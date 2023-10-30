@@ -9,7 +9,7 @@ import { Card, Stack, CardContent } from '@mui/material';
 import { styled } from '@mui/material/styles';
 //import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'
 //import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
-import Environmental from './Environmental'
+import Environmental from '../templateQuotation/Environmental'
 import MyTable from './Reliability';
 
 
@@ -85,7 +85,7 @@ function a11yProps(index) {
   };
 }
 
-export default function AddQuotation() {
+export default function QuotaionTemplates() {
   const [value, setValue] = useState(0);
 
   const handleChange = (event, newValue) => {
@@ -93,34 +93,32 @@ export default function AddQuotation() {
   };
 
   return (
-    <>
-      <Typography variant='h5'>Add Quotation</Typography>
-      <Card>
-        <CardContent>
-          <Box sx={{ width: '100%' }}>
-            <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-              <StyledTabs value={value} onChange={handleChange} aria-label="basic tabs example">
-                <StyledTab label="Environmental" {...a11yProps(0)} />
-                <StyledTab label="Reliability" {...a11yProps(1)} />
-                <StyledTab label="EMI & EMC" {...a11yProps(2)} />
-                <StyledTab label="Item Soft" {...a11yProps(3)} />
-              </StyledTabs>
-            </Box>
-            <CustomTabPanel value={value} index={0}>
-              <Environmental />
-            </CustomTabPanel>
-            <CustomTabPanel value={value} index={1}>
-              <MyTable />
-            </CustomTabPanel>
-            <CustomTabPanel value={value} index={2}>
-              Quotation for EMI & EMC tests
-            </CustomTabPanel>
-            <CustomTabPanel value={value} index={3}>
-              Quotation for Item Soft sales
-            </CustomTabPanel>
+
+    <Card>
+      <CardContent>
+        <Box sx={{ width: '100%' }}>
+          <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+            <StyledTabs value={value} onChange={handleChange} aria-label="basic tabs example">
+              <StyledTab label="Environmental" {...a11yProps(0)} />
+              <StyledTab label="Reliability" {...a11yProps(1)} />
+              <StyledTab label="EMI & EMC" {...a11yProps(2)} />
+              <StyledTab label="Item Soft" {...a11yProps(3)} />
+            </StyledTabs>
           </Box>
-        </CardContent>
-      </Card>
-    </>
+          <CustomTabPanel value={value} index={0}>
+            <Environmental />
+          </CustomTabPanel>
+          <CustomTabPanel value={value} index={1}>
+            <MyTable />
+          </CustomTabPanel>
+          <CustomTabPanel value={value} index={2}>
+            Quotation for EMI & EMC tests
+          </CustomTabPanel>
+          <CustomTabPanel value={value} index={3}>
+            Quotation for Item Soft sales
+          </CustomTabPanel>
+        </Box>
+      </CardContent>
+    </Card>
   );
 }
