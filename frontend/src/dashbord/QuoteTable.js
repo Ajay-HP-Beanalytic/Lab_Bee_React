@@ -139,7 +139,8 @@ export default function QuoteTable() {
 
 
     return (
-        <>
+      <>
+          <Typography variant='h4'>DASHBOARD</Typography>
             {quotesTableData.length ? (
                 <Card sx={{ minWidth: 900, m: 4 }} elevation={11}>
                     <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'red' }}>

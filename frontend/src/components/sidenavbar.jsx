@@ -1,8 +1,6 @@
 // Here we are using "Mini variant drawer" to create a side navigation bar:
 
-//import * as React from 'react';
-
-import React, { useState, useContext } from 'react'
+import React, { useState } from 'react'
 import { styled, useTheme } from '@mui/material/styles';
 import Box from '@mui/material/Box';
 import MuiDrawer from '@mui/material/Drawer';
@@ -20,23 +18,16 @@ import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import { Avatar, Tooltip } from '@mui/material';
-
-
 import HomeIcon from '@mui/icons-material/Home';
 import RequestQuoteIcon from '@mui/icons-material/RequestQuote';
 import EditNoteIcon from '@mui/icons-material/EditNote';
 import CalendarMonthSharpIcon from '@mui/icons-material/CalendarMonthSharp';
 import ArticleIcon from '@mui/icons-material/Article';
 import SettingsIcon from '@mui/icons-material/Settings';
+import { Link, Outlet } from 'react-router-dom';
 
 
 
-import HomeDashboard from "../Pages/Home";
-import Jobcard from "../Pages/Jobcard";
-import UserDetailsDialog from './UserDialog';
-import UpdateEnvironmentalQuote from '../templateQuotation/UpdateEnvironmental';
-import Quotations from '../Pages/Quotations';
-import UpdateQuotations from '../Pages/UpdateQuotations';
 
 const drawerWidth = 200;
 
@@ -178,7 +169,10 @@ export default function SidenavigationBar() {
 
             <Tooltip title='Home' placement="right" arrow>
               {/* Home List item */}
-              <ListItem disablePadding sx={{ display: 'block' }} onClick={() => setMenudata("Home")}>
+              <ListItem disablePadding sx={{ display: 'block' }}
+                // onClick={() => setMenudata("Home")}
+                as={Link} to='/'
+              >
                 <ListItemButton
                   selected={selectedIndex === 0} onClick={(event) => handleListItemClick(event, 0)}
                   sx={{
@@ -206,7 +200,10 @@ export default function SidenavigationBar() {
 
             {/* Quotation item */}
             <Tooltip title='Quotation' placement="right" arrow>
-              <ListItem disablePadding sx={{ display: 'block' }} onClick={() => setMenudata("Quotation")}>
+              <ListItem disablePadding sx={{ display: 'block' }}
+                // onClick={() => setMenudata("Quotation")}
+                as={Link} to='/quotation'
+              >
                 <ListItemButton
                   selected={selectedIndex === 1} onClick={(event) => handleListItemClick(event, 1)}
                   sx={{
@@ -234,7 +231,10 @@ export default function SidenavigationBar() {
 
             <Tooltip title='Update Quotation' placement="right" arrow>
               {/* Quotation update item */}
-              <ListItem disablePadding sx={{ display: 'block' }} onClick={() => setMenudata("Update Quotation")}>
+              <ListItem disablePadding sx={{ display: 'block' }}
+                as={Link} to='/updateenviquote/Sample'
+              // onClick={() => setMenudata("Update Quotation")}
+              >
                 {/* <ListItem disablePadding sx={{ display: 'block' }} onClick={() => setMenudata("/updateenviquote/:quotationID")}> */}
                 <ListItemButton
                   selected={selectedIndex === 2} onClick={(event) => handleListItemClick(event, 2)}
@@ -267,7 +267,10 @@ export default function SidenavigationBar() {
 
             {/* Job card item */}
             <Tooltip title='Jobcard' placement="right" arrow>
-              <ListItem disablePadding sx={{ display: 'block' }} onClick={() => setMenudata("Jobcard")}>
+              <ListItem disablePadding sx={{ display: 'block' }}
+                as={Link} to='/jobcard'
+              // onClick={() => setMenudata("Jobcard")}
+              >
                 <ListItemButton
                   selected={selectedIndex === 3} onClick={(event) => handleListItemClick(event, 3)}
                   sx={{
@@ -294,7 +297,10 @@ export default function SidenavigationBar() {
 
             {/* Slot Booking item */}
             <Tooltip title='Slot Booking' placement='right' arrow>
-              <ListItem disablePadding sx={{ display: 'block' }} onClick={() => setMenudata("Shorts")}>
+              <ListItem disablePadding sx={{ display: 'block' }}
+                as={Link} to='/slot-booking'
+              // onClick={() => setMenudata("Shorts")}
+              >
                 <ListItemButton
                   selected={selectedIndex === 4} onClick={(event) => handleListItemClick(event, 4)}
                   sx={{
@@ -324,7 +330,10 @@ export default function SidenavigationBar() {
           <List sx={{ marginTop: 'auto' }} >
 
             <Tooltip title='Settings' placement='right' arrow>
-              <ListItem disablePadding sx={{ display: 'block' }} onClick={() => setMenudata("Home")}>
+              <ListItem disablePadding sx={{ display: 'block' }}
+                as={Link} to='/settings'
+              // onClick={() => setMenudata("Home")}
+              >
                 <ListItemButton
                   selected={selectedIndex === 5} onClick={(event) => handleListItemClick(event, 5)}
                   sx={{
@@ -383,12 +392,14 @@ export default function SidenavigationBar() {
         </Drawer>
 
         <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
-          {menudata === "Home" && <HomeDashboard />}
+          <Box height={100} sx={{ marginTop: '0.5', marginBottom: '0.5' }} />
+          <Outlet />
+          {/* {menudata === "Home" && <HomeDashboard />}
           {menudata === "Quotation" && <Quotations />}
           {menudata === "Update Quotation" && <UpdateQuotations />}
-          {/* {menudata === "Update Quotation " && <UpdateEnvironmentalQuote />} */}
           {menudata === "Jobcard" && <Jobcard />}
-          {menudata === "User" && <UserDetailsDialog />}
+          {menudata === "User" && <UserDetailsDialog />} */}
+          {/* {menudata === "Update Quotation " && <UpdateEnvironmentalQuote />} */}
         </Box>
       </Box>
     </>
