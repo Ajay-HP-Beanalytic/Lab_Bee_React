@@ -1,14 +1,18 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Link, Outlet } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import 'react-toastify/dist/ReactToastify.css';
 import React, { useState } from "react";
 import "./App.css";
 import Login from "./Login_Register";
-import Homepage from "./Pages/HomePage";
 import UpdateEnvironmentalQuote from "./templateQuotation/UpdateEnvironmental";
 //import UpdateEnvironmentalQuote from '../templateQuotation/UpdateEnvironmental';
 import TrailPage from "./TrailPage";
 import UpdateQuotations from "./Pages/UpdateQuotations";
+import SidenavigationBar from "./components/sidenavbar";
+import Jobcard from "./Pages/Jobcard";
+import Quotations from "./Pages/Quotations";
+import QuoteTable from "./dashbord/QuoteTable";
+import NotFoundPage from "./Pages/NotFoundPage";
 
 
 
@@ -33,14 +37,14 @@ function App() {
         <ToastContainer position="top-center" />
 
         <Routes>
-          <Route path="/" element={<Login />} />
-          <Route path="/home" element={<Homepage />} />
-
-          {/* <Route path="/updateenviquote/:quotationID" element={<UpdateEnvironmentalQuote />} /> */}
-          <Route path="/updateenviquote/:quotationID" element={<UpdateQuotations />} />
-
-          <Route path='/trailpage' element={<TrailPage />} />
-
+          <Route path="" element={<SidenavigationBar />} >
+            <Route index element={<QuoteTable />} />
+            <Route path='/quotation' element={<Quotations />} />
+            <Route path='/jobcard' element={<Jobcard />} />
+            <Route path='/trailpage' element={<TrailPage />} />
+            <Route path="/updateenviquote/:quotationID" element={<UpdateQuotations />} />
+            <Route path='*' element={<NotFoundPage />} />
+          </Route>
         </Routes>
       </div>
     </BrowserRouter>
@@ -49,4 +53,3 @@ function App() {
 };
 
 export default App;
-
