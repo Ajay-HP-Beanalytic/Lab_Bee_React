@@ -27,8 +27,6 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import { Link, Outlet } from 'react-router-dom';
 
 
-
-
 const drawerWidth = 200;
 
 const openedMixin = (theme) => ({
@@ -130,7 +128,35 @@ export default function SidenavigationBar() {
   const userAvatar = firstLetter
 
 
+  const items = [
+    { i: 1, label: 'Home', icon: <HomeIcon />, path: '/home' },
+    { i: 2, label: 'Add Quotation', icon: <RequestQuoteIcon />, path: '/quotation' },
+    { i: 3, label: 'Update Quotation', icon: <EditNoteIcon />, path: '/updateenviquote/Sample' },
+    { i: 4, label: 'Jobcard', icon: <ArticleIcon />, path: '/jobcard' },
+    { i: 5, label: 'Slot Booking', icon: <CalendarMonthSharpIcon />, path: '/slot-booking' },
+  ]
+  const items2 = [
+    { i: 6, label: 'Settings', icon: <SettingsIcon />, path: '/settings' },
+    { i: 7, label: loggedInUser, icon: <Avatar sx={{ backgroundColor: 'primary.light' }}> {userAvatar} </Avatar>, path: '/trailpage' },
+  ]
 
+  function MenuItem({ item, index }) {
+    return (<Tooltip title={item.label} placement="right" arrow>
+      <ListItem disablePadding sx={{ display: 'block' }}
+        as={Link} to={item.path}
+      >
+        <ListItemButton
+          selected={selectedIndex === index} onClick={(event) => handleListItemClick(event, index)}
+          sx={{ display: 'flex', alignItems: 'center', minHeight: 48, justifyContent: open ? 'initial' : 'center', px: 2.5, }}
+        >
+          <ListItemIcon sx={{ minWidth: 0, mr: open ? 3 : 'auto', justifyContent: 'center', }}>
+            {item.icon}
+          </ListItemIcon>
+          <ListItemText primary={item.label} sx={{ opacity: open ? 1 : 0, fontFamily: 'Roboto' }} />
+        </ListItemButton>
+      </ListItem>
+    </Tooltip>)
+  }
 
   return (
     <>
@@ -155,7 +181,6 @@ export default function SidenavigationBar() {
           </Toolbar>
         </AppBar>
 
-
         <Drawer variant="permanent" open={open} >
           <DrawerHeader>
             <IconButton onClick={handleDrawerClose}>
@@ -163,230 +188,13 @@ export default function SidenavigationBar() {
             </IconButton>
           </DrawerHeader>
 
-
           {/* Create a list and add the number of items in order show it in a sidebar */}
-          <List  >
-
-            <Tooltip title='Home' placement="right" arrow>
-              {/* Home List item */}
-              <ListItem disablePadding sx={{ display: 'block' }}
-                // onClick={() => setMenudata("Home")}
-                as={Link} to='/'
-              >
-                <ListItemButton
-                  selected={selectedIndex === 0} onClick={(event) => handleListItemClick(event, 0)}
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    minHeight: 48,
-                    justifyContent: open ? 'initial' : 'center',
-                    px: 2.5,
-                  }}
-                >
-                  <ListItemIcon
-                    sx={{
-                      minWidth: 0,
-                      mr: open ? 3 : 'auto',
-                      justifyContent: 'center',
-                    }}>
-
-                    <HomeIcon />
-                  </ListItemIcon>
-                  <ListItemText primary="Home" sx={{ opacity: open ? 1 : 0, fontFamily: 'Roboto' }} />
-                </ListItemButton>
-              </ListItem>
-            </Tooltip>
-
-
-            {/* Quotation item */}
-            <Tooltip title='Quotation' placement="right" arrow>
-              <ListItem disablePadding sx={{ display: 'block' }}
-                // onClick={() => setMenudata("Quotation")}
-                as={Link} to='/quotation'
-              >
-                <ListItemButton
-                  selected={selectedIndex === 1} onClick={(event) => handleListItemClick(event, 1)}
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    minHeight: 48,
-                    justifyContent: open ? 'initial' : 'center',
-                    px: 2.5,
-                  }}
-                >
-                  <ListItemIcon
-                    sx={{
-                      minWidth: 0,
-                      mr: open ? 3 : 'auto',
-                      justifyContent: 'center',
-                    }}>
-
-                    <RequestQuoteIcon />
-                  </ListItemIcon>
-                  <ListItemText primary="Quotation" sx={{ opacity: open ? 1 : 0, fontFamily: 'Roboto' }} />
-                </ListItemButton>
-              </ListItem>
-            </Tooltip>
-
-
-            <Tooltip title='Update Quotation' placement="right" arrow>
-              {/* Quotation update item */}
-              <ListItem disablePadding sx={{ display: 'block' }}
-                as={Link} to='/updateenviquote/Sample'
-              // onClick={() => setMenudata("Update Quotation")}
-              >
-                {/* <ListItem disablePadding sx={{ display: 'block' }} onClick={() => setMenudata("/updateenviquote/:quotationID")}> */}
-                <ListItemButton
-                  selected={selectedIndex === 2} onClick={(event) => handleListItemClick(event, 2)}
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    minHeight: 48,
-                    justifyContent: open ? 'initial' : 'center',
-                    px: 2.5,
-                  }}
-                >
-                  <ListItemIcon
-                    sx={{
-                      minWidth: 0,
-                      mr: open ? 3 : 'auto',
-                      justifyContent: 'center',
-                    }}>
-
-                    <EditNoteIcon />
-                  </ListItemIcon>
-                  <ListItemText primary="Update Quotation" sx={{ opacity: open ? 1 : 0, fontFamily: 'Roboto' }} />
-                </ListItemButton>
-              </ListItem>
-            </Tooltip>
-
-
-
-
-
-
-            {/* Job card item */}
-            <Tooltip title='Jobcard' placement="right" arrow>
-              <ListItem disablePadding sx={{ display: 'block' }}
-                as={Link} to='/jobcard'
-              // onClick={() => setMenudata("Jobcard")}
-              >
-                <ListItemButton
-                  selected={selectedIndex === 3} onClick={(event) => handleListItemClick(event, 3)}
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    minHeight: 48,
-                    justifyContent: open ? 'initial' : 'center',
-                    px: 2.5,
-                  }}
-                >
-                  <ListItemIcon
-                    sx={{
-                      minWidth: 0,
-                      mr: open ? 3 : 'auto',
-                      justifyContent: 'center',
-                    }}>
-
-                    <ArticleIcon />
-                  </ListItemIcon>
-                  <ListItemText primary="Job Card" sx={{ opacity: open ? 1 : 0, fontFamily: 'Roboto' }} />
-                </ListItemButton>
-              </ListItem>
-            </Tooltip>
-
-            {/* Slot Booking item */}
-            <Tooltip title='Slot Booking' placement='right' arrow>
-              <ListItem disablePadding sx={{ display: 'block' }}
-                as={Link} to='/slot-booking'
-              // onClick={() => setMenudata("Shorts")}
-              >
-                <ListItemButton
-                  selected={selectedIndex === 4} onClick={(event) => handleListItemClick(event, 4)}
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    minHeight: 48,
-                    justifyContent: open ? 'initial' : 'center',
-                    px: 2.5,
-                  }}
-                >
-                  <ListItemIcon
-                    sx={{
-                      minWidth: 0,
-                      mr: open ? 3 : 'auto',
-                      justifyContent: 'center',
-                    }} >
-                    <CalendarMonthSharpIcon />
-                  </ListItemIcon>
-                  <ListItemText primary="Slot Booking" sx={{ opacity: open ? 1 : 0, fontFamily: 'Roboto' }} />
-                </ListItemButton>
-              </ListItem>
-            </Tooltip>
-
+          <List>
+            {items.map((item) => (<MenuItem key={item.i} item={item} index={item.i} />))}
           </List>
 
-
           <List sx={{ marginTop: 'auto' }} >
-
-            <Tooltip title='Settings' placement='right' arrow>
-              <ListItem disablePadding sx={{ display: 'block' }}
-                as={Link} to='/settings'
-              // onClick={() => setMenudata("Home")}
-              >
-                <ListItemButton
-                  selected={selectedIndex === 5} onClick={(event) => handleListItemClick(event, 5)}
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    minHeight: 48,
-                    justifyContent: open ? 'initial' : 'center',
-                    px: 2.5,
-                  }}
-                >
-                  <ListItemIcon
-                    sx={{
-                      minWidth: 0,
-                      mr: open ? 3 : 'auto',
-                      justifyContent: 'center',
-                    }}>
-
-                    <SettingsIcon />
-                  </ListItemIcon>
-                  <ListItemText primary="Settings" sx={{ opacity: open ? 1 : 0, fontFamily: 'Roboto' }} />
-                </ListItemButton>
-              </ListItem>
-            </Tooltip>
-
-
-            <Tooltip title={loggedInUser} placement='right' arrow>
-              {/* Logout user */}
-              <ListItem disablePadding sx={{ display: 'block' }} onClick={() => setMenudata("User")}>
-                <ListItemButton
-                  selected={selectedIndex === 6} onClick={(event) => handleListItemClick(event, 6)}
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    minHeight: 48,
-                    justifyContent: open ? 'initial' : 'center',
-                    px: 2.5,
-                  }}
-                //onClick={() => openUserDialog()} // Open the dialog when clicking "User"
-                >
-                  <ListItemIcon
-                    sx={{
-                      minWidth: 0,
-                      mr: open ? 3 : 'auto',
-                      justifyContent: 'center',
-                    }}>
-
-                    <Avatar sx={{ backgroundColor: 'primary.light' }}> {userAvatar} </Avatar>   {/*To show the name on hovering we can use title */}
-
-                  </ListItemIcon>
-                  <ListItemText primary={loggedInUser} sx={{ opacity: open ? 1 : 0, fontFamily: 'Roboto' }} />
-                </ListItemButton>
-              </ListItem>
-            </Tooltip>
+            {items2.map((item) => (<MenuItem key={item.i} item={item} index={item.i} />))}
           </List>
 
         </Drawer>
@@ -394,12 +202,6 @@ export default function SidenavigationBar() {
         <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
           <Box height={100} sx={{ marginTop: '0.5', marginBottom: '0.5' }} />
           <Outlet />
-          {/* {menudata === "Home" && <HomeDashboard />}
-          {menudata === "Quotation" && <Quotations />}
-          {menudata === "Update Quotation" && <UpdateQuotations />}
-          {menudata === "Jobcard" && <Jobcard />}
-          {menudata === "User" && <UserDetailsDialog />} */}
-          {/* {menudata === "Update Quotation " && <UpdateEnvironmentalQuote />} */}
         </Box>
       </Box>
     </>
