@@ -10,7 +10,8 @@ import { styled } from '@mui/material/styles';
 //import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'
 //import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import Environmental from '../templateQuotation/Environmental'
-import MyTable from './Reliability';
+import ReliabilityQuotation from './Reliability';
+import ItemSoftQuotation from './ItemSoft';
 
 
 
@@ -108,15 +109,20 @@ export default function QuotaionTemplates() {
           <CustomTabPanel value={value} index={0}>
             <Environmental />
           </CustomTabPanel>
+
           <CustomTabPanel value={value} index={1}>
-            <MyTable />
+            {/* <MyTable /> */}
+            <ReliabilityQuotation />
           </CustomTabPanel>
+
           <CustomTabPanel value={value} index={2}>
             Quotation for EMI & EMC tests
           </CustomTabPanel>
+
           <CustomTabPanel value={value} index={3}>
-            Quotation for Item Soft sales
+            <ItemSoftQuotation />
           </CustomTabPanel>
+
         </Box>
       </CardContent>
     </Card>
