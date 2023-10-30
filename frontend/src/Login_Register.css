@@ -1,0 +1,77 @@
+.login-register-form-container{
+    align-items: center;
+    width: 200px;
+    padding: 10rem;
+    border: 1px solid #ccc; /* Add a border with the desired color */
+    border-radius: 10px;
+    margin: 5rem;
+    display: flex;
+    flex-direction: column;
+    /*box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Add a shadow for a more prominent effect */
+}
+
+.inputField {
+  /*width: 300px;*/
+  width: 100%;
+  height: 25px;
+  border-radius: 10px;
+  margin-bottom: 15px;
+}
+
+
+.saveLoginInputs {
+  background-color: #4caf50;
+  width: 100%;
+  color: white;
+  border: none;
+  margin: 8px 0;
+  padding: 10px 0;
+  cursor: pointer;
+  border-radius: 10px;
+}
+
+.clearLoginInputs {
+  margin-top: 10px;
+  background-color: #e93909;
+  width: 100%;
+  color: white;
+  border: none;
+  margin: 8px 0;
+  padding: 10px 0;
+  cursor: pointer;
+  border-radius: 10px;
+
+}
+
+.link-btn {
+  background: black;
+  color: black;
+  text-decoration: underline;
+}
+
+
+/*.buttonSave:hover {
+      background-color: red;
+}*/
+  
+/*.buttonSave {
+      background-color: #4caf50;
+      width: 150px;
+      color: white;
+      border: none;
+      margin: 8px 0;
+      padding: 10px 20px;
+      cursor: pointer;
+      border-radius: 10px;
+}*/
+    
+/*.buttonGoback {
+      background-color: #ccc;
+      width: 150px;
+      color: #333;
+      border: none;
+      margin: 8px 0;
+      padding: 10px 20px;
+      cursor: pointer;
+      border-radius: 10px;
+}*/
