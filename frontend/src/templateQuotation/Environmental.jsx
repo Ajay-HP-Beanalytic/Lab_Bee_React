@@ -112,11 +112,6 @@ const Environmental = () => {
   const initialCustomerReferance = ''
   const initialKindAttention = ''
 
-  // const currentDate = new Date();
-  // const currentYear = currentDate.getFullYear().toString().slice(-2);
-  // const currentMonth = (currentDate.getMonth() + 1).toString().padStart(2, '0');
-  // const currentDay = currentDate.getDate().toString();
-
 
 
   const quoteCategory = 'Environmental testing';
@@ -496,8 +491,8 @@ const Environmental = () => {
                       <TableCell align="center">Unit</TableCell>
                       <TableCell align="center">Per Unit Charge</TableCell>
                       <TableCell align="center">Amount</TableCell>
-                      <TableCell align="center" />
-                      <TableCell align="center" />
+                      <TableCell align="center">Add Row</TableCell>
+                      <TableCell align="center">Remove Row</TableCell>
                     </TableRow>
                   </TableHead>
 
