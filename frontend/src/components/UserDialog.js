@@ -8,9 +8,8 @@ const UserDetailsDialog = () => {
 
   return (
     <>
-      <Box height={100} />
       <div>
-        <Button onClick={() => setUserDialogOpen(true)} variant='outlined'> Click Me</Button>
+        <Button onClick={() => setUserDialogOpen(true)} variant='outlined'>Logout</Button>
         <Dialog hideBackdrop open={isUserDialogOpen} onClose={() => setUserDialogOpen(false)}>
           <DialogTitle> User Info</DialogTitle>
           <DialogContent>

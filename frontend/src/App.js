@@ -5,44 +5,28 @@ import React, { useState } from "react";
 import "./App.css";
 import Login from "./Login_Register";
 import UpdateEnvironmentalQuote from "./templateQuotation/UpdateEnvironmental";
-//import UpdateEnvironmentalQuote from '../templateQuotation/UpdateEnvironmental';
 import TrailPage from "./TrailPage";
-import UpdateQuotations from "./Pages/UpdateQuotations";
 import SidenavigationBar from "./components/sidenavbar";
 import Jobcard from "./Pages/Jobcard";
-import Quotations from "./Pages/Quotations";
-import QuoteTable from "./dashbord/QuoteTable";
+import QuoteTable from "./Pages/QuoteTable";
 import NotFoundPage from "./Pages/NotFoundPage";
-
-
-
-
-
+import UserDetailsDialog from "./components/UserDialog";
+import AddQuotation from "./templateQuotation/AddQuotation";
 
 function App() {
-  //const [currentForm, setCurrentForm] = useState("login");
-  //const [loginStatus, setLoginStatus] = useState("");
-  //const [registerStatus, setRegisterStatus] = useState("");
-  //const [name, setNameString] = useState(""); // Remove initialState
-  //const [email, setEmailString] = useState("");
-  //const [password, setPasswordString] = useState("");
-
-
-
   return (
     <BrowserRouter>
       <div className="App">
-        {/*<h2> Welcome to Lab-Bee</h2>*/}
-        {/*<Typography variant="h2" sx={{ color:"red"}}> Welcome to Lab-Bee</Typography>*/}
         <ToastContainer position="top-center" />
-
         <Routes>
           <Route path="" element={<SidenavigationBar />} >
-            <Route index element={<QuoteTable />} />
-            <Route path='/quotation' element={<Quotations />} />
+            <Route index element={<Login />} />
+            <Route path='home' element={<QuoteTable />} />
+            <Route path='/quotation' element={<AddQuotation />} />
             <Route path='/jobcard' element={<Jobcard />} />
             <Route path='/trailpage' element={<TrailPage />} />
-            <Route path="/updateenviquote/:quotationID" element={<UpdateQuotations />} />
+            <Route path='/settings' element={<UserDetailsDialog />} />
+            <Route path="/updateenviquote/:quotationID" element={<UpdateEnvironmentalQuote />} />
             <Route path='*' element={<NotFoundPage />} />
           </Route>
         </Routes>
