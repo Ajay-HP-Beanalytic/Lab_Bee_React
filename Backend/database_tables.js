@@ -49,8 +49,10 @@ function createBEAQuotationsTable() {
             customer_id VARCHAR(255),
             customer_referance VARCHAR(255),
             kind_attention VARCHAR(255),
+            project_name VARCHAR(1000),
             quote_category VARCHAR(255),
             total_amount VARCHAR(255),
+            total_discount_amount VARCHAR(255),
             total_taxable_amount_in_words VARCHAR(1000),
             quote_created_by VARCHAR(255),
             PRIMARY KEY(id)
@@ -95,6 +97,53 @@ function createEnvitestsQuotesDetailsTable() {
 
 
 
+////////////////////////////////////////////////////////////////////////////
+//Function to create a reliability_quotes_data table:
+function createReliabilityQuotesDetailsTable() {
+    const createReliabilityQuotesDetailsQuery = `
+    CREATE TABLE IF NOT EXISTS reliability_quotes_data (
+        id INT NOT NULL AUTO_INCREMENT,
+        quotation_ids VARCHAR(255),
+        company_name VARCHAR(255),
+        service_description VARCHAR(1000),
+        amount VARCHAR(255),
+        PRIMARY KEY(id)
+    )`;
+
+    db.query(createReliabilityQuotesDetailsQuery, function (err, result) {
+        if (err) {
+            console.log("Error occurred while creating reliability_quotes_data table", err)
+        } else {
+            //console.log("envi_tests_quotes_data table created successfully.")
+        }
+    })
+};
+
+
+
+////////////////////////////////////////////////////////////////////////////
+//Function to create a itemsoft_quotes_data table:
+function createItemsoftQuotesDetailsTable() {
+    const createItemsoftQuotesDetailsQuery = `
+    CREATE TABLE IF NOT EXISTS itemsoft_quotes_data (
+        id INT NOT NULL AUTO_INCREMENT,
+        quotation_ids VARCHAR(255),
+        company_name VARCHAR(255),
+        module_name VARCHAR(1000),
+        module_description VARCHAR(2000),
+        amount VARCHAR(255),
+        PRIMARY KEY(id)
+    )`;
+
+    db.query(createItemsoftQuotesDetailsQuery, function (err, result) {
+        if (err) {
+            console.log("Error occurred while creating itemsoft_quotes_data table", err)
+        } else {
+            //console.log("envi_tests_quotes_data table created successfully.")
+        }
+    })
+};
+
 
 
 // Handle the process exiting to gracefully end the connection pool.
@@ -114,6 +163,8 @@ process.on('exit', function () {
 module.exports = {
     db, createUsersTable,
     createBEAQuotationsTable,
-    createEnvitestsQuotesDetailsTable
+    createEnvitestsQuotesDetailsTable,
+    createReliabilityQuotesDetailsTable,
+    createItemsoftQuotesDetailsTable
 };
 

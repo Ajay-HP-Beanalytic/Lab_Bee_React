@@ -35,11 +35,8 @@ const ItemSoftQuotation = () => {
     const [tableData, setTableData] = useState([
         {
             slno: 1,
-            testDescription: '',
-            sacNo: '',
-            duration: '',
-            unit: '',
-            perUnitCharge: '',
+            moduleName: '',
+            moduleDescription: '',
             amount: '',
         },
     ]);
@@ -54,11 +51,8 @@ const ItemSoftQuotation = () => {
         const maxSlNo = Math.max(...tableData.map((row) => row.slno), 0);
         const newRow = {
             slno: maxSlNo + 1,
-            testDescription: '',
-            sacNo: '',
-            duration: '',
-            unit: '',
-            perUnitCharge: '',
+            moduleName: '',
+            moduleDescription: '',
             amount: '',
         };
         setTableData([...tableData, newRow]);
@@ -90,21 +84,11 @@ const ItemSoftQuotation = () => {
     const formattedDate = moment(selectedDate).format("DD-MM-YYYY");
 
 
-    // Function to reset table inputs
-    /* const initialTableData = [
-        {
-            slno: 1,
-            testDescription: '',
-            sacNo: '',
-            duration: '',
-            unit: '',
-            perUnitCharge: '',
-            amount: '',
-        },]; */
 
     const initialTableData = [
         {
             slno: 1,
+            moduleName: '',
             moduleDescription: '',
             amount: '',
         },];
@@ -116,11 +100,11 @@ const ItemSoftQuotation = () => {
     const initialCustomerID = ''
     const initialCustomerReferance = ''
     const initialKindAttention = ''
+    const initialProjectName = ''
 
 
 
-
-    const quoteCategory = 'Environmental testing';
+    const quoteCategory = 'Item Software';
     const quotationCreatedBy = loggedInUser;
 
 
@@ -130,6 +114,7 @@ const ItemSoftQuotation = () => {
     const [customerId, setCustomerId] = useState(initialCustomerID)
     const [customerReferance, setCustomerreferance] = useState(initialCustomerReferance)
     const [kindAttention, setKindAttention] = useState(initialKindAttention)
+    const [projectName, setProjectName] = useState(initialProjectName)
 
 
     const [quotationIdString, setQuotationIDString] = useState('')
@@ -245,7 +230,7 @@ const ItemSoftQuotation = () => {
         }
 
         // Check at least one row is filled completely or rlse give a error messgae:
-        const isAtLeastOneRowIsFilled = tableData.some((row) => row.testDescription && row.sacNo && row.duration && row.unit && row.perUnitCharge && row.amount);
+        const isAtLeastOneRowIsFilled = tableData.some((row) => row.moduleName && row.moduleDescription && row.sacNo && row.duration && row.unit && row.perUnitCharge && row.amount);
 
         if (!isAtLeastOneRowIsFilled) {
             toast.error("Please enter atleast one row of the table.");
@@ -260,6 +245,7 @@ const ItemSoftQuotation = () => {
             customerId,
             customerReferance,
             kindAttention,
+            projectName,
             quoteCategory,
 
             taxableAmount,
@@ -269,7 +255,7 @@ const ItemSoftQuotation = () => {
         });
 
 
-        const envitestQuotesTableDataRequest = axios.post("http://localhost:4000/api/evnitest_quote_data", {
+        const itemsoftQuotesTableDataRequest = axios.post("http://localhost:4000/api/itemsoft_quote_data", {
             quotationIdString,
             customerId,
             tableData
@@ -277,10 +263,10 @@ const ItemSoftQuotation = () => {
 
         try {
             // Wait for the both requests to finish
-            const [quotesCategoryResponse, envitestTableResponse] = await Promise.all([quotesCategoryRequest, envitestQuotesTableDataRequest])
+            const [quotesCategoryResponse, itemsoftTableResponse] = await Promise.all([quotesCategoryRequest, itemsoftQuotesTableDataRequest])
 
             // Check the status of both requests:
-            if (quotesCategoryResponse.status === 200 && envitestTableResponse.status === 200) {
+            if (quotesCategoryResponse.status === 200 && itemsoftTableResponse.status === 200) {
                 toast.success("Data Added Successfully")
             } else {
                 toast.error("An error occurred while saving the data1.");
@@ -336,7 +322,9 @@ const ItemSoftQuotation = () => {
         setCustomerId(initialCustomerID);
         setCustomerreferance(initialCustomerReferance);
         setKindAttention(initialKindAttention);
+        setProjectName(initialProjectName)
         setTableData(initialTableData);
+
 
         fetchLatestQuotationId();   // Call the function here to which will fetch the latest quotation id
         //setQuotationIDString(quotationIdString);
@@ -469,6 +457,17 @@ const ItemSoftQuotation = () => {
                                         />
                                     </div>
 
+                                    <div>
+                                        <TextField
+                                            sx={{ marginBottom: '16px', marginRight: '10px', borderRadius: 3 }}
+                                            label="Project Name"
+                                            value={projectName} onChange={(e) => setProjectName(e.target.value)}
+                                            margin="3"
+                                            variant="outlined"
+                                            fullWidth
+                                        />
+                                    </div>
+
                                 </Box>
                             </Container>
 
@@ -491,6 +490,7 @@ const ItemSoftQuotation = () => {
                                     <TableHead sx={{ backgroundColor: '#227DD4', fontWeight: 'bold' }}>
                                         <TableRow>
                                             <TableCell>Sl No</TableCell>
+                                            <TableCell align="center">Module Name</TableCell>
                                             <TableCell align="center">Module Description</TableCell>
                                             <TableCell align="center">Amount</TableCell>
                                             <TableCell align="center">Add Row</TableCell>
@@ -508,11 +508,21 @@ const ItemSoftQuotation = () => {
                                                     {row.slno}
                                                 </TableCell>
 
+
                                                 <TableCell align="center">
                                                     <TextField
-                                                        value={row.testDescription}
+                                                        value={row.moduleName}
                                                         onChange={(e) =>
-                                                            handleInputChange(row.slno, 'testDescription', e.target.value)}
+                                                            handleInputChange(row.slno, 'moduleName', e.target.value)}
+                                                    />
+                                                </TableCell>
+
+
+                                                <TableCell align="center">
+                                                    <TextField
+                                                        value={row.moduleDescription}
+                                                        onChange={(e) =>
+                                                            handleInputChange(row.slno, 'moduleDescription', e.target.value)}
                                                     />
                                                 </TableCell>
 
@@ -553,12 +563,12 @@ const ItemSoftQuotation = () => {
 
                                         <TableRow>
                                             <TableCell rowSpan={2} />
-                                            <TableCell colSpan={1} > <Typography variant='h6'> Taxable Amount:</Typography> </TableCell>
+                                            <TableCell colSpan={2} > <Typography variant='h6'> Taxable Amount:</Typography> </TableCell>
                                             <TableCell align="center"> <Typography variant='h6'> {taxableAmount.toFixed(2)}</Typography> </TableCell>
                                         </TableRow>
 
                                         <TableRow>
-                                            <TableCell colSpan={1}> <Typography variant='h6'> Total Amount in Rupees:</Typography> </TableCell>
+                                            <TableCell colSpan={2}> <Typography variant='h6'> Total Amount in Rupees:</Typography> </TableCell>
                                             <TableCell align="center"> <Typography variant='h6'> {totalAmountWords} </Typography> </TableCell>
                                         </TableRow>
 

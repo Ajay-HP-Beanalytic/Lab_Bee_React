@@ -111,6 +111,7 @@ const Environmental = () => {
   const initialCustomerID = ''
   const initialCustomerReferance = ''
   const initialKindAttention = ''
+  const initialProjectName = ''
 
 
 
@@ -124,6 +125,7 @@ const Environmental = () => {
   const [customerId, setCustomerId] = useState(initialCustomerID)
   const [customerReferance, setCustomerreferance] = useState(initialCustomerReferance)
   const [kindAttention, setKindAttention] = useState(initialKindAttention)
+  const [projectName, setProjectName] = useState(initialProjectName)
 
 
   const [quotationIdString, setQuotationIDString] = useState('')
@@ -153,7 +155,7 @@ const Environmental = () => {
     const currentYear = currentDate.getFullYear().toString().slice(-2);
     const currentMonth = (currentDate.getMonth() + 1).toString().padStart(2, '0');
     const currentDay = currentDate.getDate().toString();
-    const dynamicQuotationIdString = `BEA/TS/${newCompanyName}/${currentYear}${currentMonth}${currentDay}-001`;
+    const dynamicQuotationIdString = `BEA/TS1/${newCompanyName}/${currentYear}${currentMonth}${currentDay}-001`;
     setQuotationIDString(dynamicQuotationIdString);
   };
 
@@ -186,7 +188,7 @@ const Environmental = () => {
         const formattedIncrementedNumber = newIncrementedNumber.toString().padStart(3, '0');
 
         // Create a quotation string as per the requirement:
-        const dynamicQuotationIdString = `BEA/TS/${newCompanyName}/${currentYear}${currentMonth}${currentDay}-${formattedIncrementedNumber}`;
+        const dynamicQuotationIdString = `BEA/TS1/${newCompanyName}/${currentYear}${currentMonth}${currentDay}-${formattedIncrementedNumber}`;
 
         // Set the quotation ID after fetching the last ID
         setQuotationIDString(dynamicQuotationIdString);
@@ -254,6 +256,7 @@ const Environmental = () => {
       customerId,
       customerReferance,
       kindAttention,
+      projectName,
       quoteCategory,
 
       taxableAmount,
@@ -330,7 +333,9 @@ const Environmental = () => {
     setCustomerId(initialCustomerID);
     setCustomerreferance(initialCustomerReferance);
     setKindAttention(initialKindAttention);
+    setProjectName(initialProjectName)
     setTableData(initialTableData);
+
 
     fetchLatestQuotationId();   // Call the function here to which will fetch the latest quotation id
     //setQuotationIDString(quotationIdString);
@@ -459,6 +464,17 @@ const Environmental = () => {
                       variant="outlined"
                       //value={selectedDate.toLocaleDateString()}
                       value={formattedDate}
+                      fullWidth
+                    />
+                  </div>
+
+                  <div>
+                    <TextField
+                      sx={{ marginBottom: '16px', marginRight: '10px', borderRadius: 3 }}
+                      label="Project Name"
+                      value={projectName} onChange={(e) => setProjectName(e.target.value)}
+                      margin="3"
+                      variant="outlined"
                       fullWidth
                     />
                   </div>

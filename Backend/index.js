@@ -17,7 +17,9 @@ const app = express();
 const { db,
     createUsersTable,
     createBEAQuotationsTable,
-    createEnvitestsQuotesDetailsTable } = require('./database_tables');
+    createEnvitestsQuotesDetailsTable,
+    createReliabilityQuotesDetailsTable,
+    createItemsoftQuotesDetailsTable } = require('./database_tables');
 
 
 // Establish a connection with the database and to use the tables:
@@ -31,6 +33,8 @@ db.getConnection(function (err, connection) {
     createUsersTable();
     createBEAQuotationsTable();
     createEnvitestsQuotesDetailsTable();
+    createReliabilityQuotesDetailsTable();
+    createItemsoftQuotesDetailsTable();
 
     connection.release();  // Release the connection back to the pool when done
 });
@@ -40,48 +44,6 @@ db.getConnection(function (err, connection) {
 app.use(cors());
 app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: true }));
-
-
-
-// To add new user:
-//app.post("/api/adduser", (req,res) => {
-//    const {name, email, confirmPassword} = req.body;
-//    const sqlInsert = "INSERT INTO labbee_users (name, email, password) VALUES (?,?,?)";
-//    db.query(sqlInsert, [name, email, confirmPassword], (error , result) => {
-//        if(error) {
-//            console.log(error)
-//        };
-//    });
-//});
-
-
-
-//app.post("/api/adduser", (req, res) => {
-//    const { name, email, password } = req.body;
-//    const sqlSelect = "SELECT * FROM labbee_users WHERE email = ?";
-//    const sqlInsert = "INSERT INTO labbee_users (name, email, password) VALUES (?, ?, ?)";
-//
-//
-//    
-//  
-//    db.query(sqlSelect, [email], (selectError, selectResult) => {
-//      if (selectError) {
-//        console.error(selectError);
-//        res.status(500).json({ message: "Internal server error" });
-//      } else if (selectResult.length > 0) {
-//        res.status(400).json({ message: "Email already exists" });
-//      } else {
-//        db.query(sqlInsert, [name, email, password], (insertError, insertResult) => {
-//          if (insertError) {
-//            console.error(insertError);
-//            res.status(500).json({ message: "Internal server error" });
-//          } else {
-//            res.status(200).json({ message: "User added successfully" });
-//          }
-//        });
-//      }
-//    });
-//  });
 
 
 
@@ -111,10 +73,6 @@ app.post("/api/adduser", (req, res) => {
         });
     });
 });
-
-
-
-
 
 
 
@@ -153,40 +111,16 @@ app.post("/api/login", (req, res) => {
 
 
 
-
-///// To store the quotations to the bea_quotations table:
-//app.post("/api/quotescategory", (req, res) => {
-//    const { quotationIdString, selectedDate, customerId, quoteCategory } = req.body;
-//    const formattedDate = new Date(selectedDate);
-//    const quotationCreatedBy = 'Ajay'               // Make this dynamic:
-//
-//    console.log(quotationCreatedBy)
-//    console.log('formattedDate', formattedDate)
-//
-//    // Perform a database query to store the data to the table:
-//    const sqlInsertQuotionDetails = "INSERT INTO bea_quotations (quotation_ids, company_name, quote_given_date, quote_category, quote_created_by) VALUES (?,?,?,?,?)";
-//
-//    db.query(sqlInsertQuotionDetails, [quotationIdString, customerId, formattedDate, quoteCategory, quotationCreatedBy], (error, result) => {
-//        if (error) {
-//            console.log(error);
-//            return res.status(500).json({ message: "Internal server error" });
-//        }
-//        res.status(200).json({ message: "Data added successfully" });
-//    });
-//});
-
-
-
 // To store the quotations to the environmental_tests_quotes table:
 app.post("/api/quotescategory", (req, res) => {
-    const { quotationIdString, toCompanyAddress, selectedDate, customerId, customerReferance, kindAttention, quoteCategory, taxableAmount, totalAmountWords } = req.body;
+    const { quotationIdString, toCompanyAddress, selectedDate, customerId, customerReferance, kindAttention, projectName, quoteCategory, taxableAmount, totalAmountWords } = req.body;
     const formattedDate = new Date(selectedDate);
     const quotationCreatedBy = 'Ajay'               // Make this dynamic:
 
     // Perform a database query to store the data to the table:
-    const sqlInsertQuotionDetails = "INSERT INTO bea_quotations_table (quotation_ids, company_name, company_address, quote_given_date, customer_id, customer_referance, kind_attention, quote_category, total_amount, total_taxable_amount_in_words, quote_created_by) VALUES (?,?,?,?,?,?,?,?,?,?,?)";
+    const sqlInsertQuotionDetails = "INSERT INTO bea_quotations_table (quotation_ids, company_name, company_address, quote_given_date, customer_id, customer_referance, kind_attention, project_name, quote_category, total_amount, total_taxable_amount_in_words, quote_created_by) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)";
 
-    db.query(sqlInsertQuotionDetails, [quotationIdString, customerId, toCompanyAddress, formattedDate, customerId, customerReferance, kindAttention, quoteCategory, taxableAmount, totalAmountWords, quotationCreatedBy], (error, result) => {
+    db.query(sqlInsertQuotionDetails, [quotationIdString, customerId, toCompanyAddress, formattedDate, customerId, customerReferance, kindAttention, projectName, quoteCategory, taxableAmount, totalAmountWords, quotationCreatedBy], (error, result) => {
         if (error) {
             console.log(error)
             return res.status(500).json({ message: "Internal server error" });
@@ -233,6 +167,75 @@ app.post("/api/evnitest_quote_data", (req, res) => {
 });
 
 
+//////////////////////////////////////////////////////////////
+// To store the table data in the 'reliability_quotes_data' table:
+app.post("/api/reliability_quote_data", (req, res) => {
+    const { quotationIdString, customerId } = req.body;  // change customer id to company name.
+    const tabularData = req.body.tableData;
+
+    // Perform a database query to store the data to the table:
+    const sqlInsertReliabilityQuoteTableDetails = "INSERT INTO reliability_quotes_data (quotation_ids, company_name, service_description, amount) VALUES (?,?,?,?)";
+
+    // Initialize a count to keep track of successfully inserted rows
+    let successfulInserts = 0;
+
+    // Loop through the tabularData array and insert each row into the database
+    tabularData.forEach((row) => {
+        const {
+            serviceDescription,
+            amount,
+        } = row;
+
+        db.query(sqlInsertReliabilityQuoteTableDetails, [quotationIdString, customerId, serviceDescription, amount], (error, result) => {
+            if (error) {
+                console.log(error)
+                return res.status(500).json({ message: "Internal server error" });
+            } else {
+                successfulInserts++;
+                if (successfulInserts === tabularData.length) {
+                    res.status(200).json({ message: "Table Data added successfully" });
+                }
+            }
+        });
+    });
+});
+
+
+//////////////////////////////////////////////////////////////
+/* // To store the table data in the 'itemsoft_quotes_data' table:
+app.post("/api/itemsoft_quote_data", (req, res) => {
+    const { quotationIdString, customerId } = req.body;  // change customer id to company name.
+    const tabularData = req.body.tableData;
+
+    // Perform a database query to store the data to the table:
+    const sqlInsertItemsoftQuoteTableDetails = "INSERT INTO itemsoft_quotes_data (quotation_ids, company_name, module_name, module_description, amount) VALUES (?,?,?,?,?)";
+
+    // Initialize a count to keep track of successfully inserted rows
+    let successfulInserts = 0;
+
+    // Loop through the tabularData array and insert each row into the database
+    tabularData.forEach((row) => {
+        const {
+            moduleName,
+            moduleDescription,
+            amount,
+        } = row;
+
+        db.query(sqlInsertItemsoftQuoteTableDetails, [quotationIdString, customerId, moduleName, moduleDescription, amount], (error, result) => {
+            if (error) {
+                console.log(error)
+                return res.status(500).json({ message: "Internal server error" });
+            } else {
+                successfulInserts++;
+                if (successfulInserts === tabularData.length) {
+                    res.status(200).json({ message: "Table Data added successfully" });
+                }
+            }
+        });
+    });
+}); */
+
+
 
 // To fetch the last saved quotation Id from the table envi_tests_quotes_data table:
 app.get("/api/getLatestQuoationID", (req, res) => {
@@ -267,25 +270,6 @@ app.get("/api/getQuotationdata", (req, res) => {
 
 
 
-/* // Fetch the all quotation data from the 'bea_quotations_table' table :
-app.get("/api/getQuotationdataWithID", (req, res) => {
-
-    const quotationID = req.query.quotationID;
-
-    if (!quotationID) {
-        return res.status(400).json({ error: "quotationID is missing or invalid" });
-    }
-
-    //quotation_ids, company_name, company_address, quote_given_date, customer_id, customer_referance, kind_attention, quote_category, quote_created_by
-    const quotesData = "SELECT company_name, DATE_FORMAT(quote_given_date, '%Y-%m-%d') AS formatted_quote_given_date, quote_category, quote_created_by FROM bea_quotations_table WHERE quotation_ids = ?";
-
-    //const quotesList = "SELECT * FROM bea_quotations_table";
-    db.query(quotesData, [quotationID], (error, result) => {
-        res.send(result);
-    });
-}); */
-
-
 // Fetch all quotation data from the 'bea_quotations_table' table using URL parameter.
 app.get("/api/getQuotationdataWithID/:quotationID", (req, res) => {
     const quotationID = req.params.quotationID.replaceAll('_', '/');
@@ -295,7 +279,7 @@ app.get("/api/getQuotationdataWithID/:quotationID", (req, res) => {
     }
 
     // Define your SQL query with an alias for the formatted date.
-    const quotesData = "SELECT company_name, company_address, kind_attention, customer_id, customer_referance, DATE_FORMAT(quote_given_date, '%Y-%m-%d') AS formatted_quote_given_date, total_amount, total_taxable_amount_in_words FROM bea_quotations_table WHERE quotation_ids = ?";
+    const quotesData = "SELECT company_name, company_address, kind_attention, customer_id, customer_referance, DATE_FORMAT(quote_given_date, '%Y-%m-%d') AS formatted_quote_given_date, project_name, total_amount, total_taxable_amount_in_words FROM bea_quotations_table WHERE quotation_ids = ?";
 
     db.query(quotesData, [quotationID], (error, result) => {
         if (error) {
@@ -353,7 +337,7 @@ app.post("/api/updateQuotationData/:quotationID", (req, res) => {
         totalAmountWords
     } = req.body;
 
-    const updateQuotesData = `UPDATE bea_quotations_table SET  company_name = '${companyName}', company_address = '${toCompanyAddress}',kind_attention = '${kindAttention}', customer_id = '${customerId}', customer_referance = '${customerReferance}', quote_given_date = '${selectedDate}', total_amount = '${taxableAmount}', total_taxable_amount_in_words = '${totalAmountWords}'  WHERE quotation_ids = '${quotationID}'`;
+    const updateQuotesData = `UPDATE bea_quotations_table SET company_name = '${companyName}', company_address = '${toCompanyAddress}',kind_attention = '${kindAttention}', customer_id = '${customerId}', customer_referance = '${customerReferance}', quote_given_date = '${selectedDate}', total_amount = '${taxableAmount}', total_taxable_amount_in_words = '${totalAmountWords}'  WHERE quotation_ids = '${quotationID}'`;
 
 
 
@@ -447,3 +431,45 @@ app.get("/api/get", (req, res) => {
 app.listen(4000, () => {
     console.log("Server is running on port 4000");
 });
+
+
+
+// To add new user:
+//app.post("/api/adduser", (req,res) => {
+//    const {name, email, confirmPassword} = req.body;
+//    const sqlInsert = "INSERT INTO labbee_users (name, email, password) VALUES (?,?,?)";
+//    db.query(sqlInsert, [name, email, confirmPassword], (error , result) => {
+//        if(error) {
+//            console.log(error)
+//        };
+//    });
+//});
+
+
+
+//app.post("/api/adduser", (req, res) => {
+//    const { name, email, password } = req.body;
+//    const sqlSelect = "SELECT * FROM labbee_users WHERE email = ?";
+//    const sqlInsert = "INSERT INTO labbee_users (name, email, password) VALUES (?, ?, ?)";
+//
+//
+//
+//
+//    db.query(sqlSelect, [email], (selectError, selectResult) => {
+//      if (selectError) {
+//        console.error(selectError);
+//        res.status(500).json({ message: "Internal server error" });
+//      } else if (selectResult.length > 0) {
+//        res.status(400).json({ message: "Email already exists" });
+//      } else {
+//        db.query(sqlInsert, [name, email, password], (insertError, insertResult) => {
+//          if (insertError) {
+//            console.error(insertError);
+//            res.status(500).json({ message: "Internal server error" });
+//          } else {
+//            res.status(200).json({ message: "User added successfully" });
+//          }
+//        });
+//      }
+//    });
+//  });
