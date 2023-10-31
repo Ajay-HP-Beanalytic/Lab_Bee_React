@@ -19,7 +19,8 @@ const { db,
     createBEAQuotationsTable,
     createEnvitestsQuotesDetailsTable,
     createReliabilityQuotesDetailsTable,
-    createItemsoftQuotesDetailsTable } = require('./database_tables');
+    createItemsoftQuotesDetailsTable,
+    createItemSoftModulestable } = require('./database_tables');
 
 
 // Establish a connection with the database and to use the tables:
@@ -35,6 +36,7 @@ db.getConnection(function (err, connection) {
     createEnvitestsQuotesDetailsTable();
     createReliabilityQuotesDetailsTable();
     createItemsoftQuotesDetailsTable();
+    createItemSoftModulestable();
 
     connection.release();  // Release the connection back to the pool when done
 });
@@ -410,7 +412,23 @@ app.post("/api/updateEnvitestQuotationData/:quotationID", (req, res) => {
 
 
 
+// To add itemsoft modules to the table:
+app.post("/api/addItemsoftModules", (req, res) => {
+    const { moduleName, moduleDescription } = req.body;
 
+    // Perform a database query to store the data to the table:
+    const sqlInsertModulesDetails = "INSERT INTO item_soft_modules (module_name, module_description) VALUES (?,?)";
+
+    db.query(sqlInsertModulesDetails, [moduleName, moduleDescription], (error, result) => {
+        if (error) {
+            console.log(error)
+            return res.status(500).json({ message: "Internal server error" });
+        } else {
+            res.status(200).json({ message: "Module added successfully" });
+        }
+    });
+
+})
 
 
 // Check wheteher connection is established between 
