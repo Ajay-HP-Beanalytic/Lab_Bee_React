@@ -24,6 +24,7 @@ import EditNoteIcon from '@mui/icons-material/EditNote';
 import CalendarMonthSharpIcon from '@mui/icons-material/CalendarMonthSharp';
 import ArticleIcon from '@mui/icons-material/Article';
 import SettingsIcon from '@mui/icons-material/Settings';
+import NoteAddIcon from '@mui/icons-material/NoteAdd';
 import { Link, Outlet } from 'react-router-dom';
 
 
@@ -131,9 +132,10 @@ export default function SidenavigationBar() {
   const items = [
     { i: 1, label: 'Home', icon: <HomeIcon />, path: '/home' },
     { i: 2, label: 'Add Quotation', icon: <RequestQuoteIcon />, path: '/quotation' },
-    { i: 3, label: 'Update Quotation', icon: <EditNoteIcon />, path: '/updateenviquote/Sample' },
+    /* { i: 3, label: 'Update Quotation', icon: <EditNoteIcon />, path: '/updateenviquote/Sample' }, */
     { i: 4, label: 'Jobcard', icon: <ArticleIcon />, path: '/jobcard' },
     { i: 5, label: 'Slot Booking', icon: <CalendarMonthSharpIcon />, path: '/slot-booking' },
+    { i: 6, label: 'Add Modules', icon: <NoteAddIcon />, path: '/add_module_or_test' },
   ]
   const items2 = [
     { i: 6, label: 'Settings', icon: <SettingsIcon />, path: '/settings' },

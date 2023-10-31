@@ -12,6 +12,7 @@ import QuoteTable from "./Pages/QuoteTable";
 import NotFoundPage from "./Pages/NotFoundPage";
 import UserDetailsDialog from "./components/UserDialog";
 import AddQuotation from "./templateQuotation/AddQuotation";
+import AddModulesAndTests from "./components/AddModulesAndTests";
 
 function App() {
   return (
@@ -27,6 +28,7 @@ function App() {
             <Route path='/trailpage' element={<TrailPage />} />
             <Route path='/settings' element={<UserDetailsDialog />} />
             <Route path="/updateenviquote/:quotationID" element={<UpdateEnvironmentalQuote />} />
+            <Route path="/add_module_or_test" element={<AddModulesAndTests />} />
             <Route path='*' element={<NotFoundPage />} />
           </Route>
         </Routes>

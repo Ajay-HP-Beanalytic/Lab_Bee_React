@@ -11,7 +11,7 @@ import { styled } from '@mui/material/styles';
 //import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import Environmental from '../templateQuotation/Environmental'
 import MyTable from './Reliability';
-
+import ItemSoftQuotation from './ItemSoft';
 
 
 
@@ -105,18 +105,23 @@ export default function QuotaionTemplates() {
               <StyledTab label="Item Soft" {...a11yProps(3)} />
             </StyledTabs>
           </Box>
+
           <CustomTabPanel value={value} index={0}>
             <Environmental />
           </CustomTabPanel>
+
           <CustomTabPanel value={value} index={1}>
             <MyTable />
           </CustomTabPanel>
+
           <CustomTabPanel value={value} index={2}>
             Quotation for EMI & EMC tests
           </CustomTabPanel>
+
           <CustomTabPanel value={value} index={3}>
-            Quotation for Item Soft sales
+            <ItemSoftQuotation />
           </CustomTabPanel>
+
         </Box>
       </CardContent>
     </Card>
