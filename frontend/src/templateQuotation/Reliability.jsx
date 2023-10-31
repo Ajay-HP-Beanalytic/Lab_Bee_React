@@ -1,63 +1,3 @@
-/* import React, { useState } from 'react';
-import FormControl from '@mui/material/FormControl';
-import InputLabel from '@mui/material/InputLabel';
-import Select from '@mui/material/Select';
-import MenuItem from '@mui/material/MenuItem';
-import TableCell from '@mui/material/TableCell';
-import TableRow from '@mui/material/TableRow';
-
-const MyTable = () => {
-    const [tableData, setTableData] = useState([
-        { id: 1, name: 'Item 1', category: '' },
-        { id: 2, name: 'Item 2', category: '' },
-        // Add more table data rows as needed
-    ]);
-
-    const handleCategoryChange = (event, id) => {
-        const updatedData = tableData.map((row) =>
-            row.id === id ? { ...row, category: event.target.value } : row
-        );
-        setTableData(updatedData);
-    };
-
-    return (
-        <table>
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Name</th>
-                    <th>Category</th>
-                </tr>
-            </thead>
-            <tbody>
-                {tableData.map((row) => (
-                    <TableRow key={row.id}>
-                        <TableCell>{row.id}</TableCell>
-                        <TableCell>{row.name}</TableCell>
-                        <TableCell>
-                            <FormControl sx={{ minWidth: '150px' }}>
-                                <Select
-                                    value={row.category}
-                                    onChange={(event) => handleCategoryChange(event, row.id)}
-                                >
-                                    <MenuItem value="">Select Category</MenuItem>
-                                    <MenuItem value="Category 1">Category 1</MenuItem>
-                                    <MenuItem value="Category 2">Category 2</MenuItem>
-                                    <MenuItem value="Category 3">Category 3</MenuItem>
-                                </Select>
-                            </FormControl>
-                        </TableCell>
-                    </TableRow>
-                ))}
-            </tbody>
-        </table>
-    );
-};
-
-export default MyTable;
- */
-
-
 
 import React, { useState, useEffect } from 'react';
 import {
@@ -97,11 +37,7 @@ const ReliabilityQuotation = () => {
     const [tableData, setTableData] = useState([
         {
             slno: 1,
-            testDescription: '',
-            sacNo: '',
-            duration: '',
-            unit: '',
-            perUnitCharge: '',
+            serviceDescription: '',
             amount: '',
         },
     ]);
@@ -116,11 +52,7 @@ const ReliabilityQuotation = () => {
         const maxSlNo = Math.max(...tableData.map((row) => row.slno), 0);
         const newRow = {
             slno: maxSlNo + 1,
-            testDescription: '',
-            sacNo: '',
-            duration: '',
-            unit: '',
-            perUnitCharge: '',
+            serviceDescription: '',
             amount: '',
         };
         setTableData([...tableData, newRow]);
@@ -152,18 +84,6 @@ const ReliabilityQuotation = () => {
     const formattedDate = moment(selectedDate).format("DD-MM-YYYY");
 
 
-    // Function to reset table inputs
-    /* const initialTableData = [
-        {
-            slno: 1,
-            testDescription: '',
-            sacNo: '',
-            duration: '',
-            unit: '',
-            perUnitCharge: '',
-            amount: '',
-        },]; */
-
     const initialTableData = [
         {
             slno: 1,
@@ -178,11 +98,11 @@ const ReliabilityQuotation = () => {
     const initialCustomerID = ''
     const initialCustomerReferance = ''
     const initialKindAttention = ''
+    const initialProjectName = ''
 
 
+    const quoteCategory = 'Reliability Services';
 
-
-    const quoteCategory = 'Environmental testing';
     const quotationCreatedBy = loggedInUser;
 
 
@@ -192,6 +112,7 @@ const ReliabilityQuotation = () => {
     const [customerId, setCustomerId] = useState(initialCustomerID)
     const [customerReferance, setCustomerreferance] = useState(initialCustomerReferance)
     const [kindAttention, setKindAttention] = useState(initialKindAttention)
+    const [projectName, setProjectName] = useState(initialProjectName)
 
 
     const [quotationIdString, setQuotationIDString] = useState('')
@@ -221,7 +142,7 @@ const ReliabilityQuotation = () => {
         const currentYear = currentDate.getFullYear().toString().slice(-2);
         const currentMonth = (currentDate.getMonth() + 1).toString().padStart(2, '0');
         const currentDay = currentDate.getDate().toString();
-        const dynamicQuotationIdString = `BEA/RP/${newCompanyName}/${currentYear}${currentMonth}${currentDay}-001`;
+        const dynamicQuotationIdString = `BEA/RE/${newCompanyName}/${currentYear}${currentMonth}${currentDay}-001`;
         setQuotationIDString(dynamicQuotationIdString);
     };
 
@@ -254,7 +175,7 @@ const ReliabilityQuotation = () => {
                 const formattedIncrementedNumber = newIncrementedNumber.toString().padStart(3, '0');
 
                 // Create a quotation string as per the requirement:
-                const dynamicQuotationIdString = `BEA/RP/${newCompanyName}/${currentYear}${currentMonth}${currentDay}-${formattedIncrementedNumber}`;
+                const dynamicQuotationIdString = `BEA/RE/${newCompanyName}/${currentYear}${currentMonth}${currentDay}-${formattedIncrementedNumber}`;
 
                 // Set the quotation ID after fetching the last ID
                 setQuotationIDString(dynamicQuotationIdString);
@@ -307,7 +228,7 @@ const ReliabilityQuotation = () => {
         }
 
         // Check at least one row is filled completely or rlse give a error messgae:
-        const isAtLeastOneRowIsFilled = tableData.some((row) => row.testDescription && row.sacNo && row.duration && row.unit && row.perUnitCharge && row.amount);
+        const isAtLeastOneRowIsFilled = tableData.some((row) => row.serviceDescription && row.amount);
 
         if (!isAtLeastOneRowIsFilled) {
             toast.error("Please enter atleast one row of the table.");
@@ -322,6 +243,7 @@ const ReliabilityQuotation = () => {
             customerId,
             customerReferance,
             kindAttention,
+            projectName,
             quoteCategory,
 
             taxableAmount,
@@ -331,7 +253,7 @@ const ReliabilityQuotation = () => {
         });
 
 
-        const envitestQuotesTableDataRequest = axios.post("http://localhost:4000/api/evnitest_quote_data", {
+        const reliabilityQuotesTableDataRequest = axios.post("http://localhost:4000/api/reliability_quote_data", {
             quotationIdString,
             customerId,
             tableData
@@ -339,10 +261,10 @@ const ReliabilityQuotation = () => {
 
         try {
             // Wait for the both requests to finish
-            const [quotesCategoryResponse, envitestTableResponse] = await Promise.all([quotesCategoryRequest, envitestQuotesTableDataRequest])
+            const [quotesCategoryResponse, reliabilityTableResponse] = await Promise.all([quotesCategoryRequest, reliabilityQuotesTableDataRequest])
 
             // Check the status of both requests:
-            if (quotesCategoryResponse.status === 200 && envitestTableResponse.status === 200) {
+            if (quotesCategoryResponse.status === 200 && reliabilityTableResponse.status === 200) {
                 toast.success("Data Added Successfully")
             } else {
                 toast.error("An error occurred while saving the data1.");
@@ -398,7 +320,9 @@ const ReliabilityQuotation = () => {
         setCustomerId(initialCustomerID);
         setCustomerreferance(initialCustomerReferance);
         setKindAttention(initialKindAttention);
+        setProjectName(initialProjectName)
         setTableData(initialTableData);
+
 
         fetchLatestQuotationId();   // Call the function here to which will fetch the latest quotation id
         //setQuotationIDString(quotationIdString);
@@ -531,6 +455,17 @@ const ReliabilityQuotation = () => {
                                         />
                                     </div>
 
+                                    <div>
+                                        <TextField
+                                            sx={{ marginBottom: '16px', marginRight: '10px', borderRadius: 3 }}
+                                            label="Project Name"
+                                            value={projectName} onChange={(e) => setProjectName(e.target.value)}
+                                            margin="3"
+                                            variant="outlined"
+                                            fullWidth
+                                        />
+                                    </div>
+
                                 </Box>
                             </Container>
 
@@ -572,9 +507,9 @@ const ReliabilityQuotation = () => {
 
                                                 <TableCell align="center">
                                                     <TextField
-                                                        value={row.testDescription}
+                                                        value={row.serviceDescription}
                                                         onChange={(e) =>
-                                                            handleInputChange(row.slno, 'testDescription', e.target.value)}
+                                                            handleInputChange(row.slno, 'serviceDescription', e.target.value)}
                                                     />
                                                 </TableCell>
 

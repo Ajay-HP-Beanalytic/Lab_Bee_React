@@ -3,7 +3,7 @@ import {
   Box, Typography, Container, TextField, Button, Table, TableBody, TableCell, TableContainer, TableHead,
   TableRow, Paper, IconButton, Tooltip, Grid, InputLabel, MenuItem, FormControl, Select
 } from '@mui/material';
-import { useParams } from 'react-router-dom'
+import { useNavigate, useParams } from 'react-router-dom'
 
 import { useReactToPrint } from 'react-to-print';
 
@@ -38,6 +38,8 @@ const UpdateEnvironmentalQuote = () => {
 
   const contentsToPrint = useRef();
 
+  const navigate = useNavigate();
+
   let { quotationID } = useParams();
   // quotationID = quotationID.replaceAll('_', '/')      // In order to show the quotation ID in the actual format.
   useEffect(() => {
@@ -47,6 +49,7 @@ const UpdateEnvironmentalQuote = () => {
         setCompanyName(result.data[0].company_name)
         setToCompanyAddress(result.data[0].company_address)
         setKindAttention(result.data[0].kind_attention)
+        setProjectName(result.data[0].project_name)
         setCustomerId(result.data[0].customer_id)
         setCustomerreferance(result.data[0].customer_referance)
         setSelectedDate(result.data[0].formatted_quote_given_date)
@@ -129,11 +132,7 @@ const UpdateEnvironmentalQuote = () => {
   const [customerId, setCustomerId] = useState('')
   const [customerReferance, setCustomerreferance] = useState('')
   const [kindAttention, setKindAttention] = useState('')
-
-  const [quotationIdString, setQuotationIDString] = useState('')
-
-
-
+  const [projectName, setProjectName] = useState('')
 
 
   // To submit the data and store it in a database:
@@ -165,6 +164,7 @@ const UpdateEnvironmentalQuote = () => {
       customerId,
       customerReferance,
       kindAttention,
+      projectName,
       taxableAmount,
       totalAmountWords
     }).then((res) => {
@@ -207,12 +207,6 @@ const UpdateEnvironmentalQuote = () => {
   };
 
 
-  /// To get the print or pdf of the form:
-  /* const generatePdfFile = () => {
-      toast.success('Pdf file is ready to print')
-
-  }
-*/
 
   const generatePdfFile = useReactToPrint({
     content: () => contentsToPrint.current,
@@ -223,15 +217,19 @@ const UpdateEnvironmentalQuote = () => {
   // Clear input fields when the "Cancel" button is clicked
   const handleCancelBtnIsClicked = () => {
 
-    setCompanyName('');
-    setToCompanyAddress('');
-    setCustomerId('');
-    setCustomerreferance('');
-    setKindAttention('');
-    setTableData(initialTableData);
+    setCompanyName('')
+    setToCompanyAddress('')
+    setCustomerId('')
+    setCustomerreferance('')
+    setKindAttention('')
+    setProjectName('')
+    setTableData(initialTableData)
     setSelectedDate('')
     setTaxableAmount(0)
     setTotalAmountWords('')
+
+    // Navigate to the home page.
+    navigate('/home');
   };
 
 
@@ -261,9 +259,7 @@ const UpdateEnvironmentalQuote = () => {
             <Typography variant="h6" > {quotationID} </Typography>
 
             <Box sx={{ paddingTop: '5', paddingBottom: '5', marginTop: '5', marginBottom: '5', border: 1, borderColor: 'primary.main' }}>
-              {/* <Typography variant="h6" align='right' sx={{ marginBottom: '16px', marginRight: '20px', marginLeft: '20px', fontWeight: 'bold', fontStyle: 'italic', color: 'blue', textDecoration: 'underline' }}>
-                        Quotation ID: {quotationIdString}
-                    </Typography> */}
+
 
               <Grid container justifyContent="center" spacing={2} >
                 <Grid item xs={6} elevation={4} sx={{ borderRadius: 3 }} >
@@ -356,6 +352,17 @@ const UpdateEnvironmentalQuote = () => {
                           //value={selectedDate.toLocaleDateString()}
                           value={selectedDate}
                           onChange={(e) => { setSelectedDate(e.target.value) }}
+                          fullWidth
+                        />
+                      </div>
+
+                      <div>
+                        <TextField
+                          sx={{ marginBottom: '16px', marginRight: '10px', borderRadius: 3 }}
+                          label="Project Name"
+                          value={projectName} onChange={(e) => setProjectName(e.target.value)}
+                          margin="3"
+                          variant="outlined"
                           fullWidth
                         />
                       </div>
