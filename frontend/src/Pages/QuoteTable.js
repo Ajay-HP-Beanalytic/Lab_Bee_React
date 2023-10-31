@@ -42,6 +42,7 @@ export default function QuoteTable() {
   const [quotesTableData, setQuotesTableData] = useState([]);   //fetch data from the database & to show inside a table
 
   const [loading, setLoading] = useState(true);                 //To show loading label
+  const [msg, setMsg] = useState('<h2>Loading...</h2>');
 
   const [error, setError] = useState(null);                     //To show error label
 
@@ -69,7 +70,14 @@ export default function QuoteTable() {
     const fetchQuotesDataFromDatabase = async () => {
       try {
         const response = await axios.get(quotesURL);
-        setQuotesTableData(response.data);
+        if (response.data.length !== 0) {
+          setQuotesTableData(response.data);
+        } else {
+          setMsg(<>
+          <h2>No Quotations found...</h2>
+          <Button variant="contained" color="primary" as={Link} to='/quotation'>Add Quotaion</Button>
+          </>)
+        }
         setLoading(false);
       } catch (error) {
         console.error('Failed to fetch the data', error);
@@ -233,7 +241,7 @@ export default function QuoteTable() {
 
 
       ) : (
-        <h2>Loading...</h2>
+        <>{msg}</>
       )}
     </>
   );
