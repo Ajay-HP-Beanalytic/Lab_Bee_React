@@ -145,6 +145,25 @@ function createItemsoftQuotesDetailsTable() {
 };
 
 
+//Function to create a 'item_soft_modules' table:
+function createItemSoftModulestable() {
+    const createItemSoftModulesTableQuery = `
+    CREATE TABLE IF NOT EXISTS item_soft_modules (
+        id INT NOT NULL AUTO_INCREMENT,
+        module_name VARCHAR(1000),
+        module_description VARCHAR(2000),
+        PRIMARY KEY(id)
+    )`;
+
+    db.query(createItemSoftModulesTableQuery, function (err, result) {
+        if (err) {
+            console.log("Error occurred while creating item_soft_modules table", err)
+        } else {
+            //console.log("envi_tests_quotes_data table created successfully.")
+        }
+    })
+}
+
 
 // Handle the process exiting to gracefully end the connection pool.
 process.on('exit', function () {
@@ -165,6 +184,7 @@ module.exports = {
     createBEAQuotationsTable,
     createEnvitestsQuotesDetailsTable,
     createReliabilityQuotesDetailsTable,
-    createItemsoftQuotesDetailsTable
+    createItemsoftQuotesDetailsTable,
+    createItemSoftModulestable
 };
 
