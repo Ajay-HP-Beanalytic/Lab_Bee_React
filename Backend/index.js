@@ -11,6 +11,17 @@ const cors = require("cors");                       // cors is used to access ou
 // create an express application:
 const app = express();
 
+// Install the middlewares:
+app.use(cors());
+app.use(express.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+
+// define the port:
+app.listen(4000, () => {
+    console.log("Server is running on port 4000");
+});
+
+
 
 
 // Get all the connections from the db
@@ -40,12 +51,6 @@ db.getConnection(function (err, connection) {
 
     connection.release();  // Release the connection back to the pool when done
 });
-
-
-// Install the middlewares:
-app.use(cors());
-app.use(express.json());
-app.use(bodyParser.urlencoded({ extended: true }));
 
 
 
@@ -412,7 +417,7 @@ app.post("/api/updateEnvitestQuotationData/:quotationID", (req, res) => {
 
 
 
-// To add itemsoft modules to the table:
+// To add itemsoft modules to the 'item_soft_modules' table:
 app.post("/api/addItemsoftModules", (req, res) => {
     const { moduleName, moduleDescription } = req.body;
 
@@ -431,12 +436,25 @@ app.post("/api/addItemsoftModules", (req, res) => {
 })
 
 
+// To fetch the modules details in the modules page:
+app.get("/api/getItemsoftModules", (req, res) => {
+    const itemsoftModulesList = "SELECT module_name, module_description FROM item_soft_modules";
+
+    db.query(itemsoftModulesList, (error, result) => {
+        if (error) {
+            return res.status(500).json({ error: "An error occurred while fetching data" })
+        }
+        res.send(result);
+    });
+});
+
+
 // Check wheteher connection is established between 
 app.get("/", (req, res) => {
     res.send("Hello Welcome to Labbee...");
 });
 
-// Check wheteher connection is established between 
+// Check wheteher connection is established between S
 app.get("/api/get", (req, res) => {
     const usersList = "SELECT * FROM labbee_users";
     db.query(usersList, (error, result) => {
@@ -445,10 +463,6 @@ app.get("/api/get", (req, res) => {
 });
 
 
-// define the port:
-app.listen(4000, () => {
-    console.log("Server is running on port 4000");
-});
 
 
 
