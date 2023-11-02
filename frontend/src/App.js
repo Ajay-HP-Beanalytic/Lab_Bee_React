@@ -13,6 +13,7 @@ import NotFoundPage from "./Pages/NotFoundPage";
 import UserDetailsDialog from "./components/UserDialog";
 import AddQuotation from "./templateQuotation/AddQuotation";
 import AddModulesAndTests from "./components/AddModulesAndTests";
+import Quotation from "./Pages/Quotation";
 
 function App() {
   return (
@@ -23,7 +24,7 @@ function App() {
           <Route path="" element={<SidenavigationBar />} >
             <Route index element={<Login />} />
             <Route path='home' element={<QuoteTable />} />
-            <Route path='/quotation' element={<AddQuotation />} />
+            <Route path='/quotation' element={<Quotation />} />
             <Route path='/jobcard' element={<Jobcard />} />
             <Route path='/trailpage' element={<TrailPage />} />
             <Route path='/settings' element={<UserDetailsDialog />} />
