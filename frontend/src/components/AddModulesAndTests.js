@@ -1,4 +1,4 @@
-import { TextField, Box, Button, TableContainer, InputAdornment, IconButton, TableCell, TableBody, TableRow, Table, Paper, TableHead } from '@mui/material'
+import { TextField, Box, Button, TableContainer, InputAdornment, IconButton, TableCell, TableBody, TableRow, Table, Paper, TableHead, Typography } from '@mui/material'
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import axios from 'axios'
 import * as XLSX from 'xlsx';
@@ -196,12 +196,9 @@ const AddModulesAndTests = () => {
 
                 {/* Display the uploaded file name or other information here */}
                 {uploadedFileName && (
-                    <p>Uploaded File: {uploadedFileName}</p>
-
-
-                    /*  < Typography variant="h6" align='right' sx={{ marginBottom: '16px', marginRight: '20px', marginLeft: '20px', fontWeight: 'bold', fontStyle: 'italic', textDecoration: 'underline' }}>
-                 Uploaded File: {uploadedFileName}
-             </> */
+                    <Typography variant="h6" align='center'
+                        sx={{ marginBottom: '16px', marginRight: '20px', marginLeft: '20px', fontWeight: 'bold', textDecoration: 'underline' }}
+                    >Uploaded File: {uploadedFileName}</Typography>
                 )}
 
                 <h3>Available Item Soft Modules</h3>
@@ -378,3 +375,8 @@ export default AddModulesAndTests;
 
 
 
+
+
+/*  < Typography variant="h6" align='right' sx={{ marginBottom: '16px', marginRight: '20px', marginLeft: '20px', fontWeight: 'bold', fontStyle: 'italic', textDecoration: 'underline' }}>
+ Uploaded File: {uploadedFileName}
+</> */

@@ -24,6 +24,7 @@ function createUsersTable() {
             name VARCHAR(255),
             email VARCHAR(255),
             password VARCHAR(50),
+            role VARCHAR(255),
             PRIMARY KEY(id) 
         )`;
 
@@ -71,7 +72,7 @@ function createBEAQuotationsTable() {
 ////////////////////////////////////////////////////////////////////////////
 //Function to create a envi_tests_quotes_data table:
 function createTestTable() {
-  const createTestTable = `
+    const createTestTable = `
   CREATE TABLE IF NOT EXISTS test_data (
       id INT NOT NULL AUTO_INCREMENT,
       quotation_id VARCHAR(255),
@@ -85,13 +86,13 @@ function createTestTable() {
       PRIMARY KEY(id)
   )`;
 
-  db.query(createTestTable, function (error, result) {
-      if (error) {
-          console.log("Error occurred while creating createTestTable table", error)
-      } else {
-          //console.log("envi_tests_quotes_data table created successfully.")
-      }
-  })
+    db.query(createTestTable, function (error, result) {
+        if (error) {
+            console.log("Error occurred while creating createTestTable table", error)
+        } else {
+            //console.log("envi_tests_quotes_data table created successfully.")
+        }
+    })
 };
 
 

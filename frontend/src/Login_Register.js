@@ -13,16 +13,17 @@ const initialState = {
   name: "",
   email: "",
   password: "",
+  jobrole: "",
   confirmPassword: ""
 };
 
 const Login = () => {
   const [isSignup, setIsSignup] = useState(false);
-  //console.log(isSignup);
 
   const [name, setNameString] = useState(initialState.name || "");
   const [email, setEmailString] = useState(initialState.email || "");
   const [password, setPasswordString] = useState(initialState.password || "");
+  const [jobrole, setJobrole] = useState(initialState.jobrole || "")
   const [confirmPassword, setConfirmPasswordString] = useState(initialState.confirmPassword || "");
 
   // "Password must be between 8 to 15 characters, contain at least one uppercase letter, one lowercase letter, one digit, and one special character."
@@ -47,7 +48,7 @@ const Login = () => {
       return;
     }
 
-    if (!name || !email || !password || !confirmPassword) {
+    if (!name || !jobrole || !email || !password || !confirmPassword) {
       toast.error("Please enter all the fields..!");
       return;
     }
@@ -57,6 +58,7 @@ const Login = () => {
         name,
         email,
         password,
+        jobrole,
       });
 
       if (response.status === 200) {
@@ -106,10 +108,11 @@ const Login = () => {
 
   // Clear input fields when the "Cancel" button is clicked
   const handleCancel = () => {
-    setNameString(" ");
-    setEmailString(" ");
-    setPasswordString(" ");
+    setNameString(" ")
+    setEmailString(" ")
+    setPasswordString(" ")
     setConfirmPasswordString(" ")
+    setJobrole(" ")
   };
 
 
@@ -165,19 +168,31 @@ const Login = () => {
         </TextField>
 
 
-        {isSignup && <TextField
-          name="password"
-          value={confirmPassword} onChange={(e) => setConfirmPasswordString(e.target.value)}
-          margin='normal'
-          type="password"
-          variant="outlined"
-          label='Confirm Password'
-          placeholder="Confirm your password">
-          Password
-        </TextField>}
+        {isSignup &&
+          <TextField
+            name="password"
+            value={confirmPassword} onChange={(e) => setConfirmPasswordString(e.target.value)}
+            margin='normal'
+            type="password"
+            variant="outlined"
+            label='Confirm Password'
+            placeholder="Confirm your password">
+            Password
+          </TextField>}
 
 
-        {/*<Button type="submit" sx={{marginTop:3, borderRadius:3}} variant="contained" color="primary" onClick = {isSignup ? handleRegisterNewUser : handleLogin}> { isSignup ? "Sign Up" : "Log in"}  </Button> */}
+        {isSignup &&
+          <TextField
+            name="jobrole"
+            value={jobrole} onChange={(e) => setJobrole(e.target.value)}
+            margin='normal'
+            type="jobrole"
+            variant="outlined"
+            label='Job Role'
+            placeholder="Enter your role">
+            Job Role
+          </TextField>}
+
 
         <Button type="submit" sx={{ marginTop: 3, borderRadius: 3 }} variant="contained" color="primary">
           {isSignup ? "Sign Up" : "Log in"}

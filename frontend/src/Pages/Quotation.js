@@ -115,7 +115,7 @@ export default function Quotation() {
 
 
 
-  const quoteCategory = 'Environmental testing';
+  //const quoteCategory = 'Environmental testing';
   const quotationCreatedBy = loggedInUser;
 
 
@@ -126,7 +126,7 @@ export default function Quotation() {
   const [customerReferance, setCustomerreferance] = useState(initialCustomerReferance)
   const [kindAttention, setKindAttention] = useState(initialKindAttention)
   const [projectName, setProjectName] = useState(initialProjectName)
-  const [projectType, setProjectType] = useState('Environmental Testing')
+  const [quoteCategory, setQuoteCategory] = useState('Environmental Testing')
 
 
   const [quotationIdString, setQuotationIDString] = useState('')
@@ -446,7 +446,7 @@ export default function Quotation() {
                     </FormControl>
                   </div>
 
-                  <div>
+                  {/* <div>
                     <TextField
                       sx={{ marginBottom: '16px', marginRight: '10px', borderRadius: 3 }}
                       label="Date"
@@ -456,7 +456,7 @@ export default function Quotation() {
                       value={formattedDate}
                       fullWidth
                     />
-                  </div>
+                  </div> */}
 
                   <div>
                     <TextField
@@ -470,19 +470,36 @@ export default function Quotation() {
                   </div>
 
                   <div>
-                    <FormControl sx={{ width: '100%', marginBottom: '16px', marginRight: '10px', borderRadius: 3 }}>
-                      <InputLabel>Project Type</InputLabel>
-                      <Select
-                        value={projectType} onChange={(e) => setProjectType(e.target.value)}
-                        label="Project Type"
-                        fullWidth
-                      >
-                        <MenuItem value='Environmental Testing'>Environmental Testing</MenuItem>
-                        <MenuItem value='Reliability'>Reliability</MenuItem>
-                        <MenuItem value='EMI & EMC'>EMI & EMC</MenuItem>
-                        <MenuItem value='Item Soft'>Item Soft</MenuItem>
-                      </Select>
-                    </FormControl>
+                    <Box sx={{
+                      display: 'flex',
+                      alignItems: 'flex-end',
+                      marginBottom: '16px',
+                    }}>
+
+                      <TextField
+                        sx={{ width: '50%', marginBottom: '16px', marginRight: '10px', borderRadius: 3 }}
+                        label="Date"
+                        margin="3"
+                        variant="outlined"
+                        //value={selectedDate.toLocaleDateString()}
+                        value={formattedDate}
+                      />
+
+                      <FormControl sx={{ width: '50%', marginBottom: '16px', marginRight: '10px', borderRadius: 3 }}>
+                        <InputLabel>Quotation Category</InputLabel>
+                        <Select
+                          value={quoteCategory} onChange={(e) => setQuoteCategory(e.target.value)}
+                          label="Quotation Category"
+
+                        >
+                          <MenuItem value='Environmental Testing'>Environmental Testing</MenuItem>
+                          <MenuItem value='Reliability'>Reliability</MenuItem>
+                          <MenuItem value='EMI & EMC'>EMI & EMC</MenuItem>
+                          <MenuItem value='Item Soft'>Item Soft</MenuItem>
+                        </Select>
+                      </FormControl>
+                    </Box>
+
                   </div>
 
                 </Box>
