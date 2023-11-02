@@ -57,9 +57,9 @@ db.getConnection(function (err, connection) {
 
 
 app.post("/api/adduser", (req, res) => {
-    const { name, email, password } = req.body;
+    const { name, email, password, jobrole } = req.body;
     const sqlCheckEmail = "SELECT * FROM labbee_users WHERE email=?";
-    const sqlInsertUser = "INSERT INTO labbee_users (name, email, password) VALUES (?,?,?)";
+    const sqlInsertUser = "INSERT INTO labbee_users (name, email, password, role) VALUES (?,?,?,?)";
 
     db.query(sqlCheckEmail, [email], (error, result) => {
         if (error) {
@@ -73,7 +73,7 @@ app.post("/api/adduser", (req, res) => {
         }
 
         //If email is not exists then continue:
-        db.query(sqlInsertUser, [name, email, password], (error, result) => {
+        db.query(sqlInsertUser, [name, email, password, jobrole], (error, result) => {
             if (error) {
                 console.log(error);
                 return res.status(500).json({ message: "Internal server error" });
@@ -140,33 +140,33 @@ app.post("/api/quotescategory", (req, res) => {
 // To store the table data in the 'test_data' table:
 app.post("/api/test_data", (req, res) => {
 
-  const { quotationIdString,companyName, toCompanyAddress, selectedDate, customerId, customerReferance, kindAttention, projectName, quoteCategory, taxableAmount, totalAmountWords , tableData } = req.body;
-  const formattedDate = new Date(selectedDate);
-  const quotationCreatedBy = 'Ajay'
-  
-  let sql = "INSERT INTO bea_quotations_table (quotation_ids, company_name, company_address, quote_given_date, customer_id, customer_referance, kind_attention, project_name, quote_category, total_amount, total_taxable_amount_in_words, quote_created_by) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)";
+    const { quotationIdString, companyName, toCompanyAddress, selectedDate, customerId, customerReferance, kindAttention, projectName, quoteCategory, taxableAmount, totalAmountWords, tableData } = req.body;
+    const formattedDate = new Date(selectedDate);
+    const quotationCreatedBy = 'Ajay'
 
-  db.query(sql, [quotationIdString, companyName, toCompanyAddress, formattedDate, customerId, customerReferance, kindAttention, projectName, quoteCategory, taxableAmount, totalAmountWords, quotationCreatedBy], (error, result) => {
-    if (error) {
-      console.log(error)
-      return res.status(500).json({ message: "Internal server error" });
-    }
-  })
+    let sql = "INSERT INTO bea_quotations_table (quotation_ids, company_name, company_address, quote_given_date, customer_id, customer_referance, kind_attention, project_name, quote_category, total_amount, total_taxable_amount_in_words, quote_created_by) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)";
 
-  sql = "INSERT INTO test_data (slno, test_description, sac_no, duration, unit, per_hour_charge, amount, quotation_id) VALUES (?,?,?,?,?,?,?,?)";
+    db.query(sql, [quotationIdString, companyName, toCompanyAddress, formattedDate, customerId, customerReferance, kindAttention, projectName, quoteCategory, taxableAmount, totalAmountWords, quotationCreatedBy], (error, result) => {
+        if (error) {
+            console.log(error)
+            return res.status(500).json({ message: "Internal server error" });
+        }
+    })
 
-  let obj = []
-  tableData.forEach((row) => {
-    obj = Object.values(row)
-    obj.push(quotationIdString)
-    db.query(sql, obj, (error, result) => {
-      if (error) {
-        console.log(error)
-        return res.status(500).json({ message: "Internal server error", error });
-      }
-    })    
-  })
-  return res.status(200).json({ message: "Table Data added successfully" });
+    sql = "INSERT INTO test_data (slno, test_description, sac_no, duration, unit, per_hour_charge, amount, quotation_id) VALUES (?,?,?,?,?,?,?,?)";
+
+    let obj = []
+    tableData.forEach((row) => {
+        obj = Object.values(row)
+        obj.push(quotationIdString)
+        db.query(sql, obj, (error, result) => {
+            if (error) {
+                console.log(error)
+                return res.status(500).json({ message: "Internal server error", error });
+            }
+        })
+    })
+    return res.status(200).json({ message: "Table Data added successfully" });
 });
 
 

@@ -122,7 +122,7 @@ const UpdateEnvironmentalQuote = () => {
   const [selectedDate, setSelectedDate] = useState(formattedDate);   // Default date format is "DD/MM/YYYY"
 
 
-  const quoteCategory = 'Environmental testing';
+  //const quoteCategory = 'Environmental testing';
 
   const quotationCreatedBy = loggedInUser;
 
@@ -133,6 +133,7 @@ const UpdateEnvironmentalQuote = () => {
   const [customerReferance, setCustomerreferance] = useState('')
   const [kindAttention, setKindAttention] = useState('')
   const [projectName, setProjectName] = useState('')
+  const [quoteCategory, setQuoteCategory] = useState('Environmental Testing')
 
 
   // To submit the data and store it in a database:
@@ -346,19 +347,6 @@ const UpdateEnvironmentalQuote = () => {
                       <div>
                         <TextField
                           sx={{ marginBottom: '16px', marginRight: '10px', borderRadius: 3 }}
-                          label="Date"
-                          margin="normal"
-                          variant="outlined"
-                          //value={selectedDate.toLocaleDateString()}
-                          value={selectedDate}
-                          onChange={(e) => { setSelectedDate(e.target.value) }}
-                          fullWidth
-                        />
-                      </div>
-
-                      <div>
-                        <TextField
-                          sx={{ marginBottom: '16px', marginRight: '10px', borderRadius: 3 }}
                           label="Project Name"
                           value={projectName} onChange={(e) => setProjectName(e.target.value)}
                           margin="3"
@@ -366,6 +354,40 @@ const UpdateEnvironmentalQuote = () => {
                           fullWidth
                         />
                       </div>
+
+                      <div>
+                        <Box sx={{
+                          display: 'flex',
+                          alignItems: 'flex-end',
+                          marginBottom: '16px',
+                        }}>
+
+                          <TextField
+                            sx={{ width: '50%', marginBottom: '16px', marginRight: '10px', borderRadius: 3 }}
+                            label="Date"
+                            margin="3"
+                            variant="outlined"
+                            //value={selectedDate.toLocaleDateString()}
+                            value={formattedDate}
+                          />
+
+                          <FormControl sx={{ width: '50%', marginBottom: '16px', marginRight: '10px', borderRadius: 3 }}>
+                            <InputLabel>Quotation Category</InputLabel>
+                            <Select
+                              value={quoteCategory} onChange={(e) => setQuoteCategory(e.target.value)}
+                              label="Quotation Category"
+
+                            >
+                              <MenuItem value='Environmental Testing'>Environmental Testing</MenuItem>
+                              <MenuItem value='Reliability'>Reliability</MenuItem>
+                              <MenuItem value='EMI & EMC'>EMI & EMC</MenuItem>
+                              <MenuItem value='Item Soft'>Item Soft</MenuItem>
+                            </Select>
+                          </FormControl>
+                        </Box>
+                      </div>
+
+
 
                     </Box>
                   </Container>
@@ -487,9 +509,22 @@ const UpdateEnvironmentalQuote = () => {
                           </StyledTableRow>
                         ))}
 
+                        <TableRow>
+                          <TableCell rowSpan={3} />
+                          <TableCell colSpan={5} > <Typography variant='h6'> Discount:</Typography> </TableCell>
+                          {/* <TableCell align="center"> <Typography variant='h6'> {parseFloat(taxableAmount).toFixed(2)}</Typography> </TableCell> */}
+                          <TableCell align="center"> <Typography variant='h6'>
+                            <TextField
+                              /* value={row.amount} */
+                              type='number'
+                            /* onChange={(e) =>
+                              handleCellChange(row.slno, 'amount', parseFloat(e.target.value))} */
+                            />
+                          </Typography>
+                          </TableCell>
+                        </TableRow>
 
                         <TableRow>
-                          <TableCell rowSpan={2} />
                           <TableCell colSpan={5} > <Typography variant='h6'> Taxable Amount:</Typography> </TableCell>
                           <TableCell align="center"> <Typography variant='h6'> {parseFloat(taxableAmount).toFixed(2)}</Typography> </TableCell>
                         </TableRow>
