@@ -451,6 +451,8 @@ app.post("/api/updateEnvitestQuotationData/:quotationID", (req, res) => {
 
 
 
+
+
 // To add itemsoft modules to the 'item_soft_modules' table:
 app.post("/api/addItemsoftModules", (req, res) => {
     const { moduleName, moduleDescription } = req.body;
@@ -461,7 +463,7 @@ app.post("/api/addItemsoftModules", (req, res) => {
     db.query(sqlInsertModulesDetails, [moduleName, moduleDescription], (error, result) => {
         if (error) {
             console.log(error)
-            return res.status(500).json({ message: "Internal server error" });
+            return res.status(500).json({ message: "Internal server error", result });
         } else {
             res.status(200).json({ message: "Module added successfully" });
         }
@@ -472,7 +474,7 @@ app.post("/api/addItemsoftModules", (req, res) => {
 
 // To fetch the modules details in the modules page:
 app.get("/api/getItemsoftModules", (req, res) => {
-    const itemsoftModulesList = "SELECT module_name, module_description FROM item_soft_modules";
+    const itemsoftModulesList = "SELECT id, module_name, module_description FROM item_soft_modules";
 
     db.query(itemsoftModulesList, (error, result) => {
         if (error) {
@@ -481,6 +483,43 @@ app.get("/api/getItemsoftModules", (req, res) => {
         res.send(result);
     });
 });
+
+
+// To Edit the selected module
+app.post("/api/addItemsoftModules/:id", (req, res) => {
+    const { moduleName, moduleDescription } = req.body;
+    const id = req.params.id;
+    // Perform a database query to store the data to the table:
+    const sqlUpdateModulesDetails = `UPDATE item_soft_modules  SET module_name = '${moduleName}', module_description = '${moduleDescription}' WHERE id=${id}`;
+
+    db.query(sqlUpdateModulesDetails, (error, result) => {
+        if (error) {
+            console.log(error)
+            return res.status(500).json({ message: "Internal server error", result });
+        } else {
+            res.status(200).json({ message: "Module added successfully" });
+        }
+    });
+
+})
+
+
+// To fetch the modules details in the modules page:
+app.delete("/api/getItemsoftModules/:id", (req, res) => {
+    const id = req.params.id;
+    const deleteQuery = "DELETE FROM item_soft_modules WHERE id = ?";
+
+    db.query(deleteQuery, [id], (error, result) => {
+        if (error) {
+            return res.status(500).json({ error: "An error occurred while deleting the module" });
+        }
+        res.status(200).json({ message: "Module deleted successfully" });
+    });
+});
+
+
+
+
 
 
 // Check wheteher connection is established between 

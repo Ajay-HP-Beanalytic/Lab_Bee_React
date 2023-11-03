@@ -12,9 +12,13 @@ const AddModulesAndTests = () => {
     const [modulesList, setModulesList] = useState([])
     const [uploadedFileName, setUploadedFileName] = useState(null); // Define the uploadedFileName state variable
 
+    const [editItemsoftModuleFields, setEditItemsoftModuleFields] = useState(false);
+
     const [selectedFile, setSelectedFile] = useState(null);
     const fileInputRef = useRef(null);  // Declare fileInputRef
 
+    const [ref, setRef] = useState(false)
+    const [editId, setEditId] = useState('')
 
     const onSubmitModulesButton = async (e) => {
         e.preventDefault();
@@ -23,16 +27,16 @@ const AddModulesAndTests = () => {
             toast.error("Please enter all the fields..!");
             return;
         }
+
         try {
-            const addItemModulesRequest = await axios.post("http://localhost:4000/api/addItemsoftModules", {
+            const addItemModulesRequest = await axios.post("http://localhost:4000/api/addItemsoftModules/" + editId, {
                 moduleName,
                 moduleDescription
             });
 
             if (addItemModulesRequest.status === 200) {
-                toast.success("Data Added Successfully");
-                // Append the new module to the existing modulesList
-                setModulesList([...modulesList, { module_name: moduleName, module_description: moduleDescription }]);
+                toast.success("Data Submitted Successfully");
+                setRef(!ref)
             } else {
                 toast.error("An error occurred while saving the data.");
             }
@@ -51,7 +55,9 @@ const AddModulesAndTests = () => {
 
     function handleCancelBtnIsClicked() {
         setModulename('')
+        setEditId('')
         setmoduleDescription('')
+        setEditItemsoftModuleFields(false)
     }
 
     useEffect(() => {
@@ -65,7 +71,7 @@ const AddModulesAndTests = () => {
             }
         };
         fetchModulesList();
-    }, [])
+    }, [ref])
 
 
     const handleFileChange = async (e) => {
@@ -103,13 +109,13 @@ const AddModulesAndTests = () => {
 
                                 if (addItemModulesRequest.status === 200) {
 
-                                    setModulesList([
+                                    /* setModulesList([
                                         ...modulesList,
                                         ...dataArr.map(([moduleName, moduleDescription]) => ({
                                             module_name: moduleName,
                                             module_description: moduleDescription,
                                         })),
-                                    ]);
+                                    ]); */
                                 } else {
                                     toast.error("An error occurred while saving the data.");
                                 }
@@ -122,6 +128,8 @@ const AddModulesAndTests = () => {
                                 }
                             }
                         });
+
+                        setRef(!ref)
                         toast.success("Data Added Successfully");
                     } else {
                         toast.error("All rows are empty or invalid.");
@@ -135,48 +143,112 @@ const AddModulesAndTests = () => {
     };
 
 
+    /* function editItemsoftModule(index) {
+        //console.log(index)
+    } */
+
+    // Function to edit the module:
+    const editItemsoftModule = (index, id) => {
+
+
+        setEditId(id)
+        const rowdata = modulesList[index];
+        setEditItemsoftModuleFields(true)
+        setModulename(rowdata.module_name)
+        setmoduleDescription(rowdata.module_description)
+
+    }
+
+
+    function deleteItemsoftModule(id) {
+        console.log(id)
+        const confirmDelete = window.confirm('Are you sure you want to delete this module?');
+
+        if (confirmDelete) {
+            fetch(`http://localhost:4000/api/getItemsoftModules/${id}`, { method: 'DELETE', })
+                .then(res => {
+                    if (res.status === 200) {
+                        const updatedModulesList = modulesList.filter((item) => item.id !== id);
+                        setModulesList(updatedModulesList);
+                        toast.success("Module Deleted Successfully");
+                    } else {
+                        toast.error("An error occurred while deleting the module.");
+                    }
+                })
+                .catch((error) => {
+                    toast.error("An error occurred while deleting the module.");
+                })
+            //toast.success("Data Added Successfully");
+            //setModulesList([...modulesList, { module_name: moduleName, module_description: moduleDescription }]);
+        } else {
+            handleCancelBtnIsClicked();
+        }
+    }
+
+
+    // Function to add a single module:
+    const addNewModuleButton = () => {
+        setEditItemsoftModuleFields(true)
+    }
 
     return (
         <div>
             <h2>Add Item Soft Modules And Tests</h2>
 
             <Box >
-                <TextField
-                    sx={{ marginBottom: '16px', marginLeft: '10px', borderRadius: 3 }}
-                    value={moduleName}
-                    onChange={(e) => setModulename(e.target.value)}
-                    label="Module Name"
-                    margin="normal"
-                    fullWidth
-                    variant="outlined"
-                    autoComplete="on"
-                />
+                {editItemsoftModuleFields && (
+                    <>
+                        <TextField
+                            sx={{ marginBottom: '16px', marginLeft: '10px', borderRadius: 3 }}
+                            value={moduleName}
+                            onChange={(e) => setModulename(e.target.value)}
+                            label="Module Name"
+                            margin="normal"
+                            fullWidth
+                            variant="outlined"
+                            autoComplete="on"
+                        />
 
-                <TextField
-                    sx={{ marginBottom: '16px', marginLeft: '10px', borderRadius: 3 }}
-                    value={moduleDescription}
-                    onChange={(e) => setmoduleDescription(e.target.value)}
-                    label="Module Description"
-                    margin="normal"
-                    fullWidth
-                    variant="outlined"
-                    autoComplete="on"
-                />
+                        <TextField
+                            sx={{ marginBottom: '16px', marginLeft: '10px', borderRadius: 3 }}
+                            value={moduleDescription}
+                            onChange={(e) => setmoduleDescription(e.target.value)}
+                            label="Module Description"
+                            margin="normal"
+                            fullWidth
+                            variant="outlined"
+                            autoComplete="on"
+                        />
 
-                <Button sx={{ marginBottom: '16px', marginLeft: '10px', borderRadius: 3 }}
-                    variant="contained"
-                    color="secondary"
-                    type="submit"
-                    onClick={onSubmitModulesButton}>
-                    Add
-                </Button>
+                        <Button sx={{ marginBottom: '16px', marginLeft: '10px', borderRadius: 3 }}
+                            variant="contained"
+                            color="secondary"
+                            type="submit"
+                            onClick={onSubmitModulesButton}>
+                            Submit
+                        </Button>
 
-                <Button sx={{ marginBottom: '16px', marginLeft: '10px', borderRadius: 3 }}
-                    variant="contained"
-                    color="primary"
-                    onClick={handleCancelBtnIsClicked}>
-                    Cancel
-                </Button>
+                        <Button sx={{ marginBottom: '16px', marginLeft: '10px', borderRadius: 3 }}
+                            variant="contained"
+                            color="primary"
+                            onClick={handleCancelBtnIsClicked}>
+                            Cancel
+                        </Button>
+                    </>
+                )}
+
+
+                {!editItemsoftModuleFields &&
+                    <Button sx={{ marginBottom: '16px', marginLeft: '10px', borderRadius: 3 }}
+                        variant="contained"
+                        color="primary"
+                        type="submit"
+                        /* onClick={onSubmitModulesButton} */
+                        onClick={addNewModuleButton}>
+                        Add
+                    </Button>
+                }
+
 
                 <input
                     type="file"
@@ -188,7 +260,7 @@ const AddModulesAndTests = () => {
 
                 <Button sx={{ marginBottom: '16px', marginLeft: '10px', borderRadius: 3 }}
                     variant="contained"
-                    color="primary"
+                    color="secondary"
                     onClick={() => fileInputRef.current.click()} // Use ref to trigger the file input click
                     startIcon={<UploadFileIcon />}>
                     Upload
@@ -224,8 +296,8 @@ const AddModulesAndTests = () => {
                                     <TableCell align="center">{item.module_name}</TableCell>
                                     <TableCell align="center">{item.module_description}</TableCell>
                                     <TableCell align="center">
-                                        <Button >Delete</Button>
-                                        <Button >Edit</Button>
+                                        <Button variant='outlined' size="small" onClick={() => editItemsoftModule(index, item.id)}>Edit</Button>
+                                        <Button variant='outlined' size="small" onClick={() => deleteItemsoftModule(item.id)}>Delete</Button>
                                     </TableCell>
                                 </TableRow>
                             ))}
@@ -245,138 +317,3 @@ export default AddModulesAndTests;
 
 
 
-
-
-
-
-
-
-{/* <td><button onClick={() => { deleteitem(index) }}>Delete</button></td>
-                                <td><button onClick={() => { edititem(index) }}>Edit</button></td> */}
-
-
-/* const [modulesList, setModulesList] = useState([{
-"module_name": "MIL-217",
-"module_description": "Reliability Prediction of Electronic Equipment (MIL-HDBK-217)"
-}]) */
-
-
-
-{/* <ol>
-                    {modulesList.map((item, index) => (
-                        <li key={index}>
-                            {item.module_name} - {item.module_description}
-                        </li>
-
-                    ))
-                    }
-                </ol> */}
-
-
-/* const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    //setSelectedFile(file);
-
-    if (file) {
-        const reader = new FileReader();
-
-        reader.onload = (e) => {
-
-            const data = new Uint8Array(e.target.result);
-
-            const workbook = XLSX.read(data, { type: 'array' });
-
-            const sheetName = workbook.SheetNames[0];
-
-            const worksheet = workbook.Sheets[sheetName];
-
-            // Convert worksheet to an array of objects
-            const dataArr = XLSX.utils.sheet_to_json(worksheet);
-
-            // Check if there's exactly 2 columns (you can modify this check)
-            if (dataArr.length > 0 && Object.keys(dataArr[0]).length === 2) {
-
-                // Loop through the rows and post data to the API
-                dataArr.forEach(async (row) => {
-                    const { moduleName, moduleDescription } = row;
-
-                    // Check if the row has values
-                    if (moduleName && moduleDescription) {
-                        try {
-                            const addItemModulesRequest = await axios.post("http://localhost:4000/api/addItemsoftModules", {
-                                moduleName,
-                                moduleDescription
-                            });
-
-                            if (addItemModulesRequest.status === 200) {
-                                toast.success("Data Added Successfully");
-                            } else {
-                                toast.error("An error occurred while saving the data.");
-                            }
-
-                        } catch (error) {
-                            console.error("Error details:", error);
-
-                            if (error.response && error.response.status === 400) {
-                                toast.error("Database Error");
-                            } else {
-                                toast.error("An error occurred while saving the data.");
-                            }
-                        }
-
-                    } else {
-                        toast.error("At least one row is empty.");
-                    }
-                });
-
-            } else {
-                toast.error("The Excel file must have exactly 2 columns (excluding headers).");
-            }
-        };
-
-        reader.readAsArrayBuffer(file);
-    }
-}; */
-
-
-
-
-{/* <TableContainer>
-                    <table className="custom-table">
-                        <thead>
-                            <tr>
-                                <th>Sl No</th>
-                                <th>Module Name</th>
-                                <th>Module Description</th>
-                                <th>Actions</th>
-                            </tr>
-                        </thead>
-
-                        <tbody>
-                            {modulesList.map((item, index) => {
-                                return (
-                                    <tr key={index}>
-                                        <td>{index + 1}</td>
-                                        <td>{item.module_name}</td>
-                                        <td>{item.module_description}</td>
-                                        <td>
-                                            <Button >Delete</Button>
-                                            <Button >Edit</Button>
-                                        </td>
-                                    </tr>)
-                            })}
-                        </tbody>
-
-                    </table>
-
-                </TableContainer> */}
-
-
-
-
-
-
-
-/*  < Typography variant="h6" align='right' sx={{ marginBottom: '16px', marginRight: '20px', marginLeft: '20px', fontWeight: 'bold', fontStyle: 'italic', textDecoration: 'underline' }}>
- Uploaded File: {uploadedFileName}
-</> */
