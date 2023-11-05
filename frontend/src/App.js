@@ -28,7 +28,7 @@ function App() {
             <Route path='/jobcard' element={<Jobcard />} />
             <Route path='/trailpage' element={<TrailPage />} />
             <Route path='/settings' element={<UserDetailsDialog />} />
-            <Route path="/updateenviquote/:quotationID" element={<UpdateEnvironmentalQuote />} />
+            <Route path="/quotation/:id" element={<Quotation />} />
             <Route path="/add_module_or_test" element={<AddModulesAndTests />} />
             <Route path='*' element={<NotFoundPage />} />
           </Route>

@@ -1,24 +1,19 @@
-
 import React, { useState, useEffect } from 'react';
 import {
   Box, Typography, Container, TextField, Button, Table, TableBody, TableCell, TableContainer, TableHead,
   TableRow, Paper, IconButton, Tooltip, Grid, InputLabel, MenuItem, FormControl, Select
 } from '@mui/material';
-
 import axios from "axios";
 import moment from "moment";                     // To convert the date into desired format
 import { sum, toWords } from 'number-to-words';  // To convert number to words
 import numberToWords from 'number-to-words';
-
 import { toast } from "react-toastify";
 import 'react-toastify/dist/ReactToastify.css';
-
 import { styled } from '@mui/material/styles';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
 import loggedInUser from "../components/sidenavbar"
-
-
+import { Link, useParams } from 'react-router-dom';
 
 const StyledTableRow = styled(TableRow)(({ theme }) => ({
   '&:nth-of-type(odd)': {
@@ -30,38 +25,100 @@ const StyledTableRow = styled(TableRow)(({ theme }) => ({
   },
 }));
 
-
-
-// The function:
 export default function Quotation() {
-  const [tableData, setTableData] = useState([
-    {
-      slno: 1,
-      testDescription: '',
-      sacNo: '',
-      duration: '',
-      unit: '',
-      perUnitCharge: '',
-      amount: '',
-    },
-  ]);
 
+  let initialCompanyName = ''
+  let initialToCompanyAddress = ''
+  let initialCustomerID = ''
+  let initialCustomerReferance = ''
+  let initialKindAttention = ''
+  let initialProjectName = ''
 
+  let defTestDescription = ''
+  let defSacNo = ''
+  let defDuration = ''
+  let defUnit = ''
+  let defPerUnitCharge = ''
+  let defAmount = ''
+
+  // if (!process.env.NODE_ENV || process.env.NODE_ENV === 'development') {
+  //   initialCompanyName = 'New Company'
+  //   initialToCompanyAddress = 'Bangalore'
+  //   initialCustomerID = 'NCMPY'
+  //   initialCustomerReferance = 'Email'
+  //   initialKindAttention = 'Hari'
+  //   initialProjectName = 'NewProject'
+
+  //   defTestDescription = 'New Test'
+  //   defSacNo = '123'
+  //   defDuration = '2'
+  //   defUnit = 'Hour'
+  //   defPerUnitCharge = '100'
+  //   defAmount = '200'
+  // }
+  const initialTableData = [{
+    slno: 1,
+    testDescription: defTestDescription,
+    sacNo: defSacNo,
+    duration: defDuration,
+    unit: defUnit,
+    perUnitCharge: defPerUnitCharge,
+    amount: defAmount,
+  },];
+
+  const [tableData, setTableData] = useState(initialTableData);
   const [taxableAmount, setTaxableAmount] = useState(0);
   const [totalAmountWords, setTotalAmountWords] = useState('');
-
   const [counter, setCounter] = useState(tableData.length + 1);
+
+  const [companyName, setCompanyName] = useState(initialCompanyName)
+  const [toCompanyAddress, setToCompanyAddress] = useState(initialToCompanyAddress)
+  const [kindAttention, setKindAttention] = useState(initialKindAttention)
+  const [customerId, setCustomerId] = useState(initialCustomerID)
+  const [customerReferance, setCustomerreferance] = useState(initialCustomerReferance)
+  const [projectName, setProjectName] = useState(initialProjectName)
+  const [quoteCategory, setQuoteCategory] = useState('Environmental Testing')
+  const [quotationIdString, setQuotationIDString] = useState('')
+  const [editId, setEditId] = useState('')
+  const formattedDate = moment(new Date()).format("DD-MM-YYYY");
+  const [selectedDate, setSelectedDate] = useState(formattedDate);
+  const quotationCreatedBy = loggedInUser;
+
+  const { id } = useParams('id')
+  useEffect(() => {
+    if (id) {
+      axios.get(`http://localhost:4000/api/quotation/` + id)
+        .then(result => {
+          setCompanyName(result.data[0].company_name)
+          setQuotationIDString(result.data[0].quotation_ids)
+          setToCompanyAddress(result.data[0].company_address)
+          setCustomerId(result.data[0].customer_id)
+          setCustomerreferance(result.data[0].customer_referance)
+          setSelectedDate(moment(result.data[0].quote_given_date).format("DD-MM-YYYY"))
+          setKindAttention(result.data[0].kind_attention)
+          setProjectName(result.data[0].project_name)
+          setTotalAmountWords(result.data[0].total_taxable_amount_in_words)
+          setEditId(result.data[0].id)
+          setQuoteCategory(result.data[0].quote_category)
+          setTableData(JSON.parse(result.data[0].tests))
+          // setTotalAmountWords(total_amount)
+        })
+    }
+  }, [])
+
+
+
 
   const addRow = () => {
     const maxSlNo = Math.max(...tableData.map((row) => row.slno), 0);
     const newRow = {
       slno: maxSlNo + 1,
-      testDescription: '',
-      sacNo: '',
-      duration: '',
-      unit: '',
-      perUnitCharge: '',
-      amount: '',
+      testDescription: defTestDescription,
+      sacNo: defSacNo,
+      duration: defDuration,
+      unit: defUnit,
+      perUnitCharge: defPerUnitCharge,
+      amount: defAmount,
     };
     setTableData([...tableData, newRow]);
     setCounter(maxSlNo + 1);
@@ -86,51 +143,6 @@ export default function Quotation() {
     setTableData(updatedData);
   };
 
-  // To fetch the current date:
-  const [selectedDate, setSelectedDate] = useState(new Date());   // Default date format is "DD/MM/YYYY"
-
-  const formattedDate = moment(selectedDate).format("DD-MM-YYYY");
-
-
-  // Function to reset table inputs
-  const initialTableData = [
-    {
-      slno: 1,
-      testDescription: '',
-      sacNo: '',
-      duration: '',
-      unit: '',
-      perUnitCharge: '',
-      amount: '',
-    },];
-
-
-
-  const initialCompanyName = ''
-  const initialToCompanyAddress = ''
-  const initialCustomerID = ''
-  const initialCustomerReferance = ''
-  const initialKindAttention = ''
-  const initialProjectName = ''
-
-
-
-  const quoteCategory = 'Environmental testing';
-  const quotationCreatedBy = loggedInUser;
-
-
-  /// To set the dynamic quotation ID:
-  const [companyName, setCompanyName] = useState(initialCompanyName)
-  const [toCompanyAddress, setToCompanyAddress] = useState(initialToCompanyAddress)
-  const [customerId, setCustomerId] = useState(initialCustomerID)
-  const [customerReferance, setCustomerreferance] = useState(initialCustomerReferance)
-  const [kindAttention, setKindAttention] = useState(initialKindAttention)
-  const [projectName, setProjectName] = useState(initialProjectName)
-  const [projectType, setProjectType] = useState('Environmental Testing')
-
-
-  const [quotationIdString, setQuotationIDString] = useState('')
-
   // Set initial quotation ID when the component mounts
   useEffect(() => {
     setInitialQuotationId(initialCompanyName);
@@ -146,7 +158,7 @@ export default function Quotation() {
   // To handle company names field:
   const handleCompanyNameChange = (e) => {
     const newCompanyName = e.target.value.toUpperCase();
-    setCompanyName(newCompanyName);
+    setCustomerId(newCompanyName);
     generateDynamicQuotationIdString(newCompanyName);
   };
 
@@ -249,7 +261,7 @@ export default function Quotation() {
       return;
     }
 
-    axios.post("http://localhost:4000/api/test_data", {
+    axios.post("http://localhost:4000/api/quotation/" + editId, {
       quotationIdString,
       companyName,
       toCompanyAddress,
@@ -263,24 +275,14 @@ export default function Quotation() {
       totalAmountWords,
       quotationCreatedBy,
       tableData
-    }).then(res => console.log(res.data))
-
-    try {
-      // Check the status of both requests:
-      // if (quotesCategoryResponse.status === 200 && envitestTableResponse.status === 200) {
-      //   toast.success("Data Added Successfully")
-      // } else {
-      //   toast.error("An error occurred while saving the data1.");
-      // }
-    } catch (error) {
-      // if (error.response && error.response.status === 400) {
-      //   toast.error("Database Error");
-      // } else {
-      //   toast.error("An error occurred while saving the data2.");
-      // }
+    }).then(res => {
+      if (res.status === 200) toast.success("Success")
+      if (res.status === 500) toast.error("Failed")
+    })
+    if (!editId) {
+      handleCancelBtnIsClicked();
     }
-    // handleCancelBtnIsClicked();
-  };
+  }
 
 
   // To update the amount cells based on the hours and unit per charge cells:
@@ -334,22 +336,16 @@ export default function Quotation() {
     setTotalAmountWords('')
   };
 
-
-
   const calculateTaxableAmount = () => {
-    const subtotal = tableData.map(({ amount }) => parseFloat(amount || 0)).reduce((sum, value) => sum + value, 0);
-    setTaxableAmount(subtotal);
-    setTotalAmountWords(convertNumberToWords(subtotal));
   };
 
 
   useEffect(() => {
-    calculateTaxableAmount();
+    const subtotal = tableData.map(({ amount }) => parseFloat(amount || 0)).reduce((sum, value) => sum + value, 0);
+    setTaxableAmount(subtotal);
+    setTotalAmountWords(numberToWords.toWords(subtotal).toUpperCase());
+    // calculateTaxableAmount();
   }, [tableData]);
-
-  function convertNumberToWords(number) {
-    return numberToWords.toWords(number).toUpperCase();
-  }
 
 
 
@@ -375,8 +371,8 @@ export default function Quotation() {
                 <Box>
                   <TextField
                     sx={{ marginBottom: '16px', marginLeft: '10px', borderRadius: 3 }}
-                    value={customerId}
-                    onChange={(e) => setCustomerId(e.target.value)}
+                    value={companyName}
+                    onChange={(e) => setCompanyName(e.target.value)}
                     label="Company Name"
                     margin="3"
                     fullWidth
@@ -424,7 +420,7 @@ export default function Quotation() {
                     <TextField
                       sx={{ marginBottom: '16px', marginRight: '10px', borderRadius: 3 }}
                       label="Company ID"
-                      value={companyName} onChange={handleCompanyNameChange}
+                      value={customerId} onChange={handleCompanyNameChange}
                       margin="3"
                       variant="outlined"
                       fullWidth
@@ -435,6 +431,7 @@ export default function Quotation() {
                     <FormControl sx={{ width: '100%', marginBottom: '16px', marginRight: '10px', borderRadius: 3 }} >
                       <InputLabel >Customer Referance</InputLabel>
                       <Select
+                        defaultValue={customerReferance}
                         value={customerReferance} onChange={(e) => setCustomerreferance(e.target.value)}
                         label="Customer Referance"
                         fullWidth
@@ -452,8 +449,8 @@ export default function Quotation() {
                       label="Date"
                       margin="3"
                       variant="outlined"
-                      //value={selectedDate.toLocaleDateString()}
-                      value={formattedDate}
+                      value={selectedDate}
+                      onChange={(e) => { setSelectedDate(e.target.value) }}
                       fullWidth
                     />
                   </div>
@@ -473,7 +470,7 @@ export default function Quotation() {
                     <FormControl sx={{ width: '100%', marginBottom: '16px', marginRight: '10px', borderRadius: 3 }}>
                       <InputLabel>Project Type</InputLabel>
                       <Select
-                        value={projectType} onChange={(e) => setProjectType(e.target.value)}
+                        value={quoteCategory} onChange={(e) => setQuoteCategory(e.target.value)}
                         label="Project Type"
                         fullWidth
                       >
@@ -493,7 +490,7 @@ export default function Quotation() {
 
         </Box>
 
-        <Box >
+        <Box>
           {/* Table Container */}
           <Grid container justifyContent="center" sx={{ marginTop: '10', paddingBottom: '3' }}>
             <Typography sx={{ marginTop: '5', paddingBottom: '3', paddingTop: '5' }} variant="h5">Test Details</Typography>
@@ -508,10 +505,15 @@ export default function Quotation() {
                     <TableRow>
                       <TableCell>Sl No</TableCell>
                       <TableCell align="center">Test Description</TableCell>
-                      <TableCell align="center">SAC No</TableCell>
-                      <TableCell align="center"> Duration/Quantity</TableCell>
-                      <TableCell align="center">Unit</TableCell>
-                      <TableCell align="center">Per Unit Charge</TableCell>
+                      {(quoteCategory === 'Environmental Testing' || quoteCategory === 'EMI & EMC') &&
+                        <>
+                          <TableCell align="center">SAC No</TableCell>
+                          <TableCell align="center"> Duration/Quantity</TableCell>
+                          <TableCell align="center">Unit</TableCell>
+                          <TableCell align="center">Per Unit Charge</TableCell>
+                        </>
+                      }
+                      {quoteCategory === 'Item Soft' && <TableCell align="center">Module</TableCell>}
                       <TableCell align="center">Amount</TableCell>
                       <TableCell align="center">Add Row</TableCell>
                       <TableCell align="center">Remove Row</TableCell>
@@ -536,47 +538,64 @@ export default function Quotation() {
                           />
                         </TableCell>
 
-                        <TableCell align="center">
-                          <TextField
-                            value={row.sacNo}
-                            onChange={(e) =>
-                              handleInputChange(row.slno, 'sacNo', e.target.value)}
-                          />
-                        </TableCell>
+                        {(quoteCategory === 'Environmental Testing' || quoteCategory === 'EMI & EMC') &&
+                          <>
+                            <TableCell align="center">
+                              <TextField
+                                value={row.sacNo}
+                                onChange={(e) =>
+                                  handleInputChange(row.slno, 'sacNo', e.target.value)}
+                              />
+                            </TableCell>
 
-                        <TableCell align="center">
-                          <TextField
-                            value={row.duration}
-                            //type='number'
-                            onChange={(e) =>
-                              //handleInputChange(row.slno, 'duration', e.target.value)}
-                              handleCellChange(row.slno, 'duration', parseFloat(e.target.value))}
-                          />
-                        </TableCell>
+                            <TableCell align="center">
+                              <TextField
+                                value={row.duration}
+                                //type='number'
+                                onChange={(e) =>
+                                  //handleInputChange(row.slno, 'duration', e.target.value)}
+                                  handleCellChange(row.slno, 'duration', parseFloat(e.target.value))}
+                              />
+                            </TableCell>
 
+                            <TableCell align='center'>
+                              <FormControl sx={{ minWidth: '150px' }}>
+                                <Select
+                                  value={row.unit}
+                                  onChange={(e) => handleUnitChange(row.slno, 'unit', e.target.value)}>
+                                  <MenuItem value='Hour'> Hour </MenuItem>
+                                  <MenuItem value='Test'> Test </MenuItem>
+                                  <MenuItem value='Days'> Days </MenuItem>
+                                </Select>
+                              </FormControl>
+                            </TableCell>
 
-
-                        <TableCell align='center'>
-
-                          <FormControl sx={{ minWidth: '150px' }}>
-                            <Select value={row.unit} onChange={(e) => handleUnitChange(row.slno, 'unit', e.target.value)}>
-                              <MenuItem value='Hour'> Hour </MenuItem>
-                              <MenuItem value='Test'> Test </MenuItem>
-                              <MenuItem value='Days'> Days </MenuItem>
-                            </Select>
-
-                          </FormControl>
-                        </TableCell>
-
-                        <TableCell align="center">
-                          <TextField
-                            value={row.perUnitCharge}
-                            type='number'
-                            onChange={(e) =>
-                              //handleInputChange(row.slno, 'perUnitCharge', e.target.value)}
-                              handleCellChange(row.slno, 'perUnitCharge', parseFloat(e.target.value))}
-                          />
-                        </TableCell>
+                            <TableCell align="center">
+                              <TextField
+                                value={row.perUnitCharge}
+                                type='number'
+                                onChange={(e) =>
+                                  handleCellChange(row.slno, 'perUnitCharge', parseFloat(e.target.value))}
+                              />
+                            </TableCell>
+                          </>
+                        }
+                        {quoteCategory === 'Item Soft' &&
+                          <>
+                            <TableCell align='center'>
+                              <FormControl sx={{ minWidth: '150px' }}>
+                                <Select
+                                  value={row.module_id}
+                                  onChange={(e) => handleUnitChange(row.slno, 'module_id', e.target.value)}>
+                                  <MenuItem value='Module 1'>Module 1</MenuItem>
+                                  <MenuItem value='Module 2'>Module 2</MenuItem>
+                                  <MenuItem value='Module 3'>Module 3</MenuItem>
+                                  <MenuItem value='Module 4'>Module 4</MenuItem>
+                                </Select>
+                              </FormControl>
+                            </TableCell>
+                          </>
+                        }
 
                         <TableCell align="center">
                           <TextField
@@ -614,12 +633,12 @@ export default function Quotation() {
 
                     <TableRow>
                       <TableCell rowSpan={2} />
-                      <TableCell colSpan={5} > <Typography variant='h6'> Taxable Amount:</Typography> </TableCell>
+                      <TableCell colSpan={4} > <Typography variant='h6'> Taxable Amount:</Typography> </TableCell>
                       <TableCell align="center"> <Typography variant='h6'> {taxableAmount.toFixed(2)}</Typography> </TableCell>
                     </TableRow>
 
                     <TableRow>
-                      <TableCell colSpan={5}> <Typography variant='h6'> Total Amount in Rupees:</Typography> </TableCell>
+                      <TableCell colSpan={4}> <Typography variant='h6'> Total Amount in Rupees:</Typography> </TableCell>
                       <TableCell align="center"> <Typography variant='h6'> {totalAmountWords} </Typography> </TableCell>
                     </TableRow>
 
@@ -645,9 +664,10 @@ export default function Quotation() {
               sx={{ borderRadius: 3, margin: 0.5 }}
               variant="contained"
               color="primary"
-              onClick={handleCancelBtnIsClicked}
+              onClick={() => window.history.back()}
             >
-              Cancel
+              {/* <Link to='/home' style={{ color: 'white', textDecoration: 'none' }}>Close</Link> */}
+              Close
             </Button>
           </Box>
 

@@ -27,7 +27,7 @@ const { db,
 // Establish a connection with the database and to use the tables:
 db.getConnection(function (err, connection) {
     if (err) {
-        console.err("Error connecting to the database", err);
+        console.error("Error connecting to the database", err);
         return;
     }
 
@@ -133,35 +133,59 @@ app.post("/api/quotescategory", (req, res) => {
 });
 
 // To store the table data in the 'test_data' table:
-app.post("/api/test_data", (req, res) => {
+app.post("/api/quotation", (req, res) => {
 
-  const { quotationIdString,companyName, toCompanyAddress, selectedDate, customerId, customerReferance, kindAttention, projectName, quoteCategory, taxableAmount, totalAmountWords , tableData } = req.body;
+  const { quotationIdString, companyName, toCompanyAddress, selectedDate, customerId, customerReferance, kindAttention, projectName, quoteCategory, taxableAmount, totalAmountWords,tableData } = req.body;
   const formattedDate = new Date(selectedDate);
   const quotationCreatedBy = 'Ajay'
-  
-  let sql = "INSERT INTO bea_quotations_table (quotation_ids, company_name, company_address, quote_given_date, customer_id, customer_referance, kind_attention, project_name, quote_category, total_amount, total_taxable_amount_in_words, quote_created_by) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)";
 
-  db.query(sql, [quotationIdString, companyName, toCompanyAddress, formattedDate, customerId, customerReferance, kindAttention, projectName, quoteCategory, taxableAmount, totalAmountWords, quotationCreatedBy], (error, result) => {
-    if (error) {
-      console.log(error)
-      return res.status(500).json({ message: "Internal server error" });
-    }
+  let sql = "INSERT INTO bea_quotations_table (quotation_ids, company_name, company_address, quote_given_date, customer_id, customer_referance, kind_attention, project_name, quote_category, total_amount, total_taxable_amount_in_words, quote_created_by, tests) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)";
+
+  db.query(sql, [quotationIdString, companyName, toCompanyAddress, formattedDate, customerId, customerReferance, kindAttention, projectName, quoteCategory, taxableAmount, totalAmountWords, quotationCreatedBy, JSON.stringify(tableData)], (error, result) => {
+    if (error) return res.status(500).json(error)
+    return res.status(200).json(result)
   })
+})
 
-  sql = "INSERT INTO test_data (slno, test_description, sac_no, duration, unit, per_hour_charge, amount, quotation_id) VALUES (?,?,?,?,?,?,?,?)";
+app.get("/api/quotation/:id", (req, res) => {
+  const id = req.params.id.replaceAll('_', '/');
+  if (!id) return res.status(400).json({ error: "quotationID is missing or invalid" })
 
-  let obj = []
-  tableData.forEach((row) => {
-    obj = Object.values(row)
-    obj.push(quotationIdString)
-    db.query(sql, obj, (error, result) => {
-      if (error) {
-        console.log(error)
-        return res.status(500).json({ message: "Internal server error", error });
-      }
-    })    
-  })
-  return res.status(200).json({ message: "Table Data added successfully" });
+  let sql = "SELECT * FROM bea_quotations_table WHERE id = ?";
+
+  db.query(sql, [id], (error, result) => {
+    if (error) return res.status(500).json(error)
+    return res.status(200).json(result)
+  });
+});
+
+app.post("/api/quotation/:id", (req, res) => {
+  const id = req.params.id
+  if (!id) return res.status(400).json({ error: "quotationID is missing or invalid" })
+
+  const { quotationIdString, companyName, toCompanyAddress, selectedDate, customerId, customerReferance, kindAttention, projectName, quoteCategory, taxableAmount, totalAmountWords,tableData } = req.body
+
+  const formattedDate = new Date(selectedDate);
+  let sql = "UPDATE bea_quotations_table SET quotation_ids=?, company_name=?, company_address=?, kind_attention=?, customer_id=?, customer_referance=?, quote_given_date=?, project_name=?,quote_category=?, total_amount=?, total_taxable_amount_in_words=?, tests=? WHERE id = ?";
+
+  db.query(sql, [
+    quotationIdString,
+    companyName,
+    toCompanyAddress,
+    kindAttention,
+    customerId,
+    customerReferance,
+    formattedDate,
+    projectName,
+    quoteCategory,
+    taxableAmount,
+    totalAmountWords,
+    JSON.stringify(tableData),
+    id
+  ], (error, result) => {
+    if (error) return res.status(500).json(error)
+    return res.status(200).json(result)
+  });
 });
 
 
@@ -275,7 +299,7 @@ app.post("/api/itemsoft_quote_data", (req, res) => {
 
 // To fetch the last saved quotation Id from the table envi_tests_quotes_data table:
 app.get("/api/getLatestQuoationID", (req, res) => {
-    const latestQIdFromETQT = "SELECT quotation_ids FROM envi_tests_quotes_data ORDER BY id DESC LIMIT 1 "
+    const latestQIdFromETQT = "SELECT quotation_ids FROM bea_quotations_table ORDER BY id DESC LIMIT 1 "
     db.query(latestQIdFromETQT, (error, result) => {
         if (result.length === 0) {
             res.send(
@@ -296,7 +320,7 @@ app.get("/api/getLatestQuoationID", (req, res) => {
 app.get("/api/getQuotationdata", (req, res) => {
 
     //quotation_ids, company_name, company_address, quote_given_date, customer_id, customer_referance, kind_attention, quote_category, quote_created_by
-    const quotesList = "SELECT quotation_ids, company_name, DATE_FORMAT(quote_given_date, '%Y-%m-%d') AS formatted_quote_given_date, quote_category, quote_created_by FROM bea_quotations_table";
+    const quotesList = "SELECT id,quotation_ids, company_name, DATE_FORMAT(quote_given_date, '%Y-%m-%d') AS formatted_quote_given_date, quote_category, quote_created_by FROM bea_quotations_table";
 
     //const quotesList = "SELECT * FROM bea_quotations_table";
     db.query(quotesList, (error, result) => {
