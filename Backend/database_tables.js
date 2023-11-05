@@ -5,7 +5,7 @@ const mysql = require("mysql2");
 const db = mysql.createPool({
     host: "localhost",
     user: "root",
-    password: "FRACAS@22",
+    password: "",
     database: "labbee"
 
 
@@ -44,6 +44,7 @@ function createBEAQuotationsTable() {
         CREATE TABLE IF NOT EXISTS bea_quotations_table (
             id INT NOT NULL AUTO_INCREMENT,
             quotation_ids VARCHAR(255),
+            tests TEXT,
             company_name VARCHAR(255),
             company_address VARCHAR(500),
             quote_given_date DATE,
@@ -69,31 +70,6 @@ function createBEAQuotationsTable() {
 };
 
 
-////////////////////////////////////////////////////////////////////////////
-//Function to create a envi_tests_quotes_data table:
-function createTestTable() {
-    const createTestTable = `
-  CREATE TABLE IF NOT EXISTS test_data (
-      id INT NOT NULL AUTO_INCREMENT,
-      quotation_id VARCHAR(255),
-      test_description VARCHAR(1000),
-      sac_no VARCHAR(255),
-      duration VARCHAR(255),
-      unit VARCHAR(255),
-      per_hour_charge VARCHAR(255),
-      amount VARCHAR(255),
-      module_id INT,
-      PRIMARY KEY(id)
-  )`;
-
-    db.query(createTestTable, function (error, result) {
-        if (error) {
-            console.log("Error occurred while creating createTestTable table", error)
-        } else {
-            //console.log("envi_tests_quotes_data table created successfully.")
-        }
-    })
-};
 
 
 ////////////////////////////////////////////////////////////////////////////
@@ -209,7 +185,6 @@ process.on('exit', function () {
 module.exports = {
     db, createUsersTable,
     createBEAQuotationsTable,
-    createTestTable,
     createEnvitestsQuotesDetailsTable,
     createReliabilityQuotesDetailsTable,
     createItemsoftQuotesDetailsTable,
