@@ -446,18 +446,6 @@ export default function Quotation() {
                   <div>
                     <TextField
                       sx={{ marginBottom: '16px', marginRight: '10px', borderRadius: 3 }}
-                      label="Date"
-                      margin="3"
-                      variant="outlined"
-                      value={selectedDate}
-                      onChange={(e) => { setSelectedDate(e.target.value) }}
-                      fullWidth
-                    />
-                  </div>
-
-                  <div>
-                    <TextField
-                      sx={{ marginBottom: '16px', marginRight: '10px', borderRadius: 3 }}
                       label="Project Name"
                       value={projectName} onChange={(e) => setProjectName(e.target.value)}
                       margin="3"
@@ -466,8 +454,22 @@ export default function Quotation() {
                     />
                   </div>
 
-                  <div>
-                    <FormControl sx={{ width: '100%', marginBottom: '16px', marginRight: '10px', borderRadius: 3 }}>
+                  <Box sx={{
+                    display: 'flex',
+                    alignItems: 'flex-end',
+                    marginBottom: '16px',
+                  }}>
+                    <TextField
+                      sx={{ width: '50%', marginBottom: '16px', marginRight: '10px', borderRadius: 3 }}
+                      label="Date"
+                      margin="3"
+                      variant="outlined"
+                      value={selectedDate}
+                      onChange={(e) => { setSelectedDate(e.target.value) }}
+                      fullWidth
+                    />
+
+                    <FormControl sx={{ width: '50%', marginBottom: '16px', marginRight: '10px', borderRadius: 3 }}>
                       <InputLabel>Project Type</InputLabel>
                       <Select
                         value={quoteCategory} onChange={(e) => setQuoteCategory(e.target.value)}
@@ -480,7 +482,7 @@ export default function Quotation() {
                         <MenuItem value='Item Soft'>Item Soft</MenuItem>
                       </Select>
                     </FormControl>
-                  </div>
+                  </Box>
 
                 </Box>
               </Container>
@@ -633,12 +635,12 @@ export default function Quotation() {
 
                     <TableRow>
                       <TableCell rowSpan={2} />
-                      <TableCell colSpan={4} > <Typography variant='h6'> Taxable Amount:</Typography> </TableCell>
+                      <TableCell colSpan={3} > <Typography variant='h6'> Taxable Amount:</Typography> </TableCell>
                       <TableCell align="center"> <Typography variant='h6'> {taxableAmount.toFixed(2)}</Typography> </TableCell>
                     </TableRow>
 
                     <TableRow>
-                      <TableCell colSpan={4}> <Typography variant='h6'> Total Amount in Rupees:</Typography> </TableCell>
+                      <TableCell colSpan={3}> <Typography variant='h6'> Total Amount in Rupees:</Typography> </TableCell>
                       <TableCell align="center"> <Typography variant='h6'> {totalAmountWords} </Typography> </TableCell>
                     </TableRow>
 

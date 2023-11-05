@@ -183,7 +183,6 @@ process.on('exit', function () {
 module.exports = {
     db, createUsersTable,
     createBEAQuotationsTable,
-    createTestTable,
     createEnvitestsQuotesDetailsTable,
     createReliabilityQuotesDetailsTable,
     createItemsoftQuotesDetailsTable,
