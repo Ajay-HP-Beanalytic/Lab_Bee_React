@@ -91,6 +91,7 @@ export default function Quotation() {
     if (id) {
       axios.get(`http://localhost:4000/api/quotation/` + id)
         .then(result => {
+          generateDynamicQuotationIdString(result.data[0].customer_id)
           setCompanyName(result.data[0].company_name)
           setQuotationIDString(result.data[0].quotation_ids)
           setToCompanyAddress(result.data[0].company_address)
