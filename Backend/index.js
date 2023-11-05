@@ -17,7 +17,6 @@ const app = express();
 const { db,
     createUsersTable,
     createBEAQuotationsTable,
-    createTestTable,
     createEnvitestsQuotesDetailsTable,
     createReliabilityQuotesDetailsTable,
     createItemsoftQuotesDetailsTable,
