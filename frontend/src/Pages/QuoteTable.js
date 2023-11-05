@@ -8,9 +8,10 @@ import { Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } 
 import { styled } from '@mui/material/styles';
 import PendingIcon from '@mui/icons-material/Pending';
 
-import { Edit as EditIcon, Print as PrintIcon, Close as CloseIcon } from '@mui/icons-material';
+import { Edit as EditIcon, Print as PrintIcon, Close as CloseIcon, RocketTwoTone } from '@mui/icons-material';
 import { Link } from 'react-router-dom';
 import UpdateEnvironmentalQuote from '../templateQuotation/UpdateEnvironmental';
+import moment from 'moment';
 /* import EditIcon from '@mui/icons-material/Edit';
 import PrintIcon from '@mui/icons-material/Print';
 import CloseIcon from '@mui/icons-material/Close'; */
@@ -74,8 +75,8 @@ export default function QuoteTable() {
           setQuotesTableData(response.data);
         } else {
           setMsg(<>
-          <h2>No Quotations found...</h2>
-          <Button variant="contained" color="primary" as={Link} to='/quotation'>Add Quotaion</Button>
+            <h2>No Quotations found...</h2>
+            <Button variant="contained" color="primary" as={Link} to='/quotation'>Add Quotaion</Button>
           </>)
         }
         setLoading(false);
@@ -188,7 +189,7 @@ export default function QuoteTable() {
                           <TableCell>{index + 1}</TableCell>
                           <TableCell>{row.quotation_ids}</TableCell>
                           <TableCell>{row.company_name}</TableCell>
-                          <TableCell>{row.formatted_quote_given_date}</TableCell>
+                          <TableCell>{moment(row.quote_given_date).format("DD-MM-YYYY")}</TableCell>
                           <TableCell>{row.quote_category}</TableCell>
                           <TableCell>{row.quote_created_by}</TableCell>
                           {/* <TableCell>{<Button variant='outlined' onClick={handleOpenDialog}> View</Button>}</TableCell> */}
@@ -196,7 +197,7 @@ export default function QuoteTable() {
                           <TableCell>
                             <Button variant='outlined' >
                               <span>
-                                <Link to={`/updateenviquote/${row.quotation_ids.replaceAll('/', '_')}`} > View </Link>
+                                <Link to={`/quotation/${row.id}`} > View </Link>
                               </span>
                             </Button>
                           </TableCell>
@@ -207,7 +208,7 @@ export default function QuoteTable() {
                           <TableCell>{index + 1}</TableCell>
                           <TableCell>{row.quotation_ids}</TableCell>
                           <TableCell>{row.company_name}</TableCell>
-                          <TableCell>{row.formatted_quote_given_date}</TableCell>
+                          <TableCell>{moment(row.quote_given_date).format("DD-MM-YYYY")}</TableCell>
                           <TableCell>{row.quote_category}</TableCell>
                           <TableCell>{row.quote_created_by}</TableCell>
                           {/* <TableCell><Button variant='outlined' onClick={handleOpenDialog}> View</Button></TableCell> */}
@@ -215,7 +216,7 @@ export default function QuoteTable() {
                           <TableCell>
                             <Button variant='outlined' >
                               <span>
-                                <Link to={`/updateenviquote/${row.quotation_ids.replaceAll('/', '_')}`} > View </Link>
+                                <Link to={`/quotation/${row.id}`} > View </Link>
                               </span>
                             </Button>
                           </TableCell>
