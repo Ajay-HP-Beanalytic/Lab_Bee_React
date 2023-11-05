@@ -115,7 +115,7 @@ const Environmental = () => {
 
 
 
-  const quoteCategory = 'Environmental testing';
+  //const quoteCategory = 'Environmental testing';
   const quotationCreatedBy = loggedInUser;
 
 
@@ -126,6 +126,7 @@ const Environmental = () => {
   const [customerReferance, setCustomerreferance] = useState(initialCustomerReferance)
   const [kindAttention, setKindAttention] = useState(initialKindAttention)
   const [projectName, setProjectName] = useState(initialProjectName)
+  const [quoteCategory, setQuoteCategory] = useState('Environmental Testing')
 
 
   const [quotationIdString, setQuotationIDString] = useState('')
@@ -456,17 +457,6 @@ const Environmental = () => {
                     </FormControl>
                   </div>
 
-                  <div>
-                    <TextField
-                      sx={{ marginBottom: '16px', marginRight: '10px', borderRadius: 3 }}
-                      label="Date"
-                      margin="3"
-                      variant="outlined"
-                      //value={selectedDate.toLocaleDateString()}
-                      value={formattedDate}
-                      fullWidth
-                    />
-                  </div>
 
                   <div>
                     <TextField
@@ -475,8 +465,41 @@ const Environmental = () => {
                       value={projectName} onChange={(e) => setProjectName(e.target.value)}
                       margin="3"
                       variant="outlined"
-                      fullWidth
                     />
+                  </div>
+
+
+                  <div>
+                    <Box sx={{
+                      display: 'flex',
+                      alignItems: 'flex-end',
+                      marginBottom: '16px',
+                    }}>
+
+                      <TextField
+                        sx={{ width: '50%', marginBottom: '16px', marginRight: '10px', borderRadius: 3 }}
+                        label="Date"
+                        margin="3"
+                        variant="outlined"
+                        //value={selectedDate.toLocaleDateString()}
+                        value={formattedDate}
+                      />
+
+                      <FormControl sx={{ width: '50%', marginBottom: '16px', marginRight: '10px', borderRadius: 3 }}>
+                        <InputLabel>Quotation Category</InputLabel>
+                        <Select
+                          value={quoteCategory} onChange={(e) => setQuoteCategory(e.target.value)}
+                          label="Quotation Category"
+
+                        >
+                          <MenuItem value='Environmental Testing'>Environmental Testing</MenuItem>
+                          <MenuItem value='Reliability'>Reliability</MenuItem>
+                          <MenuItem value='EMI & EMC'>EMI & EMC</MenuItem>
+                          <MenuItem value='Item Soft'>Item Soft</MenuItem>
+                        </Select>
+                      </FormControl>
+                    </Box>
+
                   </div>
 
                 </Box>
