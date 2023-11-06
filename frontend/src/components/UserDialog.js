@@ -30,4 +30,46 @@ const UserDetailsDialog = () => {
   );
 };
 
-export default UserDetailsDialog;
+
+
+const DeleteItemsoftModuleDialog = () => {
+  const [isDeleteModuleDialogOpen, setisDeleteModuleDialogOpen] = useState(false)
+
+  return (
+    <>
+      <div>
+        <Button onClick={() => setisDeleteModuleDialogOpen(true)} variant='outlined'>Delete Module</Button>
+        <Dialog hideBackdrop open={isDeleteModuleDialogOpen} onClose={() => setisDeleteModuleDialogOpen(false)}>
+          <DialogTitle>Delete Module</DialogTitle>
+
+
+          <DialogContent>
+            <DialogContentText>
+              Are you sure you want to delete this module?
+            </DialogContentText>
+          </DialogContent>
+
+
+
+          <DialogActions>
+            <Button
+              onClick={() => setisDeleteModuleDialogOpen(false)} sx={{ marginTop: 3, borderRadius: 3 }} variant="contained" color="primary"> Delete </Button>
+            <Button onClick={() => setisDeleteModuleDialogOpen(false)} sx={{ marginTop: 3, borderRadius: 3 }} variant="contained" color="secondary"> Cancel </Button>
+          </DialogActions>
+        </Dialog>
+      </div>
+    </>
+  );
+};
+
+// Render the modal components in the parent component
+const DialogModals = () => {
+  return (
+    <div>
+      <UserDetailsDialog />
+      <DeleteItemsoftModuleDialog />
+    </div>
+  );
+};
+
+export default DialogModals;

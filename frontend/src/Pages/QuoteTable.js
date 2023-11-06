@@ -12,6 +12,7 @@ import { Edit as EditIcon, Print as PrintIcon, Close as CloseIcon, RocketTwoTone
 import { Link } from 'react-router-dom';
 import UpdateEnvironmentalQuote from '../templateQuotation/UpdateEnvironmental';
 import moment from 'moment';
+import { toast } from 'react-toastify';
 /* import EditIcon from '@mui/icons-material/Edit';
 import PrintIcon from '@mui/icons-material/Print';
 import CloseIcon from '@mui/icons-material/Close'; */
@@ -43,7 +44,8 @@ export default function QuoteTable() {
   const [quotesTableData, setQuotesTableData] = useState([]);   //fetch data from the database & to show inside a table
 
   const [loading, setLoading] = useState(true);                 //To show loading label
-  const [msg, setMsg] = useState('<h2>Loading...</h2>');
+
+  const [msg, setMsg] = useState(<h2>Loading...</h2>);
 
   const [error, setError] = useState(null);                     //To show error label
 
@@ -53,6 +55,7 @@ export default function QuoteTable() {
 
   const [rowsPerPage, setRowsPerPage] = useState(10);            //To show the number of rows per page
 
+  const [refresh, setRefresh] = useState(false)
 
 
 
@@ -76,7 +79,6 @@ export default function QuoteTable() {
         } else {
           setMsg(<>
             <h2>No Quotations found...</h2>
-            <Button variant="contained" color="primary" as={Link} to='/quotation'>Add Quotaion</Button>
           </>)
         }
         setLoading(false);
@@ -122,7 +124,7 @@ export default function QuoteTable() {
 
     }
 
-  }, [filterRow]);
+  }, [filterRow, refresh]);
 
 
   if (loading) {
@@ -143,10 +145,22 @@ export default function QuoteTable() {
     setPage(0)
   };
 
+  function deleteQuote(id) {
+    axios.delete(`http://localhost:4000/api/quotation/` + id)
+      .then(res => {
+        console.log(res.data)
+        setRefresh(!refresh)
+        toast.success("Quotation deleted.")
+      })
+  }
+
 
   return (
     <>
       <Typography variant='h4'>DASHBOARD</Typography>
+
+      <Button variant="contained" color="primary" as={Link} to='/quotation'>Add Quotaion</Button>
+
       {quotesTableData.length ? (
         <Card sx={{ minWidth: 900, m: 4 }} elevation={11}>
           <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'red' }}>
@@ -200,6 +214,9 @@ export default function QuoteTable() {
                                 <Link to={`/quotation/${row.id}`} > View </Link>
                               </span>
                             </Button>
+                            <Button variant='outlined' >
+                              <span>Delete</span>
+                            </Button>
                           </TableCell>
                         </TableRow>
                       ))
@@ -218,6 +235,9 @@ export default function QuoteTable() {
                               <span>
                                 <Link to={`/quotation/${row.id}`} > View </Link>
                               </span>
+                            </Button>
+                            <Button variant='outlined' onClick={() => { deleteQuote(row.id) }}>
+                              <span>Delete</span>
                             </Button>
                           </TableCell>
                         </TableRow>

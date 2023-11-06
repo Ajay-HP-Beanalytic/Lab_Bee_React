@@ -4,14 +4,12 @@ import 'react-toastify/dist/ReactToastify.css';
 import React, { useState } from "react";
 import "./App.css";
 import Login from "./Login_Register";
-import UpdateEnvironmentalQuote from "./templateQuotation/UpdateEnvironmental";
 import TrailPage from "./TrailPage";
 import SidenavigationBar from "./components/sidenavbar";
 import Jobcard from "./Pages/Jobcard";
 import QuoteTable from "./Pages/QuoteTable";
 import NotFoundPage from "./Pages/NotFoundPage";
 import UserDetailsDialog from "./components/UserDialog";
-import AddQuotation from "./templateQuotation/AddQuotation";
 import AddModulesAndTests from "./components/AddModulesAndTests";
 import Quotation from "./Pages/Quotation";
 

@@ -74,7 +74,7 @@ function createBEAQuotationsTable() {
 
 ////////////////////////////////////////////////////////////////////////////
 //Function to create a envi_tests_quotes_data table:
-function createEnvitestsQuotesDetailsTable() {
+/* function createEnvitestsQuotesDetailsTable() {
     const createEnvitestsQuotesDetailsQuery = `
     CREATE TABLE IF NOT EXISTS envi_tests_quotes_data (
         id INT NOT NULL AUTO_INCREMENT,
@@ -96,13 +96,13 @@ function createEnvitestsQuotesDetailsTable() {
             //console.log("envi_tests_quotes_data table created successfully.")
         }
     })
-};
+}; */
 
 
 
 ////////////////////////////////////////////////////////////////////////////
 //Function to create a reliability_quotes_data table:
-function createReliabilityQuotesDetailsTable() {
+/* function createReliabilityQuotesDetailsTable() {
     const createReliabilityQuotesDetailsQuery = `
     CREATE TABLE IF NOT EXISTS reliability_quotes_data (
         id INT NOT NULL AUTO_INCREMENT,
@@ -120,13 +120,13 @@ function createReliabilityQuotesDetailsTable() {
             //console.log("envi_tests_quotes_data table created successfully.")
         }
     })
-};
+}; */
 
 
 
 ////////////////////////////////////////////////////////////////////////////
 //Function to create a itemsoft_quotes_data table:
-function createItemsoftQuotesDetailsTable() {
+/* function createItemsoftQuotesDetailsTable() {
     const createItemsoftQuotesDetailsQuery = `
     CREATE TABLE IF NOT EXISTS itemsoft_quotes_data (
         id INT NOT NULL AUTO_INCREMENT,
@@ -145,7 +145,7 @@ function createItemsoftQuotesDetailsTable() {
             //console.log("envi_tests_quotes_data table created successfully.")
         }
     })
-};
+}; */
 
 
 //Function to create a 'item_soft_modules' table:
@@ -185,9 +185,6 @@ process.on('exit', function () {
 module.exports = {
     db, createUsersTable,
     createBEAQuotationsTable,
-    createEnvitestsQuotesDetailsTable,
-    createReliabilityQuotesDetailsTable,
-    createItemsoftQuotesDetailsTable,
     createItemSoftModulestable
 };
 
