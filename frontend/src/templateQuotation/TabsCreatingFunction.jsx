@@ -7,11 +7,6 @@ import Typography from '@mui/material/Typography';
 import Box from '@mui/material/Box';
 import { Card, Stack, CardContent } from '@mui/material';
 import { styled } from '@mui/material/styles';
-//import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns'
-//import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
-import Environmental from '../templateQuotation/Environmental'
-import MyTable from './Reliability';
-import ItemSoftQuotation from './ItemSoft';
 
 
 
@@ -107,11 +102,13 @@ export default function QuotaionTemplates() {
           </Box>
 
           <CustomTabPanel value={value} index={0}>
-            <Environmental />
+            {/* <Environmental /> */}
+            Quotation for EMI & EMC tests
           </CustomTabPanel>
 
           <CustomTabPanel value={value} index={1}>
-            <MyTable />
+            {/* <MyTable /> */}
+            Quotation for EMI & EMC tests
           </CustomTabPanel>
 
           <CustomTabPanel value={value} index={2}>
@@ -119,7 +116,7 @@ export default function QuotaionTemplates() {
           </CustomTabPanel>
 
           <CustomTabPanel value={value} index={3}>
-            <ItemSoftQuotation />
+            Quotation for EMI & EMC tests
           </CustomTabPanel>
 
         </Box>

@@ -5,6 +5,7 @@ import * as XLSX from 'xlsx';
 import React, { useEffect, useRef, useState } from 'react'
 import { toast } from 'react-toastify'
 
+
 const AddModulesAndTests = () => {
 
     const [moduleName, setModulename] = useState('')
@@ -19,6 +20,8 @@ const AddModulesAndTests = () => {
 
     const [ref, setRef] = useState(false)
     const [editId, setEditId] = useState('')
+
+    const [isDeleteModuleDialogOpen, setisDeleteModuleDialogOpen] = useState(false) //To delete the itemsoft module:
 
     const onSubmitModulesButton = async (e) => {
         e.preventDefault();
@@ -143,9 +146,6 @@ const AddModulesAndTests = () => {
     };
 
 
-    /* function editItemsoftModule(index) {
-        //console.log(index)
-    } */
 
     // Function to edit the module:
     const editItemsoftModule = (index, id) => {
@@ -161,7 +161,7 @@ const AddModulesAndTests = () => {
 
 
     function deleteItemsoftModule(id) {
-        console.log(id)
+
         const confirmDelete = window.confirm('Are you sure you want to delete this module?');
 
         if (confirmDelete) {
@@ -249,22 +249,26 @@ const AddModulesAndTests = () => {
                     </Button>
                 }
 
+                {!editItemsoftModuleFields && (
+                    <>
+                        <input
+                            type="file"
+                            accept=".xls, .xlsx"  // Limit file selection to Excel files
+                            onChange={handleFileChange}
+                            style={{ display: 'none' }}  // Hide the input element
+                            ref={(fileInputRef)}
+                        />
 
-                <input
-                    type="file"
-                    accept=".xls, .xlsx"  // Limit file selection to Excel files
-                    onChange={handleFileChange}
-                    style={{ display: 'none' }}  // Hide the input element
-                    ref={(fileInputRef)}
-                />
+                        <Button sx={{ marginBottom: '16px', marginLeft: '10px', borderRadius: 3 }}
+                            variant="contained"
+                            color="secondary"
+                            onClick={() => fileInputRef.current.click()} // Use ref to trigger the file input click
+                            startIcon={<UploadFileIcon />}>
+                            Upload
+                        </Button>
+                    </>
+                )}
 
-                <Button sx={{ marginBottom: '16px', marginLeft: '10px', borderRadius: 3 }}
-                    variant="contained"
-                    color="secondary"
-                    onClick={() => fileInputRef.current.click()} // Use ref to trigger the file input click
-                    startIcon={<UploadFileIcon />}>
-                    Upload
-                </Button>
 
                 {/* Display the uploaded file name or other information here */}
                 {uploadedFileName && (

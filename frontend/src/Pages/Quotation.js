@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Box, Typography, Container, TextField, Button, Table, TableBody, TableCell, TableContainer, TableHead,
-  TableRow, Paper, IconButton, Tooltip, Grid, InputLabel, MenuItem, FormControl, Select
+  TableRow, Paper, IconButton, Tooltip, Grid, InputLabel, MenuItem, FormControl, Select, Checkbox
 } from '@mui/material';
 import axios from "axios";
 import moment from "moment";                     // To convert the date into desired format
@@ -42,21 +42,22 @@ export default function Quotation() {
   let defPerUnitCharge = ''
   let defAmount = ''
 
-  // if (!process.env.NODE_ENV || process.env.NODE_ENV === 'development') {
-  //   initialCompanyName = 'New Company'
-  //   initialToCompanyAddress = 'Bangalore'
-  //   initialCustomerID = 'NCMPY'
-  //   initialCustomerReferance = 'Email'
-  //   initialKindAttention = 'Hari'
-  //   initialProjectName = 'NewProject'
+  /* if (!process.env.NODE_ENV || process.env.NODE_ENV === 'development') {
+    initialCompanyName = 'New Company'
+    initialToCompanyAddress = 'Bangalore'
+    initialCustomerID = 'NCMPY'
+    initialCustomerReferance = 'Email'
+    initialKindAttention = 'Hari'
+    initialProjectName = 'NewProject'
 
-  //   defTestDescription = 'New Test'
-  //   defSacNo = '123'
-  //   defDuration = '2'
-  //   defUnit = 'Hour'
-  //   defPerUnitCharge = '100'
-  //   defAmount = '200'
-  // }
+    defTestDescription = 'New Test'
+    defSacNo = '123'
+    defDuration = '2'
+    defUnit = 'Hour'
+    defPerUnitCharge = '100'
+    defAmount = '200'
+  } */
+
   const initialTableData = [{
     slno: 1,
     testDescription: defTestDescription,
@@ -86,7 +87,10 @@ export default function Quotation() {
   const [selectedDate, setSelectedDate] = useState(formattedDate);
   const quotationCreatedBy = loggedInUser;
 
+  const [isTotalDiscountVisible, setIsTotalDiscountVisible] = useState(false);
+
   const { id } = useParams('id')
+
   useEffect(() => {
     if (id) {
       axios.get(`http://localhost:4000/api/quotation/` + id)
@@ -104,6 +108,8 @@ export default function Quotation() {
           setEditId(result.data[0].id)
           setQuoteCategory(result.data[0].quote_category)
           setTableData(JSON.parse(result.data[0].tests))
+          //console.log(result.data[0].tests)
+          //setTableData(result.data[0].tests)
           // setTotalAmountWords(total_amount)
         })
     }
@@ -181,7 +187,7 @@ export default function Quotation() {
 
 
   // To generate quotation ID dynamically based on the last saved quoataion ID:
-  const generateDynamicQuotationIdString = async (newCompanyName) => {
+  const generateDynamicQuotationIdString = async (newCompanyName, catCodefromTarget = '') => {
     const currentDate = new Date();
     const currentYear = currentDate.getFullYear().toString().slice(-2);
     const currentMonth = (currentDate.getMonth() + 1).toString().padStart(2, '0');
@@ -207,8 +213,20 @@ export default function Quotation() {
         // Format it as a string with leading zeros
         const formattedIncrementedNumber = newIncrementedNumber.toString().padStart(3, '0');
 
+        let x = ''
+        if (catCodefromTarget) {
+          x = catCodefromTarget
+        } else {
+          x = quoteCategory
+        }
+        let catCode = ''
+        if (x === 'Item Soft') catCode = 'IT'
+        if (x === 'Reliability') catCode = 'RE'
+        if (x === 'Environmental Testing') catCode = 'TS1'
+        if (x === 'EMI & EMC') catCode = 'TS2'
+
         // Create a quotation string as per the requirement:
-        const dynamicQuotationIdString = `BEA/TS1/${newCompanyName}/${currentYear}${currentMonth}${currentDay}-${formattedIncrementedNumber}`;
+        const dynamicQuotationIdString = `BEA/${catCode}/${newCompanyName}/${currentYear}${currentMonth}${currentDay}-${formattedIncrementedNumber}`;
 
         // Set the quotation ID after fetching the last ID
         setQuotationIDString(dynamicQuotationIdString);
@@ -259,9 +277,17 @@ export default function Quotation() {
       toast.error("Please enter all the fields..!");
       return;
     }
-
+    let isAtLeastOneRowIsFilled = false
     // Check at least one row is filled completely or rlse give a error messgae:
-    const isAtLeastOneRowIsFilled = tableData.some((row) => row.testDescription && row.sacNo && row.duration && row.unit && row.perUnitCharge && row.amount);
+    if (quoteCategory === 'Item Soft') {
+      isAtLeastOneRowIsFilled = tableData.some((row) => row.testDescription && row.module_id && row.amount);
+    }
+    if (quoteCategory === 'Reliability') {
+      isAtLeastOneRowIsFilled = tableData.some((row) => row.testDescription && row.amount);
+    }
+    if (quoteCategory === 'Environmental Testing' || quoteCategory === 'EMI & EMC') {
+      isAtLeastOneRowIsFilled = tableData.some((row) => row.testDescription && row.sacNo && row.duration && row.unit && row.perUnitCharge && row.amount);
+    }
 
     if (!isAtLeastOneRowIsFilled) {
       toast.error("Please enter atleast one row of the table.");
@@ -354,12 +380,14 @@ export default function Quotation() {
     // calculateTaxableAmount();
   }, [tableData]);
 
+
   const contentsToPrint = useRef();
   const generatePdfFile = useReactToPrint({
     content: () => contentsToPrint.current,
     documentTitle: `Quotation Number: ${quotationIdString}`,
     onAfterPrint: () => alert('Pdf file generated successfully')
   })
+
 
 
   return (
@@ -387,7 +415,7 @@ export default function Quotation() {
                       value={companyName}
                       onChange={(e) => setCompanyName(e.target.value)}
                       label="Company Name"
-                      margin="3"
+                      margin="normal"
                       fullWidth
                       variant="outlined"
                       autoComplete="on"
@@ -398,7 +426,7 @@ export default function Quotation() {
                         label="To Address"
                         value={toCompanyAddress}
                         onChange={(e) => setToCompanyAddress(e.target.value)}
-                        margin="3"
+                        margin="normal"
                         fullWidth
                         variant="outlined"
                         multiline={true}
@@ -411,7 +439,7 @@ export default function Quotation() {
                         sx={{ marginBottom: '16px', marginLeft: '10px', borderRadius: 3 }}
                         value={kindAttention} onChange={(e) => setKindAttention(e.target.value)}
                         label="Customer Name/Contact Person"
-                        margin="3"
+                        margin="normal"
                         variant="outlined"
                         autoComplete="on"
                         fullWidth
@@ -434,7 +462,7 @@ export default function Quotation() {
                         sx={{ marginBottom: '16px', marginRight: '10px', borderRadius: 3 }}
                         label="Company ID"
                         value={customerId} onChange={handleCompanyNameChange}
-                        margin="3"
+                        margin="normal"
                         variant="outlined"
                         fullWidth
                       />
@@ -461,7 +489,7 @@ export default function Quotation() {
                         sx={{ marginBottom: '16px', marginRight: '10px', borderRadius: 3 }}
                         label="Project Name"
                         value={projectName} onChange={(e) => setProjectName(e.target.value)}
-                        margin="3"
+                        margin="normal"
                         variant="outlined"
                         fullWidth
                       />
@@ -475,7 +503,7 @@ export default function Quotation() {
                       <TextField
                         sx={{ width: '50%', marginBottom: '16px', marginRight: '10px', borderRadius: 3 }}
                         label="Date"
-                        margin="3"
+                        margin="normal"
                         variant="outlined"
                         value={selectedDate}
                         onChange={(e) => { setSelectedDate(e.target.value) }}
@@ -483,11 +511,15 @@ export default function Quotation() {
                       />
 
                       <FormControl sx={{ width: '50%', marginBottom: '16px', marginRight: '10px', borderRadius: 3 }}>
-                        <InputLabel>Project Type</InputLabel>
+                        <InputLabel>Quote Type</InputLabel>
                         <Select
-                          value={quoteCategory} onChange={(e) => setQuoteCategory(e.target.value)}
-                          label="Project Type"
-                          fullWidth
+                          value={quoteCategory} onChange={(e) => {
+                            setQuoteCategory(e.target.value)
+                            generateDynamicQuotationIdString(customerId, e.target.value)
+                          }
+                          }
+                          label="Quote Type"
+                          margin="normal"
                         >
                           <MenuItem value='Environmental Testing'>Environmental Testing</MenuItem>
                           <MenuItem value='Reliability'>Reliability</MenuItem>
@@ -642,12 +674,38 @@ export default function Quotation() {
                         </StyledTableRow>
                       ))}
 
+                      <TableRow>
+                        <TableCell align="left" >
+                          <Checkbox
+                            checked={isTotalDiscountVisible}
+                            onChange={(event) => setIsTotalDiscountVisible(event.target.checked)}
+                          />
+
+                        </TableCell>
+                      </TableRow>
+
 
                       <TableRow>
-                        <TableCell rowSpan={2} />
+                        <TableCell rowSpan={3} />
                         <TableCell colSpan={3} > <Typography variant='h6'> Taxable Amount:</Typography> </TableCell>
-                        <TableCell align="center"> <Typography variant='h6'> {taxableAmount.toFixed(2)}</Typography> </TableCell>
+                        <TableCell align="center"> <Typography variant='h6'> {taxableAmount.toFixed(2)}</Typography>  </TableCell>
                       </TableRow>
+
+                      {isTotalDiscountVisible && (
+                        <TableRow>
+                          <TableCell colSpan={3} > <Typography variant='h6'> Total Discount:</Typography> </TableCell>
+                          <TableCell align="center"> <Typography variant='h6'>
+                            <TextField
+                              /* value={row.amount} */
+                              type='number'
+                            /* onChange={(e) =>
+                              handleCellChange(row.slno, 'amount', parseFloat(e.target.value))} */
+                            />
+                          </Typography>
+                          </TableCell>
+                        </TableRow>
+                      )}
+
 
                       <TableRow>
                         <TableCell colSpan={3}> <Typography variant='h6'> Total Amount in Rupees:</Typography> </TableCell>
