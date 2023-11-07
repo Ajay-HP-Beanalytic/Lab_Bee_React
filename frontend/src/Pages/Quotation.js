@@ -13,7 +13,7 @@ import { styled } from '@mui/material/styles';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
 import loggedInUser from "../components/sidenavbar"
-import { Link, useParams } from 'react-router-dom';
+import { Link, Navigate, useParams } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
 
 const StyledTableRow = styled(TableRow)(({ theme }) => ({
@@ -382,12 +382,16 @@ export default function Quotation() {
 
 
   const contentsToPrint = useRef();
-  const generatePdfFile = useReactToPrint({
+
+  /* const generatePdfFile = useReactToPrint({
     content: () => contentsToPrint.current,
     documentTitle: `Quotation Number: ${quotationIdString}`,
     onAfterPrint: () => alert('Pdf file generated successfully')
-  })
+  }) */
 
+  function generatePdfFile() {
+    Navigate('/quotationPdf')
+  }
 
 
   return (
@@ -409,6 +413,7 @@ export default function Quotation() {
                   <Box sx={{ paddingBottom: '10px' }}>
                     <Typography variant="h6">Customer Details</Typography>
                   </Box>
+
                   <Box>
                     <TextField
                       sx={{ marginBottom: '16px', marginLeft: '10px', borderRadius: 3 }}
@@ -724,19 +729,12 @@ export default function Quotation() {
               <Button
                 sx={{ borderRadius: 3, margin: 0.5 }}
                 variant="contained"
-                color="secondary"
+                color="primary"
                 type="submit"
               >
                 {editId ? 'Save changes' : 'Add'}
               </Button>
 
-              <Button
-                sx={{ borderRadius: 3, margin: 0.5, backgroundColor: '#EC7063' }}
-                variant="contained"
-                onClick={generatePdfFile}
-              >
-                Print
-              </Button>
 
               <Button
                 sx={{ borderRadius: 3, margin: 0.5 }}
@@ -747,6 +745,22 @@ export default function Quotation() {
                 {/* <Link to='/home' style={{ color: 'white', textDecoration: 'none' }}>Close</Link> */}
                 Close
               </Button>
+
+              {/* {editId && (
+                <Button
+                  sx={{ borderRadius: 3, margin: 0.5 }}
+                  variant="contained"
+                  color="primary"
+                  as={Link}
+                  to={{
+                    pathname: "/quotationPdf",
+                    state: { quotationid: quotationIdString[0] }
+                  }}
+                >
+                  Print
+                </Button>
+              )} */}
+
             </Box>
 
           </Box>
@@ -758,7 +772,7 @@ export default function Quotation() {
 };
 
 
-
+/* as={Link} to={`/quotationPdf/${quotationIdString}`} */
 
 
 

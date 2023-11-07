@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import axios from 'axios';
 import {
   Box, Card, Table, TableBody, Button, TableCell, TableRow, TableContainer, TableHead, Paper,
-  TablePagination, Typography, CardContent, TextField, Autocomplete
+  TablePagination, Typography, CardContent, TextField, Autocomplete, IconButton, Tooltip
 } from '@mui/material';
 import { Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@mui/material'
 import { styled } from '@mui/material/styles';
@@ -13,6 +13,7 @@ import { Link } from 'react-router-dom';
 import UpdateEnvironmentalQuote from '../templateQuotation/UpdateEnvironmental';
 import moment from 'moment';
 import { toast } from 'react-toastify';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 /* import EditIcon from '@mui/icons-material/Edit';
 import PrintIcon from '@mui/icons-material/Print';
 import CloseIcon from '@mui/icons-material/Close'; */
@@ -145,14 +146,14 @@ export default function QuoteTable() {
     setPage(0)
   };
 
-  function deleteQuote(id) {
+  /* function deleteQuote(id) {
     axios.delete(`http://localhost:4000/api/quotation/` + id)
       .then(res => {
         console.log(res.data)
         setRefresh(!refresh)
         toast.success("Quotation deleted.")
       })
-  }
+  } */
 
 
   return (
@@ -209,13 +210,19 @@ export default function QuoteTable() {
                           {/* <TableCell>{<Button variant='outlined' onClick={handleOpenDialog}> View</Button>}</TableCell> */}
                           {/* <TableCell>{<Button variant='outlined' onClick={() => viewQuoteDetails(index)}> View</Button>}</TableCell> */}
                           <TableCell>
-                            <Button variant='outlined' >
+
+                            <IconButton variant='outlined'  >
+                              <Tooltip title='View Quote' arrow>
+                                <Link to={`/quotation/${row.id}`}>
+                                  <VisibilityIcon />
+                                </Link>
+                              </Tooltip>
+                            </IconButton>
+
+                            <Button variant='outlined'>
                               <span>
-                                <Link to={`/quotation/${row.id}`} > View </Link>
+                                <Link to={`/quotationPdf/${row.id}`} >Print </Link>
                               </span>
-                            </Button>
-                            <Button variant='outlined' >
-                              <span>Delete</span>
                             </Button>
                           </TableCell>
                         </TableRow>
@@ -231,13 +238,19 @@ export default function QuoteTable() {
                           {/* <TableCell><Button variant='outlined' onClick={handleOpenDialog}> View</Button></TableCell> */}
                           {/* <TableCell>{<Button variant='outlined' onClick={() => viewQuoteDetails(index)}> View</Button>}</TableCell> */}
                           <TableCell>
-                            <Button variant='outlined' >
+
+                            <IconButton variant='outlined'  >
+                              <Tooltip title='View Quote' arrow>
+                                <Link to={`/quotation/${row.id}`}>
+                                  <VisibilityIcon />
+                                </Link>
+                              </Tooltip>
+                            </IconButton>
+
+                            <Button variant='outlined'>
                               <span>
-                                <Link to={`/quotation/${row.id}`} > View </Link>
+                                <Link to={`/quotationPdf/${row.id}`} >Print </Link>
                               </span>
-                            </Button>
-                            <Button variant='outlined' onClick={() => { deleteQuote(row.id) }}>
-                              <span>Delete</span>
                             </Button>
                           </TableCell>
                         </TableRow>
