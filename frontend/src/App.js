@@ -12,6 +12,7 @@ import NotFoundPage from "./Pages/NotFoundPage";
 import UserDetailsDialog from "./components/UserDialog";
 import AddModulesAndTests from "./components/AddModulesAndTests";
 import Quotation from "./Pages/Quotation";
+import QuotationPdf from "./Pages/QuotationPdf";
 
 function App() {
   return (
@@ -28,6 +29,7 @@ function App() {
             <Route path='/settings' element={<UserDetailsDialog />} />
             <Route path="/quotation/:id" element={<Quotation />} />
             <Route path="/add_module_or_test" element={<AddModulesAndTests />} />
+            <Route path="/quotationPdf/:id" element={<QuotationPdf />} />
             <Route path='*' element={<NotFoundPage />} />
           </Route>
         </Routes>
