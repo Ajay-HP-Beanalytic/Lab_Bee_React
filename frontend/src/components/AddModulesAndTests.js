@@ -1,9 +1,14 @@
-import { TextField, Box, Button, TableContainer, InputAdornment, IconButton, TableCell, TableBody, TableRow, Table, Paper, TableHead, Typography } from '@mui/material'
-import UploadFileIcon from '@mui/icons-material/UploadFile';
+import { TextField, Box, Button, TableContainer, IconButton, TableCell, TableBody, TableRow, Table, Paper, TableHead, Typography, Tooltip, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material'
+
 import axios from 'axios'
 import * as XLSX from 'xlsx';
 import React, { useEffect, useRef, useState } from 'react'
 import { toast } from 'react-toastify'
+
+import AddIcon from '@mui/icons-material/Add';
+import UploadFileIcon from '@mui/icons-material/UploadFile';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
 
 
 const AddModulesAndTests = () => {
@@ -21,7 +26,6 @@ const AddModulesAndTests = () => {
     const [ref, setRef] = useState(false)
     const [editId, setEditId] = useState('')
 
-    const [isDeleteModuleDialogOpen, setisDeleteModuleDialogOpen] = useState(false) //To delete the itemsoft module:
 
     const onSubmitModulesButton = async (e) => {
         e.preventDefault();
@@ -63,6 +67,7 @@ const AddModulesAndTests = () => {
         setEditItemsoftModuleFields(false)
     }
 
+    // Fetch the data from the table using the useEffect hook:
     useEffect(() => {
 
         const fetchModulesList = async () => {
@@ -150,7 +155,6 @@ const AddModulesAndTests = () => {
     // Function to edit the module:
     const editItemsoftModule = (index, id) => {
 
-
         setEditId(id)
         const rowdata = modulesList[index];
         setEditItemsoftModuleFields(true)
@@ -159,7 +163,7 @@ const AddModulesAndTests = () => {
 
     }
 
-
+    // Function to delete the particular module from the table:
     function deleteItemsoftModule(id) {
 
         const confirmDelete = window.confirm('Are you sure you want to delete this module?');
@@ -197,57 +201,70 @@ const AddModulesAndTests = () => {
 
             <Box >
                 {editItemsoftModuleFields && (
-                    <>
-                        <TextField
-                            sx={{ marginBottom: '16px', marginLeft: '10px', borderRadius: 3 }}
-                            value={moduleName}
-                            onChange={(e) => setModulename(e.target.value)}
-                            label="Module Name"
-                            margin="normal"
-                            fullWidth
-                            variant="outlined"
-                            autoComplete="on"
-                        />
 
-                        <TextField
-                            sx={{ marginBottom: '16px', marginLeft: '10px', borderRadius: 3 }}
-                            value={moduleDescription}
-                            onChange={(e) => setmoduleDescription(e.target.value)}
-                            label="Module Description"
-                            margin="normal"
-                            fullWidth
-                            variant="outlined"
-                            autoComplete="on"
-                        />
+                    <Dialog open={editItemsoftModuleFields}
+                        onClose={handleCancelBtnIsClicked}
+                        aria-labelledby="itemsoft-modules-dialog">
 
-                        <Button sx={{ marginBottom: '16px', marginLeft: '10px', borderRadius: 3 }}
-                            variant="contained"
-                            color="secondary"
-                            type="submit"
-                            onClick={onSubmitModulesButton}>
-                            Submit
-                        </Button>
+                        <DialogTitle id="itemsoft-modules-dialog">
+                            {editItemsoftModuleFields ? 'Add Item Soft Modules' : 'Edit Item Soft Modules'}
+                        </DialogTitle>
 
-                        <Button sx={{ marginBottom: '16px', marginLeft: '10px', borderRadius: 3 }}
-                            variant="contained"
-                            color="primary"
-                            onClick={handleCancelBtnIsClicked}>
-                            Cancel
-                        </Button>
-                    </>
+                        <DialogContent>
+                            <TextField
+                                sx={{ marginBottom: '16px', marginLeft: '10px', borderRadius: 3 }}
+                                value={moduleName}
+                                onChange={(e) => setModulename(e.target.value)}
+                                label="Module Name"
+                                margin="normal"
+                                fullWidth
+                                variant="outlined"
+                                autoComplete="on"
+                            />
+
+                            <TextField
+                                sx={{ marginBottom: '16px', marginLeft: '10px', borderRadius: 3 }}
+                                value={moduleDescription}
+                                onChange={(e) => setmoduleDescription(e.target.value)}
+                                label="Module Description"
+                                margin="normal"
+                                fullWidth
+                                variant="outlined"
+                                autoComplete="on"
+                            />
+
+                            <DialogActions>
+                                <Button sx={{ marginBottom: '16px', marginLeft: '10px', borderRadius: 3 }}
+                                    variant="contained"
+                                    color="secondary"
+                                    type="submit"
+                                    onClick={onSubmitModulesButton}>
+                                    Submit
+                                </Button>
+
+                                <Button sx={{ marginBottom: '16px', marginLeft: '10px', borderRadius: 3 }}
+                                    variant="contained"
+                                    color="primary"
+                                    onClick={handleCancelBtnIsClicked}>
+                                    Cancel
+                                </Button>
+                            </DialogActions>
+                        </DialogContent>
+
+                    </Dialog>
+
                 )}
 
 
-                {!editItemsoftModuleFields &&
-                    <Button sx={{ marginBottom: '16px', marginLeft: '10px', borderRadius: 3 }}
-                        variant="contained"
-                        color="primary"
-                        type="submit"
-                        /* onClick={onSubmitModulesButton} */
-                        onClick={addNewModuleButton}>
-                        Add
-                    </Button>
-                }
+                {!editItemsoftModuleFields && (
+                    <IconButton variant="contained" size="large" >
+                        <Tooltip title="Add module" arrow type="submit">
+                            <div>
+                                <AddIcon fontSize="inherit" onClick={addNewModuleButton} />
+                            </div>
+                        </Tooltip>
+                    </IconButton>
+                )}
 
                 {!editItemsoftModuleFields && (
                     <>
@@ -259,13 +276,15 @@ const AddModulesAndTests = () => {
                             ref={(fileInputRef)}
                         />
 
-                        <Button sx={{ marginBottom: '16px', marginLeft: '10px', borderRadius: 3 }}
-                            variant="contained"
-                            color="secondary"
-                            onClick={() => fileInputRef.current.click()} // Use ref to trigger the file input click
-                            startIcon={<UploadFileIcon />}>
-                            Upload
-                        </Button>
+
+
+                        <IconButton variant='contained' size="large" >
+                            <Tooltip title="Upload Excel" arrow>
+                                <div>
+                                    <UploadFileIcon fontSize="inherit" onClick={() => fileInputRef.current.click()} />
+                                </div>
+                            </Tooltip>
+                        </IconButton>
                     </>
                 )}
 
@@ -300,8 +319,20 @@ const AddModulesAndTests = () => {
                                     <TableCell align="center">{item.module_name}</TableCell>
                                     <TableCell align="center">{item.module_description}</TableCell>
                                     <TableCell align="center">
-                                        <Button variant='outlined' size="small" onClick={() => editItemsoftModule(index, item.id)}>Edit</Button>
-                                        <Button variant='outlined' size="small" onClick={() => deleteItemsoftModule(item.id)}>Delete</Button>
+
+                                        <IconButton variant='outlined' size='large' onClick={() => editItemsoftModule(index, item.id)}>
+                                            <Tooltip title='Edit module' arrow>
+                                                <EditIcon fontSize="inherit" />
+                                            </Tooltip>
+                                        </IconButton>
+
+
+                                        <IconButton variant='outlined' size='large' onClick={() => deleteItemsoftModule(item.id)}>
+                                            <Tooltip title='Delete module' arrow>
+                                                <DeleteIcon fontSize="inherit" />
+                                            </Tooltip>
+                                        </IconButton>
+
                                     </TableCell>
                                 </TableRow>
                             ))}
@@ -319,5 +350,72 @@ export default AddModulesAndTests;
 
 
 
+
+
+//< Button sx={{ marginBottom: '16px', marginLeft: '10px', borderRadius: 3 }}
+//    variant="contained"
+//    color="primary"
+//    type="submit"
+//    /* onClick={onSubmitModulesButton} */
+//    onClick={addNewModuleButton}>
+//    Add
+//</>
+
+
+
+{/* <Button sx={{ marginBottom: '16px', marginLeft: '10px', borderRadius: 3 }}
+                            variant="contained"
+                            color="secondary"
+                            onClick={() => fileInputRef.current.click()} // Use ref to trigger the file input click
+                            startIcon={<UploadFileIcon />}>
+                            Upload
+                        </Button> */}
+
+
+{/* <Button variant='outlined' size="small" onClick={() => editItemsoftModule(index, item.id)}>Edit</Button>
+                                        <Button variant='outlined' size="small" onClick={() => deleteItemsoftModule(item.id)}>Delete</Button> */}
+
+
+
+
+
+{/* <>
+    <TextField
+        sx={{ marginBottom: '16px', marginLeft: '10px', borderRadius: 3 }}
+        value={moduleName}
+        onChange={(e) => setModulename(e.target.value)}
+        label="Module Name"
+        margin="normal"
+        fullWidth
+        variant="outlined"
+        autoComplete="on"
+    />
+
+    <TextField
+        sx={{ marginBottom: '16px', marginLeft: '10px', borderRadius: 3 }}
+        value={moduleDescription}
+        onChange={(e) => setmoduleDescription(e.target.value)}
+        label="Module Description"
+        margin="normal"
+        fullWidth
+        variant="outlined"
+        autoComplete="on"
+    />
+
+    <Button sx={{ marginBottom: '16px', marginLeft: '10px', borderRadius: 3 }}
+        variant="contained"
+        color="secondary"
+        type="submit"
+        onClick={onSubmitModulesButton}>
+        Submit
+    </Button>
+
+    <Button sx={{ marginBottom: '16px', marginLeft: '10px', borderRadius: 3 }}
+        variant="contained"
+        color="primary"
+        onClick={handleCancelBtnIsClicked}>
+        Cancel
+    </Button>
+</> */}
 
 
