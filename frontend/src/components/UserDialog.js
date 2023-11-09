@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Dialog, Button, DialogActions, DialogTitle, DialogContent, DialogContentText, Box } from '@mui/material';
+import AddCustomerDetails from './AddCustomerDetails';
 
 const UserDetailsDialog = () => {
 
@@ -66,8 +67,9 @@ const DeleteItemsoftModuleDialog = () => {
 const DialogModals = () => {
   return (
     <div>
-      <UserDetailsDialog />
-      <DeleteItemsoftModuleDialog />
+      {/* <UserDetailsDialog />
+      <DeleteItemsoftModuleDialog /> */}
+      <AddCustomerDetails />
     </div>
   );
 };

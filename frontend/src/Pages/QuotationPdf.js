@@ -11,7 +11,18 @@ import QuotePicture from '../images/QuotePicture.jpg'
 import './QuotationPdf.css';
 import { useReactToPrint } from 'react-to-print';
 
+import { Page, Text, View, Document, StyleSheet, PDFDownloadLink } from '@react-pdf/renderer';
+import ReactPDF from '@react-pdf/renderer';
+import TrailPdf from './TrailPdf';
+
 export default function QuotationPdf() {
+
+    /* ReactPDF.render(<TrailPdf />, `C:/Users/admin/Desktop/AJ_Personal/trail.pdf`); */
+
+    /* const dirname = `C:/Users/admin/Desktop/AJ_Personal`
+    ReactPDF.render(<TrailPdf />, `${dirname}/example.pdf`); */
+
+    //ReactPDF.renderToStream(<TrailPdf />);
 
     const { id } = useParams('id')
 
@@ -49,8 +60,32 @@ export default function QuotationPdf() {
     })
 
 
+    //Create styles of a pdf file:
+    const styles = StyleSheet.create({
+        page: {
+            flexDirection: 'row',
+            backgroundColor: '#E4E4E4'
+        },
+        section: {
+            margin: 10,
+            padding: 10,
+            flexGrow: 1
+        }
+    });
+
+
+
+
+
     return (
         <>
+
+            <div>
+                <PDFDownloadLink document={<TrailPdf />} fileName='FORM1' >
+                    {({ loading }) => (loading ? <Button variant='outlined'> Loading the pdf... </Button> :
+                        <Button variant='outlined'> Download </Button>)}
+                </PDFDownloadLink>
+            </div>
 
             <div style={{ position: 'left', top: 0, left: 0 }}>
 
@@ -93,7 +128,8 @@ export default function QuotationPdf() {
             <br />
 
             <Container component="span" margin={2} paddingright={1} elevation={11} >
-                <div ref={contentsToPrint} style={{ width: '100%' }}>
+                {/* <div ref={contentsToPrint} style={{ width: '100%' }}> */}
+                <div>
                     <Box sx={{ paddingTop: '5', paddingBottom: '5', marginTop: '5', marginBottom: '5', border: 1, borderColor: 'primary.main' }}>
 
                         <div style={{ display: 'flex', alignItems: 'center' }}>

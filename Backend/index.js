@@ -17,6 +17,7 @@ const app = express();
 const { db,
   createUsersTable,
   createBEAQuotationsTable,
+  createCustomerDetailsTable,
   createItemSoftModulestable } = require('./database_tables');
 
 
@@ -30,6 +31,7 @@ db.getConnection(function (err, connection) {
   // call the table creating functions here:
   createUsersTable();
   createBEAQuotationsTable();
+  createCustomerDetailsTable();
   createItemSoftModulestable();
 
   connection.release();  // Release the connection back to the pool when done
@@ -51,6 +53,11 @@ usersDataAPIs(app)
 // backend connection of users API's from 'BEAQuotationsTable' page:
 const { mainQuotationsTableAPIs } = require('./BEAQuotationsTable')
 mainQuotationsTableAPIs(app)
+
+
+// backend connection of users API's from 'AddCustomerDetails' page:
+const { customerDetailsAPIs } = require('./CustomerDetails')
+customerDetailsAPIs(app)
 
 
 // backend connection of ItemSoftModules API's from 'ItemSoftModules' page:

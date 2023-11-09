@@ -55,21 +55,21 @@ function itemSoftModulesAPIs(app) {
         const { moduleName, moduleDescription } = req.body;
         const id = req.params.id;
         // Perform a database query to store the data to the table:
-        const sqlUpdateModulesDetails = `UPDATE item_soft_modules  SET module_name = '${moduleName}', module_description = '${moduleDescription}' WHERE id=${id}`;
+        const sqlUpdateModulesDetails = `UPDATE item_soft_modules SET module_name = '${moduleName}', module_description = '${moduleDescription}' WHERE id=${id}`;
 
         db.query(sqlUpdateModulesDetails, (error, result) => {
             if (error) {
                 console.log(error)
                 return res.status(500).json({ message: "Internal server error", result });
             } else {
-                res.status(200).json({ message: "Module added successfully" });
+                res.status(200).json({ message: "Module updated successfully" });
             }
         });
 
     })
 
 
-    // To fetch the modules details in the modules page:
+    // To delete the module from the table:
     app.delete("/api/getItemsoftModules/:id", (req, res) => {
         const id = req.params.id;
         const deleteQuery = "DELETE FROM item_soft_modules WHERE id = ?";

@@ -148,6 +148,28 @@ function createBEAQuotationsTable() {
 }; */
 
 
+//Function to create a 'customers_details' table:
+function createCustomerDetailsTable() {
+    const createCustomerDetailsTableQuery = `
+    CREATE TABLE IF NOT EXISTS customers_details (
+        id INT NOT NULL AUTO_INCREMENT,
+        company_name VARCHAR(1000),
+        company_address VARCHAR(2000),
+        contact_person VARCHAR(1000),
+        company_id VARCHAR(500),
+        customer_referance VARCHAR(500),
+        PRIMARY KEY(id)
+    )`;
+
+    db.query(createCustomerDetailsTableQuery, function (err, result) {
+        if (err) {
+            console.log("Error occurred while creating customers_details table", err)
+        } else {
+            //console.log("envi_tests_quotes_data table created successfully.")
+        }
+    })
+}
+
 //Function to create a 'item_soft_modules' table:
 function createItemSoftModulestable() {
     const createItemSoftModulesTableQuery = `
@@ -185,6 +207,7 @@ process.on('exit', function () {
 module.exports = {
     db, createUsersTable,
     createBEAQuotationsTable,
+    createCustomerDetailsTable,
     createItemSoftModulestable
 };
 

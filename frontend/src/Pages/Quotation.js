@@ -91,6 +91,9 @@ export default function Quotation() {
 
   const { id } = useParams('id')
 
+  const [companyIdList, setCompanyIdList] = useState([])
+  const [selectedCompanyId, setSelectedCompanyId] = useState('');
+
   useEffect(() => {
     if (id) {
       axios.get(`http://localhost:4000/api/quotation/` + id)
@@ -120,6 +123,47 @@ export default function Quotation() {
   }, [])
 
 
+  /* const PrefillTextFields = () => {
+    useEffect(() => {
+      if (selectedCompanyId)
+        axios.get(`http://localhost:4000/api/getCompanyDetails/` + selectedCompanyId)
+          .then(result => {
+            setCompanyName(result.data[0].company_name)
+            setToCompanyAddress(result.data[0].company_address)
+            setKindAttention(result.data[0].contact_person)
+            setCustomerId(result.data[0].company_id)
+            setCustomerreferance(result.data[0].customer_referance)
+          })
+    }, [])
+  } */
+
+  const prefillTextFields = (selectedCompanyId) => {
+    if (selectedCompanyId) {
+      axios.get(`http://localhost:4000/api/getCompanyDetails/` + selectedCompanyId)
+        .then(result => {
+          setCompanyName(result.data[0].company_name)
+          setToCompanyAddress(result.data[0].company_address)
+          setKindAttention(result.data[0].contact_person)
+          setCustomerId(result.data[0].company_id)
+          setCustomerreferance(result.data[0].customer_referance)
+          generateDynamicQuotationIdString(result.data[0].company_id)
+        })
+        .catch(error => {
+          console.log(error)
+        })
+    }
+  }
+
+
+  //Fetch companyIds from the table in order to autofill the data:
+  useEffect(() => {
+    axios.get(`http://localhost:4000/api/getCompanyIdList`)
+      .then(result => {
+        const companyIds = result.data.map(item => item.company_id);
+        setCompanyIdList(companyIds);
+
+      })
+  }, [])
 
 
   const addRow = () => {
@@ -367,6 +411,7 @@ export default function Quotation() {
 
     setTaxableAmount(0)
     setTotalAmountWords('')
+    setSelectedCompanyId('')
   };
 
   const calculateTaxableAmount = () => {
@@ -379,6 +424,9 @@ export default function Quotation() {
     setTotalAmountWords(numberToWords.toWords(subtotal).toUpperCase());
     // calculateTaxableAmount();
   }, [tableData]);
+
+
+
 
 
   const contentsToPrint = useRef();
@@ -401,9 +449,31 @@ export default function Quotation() {
         <Box >
 
           <Box sx={{ paddingTop: '5', paddingBottom: '5', marginTop: '5', marginBottom: '5', border: 1, borderColor: 'primary.main' }}>
-            <Typography variant="h6" align='right' sx={{ marginBottom: '16px', marginRight: '20px', marginLeft: '20px', fontWeight: 'bold', fontStyle: 'italic', color: 'blue', textDecoration: 'underline' }}>
-              Quotation ID: {quotationIdString}
-            </Typography>
+
+            <div sx={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between' }}>
+
+              <FormControl align='left' sx={{ width: "25%", marginTop: '20px', }}>
+                <InputLabel id="import_company_data">Enter company ID</InputLabel>
+                <Select
+                  labelId="import_company_data"
+                  id="select_company_id"
+                  value={selectedCompanyId}
+                  label="Select Company Data"
+                  onChange={(e) => {
+                    setSelectedCompanyId(e.target.value)
+                    prefillTextFields(e.target.value)
+                  }}
+                >
+                  {companyIdList.map((companyId, index) => (
+                    <MenuItem key={index} value={companyId}> {companyId}</MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
+              <Typography variant="h6" align='right' sx={{ marginBottom: '16px', marginRight: '20px', marginLeft: '20px', fontWeight: 'bold', fontStyle: 'italic', color: 'blue', textDecoration: 'underline' }}>
+                Quotation ID: {quotationIdString}
+              </Typography>
+            </div>
 
             <Grid container justifyContent="center" spacing={2} >
               <Grid item xs={6} elevation={4} sx={{ borderRadius: 3 }} >
