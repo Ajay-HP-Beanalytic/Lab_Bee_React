@@ -10,8 +10,13 @@ import numberToWords from 'number-to-words';
 import { toast } from "react-toastify";
 import 'react-toastify/dist/ReactToastify.css';
 import { styled } from '@mui/material/styles';
+
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import PrintIcon from '@mui/icons-material/Print';
+
+
 import loggedInUser from "../components/sidenavbar"
 import { Link, Navigate, useParams } from 'react-router-dom';
 import { useReactToPrint } from 'react-to-print';
@@ -443,7 +448,30 @@ export default function Quotation() {
 
 
   return (
-    <div ref={contentsToPrint} style={{ width: '100%' }}>
+
+    <div>
+      {editId &&
+        <div style={{ position: 'left', top: 0, left: 0 }}>
+          <IconButton variant='outlined' size="large" >
+            <Tooltip title='Go Back' arrow>
+              <Link>
+                <ArrowBackIcon fontSize="inherit" onClick={() => window.history.back()} />
+              </Link>
+            </Tooltip>
+          </IconButton>
+
+          <IconButton variant='outlined' size="large" >
+            <Tooltip title='Print quotation' arrow>
+              <Link >
+                <PrintIcon fontSize="inherit" />
+                {/* onClick={generatePdfFile} */}
+              </Link>
+            </Tooltip>
+          </IconButton>
+        </div>
+      }
+
+
       <Typography variant='h5'>{editId ? 'Update Quotation' : 'Add New Quotation'}</Typography>
       <form onSubmit={handleSubmitETQuotation}>
         <Box >

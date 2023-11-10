@@ -37,6 +37,7 @@ function App() {
             <Route path="/add_customer_data" element={<AddCustomerDetails />} />
             <Route path="/quotationPdf/:id" element={<QuotationPdf />} />
             <Route path="/quotationPdf/:id" element={<TrailPdf />} />
+            <Route path="/quotationPdf" element={<TrailPdf />} />
 
             <Route path='*' element={<NotFoundPage />} />
           </Route>
