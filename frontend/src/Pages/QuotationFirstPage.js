@@ -1,12 +1,13 @@
 import React from 'react'
-import { Page, Text, View, Image, Document, StyleSheet, PDFDownloadLink, Link } from '@react-pdf/renderer';
+import { Text, View, Image, Document, StyleSheet, PDFDownloadLink, Link } from '@react-pdf/renderer';
 import { Font } from '@react-pdf/renderer';
 import RobotoFont from '../fonts/Roboto-Regular.ttf';
 import CalibriFont from '../fonts/Calibri.ttf';
 
 import BeanalyticLogo from '../images/BeanalyticLogo.jpg'
 import QuotePicture from '../images/QuotePicture.jpg'
-import NDSimage from '../images/NDS.png'
+
+import HeaderForQuote from './HeaderForQuote';
 
 Font.register({
     family: 'RobotoFamily',
@@ -21,21 +22,21 @@ Font.register({
 
 const styles = StyleSheet.create({
 
-    beaLogo: {
-        height: 60,
-        width: 150,
-    },
-
-    nablText: {
-        fontSize: 10,
-        textAlign: 'right',
-        fontFamily: "RobotoFamily",
-    },
-
-    headerContainer: {
+    /* headerContainer: {
         flexDirection: "row",
         justifyContent: 'space-between',
     },
+
+    beaLogo: {
+        height: 58,
+        width: 145,
+    },
+
+    nablText: {
+        fontSize: 12,
+        textAlign: 'right',
+        fontFamily: "CalibriFamily",
+    }, */
 
     mainTitle: {
         fontSize: 18,
@@ -92,19 +93,18 @@ const styles = StyleSheet.create({
 
 export default function QuotationFirstPage() {
 
+    const ndsString = `The material contained in this document is considered commercially sensitive and proprietary to BE Analytic Solutions. This document has been provided to you in strict confidence for evaluation purposes only and any reproduction, transfer, disclosure or application of methodologies contained herein is prohibited without the expressed written consent of BE Analytic Solutions.`
+
+    const quoteTitleWithServiceName = `PROPOSAL FOR ENVIRONMENTAL TEST`
+
     return (
         <>
-            <View style={styles.headerContainer} fixed>
-                <Image style={styles.beaLogo} src={BeanalyticLogo} />
-                <Text style={styles.nablText} >
-                    ISO 9001:2015 Certified
-                    NABL Accredited Lab
-                </Text>
-            </View>
+            {/* Import Header Component without bottom border */}
+            <HeaderForQuote showBorder={false} />
 
-            <Text style={styles.mainTitle} >PROPOSAL FOR ENVIRONMENTAL TEST</Text>
+            <Text style={styles.mainTitle} > {quoteTitleWithServiceName} </Text>
 
-            <br />
+            <br style={{ marginBottom: '10' }} />
 
             <div>
                 <Text style={styles.subTitle} fixed>Submitted to</Text>
@@ -123,7 +123,7 @@ export default function QuotationFirstPage() {
                 <br />
 
                 <Text>
-                    The material contained in this document is considered commercially sensitive and proprietary to BE Analytic Solutions. This document has been provided to you in strict confidence for evaluation purposes only and any reproduction, transfer, disclosure or application of methodologies contained herein is prohibited without the expressed written consent of BE Analytic Solutions.
+                    {ndsString}
                 </Text>
             </View>
 
