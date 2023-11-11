@@ -2,11 +2,12 @@ import React from 'react'
 import { Page, Text, View, Image, Document, StyleSheet, PDFDownloadLink, Link } from '@react-pdf/renderer';
 import { Font } from '@react-pdf/renderer';
 import RobotoFont from '../fonts/Roboto-Regular.ttf';
+import RobotoBoldItalicsFont from '../fonts/Roboto-BoldItalic.ttf'
 import CalibriFont from '../fonts/Calibri.ttf';
 
 Font.register({
-    family: 'CalibriFamily',
-    src: CalibriFont
+    family: 'RobotoFamily',
+    src: RobotoFont
 })
 
 Font.register({
@@ -14,8 +15,21 @@ Font.register({
     src: CalibriFont
 })
 
+Font.register({
+    family: "RobotoBoldItalicsFamily",
+    src: RobotoBoldItalicsFont
+});
+
 
 const styles = StyleSheet.create({
+
+    tAndCTitle: {
+        textDecoration: 'underline',
+        alignSelf: 'center',
+        fontSize: 15,
+        fontWeight: 'bold',
+        fontFamily: "CalibriFamily",
+    },
 
     tAndCTexts: {
         fontSize: 12,
@@ -66,7 +80,6 @@ const styles = StyleSheet.create({
 
     bankDetailsBox: {
         fontSize: 12,
-
         fontFamily: "CalibriFamily",
         marginLeft: 25,
         marginRight: 25,
@@ -94,16 +107,37 @@ const styles = StyleSheet.create({
     },
 
     italicText: {
-        fontStyle: 'italic',
+        fontFamily: 'RobotoBoldItalicsFamily',
         alignSelf: 'center',
-        fontSize: 12,
-        fontWeight: 'extrabold',
+        fontSize: 14,
+    },
+
+
+    footerContainer: {
+        position: "absolute",
+        bottom: 20,
+        fontSize: 8,
+        color: "black",
+        flexDirection: "row",
+        textAlign: 'center',
+        alignSelf: 'center',
+        marginLeft: 25,
+        marginRight: 25,
+    },
+
+    beaAddress: {
+        fontSize: 8,
+    },
+
+    horizontalLine: {
+        border: '1px solid red',
+        margin: '10px 0',
     },
 
 })
 
 
-
+const beaAddressStr = `BE Analytic Solutions, B131/A, Devasandra Industrial Estate, Mahadevapura, Bangalore–560048, India,Ph: 8095000439, sales@beanalytic.com, www.beanalytic.com`
 
 const getTermsAndConditionText = (tAndC) => {
     switch (tAndC) {
@@ -129,6 +163,11 @@ export default function QuoteTermsAndConditions() {
     return (
         <>
             <View>
+
+                <br style={{ paddingTop: 10 }} />
+                <Text style={styles.tAndCTitle}>TERMS & CONDITIONS</Text>
+                <br style={{ paddingTop: 10 }} />
+
                 {[1, 2, 3, 4, 5].map((tAndC) => (
                     <View key={tAndC}>
                         <Text style={[styles.tAndCTexts, tAndC === 1 ? styles.blacktAndCTexts : null]}>
@@ -198,6 +237,17 @@ export default function QuoteTermsAndConditions() {
                 <br style={{ paddingTop: 10 }} />
 
             </View>
+
+
+            {/* <hr style={styles.horizontalLine} /> */}
+
+            {/* <View style={styles.footerContainer} >
+                <Text style={styles.beaAddress} fixed >
+                    {beaAddressStr}
+                </Text>
+            </View> */}
+
+
         </>
     )
 }
