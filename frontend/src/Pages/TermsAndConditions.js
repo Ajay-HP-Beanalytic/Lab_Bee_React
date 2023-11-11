@@ -5,6 +5,12 @@ import RobotoFont from '../fonts/Roboto-Regular.ttf';
 import RobotoBoldItalicsFont from '../fonts/Roboto-BoldItalic.ttf'
 import CalibriFont from '../fonts/Calibri.ttf';
 
+import BeanalyticLogo from '../images/BeanalyticLogo.jpg'
+
+
+import HeaderForQuote from './HeaderForQuote';
+import FooterForQuote from './FooterForQuote';
+
 Font.register({
     family: 'RobotoFamily',
     src: RobotoFont
@@ -62,14 +68,6 @@ const styles = StyleSheet.create({
         marginLeft: 25,
     },
 
-    companyAddressBox: {
-        fontSize: 12,
-        alignSelf: 'center',
-        fontFamily: "CalibriFamily",
-        marginLeft: 25,
-        marginRight: 25,
-    },
-
     headerTitle: {
         textDecoration: 'underline',
         alignSelf: 'center',
@@ -83,6 +81,16 @@ const styles = StyleSheet.create({
         fontFamily: "CalibriFamily",
         marginLeft: 25,
         marginRight: 25,
+    },
+
+    label: {
+        fontFamily: "CalibriFamily",
+        fontSize: 12,
+        fontWeight: "bold",
+    },
+
+    blueHighlightText: {
+        color: '#6296d7',
     },
 
     contactDetails: {
@@ -100,44 +108,19 @@ const styles = StyleSheet.create({
         fontFamily: "CalibriFamily",
     },
 
-    underlineLink: {
+    /* underlineLink: {
         alignSelf: 'center',
         color: 'blue',
         textDecoration: 'underline',
-    },
+    }, */
 
     italicText: {
         fontFamily: 'RobotoBoldItalicsFamily',
         alignSelf: 'center',
         fontSize: 14,
     },
-
-
-    footerContainer: {
-        position: "absolute",
-        bottom: 20,
-        fontSize: 8,
-        color: "black",
-        flexDirection: "row",
-        textAlign: 'center',
-        alignSelf: 'center',
-        marginLeft: 25,
-        marginRight: 25,
-    },
-
-    beaAddress: {
-        fontSize: 8,
-    },
-
-    horizontalLine: {
-        border: '1px solid red',
-        margin: '10px 0',
-    },
-
 })
 
-
-const beaAddressStr = `BE Analytic Solutions, B131/A, Devasandra Industrial Estate, Mahadevapura, Bangalore–560048, India,Ph: 8095000439, sales@beanalytic.com, www.beanalytic.com`
 
 const getTermsAndConditionText = (tAndC) => {
     switch (tAndC) {
@@ -159,94 +142,160 @@ const getTermsAndConditionText = (tAndC) => {
 
 
 export default function QuoteTermsAndConditions() {
+    const beaCompanyIdNumber = `AAA–3852`
+    const beaCompanyPANnumber = ` AAKFB5949D`
+    const beaGst = `29AAKFB5949D1Z7`
+    const beaBankAddress = `SBI BANK, SME BRANCH MAHADEVAPURA,
+                    KSSIDC COMPLEX, WHITEFIELD ROAD, BLR-560048`
+    const beaBankBranch = `Mahadevapura Branch`
+    const beaBankAccountName = `BE Analytic Solutions LLP`
+    const beaBankAccountNumber = `38597040021`
+    const beaBankIfscCode = `SBIN0003028`
+    const beaBankSwiftCode = `SBININBB262`
+    const beaBankMicrCode = `560002019`
+    const mdNameAndContactNumber = `Anil Kumar Ammina - Mob: +91-9986074309`
+    const officePhoneNumber = `Office: 8095000439 `
 
     return (
         <>
-            <View>
+            {/* Import Header Component with bottom border */}
+            <HeaderForQuote showBorder={true} />
 
-                <br style={{ paddingTop: 10 }} />
-                <Text style={styles.tAndCTitle}>TERMS & CONDITIONS</Text>
-                <br style={{ paddingTop: 10 }} />
+            <br style={{ paddingTop: 10 }} />
 
-                {[1, 2, 3, 4, 5].map((tAndC) => (
-                    <View key={tAndC}>
-                        <Text style={[styles.tAndCTexts, tAndC === 1 ? styles.blacktAndCTexts : null]}>
-                            {tAndC}. {getTermsAndConditionText(tAndC)}</Text>
-                    </View>
-                ))}
+            <Text style={styles.tAndCTitle}>TERMS & CONDITIONS</Text>
 
+            <br style={{ paddingTop: 10 }} />
 
-                <br style={{ paddingTop: 10 }} />
-                <Text style={styles.heading1}>Please place your valued order on:</Text>
-
-                <View >
-                    <Text style={styles.companyAddress}>BE Analytic Solutions LLP</Text>
-                    <Text style={styles.companyAddress}>#B131/A, Devasandra Industrial Estate</Text>
-                    <Text style={styles.companyAddress}>Whitefield Rd, Mahadevapura</Text>
-                    <Text style={styles.companyAddress}>Bangalore–560 048</Text>
+            {[1, 2, 3, 4, 5].map((tAndC) => (
+                <View key={tAndC}>
+                    <Text style={[styles.tAndCTexts, tAndC === 1 ? styles.blacktAndCTexts : null]}>
+                        {tAndC}. {getTermsAndConditionText(tAndC)}</Text>
                 </View>
-
-                <br style={{ paddingTop: 10 }} />
-                <Text style={styles.headerTitle}>Company & Bank Details</Text>
-                <br style={{ paddingTop: 10 }} />
-
-                <View style={styles.bankDetailsBox}>
-                    <Text>Company Identity Number: AAA – 3852; Company PAN: AAKFB5949D</Text>
-                    <Text>GSTN: 29AAKFB5949D1Z7</Text>
-                    <Text>BANK: SBI BANK, SME BRANCH MAHADEVAPURA,
-                        KSSIDC COMPLEX, WHITEFIELD ROAD, BLR-560048
-                    </Text>
-                    <Text>Branch: Mahadevapura Branch</Text>
-                    <Text>A/C Name: BE Analytic Solutions LLP</Text>
-                    <Text>A/C NO: 38597040021</Text>
-                    <Text>IFSC CODE: SBIN0003028</Text>
-                    <Text>SWIFT CODE: SBININBB262</Text>
-                    <Text>MICR: 560002019</Text>
-                </View>
+            ))}
 
 
-                <br style={{ paddingTop: 10 }} />
-                <Text style={styles.headerTitle}>CONTACT INFORMATION</Text>
-                <br style={{ paddingTop: 10 }} />
+            <br style={{ paddingTop: 10 }} />
+            <Text style={styles.heading1}>Please place your valued order on:</Text>
 
-                <View style={styles.contactDetails}>
-                    <Text style={{ fontWeight: 'extrabold' }}>Contact Details:</Text>
-                    <Text>Anil Kumar Ammina - Mob: +91-9986074309</Text>
-                    <Text>Office: 8095000439</Text>
-                </View>
+            <View >
+                <Text style={styles.companyAddress}>BE Analytic Solutions LLP</Text>
+                <Text style={styles.companyAddress}>#B131/A, Devasandra Industrial Estate</Text>
+                <Text style={styles.companyAddress}>Whitefield Rd, Mahadevapura</Text>
+                <Text style={styles.companyAddress}>Bangalore–560 048</Text>
+            </View>
 
-                <br style={{ paddingTop: 20 }} />
+            <br style={{ paddingTop: 10 }} />
+            <Text style={styles.headerTitle}>Company & Bank Details</Text>
+            <br style={{ paddingTop: 10 }} />
 
-                <View style={styles.finalBox}>
-                    <Text >Should you require any further information or clarification on this proposal (technical or commercial details), please contact:
-                    </Text>
+            <View style={styles.bankDetailsBox}>
+                {/* <Text>Company Identity Number: {beaCompanyIdNumber}</Text>
+                <Text>Company PAN: {beaCompanyPANnumber}</Text>
+                <Text>GSTN: {beaGst}</Text>
+                <Text>BANK: {beaBankAddress}
+                </Text>
+                <Text>Branch: {beaBankBranch}</Text>
+                <Text>A/C Name: {beaBankAccountName}</Text>
+                <Text>A/C NO: {beaBankAccountNumber}</Text>
+                <Text>IFSC CODE: {beaBankIfscCode}</Text>
+                <Text>SWIFT CODE: {beaBankSwiftCode}</Text>
+                <Text>MICR: {beaBankMicrCode}</Text> */}
 
-                    <br style={{ paddingTop: 10 }} />
-                    <Text >
-                        We invite you to visit our website: {' '}
-                        <Link src="http://www.beanalytic.com" color="blue" textDecoration="underline">
-                            www.beanalytic.com
-                        </Link>
-                    </Text>
-                    <br style={{ paddingTop: 10 }} />
 
-                </View>
+                <Text style={styles.label}>
+                    Company Identity Number:
+                    <Text style={styles.blueHighlightText}> {beaCompanyIdNumber}</Text>
+                </Text>
 
-                <br style={{ paddingTop: 10 }} />
-                <Text style={styles.italicText}>Rely on us for Reliability Engineering Services.</Text>
-                <br style={{ paddingTop: 10 }} />
+                <Text style={styles.label}>
+                    Company PAN:
+                    <Text style={styles.blueHighlightText}> {beaCompanyPANnumber}</Text>
+                </Text>
+
+                <Text style={styles.label}>
+                    GSTN:
+                    <Text style={styles.blueHighlightText}> {beaGst}</Text>
+                </Text>
+
+
+                <Text style={styles.label}>
+                    BANK:
+                    <Text style={styles.blueHighlightText}> {beaBankAddress}</Text>
+                </Text>
+
+
+                <Text style={styles.label}>
+                    Branch:
+                    <Text style={styles.blueHighlightText}> {beaBankBranch}</Text>
+                </Text>
+
+
+                <Text style={styles.label}>
+                    A/C Name:
+                    <Text style={styles.blueHighlightText}> {beaBankAccountName}</Text>
+                </Text>
+
+
+                <Text style={styles.label}>
+                    A/C NO:
+                    <Text style={styles.blueHighlightText}> {beaBankAccountNumber}</Text>
+                </Text>
+
+
+                <Text style={styles.label}>
+                    IFSC CODE:
+                    <Text style={styles.blueHighlightText}> {beaBankIfscCode}</Text>
+                </Text>
+
+
+                <Text style={styles.label}>
+                    SWIFT CODE:
+                    <Text style={styles.blueHighlightText}>{beaBankSwiftCode}</Text>
+                </Text>
+
+
+                <Text style={styles.label}>
+                    MICR:
+                    <Text style={styles.blueHighlightText}>{beaBankMicrCode}</Text>
+                </Text>
 
             </View>
 
 
-            {/* <hr style={styles.horizontalLine} /> */}
+            <br style={{ paddingTop: 10 }} />
+            <Text style={styles.headerTitle}>CONTACT INFORMATION</Text>
+            <br style={{ paddingTop: 10 }} />
 
-            {/* <View style={styles.footerContainer} >
-                <Text style={styles.beaAddress} fixed >
-                    {beaAddressStr}
+            <View style={styles.contactDetails}>
+                <Text style={{ fontWeight: 'bold' }}>Contact Details:</Text>
+                <Text>{mdNameAndContactNumber}</Text>
+                <Text>{officePhoneNumber}</Text>
+            </View>
+
+            <br style={{ paddingTop: 20 }} />
+
+            <View style={styles.finalBox}>
+                <Text >Should you require any further information or clarification on this proposal (technical or commercial details), please contact:
                 </Text>
-            </View> */}
 
+                <br style={{ paddingTop: 10 }} />
+                <Text >
+                    We invite you to visit our website: {' '}
+                    <Link src="http://www.beanalytic.com" color="blue" textDecoration="underline">
+                        www.beanalytic.com
+                    </Link>
+                </Text>
+                <br style={{ paddingTop: 10 }} />
+
+            </View>
+
+            <br style={{ paddingTop: 10 }} />
+            <Text style={styles.italicText}>Rely on us for Reliability Engineering Services.</Text>
+            <br style={{ paddingTop: 10 }} />
+
+            {/* Import Footer Component */}
+            <FooterForQuote />
 
         </>
     )

@@ -8,7 +8,6 @@ import axios from 'axios';
 import BeanalyticLogo from '../images/BeanalyticLogo.jpg'
 import QuotePicture from '../images/QuotePicture.jpg'
 
-import './QuotationPdf.css';
 import { useReactToPrint } from 'react-to-print';
 
 import { Page, Text, View, Document, StyleSheet, PDFDownloadLink } from '@react-pdf/renderer';

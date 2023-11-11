@@ -1,14 +1,12 @@
 import React from 'react'
-import { Page, Text, View, Image, Document, StyleSheet, PDFDownloadLink, Link } from '@react-pdf/renderer';
+import { Text, View, Image, StyleSheet } from '@react-pdf/renderer';
 import { Font } from '@react-pdf/renderer';
 import RobotoFont from '../fonts/Roboto-Regular.ttf';
 import CalibriFont from '../fonts/Calibri.ttf';
-
-import BeanalyticLogo from '../images/BeanalyticLogo.jpg'
-import QuotePicture from '../images/QuotePicture.jpg'
-import NDSimage from '../images/NDS.png'
-
 import MDSign from '../images/anilSirSign.png'
+
+import HeaderForQuote from './HeaderForQuote';
+import FooterForQuote from './FooterForQuote';
 
 Font.register({
     family: 'RobotoFamily',
@@ -22,6 +20,23 @@ Font.register({
 
 
 const styles = StyleSheet.create({
+
+    headerContainer: {
+        flexDirection: "row",
+        justifyContent: 'space-between',
+        borderBottom: '0.5px solid black', // Add this line for the bottom border
+    },
+
+    beaLogo: {
+        height: 58,
+        width: 145,
+    },
+
+    nablText: {
+        fontSize: 12,
+        textAlign: 'right',
+        fontFamily: "CalibriFamily",
+    },
 
     quotationTitle: {
         textDecoration: 'underline',
@@ -90,18 +105,25 @@ const styles = StyleSheet.create({
 
     footerContainer: {
         position: "absolute",
-        bottom: 20,
+        bottom: 25,
         fontSize: 8,
         color: "black",
-        flexDirection: "row",
         textAlign: 'center',
-        alignSelf: 'center',
-        marginLeft: 25,
-        marginRight: 25,
+        width: "100%",
+        marginLeft: 9,
+        marginRight: 5,
+        borderTop: '0.5px solid black', // Add this line for the top border
     },
 
-    beaAddress: {
+    addressText: {
         fontSize: 8,
+        textAlign: 'center',
+        marginTop: 5,
+    },
+
+    linkText: {
+        color: 'blue',
+        textDecoration: 'underline',
     },
 
 
@@ -147,8 +169,6 @@ const styles = StyleSheet.create({
 })
 
 
-const beaAddressStr = `BE Analytic Solutions, B131/A, Devasandra Industrial Estate, Mahadevapura, Bangalore–560048, India,Ph: 8095000439, sales@beanalytic.com, www.beanalytic.com`
-
 const getNotesOfQuotation = (notes) => {
     switch (notes) {
         case 1:
@@ -172,8 +192,13 @@ const getNotesOfQuotation = (notes) => {
 
 
 export default function QuotationSecondPage() {
+
     return (
         <>
+            {/* Import Header Component with bottom border */}
+            <HeaderForQuote showBorder={true} />
+
+            <br style={{ paddingTop: 10 }} />
 
             <Text style={styles.quotationTitle}>QUOTATION</Text>
 
@@ -217,16 +242,8 @@ export default function QuotationSecondPage() {
                 <Text style={styles.mdNameAndDesnation} >Managing Director</Text>
             </View>
 
-
-
-            {/* <hr style={styles.horizontalLine} /> */}
-
-            {/* <View style={styles.footerContainer} >
-                <Text style={styles.beaAddress} fixed >
-                    {beaAddressStr}
-                </Text>
-            </View> */}
-
+            {/* Import footer component */}
+            <FooterForQuote />
 
         </>
     )
