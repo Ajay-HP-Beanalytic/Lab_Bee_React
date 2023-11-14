@@ -4,15 +4,10 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import PrintIcon from '@mui/icons-material/Print';
 import { Link, useParams } from 'react-router-dom';
 import axios from 'axios';
-
-import BeanalyticLogo from '../images/BeanalyticLogo.jpg'
-import QuotePicture from '../images/QuotePicture.jpg'
-
 import { useReactToPrint } from 'react-to-print';
 
-import { Page, Text, View, Document, StyleSheet, PDFDownloadLink } from '@react-pdf/renderer';
-import ReactPDF from '@react-pdf/renderer';
-import TrailPdf from './TrailPdf';
+import { StyleSheet, PDFDownloadLink } from '@react-pdf/renderer';
+import TrailPdf from '../Quotes_PDF/TrailPdf';
 
 export default function QuotationPdf() {
 
@@ -73,20 +68,17 @@ export default function QuotationPdf() {
     });
 
 
-
-
-
     return (
         <>
 
             <div>
-                <PDFDownloadLink document={<TrailPdf />} fileName='FORM1' >
+                <PDFDownloadLink document={<TrailPdf id={id} />} fileName='FORM1' >
                     {({ loading }) => (loading ? <Button variant='outlined'> Loading the pdf... </Button> :
                         <Button variant='outlined'> Download </Button>)}
                 </PDFDownloadLink>
             </div>
 
-            <div style={{ position: 'left', top: 0, left: 0 }}>
+            {/* <div style={{ position: 'left', top: 0, left: 0 }}>
 
                 <IconButton variant='outlined' size="large" >
                     <Tooltip title='Go Back' arrow>
@@ -104,15 +96,15 @@ export default function QuotationPdf() {
                     </Tooltip>
                 </IconButton>
 
-            </div>
+            </div> */}
 
-            <Box sx={{ justifyContent: 'center', marginTop: 3 }}>
+            {/* <Box sx={{ justifyContent: 'center', marginTop: 3 }}>
                 <Typography variant='h5' sx={{ fontWeight: 'bold', color: '#DF2F55', textDecoration: 'underline' }}>
                     {quotationIdString}
                 </Typography>
-            </Box>
+            </Box> */}
 
-            <br />
+            {/* <br />
             <TextField
                 sx={{ width: '50%', marginBottom: '16px', marginLeft: '10px', borderRadius: 3 }}
                 value={addCompanyLogo}
@@ -124,10 +116,9 @@ export default function QuotationPdf() {
                 autoComplete="on">
                 Add Company Logo </TextField>
 
-            <br />
+            <br /> */}
 
-            <Container component="span" margin={2} paddingright={1} elevation={11} >
-                {/* <div ref={contentsToPrint} style={{ width: '100%' }}> */}
+            {/* <Container component="span" margin={2} paddingright={1} elevation={11} >
                 <div>
                     <Box sx={{ paddingTop: '5', paddingBottom: '5', marginTop: '5', marginBottom: '5', border: 1, borderColor: 'primary.main' }}>
 
@@ -137,7 +128,6 @@ export default function QuotationPdf() {
                             <div>
                                 <p style={{ float: 'right', marginLeft: '700px' }}>ISO 9001:2015 Certified
                                     NABL Accredited Lab</p>
-                                {/* <p style={{ float: 'right', marginLeft: '700px' }}>NABL Accredited Lab</p> */}
                             </div>
                         </div>
 
@@ -172,7 +162,7 @@ export default function QuotationPdf() {
                     </Box>
                 </div>
 
-            </Container>
+            </Container> */}
 
 
         </>

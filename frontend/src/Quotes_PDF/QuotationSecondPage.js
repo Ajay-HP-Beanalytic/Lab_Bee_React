@@ -1,12 +1,16 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { Text, View, Image, StyleSheet } from '@react-pdf/renderer';
 import { Font } from '@react-pdf/renderer';
 import RobotoFont from '../fonts/Roboto-Regular.ttf';
 import CalibriFont from '../fonts/Calibri.ttf';
+import CalibriBold from '../fonts/Calibrib.ttf'
+import RobotoBoldItalicsFont from '../fonts/Roboto-BoldItalic.ttf'
 import MDSign from '../images/anilSirSign.png'
 
 import HeaderForQuote from './HeaderForQuote';
 import FooterForQuote from './FooterForQuote';
+import axios from 'axios';
+import moment from 'moment';
 
 Font.register({
     family: 'RobotoFamily',
@@ -17,6 +21,17 @@ Font.register({
     family: 'CalibriFamily',
     src: CalibriFont
 })
+
+Font.register({
+    family: 'CalibriBoldFamily',
+    src: CalibriBold
+})
+
+
+Font.register({
+    family: "RobotoBoldItalicsFamily",
+    src: RobotoBoldItalicsFont
+});
 
 
 const styles = StyleSheet.create({
@@ -65,11 +80,18 @@ const styles = StyleSheet.create({
     },
 
     label: {
-        fontSize: 12,
+        fontSize: 13,
         marginBottom: 5,
         marginLeft: 2,
-        fontFamily: 'CalibriFamily',
-        fontWeight: 'bold',
+        fontFamily: 'CalibriBoldFamily',
+    },
+
+    amountInWordsLabel: {
+        fontFamily: 'RobotoBoldItalicsFamily',
+        fontSize: '12',
+        textDecoration: 'underline',
+        marginLeft: 25,
+        marginRight: 25,
     },
 
     noteHeading: {
@@ -191,34 +213,75 @@ const getNotesOfQuotation = (notes) => {
 };
 
 
-export default function QuotationSecondPage() {
+export default function QuotationSecondPage({ id }) {
+
+    const [toCompanyName, setToCompanyName] = useState('')
+    const [toCompanyAddress, setToCompanyAddress] = useState('')
+    const [kindAttention, setKindAttention] = useState('')
+    const [selectedQuoationId, setSelectedQuoationId] = useState('')
+    const [customerIdStr, setCustomerIdStr] = useState('')
+    const formattedDate = moment(new Date()).format("DD-MM-YYYY");
+    const [quoteGivenDate, setQuoteGivenDate] = useState(formattedDate);
+    const [customerReferance, setCustomerReferance] = useState('')
+
+    const [totalAmountInWords, setTotalAmountInWords] = useState('')
+
+    const presentDate = new Date();
+    const todaysDate = moment(presentDate).format("DD-MM-YYYY");
+
+    useEffect(() => {
+        axios.get(`http://localhost:4000/api/quotation/` + id)
+            .then(result => {
+                setToCompanyName(result.data[0].company_name)
+                setToCompanyAddress(result.data[0].company_address)
+                setKindAttention(result.data[0].kind_attention)
+                setSelectedQuoationId(result.data[0].quotation_ids);
+                setCustomerIdStr(result.data[0].customer_id)
+                setQuoteGivenDate(moment(result.data[0].quote_given_date).format("DD-MM-YYYY"))
+                setCustomerReferance(result.data[0].customer_referance)
+                setTotalAmountInWords(result.data[0].total_taxable_amount_in_words)
+            })
+            .catch(error => {
+                console.error(error);
+            })
+    }, [])
+
+
+
+
 
     return (
         <>
             {/* Import Header Component with bottom border */}
-            <HeaderForQuote showBorder={true} />
+            <HeaderForQuote showBorder={true} id={id} />
 
             <br style={{ paddingTop: 10 }} />
 
             <Text style={styles.quotationTitle}>QUOTATION</Text>
 
+            {/* <Text style={styles.mainTitle} > 'ajay id' : {quotationIdString} </Text> */}
+
             <View style={styles.customerInfoBoxContainer}>
                 {/* First Box */}
                 <View style={styles.custInfoBox}>
-                    <Text style={styles.label}>To:</Text>
-                    <Text style={styles.label}>Kind Attention:</Text>
+                    <Text style={styles.label}>To: {toCompanyName}</Text>
+                    <Text style={styles.label}>Address: {toCompanyAddress}</Text>
+                    <Text style={styles.label}>Kind Attention:{kindAttention}</Text>
                 </View>
 
                 {/* Second Box */}
                 <View style={styles.custInfoBox}>
-                    <Text style={styles.label}>Quotation ID:</Text>
-                    <Text style={styles.label}>Customer ID:</Text>
-                    <Text style={styles.label}>Dated:</Text>
-                    <Text style={styles.label}>Customer Reference:</Text>
-                    <Text style={styles.label}>Date:</Text>
+                    <Text style={styles.label}>Quotation ID: {selectedQuoationId}</Text>
+                    <Text style={styles.label}>Customer ID: {customerIdStr}</Text>
+                    <Text style={styles.label}>Dated:{quoteGivenDate}</Text>
+                    <Text style={styles.label}>Customer Reference:{customerReferance}</Text>
+                    <Text style={styles.label}>Date: {todaysDate} </Text>
                 </View>
             </View>
 
+            <Text style={styles.amountInWordsLabel}>TOTAL AMOUNT IN RUPEES:{totalAmountInWords} RUPEES ONLY.</Text>
+
+            <br style={{ paddingTop: 10 }} />
 
             <View>
                 <Text style={styles.noteHeading}>Note:</Text>

@@ -1,7 +1,5 @@
 import React from 'react'
-import { Page, Text, View, Image, Document, StyleSheet, PDFDownloadLink } from '@react-pdf/renderer';
-import { PDFViewer } from '@react-pdf/renderer';
-import ReactDOM from 'react-dom';
+import { Page, Document, StyleSheet } from '@react-pdf/renderer';
 import { Font } from '@react-pdf/renderer';
 import RobotoFont from '../fonts/Roboto-Regular.ttf';
 import CalibriFont from '../fonts/Calibri.ttf';
@@ -56,19 +54,21 @@ const styles = StyleSheet.create({
 });
 
 
-export default function TrailPdf() {
+export default function TrailPdf({ id }) {
     return (
         <>
             <Document>
 
                 {/* Importing first page content for the quotation */}
                 <Page size="A4" style={[styles.documentBody]}>
+                    {/* <QuotationFirstPage id={8} /> */}
                     <QuotationFirstPage />
                 </Page>
 
                 {/* Importing second page (main quoation page with table) content for the quotation */}
                 <Page size="A4" style={[styles.documentBody]}>
-                    <QuotationSecondPage />
+                    <QuotationSecondPage id={id} />
+                    {/* <QuotationSecondPage /> */}
                 </Page>
 
                 {/* Importing 3rd page (Terms & Conditions, Bank details page ) content for the quotation */}
@@ -85,45 +85,6 @@ export default function TrailPdf() {
 
 
 
-
-
-
-/* const beaAddressStr = `BE Analytic Solutions, B131/A, Devasandra Industrial Estate, Mahadevapura, Bangalore–560048, India,Ph: 8095000439, sales@beanalytic.com, www.beanalytic.com` */
-
-/* footerContainer: {
-        position: "absolute",
-        bottom: 20,
-        fontSize: 8,
-        color: "black",
-        flexDirection: "row",
-        textAlign: 'center',
-        alignSelf: 'center',
-        marginLeft: 25,
-        marginRight: 25,
-    },
-
-    beaAddress: {
-        fontSize: 8,
-    }, */
-
-
-
-
-{/* <Text
-                        style={styles.pageNumber}
-                        render={({ pageNumber, totalPages }) => `${pageNumber} / ${totalPages}`}
-                        fixed
-                    /> */}
-
-
-{/* <hr style={styles.horizontalLine} /> */ }
-
-{/* <View style={styles.footerContainer} >
-                        <Text style={styles.beaAddress} fixed >
-                            BE Analytic Solutions, B131/A, Devasandra Industrial Estate, Mahadevapura, Bangalore – 560048, India,
-                            Ph: 8095000439, sales@beanalytic.com, www.beanalytic.com
-                        </Text>
-                    </View> */}
 
 
 

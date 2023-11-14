@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { Text, View, Image, Document, StyleSheet, PDFDownloadLink, Link } from '@react-pdf/renderer';
 import { Font } from '@react-pdf/renderer';
 import RobotoFont from '../fonts/Roboto-Regular.ttf';
@@ -8,6 +8,8 @@ import BeanalyticLogo from '../images/BeanalyticLogo.jpg'
 import QuotePicture from '../images/QuotePicture.jpg'
 
 import HeaderForQuote from './HeaderForQuote';
+import { useParams } from 'react-router-dom';
+import axios from 'axios';
 
 Font.register({
     family: 'RobotoFamily',
@@ -21,22 +23,6 @@ Font.register({
 
 
 const styles = StyleSheet.create({
-
-    /* headerContainer: {
-        flexDirection: "row",
-        justifyContent: 'space-between',
-    },
-
-    beaLogo: {
-        height: 58,
-        width: 145,
-    },
-
-    nablText: {
-        fontSize: 12,
-        textAlign: 'right',
-        fontFamily: "CalibriFamily",
-    }, */
 
     mainTitle: {
         fontSize: 18,
@@ -73,7 +59,6 @@ const styles = StyleSheet.create({
         backgroundColor: '#99ccff',
         border: '1px solid black',
         fontSize: 12,
-        marginVertical: 70,
         alignSelf: 'center',
         fontFamily: "CalibriFamily",
         marginLeft: 25,
@@ -91,11 +76,17 @@ const styles = StyleSheet.create({
 
 });
 
+
+
+
 export default function QuotationFirstPage() {
+
 
     const ndsString = `The material contained in this document is considered commercially sensitive and proprietary to BE Analytic Solutions. This document has been provided to you in strict confidence for evaluation purposes only and any reproduction, transfer, disclosure or application of methodologies contained herein is prohibited without the expressed written consent of BE Analytic Solutions.`
 
     const quoteTitleWithServiceName = `PROPOSAL FOR ENVIRONMENTAL TEST`
+
+
 
     return (
         <>
@@ -110,10 +101,10 @@ export default function QuotationFirstPage() {
                 <Text style={styles.subTitle} fixed>Submitted to</Text>
             </div>
 
-            <Image style={styles.companyLogo} src={BeanalyticLogo} />
+            <Image style={styles.companyLogo} src={BeanalyticLogo} alt='company log' />
 
             <div >
-                <Image style={styles.commonImageForQuotes} src={QuotePicture} />
+                <Image style={styles.commonImageForQuotes} src={QuotePicture} alt='Common quote image' />
             </div>
 
             <View style={styles.ndsBox}>
