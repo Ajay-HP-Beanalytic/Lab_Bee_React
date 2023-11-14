@@ -158,7 +158,9 @@ export default function QuoteTable() {
 
   return (
     <>
-      <Typography variant='h4'>DASHBOARD</Typography>
+      <Typography variant='h4'>QUOTATIONS DASHBOARD</Typography>
+
+      <br />
 
       <Button variant="contained" color="primary" as={Link} to='/quotation'>Add Quotaion</Button>
 
@@ -219,11 +221,11 @@ export default function QuoteTable() {
                               </Tooltip>
                             </IconButton>
 
-                            <Button variant='outlined'>
+                            {/* <Button variant='outlined'>
                               <span>
                                 <Link to={`/quotationPdf/${row.id}`} >Print </Link>
                               </span>
-                            </Button>
+                            </Button> */}
                           </TableCell>
                         </TableRow>
                       ))
@@ -247,11 +249,11 @@ export default function QuoteTable() {
                               </Tooltip>
                             </IconButton>
 
-                            <Button variant='outlined'>
+                            {/* <Button variant='outlined'>
                               <span>
                                 <Link to={`/quotationPdf/${row.id}`} >Print </Link>
                               </span>
-                            </Button>
+                            </Button> */}
                           </TableCell>
                         </TableRow>
                       ))}

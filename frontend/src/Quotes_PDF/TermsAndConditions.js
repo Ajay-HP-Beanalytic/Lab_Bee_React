@@ -1,11 +1,9 @@
 import React from 'react'
-import { Page, Text, View, Image, Document, StyleSheet, PDFDownloadLink, Link } from '@react-pdf/renderer';
+import { Text, View, StyleSheet, Link } from '@react-pdf/renderer';
 import { Font } from '@react-pdf/renderer';
 import RobotoFont from '../fonts/Roboto-Regular.ttf';
 import RobotoBoldItalicsFont from '../fonts/Roboto-BoldItalic.ttf'
 import CalibriFont from '../fonts/Calibri.ttf';
-
-import BeanalyticLogo from '../images/BeanalyticLogo.jpg'
 
 
 import HeaderForQuote from './HeaderForQuote';
@@ -142,6 +140,7 @@ const getTermsAndConditionText = (tAndC) => {
 
 
 export default function QuoteTermsAndConditions() {
+
     const beaCompanyIdNumber = `AAA–3852`
     const beaCompanyPANnumber = ` AAKFB5949D`
     const beaGst = `29AAKFB5949D1Z7`
@@ -156,10 +155,13 @@ export default function QuoteTermsAndConditions() {
     const mdNameAndContactNumber = `Anil Kumar Ammina - Mob: +91-9986074309`
     const officePhoneNumber = `Office: 8095000439 `
 
+
+    const quotationId = 'BEA/TS1/BOSCH/23116-002'
+
     return (
         <>
             {/* Import Header Component with bottom border */}
-            <HeaderForQuote showBorder={true} />
+            <HeaderForQuote showBorder={true} quoteID={quotationId} />
 
             <br style={{ paddingTop: 10 }} />
 

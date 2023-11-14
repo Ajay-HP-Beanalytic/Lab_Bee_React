@@ -103,7 +103,6 @@ export default function Quotation() {
     if (id) {
       axios.get(`http://localhost:4000/api/quotation/` + id)
         .then(result => {
-          generateDynamicQuotationIdString(result.data[0].customer_id)
           setCompanyName(result.data[0].company_name)
           setQuotationIDString(result.data[0].quotation_ids)
           setToCompanyAddress(result.data[0].company_address)
@@ -116,6 +115,9 @@ export default function Quotation() {
           setEditId(result.data[0].id)
           setQuoteCategory(result.data[0].quote_category)
           setTableData(JSON.parse(result.data[0].tests))
+          setTimeout(() => {
+            generateDynamicQuotationIdString(result.data[0].customer_id)
+          }, 5000);
           //console.log(result.data[0].tests)
           //setTableData(result.data[0].tests)
           // setTotalAmountWords(total_amount)
@@ -151,7 +153,9 @@ export default function Quotation() {
           setKindAttention(result.data[0].contact_person)
           setCustomerId(result.data[0].company_id)
           setCustomerreferance(result.data[0].customer_referance)
-          generateDynamicQuotationIdString(result.data[0].company_id)
+          setTimeout(() => {
+            generateDynamicQuotationIdString(result.data[0].company_id)
+          }, 2000);
         })
         .catch(error => {
           console.log(error)
@@ -237,10 +241,21 @@ export default function Quotation() {
 
   // To generate quotation ID dynamically based on the last saved quoataion ID:
   const generateDynamicQuotationIdString = async (newCompanyName, catCodefromTarget = '') => {
-    const currentDate = new Date();
-    const currentYear = currentDate.getFullYear().toString().slice(-2);
-    const currentMonth = (currentDate.getMonth() + 1).toString().padStart(2, '0');
-    const currentDay = currentDate.getDate().toString();
+    console.log('working');
+    let final_date = ''
+    if (id) {
+      const currentDate = new Date(selectedDate);
+      const currentYear = currentDate.getFullYear().toString().slice(-2);
+      const currentMonth = (currentDate.getMonth() + 1).toString().padStart(2, '0');
+      const currentDay = currentDate.getDate().toString();
+      final_date = `${currentYear}${currentMonth}${currentDay}`
+    } else {
+      const currentDate = new Date();
+      const currentYear = currentDate.getFullYear().toString().slice(-2);
+      const currentMonth = (currentDate.getMonth() + 1).toString().padStart(2, '0');
+      const currentDay = currentDate.getDate().toString();
+      final_date = `${currentYear}${currentMonth}${currentDay}`
+    }
 
     try {
       // Make an API call to fetch the last quotation ID from your database
@@ -275,7 +290,7 @@ export default function Quotation() {
         if (x === 'EMI & EMC') catCode = 'TS2'
 
         // Create a quotation string as per the requirement:
-        const dynamicQuotationIdString = `BEA/${catCode}/${newCompanyName}/${currentYear}${currentMonth}${currentDay}-${formattedIncrementedNumber}`;
+        const dynamicQuotationIdString = `BEA/${catCode}/${newCompanyName}/${final_date}-${formattedIncrementedNumber}`;
 
         // Set the quotation ID after fetching the last ID
         setQuotationIDString(dynamicQuotationIdString);
@@ -462,7 +477,7 @@ export default function Quotation() {
 
           <IconButton variant='outlined' size="large" >
             <Tooltip title='Print quotation' arrow>
-              <Link >
+              <Link to={`/quotationPdf/${id}`}>
                 <PrintIcon fontSize="inherit" />
                 {/* onClick={generatePdfFile} */}
               </Link>
