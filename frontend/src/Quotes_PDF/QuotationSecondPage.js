@@ -11,6 +11,7 @@ import HeaderForQuote from './HeaderForQuote';
 import FooterForQuote from './FooterForQuote';
 import axios from 'axios';
 import moment from 'moment';
+import QuotesDetailsInTable from './QuotesTable';
 
 Font.register({
     family: 'RobotoFamily',
@@ -63,7 +64,7 @@ const styles = StyleSheet.create({
 
     customerInfoBoxContainer: {
         //backgroundColor: '#99ccff',
-        border: '1px solid black',
+        border: '0.5px solid black',
         marginVertical: 15,
         alignSelf: 'center',
         fontFamily: "CalibriFamily",
@@ -76,7 +77,7 @@ const styles = StyleSheet.create({
 
     custInfoBox: {
         width: '48%', // Adjust the width as needed
-        border: '1px solid black',
+        border: '0.3px solid black',
     },
 
     label: {
@@ -84,6 +85,11 @@ const styles = StyleSheet.create({
         marginBottom: 5,
         marginLeft: 2,
         fontFamily: 'CalibriBoldFamily',
+    },
+
+    normalText: {
+        fontSize: 13,
+        fontFamily: 'CalibriFamily',
     },
 
     amountInWordsLabel: {
@@ -264,20 +270,47 @@ export default function QuotationSecondPage({ id }) {
             <View style={styles.customerInfoBoxContainer}>
                 {/* First Box */}
                 <View style={styles.custInfoBox}>
-                    <Text style={styles.label}>To: {toCompanyName}</Text>
-                    <Text style={styles.label}>Address: {toCompanyAddress}</Text>
-                    <Text style={styles.label}>Kind Attention:{kindAttention}</Text>
+                    <Text style={styles.label}>To:
+                        <Text style={styles.normalText}> {toCompanyName}</Text>
+                    </Text>
+
+                    <Text style={styles.label}>Address:
+                        <Text style={styles.normalText}> {toCompanyAddress}</Text>
+                    </Text>
+
+                    <Text style={styles.label}>Kind Attention:
+                        <Text style={styles.normalText}> {kindAttention}</Text>
+                    </Text>
                 </View>
 
                 {/* Second Box */}
                 <View style={styles.custInfoBox}>
-                    <Text style={styles.label}>Quotation ID: {selectedQuoationId}</Text>
-                    <Text style={styles.label}>Customer ID: {customerIdStr}</Text>
-                    <Text style={styles.label}>Dated:{quoteGivenDate}</Text>
-                    <Text style={styles.label}>Customer Reference:{customerReferance}</Text>
-                    <Text style={styles.label}>Date: {todaysDate} </Text>
+                    <Text style={styles.label}>Quotation ID:
+                        <Text style={styles.normalText}> {selectedQuoationId}</Text>
+                    </Text>
+
+                    <Text style={styles.label}>Customer ID:
+                        <Text style={styles.normalText}> {customerIdStr}</Text>
+                    </Text>
+
+                    <Text style={styles.label}>Dated:
+                        <Text style={styles.normalText}> {quoteGivenDate}</Text>
+                    </Text>
+
+                    <Text style={styles.label}>Customer Reference:
+                        <Text style={styles.normalText}> {customerReferance}</Text>
+                    </Text>
+
+                    <Text style={styles.label}>Date:
+                        <Text style={styles.normalText}> {todaysDate} </Text>
+                    </Text>
                 </View>
             </View>
+
+            {/* Import table data of the selected quotation ID */}
+            <QuotesDetailsInTable id={id} />
+
+            <br style={{ paddingTop: 10 }} />
 
             <Text style={styles.amountInWordsLabel}>TOTAL AMOUNT IN RUPEES:{totalAmountInWords} RUPEES ONLY.</Text>
 
