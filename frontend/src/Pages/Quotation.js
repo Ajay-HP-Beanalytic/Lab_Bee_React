@@ -117,7 +117,7 @@ export default function Quotation() {
           setTableData(JSON.parse(result.data[0].tests))
           setTimeout(() => {
             generateDynamicQuotationIdString(result.data[0].customer_id)
-          }, 5000);
+          }, 2000);
           //console.log(result.data[0].tests)
           //setTableData(result.data[0].tests)
           // setTotalAmountWords(total_amount)
@@ -241,7 +241,7 @@ export default function Quotation() {
 
   // To generate quotation ID dynamically based on the last saved quoataion ID:
   const generateDynamicQuotationIdString = async (newCompanyName, catCodefromTarget = '') => {
-    console.log('working');
+    //console.log('working');
     let final_date = ''
     if (id) {
       const currentDate = new Date(selectedDate);
@@ -792,7 +792,7 @@ export default function Quotation() {
                         </StyledTableRow>
                       ))}
 
-                      <TableRow>
+                      {/* <TableRow>
                         <TableCell align="left" >
                           <Checkbox
                             checked={isTotalDiscountVisible}
@@ -800,19 +800,67 @@ export default function Quotation() {
                           />
 
                         </TableCell>
-                      </TableRow>
+                      </TableRow> */}
 
 
-                      <TableRow>
+                      {/* <TableRow>
                         <TableCell rowSpan={3} />
                         <TableCell colSpan={3} > <Typography variant='h6'> Taxable Amount:</Typography> </TableCell>
                         <TableCell align="center"> <Typography variant='h6'> {taxableAmount.toFixed(2)}</Typography>  </TableCell>
-                      </TableRow>
+                      </TableRow> */}
 
-                      {isTotalDiscountVisible && (
+                      {/* {isTotalDiscountVisible && (
                         <TableRow>
                           <TableCell colSpan={3} > <Typography variant='h6'> Total Discount:</Typography> </TableCell>
                           <TableCell align="center"> <Typography variant='h6'>
+                            <TextField
+                              type='number'
+                            />
+                          </Typography>
+                          </TableCell>
+                        </TableRow>
+                      )} */}
+
+
+                      {/* <TableRow>
+                        <TableCell colSpan={3}> <Typography variant='h6'> Total Amount in Rupees:</Typography> </TableCell>
+                        <TableCell align="center"> <Typography variant='h6'> {totalAmountWords} </Typography> </TableCell>
+                      </TableRow> */}
+
+
+                    </TableBody>
+                  </Table>
+
+                  <hr sx={{ border: '1px solid black', marginTop: '20', marginBottom: '10' }} />
+
+
+                  <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                    <TableRow>
+                      <TableCell align="left">
+                        <Checkbox
+                          checked={isTotalDiscountVisible}
+                          onChange={(event) => setIsTotalDiscountVisible(event.target.checked)}
+                        />
+                      </TableCell>
+                    </TableRow>
+
+                    <TableRow>
+                      <TableCell rowSpan={3} />
+                      <TableCell colSpan={3}>
+                        <Typography variant='h6'>Taxable Amount:</Typography>
+                      </TableCell>
+                      <TableCell align="center">
+                        <Typography variant='h6'>{taxableAmount.toFixed(2)}</Typography>
+                      </TableCell>
+                    </TableRow>
+
+                    {isTotalDiscountVisible && (
+                      <TableRow>
+                        <TableCell colSpan={3}>
+                          <Typography variant='h6'>Total Discount:</Typography>
+                        </TableCell>
+                        <TableCell align="center">
+                          <Typography variant='h6'>
                             <TextField
                               /* value={row.amount} */
                               type='number'
@@ -820,20 +868,34 @@ export default function Quotation() {
                               handleCellChange(row.slno, 'amount', parseFloat(e.target.value))} */
                             />
                           </Typography>
-                          </TableCell>
-                        </TableRow>
-                      )}
-
-
-                      <TableRow>
-                        <TableCell colSpan={3}> <Typography variant='h6'> Total Amount in Rupees:</Typography> </TableCell>
-                        <TableCell align="center"> <Typography variant='h6'> {totalAmountWords} </Typography> </TableCell>
+                        </TableCell>
                       </TableRow>
+                    )}
+
+                    <TableRow>
+                      <TableCell colSpan={3}>
+                        <Typography variant='h6'>Total Amount in Rupees:</Typography>
+                      </TableCell>
+                      <TableCell align="center">
+                        <Typography variant='h6'>{totalAmountWords}</Typography>
+                      </TableCell>
+                    </TableRow>
+                  </Box>
 
 
-                    </TableBody>
-                  </Table>
+
+
                 </TableContainer>
+
+                {/* <div sx={{ display: 'space-between', alignItems: 'center' }}>
+                  <Typography variant='h6' align="center" > Total Amount in Rupees: {totalAmountWords}</Typography>
+                </div> */}
+
+                {/* <div sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Typography variant='h6' align="left" sx={{ marginTop: '8px' }}>Total Amount in Rupees:
+                    <Typography variant='h6' align="center" sx={{ marginLeft: '8px' }}>{totalAmountWords}</Typography>
+                  </Typography>
+                </div> */}
               </Grid>
             </Grid>
 
