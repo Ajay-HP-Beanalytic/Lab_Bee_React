@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Box, Typography, Container, TextField, Button, Table, TableBody, TableCell, TableContainer, TableHead,
-  TableRow, Paper, IconButton, Tooltip, Grid, InputLabel, MenuItem, FormControl, Select, Checkbox
+  TableRow, Paper, IconButton, Tooltip, Grid, InputLabel, MenuItem, FormControl, Select, Checkbox, Autocomplete
 } from '@mui/material';
 import axios from "axios";
 import moment from "moment";                     // To convert the date into desired format
@@ -496,21 +496,21 @@ export default function Quotation() {
             <div sx={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between' }}>
 
               <FormControl align='left' sx={{ width: "25%", marginTop: '20px', }}>
-                <InputLabel id="import_company_data">Enter company ID</InputLabel>
-                <Select
-                  labelId="import_company_data"
-                  id="select_company_id"
+                <Autocomplete
                   value={selectedCompanyId}
-                  label="Select Company Data"
-                  onChange={(e) => {
-                    setSelectedCompanyId(e.target.value)
-                    prefillTextFields(e.target.value)
+                  onChange={(event, newValue) => {
+                    setSelectedCompanyId(newValue);
+                    prefillTextFields(newValue);
                   }}
-                >
-                  {companyIdList.map((companyId, index) => (
-                    <MenuItem key={index} value={companyId}> {companyId}</MenuItem>
-                  ))}
-                </Select>
+                  options={companyIdList}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Select Company Data"
+                      variant="outlined"
+                    />
+                  )}
+                />
               </FormControl>
 
               <Typography variant="h6" align='right' sx={{ marginBottom: '16px', marginRight: '20px', marginLeft: '20px', fontWeight: 'bold', fontStyle: 'italic', color: 'blue', textDecoration: 'underline' }}>

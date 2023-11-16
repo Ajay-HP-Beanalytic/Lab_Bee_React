@@ -12,6 +12,7 @@ import FooterForQuote from './FooterForQuote';
 import axios from 'axios';
 import moment from 'moment';
 import QuotesDetailsInTable from './QuotesTable';
+import QuotationNotes from './Notes';
 
 Font.register({
     family: 'RobotoFamily',
@@ -109,19 +110,6 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
     },
 
-    noteTexts: {
-        fontSize: 12,
-        textAlign: "left",
-        color: "black",
-        fontFamily: "CalibriFamily",
-        marginLeft: 25,
-        marginRight: 25,
-    },
-
-    redNoteTexts: {
-        color: "red",
-    },
-
     mdNameAndDesnation: {
         fontSize: 14,
         textAlign: "left",
@@ -154,46 +142,6 @@ const styles = StyleSheet.create({
         textDecoration: 'underline',
     },
 
-
-    //Table components:
-    table: {
-        display: 'table',
-        width: '95%',
-        borderCollapse: 'collapse',
-        marginBottom: 10,
-        marginLeft: 25,
-        marginRight: 25,
-    },
-    tableRow: {
-        flexDirection: 'row',
-        borderBottomColor: '#000',
-        borderBottomWidth: 1,
-        alignItems: 'center',
-        height: 20,
-    },
-    tableCell: {
-        borderRightColor: '#000',
-        borderRightWidth: 1,
-        margin: 'auto',
-        padding: 8,
-        flexGrow: 1,
-        flexBasis: 0,
-    },
-    headerCell: {
-        backgroundColor: '#e6e6e6',
-        fontWeight: 'bold',
-    },
-    footerRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-    },
-    footerLabel: {
-        fontWeight: 'bold',
-    },
-    footerValue: {
-        textAlign: 'right',
-        fontWeight: 'bold',
-    },
 })
 
 
@@ -235,6 +183,8 @@ export default function QuotationSecondPage({ id }) {
     const presentDate = new Date();
     const todaysDate = moment(presentDate).format("DD-MM-YYYY");
 
+    const [quoteCategory, setQuoteCategory] = useState('')
+
     useEffect(() => {
         axios.get(`http://localhost:4000/api/quotation/` + id)
             .then(result => {
@@ -246,6 +196,7 @@ export default function QuotationSecondPage({ id }) {
                 setQuoteGivenDate(moment(result.data[0].quote_given_date).format("DD-MM-YYYY"))
                 setCustomerReferance(result.data[0].customer_referance)
                 setTotalAmountInWords(result.data[0].total_taxable_amount_in_words)
+                setQuoteCategory(result.data[0].quote_category)
             })
             .catch(error => {
                 console.error(error);
@@ -310,22 +261,15 @@ export default function QuotationSecondPage({ id }) {
             {/* Import table data of the selected quotation ID */}
             <QuotesDetailsInTable id={id} />
 
-            <br style={{ paddingTop: 10 }} />
+            <br style={{ paddingTop: 15 }} />
 
-            <Text style={styles.amountInWordsLabel}>TOTAL AMOUNT IN RUPEES:{totalAmountInWords} RUPEES ONLY.</Text>
+            {/* Import quotation notes based on the quotation category*/}
+            <QuotationNotes quoteCategory={quoteCategory} />
 
-            <br style={{ paddingTop: 10 }} />
+
+
 
             <View>
-                <Text style={styles.noteHeading}>Note:</Text>
-
-                {[1, 2, 3, 4, 5, 6, 7].map((notes) => (
-                    <View key={notes}>
-                        <Text style={[styles.noteTexts, notes === 7 ? styles.redNoteTexts : null]}>
-                            {notes}. {getNotesOfQuotation(notes)}</Text>
-                    </View>
-                ))}
-
                 <br style={{ paddingTop: 10 }} />
                 <Text style={styles.noteHeading}>For BE Analytic Solutions LLP:</Text>
                 <br style={{ paddingTop: 10 }} />
