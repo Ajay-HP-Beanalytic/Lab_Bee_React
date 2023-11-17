@@ -192,17 +192,6 @@ export default function QuoteTermsAndConditions() {
             <br style={{ paddingTop: 10 }} />
 
             <View style={styles.bankDetailsBox}>
-                {/* <Text>Company Identity Number: {beaCompanyIdNumber}</Text>
-                <Text>Company PAN: {beaCompanyPANnumber}</Text>
-                <Text>GSTN: {beaGst}</Text>
-                <Text>BANK: {beaBankAddress}
-                </Text>
-                <Text>Branch: {beaBankBranch}</Text>
-                <Text>A/C Name: {beaBankAccountName}</Text>
-                <Text>A/C NO: {beaBankAccountNumber}</Text>
-                <Text>IFSC CODE: {beaBankIfscCode}</Text>
-                <Text>SWIFT CODE: {beaBankSwiftCode}</Text>
-                <Text>MICR: {beaBankMicrCode}</Text> */}
 
 
                 <Text style={styles.label}>

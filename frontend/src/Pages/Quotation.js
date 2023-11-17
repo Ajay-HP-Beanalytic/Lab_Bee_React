@@ -477,7 +477,7 @@ export default function Quotation() {
 
           <IconButton variant='outlined' size="large" >
             <Tooltip title='Print quotation' arrow>
-              <Link to={`/quotationPdf/${id}`}>
+              <Link to={`/quotationWordToPdf/${id}`}>
                 <PrintIcon fontSize="inherit" />
                 {/* onClick={generatePdfFile} */}
               </Link>

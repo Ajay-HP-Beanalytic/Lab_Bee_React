@@ -8,6 +8,7 @@ import { useReactToPrint } from 'react-to-print';
 
 import { StyleSheet, PDFDownloadLink } from '@react-pdf/renderer';
 import TrailPdf from '../Quotes_PDF/TrailPdf';
+import DocToPdf from '../components/DocToPdf';
 
 export default function QuotationPdf() {
 
@@ -72,10 +73,14 @@ export default function QuotationPdf() {
         <>
 
             <div>
-                <PDFDownloadLink document={<TrailPdf id={id} />} fileName='FORM1' >
+                {/* <PDFDownloadLink document={<TrailPdf id={id} />} fileName='FORM1' >
                     {({ loading }) => (loading ? <Button variant='outlined'> Loading the pdf... </Button> :
                         <Button variant='outlined'> Download </Button>)}
-                </PDFDownloadLink>
+                </PDFDownloadLink> */}
+
+                {/* <Button variant='outlined' color="primary" as={Link} to={`/quotationDocToPdf/${id}`}> Download </Button> */}
+                <Button variant='outlined' Link={<DocToPdf id={id} />} > Download </Button>
+
             </div>
 
             {/* <div style={{ position: 'left', top: 0, left: 0 }}>
