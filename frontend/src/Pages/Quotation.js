@@ -446,22 +446,6 @@ export default function Quotation() {
   }, [tableData]);
 
 
-
-
-
-  const contentsToPrint = useRef();
-
-  /* const generatePdfFile = useReactToPrint({
-    content: () => contentsToPrint.current,
-    documentTitle: `Quotation Number: ${quotationIdString}`,
-    onAfterPrint: () => alert('Pdf file generated successfully')
-  }) */
-
-  function generatePdfFile() {
-    Navigate('/quotationPdf')
-  }
-
-
   return (
 
     <div>
@@ -479,7 +463,6 @@ export default function Quotation() {
             <Tooltip title='Print quotation' arrow>
               <Link to={`/quotationWordToPdf/${id}`}>
                 <PrintIcon fontSize="inherit" />
-                {/* onClick={generatePdfFile} */}
               </Link>
             </Tooltip>
           </IconButton>
@@ -497,6 +480,7 @@ export default function Quotation() {
 
               <FormControl align='left' sx={{ width: "25%", marginTop: '20px', }}>
                 <Autocomplete
+                  disablePortal
                   value={selectedCompanyId}
                   onChange={(event, newValue) => {
                     setSelectedCompanyId(newValue);
@@ -947,7 +931,7 @@ export default function Quotation() {
 };
 
 
-/* as={Link} to={`/quotationPdf/${quotationIdString}`} */
+
 
 
 

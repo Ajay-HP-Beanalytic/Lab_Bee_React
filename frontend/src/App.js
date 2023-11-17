@@ -15,7 +15,6 @@ import AddModulesAndTests from "./components/AddModulesAndTests";
 import AddCustomerDetails from "./components/AddCustomerDetails";
 import Quotation from "./Pages/Quotation";
 import QuotationPdf from "./Pages/QuotationPdf";
-import TrailPdf from "./Quotes_PDF/TrailPdf";
 import DocToPdf from "./components/DocToPdf";
 
 
