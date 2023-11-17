@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Dialog, Button, DialogActions, DialogTitle, DialogContent, DialogContentText, Box } from '@mui/material';
 import AddCustomerDetails from './AddCustomerDetails';
+import DocToPdf from './DocToPdf';
 
 const UserDetailsDialog = () => {
 
@@ -70,6 +71,7 @@ const DialogModals = () => {
       {/* <UserDetailsDialog />
       <DeleteItemsoftModuleDialog /> */}
       <AddCustomerDetails />
+      <DocToPdf />
     </div>
   );
 };
