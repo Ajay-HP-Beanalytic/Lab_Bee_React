@@ -7,7 +7,6 @@ import axios from 'axios';
 import { useReactToPrint } from 'react-to-print';
 
 import { StyleSheet, PDFDownloadLink } from '@react-pdf/renderer';
-import TrailPdf from '../Quotes_PDF/TrailPdf';
 import DocToPdf from '../components/DocToPdf';
 
 export default function QuotationPdf() {

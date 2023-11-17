@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import axios from 'axios';
 import {
   Box, Card, Table, TableBody, Button, TableCell, TableRow, TableContainer, TableHead, Paper,
-  TablePagination, Typography, CardContent, TextField, Autocomplete, IconButton, Tooltip
+  TablePagination, Typography, CardContent, TextField, Autocomplete, IconButton, Tooltip, FormControl
 } from '@mui/material';
 import { Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@mui/material'
 import { styled } from '@mui/material/styles';
@@ -170,22 +170,23 @@ export default function QuoteTable() {
             Quotations Table
           </Typography>
           <Box component="span" display="flex" justifyContent="end" pr={1} pt={1}>
-            <Autocomplete
-              disablePortal
-              id="combo-box-demo"
-              options={quotesTableData}
 
-              onChange={(event, value) => { setFilterRow(value ? [value] : []); }}
-              //getOptionLabel={(quotesTableData) =>
-              //    quotesTableData.quotation_ids || quotesTableData.company_name || ' '
-              //}
+            <FormControl sx={{ width: 350 }} align='left' >
+              <Autocomplete
+                disablePortal
+                onChange={(event, value) => { setFilterRow(value ? [value] : []); }}
+                getOptionLabel={(option) => option.quotation_ids || ' '}
+                options={quotesTableData}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    label="Search Quotation"
+                    variant="outlined"
+                  />
+                )}
+              />
+            </FormControl>
 
-              getOptionLabel={(option) =>
-                option.quotation_ids || ' '
-              }
-              sx={{ width: 350 }}
-              renderInput={(params) => <TextField {...params} label="Search Quotation" />}
-            />
           </Box>
           <CardContent>
             <Paper sx={{ width: '100%', overflow: 'hidden' }}>
