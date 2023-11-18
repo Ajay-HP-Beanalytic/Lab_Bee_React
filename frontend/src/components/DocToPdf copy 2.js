@@ -1,5 +1,5 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField } from '@mui/material'
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import Docxtemplater from 'docxtemplater'
 import { saveAs } from 'file-saver';
 import TS1Template from '../templates/EnvironmentalQuoteTemplate.docx'
@@ -58,27 +58,59 @@ export default function DocToPdf() {
     const [quotationTitle, setQuotationTitle] = useState('');
     const [quotationTitleDialog, setQuotationTitleDialog] = useState(false);
 
-    const [companyLogoImage, setCompanyLogoImage] = useState(null);
-    const fileInputRef = useRef(null);
 
 
-    // Function to handle the uploaded image:
-    const handleFileChange = (e) => {
-        const file = e.target.files[0];
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = () => {
-                setCompanyLogoImage(reader.result);
-            };
-            reader.readAsDataURL(file);
-        }
-    };
+    function onSubmitQuoteTitleButton() {
+        alert('Its done')
+    }
 
+    function handleCancelBtnIsClicked() {
+        setQuotationTitle('')
+        setQuotationTitleDialog(false)
+    }
 
-
-
-    // Function to generate the wrod document based on the data:
     const generatePDF = async () => {
+
+
+        <Dialog open={quotationTitleDialog}
+            onClose={handleCancelBtnIsClicked}
+            aria-labelledby="quotation_title-dialog">
+
+            <DialogTitle id="quotation_title-dialog">
+                Enter quoatation title
+            </DialogTitle>
+
+            <DialogContent>
+                <TextField
+                    sx={{ marginBottom: '16px', marginLeft: '10px', borderRadius: 3 }}
+                    value={quotationTitle}
+                    onChange={(e) => setQuotationTitle(e.target.value)}
+                    label="Quotation Title"
+                    margin="normal"
+                    fullWidth
+                    variant="outlined"
+                    autoComplete="on"
+                />
+
+                <DialogActions>
+                    <Button sx={{ marginBottom: '16px', marginLeft: '10px', borderRadius: 3 }}
+                        variant="contained"
+                        color="secondary"
+                        type="submit"
+                        onClick={onSubmitQuoteTitleButton}>
+                        Submit
+                    </Button>
+
+                    <Button sx={{ marginBottom: '16px', marginLeft: '10px', borderRadius: 3 }}
+                        variant="contained"
+                        color="primary"
+                        onClick={handleCancelBtnIsClicked}>
+                        Cancel
+                    </Button>
+                </DialogActions>
+            </DialogContent>
+
+        </Dialog>
 
         let templateDocument = ''
 
@@ -104,35 +136,42 @@ export default function DocToPdf() {
             const doc = new Docxtemplater(zip, {
                 paragraphLoop: true,
                 linebreaks: true,
-
             });
 
 
-            // Generate base64 data for your image (replace with your actual image URL)
-            /* const imageUrl = 'https://docxtemplater.com/puffin.png';
-            const imageBase64 = axios.get(imageUrl, { responseType: 'arraybuffer' })
-                .then(response => Buffer.from(response.data, 'binary').toString('base64')); */
+
+            let testDescription = ''
+            let amount = ''
+            let duration = ''
+            let perUnitCharge = ''
+            let sacNo = ''
+            let slno = ''
+            let unit = ''
 
 
-            /* const imageUrl = 'https://docxtemplater.com/puffin.png';
-            const imageBase64 = axios.get(imageUrl, { responseType: 'arraybuffer' })
-                .then(response => {
-                    const base64 = btoa(
-                        new Uint8Array(response.data)
-                            .reduce((data, byte) => data + String.fromCharCode(byte), '')
-                    );
-                    return base64;
-                }); */
+            tableData.forEach(item => {
+                testDescription += item.testDescription + `\n`
+                amount += item.amount + `\n`
+                duration += item.duration + `\n`
+                perUnitCharge += item.perUnitCharge + `\n`
+                sacNo += item.sacNo + `\n`
+                slno += item.slno + `\n`
+                unit += item.unit + `\n`
+            })
 
 
 
 
-
-            const imageSrc = { image: 'https://docxtemplater.com/puffin.png' };
-            const image1Src = { $image1: 'https://docxtemplater.com/puffin.png' };
 
             // Set the data for the table placeholder in the template
             doc.setData({
+                testDescription: testDescription,
+                amount: amount,
+                duration: duration,
+                perUnitCharge: perUnitCharge,
+                sacNo: sacNo,
+                slno: slno,
+                unit: unit,
 
                 QUOTATIONTITLE: quotationTitle,
 
@@ -145,14 +184,8 @@ export default function DocToPdf() {
                 customerReferance: customerReferance,
                 todaysDate: todaysDate,
                 taxableAmount: taxableAmount,
-                totalAmountInWords: totalAmountInWords,
-
-                "dataRows": tableData,
-
-                "src": "https://docxtemplater.com/puffin.png"
-
+                totalAmountInWords: totalAmountInWords
             });
-
 
 
             doc.render();
@@ -167,19 +200,7 @@ export default function DocToPdf() {
         });
     };
 
-    // Function to submit the title and the image of the dialog
-    function onSubmitQuoteTitleButton() {
-        generatePDF()
-        setQuotationTitleDialog(false);
-    }
 
-
-
-    // Function to clear the title and the image of the dialog. And to close the dialog
-    function handleCancelBtnIsClicked() {
-        setQuotationTitle('')
-        setQuotationTitleDialog(false)
-    }
 
     useEffect(() => {
         axios.get(`http://localhost:4000/api/quotation/` + id)
@@ -192,10 +213,10 @@ export default function DocToPdf() {
                 setQuoteGivenDate(moment(result.data[0].quote_given_date).format("DD-MM-YYYY"))
                 setCustomerReferance(result.data[0].customer_referance)
                 setTableData(JSON.parse(result.data[0].tests))
+                console.log('Aj', result.data[0].tests)
                 setQuoteCategory(result.data[0].quote_category)
                 setTaxableAmount(result.data[0].total_amount)
                 setTotalAmountInWords(result.data[0].total_taxable_amount_in_words)
-                console.log('Aj', result.data[0].tests)
 
             })
             .catch(error => {
@@ -206,70 +227,7 @@ export default function DocToPdf() {
 
     return (
         <>
-            <Button variant='contained' onClick={() => setQuotationTitleDialog(true)}>
-                DOWNLOAD QUOTATION
-            </Button>
-
-            {quotationTitleDialog && (
-                <Dialog
-                    open={quotationTitleDialog}
-                    onClose={handleCancelBtnIsClicked}
-                    aria-labelledby="quotation_title-dialog">
-                    <DialogTitle id="quotation_title-dialog">Enter Quotation Title And Logo</DialogTitle>
-                    <DialogContent>
-                        <TextField
-                            sx={{ minWidth: '400px', borderRadius: 3 }}
-                            value={quotationTitle}
-                            onChange={(e) => setQuotationTitle(e.target.value)}
-                            label="Quotation Title"
-                            margin="normal"
-                            fullWidth
-                            variant="outlined"
-                            autoComplete="on"
-                        />
-
-
-                        <>
-                            <h4>Select the image: </h4>
-                            <form ref={fileInputRef}>
-                                <input
-                                    type="file"
-                                    accept="image/jpg, image/jpeg, image/png"
-                                    onChange={handleFileChange}
-                                />
-                            </form>
-
-                            {companyLogoImage && (
-                                <img
-                                    src={companyLogoImage}
-                                    alt="Company Logo"
-                                    style={{ maxWidth: '100%', marginTop: '10px', borderRadius: '5px' }}
-                                />
-                            )}
-                        </>
-
-
-                    </DialogContent>
-
-                    <DialogActions sx={{ alignItems: 'center' }}>
-                        <Button
-                            variant="contained"
-                            color="secondary"
-                            type="submit"
-                            onClick={onSubmitQuoteTitleButton}
-                        >
-                            Submit
-                        </Button>
-                        <Button
-                            variant="contained"
-                            color="primary"
-                            onClick={handleCancelBtnIsClicked}
-                        >
-                            Cancel
-                        </Button>
-                    </DialogActions>
-                </Dialog>
-            )}
+            <Button variant='contained' onClick={generatePDF}>Generate PDF</Button>
         </>
     )
 }
