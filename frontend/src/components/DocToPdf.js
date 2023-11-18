@@ -54,7 +54,7 @@ export default function DocToPdf() {
     const [counter, setCounter] = useState(tableData.length + 1);
     const [taxableAmount, setTaxableAmount] = useState(0);
 
-
+    const [module, setModule] = useState('')
     const [quotationTitle, setQuotationTitle] = useState('');
     const [quotationTitleDialog, setQuotationTitleDialog] = useState(false);
 
@@ -91,6 +91,7 @@ export default function DocToPdf() {
         }
 
         if (quoteCategory === 'Item Soft') {
+
             templateDocument = ITTemplate
         }
 
@@ -131,6 +132,15 @@ export default function DocToPdf() {
             const imageSrc = { image: 'https://docxtemplater.com/puffin.png' };
             const image1Src = { $image1: 'https://docxtemplater.com/puffin.png' };
 
+            let newTData = []
+            for (let i = 0; i < tableData.length; i++) {
+                // console.log(modules[tableData[i].module_id]);
+                newTData[i] = tableData[i]
+                newTData[i].module_name = modules[tableData[i].module_id]
+            }
+
+            console.log(tableData);
+
             // Set the data for the table placeholder in the template
             doc.setData({
 
@@ -147,7 +157,7 @@ export default function DocToPdf() {
                 taxableAmount: taxableAmount,
                 totalAmountInWords: totalAmountInWords,
 
-                "dataRows": tableData,
+                "dataRows": newTData,
 
                 "src": "https://docxtemplater.com/puffin.png"
 
@@ -181,6 +191,22 @@ export default function DocToPdf() {
         setQuotationTitleDialog(false)
     }
 
+    const [modules, setModules] = useState([])
+
+    useEffect(() => {
+        axios.get(`http://localhost:4000/api/getItemsoftModules/`)
+            .then(result => {
+                let newModules = {}
+                result.data.forEach(e => {
+                    newModules[e.id] = e.module_name + ' - ' + e.module_description
+                })
+                setModules(newModules);
+            })
+            .catch(error => {
+                console.error(error);
+            })
+    }, [])
+
     useEffect(() => {
         axios.get(`http://localhost:4000/api/quotation/` + id)
             .then(result => {
@@ -195,7 +221,8 @@ export default function DocToPdf() {
                 setQuoteCategory(result.data[0].quote_category)
                 setTaxableAmount(result.data[0].total_amount)
                 setTotalAmountInWords(result.data[0].total_taxable_amount_in_words)
-                console.log('Aj', result.data[0].tests)
+                // console.log('Aj', result.data[0].tests)
+
 
             })
             .catch(error => {

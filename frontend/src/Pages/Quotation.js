@@ -115,12 +115,7 @@ export default function Quotation() {
           setEditId(result.data[0].id)
           setQuoteCategory(result.data[0].quote_category)
           setTableData(JSON.parse(result.data[0].tests))
-          setTimeout(() => {
-            generateDynamicQuotationIdString(result.data[0].customer_id)
-          }, 2000);
-          //console.log(result.data[0].tests)
-          //setTableData(result.data[0].tests)
-          // setTotalAmountWords(total_amount)
+
         })
     }
     axios.get(`http://localhost:4000/api/getItemsoftModules/`)
@@ -128,6 +123,8 @@ export default function Quotation() {
         setModules(result.data)
       })
   }, [])
+
+
 
 
   /* const PrefillTextFields = () => {
@@ -153,9 +150,7 @@ export default function Quotation() {
           setKindAttention(result.data[0].contact_person)
           setCustomerId(result.data[0].company_id)
           setCustomerreferance(result.data[0].customer_referance)
-          setTimeout(() => {
-            generateDynamicQuotationIdString(result.data[0].company_id)
-          }, 2000);
+          generateDynamicQuotationIdString(result.data[0].company_id)
         })
         .catch(error => {
           console.log(error)
@@ -202,12 +197,12 @@ export default function Quotation() {
     setTableData(updatedData);
   };
 
-  const handleUnitChange = (slno, field, value) => {
-    const updatedData = tableData.map((row) =>
-      row.slno === slno ? { ...row, [field]: value } : row
-    );
-    setTableData(updatedData);
-  };
+  // const handleUnitChange = (slno, field, value) => {
+  //   const updatedData = tableData.map((row) =>
+  //     row.slno === slno ? { ...row, [field]: value } : row
+  //   );
+  //   setTableData(updatedData);
+  // };
 
   // Set initial quotation ID when the component mounts
   useEffect(() => {
@@ -235,7 +230,7 @@ export default function Quotation() {
     const currentMonth = (currentDate.getMonth() + 1).toString().padStart(2, '0');
     const currentDay = currentDate.getDate().toString();
     const dynamicQuotationIdString = `BEA/TS1/${newCompanyName}/${currentYear}${currentMonth}${currentDay}-001`;
-    setQuotationIDString(dynamicQuotationIdString);
+    // setQuotationIDString(dynamicQuotationIdString);
   };
 
 
@@ -243,64 +238,55 @@ export default function Quotation() {
   const generateDynamicQuotationIdString = async (newCompanyName, catCodefromTarget = '') => {
     //console.log('working');
     let final_date = ''
+    let newIncrementedNumber = ''
     if (id) {
       const currentDate = new Date(selectedDate);
-      const currentYear = currentDate.getFullYear().toString().slice(-2);
-      const currentMonth = (currentDate.getMonth() + 1).toString().padStart(2, '0');
-      const currentDay = currentDate.getDate().toString();
-      final_date = `${currentYear}${currentMonth}${currentDay}`
+      final_date = selectedDate.replaceAll('-', '')
+      final_date = final_date.substring(6, 8) + final_date.substring(2, 4) + final_date.substring(0, 2)
+      newIncrementedNumber = quotationIdString.split('-')[1]
     } else {
       const currentDate = new Date();
       const currentYear = currentDate.getFullYear().toString().slice(-2);
       const currentMonth = (currentDate.getMonth() + 1).toString().padStart(2, '0');
       const currentDay = currentDate.getDate().toString();
       final_date = `${currentYear}${currentMonth}${currentDay}`
-    }
+      try {
+        const response = await axios.get("http://localhost:4000/api/getLatestQuoationID")
+        if (response.status === 200) {
+          // Assign the last fetched quotation ID to the variable:
+          const lastQuotationID = response.data[0]?.quotation_ids;
 
-    try {
-      // Make an API call to fetch the last quotation ID from your database
-      const response = await axios.get("http://localhost:4000/api/getLatestQuoationID");
-
-      if (response.status === 200) {
-        // Assign the last fetched quotation ID to the variable:
-        const lastQuotationID = response.data[0]?.quotation_ids;
-
-        // Extract the existing incremented number and convert it to a number
-        //const existingIncrementedNumber = parseInt(lastQuotationID.split('-')[1]);
-        const existingIncrementedNumber = !isNaN(parseInt(lastQuotationID.split('-')[1]))
-          ? parseInt(lastQuotationID.split('-')[1])
-          : 1;
-
-        // Increment the number by 1
-        const newIncrementedNumber = existingIncrementedNumber + 1;
-
-        // Format it as a string with leading zeros
-        const formattedIncrementedNumber = newIncrementedNumber.toString().padStart(3, '0');
-
-        let x = ''
-        if (catCodefromTarget) {
-          x = catCodefromTarget
+          // Extract the existing incremented number and convert it to a number
+          //const existingIncrementedNumber = parseInt(lastQuotationID.split('-')[1]);
+          const existingIncrementedNumber = !isNaN(parseInt(lastQuotationID.split('-')[1]))
+            ? parseInt(lastQuotationID.split('-')[1])
+            : 1;
+          newIncrementedNumber = existingIncrementedNumber + 1;
         } else {
-          x = quoteCategory
+          console.error("Failed to fetch the last incrementedNumber.");
         }
-        let catCode = ''
-        if (x === 'Item Soft') catCode = 'IT'
-        if (x === 'Reliability') catCode = 'RE'
-        if (x === 'Environmental Testing') catCode = 'TS1'
-        if (x === 'EMI & EMC') catCode = 'TS2'
-
-        // Create a quotation string as per the requirement:
-        const dynamicQuotationIdString = `BEA/${catCode}/${newCompanyName}/${final_date}-${formattedIncrementedNumber}`;
-
-        // Set the quotation ID after fetching the last ID
-        setQuotationIDString(dynamicQuotationIdString);
-
-      } else {
-        console.error("Failed to fetch the last incrementedNumber.");
+      } catch (error) {
+        console.error("An error occurred while fetching the last incrementedNumber: " + error);
       }
-    } catch (error) {
-      console.error("An error occurred while fetching the last incrementedNumber: " + error);
     }
+    const formattedIncrementedNumber = newIncrementedNumber.toString().padStart(3, '0');
+    let x = ''
+    if (catCodefromTarget) {
+      x = catCodefromTarget
+    } else {
+      x = quoteCategory
+    }
+    let catCode = ''
+    if (x === 'Item Soft') catCode = 'IT'
+    if (x === 'Reliability') catCode = 'RE'
+    if (x === 'Environmental Testing') catCode = 'TS1'
+    if (x === 'EMI & EMC') catCode = 'TS2'
+
+    // Create a quotation string as per the requirement:
+    const dynamicQuotationIdString = `BEA/${catCode}/${newCompanyName}/${final_date}-${formattedIncrementedNumber}`;
+
+    // Set the quotation ID after fetching the last ID
+    setQuotationIDString(dynamicQuotationIdString);
   };
 
 
@@ -315,7 +301,9 @@ export default function Quotation() {
         const latestQuotationID = response.data[0]?.quotation_ids; // Access the specific property containing the ID 
 
         if (latestQuotationID) {
-          setQuotationIDString(latestQuotationID);
+          if (!id) {
+            setQuotationIDString(latestQuotationID);
+          }
         } else {
           setInitialQuotationId(companyName);
         }
@@ -425,8 +413,10 @@ export default function Quotation() {
     setProjectName(initialProjectName)
     setTableData(initialTableData);
 
+    if (!id) {
 
-    fetchLatestQuotationId();   // Call the function here to which will fetch the latest quotation id
+      fetchLatestQuotationId();   // Call the function here to which will fetch the latest quotation id
+    }
     //setQuotationIDString(quotationIdString);
 
     setTaxableAmount(0)
@@ -653,7 +643,9 @@ export default function Quotation() {
                     <TableHead sx={{ backgroundColor: '#227DD4', fontWeight: 'bold' }}>
                       <TableRow>
                         <TableCell>Sl No</TableCell>
-                        <TableCell align="center">Test Description</TableCell>
+                        {(quoteCategory === 'Environmental Testing' || quoteCategory === 'EMI & EMC' || quoteCategory === 'Reliability') &&
+                          <TableCell align="center">Test Description</TableCell>
+                        }
                         {(quoteCategory === 'Environmental Testing' || quoteCategory === 'EMI & EMC') &&
                           <>
                             <TableCell align="center">SAC No</TableCell>
@@ -678,15 +670,15 @@ export default function Quotation() {
                           <TableCell component="th" scope="row">
                             {row.slno}
                           </TableCell>
-
-                          <TableCell align="center">
-                            <TextField
-                              value={row.testDescription}
-                              onChange={(e) =>
-                                handleInputChange(row.slno, 'testDescription', e.target.value)}
-                            />
-                          </TableCell>
-
+                          {(quoteCategory === 'Environmental Testing' || quoteCategory === 'EMI & EMC' || quoteCategory === 'Reliability') &&
+                            <TableCell align="center">
+                              <TextField
+                                value={row.testDescription}
+                                onChange={(e) =>
+                                  handleInputChange(row.slno, 'testDescription', e.target.value)}
+                              />
+                            </TableCell>
+                          }
                           {(quoteCategory === 'Environmental Testing' || quoteCategory === 'EMI & EMC') &&
                             <>
                               <TableCell align="center">
@@ -711,7 +703,7 @@ export default function Quotation() {
                                 <FormControl sx={{ minWidth: '150px' }}>
                                   <Select
                                     value={row.unit}
-                                    onChange={(e) => handleUnitChange(row.slno, 'unit', e.target.value)}>
+                                    onChange={(e) => handleInputChange(row.slno, 'unit', e.target.value)}>
                                     <MenuItem value='Hour'> Hour </MenuItem>
                                     <MenuItem value='Test'> Test </MenuItem>
                                     <MenuItem value='Days'> Days </MenuItem>
@@ -735,7 +727,7 @@ export default function Quotation() {
                                 <FormControl sx={{ minWidth: '150px' }}>
                                   <Select
                                     value={row.module_id}
-                                    onChange={(e) => handleUnitChange(row.slno, 'module_id', e.target.value)}>
+                                    onChange={(e) => handleInputChange(row.slno, 'module_id', e.target.value)}>
                                     {modules.map((item) => (<MenuItem key={item.id} value={item.id}>{item.module_name} - {item.module_description}</MenuItem>))}
                                   </Select>
                                 </FormControl>
