@@ -71,7 +71,7 @@ const DialogModals = () => {
       {/* <UserDetailsDialog />
       <DeleteItemsoftModuleDialog /> */}
       <AddCustomerDetails />
-      <DocToPdf />
+      {/* <DocToPdf /> */}
     </div>
   );
 };
