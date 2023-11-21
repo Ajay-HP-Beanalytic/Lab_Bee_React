@@ -127,19 +127,6 @@ export default function Quotation() {
 
 
 
-  /* const PrefillTextFields = () => {
-    useEffect(() => {
-      if (selectedCompanyId)
-        axios.get(`http://localhost:4000/api/getCompanyDetails/` + selectedCompanyId)
-          .then(result => {
-            setCompanyName(result.data[0].company_name)
-            setToCompanyAddress(result.data[0].company_address)
-            setKindAttention(result.data[0].contact_person)
-            setCustomerId(result.data[0].company_id)
-            setCustomerreferance(result.data[0].customer_referance)
-          })
-    }, [])
-  } */
 
   const prefillTextFields = (selectedCompanyId) => {
     if (selectedCompanyId) {
@@ -170,6 +157,8 @@ export default function Quotation() {
   }, [])
 
 
+
+  // Function to add the new row on clicking plus btn:
   const addRow = () => {
     const maxSlNo = Math.max(...tableData.map((row) => row.slno), 0);
     const newRow = {
@@ -185,6 +174,7 @@ export default function Quotation() {
     setCounter(maxSlNo + 1);
   };
 
+  // Function to remove the new row on clicking minus btn:
   const removeRow = (slno) => {
     const updatedData = tableData.filter((row) => row.slno !== slno);
     setTableData(updatedData);
@@ -197,12 +187,7 @@ export default function Quotation() {
     setTableData(updatedData);
   };
 
-  // const handleUnitChange = (slno, field, value) => {
-  //   const updatedData = tableData.map((row) =>
-  //     row.slno === slno ? { ...row, [field]: value } : row
-  //   );
-  //   setTableData(updatedData);
-  // };
+
 
   // Set initial quotation ID when the component mounts
   useEffect(() => {
@@ -633,11 +618,9 @@ export default function Quotation() {
             {/* Table Container */}
             <Grid container justifyContent="center" sx={{ marginTop: '10', paddingBottom: '3' }}>
               <Typography sx={{ marginTop: '5', paddingBottom: '3', paddingTop: '5' }} variant="h5">Test Details</Typography>
-              {/* <Grid item xs={12}>
-              <Typography sx={{ marginTop: '5', paddingBottom: '3' }} variant="h6">Test Details</Typography>
-            </Grid> */}
 
-              <Grid item xs={12}>
+
+              <Grid item xs={12} >
                 <TableContainer component={Paper}>
                   <Table sx={{ minWidth: 650 }} aria-label="simple table">
                     <TableHead sx={{ backgroundColor: '#227DD4', fontWeight: 'bold' }}>
@@ -656,8 +639,15 @@ export default function Quotation() {
                         }
                         {quoteCategory === 'Item Soft' && <TableCell align="center">Module</TableCell>}
                         <TableCell align="center">Amount</TableCell>
-                        <TableCell align="center">Add Row</TableCell>
-                        <TableCell align="center">Remove Row</TableCell>
+                        {/* <TableCell align="center">Add Row</TableCell> */}
+                        <TableCell align="center">
+                          <IconButton>
+                            <Tooltip title='Add Row' arrow>
+                              {/* <AddIcon onClick={handleAddRow} /> */}
+                              <AddIcon onClick={addRow} />
+                            </Tooltip>
+                          </IconButton>
+                        </TableCell>
                       </TableRow>
                     </TableHead>
 
@@ -746,23 +736,22 @@ export default function Quotation() {
                             />
                           </TableCell>
 
-                          <TableCell align="center">
+                          {/* <TableCell align="center">
                             <Tooltip title="Add row" arrow>
                               <IconButton color="primary" onClick={addRow} aria-label="Add Row">
                                 <AddIcon />
                               </IconButton>
                             </Tooltip>
-                          </TableCell>
+                          </TableCell> */}
 
                           <TableCell align="center">
-                            <Tooltip title="Remove row" arrow>
-                              <IconButton
-                                color="secondary"
-                                onClick={() => removeRow(row.slno)}
-                              >
-                                <RemoveIcon />
-                              </IconButton>
-                            </Tooltip>
+
+                            <IconButton color="secondary">
+                              <Tooltip title="Remove row" arrow>
+                                <RemoveIcon onClick={() => removeRow(row.slno)} />
+                              </Tooltip>
+                            </IconButton>
+
                           </TableCell>
 
                         </StyledTableRow>
