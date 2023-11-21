@@ -1,20 +1,31 @@
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, TextField } from '@mui/material'
-import React, { useEffect, useState } from 'react'
+import { Button, Dialog, DialogActions, DialogContent, DialogTitle, FormControl, Input, InputLabel, TextField } from '@mui/material'
+import React, { useEffect, useRef, useState } from 'react'
 import Docxtemplater from 'docxtemplater'
 import { saveAs } from 'file-saver';
+
 import TS1Template from '../templates/EnvironmentalQuoteTemplate.docx'
 import RETemplate from '../templates/ReliabilityQuoteTemplate.docx'
 import ITTemplate from '../templates/ItemSoftQuoteTemplate.docx'
+import EMI_EMC_Template from '../templates/EMICQuoteTemplate.docx'
+
 import PizZip from 'pizzip';
 import PizZipUtils from 'pizzip/utils/index.js';
 import axios from 'axios';
 import moment from 'moment';
 import { useParams } from 'react-router-dom';
+import DocViewer, { DocViewerRenderers } from "@cyntler/react-doc-viewer";
+import { toast } from 'react-toastify';
+import * as Docx from "docx";
+
+
+
 
 
 function loadFile(url, callback) {
     PizZipUtils.getBinaryContent(url, callback);
 }
+
+
 export default function DocToPdf() {
     const { id } = useParams('id')
 
@@ -54,63 +65,37 @@ export default function DocToPdf() {
     const [counter, setCounter] = useState(tableData.length + 1);
     const [taxableAmount, setTaxableAmount] = useState(0);
 
-
+    const [module, setModule] = useState('')
     const [quotationTitle, setQuotationTitle] = useState('');
     const [quotationTitleDialog, setQuotationTitleDialog] = useState(false);
 
 
+    const [companyLogoImage, setCompanyLogoImage] = useState(null);
+    const fileInputRef = useRef(null);
 
-    function onSubmitQuoteTitleButton() {
-        alert('Its done')
-    }
+    const [selectedDocument, setSelectedDocument] = useState(null);
+    const [generatedDoc, setGeneratedDoc] = useState(null);
 
-    function handleCancelBtnIsClicked() {
-        setQuotationTitle('')
-        setQuotationTitleDialog(false)
-    }
 
+
+
+
+
+    // Function to handle the uploaded image:
+    const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = () => {
+                setCompanyLogoImage(reader.result);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+
+    // Function to generate the wrod document based on the data:
     const generatePDF = async () => {
-
-
-        <Dialog open={quotationTitleDialog}
-            onClose={handleCancelBtnIsClicked}
-            aria-labelledby="quotation_title-dialog">
-
-            <DialogTitle id="quotation_title-dialog">
-                Enter quoatation title
-            </DialogTitle>
-
-            <DialogContent>
-                <TextField
-                    sx={{ marginBottom: '16px', marginLeft: '10px', borderRadius: 3 }}
-                    value={quotationTitle}
-                    onChange={(e) => setQuotationTitle(e.target.value)}
-                    label="Quotation Title"
-                    margin="normal"
-                    fullWidth
-                    variant="outlined"
-                    autoComplete="on"
-                />
-
-                <DialogActions>
-                    <Button sx={{ marginBottom: '16px', marginLeft: '10px', borderRadius: 3 }}
-                        variant="contained"
-                        color="secondary"
-                        type="submit"
-                        onClick={onSubmitQuoteTitleButton}>
-                        Submit
-                    </Button>
-
-                    <Button sx={{ marginBottom: '16px', marginLeft: '10px', borderRadius: 3 }}
-                        variant="contained"
-                        color="primary"
-                        onClick={handleCancelBtnIsClicked}>
-                        Cancel
-                    </Button>
-                </DialogActions>
-            </DialogContent>
-
-        </Dialog>
 
         let templateDocument = ''
 
@@ -126,6 +111,10 @@ export default function DocToPdf() {
             templateDocument = ITTemplate
         }
 
+        if (quoteCategory === 'EMI & EMC') {
+            templateDocument = EMI_EMC_Template
+        }
+
 
         loadFile(templateDocument, function (error, content) {
             if (error) {
@@ -136,42 +125,20 @@ export default function DocToPdf() {
             const doc = new Docxtemplater(zip, {
                 paragraphLoop: true,
                 linebreaks: true,
+
             });
 
+            let newTData = []
+            for (let i = 0; i < tableData.length; i++) {
+                // console.log(modules[tableData[i].module_id]);
+                newTData[i] = tableData[i]
+                newTData[i].module_name = modules[tableData[i].module_id]
+            }
 
-
-            let testDescription = ''
-            let amount = ''
-            let duration = ''
-            let perUnitCharge = ''
-            let sacNo = ''
-            let slno = ''
-            let unit = ''
-
-
-            tableData.forEach(item => {
-                testDescription += item.testDescription + `\n`
-                amount += item.amount + `\n`
-                duration += item.duration + `\n`
-                perUnitCharge += item.perUnitCharge + `\n`
-                sacNo += item.sacNo + `\n`
-                slno += item.slno + `\n`
-                unit += item.unit + `\n`
-            })
-
-
-
-
+            //console.log(tableData);
 
             // Set the data for the table placeholder in the template
             doc.setData({
-                testDescription: testDescription,
-                amount: amount,
-                duration: duration,
-                perUnitCharge: perUnitCharge,
-                sacNo: sacNo,
-                slno: slno,
-                unit: unit,
 
                 QUOTATIONTITLE: quotationTitle,
 
@@ -184,9 +151,10 @@ export default function DocToPdf() {
                 customerReferance: customerReferance,
                 todaysDate: todaysDate,
                 taxableAmount: taxableAmount,
-                totalAmountInWords: totalAmountInWords
-            });
+                totalAmountInWords: totalAmountInWords,
 
+                "dataRows": newTData,
+            });
 
             doc.render();
 
@@ -196,40 +164,204 @@ export default function DocToPdf() {
                 .generate({ type: 'blob', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
 
             // Save the blob as a file
-            saveAs(blob, 'trail.docx');
-        });
-    };
+            //saveAs(blob, 'trail.docx');
+
+            // Set the selected document after generating the PDF
+            //setSelectedDocument(blob);
+            //const dataUrl = URL.createObjectURL(blob);
+            //setSelectedDocument(dataUrl);
+
+            // Open the generated document in a new tab
+            //window.open(blob, '_blank');
+
+            // Save the blob as a file
+            //saveAs(blob, 'trail.docx');
+
+            // Set the generated document to be displayed
+            //setGeneratedDoc(blob);
+
+            const dataUrl = URL.createObjectURL(blob);
+
+            const newTab = window.open(dataUrl, '_blank');
+
+            newTab.addEventListener('load', () => {
+                newTab.print();
+            });
+        };
+
+
+        // Function to submit the title and the image of the dialog
+        function onSubmitQuoteTitleButton() {
+            if (quotationTitle != '') {
+                generatePDF()
+                setQuotationTitle('')
+                setCompanyLogoImage(null)
+                setQuotationTitleDialog(false);
+            } else {
+                toast.warning('Please enter the quotation title')
+            }
+        }
+
+
+        // Function to clear the title and the image of the dialog. And to close the dialog
+        function handleCancelBtnIsClicked() {
+            setQuotationTitle('')
+            setCompanyLogoImage(null)
+            setQuotationTitleDialog(false)
+        }
+
+        const [modules, setModules] = useState([])
+
+        useEffect(() => {
+            axios.get(`http://localhost:4000/api/getItemsoftModules/`)
+                .then(result => {
+                    let newModules = {}
+                    result.data.forEach(e => {
+                        newModules[e.id] = e.module_name + ' - ' + e.module_description
+                    })
+                    setModules(newModules);
+                })
+                .catch(error => {
+                    console.error(error);
+                })
+        }, [])
+
+        useEffect(() => {
+            axios.get(`http://localhost:4000/api/quotation/` + id)
+                .then(result => {
+                    setToCompanyName(result.data[0].company_name)
+                    setToCompanyAddress(result.data[0].company_address)
+                    setKindAttention(result.data[0].kind_attention)
+                    setSelectedQuotationId(result.data[0].quotation_ids);
+                    setCustomerIdStr(result.data[0].customer_id)
+                    setQuoteGivenDate(moment(result.data[0].quote_given_date).format("DD-MM-YYYY"))
+                    setCustomerReferance(result.data[0].customer_referance)
+                    setTableData(JSON.parse(result.data[0].tests))
+                    setQuoteCategory(result.data[0].quote_category)
+                    setTaxableAmount(result.data[0].total_amount)
+                    setTotalAmountInWords(result.data[0].total_taxable_amount_in_words)
+                    // console.log('Aj', result.data[0].tests)
+
+
+                })
+                .catch(error => {
+                    console.error(error);
+                })
+        }, [])
 
 
 
-    useEffect(() => {
-        axios.get(`http://localhost:4000/api/quotation/` + id)
-            .then(result => {
-                setToCompanyName(result.data[0].company_name)
-                setToCompanyAddress(result.data[0].company_address)
-                setKindAttention(result.data[0].kind_attention)
-                setSelectedQuotationId(result.data[0].quotation_ids);
-                setCustomerIdStr(result.data[0].customer_id)
-                setQuoteGivenDate(moment(result.data[0].quote_given_date).format("DD-MM-YYYY"))
-                setCustomerReferance(result.data[0].customer_referance)
-                setTableData(JSON.parse(result.data[0].tests))
-                console.log('Aj', result.data[0].tests)
-                setQuoteCategory(result.data[0].quote_category)
-                setTaxableAmount(result.data[0].total_amount)
-                setTotalAmountInWords(result.data[0].total_taxable_amount_in_words)
+        const docs = [
+            {
+                //uri: "https://calibre-ebook.com/downloads/demos/demo.docx",
+                //fileType: 'docx',
+                //fileName: 'demo.docx'
+                //uri: selectedDocument
 
-            })
-            .catch(error => {
-                console.error(error);
-            })
-    }, [])
+                uri: selectedDocument,
+                fileType: 'docx',
+                fileName: 'trail.docx'
+            },
+
+        ];
 
 
-    return (
-        <>
-            <Button variant='contained' onClick={generatePDF}>Generate PDF</Button>
-        </>
-    )
-}
+        return (
+            <>
+                <div>
+                    <Button variant='contained' onClick={() => setQuotationTitleDialog(true)}>
+                        PREVIEW QUOTATION
+                    </Button>
+
+
+                    {quotationTitleDialog && (
+                        <Dialog
+                            open={quotationTitleDialog}
+                            onClose={handleCancelBtnIsClicked}
+                            aria-labelledby="quotation_title-dialog"
+                        >
+
+                            <DialogTitle id="quotation_title-dialog">Enter Quotation Title And Logo</DialogTitle>
+                            <DialogContent>
+                                <TextField
+                                    sx={{ minWidth: '400px', borderRadius: 3 }}
+                                    value={quotationTitle}
+                                    onChange={(e) => setQuotationTitle(e.target.value)}
+                                    label="Quotation Title"
+                                    margin="normal"
+                                    fullWidth
+                                    variant="outlined"
+                                    autoComplete="on"
+                                />
+
+
+                                <>
+                                    <h4>Select the image: </h4>
+                                    <FormControl ref={fileInputRef}>
+                                        <TextField
+                                            type="file"
+                                            accept="image/jpg, image/jpeg, image/png"
+                                            onChange={handleFileChange}
+                                        />
+                                    </FormControl>
+
+                                    {companyLogoImage && (
+                                        <img
+                                            src={companyLogoImage}
+                                            alt="Company Logo"
+                                            style={{ maxWidth: '100%', marginTop: '10px', borderRadius: '5px' }}
+                                        />
+                                    )}
+                                </>
+                            </DialogContent>
+
+                            <DialogActions sx={{ alignItems: 'center' }}>
+                                <Button
+                                    variant="contained"
+                                    color="secondary"
+                                    type="submit"
+                                    onClick={onSubmitQuoteTitleButton}
+                                >
+                                    Submit
+                                </Button>
+                                <Button
+                                    variant="contained"
+                                    color="primary"
+                                    onClick={handleCancelBtnIsClicked}
+                                >
+                                    Cancel
+                                </Button>
+                            </DialogActions>
+                        </Dialog>
+
+                    )}
+
+                </div>
+
+                <h1>Veiw the selected document for your referance.... </h1>
+
+                <div>
+                    {/* <DocViewer documents={docs} pluginRenderers={DocViewerRenderers} */}
+                    {/* {selectedDocument ? (
+                    < DocViewer
+                        documents={docs}
+                        pluginRenderers={DocViewerRenderers}
+                        style={{ height: 1000, width: 900 }}
+                    />
+                ) : null} */}
+
+
+                    {generatedDoc && (
+                        <DocViewer>
+                            <div dangerouslySetInnerHTML={{ __html: generatedDoc }} />
+                        </DocViewer>
+                    )}
+
+
+
+                </div>
+            </>
+        )
+    }
 
 

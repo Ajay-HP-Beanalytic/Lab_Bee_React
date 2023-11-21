@@ -1,8 +1,14 @@
 import React, { useState } from 'react';
 import {
   Box, Typography, Container, TextField, Button, Table, TableBody, TableCell, TableContainer, TableHead,
-  TableRow, Paper, IconButton, Tooltip, Grid, InputLabel, MenuItem, FormControl, Select, Checkbox
+  TableRow, Paper, Grid, InputLabel, MenuItem, FormControl, Select, FormControlLabel, Radio, RadioGroup, Checkbox
 } from '@mui/material';
+
+import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
+import dayjs from 'dayjs';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+
 
 
 function handleSubmitJobcard() {
@@ -11,392 +17,628 @@ function handleSubmitJobcard() {
 
 const Jobcard = () => {
 
-  const jobcardNumber = '2023-2024/11-010'
+  const [value, setValue] = React.useState(dayjs());
+  const [eutRows, setEutRows] = useState([]);
+  const [testRows, setTestRows] = useState([]);
+  const [testdetailsRows, setTestDetailsRows] = useState([]);
 
-  const quoteCategory = 'Environmental Testing'
 
-  const [editId, setEditId] = useState('')
+  const [jcStatus, setJcStatus] = useState('Open');
+
+  const handleChange = (event) => {
+    setJcStatus(event.target.value);
+  };
+
+
+  const handleDateChange = (newValue) => {
+    setValue(newValue);
+  };
+
+  const handleAddEutRow = () => {
+    if (eutRows.length > 0) {
+      const lastId = eutRows[eutRows.length - 1].id
+      // console.log(eutRows.length);
+      const newRow = { id: lastId + 1 };
+      setEutRows([...eutRows, newRow]);
+    }
+    else {
+      const newRow = { id: eutRows.length };
+      setEutRows([...eutRows, newRow]);
+    }
+  };
+
+  const handleRemoveEutRow = (id) => {
+    const updatedRows = eutRows.filter((row) => row.id !== id);
+    setEutRows(updatedRows);
+  };
+
+
+
+  const handleAddTestRow = () => {
+    if (testRows.length > 0) {
+      const lastId = testRows[testRows.length - 1].id
+      const newRow = { id: lastId + 1 };
+      setTestRows([...testRows, newRow]);
+    }
+    else {
+      const newRow = { id: testRows.length };
+      setTestRows([...testRows, newRow]);
+    }
+  };
+
+  const handleRemoveTestRow = (id) => {
+    const updatedRows = testRows.filter((row) => row.id !== id);
+    setTestRows(updatedRows);
+  };
+
+
+
+
+  const handleAddTestDetailsRow = () => {
+    if (testdetailsRows.length > 0) {
+      const lastId = testdetailsRows[testdetailsRows.length - 1].id
+      const newRow = { id: lastId + 1 };
+      setTestDetailsRows([...testdetailsRows, newRow]);
+    }
+    else {
+      const newRow = { id: testdetailsRows.length };
+      setTestDetailsRows([...testdetailsRows, newRow]);
+    }
+  };
+
+  const handleRemoveTestDetailsRow = (id) => {
+    const updatedRows = testdetailsRows.filter((row) => row.id !== id);
+    setTestDetailsRows(updatedRows);
+  };
+
+
+
 
   return (
+
     <>
-      <Typography variant='h5'>Job Card</Typography>
+      <LocalizationProvider dateAdapter={AdapterDayjs}>
+        <Typography variant='h5' align='center'>Job Card </Typography>
 
-      <form onSubmit={handleSubmitJobcard}>
-        <Box >
+        <form onSubmit={handleSubmitJobcard}>
+          <Box >
 
-          <Box sx={{ paddingTop: '5', paddingBottom: '5', marginTop: '5', marginBottom: '5', border: 1, borderColor: 'primary.main' }}>
+            <Box sx={{ paddingTop: '5', paddingBottom: '5px', marginTop: '5px', marginBottom: '5px', border: 1, borderColor: 'primary.main', marginLeft: '140px', marginRight: '140px' }}>
 
-            <div sx={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between' }}>
+              <Grid container justifyContent="center" spacing={2} >
+                <Grid item xs={6} elevation={4} sx={{ borderRadius: 3 }} >
 
-              {/* <FormControl align='left' sx={{ width: "25%", marginTop: '20px', }}>
-              <InputLabel id="import_company_data">Enter company ID</InputLabel>
-              <Select
-                labelId="import_company_data"
-                id="select_company_id"
-                value={selectedCompanyId}
-                label="Select Company Data"
-                onChange={(e) => {
-                  setSelectedCompanyId(e.target.value)
-                  prefillTextFields(e.target.value)
-                }}
-              >
-                {companyIdList.map((companyId, index) => (
-                  <MenuItem key={index} value={companyId}> {companyId}</MenuItem>
-                ))}
-              </Select>
-            </FormControl> */}
-
-              <Typography variant="h6" align='right' sx={{ marginBottom: '16px', marginRight: '20px', marginLeft: '20px', fontWeight: 'bold', fontStyle: 'italic', color: 'blue', textDecoration: 'underline' }}>
-                JC Number: {jobcardNumber}
-              </Typography>
-            </div>
-
-            <Grid container justifyContent="center" spacing={2} >
-              <Grid item xs={6} elevation={4} sx={{ borderRadius: 3 }} >
-
-
-                <Container component="span" margin={1} paddingright={1} elevation={11}>
-                  <Box sx={{ paddingBottom: '10px' }}>
-                    <Typography variant="h6">Customer Details</Typography>
-                  </Box>
-
-                  <Box>
-                    <TextField
-                      sx={{ marginBottom: '16px', marginLeft: '10px', borderRadius: 3 }}
-                      /* value={companyName}
-                      onChange={(e) => setCompanyName(e.target.value)} */
-                      label="Company Name"
-                      margin="normal"
-                      fullWidth
-                      variant="outlined"
-                      autoComplete="on"
-                    />
-                    <div>
+                  <Container component="span" margin={1} paddingright={1} elevation={11}>
+                    <Box sx={{ paddingBottom: '10px' }}>
                       <TextField
                         sx={{ marginBottom: '16px', marginLeft: '10px', borderRadius: 3 }}
-                        label="To Address"
-                        /* value={toCompanyAddress}
-                        onChange={(e) => setToCompanyAddress(e.target.value)} */
+                        label="Jc Number"
                         margin="normal"
                         fullWidth
                         variant="outlined"
-                        multiline={true}
-                        rows={4}
                         autoComplete="on"
                       />
-                    </div>
-                    <div>
+
+                      <TextField
+                        sx={{ marginBottom: '30px', marginLeft: '10px', borderRadius: 3 }}
+                        label="Dc Form Number"
+                        margin="normal"
+                        fullWidth
+                        variant="outlined"
+                        autoComplete="on"
+                      />
+
+                      <DateTimePicker sx={{ marginBottom: '16px', marginLeft: '10px', borderRadius: 3, width: 418 }}
+                        label="Jc Open Date"
+                        variant="outlined"
+                        fullWidth
+                        value={value}
+                        onChange={handleDateChange}
+                        renderInput={(props) => <TextField {...props} />}
+                      />
+
                       <TextField
                         sx={{ marginBottom: '16px', marginLeft: '10px', borderRadius: 3 }}
-                        /* value={kindAttention} onChange={(e) => setKindAttention(e.target.value)} */
-                        label="Customer Name/Contact Person"
+                        label="Po Number"
                         margin="normal"
                         variant="outlined"
                         autoComplete="on"
                         fullWidth
                       />
-                    </div>
-                  </Box>
-                </Container>
-              </Grid>
+                      {/* <Typography variant="h10" > Category:
+                        <RadioGroup style={{ marginLeft: '300px', marginRight: '1px', marginTop: 3, marginBottom: 2, scrollMarginBottom: 5 }} aria-label="Category" name="category"  >
+                          <FormControlLabel
+                            value="Environmental"
+                            control={<Radio />}
+                            label={
+                              <Typography variant="body2" style={{ fontSize: '0.8rem' }}>
+                                Environmental
+                              </Typography>
+                            }
+                          />
+                          <FormControlLabel
+                            value="Screening"
+                            control={<Radio />}
+                            label={
+                              <Typography variant="body2" style={{ fontSize: '0.8rem' }}>
+                                Screening
+                              </Typography>
+                            }
+                          />
 
-              <Grid item xs={6} elevation={4} sx={{ borderRadius: 3 }}>
+                          <FormControlLabel
+                            value="Other"
+                            control={<Radio />}
+                            label={
+                              <Typography variant="body2" style={{ fontSize: '0.8rem' }}>
+                                Other
+                              </Typography>
+                            }
+                          />
+                        </RadioGroup>
+                      </Typography> */}
 
-                <Container component="span" margin={1} paddingright={1} elevation={11}>
-                  <Box sx={{ paddingBottom: '10px' }}>
-                    <Typography variant="h6">Primary Details</Typography>
-                  </Box>
+                      <div style={{ display: 'flex', marginBottom: '30px', marginLeft: '10px' }}>
+                        <div  >
+                          Category:
+                        </div>
 
-                  <Box>
-                    <div>
-                      <TextField
-                        sx={{ marginBottom: '16px', marginRight: '10px', borderRadius: 3 }}
-                        label="Company ID"
-                        /* value={customerId} onChange={handleCompanyNameChange} */
-                        margin="normal"
-                        variant="outlined"
-                        fullWidth
-                      />
-                    </div>
+                        <div style={{ display: 'flex', marginLeft: '240px' }} >
+                          <RadioGroup aria-label="Category" name="category"  >
+                            <FormControlLabel value="Environmental" control={<Radio />} label="Good " />
+                            <FormControlLabel value="Screening" control={<Radio />} label="Screening " />
+                            <FormControlLabel value="Other" control={<Radio />} label="Other " />
+                          </RadioGroup>
+                        </div>
 
-                    <div>
-                      <FormControl sx={{ width: '100%', marginBottom: '16px', marginRight: '10px', borderRadius: 3 }} >
-                        <InputLabel >Customer Referance</InputLabel>
+                      </div>
+                      <br />
+
+                      <FormControl sx={{ width: '100%', marginBottom: '15px', marginRight: '15px', marginLeft: '10px', borderRadius: 3 }} >
+                        <InputLabel >Test Incharge Name</InputLabel>
                         <Select
-                          /* defaultValue={customerReferance} */
-                          /*  value={customerReferance} onChange={(e) => setCustomerreferance(e.target.value)} */
-                          label="Customer Referance"
+                          label="Test Incharge Name"
                           fullWidth
-
                         >
-                          <MenuItem value="Email">Email</MenuItem>
-                          <MenuItem value="Phone">Phone</MenuItem>
+                          <MenuItem value="Chandra">Chandra</MenuItem>
+                          <MenuItem value="Kumarvasaya">Kumarvasaya</MenuItem>
+                          <MenuItem value="Kumarvasaya">Mahaboob</MenuItem>
+                          <MenuItem value="Kumarvasaya">Uday</MenuItem>
                         </Select>
                       </FormControl>
-                    </div>
 
-                    <div>
-                      <TextField
-                        sx={{ marginBottom: '16px', marginRight: '10px', borderRadius: 3 }}
-                        label="Project Name"
-                        /*  value={projectName} onChange={(e) => setProjectName(e.target.value)} */
-                        margin="normal"
-                        variant="outlined"
-                        fullWidth
-                      />
-                    </div>
-
-                    <Box sx={{
-                      display: 'flex',
-                      alignItems: 'flex-end',
-                      marginBottom: '16px',
-                    }}>
-                      <TextField
-                        sx={{ width: '50%', marginBottom: '16px', marginRight: '10px', borderRadius: 3 }}
-                        label="Date"
-                        margin="normal"
-                        variant="outlined"
-                        /*  value={selectedDate}
-                         onChange={(e) => { setSelectedDate(e.target.value) }} */
-                        fullWidth
-                      />
-
-                      <FormControl sx={{ width: '50%', marginBottom: '16px', marginRight: '10px', borderRadius: 3 }}>
-                        <InputLabel>Quote Type</InputLabel>
-                        <Select
-                          /* value={quoteCategory} onChange={(e) => {
-                            setQuoteCategory(e.target.value)
-                            generateDynamicQuotationIdString(customerId, e.target.value)
-                          }
-                          } */
-                          label="Quote Type"
-                          margin="normal"
-                        >
-                          <MenuItem value='Environmental Testing'>Environmental Testing</MenuItem>
-                          <MenuItem value='Reliability'>Reliability</MenuItem>
-                          <MenuItem value='EMI & EMC'>EMI & EMC</MenuItem>
-                          <MenuItem value='Item Soft'>Item Soft</MenuItem>
-                        </Select>
-                      </FormControl>
                     </Box>
+                  </Container>
+                </Grid>
 
-                  </Box>
-                </Container>
-
-              </Grid>
-            </Grid>
-
-          </Box>
-
-          <Box>
-            {/* Table Container */}
-            <Grid container justifyContent="center" sx={{ marginTop: '10', paddingBottom: '3' }}>
-              <Typography sx={{ marginTop: '5', paddingBottom: '3', paddingTop: '5' }} variant="h5">Test Details</Typography>
-              {/* <Grid item xs={12}>
-              <Typography sx={{ marginTop: '5', paddingBottom: '3' }} variant="h6">Test Details</Typography>
-            </Grid> */}
-
-              <Grid item xs={12}>
-                <TableContainer component={Paper}>
-                  <Table sx={{ minWidth: 650 }} aria-label="simple table">
-                    <TableHead sx={{ backgroundColor: '#227DD4', fontWeight: 'bold' }}>
-                      <TableRow>
-                        <TableCell>Sl No</TableCell>
-                        <TableCell align="center">Test Description</TableCell>
-                        {(quoteCategory === 'Environmental Testing' || quoteCategory === 'EMI & EMC') &&
-                          <>
-                            <TableCell align="center">SAC No</TableCell>
-                            <TableCell align="center"> Duration/Quantity</TableCell>
-                            <TableCell align="center">Unit</TableCell>
-                            <TableCell align="center">Per Unit Charge</TableCell>
-                          </>
-                        }
-                        {quoteCategory === 'Item Soft' && <TableCell align="center">Module</TableCell>}
-                        <TableCell align="center">Amount</TableCell>
-                        <TableCell align="center">Add Row</TableCell>
-                        <TableCell align="center">Remove Row</TableCell>
-                      </TableRow>
-                    </TableHead>
-
-                    {/* <TableBody>
-                    {tableData.map((row) => (
-                      <StyledTableRow
-                        key={row.slno}
-                        sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
-                      >
-                        <TableCell component="th" scope="row">
-                          {row.slno}
-                        </TableCell>
-
-                        <TableCell align="center">
-                          <TextField
-                            value={row.testDescription}
-                            onChange={(e) =>
-                              handleInputChange(row.slno, 'testDescription', e.target.value)}
-                          />
-                        </TableCell>
-
-                        {(quoteCategory === 'Environmental Testing' || quoteCategory === 'EMI & EMC') &&
-                          <>
-                            <TableCell align="center">
-                              <TextField
-                                value={row.sacNo}
-                                onChange={(e) =>
-                                  handleInputChange(row.slno, 'sacNo', e.target.value)}
-                              />
-                            </TableCell>
-
-                            <TableCell align="center">
-                              <TextField
-                                value={row.duration}
-                                //type='number'
-                                onChange={(e) =>
-                                  //handleInputChange(row.slno, 'duration', e.target.value)}
-                                  handleCellChange(row.slno, 'duration', parseFloat(e.target.value))}
-                              />
-                            </TableCell>
-
-                            <TableCell align='center'>
-                              <FormControl sx={{ minWidth: '150px' }}>
-                                <Select
-                                  value={row.unit}
-                                  onChange={(e) => handleUnitChange(row.slno, 'unit', e.target.value)}>
-                                  <MenuItem value='Hour'> Hour </MenuItem>
-                                  <MenuItem value='Test'> Test </MenuItem>
-                                  <MenuItem value='Days'> Days </MenuItem>
-                                </Select>
-                              </FormControl>
-                            </TableCell>
-
-                            <TableCell align="center">
-                              <TextField
-                                value={row.perUnitCharge}
-                                type='number'
-                                onChange={(e) =>
-                                  handleCellChange(row.slno, 'perUnitCharge', parseFloat(e.target.value))}
-                              />
-                            </TableCell>
-                          </>
-                        }
-                        {quoteCategory === 'Item Soft' &&
-                          <>
-                            <TableCell align='center'>
-                              <FormControl sx={{ minWidth: '150px' }}>
-                                <Select
-                                  value={row.module_id}
-                                  onChange={(e) => handleUnitChange(row.slno, 'module_id', e.target.value)}>
-                                  {modules.map((item) => (<MenuItem key={item.id} value={item.id}>{item.module_name} - {item.module_description}</MenuItem>))}
-                                </Select>
-                              </FormControl>
-                            </TableCell>
-                          </>
-                        }
-
-                        <TableCell align="center">
-                          <TextField
-                            value={row.amount}
-                            type='number'
-                            onChange={(e) =>
-                              //handleInputChange(row.slno, 'amount', e.target.value)}
-                              handleCellChange(row.slno, 'amount', parseFloat(e.target.value))}
-
-                          />
-                        </TableCell>
-
-                        <TableCell align="center">
-                          <Tooltip title="Add row" arrow>
-                            <IconButton color="primary" onClick={addRow} aria-label="Add Row">
-                              <AddIcon />
-                            </IconButton>
-                          </Tooltip>
-                        </TableCell>
-
-                        <TableCell align="center">
-                          <Tooltip title="Remove row" arrow>
-                            <IconButton
-                              color="secondary"
-                              onClick={() => removeRow(row.slno)}
-                            >
-                              <RemoveIcon />
-                            </IconButton>
-                          </Tooltip>
-                        </TableCell>
-
-                      </StyledTableRow>
-                    ))}
-
-                    <TableRow>
-                      <TableCell align="left" >
-                        <Checkbox
-                          checked={isTotalDiscountVisible}
-                          onChange={(event) => setIsTotalDiscountVisible(event.target.checked)}
+                <Grid item xs={6} elevation={4} sx={{ borderRadius: 3 }}>
+                  <Container component="span" margin={1} paddingright={1} elevation={11}>
+                    <Box sx={{ paddingBottom: '10px' }}>
+                      <div>
+                        <TextField
+                          sx={{ marginBottom: '16px', borderRadius: 3, marginRight: '10px' }}
+                          label="Company Name"
+                          margin="normal"
+                          variant="outlined"
+                          autoComplete="on"
+                          fullWidth
+                        />
+                        <TextField
+                          sx={{ marginBottom: '16px', marginRight: '10px', borderRadius: 3 }}
+                          label="Customer Number"
+                          margin="normal"
+                          variant="outlined"
+                          fullWidth
+                        />
+                        <TextField
+                          sx={{ marginBottom: '16px', marginRight: '10px', borderRadius: 3 }}
+                          label="Customer Signature"
+                          margin="normal"
+                          variant="outlined"
+                          fullWidth
+                        />
+                        <TextField
+                          sx={{ marginBottom: '16px', marginRight: '10px', borderRadius: 3 }}
+                          label="Project Name"
+                          margin="normal"
+                          variant="outlined"
+                          fullWidth
                         />
 
-                      </TableCell>
-                    </TableRow>
+                        {/* <Typography variant="h10" > Sample Condition:
+                          <RadioGroup style={{ marginLeft: '300px', marginRight: '15px', marginBottom: '55px', marginTop: 5, }} aria-label="Category" name="category"  >
+                            <FormControlLabel
+                              value="Good"
+                              control={<Radio />}
+                              label={
+                                <Typography variant="body2" style={{ fontSize: '0.8rem' }}>
+                                  Good
+                                </Typography>
+                              }
+                            />
+                            <FormControlLabel
+                              value="Other"
+                              control={<Radio />}
+                              label={
+                                <Typography variant="body2" style={{ fontSize: '0.8rem' }}>
+                                  Other
+                                </Typography>
+                              }
+                            />
+                          </RadioGroup>
+                        </Typography> */}
 
 
-                    <TableRow>
-                      <TableCell rowSpan={3} />
-                      <TableCell colSpan={3} > <Typography variant='h6'> Taxable Amount:</Typography> </TableCell>
-                      <TableCell align="center"> <Typography variant='h6'> {taxableAmount.toFixed(2)}</Typography>  </TableCell>
-                    </TableRow>
+                        {/* <Typography variant="h8" style={{ marginLeft: '1px', marginRight: '15px' }} > Sample Condition:
+                          <RadioGroup style={{ marginLeft: '319px', marginRight: '15px', marginBottom: '55px' }} aria-label="Category" name="category"  >
+                            <FormControlLabel value="Good" control={<Radio />} label="Good " />
+                            <FormControlLabel value="Other" control={<Radio />} label="Other " />
+                          </RadioGroup>
 
-                    {isTotalDiscountVisible && (
-                      <TableRow>
-                        <TableCell colSpan={3} > <Typography variant='h6'> Total Discount:</Typography> </TableCell>
-                        <TableCell align="center"> <Typography variant='h6'>
-                          <TextField
-                            type='number'
-                          />
-                        </Typography>
-                        </TableCell>
-                      </TableRow>
-                    )}
+                        </Typography> */}
+
+                        <div style={{
+                          display: 'flex', marginBottom: '85px', marginLeft: '1px'
+                        }}>
+                          <div  >
+                            SampleCondition:
+                          </div>
+
+                          <div style={{ display: 'flex', marginLeft: '200px' }}>
+                            <RadioGroup aria-label="Category" name="category"  >
+                              <FormControlLabel value="Good" control={<Radio />} label="Good " />
+                              <FormControlLabel value="Other" control={<Radio />} label="Other " />
+                            </RadioGroup>
+                          </div>
+
+                        </div>
 
 
-                    <TableRow>
-                      <TableCell colSpan={3}> <Typography variant='h6'> Total Amount in Rupees:</Typography> </TableCell>
-                      <TableCell align="center"> <Typography variant='h6'> {totalAmountWords} </Typography> </TableCell>
-                    </TableRow>
+                        <TextField
+                          sx={{ marginBottom: '30px', marginRight: '10px', borderRadius: 3 }}
+                          label="Reference Document(ifany)"
+                          margin="normal"
+                          variant="outlined"
+                          fullWidth
+                        />
 
+                      </div>
+                    </Box>
+                  </Container>
 
-                  </TableBody> */}
-                  </Table>
-                </TableContainer>
+                </Grid>
               </Grid>
-            </Grid>
 
-            <Box sx={{ marginTop: 3, marginBottom: 0.5, alignContent: 'center' }}>
-
-              <Button
-                sx={{ borderRadius: 3, margin: 0.5 }}
-                variant="contained"
-                color="primary"
-                type="submit"
-              >
-                {editId ? 'Save changes' : 'Add'}
-              </Button>
-
-
-              <Button
-                sx={{ borderRadius: 3, margin: 0.5 }}
-                variant="contained"
-                color="primary"
-                onClick={() => window.history.back()}
-              >
-                {/* <Link to='/home' style={{ color: 'white', textDecoration: 'none' }}>Close</Link> */}
-                Close
-              </Button>
             </Box>
 
+            <Box>
+              {/* Table Container */}
+              <Grid container justifyContent="center" sx={{ marginTop: '10', paddingBottom: '3' }}>
+                <Typography sx={{ marginTop: '5', paddingBottom: '3', paddingTop: '5' }} variant="h5">EutDetails</Typography>
+
+                <Grid item xs={12}>
+                  <TableContainer component={Paper} style={{ marginLeft: '140px', maxWidth: '960px' }}>
+                    <Table size='small' aria-label="simple table">
+                      <TableHead sx={{ backgroundColor: '#227DD4', fontWeight: 'bold', marginLeft: '140px' }}>
+                        <TableRow>
+                          <TableCell>Sl No</TableCell>
+                          <TableCell align="center">Test Description</TableCell>
+                          <TableCell align="center">Jc Number</TableCell>
+                          <TableCell align="center">Nomenculature</TableCell>
+                          <TableCell align="center">Eut Description</TableCell>
+                          <TableCell align="center">Qty</TableCell>
+                          <TableCell align="center">Part No</TableCell>
+                          <TableCell align="center">Model No</TableCell>
+                          <TableCell align="center">Serial No</TableCell>
+                          <TableCell><Button style={{ backgroundColor: '#4e95dc' }} variant="contained" color="primary" onClick={handleAddEutRow}>
+                            Add
+                          </Button> </TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {eutRows.map((row, index) => {
+                          return (
+                            <TableRow key={row.id}>
+                              <TableCell>{index + 1}</TableCell>
+                              <TableCell>
+                                <TextField style={{ backgroundColor: 'white', width: '100px', align: "center" }} variant="outlined" size="small" />
+                              </TableCell>
+                              <TableCell>
+                                <TextField style={{ backgroundColor: 'white', width: '100px', align: "center" }} variant="outlined" size="small" />
+                              </TableCell>
+                              <TableCell>
+                                <TextField style={{ backgroundColor: 'white', width: '100px', align: "center" }} variant="outlined" size="small" />
+                              </TableCell>
+                              <TableCell>
+                                <TextField style={{ backgroundColor: 'white', width: '100px', align: "center" }} variant="outlined" size="small" />
+                              </TableCell>
+                              <TableCell>
+                                <TextField style={{ backgroundColor: 'white', width: '100px', align: "center" }} variant="outlined" size="small" />
+                              </TableCell>
+                              <TableCell>
+                                <TextField style={{ backgroundColor: 'white', width: '100px', align: "center" }} variant="outlined" size="small" />
+                              </TableCell>
+                              <TableCell>
+                                <TextField style={{ backgroundColor: 'white', width: '100px', align: "center" }} variant="outlined" size="small" />
+                              </TableCell>
+                              <TableCell>
+                                <TextField style={{ backgroundColor: 'white', width: '100px', align: "center" }} variant="outlined" size="small" />
+                              </TableCell>
+
+
+
+                              <TableCell>
+                                <Button
+                                  style={{ backgroundColor: '#227DD4', width: '100px', align: "center" }}
+                                  variant="contained"
+                                  color="secondary"
+                                  onClick={() => handleRemoveEutRow(row.id)}
+                                >
+                                  Remove
+                                </Button>
+                              </TableCell>
+                            </TableRow>
+                          )
+                        }
+                        )}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+
+                </Grid>
+              </Grid>
+
+
+              <Grid container justifyContent="center" sx={{ marginTop: '10', paddingBottom: '3' }}>
+                <Typography sx={{ marginTop: '5', paddingBottom: '3', paddingTop: '5' }} variant="h5">Tests</Typography>
+
+                <Grid item xs={12}>
+                  <TableContainer component={Paper} style={{ marginLeft: '140px', maxWidth: '960px' }}>
+                    <Table size='small' aria-label="simple table">
+                      <TableHead sx={{ backgroundColor: '#227DD4', fontWeight: 'bold', minWidth: 100 }}>
+                        <TableRow>
+                          <TableCell>Sl No</TableCell>
+                          <TableCell align="center">Test</TableCell>
+                          <TableCell align="center">NABL</TableCell>
+                          <TableCell align="center">Nomenculature</TableCell>
+                          <TableCell align="center">Test Standard</TableCell>
+                          <TableCell align="center">Reference Document</TableCell>
+                          <TableCell><Button style={{ backgroundColor: '#4e95dc' }} variant="contained" color="primary" onClick={handleAddTestRow}>
+                            Add
+                          </Button> </TableCell>
+
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {testRows.map((row, index) => (
+                          <TableRow key={row.id}>
+                            <TableCell>{index + 1}</TableCell>
+                            <TableCell>
+                              <TextField style={{ backgroundColor: 'white', width: '100px', align: "center" }} variant="outlined" size="small" />
+                            </TableCell>
+                            <TableCell>
+                              <TextField
+                                style={{ backgroundColor: "white", width: '100px', align: "center" }}
+                                variant='outlined'
+                                size="small"
+                                InputProps={{
+                                  endAdornment: (
+                                    <FormControlLabel
+                                      control={<Checkbox style={{ width: '10px', align: "center" }} />}
+                                      label="NABL"
+
+                                    />
+                                  ),
+                                }}
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <TextField style={{ backgroundColor: 'white', width: '100px', align: "center" }} variant="outlined" size="small" />
+                            </TableCell>
+                            <TableCell>
+                              <TextField style={{ backgroundColor: 'white', width: '100px', align: "center" }} variant="outlined" size="small" />
+                            </TableCell>
+                            <TableCell>
+                              <TextField style={{ backgroundColor: 'white', width: '100px', align: "center" }} variant="outlined" size="small" />
+                            </TableCell>
+
+                            <TableCell >
+                              <Button
+                                style={{ backgroundColor: '#227DD4', width: '100px', align: "center" }}
+                                variant="contained"
+                                color="secondary"
+                                onClick={() => handleRemoveTestRow(row.id)}
+                              >
+                                Remove
+                              </Button>
+                            </TableCell>
+
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+
+                </Grid>
+              </Grid>
+
+
+              <Grid container justifyContent="center" sx={{ marginTop: '10', paddingBottom: '3' }}>
+                <Typography sx={{ marginTop: '5', paddingBottom: '3', paddingTop: '5' }} variant="h5">Test Details</Typography>
+
+                <Grid item xs={12}>
+                  <TableContainer component={Paper} style={{ marginLeft: '140px', maxWidth: '960px' }}>
+                    <Table size='small' aria-label="simple table">
+                      <TableHead sx={{ backgroundColor: '#227DD4', fontWeight: 'bold' }}>
+                        <TableRow>
+                          <TableCell>Sl No</TableCell>
+                          <TableCell align="center">Jc Number</TableCell>
+                          <TableCell align="center">Test</TableCell>
+                          <TableCell align="center">Chamber</TableCell>
+                          <TableCell align="center">Eut Serial No</TableCell>
+                          <TableCell align="center">Standard</TableCell>
+                          <TableCell align="center">Start By</TableCell>
+                          <TableCell align="center">Serial No</TableCell>
+                          <TableCell align="center">Start Date</TableCell>
+                          <TableCell align="center">Duration(Hrs)</TableCell>
+                          <TableCell align="center">Ended By</TableCell>
+                          <TableCell align="center">Remarks</TableCell>
+                          <TableCell align="center">Report No</TableCell>
+                          <TableCell align="center">Prepared By</TableCell>
+                          <TableCell align="center">Nabl Uploaded</TableCell>
+                          <TableCell align="center">Report Status</TableCell>
+
+                          <TableCell><Button style={{ backgroundColor: '#4e95dc' }} variant="contained" color="primary" onClick={handleAddTestDetailsRow}>
+                            Add
+                          </Button> </TableCell>
+
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {testdetailsRows.map((row, index) => (
+                          <TableRow key={row.id}>
+                            <TableCell>{index + 1}</TableCell>
+                            <TableCell>
+                              <TextField style={{ backgroundColor: 'white', width: '65px', align: "center" }} variant="outlined" size="small" />
+                            </TableCell>
+                            <TableCell>
+                              <TextField style={{ backgroundColor: 'white', width: '65px', align: "center" }} variant="outlined" size="small" />
+                            </TableCell>
+                            <TableCell>
+                              <TextField style={{ backgroundColor: 'white', width: '65px', align: "center" }} variant="outlined" size="small" />
+                            </TableCell>
+                            <TableCell>
+                              <TextField style={{ backgroundColor: 'white', width: '65px', align: "center" }} variant="outlined" size="small" />
+                            </TableCell>
+                            <TableCell>
+                              <TextField style={{ backgroundColor: 'white', width: '65px', align: "center" }} variant="outlined" size="small" />
+                            </TableCell>
+                            <TableCell>
+                              <TextField style={{ backgroundColor: 'white', width: '65px', align: "center" }} variant="outlined" size="small" />
+                            </TableCell>
+                            <TableCell>
+                              <TextField style={{ backgroundColor: 'white', width: '65px', align: "center" }} variant="outlined" size="small" />
+                            </TableCell>
+                            <TableCell>
+                              <TextField style={{ backgroundColor: 'white', width: '65px', align: "center" }} variant="outlined" size="small" />
+                            </TableCell>
+                            <TableCell>
+                              <TextField style={{ backgroundColor: 'white', width: '65px', align: "center" }} variant="outlined" size="small" />
+                            </TableCell>
+                            <TableCell>
+                              <TextField style={{ backgroundColor: 'white', width: '65px', align: "center" }} variant="outlined" size="small" />
+                            </TableCell>
+                            <TableCell>
+                              <TextField style={{ backgroundColor: 'white', width: '65px', align: "center" }} variant="outlined" size="small" />
+                            </TableCell>
+                            <TableCell>
+                              <TextField style={{ backgroundColor: 'white', width: '65px', align: "center" }} variant="outlined" size="small" />
+                            </TableCell>
+                            <TableCell>
+                              <TextField style={{ backgroundColor: 'white', width: '65px', align: "center" }} variant="outlined" size="small" />
+                            </TableCell>
+                            <TableCell>
+                              <TextField style={{ backgroundColor: 'white', width: '65px', align: "center" }} variant="outlined" size="small" />
+                            </TableCell>
+                            <TableCell>
+                              <TextField style={{ backgroundColor: 'white', width: '65px', align: "center" }} variant="outlined" size="small" />
+                            </TableCell>
+
+
+
+                            <TableCell>
+                              <Button
+                                style={{ backgroundColor: '#227DD4', align: "center", width: '65px' }}
+                                variant="contained"
+                                color="secondary"
+                                onClick={() => handleRemoveTestDetailsRow(row.id)}
+                              >
+                                Remove
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+
+                </Grid>
+              </Grid>
+
+              <Box sx={{ paddingTop: '5', paddingBottom: '5', marginTop: '20px', marginBottom: '20px', border: 1, borderColor: 'primary.main', marginLeft: '140px', marginRight: '140px' }}>
+
+                <Container maxWidth="s">
+                  <Grid container spacing={2}>
+                    <Grid item xs={6}>
+                      <FormControl sx={{ width: '100%', marginBottom: '20px', marginRight: '15px', marginTop: '20px', borderRadius: 3 }} >
+                        <InputLabel >JcStatus</InputLabel>
+                        <Select
+                          label="JcStatus"
+                          fullWidth
+                          value={jcStatus}
+                          onChange={handleChange}
+                        >
+                          <MenuItem value="Open">Open</MenuItem>
+                          <MenuItem value="Running">Running</MenuItem>
+                          <MenuItem value="Close">Close</MenuItem>
+
+                        </Select>
+                      </FormControl>
+                    </Grid>
+
+                    <Grid item xs={6} >
+
+                      {jcStatus === 'Close' && (
+
+                        <DateTimePicker sx={{ marginBottom: '16px', marginTop: '20px', marginLeft: '15px', borderRadius: 3, width: 425 }}
+                          label="Jc close Date"
+                          variant="outlined"
+
+                          size="small"
+                          defaultValue={dayjs()}
+                        />
+
+                      )}
+
+                      {jcStatus === 'Open' && (
+                        <Typography variant="h6">
+                          <TextField sx={{ marginBottom: '16px', marginTop: '20px', marginLeft: '15px', borderRadius: 3, width: 425 }}
+                          />
+                        </Typography>
+                      )}
+
+                      <TextField
+                        sx={{ marginBottom: '20px', marginLeft: '15px', marginRight: '15px', borderRadius: 3, width: 425 }}
+                        label="Observations(if any)"
+                        margin="normal"
+                        variant="outlined"
+                        autoComplete="on"
+                      />
+
+                    </Grid>
+                  </Grid>
+
+                </Container>
+
+              </Box>
+
+            </Box>
+
+            <Button style={{ marginLeft: '150px', align: 'center', marginTop: 20, marginRight: '15px', backgroundColor: '#227DD4' }} sx={{ width: '8%', marginBottom: 5 }}
+              variant="contained"
+              color="primary">
+              Clear
+            </Button>
+
+            <Button style={{ marginTop: 20, backgroundColor: '#227DD4', marginRight: '150px' }} sx={{ width: '8%', marginBottom: 5, align: 'center' }}
+              variant="contained"
+              color="secondary">
+              Submit
+            </Button>
+
           </Box>
-
-        </Box>
-      </form >
-
-
-
+        </form >
+      </LocalizationProvider >
     </>
   )
 }

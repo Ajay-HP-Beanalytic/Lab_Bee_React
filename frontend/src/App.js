@@ -16,6 +16,7 @@ import AddCustomerDetails from "./components/AddCustomerDetails";
 import Quotation from "./Pages/Quotation";
 import QuotationPdf from "./Pages/QuotationPdf";
 import DocToPdf from "./components/DocToPdf";
+import DocumentViewer from "./components/DocumentViewer";
 
 
 
@@ -37,10 +38,10 @@ function App() {
             <Route path="/add_module_or_test" element={<AddModulesAndTests />} />
             <Route path="/add_customer_data" element={<AddCustomerDetails />} />
             <Route path="/quotationPdf/:id" element={<QuotationPdf />} />
-            {/* <Route path="/quotationDocToPdf/:id" element={<DocToPdf />} /> */}
 
             <Route path="/quotationWordToPdf/:id" element={<DocToPdf />} />
-            {/* <Route path="/quotationPdf" element={<TrailPdf />} /> */}
+            {/* <Route path="/quotationWordToPdf/:id" element={<DocumentViewer />} /> */}
+
 
             <Route path='*' element={<NotFoundPage />} />
           </Route>

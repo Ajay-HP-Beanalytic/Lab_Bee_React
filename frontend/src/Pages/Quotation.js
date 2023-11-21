@@ -325,7 +325,7 @@ export default function Quotation() {
 
 
     if (!quotationIdString || !customerId || !toCompanyAddress || !selectedDate || !customerId || !customerReferance ||
-      !kindAttention || !quoteCategory || !quotationCreatedBy || !tableData) {
+      !kindAttention || !projectName || !quoteCategory || !quotationCreatedBy || !tableData) {
       toast.error("Please enter all the fields..!");
       return;
     }
