@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Box, Typography, Container, TextField, Button, Table, TableBody, TableCell, TableContainer, TableHead,
-  TableRow, Paper, IconButton, Tooltip, Grid, InputLabel, MenuItem, FormControl, Select, Checkbox, Autocomplete
+  TableRow, Paper, IconButton, Tooltip, Grid, InputLabel, MenuItem, FormControl, Select, Checkbox, Autocomplete, FormControlLabel, Stack
 } from '@mui/material';
 import axios from "axios";
 import moment from "moment";                     // To convert the date into desired format
@@ -19,7 +19,6 @@ import PrintIcon from '@mui/icons-material/Print';
 
 import loggedInUser from "../components/sidenavbar"
 import { Link, Navigate, useParams } from 'react-router-dom';
-import { useReactToPrint } from 'react-to-print';
 
 const StyledTableRow = styled(TableRow)(({ theme }) => ({
   '&:nth-of-type(odd)': {
@@ -93,6 +92,7 @@ export default function Quotation() {
   const quotationCreatedBy = loggedInUser;
 
   const [isTotalDiscountVisible, setIsTotalDiscountVisible] = useState(false);
+  const [discountAmount, setDiscountAmount] = useState('')
 
   const { id } = useParams('id')
 
@@ -303,7 +303,6 @@ export default function Quotation() {
 
 
 
-
   // To submit the data and store it in a database:
   const handleSubmitETQuotation = async (e) => {
     e.preventDefault();
@@ -342,6 +341,7 @@ export default function Quotation() {
       projectName,
       quoteCategory,
       taxableAmount,
+      discountAmount,
       totalAmountWords,
       quotationCreatedBy,
       tableData
@@ -382,10 +382,10 @@ export default function Quotation() {
 
       // Update the state with the new data
       setTableData(updatedData);
-      calculateTaxableAmount();
     }
 
   }
+
 
   // Clear input fields when the "Cancel" button is clicked
   const handleCancelBtnIsClicked = () => {
@@ -409,16 +409,18 @@ export default function Quotation() {
     setSelectedCompanyId('')
   };
 
-  const calculateTaxableAmount = () => {
-  };
-
-
+  // Useeffect to calculate the total amount, to display that in word. 
   useEffect(() => {
     const subtotal = tableData.map(({ amount }) => parseFloat(amount || 0)).reduce((sum, value) => sum + value, 0);
-    setTaxableAmount(subtotal);
-    setTotalAmountWords(numberToWords.toWords(subtotal).toUpperCase());
-    // calculateTaxableAmount();
-  }, [tableData]);
+
+    // Apply the discount if it is visible
+    const subTotalAfterDiscount = isTotalDiscountVisible ? subtotal - parseFloat(discountAmount || 0) : subtotal;
+
+    setTaxableAmount(subTotalAfterDiscount);
+    setTotalAmountWords(numberToWords.toWords(subTotalAfterDiscount).toUpperCase());
+  }, [tableData, isTotalDiscountVisible, discountAmount]);
+
+
 
 
   return (
@@ -614,6 +616,8 @@ export default function Quotation() {
 
           </Box>
 
+          <br />
+
           <Box>
             {/* Table Container */}
             <Grid container justifyContent="center" sx={{ marginTop: '10', paddingBottom: '3' }}>
@@ -736,61 +740,16 @@ export default function Quotation() {
                             />
                           </TableCell>
 
-                          {/* <TableCell align="center">
-                            <Tooltip title="Add row" arrow>
-                              <IconButton color="primary" onClick={addRow} aria-label="Add Row">
-                                <AddIcon />
-                              </IconButton>
-                            </Tooltip>
-                          </TableCell> */}
-
                           <TableCell align="center">
-
                             <IconButton color="secondary">
                               <Tooltip title="Remove row" arrow>
                                 <RemoveIcon onClick={() => removeRow(row.slno)} />
                               </Tooltip>
                             </IconButton>
-
                           </TableCell>
 
                         </StyledTableRow>
                       ))}
-
-                      {/* <TableRow>
-                        <TableCell align="left" >
-                          <Checkbox
-                            checked={isTotalDiscountVisible}
-                            onChange={(event) => setIsTotalDiscountVisible(event.target.checked)}
-                          />
-
-                        </TableCell>
-                      </TableRow> */}
-
-
-                      {/* <TableRow>
-                        <TableCell rowSpan={3} />
-                        <TableCell colSpan={3} > <Typography variant='h6'> Taxable Amount:</Typography> </TableCell>
-                        <TableCell align="center"> <Typography variant='h6'> {taxableAmount.toFixed(2)}</Typography>  </TableCell>
-                      </TableRow> */}
-
-                      {/* {isTotalDiscountVisible && (
-                        <TableRow>
-                          <TableCell colSpan={3} > <Typography variant='h6'> Total Discount:</Typography> </TableCell>
-                          <TableCell align="center"> <Typography variant='h6'>
-                            <TextField
-                              type='number'
-                            />
-                          </Typography>
-                          </TableCell>
-                        </TableRow>
-                      )} */}
-
-
-                      {/* <TableRow>
-                        <TableCell colSpan={3}> <Typography variant='h6'> Total Amount in Rupees:</Typography> </TableCell>
-                        <TableCell align="center"> <Typography variant='h6'> {totalAmountWords} </Typography> </TableCell>
-                      </TableRow> */}
 
 
                     </TableBody>
@@ -801,11 +760,24 @@ export default function Quotation() {
 
                   <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                     <TableRow>
-                      <TableCell align="left">
-                        <Checkbox
-                          checked={isTotalDiscountVisible}
-                          onChange={(event) => setIsTotalDiscountVisible(event.target.checked)}
-                        />
+                      <TableCell >
+                        {/* <Typography variant="body1">Check to add Discount</Typography>
+                        <Tooltip label='Show Discount Field' arrow>
+                          <Checkbox
+                            checked={isTotalDiscountVisible}
+                            onChange={(event) => setIsTotalDiscountVisible(event.target.checked)}
+                          />
+                        </Tooltip> */}
+
+                        {editId && (<Stack direction='row'>
+                          <FormControlLabel
+                            control={<Checkbox checked={isTotalDiscountVisible} />}
+                            onChange={(event) => setIsTotalDiscountVisible(event.target.checked)}
+                            label={<Typography variant="h6">Check to add Discount</Typography>}
+                          />
+                        </Stack>)}
+
+
                       </TableCell>
                     </TableRow>
 
@@ -827,15 +799,15 @@ export default function Quotation() {
                         <TableCell align="center">
                           <Typography variant='h6'>
                             <TextField
-                              /* value={row.amount} */
+                              value={discountAmount}
                               type='number'
-                            /* onChange={(e) =>
-                              handleCellChange(row.slno, 'amount', parseFloat(e.target.value))} */
+                              onChange={(e) => setDiscountAmount(e.target.value)}
                             />
                           </Typography>
                         </TableCell>
                       </TableRow>
                     )}
+
 
                     <TableRow>
                       <TableCell colSpan={3}>
@@ -847,20 +819,8 @@ export default function Quotation() {
                     </TableRow>
                   </Box>
 
-
-
-
                 </TableContainer>
 
-                {/* <div sx={{ display: 'space-between', alignItems: 'center' }}>
-                  <Typography variant='h6' align="center" > Total Amount in Rupees: {totalAmountWords}</Typography>
-                </div> */}
-
-                {/* <div sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <Typography variant='h6' align="left" sx={{ marginTop: '8px' }}>Total Amount in Rupees:
-                    <Typography variant='h6' align="center" sx={{ marginLeft: '8px' }}>{totalAmountWords}</Typography>
-                  </Typography>
-                </div> */}
               </Grid>
             </Grid>
 
@@ -882,24 +842,8 @@ export default function Quotation() {
                 color="primary"
                 onClick={() => window.history.back()}
               >
-                {/* <Link to='/home' style={{ color: 'white', textDecoration: 'none' }}>Close</Link> */}
                 Close
               </Button>
-
-              {/* {editId && (
-                <Button
-                  sx={{ borderRadius: 3, margin: 0.5 }}
-                  variant="contained"
-                  color="primary"
-                  as={Link}
-                  to={{
-                    pathname: "/quotationPdf",
-                    state: { quotationid: quotationIdString[0] }
-                  }}
-                >
-                  Print
-                </Button>
-              )} */}
 
             </Box>
 

@@ -4,22 +4,17 @@ import {
   Box, Card, Table, TableBody, Button, TableCell, TableRow, TableContainer, TableHead, Paper,
   TablePagination, Typography, CardContent, TextField, Autocomplete, IconButton, Tooltip, FormControl
 } from '@mui/material';
-import { Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@mui/material'
 import { styled } from '@mui/material/styles';
 import PendingIcon from '@mui/icons-material/Pending';
 
-import { Edit as EditIcon, Print as PrintIcon, Close as CloseIcon, RocketTwoTone } from '@mui/icons-material';
+
 import { Link } from 'react-router-dom';
-import UpdateEnvironmentalQuote from '../templateQuotation/UpdateEnvironmental';
 import moment from 'moment';
-import { toast } from 'react-toastify';
 import VisibilityIcon from '@mui/icons-material/Visibility';
-/* import EditIcon from '@mui/icons-material/Edit';
-import PrintIcon from '@mui/icons-material/Print';
-import CloseIcon from '@mui/icons-material/Close'; */
 
 
-const StyledTableRow = styled(TableRow)(({ theme }) => ({
+
+/* const StyledTableRow = styled(TableRow)(({ theme }) => ({
   '&:nth-of-type(odd)': {
     backgroundColor: theme.palette.action.hover,
     fontSize: 14,
@@ -28,7 +23,7 @@ const StyledTableRow = styled(TableRow)(({ theme }) => ({
   '&:last-child td, &:last-child th': {
     border: 0,
   },
-}));
+})); */
 
 
 
@@ -204,16 +199,14 @@ export default function QuoteTable() {
                     {filterRow.length > 0
                       ? filterRow.map((row, index) => (
                         <TableRow key={index} align="center">
-                          <TableCell>{index + 1}</TableCell>
-                          <TableCell>{row.quotation_ids}</TableCell>
-                          <TableCell>{row.company_name}</TableCell>
-                          <TableCell>{moment(row.quote_given_date).format("DD-MM-YYYY")}</TableCell>
-                          <TableCell>{row.quote_category}</TableCell>
-                          <TableCell>{row.quote_created_by}</TableCell>
-                          {/* <TableCell>{<Button variant='outlined' onClick={handleOpenDialog}> View</Button>}</TableCell> */}
-                          {/* <TableCell>{<Button variant='outlined' onClick={() => viewQuoteDetails(index)}> View</Button>}</TableCell> */}
-                          <TableCell>
+                          <TableCell align="center" >{index + 1}</TableCell>
+                          <TableCell align="center" >{row.quotation_ids}</TableCell>
+                          <TableCell align="center" >{row.company_name}</TableCell>
+                          <TableCell align="center" >{moment(row.quote_given_date).format("DD-MM-YYYY")}</TableCell>
+                          <TableCell align="center" >{row.quote_category}</TableCell>
+                          <TableCell align="center" >{row.quote_created_by}</TableCell>
 
+                          <TableCell align="center">
                             <IconButton variant='outlined'  >
                               <Tooltip title='View Quote' arrow>
                                 <Link to={`/quotation/${row.id}`}>
@@ -221,40 +214,26 @@ export default function QuoteTable() {
                                 </Link>
                               </Tooltip>
                             </IconButton>
-
-                            {/* <Button variant='outlined'>
-                              <span>
-                                <Link to={`/quotationPdf/${row.id}`} >Print </Link>
-                              </span>
-                            </Button> */}
                           </TableCell>
                         </TableRow>
                       ))
                       : quotesTableData.slice(page * rowsPerPage, (page + 1) * rowsPerPage).map((row, index) => (
                         <TableRow key={index} align="center">
-                          <TableCell>{index + 1}</TableCell>
-                          <TableCell>{row.quotation_ids}</TableCell>
-                          <TableCell>{row.company_name}</TableCell>
-                          <TableCell>{moment(row.quote_given_date).format("DD-MM-YYYY")}</TableCell>
-                          <TableCell>{row.quote_category}</TableCell>
-                          <TableCell>{row.quote_created_by}</TableCell>
-                          {/* <TableCell><Button variant='outlined' onClick={handleOpenDialog}> View</Button></TableCell> */}
-                          {/* <TableCell>{<Button variant='outlined' onClick={() => viewQuoteDetails(index)}> View</Button>}</TableCell> */}
-                          <TableCell>
+                          <TableCell align="center" >{index + 1}</TableCell>
+                          <TableCell align="center" >{row.quotation_ids}</TableCell>
+                          <TableCell align="center" >{row.company_name}</TableCell>
+                          <TableCell align="center" >{moment(row.quote_given_date).format("DD-MM-YYYY")}</TableCell>
+                          <TableCell align="center" >{row.quote_category}</TableCell>
+                          <TableCell align="center" >{row.quote_created_by}</TableCell>
 
-                            <IconButton variant='outlined'  >
-                              <Tooltip title='View Quote' arrow>
+                          <TableCell align="center">
+                            <Tooltip title='View Quote' arrow>
+                              <IconButton variant='outlined'  >
                                 <Link to={`/quotation/${row.id}`}>
                                   <VisibilityIcon />
                                 </Link>
-                              </Tooltip>
-                            </IconButton>
-
-                            {/* <Button variant='outlined'>
-                              <span>
-                                <Link to={`/quotationPdf/${row.id}`} >Print </Link>
-                              </span>
-                            </Button> */}
+                              </IconButton>
+                            </Tooltip>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -275,8 +254,6 @@ export default function QuoteTable() {
           </CardContent>
         </Card>
 
-
-
       ) : (
         <>{msg}</>
       )}
@@ -285,10 +262,6 @@ export default function QuoteTable() {
 }
 
 
-
-{/* <Button variant="contained" startIcon={<EditIcon />} sx={{ backgroundColor: 'blue' }}>Edit</Button>
-                                <Button variant="contained" startIcon={<PrintIcon />} sx={{ backgroundColor: 'green' }}>Print</Button>
-                                <Button variant="contained" startIcon={<CloseIcon />} sx={{ backgroundColor: '#D9191C' }} onClick={handleCloseDialog}>Close</Button> */}
 
 
 

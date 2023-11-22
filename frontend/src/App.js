@@ -27,8 +27,10 @@ function App() {
       <div className="App">
         <ToastContainer position="top-center" />
         <Routes>
+          <Route path="/" element={<Login />} />
+
           <Route path="" element={<SidenavigationBar />} >
-            <Route index element={<Login />} />
+
             <Route path='home' element={<QuoteTable />} />
             <Route path='/quotation' element={<Quotation />} />
             <Route path='/jobcard' element={<Jobcard />} />
@@ -40,17 +42,20 @@ function App() {
             <Route path="/quotationPdf/:id" element={<QuotationPdf />} />
 
             <Route path="/quotationWordToPdf/:id" element={<DocToPdf />} />
-            {/* <Route path="/quotationWordToPdf/:id" element={<DocumentViewer />} /> */}
-
 
             <Route path='*' element={<NotFoundPage />} />
+
           </Route>
+
         </Routes>
       </div>
-    </BrowserRouter>
+    </BrowserRouter >
 
   );
 };
 
 
 export default App;
+
+
+

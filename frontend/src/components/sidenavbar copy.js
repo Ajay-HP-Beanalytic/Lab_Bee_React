@@ -101,13 +101,13 @@ export default function SidenavigationBar() {
   const [open, setOpen] = useState(false);          // "true" to keep open, and "false" is for keep it closed
   const [menudata, setMenudata] = useState("Home");
 
-  const handleDrawerOpen = () => {
-    setOpen(true);
-  };
+  // const handleDrawerOpen = () => {
+  //   setOpen(true);
+  // };
 
-  const handleDrawerClose = () => {
-    setOpen(false);
-  };
+  // const handleDrawerClose = () => {
+  //   setOpen(!open);
+  // };
 
 
   // To highlight the selected or clicked buton 
@@ -142,36 +142,43 @@ export default function SidenavigationBar() {
     { i: 7, label: loggedInUser, icon: <Avatar sx={{ backgroundColor: 'primary.light' }}> {userAvatar} </Avatar>, path: '/trailpage' },
   ]
 
+  const [leftmargin, setLeftMargin] = useState(200)
+
   function MenuItem({ item, index }) {
-    return (<Tooltip title={item.label} placement="right" arrow>
-      <ListItem disablePadding sx={{ display: 'block' }}
-        as={Link} to={item.path}
-      >
-        <ListItemButton
-          selected={selectedIndex === index} onClick={(event) => handleListItemClick(event, index)}
-          sx={{ display: 'flex', alignItems: 'center', minHeight: 48, justifyContent: open ? 'initial' : 'center', px: 2.5, }}
+    return (
+      <Tooltip title={item.label} placement="right" arrow>
+        <ListItem disablePadding sx={{ display: 'block' }}
+          as={Link} to={item.path}
         >
-          <ListItemIcon sx={{ minWidth: 0, mr: open ? 3 : 'auto', justifyContent: 'center', }}>
-            {item.icon}
-          </ListItemIcon>
-          <ListItemText primary={item.label} sx={{ opacity: open ? 1 : 0, fontFamily: 'Roboto' }} />
-        </ListItemButton>
-      </ListItem>
-    </Tooltip>)
+          <ListItemButton
+            selected={selectedIndex === index} onClick={(event) => handleListItemClick(event, index)}
+            sx={{ display: 'flex', alignItems: 'center', minHeight: 48, justifyContent: open ? 'initial' : 'center', px: 2.5, }}
+          >
+            <ListItemIcon sx={{ minWidth: 0, mr: open ? 3 : 'auto', justifyContent: 'center', }}>
+              {item.icon}
+            </ListItemIcon>
+            <ListItemText primary={item.label} sx={{ opacity: open ? 1 : 0, fontFamily: 'Roboto' }} />
+          </ListItemButton>
+        </ListItem>
+      </Tooltip>
+    )
   }
 
   return (
     <>
-      <Box sx={{ display: 'flex' }}>
+      <Box sx={{ paddingLeft: `${leftmargin}px`, transition: '0.2s ease-in-out' }}>
         <CssBaseline />
 
-        {/* To customize the top header or the app bar */}
+        {/* To cutomize the top header or the app bar */}
         <AppBar position="fixed" elevation={4} sx={{ backgroundColor: "#0D809D", color: "#2f2f2f", height: "64px" }}>
           <Toolbar >
             <IconButton
               color="inherit"
               aria-label="open drawer"
-              onClick={() => { setOpen(!open) }}
+              onClick={() => {
+                setOpen(!open);
+                open ? setLeftMargin(70) : setLeftMargin(200)
+              }}
               edge="start"
             >
               <MenuIcon />
@@ -185,9 +192,9 @@ export default function SidenavigationBar() {
 
         <Drawer variant="permanent" open={open} >
           <DrawerHeader>
-            <IconButton onClick={handleDrawerClose}>
-              {theme.direction === 'rtl' ? <ChevronRightIcon /> : <ChevronLeftIcon />}
-            </IconButton>
+            {/* <IconButton onClick={handleDrawerClose}>
+              {theme.direction === 'rtl' ? <ChevronRightIcon sx={{ background: 'green' }} /> : <ChevronLeftIcon />}
+            </IconButton> */}
           </DrawerHeader>
 
           {/* Create a list and add the number of items in order show it in a sidebar */}
@@ -201,8 +208,8 @@ export default function SidenavigationBar() {
 
         </Drawer>
 
-        <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
-          <Box height={100} sx={{ marginTop: '0.5', marginBottom: '0.5' }} />
+        <Box component="main" sx={{ flexGrow: 1, padding: 3, border: '1px solid black' }}>
+          <Box height={100} sx={{ marginTop: '1', marginBottom: '0.5', marginRight: '1' }} />
           <Outlet />
         </Box>
       </Box>
