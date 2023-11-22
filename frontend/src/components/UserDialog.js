@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Dialog, Button, DialogActions, DialogTitle, DialogContent, DialogContentText, Box } from '@mui/material';
 import AddCustomerDetails from './AddCustomerDetails';
 import DocToPdf from './DocToPdf';
+import JCEssentials from './JCEssentials';
 
 const UserDetailsDialog = () => {
 
@@ -71,7 +72,9 @@ const DialogModals = () => {
       {/* <UserDetailsDialog />
       <DeleteItemsoftModuleDialog /> */}
       <AddCustomerDetails />
-      {/* <DocToPdf /> */}
+      <br />
+
+      <JCEssentials />
     </div>
   );
 };
