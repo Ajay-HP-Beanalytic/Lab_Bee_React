@@ -1,6 +1,10 @@
 
 const mysql = require("mysql2");                    // In order to interact with the mysql database.
+const bcrypt = require("bcrypt")                    // Import bcrypt package in order to encrypt the password
+const saltRounds = 10                               // Let saltRoulds be '10' for hasing purpose
+const jwt = require("jsonwebtoken")                 // Import jsonwebtoken package in order to create tokens
 
+const jwtSecret = "RANDOM-TOKEN";                   // To create a random token
 
 //Create a connection between the backend server and the database:
 const db = mysql.createPool({
@@ -22,13 +26,12 @@ function usersDataAPIs(app) {
 
     //api to add or register the new user: 
     app.post("/api/adduser", (req, res) => {
-        const { name, email, password, jobrole } = req.body;
+        const { name, email, password } = req.body;
         const sqlCheckEmail = "SELECT * FROM labbee_users WHERE email=?";
-        const sqlInsertUser = "INSERT INTO labbee_users (name, email, password, role) VALUES (?,?,?,?)";
+        const sqlInsertUser = "INSERT INTO labbee_users (name, email, password) VALUES (?,?,?)";
 
         db.query(sqlCheckEmail, [email], (error, result) => {
             if (error) {
-                console.log(error);
                 return res.status(500).json({ message: "Internal server error" });
             }
 
@@ -37,16 +40,27 @@ function usersDataAPIs(app) {
                 return res.status(400).json({ message: "Email already exists" });
             }
 
-            //If email is not exists then continue:
-            db.query(sqlInsertUser, [name, email, password, jobrole], (error, result) => {
-                if (error) {
-                    console.log(error);
+            //If email is not exists then continue and encrypt the password:
+            bcrypt
+                .genSalt(saltRounds)
+                .then(salt => {
+                    return bcrypt.hash(password, salt)
+                })
+                .then(hash => {
+                    db.query(sqlInsertUser, [name, email, hash], (error) => {
+                        if (error) {
+                            return res.status(500).json({ message: "Internal server error" });
+                        }
+                        return res.status(200).json({ message: "Registration Success" });
+                    })
+                })
+                .catch(err => {
                     return res.status(500).json({ message: "Internal server error" });
-                }
-                res.status(200).json({ message: "User added successfully" });
-            });
+                })
         });
     });
+
+
 
     /// To allow an user to access the application on succesfull login:
     app.post("/api/login", (req, res) => {
@@ -56,26 +70,40 @@ function usersDataAPIs(app) {
         const usersList = "SELECT * FROM labbee_users WHERE email = ?";
 
         // Execute the query, passing in the email as a parameter
-        db.query(usersList, [email], (error, results) => {
+        db.query(usersList, [email], async (error, result) => {
             if (error) {
                 console.error(error);
                 return res.status(500).json({ message: "Internal server error" });
             }
 
-            if (results.length === 0) {
+            if (result.length === 0) {
                 // User not found
                 return res.status(401).json({ message: "User not found" });
             }
 
-            const user = results[0];
+            const user = result[0];
 
-            if (user.password !== password) {
-                // Incorrect password
-                return res.status(401).json({ message: "Incorrect password" });
+            try {
+                const matched = await bcrypt.compare(password, user.password);
+
+                if (!matched) {
+                    // Incorrect password
+                    return res.status(401).json({ message: "Incorrect password" });
+                }
+
+                // Password is correct; generate and send JWT token
+                const token = jwt.sign(
+                    { userID: user.id, email: user.email },
+                    jwtSecret,
+                    { expiresIn: '30d' }
+                );
+
+                res.status(200).json({ username: user.name, token });
+
+            } catch (error) {
+                console.error(err);
+                return res.status(500).json({ message: "Internal server error" });
             }
-
-            // Authentication successful
-            res.status(200).json({ message: "Login successful", user });
         });
     });
 
@@ -93,3 +121,70 @@ function usersDataAPIs(app) {
 
 module.exports = { usersDataAPIs }
 
+
+
+// //api to add or register the new user:
+// app.post("/api/adduser", (req, res) => {
+//     const { name, email, password, jobrole } = req.body;
+//     const sqlCheckEmail = "SELECT * FROM labbee_users WHERE email=?";
+//     const sqlInsertUser = "INSERT INTO labbee_users (name, email, password, role) VALUES (?,?,?,?)";
+
+//     db.query(sqlCheckEmail, [email], (error, result) => {
+//         if (error) {
+//             console.log(error);
+//             return res.status(500).json({ message: "Internal server error" });
+//         }
+
+//         if (result.length > 0) {
+//             //Email already exists:
+//             return res.status(400).json({ message: "Email already exists" });
+//         }
+
+//         //If email is not exists then continue:
+//         db.query(sqlInsertUser, [name, email, password, jobrole], (error, result) => {
+//             if (error) {
+//                 console.log(error);
+//                 return res.status(500).json({ message: "Internal server error" });
+//             }
+//             res.status(200).json({ message: "User added successfully" });
+//         });
+//     });
+// });
+
+
+
+
+
+
+
+
+/// To allow an user to access the application on succesfull login:
+// app.post("/api/login", (req, res) => {
+//     const { email, password } = req.body;
+
+//     // Perform a database query to find the user with the provided email
+//     const usersList = "SELECT * FROM labbee_users WHERE email = ?";
+
+//     // Execute the query, passing in the email as a parameter
+//     db.query(usersList, [email], (error, results) => {
+//         if (error) {
+//             console.error(error);
+//             return res.status(500).json({ message: "Internal server error" });
+//         }
+
+//         if (results.length === 0) {
+//             // User not found
+//             return res.status(401).json({ message: "User not found" });
+//         }
+
+//         const user = results[0];
+
+//         if (user.password !== password) {
+//             // Incorrect password
+//             return res.status(401).json({ message: "Incorrect password" });
+//         }
+
+//         // Authentication successful
+//         res.status(200).json({ message: "Login successful", user });
+//     });
+// });
