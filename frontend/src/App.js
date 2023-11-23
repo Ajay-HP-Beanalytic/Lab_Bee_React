@@ -4,7 +4,10 @@ import 'react-toastify/dist/ReactToastify.css';
 import React, { useState } from "react";
 
 import "./App.css";
-import Login from "./Login_Register";
+//import Login from "./Login_Register";
+import Login from "./LoginRegister/Login";
+import Register from "./LoginRegister/Register";
+import ForgotPassword from "./LoginRegister/ForgotPassword";
 import TrailPage from "./TrailPage";
 import SidenavigationBar from "./components/sidenavbar";
 import Jobcard from "./Pages/Jobcard";
@@ -20,6 +23,7 @@ import DocumentViewer from "./components/DocumentViewer";
 
 
 
+
 function App() {
   return (
 
@@ -27,9 +31,15 @@ function App() {
       <div className="App">
         <ToastContainer position="top-center" />
         <Routes>
-          <Route path="/" element={<Login />} />
+          {/* <Route path="/" element={<Login />} /> */}
+          <Route path="/" exact element={<Login />}></Route>
+          <Route path="/register" exact element={<Register />}></Route>
+          <Route path="/reset-password" exact element={<ForgotPassword />}></Route>
 
           <Route path="" element={<SidenavigationBar />} >
+
+
+
 
             <Route path='home' element={<QuoteTable />} />
             <Route path='/quotation' element={<Quotation />} />

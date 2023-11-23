@@ -589,23 +589,25 @@ export default function Quotation() {
                         fullWidth
                       />
 
-                      <FormControl sx={{ width: '50%', marginBottom: '16px', marginRight: '10px', borderRadius: 3 }}>
-                        <InputLabel>Quote Type</InputLabel>
-                        <Select
-                          value={quoteCategory} onChange={(e) => {
-                            setQuoteCategory(e.target.value)
-                            generateDynamicQuotationIdString(customerId, e.target.value)
-                          }
-                          }
-                          label="Quote Type"
-                          margin="normal"
-                        >
-                          <MenuItem value='Environmental Testing'>Environmental Testing</MenuItem>
-                          <MenuItem value='Reliability'>Reliability</MenuItem>
-                          <MenuItem value='EMI & EMC'>EMI & EMC</MenuItem>
-                          <MenuItem value='Item Soft'>Item Soft</MenuItem>
-                        </Select>
-                      </FormControl>
+                      {editId &&
+                        <FormControl sx={{ width: '50%', marginBottom: '16px', marginRight: '10px', borderRadius: 3 }}>
+                          <InputLabel>Quote Type</InputLabel>
+                          <Select
+                            value={quoteCategory} onChange={(e) => {
+                              setQuoteCategory(e.target.value)
+                              generateDynamicQuotationIdString(customerId, e.target.value)
+                            }
+                            }
+                            label="Quote Type"
+                            margin="normal"
+                          >
+                            <MenuItem value='Environmental Testing'>Environmental Testing</MenuItem>
+                            <MenuItem value='Reliability'>Reliability</MenuItem>
+                            <MenuItem value='EMI & EMC'>EMI & EMC</MenuItem>
+                            <MenuItem value='Item Soft'>Item Soft</MenuItem>
+                          </Select>
+                        </FormControl>}
+
                     </Box>
 
                   </Box>
