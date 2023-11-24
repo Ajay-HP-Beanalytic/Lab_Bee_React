@@ -4,6 +4,9 @@ const bcrypt = require("bcrypt")                    // Import bcrypt package in 
 const saltRounds = 10                               // Let saltRoulds be '10' for hasing purpose
 const jwt = require("jsonwebtoken")                 // Import jsonwebtoken package in order to create tokens
 
+const session = require("express-session")          // Import 'express-session' module to create user session
+const cookieParser = require("cookie-parser")       // Import 'cookie-parser' module to create cookies for a logge in user 
+
 const jwtSecret = "RANDOM-TOKEN";                   // To create a random token
 
 //Create a connection between the backend server and the database:
@@ -95,18 +98,42 @@ function usersDataAPIs(app) {
                 const token = jwt.sign(
                     { userID: user.id, email: user.email },
                     jwtSecret,
-                    { expiresIn: '30d' }
+                    { expiresIn: '1d' }
                 );
 
-                res.status(200).json({ username: user.name, token });
+                //res.status(200).json({ username: user.name, token });
+                //console.log({ username: user.name,})
+
+                req.session.username = user.name
+
+                res.status(200).json({ username: req.session.username, token: token });
+                //res.cookie('token', token)
+
 
             } catch (error) {
-                console.error(err);
+                console.error(error);
                 return res.status(500).json({ message: "Internal server error" });
             }
         });
     });
 
+
+
+    // api to fetch the logged in user name:
+    app.get("/api/getLoggedInUser", (req, res) => {
+        if (req.session.username) {
+            return res.json({ valid: true, username: req.session.username })
+        } else {
+            return res.json({ valid: false })
+        }
+    });
+
+
+    // api to logout from the application:
+    app.get("/api/logout", (req, res) => {
+        res.clearCookie('connect.sid')
+        return res.json({ Status: "Logged out successfully " })
+    });
 
     // Check wheteher connection is established between 
     app.get("/api/get", (req, res) => {

@@ -7,6 +7,8 @@ const cors = require("cors");                       // cors is used to access ou
 //it deals with requests made from one domain (origin) to another different domain (origin) via JavaScript.
 
 
+const session = require("express-session")          // Import 'express-session' module to create user session
+const cookieParser = require("cookie-parser")       // Import 'cookie-parser' module to create cookies for a logge in user 
 
 // create an express application:
 const app = express();
@@ -39,9 +41,26 @@ db.getConnection(function (err, connection) {
 
 
 // Install the middlewares:
-app.use(cors());
+//app.use(cors());
+app.use(cors({
+  origin: ["http://localhost:3000"],   // mention the host address of the frontend
+  methods: ["POST", "GET"],
+  credentials: true
+}));
+
 app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+app.use(cookieParser());
+
+app.use(session({
+  secret: 'secret',  // A secret key used to encrypt the session cookie
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: false,
+    maxAge: 30 * 60 * 1000, // 30 minutes in milliseconds (the value is calculated by multiplying the number of minutes (30) by the number of seconds in a minute (60) and then by 1000 to convert it to milliseconds.)
+  }   // Set the session cookie properties
+}))
 
 
 

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box, Typography, Container, TextField, Button, Table, TableBody, TableCell, TableContainer, TableHead,
   TableRow, Paper, IconButton, Tooltip, Grid, InputLabel, MenuItem, FormControl, Select, Checkbox, Autocomplete, FormControlLabel, Stack
@@ -14,10 +14,7 @@ import { styled } from '@mui/material/styles';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import PrintIcon from '@mui/icons-material/Print';
-
-
-import loggedInUser from "../components/sidenavbar"
+import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import { Link, Navigate, useParams } from 'react-router-dom';
 
 const StyledTableRow = styled(TableRow)(({ theme }) => ({
@@ -89,7 +86,9 @@ export default function Quotation() {
   const [editId, setEditId] = useState('')
   const formattedDate = moment(new Date()).format("DD-MM-YYYY");
   const [selectedDate, setSelectedDate] = useState(formattedDate);
-  const quotationCreatedBy = loggedInUser;
+  // State variable to set the user name:
+  const [quotationCreatedBy, setQuotationCreatedBy] = useState('')
+
 
   const [isTotalDiscountVisible, setIsTotalDiscountVisible] = useState(false);
   const [discountAmount, setDiscountAmount] = useState('')
@@ -99,6 +98,8 @@ export default function Quotation() {
   const [companyIdList, setCompanyIdList] = useState([])
   const [selectedCompanyId, setSelectedCompanyId] = useState('');
 
+
+  // UseEffect to set the quotation data during update of the quotation:
   useEffect(() => {
     if (id) {
       axios.get(`http://localhost:4000/api/quotation/` + id)
@@ -125,9 +126,7 @@ export default function Quotation() {
   }, [])
 
 
-
-
-
+  // To prefill the primary company details on selecting company name:
   const prefillTextFields = (selectedCompanyId) => {
     if (selectedCompanyId) {
       axios.get(`http://localhost:4000/api/getCompanyDetails/` + selectedCompanyId)
@@ -137,6 +136,7 @@ export default function Quotation() {
           setKindAttention(result.data[0].contact_person)
           setCustomerId(result.data[0].company_id)
           setCustomerreferance(result.data[0].customer_referance)
+          setSelectedDate(formattedDate)
           generateDynamicQuotationIdString(result.data[0].company_id)
         })
         .catch(error => {
@@ -157,7 +157,6 @@ export default function Quotation() {
   }, [])
 
 
-
   // Function to add the new row on clicking plus btn:
   const addRow = () => {
     const maxSlNo = Math.max(...tableData.map((row) => row.slno), 0);
@@ -173,6 +172,7 @@ export default function Quotation() {
     setTableData([...tableData, newRow]);
     setCounter(maxSlNo + 1);
   };
+
 
   // Function to remove the new row on clicking minus btn:
   const removeRow = (slno) => {
@@ -302,6 +302,22 @@ export default function Quotation() {
   };
 
 
+  // To validate the user credential its very much important
+  axios.defaults.withCredentials = true;
+
+  // UseEffect to get the logged in user name to set quotation created by variable:
+  useEffect(() => {
+    axios.get('http://localhost:4000/api/getLoggedInUser')
+      .then(res => {
+        if (res.data.valid) {
+          setQuotationCreatedBy(res.data.username)
+        } else {
+          console.log('An error is occured while setting up quote created by')
+        }
+      })
+      .catch(err => console.log(err))
+  }, [])
+
 
   // To submit the data and store it in a database:
   const handleSubmitETQuotation = async (e) => {
@@ -334,7 +350,7 @@ export default function Quotation() {
       quotationIdString,
       companyName,
       toCompanyAddress,
-      selectedDate,
+      selectedDate: moment(selectedDate, "DD-MM-YYYY").toDate(), // Format the date before sending
       customerId,
       customerReferance,
       kindAttention,
@@ -347,7 +363,7 @@ export default function Quotation() {
       tableData
     }).then(res => {
       if (res.status === 200) toast.success(editId ? "Changes Saved" : "Quotation Added")
-      if (res.status === 500) toast.error("Failed")
+      if (res.status === 500) toast.error("Failed to create the quotation")
     })
     if (!editId) {
       handleCancelBtnIsClicked();
@@ -426,26 +442,6 @@ export default function Quotation() {
   return (
 
     <div>
-      {editId &&
-        <div style={{ position: 'left', top: 0, left: 0 }}>
-          <IconButton variant='outlined' size="large" >
-            <Tooltip title='Go Back' arrow>
-              <Link>
-                <ArrowBackIcon fontSize="inherit" onClick={() => window.history.back()} />
-              </Link>
-            </Tooltip>
-          </IconButton>
-
-          <IconButton variant='outlined' size="large" >
-            <Tooltip title='Print quotation' arrow>
-              <Link to={`/quotationWordToPdf/${id}`}>
-                <PrintIcon fontSize="inherit" />
-              </Link>
-            </Tooltip>
-          </IconButton>
-        </div>
-      }
-
 
       <Typography variant='h5'>{editId ? 'Update Quotation' : 'Add New Quotation'}</Typography>
       <form onSubmit={handleSubmitETQuotation}>
@@ -589,7 +585,7 @@ export default function Quotation() {
                         fullWidth
                       />
 
-                      {editId &&
+                      {!editId &&
                         <FormControl sx={{ width: '50%', marginBottom: '16px', marginRight: '10px', borderRadius: 3 }}>
                           <InputLabel>Quote Type</InputLabel>
                           <Select
@@ -635,6 +631,7 @@ export default function Quotation() {
                         {(quoteCategory === 'Environmental Testing' || quoteCategory === 'EMI & EMC' || quoteCategory === 'Reliability') &&
                           <TableCell align="center">Test Description</TableCell>
                         }
+
                         {(quoteCategory === 'Environmental Testing' || quoteCategory === 'EMI & EMC') &&
                           <>
                             <TableCell align="center">SAC No</TableCell>
@@ -643,17 +640,18 @@ export default function Quotation() {
                             <TableCell align="center">Per Unit Charge</TableCell>
                           </>
                         }
+
                         {quoteCategory === 'Item Soft' && <TableCell align="center">Module</TableCell>}
                         <TableCell align="center">Amount</TableCell>
-                        {/* <TableCell align="center">Add Row</TableCell> */}
+
                         <TableCell align="center">
                           <IconButton>
                             <Tooltip title='Add Row' arrow>
-                              {/* <AddIcon onClick={handleAddRow} /> */}
                               <AddIcon onClick={addRow} />
                             </Tooltip>
                           </IconButton>
                         </TableCell>
+
                       </TableRow>
                     </TableHead>
 
@@ -690,7 +688,6 @@ export default function Quotation() {
                                   value={row.duration}
                                   //type='number'
                                   onChange={(e) =>
-                                    //handleInputChange(row.slno, 'duration', e.target.value)}
                                     handleCellChange(row.slno, 'duration', parseFloat(e.target.value))}
                                 />
                               </TableCell>
@@ -736,7 +733,6 @@ export default function Quotation() {
                               value={row.amount}
                               type='number'
                               onChange={(e) =>
-                                //handleInputChange(row.slno, 'amount', e.target.value)}
                                 handleCellChange(row.slno, 'amount', parseFloat(e.target.value))}
 
                             />
@@ -846,6 +842,29 @@ export default function Quotation() {
               >
                 Close
               </Button>
+
+
+              {/* <Button variant='outlined' Link={<DocToPdf id={id} />} > Download </Button> */}
+
+              {/* {editId &&
+                <Tooltip title='Download quotation' arrow>
+                  <Link to={<DocToPdf id={id} />}>
+                    <Button variant='outlined'>Download</Button>
+                  </Link>
+                </Tooltip>
+              } */}
+
+
+              {editId &&
+                <IconButton variant='outlined' size="large" >
+                  <Tooltip title='Download quotation' arrow>
+                    <Link to={`/quotationWordToPdf/${id}`}>
+                      {/* <Link to={<DocToPdf id={id} />}> */}
+                      <FileDownloadIcon fontSize="inherit" />
+                    </Link>
+                  </Tooltip>
+                </IconButton>
+              }
 
             </Box>
 
