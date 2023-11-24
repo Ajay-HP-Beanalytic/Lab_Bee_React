@@ -20,6 +20,7 @@ import Quotation from "./Pages/Quotation";
 import QuotationPdf from "./Pages/QuotationPdf";
 import DocToPdf from "./components/DocToPdf";
 import DocumentViewer from "./components/DocumentViewer";
+import UserLogoutDialog from "./components/UserLogoutDialog";
 
 
 
@@ -44,7 +45,6 @@ function App() {
             <Route path='home' element={<QuoteTable />} />
             <Route path='/quotation' element={<Quotation />} />
             <Route path='/jobcard' element={<Jobcard />} />
-            <Route path='/trailpage' element={<TrailPage />} />
             <Route path='/settings' element={<UserDetailsDialog />} />
             <Route path="/quotation/:id" element={<Quotation />} />
             <Route path="/add_module_or_test" element={<AddModulesAndTests />} />
@@ -53,6 +53,8 @@ function App() {
 
             <Route path="/quotationWordToPdf/:id" element={<DocToPdf />} />
 
+            <Route path="/userlogout" element={<UserLogoutDialog />} />
+            <Route path='/trailpage' element={<TrailPage />} />
             <Route path='*' element={<NotFoundPage />} />
 
           </Route>

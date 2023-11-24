@@ -22,9 +22,9 @@ function mainQuotationsTableAPIs(app) {
     // To store the table data in the 'bea_quotations_table' table:
     app.post("/api/quotation", (req, res) => {
 
-        const { quotationIdString, companyName, toCompanyAddress, selectedDate, customerId, customerReferance, kindAttention, projectName, quoteCategory, taxableAmount, discountAmount, totalAmountWords, tableData } = req.body;
+        const { quotationIdString, companyName, toCompanyAddress, selectedDate, customerId, customerReferance, kindAttention, projectName, quoteCategory, taxableAmount, discountAmount, totalAmountWords, tableData, quotationCreatedBy } = req.body;
         const formattedDate = new Date(selectedDate);
-        const quotationCreatedBy = 'Ajay'
+
 
         let sql = "INSERT INTO bea_quotations_table (quotation_ids, company_name, company_address, quote_given_date, customer_id, customer_referance, kind_attention, project_name, quote_category, total_amount, total_discount_amount, total_taxable_amount_in_words, quote_created_by, tests) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
@@ -33,7 +33,6 @@ function mainQuotationsTableAPIs(app) {
             return res.status(200).json(result)
         })
     })
-
 
     // To fetch the quoatation data from the 'bea_quotations_table' based on the quoatation id:
     app.get("/api/quotation/:id", (req, res) => {

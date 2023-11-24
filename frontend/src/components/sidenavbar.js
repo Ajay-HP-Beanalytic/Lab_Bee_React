@@ -1,6 +1,6 @@
 // Here we are using "Mini variant drawer" to create a side navigation bar:
 
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { styled, useTheme } from '@mui/material/styles';
 import Box from '@mui/material/Box';
 import MuiDrawer from '@mui/material/Drawer';
@@ -25,7 +25,8 @@ import CalendarMonthSharpIcon from '@mui/icons-material/CalendarMonthSharp';
 import ArticleIcon from '@mui/icons-material/Article';
 import SettingsIcon from '@mui/icons-material/Settings';
 import NoteAddIcon from '@mui/icons-material/NoteAdd';
-import { Link, Outlet } from 'react-router-dom';
+import { Link, Outlet, useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 
 const drawerWidth = 200;
@@ -118,17 +119,43 @@ export default function SidenavigationBar() {
   };
 
 
-  {/*//const { loggedInUser } = useContext(AuthContext);*/ }
 
-  const loggedInUser = 'Ajay kumar HP'
+  // State variable to set the user name:
+  const [loggedInUser, setLoggedInUser] = useState('')
+  const navigate = useNavigate()
+
+
+  // User authentication process:
+  useEffect(() => {
+    if (!localStorage.getItem('token')) {
+      navigate("/")
+    }
+  }, [])
+
+
+  // To validate the user credential its very much important
+  axios.defaults.withCredentials = true;
+
+  // To get the logged in user name:
+  useEffect(() => {
+    axios.get('http://localhost:4000/api/getLoggedInUser')
+      .then(res => {
+        if (res.data.valid) {
+          setLoggedInUser(res.data.username)
+        } else {
+          navigate("/")
+        }
+      })
+      .catch(err => console.log(err))
+  }, [])
+
+
+  // Create avatar texts to display in the sidebar
   const firstLetter = loggedInUser.charAt(0).toUpperCase();
-  //const secondLetter = loggedInUser.charAt(5).toUpperCase();
-
-  //const userAvatar = firstLetter + secondLetter
-
   const userAvatar = firstLetter
 
 
+  // Create items to display in the side navigation bar
   const items = [
     { i: 1, label: 'Home', icon: <HomeIcon />, path: '/home' },
     { i: 2, label: 'Add Quotation', icon: <RequestQuoteIcon />, path: '/quotation' },
@@ -139,12 +166,18 @@ export default function SidenavigationBar() {
   ]
   const items2 = [
     { i: 6, label: 'Settings', icon: <SettingsIcon />, path: '/settings' },
-    { i: 7, label: loggedInUser, icon: <Avatar sx={{ backgroundColor: 'primary.light' }}> {userAvatar} </Avatar>, path: '/trailpage' },
+    { i: 7, label: loggedInUser, icon: <Avatar sx={{ backgroundColor: 'primary.light' }}> {userAvatar} </Avatar>, path: '/userlogout' },
   ]
+
 
   const [leftmargin, setLeftMargin] = useState(200)
 
+
+
+
+
   function MenuItem({ item, index }) {
+
     return (
       <Tooltip title={item.label} placement="right" arrow>
         <ListItem disablePadding sx={{ display: 'block' }}

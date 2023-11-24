@@ -11,7 +11,7 @@ import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import Checkbox from "@mui/material/Checkbox";
 import FormControlLabel from "@mui/material/FormControlLabel";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Stack from "@mui/material/Stack";
 import { useNavigate } from "react-router-dom";
 
@@ -80,6 +80,23 @@ export default function Login() {
   };
 
 
+  // To validate the user credential its very much important
+  axios.defaults.withCredentials = true;
+
+  //To get the logged in user name:
+  useEffect(() => {
+    axios.get('http://localhost:4000/api/getLoggedInUser')
+      .then(res => {
+        if (res.data.valid) {
+          navigate("/home")
+        } else {
+          navigate("/")
+        }
+      })
+      .catch(err => console.log(err))
+  }, [])
+
+
   // To allow an user to log-In:
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -96,7 +113,10 @@ export default function Login() {
         if (response.status === 200) {
           toast.success("Logged In succesfully")
           navigate("/home");                      // Redirect to the home page or perform other actions
-          console.log(response)
+
+          //localStorage.setItem('token', response.data.token)  // Store token in the local storage
+          //console.log(response.data)
+
         } else {
           toast.warning("Login Error");
         }
@@ -108,7 +128,7 @@ export default function Login() {
           toast.warning("Incorrect Email or Password");
         } else {
           // Other errors
-          toast.error("Login Errorsssss");
+          toast.error("Login Error");
         }
         console.log(error)
       }

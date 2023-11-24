@@ -52,13 +52,8 @@ const RegisterLogoAndText = {
 
 export default function Register() {
 
-  // const [open, setOpen] = useState(false);
-  // const [remember, setRemember] = useState(false);
-  // const vertical = "top";
-  // const horizontal = "right";
 
   const navigate = useNavigate();
-
 
   const initialState = {
     name: "",
