@@ -29,6 +29,7 @@ export default function AddCustomerDetails() {
     const [operationType, setOperationType] = useState("add");
 
 
+    // Function to submit the customer details:
     const onSubmitCustomerDetailsButton = async (e) => {
         e.preventDefault()
 
@@ -86,10 +87,8 @@ export default function AddCustomerDetails() {
         setOperationType("add");
     }
 
-    /* function addNewCustomerDetailsButton() {
-        setEditCustomerDetailsFields(true)
-    } */
 
+    // Function to add new customer details
     const addNewCustomerDetailsButton = (customer) => {
         if (customer) {
             setOperationType("edit");
@@ -168,6 +167,7 @@ export default function AddCustomerDetails() {
         }
     }
 
+
     // Function to edit the company data:
     const editCompanyData = (index, id) => {
         setEditId(id)
@@ -194,11 +194,11 @@ export default function AddCustomerDetails() {
                         setCompaniesList(updatedCompaniesList);
                         toast.success("Customer Data Deleted Successfully");
                     } else {
-                        toast.error("An error occurred while deleting the module.");
+                        toast.error("An error occurred while deleting.");
                     }
                 })
                 .catch((error) => {
-                    toast.error("An error occurred while deleting the module.");
+                    toast.error("An error occurred while deleting.");
                 })
         } else {
             onCancelCustomerDetailsButton();

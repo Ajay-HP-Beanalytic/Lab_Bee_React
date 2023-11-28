@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   Box, Typography, Container, TextField, Button, Table, TableBody, TableCell, TableContainer, TableHead,
   TableRow, Paper, Grid, InputLabel, MenuItem, FormControl, Select, FormControlLabel, Radio, RadioGroup, Checkbox, FormLabel, IconButton, Tooltip
@@ -20,12 +20,15 @@ function handleSubmitJobcard() {
   console.log('This is Jobcard')
 }
 
-const Jobcard = () => {
+const JobcardBMRCL = () => {
 
   const [dateTimeValue, setDateTimeValue] = useState(dayjs());
   const [eutRows, setEutRows] = useState([]);
   const [testRows, setTestRows] = useState([]);
   const [testdetailsRows, setTestDetailsRows] = useState([]);
+
+  const [uploadImages, setUploadImages] = useState(null);
+  const fileInputRef = useRef(null);
 
 
   const [jcStatus, setJcStatus] = useState('Open');
@@ -105,11 +108,27 @@ const Jobcard = () => {
   }
 
 
+
+
   // Add tests Dialog:
   const addTestsDialog = () => {
     <JCDialogs />
     //toast.success('Cleared')
   }
+
+
+
+  // Function to handle the uploaded image:
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        setUploadImages(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   return (
 
@@ -139,7 +158,7 @@ const Jobcard = () => {
                   //fullwidth
                   />
 
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  {/* <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <TextField
                       sx={{ width: '50%', borderRadius: 3 }}
                       label="DC Form Number"
@@ -155,9 +174,14 @@ const Jobcard = () => {
                       variant="outlined"
                       autoComplete="on"
                     />
+                  </div> */}
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <br sx={{ marginTop: '3px' }} />
                   </div>
 
-                  <br />
+
+                  {/* <br sx={{ marginTop: '1px' }} /> */}
 
                   <div style={{ display: 'flex', justifyContent: 'space-between' }} >
                     <LocalizationProvider dateAdapter={AdapterDayjs}>
@@ -174,9 +198,9 @@ const Jobcard = () => {
 
 
                     <FormControl sx={{ width: '45%', borderRadius: 3 }} >
-                      <InputLabel >Test Incharge Name</InputLabel>
+                      <InputLabel >JC Started By</InputLabel>
                       <Select
-                        label="Test Incharge Name"
+                        label="JC Filed By"
                       >
                         <MenuItem value="Chandra">Chandra</MenuItem>
                         <MenuItem value="Kumarvasaya">Kumarvasaya</MenuItem>
@@ -190,14 +214,14 @@ const Jobcard = () => {
                   <br />
 
                   <FormControl sx={{ width: '50%', }}>
-                    <FormLabel id="test-category-buttons-group-label">Test Category:</FormLabel>
+                    <FormLabel id="test-category-buttons-group-label"> JC Category:</FormLabel>
                     <RadioGroup
-                      row
+                      //row
                       aria-label="Category"
                       name="category"  >
-                      <FormControlLabel value="Environmental" control={<Radio />} label="Good " />
-                      <FormControlLabel value="Screening" control={<Radio />} label="Screening " />
-                      <FormControlLabel value="Other" control={<Radio />} label="Other " />
+                      <FormControlLabel value="SC" control={<Radio />} label="SC" />
+                      <FormControlLabel value="OPM" control={<Radio />} label="OPM" />
+                      <FormControlLabel value="CM" control={<Radio />} label="CM" />
                     </RadioGroup>
                   </FormControl>
 
@@ -209,14 +233,14 @@ const Jobcard = () => {
             {/* Second Grid box */}
             <Grid item xs={6} elevation={4} sx={{ borderRadius: 3 }}>
 
-              <Typography variant='h5' align='center'> Customer Details </Typography>
+              <Typography variant='h5' align='center'> Equipment Details </Typography>
               <br />
 
               <Container component="span" margin={1} paddingright={1} elevation={11}>
                 <Box >
                   <TextField
                     sx={{ borderRadius: 3, marginRight: '10px' }}
-                    label="Company Name"
+                    label="Equipment Name"
                     margin="normal"
                     variant="outlined"
                     autoComplete="on"
@@ -226,13 +250,13 @@ const Jobcard = () => {
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <TextField
                       sx={{ width: '50%', borderRadius: 3 }}
-                      label="Contact Number"
+                      label="Train Number"
                       margin="normal"
                       variant="outlined"
                     />
                     <TextField
                       sx={{ width: '45%', borderRadius: 3 }}
-                      label="Customer Name/Signature"
+                      label="Car Number"
                       margin="normal"
                       variant="outlined"
                     />
@@ -241,9 +265,11 @@ const Jobcard = () => {
                   <div style={{ display: 'flex', justifyContent: 'space-between' }} >
                     <TextField
                       sx={{ borderRadius: 3 }}
-                      label="Project Name"
+                      label="Issue Description"
                       margin="normal"
                       variant="outlined"
+                      multiline={true}
+                      rows={3}
                       fullWidth
                     />
                   </div>
@@ -252,13 +278,14 @@ const Jobcard = () => {
                   <br />
 
                   <FormControl sx={{ width: '50%', }}>
-                    <FormLabel id="sample-condition-buttons-group-label">Sample Condition:</FormLabel>
+                    <FormLabel id="sample-condition-buttons-group-label">Equipment Condition:</FormLabel>
                     <RadioGroup
-                      row
+                      //row
                       aria-label="sample-condition"
                       name="sample-condition"  >
-                      <FormControlLabel value="Good" control={<Radio />} label="Good " />
-                      <FormControlLabel value="Other" control={<Radio />} label="Other " />
+                      <FormControlLabel value="Healthy" control={<Radio />} label="Healthy" />
+                      <FormControlLabel value="Require Service" control={<Radio />} label="Require Service" />
+                      <FormControlLabel value="Not In Operation" control={<Radio />} label="Not In Operation" />
                     </RadioGroup>
                   </FormControl>
 
@@ -270,6 +297,10 @@ const Jobcard = () => {
                     variant="outlined"
                     fullWidth
                   />
+
+
+
+
                 </Box>
               </Container>
 
@@ -281,8 +312,41 @@ const Jobcard = () => {
         <br />
 
         <Box >
+
+          <Typography sx={{ marginTop: '5', paddingBottom: '3', paddingTop: '5' }} variant="h5"> Action Taken</Typography>
+
+          <TextField
+            sx={{ borderRadius: 3 }}
+            label="Job Details"
+            margin="normal"
+            variant="outlined"
+            multiline={true}
+            rows={10}
+            fullWidth
+          />
+
+          <>
+            <Typography sx={{ marginTop: '5', paddingBottom: '3', paddingTop: '5' }} variant="h5"> Add Images </Typography>
+            <FormControl ref={fileInputRef}>
+              <TextField
+                type="file"
+                accept="image/jpg, image/jpeg, image/png"
+                onChange={handleFileChange}
+              />
+            </FormControl>
+
+            {uploadImages && (
+              <img
+                src={uploadImages}
+                alt="Upload Images"
+                style={{ maxWidth: '70%', marginTop: '10px', borderRadius: '5px' }}
+              />
+            )}
+          </>
+
+
           {/* Table Container */}
-          <Typography sx={{ marginTop: '5', paddingBottom: '3', paddingTop: '5' }} variant="h5"> EUT Details </Typography>
+          {/* <Typography sx={{ marginTop: '5', paddingBottom: '3', paddingTop: '5' }} variant="h5"> EUT Details </Typography>
 
           <TableContainer component={Paper} >
             <Table size='small' aria-label="simple table">
@@ -349,14 +413,14 @@ const Jobcard = () => {
                 )}
               </TableBody>
             </Table>
-          </TableContainer>
+          </TableContainer> */}
 
 
 
           <br />
 
 
-          <Typography sx={{ marginTop: '5', paddingBottom: '3', paddingTop: '5' }} variant="h5"> Tests </Typography>
+          {/* <Typography sx={{ marginTop: '5', paddingBottom: '3', paddingTop: '5' }} variant="h5"> Tests </Typography>
 
           <TableContainer component={Paper} >
             <Table size='small' aria-label="simple table">
@@ -420,11 +484,11 @@ const Jobcard = () => {
                 ))}
               </TableBody>
             </Table>
-          </TableContainer>
+          </TableContainer> */}
 
 
 
-          <br />
+          {/* <br />
 
           <Typography sx={{ marginTop: '5', paddingBottom: '3', paddingTop: '5' }} variant="h5">Test Details</Typography>
 
@@ -556,7 +620,7 @@ const Jobcard = () => {
             </Table>
           </TableContainer>
 
-          <br />
+          <br /> */}
 
 
           <Box sx={{ paddingTop: '5', paddingBottom: '5px', marginTop: '5px', marginBottom: '5px', border: 1, borderColor: 'primary.main' }}>
@@ -634,4 +698,4 @@ const Jobcard = () => {
   )
 }
 
-export default Jobcard;
+export default JobcardBMRCL;

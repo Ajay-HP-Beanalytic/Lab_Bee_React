@@ -44,7 +44,7 @@ db.getConnection(function (err, connection) {
 //app.use(cors());
 app.use(cors({
   origin: ["http://localhost:3000"],   // mention the host address of the frontend
-  methods: ["POST", "GET"],
+  methods: ["POST", "GET", "DELETE"],
   credentials: true
 }));
 
@@ -58,8 +58,14 @@ app.use(session({
   saveUninitialized: false,
   cookie: {
     secure: false,
-    maxAge: 30 * 60 * 1000, // 30 minutes in milliseconds (the value is calculated by multiplying the number of minutes (30) by the number of seconds in a minute (60) and then by 1000 to convert it to milliseconds.)
-  }   // Set the session cookie properties
+    maxAge: 60 * 60 * 1000,
+    //maxAge: 30 * 60 * 1000, // 30 minutes in milliseconds (the value is calculated by multiplying the number of minutes (30) by the number of seconds in a minute (60) and then by 1000 to convert it to milliseconds.)
+
+    //name: 'labbee_user', // Set your custom cookie name here (Default is : connect.sid if we use 'express-session')
+
+    // Set the session cookie properties
+  }
+
 }))
 
 

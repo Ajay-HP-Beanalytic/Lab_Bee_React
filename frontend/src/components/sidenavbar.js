@@ -122,15 +122,11 @@ export default function SidenavigationBar() {
 
   // State variable to set the user name:
   const [loggedInUser, setLoggedInUser] = useState('')
+
+  // State variable to get the logged in user role
+  const [loggedInUserRole, setLoggedInUserRole] = useState('')
+
   const navigate = useNavigate()
-
-
-  // User authentication process:
-  useEffect(() => {
-    if (!localStorage.getItem('token')) {
-      navigate("/")
-    }
-  }, [])
 
 
   // To validate the user credential its very much important
@@ -141,6 +137,8 @@ export default function SidenavigationBar() {
     axios.get('http://localhost:4000/api/getLoggedInUser')
       .then(res => {
         if (res.data.valid) {
+          //console.log(res.data.user_role)
+          setLoggedInUserRole(res.data.user_role)
           setLoggedInUser(res.data.username)
         } else {
           navigate("/")
@@ -159,15 +157,31 @@ export default function SidenavigationBar() {
   const items = [
     { i: 1, label: 'Home', icon: <HomeIcon />, path: '/home' },
     { i: 2, label: 'Add Quotation', icon: <RequestQuoteIcon />, path: '/quotation' },
-    /* { i: 3, label: 'Update Quotation', icon: <EditNoteIcon />, path: '/updateenviquote/Sample' }, */
+    { i: 3, label: 'Quotation Essentials', icon: <NoteAddIcon />, path: '/quotation_essentials' },
     { i: 4, label: 'Jobcard', icon: <ArticleIcon />, path: '/jobcard' },
     { i: 5, label: 'Slot Booking', icon: <CalendarMonthSharpIcon />, path: '/slot-booking' },
-    { i: 6, label: 'Add Modules', icon: <NoteAddIcon />, path: '/add_module_or_test' },
+    // { i: 6, label: 'Add Modules', icon: <NoteAddIcon />, path: '/add_module_or_test' },
   ]
   const items2 = [
     { i: 6, label: 'Settings', icon: <SettingsIcon />, path: '/settings' },
     { i: 7, label: loggedInUser, icon: <Avatar sx={{ backgroundColor: 'primary.light' }}> {userAvatar} </Avatar>, path: '/userlogout' },
   ]
+
+
+  // Filter items based on the user's role
+  const filteredItems = items.filter(item => {
+    if (loggedInUserRole === 'Admin') {
+      return true; // Show all items for Admin
+    } else if (loggedInUserRole === 'Marketing') {
+      return [1, 2, 3, 7].includes(item.i); // Show items 1, 2, 3, and 7 for Marketing
+    } else if (loggedInUserRole === 'Lab Manager') {
+      return [4, 5, 7].includes(item.i); // Show items 4, 5, and 7 for Lab Manager
+    }
+    return false; // Default: Hide the item
+  });
+
+
+
 
 
   const [leftmargin, setLeftMargin] = useState(200)
@@ -232,9 +246,16 @@ export default function SidenavigationBar() {
           </DrawerHeader>
 
           {/* Create a list and add the number of items in order show it in a sidebar */}
-          <List>
+
+          {/* <List>
             {items.map((item) => (<MenuItem key={item.i} item={item} index={item.i} />))}
-          </List>
+          </List> */}
+
+          {filteredItems.map(item => (
+            // Render your item component here
+            (<MenuItem key={item.i} item={item} index={item.i} />)
+          ))}
+
 
           <List sx={{ marginTop: 'auto' }} >
             {items2.map((item) => (<MenuItem key={item.i} item={item} index={item.i} />))}

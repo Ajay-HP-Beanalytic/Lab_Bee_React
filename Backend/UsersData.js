@@ -29,12 +29,14 @@ function usersDataAPIs(app) {
 
     //api to add or register the new user: 
     app.post("/api/adduser", (req, res) => {
-        const { name, email, password } = req.body;
+        //const { name, email, password } = req.body;
+        const { name, email, password, role, allowedComponents } = req.body;
         const sqlCheckEmail = "SELECT * FROM labbee_users WHERE email=?";
-        const sqlInsertUser = "INSERT INTO labbee_users (name, email, password) VALUES (?,?,?)";
+        const sqlInsertUser = "INSERT INTO labbee_users (name, email, password, role, allowed_components) VALUES (?,?,?,?,?)";
 
         db.query(sqlCheckEmail, [email], (error, result) => {
             if (error) {
+                console.error("Error checking email:", error);
                 return res.status(500).json({ message: "Internal server error" });
             }
 
@@ -50,18 +52,65 @@ function usersDataAPIs(app) {
                     return bcrypt.hash(password, salt)
                 })
                 .then(hash => {
-                    db.query(sqlInsertUser, [name, email, hash], (error) => {
+                    //db.query(sqlInsertUser, [name, email, hash], (error) => {
+                    db.query(sqlInsertUser, [name, email, hash, role, allowedComponents], (error) => {
                         if (error) {
+                            console.error("Error inserting user:", error);
                             return res.status(500).json({ message: "Internal server error" });
                         }
                         return res.status(200).json({ message: "Registration Success" });
                     })
                 })
                 .catch(err => {
+                    console.error("Error hashing password:", err);
                     return res.status(500).json({ message: "Internal server error" });
                 })
         });
     });
+
+
+
+
+    //api to update the data of a registered user: 
+    app.post("/api/adduser/:id", (req, res) => {
+        //const { name, email, password } = req.body;
+        const { name, email, password, role, allowedComponents } = req.body;
+        const id = req.params.id;
+        const sqlUpdateUser = `UPDATE labbee_users SET name='${name}', email='${email}', password='${password}', role='${role}', allowed_components='${allowedComponents}' WHERE id=${id}`;
+
+        db.query(sqlUpdateUser, (error, result) => {
+            if (error) {
+                console.error(error);
+                return res.status(500).json({ message: "Internal server error" });
+            } else {
+                res.status(200).json({ message: "User data updated successfully" });
+            }
+
+
+
+            //If email is not exists then continue and encrypt the password:
+            // bcrypt
+            //     .genSalt(saltRounds)
+            //     .then(salt => {
+            //         return bcrypt.hash(password, salt)
+            //     })
+            //     .then(hash => {
+            //         //db.query(sqlInsertUser, [name, email, hash], (error) => {
+            //         db.query(sqlInsertUser, [name, email, hash, role], (error) => {
+            //             if (error) {
+            //                 console.error("Error inserting user:", error);
+            //                 return res.status(500).json({ message: "Internal server error" });
+            //             }
+            //             return res.status(200).json({ message: "Registration Success" });
+            //         })
+            //     })
+            //     .catch(err => {
+            //         console.error("Error hashing password:", err);
+            //         return res.status(500).json({ message: "Internal server error" });
+            //     })
+        });
+    });
+
 
 
 
@@ -98,16 +147,13 @@ function usersDataAPIs(app) {
                 const token = jwt.sign(
                     { userID: user.id, email: user.email },
                     jwtSecret,
-                    { expiresIn: '1d' }
+                    { expiresIn: '30d' }
                 );
 
-                //res.status(200).json({ username: user.name, token });
-                //console.log({ username: user.name,})
-
                 req.session.username = user.name
+                req.session.role = user.role
 
                 res.status(200).json({ username: req.session.username, token: token });
-                //res.cookie('token', token)
 
 
             } catch (error) {
@@ -119,24 +165,52 @@ function usersDataAPIs(app) {
 
 
 
+    //Function to delete the user data from the table and database :
+    app.delete("/api/deleteUser/:id", (req, res) => {
+        const id = req.params.id;
+        const deleteQuery = "DELETE FROM labbee_users WHERE id = ?";
+
+        db.query(deleteQuery, [id], (error, result) => {
+            if (error) {
+                return res.status(500).json({ error: "An error occurred while deleting the user" });
+            }
+            res.status(200).json({ message: "User removed successfully" });
+        });
+    });
+
+
+
+
     // api to fetch the logged in user name:
     app.get("/api/getLoggedInUser", (req, res) => {
         if (req.session.username) {
-            return res.json({ valid: true, username: req.session.username })
+            console.log(req.session.role)
+            return res.json({ valid: true, username: req.session.username, user_role: req.session.role })
         } else {
             return res.json({ valid: false })
         }
     });
 
 
+
     // api to logout from the application:
     app.get("/api/logout", (req, res) => {
+
+        // Clear cookie
         res.clearCookie('connect.sid')
+
+        //req.session.destroy();
+
+
+        // Set a header indicating session expiration time
+        //res.setHeader("Session-Expired", "true");
+
         return res.json({ Status: "Logged out successfully " })
     });
 
+
     // Check wheteher connection is established between 
-    app.get("/api/get", (req, res) => {
+    app.get("/api/getAllUsers", (req, res) => {
         const usersList = "SELECT * FROM labbee_users";
         db.query(usersList, (error, result) => {
             res.send(result);
