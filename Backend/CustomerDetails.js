@@ -74,7 +74,7 @@ function customerDetailsAPIs(app) {
 
         db.query(deleteQuery, [id], (error, result) => {
             if (error) {
-                return res.status(500).json({ error: "An error occurred while deleting the module" });
+                return res.status(500).json({ error: "An error occurred while deleting the customer data" });
             }
             res.status(200).json({ message: "Company data deleted successfully" });
         });

@@ -190,7 +190,7 @@ export default function QuoteTable() {
                   <TableHead sx={{ backgroundColor: '#227DD4', fontWeight: 'bold' }}>
                     <TableRow>
                       {tableHeadersText.map((header, index) => (
-                        <TableCell key={index} align="center" style={{ color: 'white' }}>{header} </TableCell>
+                        <TableCell key={index} align="center" style={{ color: 'white' }}> {header} </TableCell>
                       ))}
                     </TableRow>
                   </TableHead>

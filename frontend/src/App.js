@@ -11,6 +11,7 @@ import ForgotPassword from "./LoginRegister/ForgotPassword";
 import TrailPage from "./TrailPage";
 import SidenavigationBar from "./components/sidenavbar";
 import Jobcard from "./Pages/Jobcard";
+import JobcardBMRCL from "./Pages/Jobcard_BMRCL";
 import QuoteTable from "./Pages/QuoteTable";
 import NotFoundPage from "./Pages/NotFoundPage";
 import UserDetailsDialog from "./components/UserDialog";
@@ -45,9 +46,10 @@ function App() {
             <Route path='home' element={<QuoteTable />} />
             <Route path='/quotation' element={<Quotation />} />
             <Route path='/jobcard' element={<Jobcard />} />
+            {/* <Route path='/jobcard' element={<JobcardBMRCL />} /> // BMRCL Job-Card */}
             <Route path='/settings' element={<UserDetailsDialog />} />
             <Route path="/quotation/:id" element={<Quotation />} />
-            <Route path="/add_module_or_test" element={<AddModulesAndTests />} />
+            <Route path="/quotation_essentials" element={<AddModulesAndTests />} />
             <Route path="/add_customer_data" element={<AddCustomerDetails />} />
             <Route path="/quotationPdf/:id" element={<QuotationPdf />} />
 

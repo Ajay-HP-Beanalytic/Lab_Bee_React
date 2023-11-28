@@ -97,6 +97,28 @@ export default function Login() {
   }, [])
 
 
+  /* //To show the login again toast notification after session ends:
+  useEffect(() => {
+    axios.interceptors.response.use(
+      (response) => {
+        // Check for the "Session-Expired" header
+        const isSessionExpired = response.headers["session-expired"];
+
+        if (isSessionExpired) {
+          // Show toast notification
+          toast.warning("Your session has ended. Please login to continue.");
+        }
+
+        return response;
+      },
+      (error) => {
+        return Promise.reject(error);
+      }
+    );
+   }, []) */
+
+
+
   // To allow an user to log-In:
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -111,8 +133,12 @@ export default function Login() {
         });
 
         if (response.status === 200) {
-          toast.success("Logged In succesfully")
+          // setTimeout(() => {
+          //   navigate("/home")
+          // }, 500)
+
           navigate("/home");                      // Redirect to the home page or perform other actions
+          toast.success("You have logged in succesfully.")
 
           //localStorage.setItem('token', response.data.token)  // Store token in the local storage
           //console.log(response.data)
@@ -142,7 +168,8 @@ export default function Login() {
 
       <div
         style={{
-          backgroundImage: `url(${bgimg})`,
+          //backgroundImage: `url(${bgimg})`,
+          backgroundImage: "linear-gradient(135deg, #009FFD 10%, #2A2A72 100%)",
           backgroundSize: "cover",
           height: "100vh",
           color: "#f5f5f5",
@@ -159,7 +186,7 @@ export default function Login() {
                   marginLeft: "15px",
                   marginRight: "15px",
                   height: "25vh",
-                  color: "#f5f5f5",
+                  color: "#f5f5f5", // background color of the first box
                 }}
               ></Box>
             </Grid>
@@ -169,7 +196,7 @@ export default function Login() {
                   backgroundSize: "cover",
                   height: "70vh",
                   minHeight: "500px",
-                  backgroundColor: "#3b33d5",
+                  backgroundColor: "#3b33d5", // background color of the second box
                 }}
               >
                 <ThemeProvider theme={darkTheme}>

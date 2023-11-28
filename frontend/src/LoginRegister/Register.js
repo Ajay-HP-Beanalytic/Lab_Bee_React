@@ -115,7 +115,7 @@ export default function Register() {
       const response = await axios.post("http://localhost:4000/api/adduser", {
         name,
         email,
-        password
+        password,
       });
 
       if (response.status === 200) {
@@ -154,7 +154,8 @@ export default function Register() {
 
       <div
         style={{
-          backgroundImage: `url(${bgimg})`,
+          //backgroundImage: `url(${bgimg})`,
+          backgroundImage: "linear-gradient(135deg, #009FFD 10%, #2A2A72 100%)",
           backgroundSize: "cover",
           height: "100vh",
           color: "#f5f5f5",
