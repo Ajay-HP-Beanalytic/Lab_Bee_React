@@ -1,24 +1,25 @@
-import { TextField, Box, Button, TableContainer, IconButton, TableCell, TableBody, TableRow, Table, Paper, TableHead, Typography, Tooltip, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material'
 
+import React, { useEffect, useRef, useState } from 'react'
 import axios from 'axios'
 import * as XLSX from 'xlsx';
-import React, { useEffect, useRef, useState } from 'react'
 import { toast } from 'react-toastify'
 
 import AddIcon from '@mui/icons-material/Add';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Tooltip, Typography } from '@mui/material';
 
+export default function AddTestsList() {
 
-const AddModulesAndTests = () => {
-
-    const [moduleName, setModulename] = useState('')
-    const [moduleDescription, setmoduleDescription] = useState('')
-    const [modulesList, setModulesList] = useState([])
+    const [testName, setTestName] = useState('')
+    const [testCode, setTestCode] = useState('')
+    const [testDescription, setTestDescription] = useState('')
+    const [testCategory, setTestCategory] = useState('')
+    const [testsList, setTestsList] = useState([])
     const [uploadedFileName, setUploadedFileName] = useState(null); // Define the uploadedFileName state variable
 
-    const [editItemsoftModuleFields, setEditItemsoftModuleFields] = useState(false);
+    const [editTestsFields, setEditTestsFields] = useState(false);
 
     const [selectedFile, setSelectedFile] = useState(null);
     const fileInputRef = useRef(null);  // Declare fileInputRef
@@ -28,21 +29,22 @@ const AddModulesAndTests = () => {
 
 
     // Function to handle the submit process.
-    const onSubmitModulesButton = async (e) => {
-        e.preventDefault();
+    const onSubmitTestsButton = async (e) => {
 
-        if (!moduleName || !moduleDescription) {
+        if (!testName || !testCode || !testDescription || !testCategory) {
             toast.error("Please enter all the fields..!");
             return;
         }
 
         try {
-            const addItemModulesRequest = await axios.post("http://localhost:4000/api/addItemsoftModules/" + editId, {
-                moduleName,
-                moduleDescription
+            const addTestRequest = await axios.post("http://localhost:4000/api/addTS1Tests/" + editId, {
+                testName,
+                testCode,
+                testDescription,
+                testCategory
             });
 
-            if (addItemModulesRequest.status === 200) {
+            if (addTestRequest.status === 200) {
                 if (editId) {
                     toast.success("Data Updated Successfully");
                     setRef(!ref)
@@ -66,26 +68,31 @@ const AddModulesAndTests = () => {
     }
 
 
+    // Function to operate cancel btn
     function handleCancelBtnIsClicked() {
-        setModulename('')
+        setTestName('')
+        setTestCode('')
+        setTestDescription('')
+        setTestCategory('')
         setEditId('')
-        setmoduleDescription('')
-        setEditItemsoftModuleFields(false)
+        setEditTestsFields(false)
     }
+
 
     // Fetch the data from the table using the useEffect hook:
     useEffect(() => {
 
-        const fetchModulesList = async () => {
+        const fetchTestsList = async () => {
             try {
-                const quotesURL = await axios.get("http://localhost:4000/api/getItemsoftModules");
-                setModulesList(quotesURL.data)
+                const testsURL = await axios.get("http://localhost:4000/api/getTS1Tests");
+                setTestsList(testsURL.data)
             } catch (error) {
                 console.error('Failed to fetch the data', error);
             }
         };
-        fetchModulesList();
+        fetchTestsList();
     }, [ref])
+
 
 
     // To read the data of the uploaded excel file
@@ -110,27 +117,22 @@ const AddModulesAndTests = () => {
                 const dataArr = XLSX.utils.sheet_to_json(worksheet, { header: 1 }).slice(1);
 
                 // Check if the dataArr has at least one row with two columns (excluding headers)
-                if (dataArr.length > 1 && dataArr[0].length === 2) {
+                if (dataArr.length > 1 && dataArr[0].length === 4) {
 
                     if (dataArr.length > 0) {
                         dataArr.forEach(async (row) => {
-                            const [moduleName, moduleDescription] = row;
+                            const [testName, testCode, testDescription, testCategory] = row;
 
                             try {
-                                const addItemModulesRequest = await axios.post("http://localhost:4000/api/addItemsoftModules", {
-                                    moduleName,
-                                    moduleDescription
+                                const addTestsRequest = await axios.post("http://localhost:4000/api/addTS1Tests", {
+                                    testName,
+                                    testCode,
+                                    testDescription,
+                                    testCategory
                                 });
 
-                                if (addItemModulesRequest.status === 200) {
+                                if (addTestsRequest.status === 200) {
 
-                                    /* setModulesList([
-                                        ...modulesList,
-                                        ...dataArr.map(([moduleName, moduleDescription]) => ({
-                                            module_name: moduleName,
-                                            module_description: moduleDescription,
-                                        })),
-                                    ]); */
                                 } else {
                                     toast.error("An error occurred while saving the data.");
                                 }
@@ -160,70 +162,68 @@ const AddModulesAndTests = () => {
 
 
     // Function to edit the module:
-    const editItemsoftModule = (index, id) => {
+    const editSelectedTest = (index, id) => {
 
         setEditId(id)
-        const rowdata = modulesList[index];
-        setEditItemsoftModuleFields(true)
-        setModulename(rowdata.module_name)
-        setmoduleDescription(rowdata.module_description)
-
+        const rowdata = testsList[index];
+        setEditTestsFields(true)
+        setTestName(rowdata.test_name)
+        setTestCode(rowdata.test_code)
+        setTestDescription(rowdata.test_description)
+        setTestCategory(rowdata.test_category)
     }
 
 
     // Function to delete the particular module from the table:
-    function deleteItemsoftModule(id) {
+    function deleteSelectedTest(id) {
 
-        const confirmDelete = window.confirm('Are you sure you want to delete this module?');
+        const confirmDelete = window.confirm('Are you sure you want to delete this test?');
 
         if (confirmDelete) {
-            fetch(`http://localhost:4000/api/getItemsoftModules/${id}`, { method: 'DELETE', })
+            fetch(`http://localhost:4000/api/getTS1Tests/${id}`, { method: 'DELETE', })
                 .then(res => {
                     if (res.status === 200) {
-                        const updatedModulesList = modulesList.filter((item) => item.id !== id);
-                        setModulesList(updatedModulesList);
-                        toast.success("Module Deleted Successfully");
+                        const updatedTestsList = testsList.filter((item) => item.id !== id);
+                        setTestsList(updatedTestsList);
+                        toast.success("Test Deleted Successfully");
                     } else {
-                        toast.error("An error occurred while deleting the module.");
+                        toast.error("An error occurred while deleting the Test.");
                     }
                 })
                 .catch((error) => {
-                    toast.error("An error occurred while deleting the module.");
+                    toast.error("An error occurred while deleting the Test.");
                 })
-            //toast.success("Data Added Successfully");
-            //setModulesList([...modulesList, { module_name: moduleName, module_description: moduleDescription }]);
         } else {
             handleCancelBtnIsClicked();
         }
     }
 
-
-    // Function to add a single module:
-    const addNewModuleButton = () => {
-        setEditItemsoftModuleFields(true)
+    // Function to open the dialog:
+    const addNewTestButton = () => {
+        setEditTestsFields(true)
     }
 
     return (
         <>
-            <h2>Add Item Soft Modules And Tests</h2>
+            <h2>Add Environmental Tests</h2>
 
-            <Box >
-                {editItemsoftModuleFields && (
-
-                    <Dialog open={editItemsoftModuleFields}
+            <Box>
+                {editTestsFields && (
+                    <Dialog
+                        open={editTestsFields}
                         onClose={handleCancelBtnIsClicked}
-                        aria-labelledby="itemsoft-modules-dialog">
-
-                        <DialogTitle id="itemsoft-modules-dialog">
-                            {editItemsoftModuleFields ? 'Add Item Soft Modules' : 'Edit Item Soft Modules'}
+                        aria-labelledby='ts1-tests-add-edit-dialog'
+                    >
+                        <DialogTitle id='ts1-tests-add-edit-dialog'>
+                            {editTestsFields ? 'Add New Test' : 'Edit Test'}
                         </DialogTitle>
 
                         <DialogContent>
                             <TextField
                                 sx={{ marginBottom: '16px', marginLeft: '10px', borderRadius: 3 }}
-                                value={moduleName}
-                                onChange={(e) => setModulename(e.target.value)}
-                                label="Module Name"
+                                value={testName}
+                                onChange={(e) => setTestName(e.target.value)}
+                                label="Test Name"
                                 margin="normal"
                                 fullWidth
                                 variant="outlined"
@@ -232,51 +232,70 @@ const AddModulesAndTests = () => {
 
                             <TextField
                                 sx={{ marginBottom: '16px', marginLeft: '10px', borderRadius: 3 }}
-                                value={moduleDescription}
-                                onChange={(e) => setmoduleDescription(e.target.value)}
-                                label="Module Description"
+                                value={testCode}
+                                onChange={(e) => setTestCode(e.target.value)}
+                                label="Test Code"
                                 margin="normal"
                                 fullWidth
                                 variant="outlined"
                                 autoComplete="on"
                             />
 
-                            <DialogActions>
+                            <TextField
+                                sx={{ marginBottom: '16px', marginLeft: '10px', borderRadius: 3 }}
+                                value={testDescription}
+                                onChange={(e) => setTestDescription(e.target.value)}
+                                label="Test Description"
+                                margin="normal"
+                                fullWidth
+                                variant="outlined"
+                                autoComplete="on"
+                            />
 
-                                <Button sx={{ marginBottom: '16px', marginLeft: '10px', borderRadius: 3 }}
-                                    variant="contained"
-                                    color="primary"
-                                    onClick={handleCancelBtnIsClicked}>
-                                    Cancel
-                                </Button>
-
-                                <Button sx={{ marginBottom: '16px', marginLeft: '10px', borderRadius: 3 }}
-                                    variant="contained"
-                                    color="secondary"
-                                    type="submit"
-                                    onClick={onSubmitModulesButton}>
-                                    Submit
-                                </Button>
-
-                            </DialogActions>
+                            <TextField
+                                sx={{ marginBottom: '16px', marginLeft: '10px', borderRadius: 3 }}
+                                value={testCategory}
+                                onChange={(e) => setTestCategory(e.target.value)}
+                                label="Test Category"
+                                margin="normal"
+                                fullWidth
+                                variant="outlined"
+                                autoComplete="on"
+                            />
                         </DialogContent>
 
-                    </Dialog>
+                        <DialogActions>
+                            <Button sx={{ marginBottom: '16px', marginLeft: '10px', borderRadius: 3 }}
+                                variant="contained"
+                                color="primary"
+                                onClick={handleCancelBtnIsClicked}>
+                                Cancel
+                            </Button>
 
+                            <Button sx={{ marginBottom: '16px', marginLeft: '10px', borderRadius: 3 }}
+                                variant="contained"
+                                color="secondary"
+                                type="submit"
+                                onClick={onSubmitTestsButton}>
+                                Submit
+                            </Button>
+                        </DialogActions>
+                    </Dialog>
                 )}
 
 
-                {!editItemsoftModuleFields && (
+                {!editTestsFields && (
                     <IconButton variant="contained" size="large" >
-                        <Tooltip title="Add module" arrow type="submit">
+                        <Tooltip title="Add Test" arrow type="submit">
                             <div>
-                                <AddIcon fontSize="inherit" onClick={addNewModuleButton} />
+                                <AddIcon fontSize="inherit" onClick={addNewTestButton} />
                             </div>
                         </Tooltip>
                     </IconButton>
                 )}
 
-                {!editItemsoftModuleFields && (
+
+                {!editTestsFields && (
                     <>
                         <input
                             type="file"
@@ -298,7 +317,6 @@ const AddModulesAndTests = () => {
                     </>
                 )}
 
-
                 {/* Display the uploaded file name or other information here */}
                 {uploadedFileName && (
                     <Typography variant="h6" align='center'
@@ -306,58 +324,64 @@ const AddModulesAndTests = () => {
                     >Uploaded File: {uploadedFileName}</Typography>
                 )}
 
-                <h3>Available Item Soft Modules</h3>
 
-                <TableContainer component={Paper}>
+                <h3>Available Test Names</h3>
+
+                <TableContainer component={Paper} >
                     <Table sx={{ minWidth: 650 }} aria-label="simple table">
                         <TableHead sx={{ backgroundColor: '#227DD4', fontWeight: 'bold' }}>
                             <TableRow>
                                 <TableCell>Sl No</TableCell>
-                                <TableCell align="center">Module Name</TableCell>
-                                <TableCell align="center">Module Description</TableCell>
+                                <TableCell align="center">Test Name</TableCell>
+                                <TableCell align="center">Test Code</TableCell>
+                                <TableCell align="center">Test Description</TableCell>
+                                <TableCell align="center">Test Category</TableCell>
                                 <TableCell align="center">Action</TableCell>
                             </TableRow>
                         </TableHead>
+
                         <TableBody>
-                            {modulesList.map((item, index) => (
+                            {testsList.map((item, index) => (
                                 <TableRow
-                                    key={index} align="center"
+                                    key={index} align='center'
+                                    style={{
+                                        backgroundColor: item.test_category === 'NABL' ? '#80ffaa' : (item.test_category === 'NON-NABL' ? '#ffff99' : 'white')
+                                    }}
                                 >
                                     <TableCell component="th" scope="row">
                                         {index + 1}
                                     </TableCell>
-                                    <TableCell align="center">{item.module_name}</TableCell>
-                                    <TableCell align="center">{item.module_description}</TableCell>
+                                    <TableCell align="center">{item.test_name}</TableCell>
+                                    <TableCell align="center">{item.test_code}</TableCell>
+                                    <TableCell align="center">{item.test_description}</TableCell>
+                                    <TableCell align="center">{item.test_category}</TableCell>
+
                                     <TableCell align="center">
 
-                                        <IconButton variant='outlined' size='large' onClick={() => editItemsoftModule(index, item.id)}>
-                                            <Tooltip title='Edit module' arrow>
+                                        <IconButton variant='outlined' size='large' onClick={() => editSelectedTest(index, item.id)}>
+                                            <Tooltip title='Edit Test' arrow>
                                                 <EditIcon fontSize="inherit" />
                                             </Tooltip>
                                         </IconButton>
 
 
-                                        <IconButton variant='outlined' size='large' onClick={() => deleteItemsoftModule(item.id)}>
-                                            <Tooltip title='Delete module' arrow>
+                                        <IconButton variant='outlined' size='large' onClick={() => deleteSelectedTest(item.id)}>
+                                            <Tooltip title='Delete Test' arrow>
                                                 <DeleteIcon fontSize="inherit" />
                                             </Tooltip>
                                         </IconButton>
 
                                     </TableCell>
+
                                 </TableRow>
                             ))}
                         </TableBody>
+
                     </Table>
+
                 </TableContainer>
 
             </Box>
-        </ >
+        </>
     )
 }
-
-export default AddModulesAndTests;
-
-
-
-
-

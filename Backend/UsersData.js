@@ -184,7 +184,6 @@ function usersDataAPIs(app) {
     // api to fetch the logged in user name:
     app.get("/api/getLoggedInUser", (req, res) => {
         if (req.session.username) {
-            console.log(req.session.role)
             return res.json({ valid: true, username: req.session.username, user_role: req.session.role })
         } else {
             return res.json({ valid: false })

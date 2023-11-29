@@ -19,8 +19,10 @@ const app = express();
 const { db,
   createUsersTable,
   createBEAQuotationsTable,
+  createChamberCalibrationTable,
   createCustomerDetailsTable,
-  createItemSoftModulestable } = require('./database_tables');
+  createItemSoftModulestable,
+  createTestsListTable } = require('./database_tables');
 
 
 // Establish a connection with the database and to use the tables:
@@ -33,8 +35,10 @@ db.getConnection(function (err, connection) {
   // call the table creating functions here:
   createUsersTable();
   createBEAQuotationsTable();
+  createChamberCalibrationTable();
   createCustomerDetailsTable();
   createItemSoftModulestable();
+  createTestsListTable()
 
   connection.release();  // Release the connection back to the pool when done
 });
@@ -75,12 +79,17 @@ const { usersDataAPIs } = require('./UsersData')
 usersDataAPIs(app)
 
 
-// backend connection of users API's from 'BEAQuotationsTable' page:
+// backend connection from 'BEAQuotationsTable' page:
 const { mainQuotationsTableAPIs } = require('./BEAQuotationsTable')
 mainQuotationsTableAPIs(app)
 
 
-// backend connection of users API's from 'AddCustomerDetails' page:
+// backend connection from 'BEAQuotationsTable' page:
+const { chambersAndCalibrationAPIs } = require('./ChambersAndCalibrationAPI')
+chambersAndCalibrationAPIs(app)
+
+
+// backend connection from 'AddCustomerDetails' page:
 const { customerDetailsAPIs } = require('./CustomerDetails')
 customerDetailsAPIs(app)
 
@@ -88,6 +97,11 @@ customerDetailsAPIs(app)
 // backend connection of ItemSoftModules API's from 'ItemSoftModules' page:
 const { itemSoftModulesAPIs } = require('./ItemSoftModules')
 itemSoftModulesAPIs(app)
+
+
+// backend connection of TS1_Tests List API's from 'EnvitestsList' page:
+const { ts1TestsListAPIs } = require('./EnvitestsList')
+ts1TestsListAPIs(app)
 
 
 
