@@ -148,6 +148,32 @@ function createBEAQuotationsTable() {
 }; */
 
 
+
+//Function to create a 'chamber_calibration' table:
+function createChamberCalibrationTable() {
+    const sqlQuery = `
+    CREATE TABLE IF NOT EXISTS chamber_calibration (
+        id INT NOT NULL AUTO_INCREMENT,
+        chamber_name VARCHAR(1000),
+        chamber_id VARCHAR(100),
+        calibration_done_date DATE,
+        calibration_due_date DATE,
+        calibration_done_by VARCHAR(1000),
+        calibration_status VARCHAR(250),
+        chamber_status VARCHAR(250),
+        remarks VARCHAR(2000),
+        PRIMARY KEY(id)
+    )`;
+
+    db.query(sqlQuery, function (err, result) {
+        if (err) {
+            console.log("Error occurred while creating chamber_calibration table", err)
+        } else {
+            //console.log("chamber_calibration table created successfully.")
+        }
+    })
+}
+
 //Function to create a 'customers_details' table:
 function createCustomerDetailsTable() {
     const createCustomerDetailsTableQuery = `
@@ -190,6 +216,32 @@ function createItemSoftModulestable() {
 }
 
 
+
+//Function to create a 'ts1_tests' table:
+function createTestsListTable() {
+    const sqlQuery = `
+    CREATE TABLE IF NOT EXISTS ts1_tests (
+        id INT NOT NULL AUTO_INCREMENT,
+        test_name VARCHAR(1000),
+        test_code VARCHAR(100),
+        test_description VARCHAR(2000),
+        test_category VARCHAR(100),
+        PRIMARY KEY(id)
+    )`;
+
+    db.query(sqlQuery, function (err, result) {
+        if (err) {
+            console.log("Error occurred while creating ts1_tests table", err)
+        } else {
+            //console.log("ts1_tests table created successfully.")
+        }
+    })
+}
+
+
+
+
+
 // Handle the process exiting to gracefully end the connection pool.
 process.on('exit', function () {
     db.end(function (err) {
@@ -207,7 +259,9 @@ process.on('exit', function () {
 module.exports = {
     db, createUsersTable,
     createBEAQuotationsTable,
+    createChamberCalibrationTable,
     createCustomerDetailsTable,
-    createItemSoftModulestable
+    createItemSoftModulestable,
+    createTestsListTable
 };
 

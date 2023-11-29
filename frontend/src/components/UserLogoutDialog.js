@@ -34,10 +34,10 @@ const UserLogoutDialog = () => {
         axios.get("http://localhost:4000/api/logout")
             .then(res => {
                 navigate('/')
-            }).catch(err => console.log(err));
+            })
+            .catch(err => console.log(err));
         setUserDialogOpen(false)
         toast.success('You have successfully logged out.')
-        //localStorage.removeItem('token')
     }
 
 
@@ -383,26 +383,6 @@ const UserLogoutDialog = () => {
                             </IconButton>
                         )}
 
-                        {/* {!editUserDetailsFields && (
-                            <>
-                                <input
-                                    type="file"
-                                    accept=".xls, .xlsx"  // Limit file selection to Excel files
-                                    //onChange={handleCustomerFileChange}
-                                    style={{ display: 'none' }}  // Hide the input element
-                                    ref={(fileInputRef)}
-                                />
-
-                                <IconButton variant='contained' size="large" onClick={() => fileInputRef.current.click()}>
-                                    <Tooltip title="Upload data using Excel" arrow>
-                                        <div>
-                                            <UploadFileIcon fontSize="inherit" />
-                                        </div>
-                                    </Tooltip>
-                                </IconButton>
-                            </>
-                        )} */}
-
 
 
                         <Paper sx={{ width: '100%', mb: 2 }}>
@@ -465,7 +445,7 @@ const UserLogoutDialog = () => {
 
                 <Button onClick={() => setUserDialogOpen(true)} variant='outlined'>Logout</Button>
                 <Dialog hideBackdrop open={isUserDialogOpen} onClose={() => setUserDialogOpen(false)}>
-                    <DialogTitle> User Info</DialogTitle>
+                    <DialogTitle> Logout Confirmation</DialogTitle>
                     <DialogContent>
                         <DialogContentText>
                             Are you sure you want to logout..!?

@@ -56,6 +56,9 @@ export default function Login() {
 
   const [remember, setRemember] = useState(false);
 
+  // Set initial state with the last logged email
+  const [userEmail, setUserEmail] = useState(localStorage.getItem('lastLoggedEmail') || '');
+
   const navigate = useNavigate();
 
   const initialState = {
@@ -78,6 +81,26 @@ export default function Login() {
   const handleMouseDownPassword1 = (event) => {
     event.preventDefault();
   };
+
+
+
+
+  // Update the local storage with the current email
+  const handleEmailChange = (event) => {
+    const newEmail = event.target.value;
+    setEmailString(newEmail);
+    localStorage.setItem('lastEnteredEmail', newEmail);
+  };
+
+
+  // Load the last entered email from local storage
+  useEffect(() => {
+    const storedEmail = localStorage.getItem('lastEnteredEmail');
+    if (storedEmail) {
+      setEmailString(storedEmail);
+    }
+  }, []);
+
 
 
   // To validate the user credential its very much important
@@ -223,7 +246,9 @@ export default function Login() {
 
                           <TextField
                             name="email"
-                            value={email} onChange={(e) => setEmailString(e.target.value)}
+                            value={email}
+                            //onChange={(e) => setEmailString(e.target.value)}
+                            onChange={handleEmailChange}
                             required
                             fullWidth
                             autoComplete="email"
@@ -241,7 +266,8 @@ export default function Login() {
                             <InputLabel htmlFor="outlined-adornment-password">Password</InputLabel>
                             <OutlinedInput
                               id="outlined-adornment-password"
-                              value={password} onChange={(e) => setPasswordString(e.target.value)}
+                              value={password}
+                              onChange={(e) => setPasswordString(e.target.value)}
 
                               type={showPassword ? 'text' : 'password'}
                               endAdornment={

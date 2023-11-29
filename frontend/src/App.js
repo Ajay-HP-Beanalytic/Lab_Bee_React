@@ -14,14 +14,13 @@ import Jobcard from "./Pages/Jobcard";
 import JobcardBMRCL from "./Pages/Jobcard_BMRCL";
 import QuoteTable from "./Pages/QuoteTable";
 import NotFoundPage from "./Pages/NotFoundPage";
-import UserDetailsDialog from "./components/UserDialog";
-import AddModulesAndTests from "./components/AddModulesAndTests";
-import AddCustomerDetails from "./components/AddCustomerDetails";
 import Quotation from "./Pages/Quotation";
 import QuotationPdf from "./Pages/QuotationPdf";
 import DocToPdf from "./components/DocToPdf";
-import DocumentViewer from "./components/DocumentViewer";
 import UserLogoutDialog from "./components/UserLogoutDialog";
+import QuotationRequirements from "./Pages/QuotationRequirements";
+import JobcardRequirements from "./Pages/JobcardRequirements";
+import ChamberAndCalibration from "./components/ChamberCalibration";
 
 
 
@@ -38,22 +37,22 @@ function App() {
           <Route path="/register" exact element={<Register />}></Route>
           <Route path="/reset-password" exact element={<ForgotPassword />}></Route>
 
+
           <Route path="" element={<SidenavigationBar />} >
-
-
-
 
             <Route path='home' element={<QuoteTable />} />
             <Route path='/quotation' element={<Quotation />} />
-            <Route path='/jobcard' element={<Jobcard />} />
-            {/* <Route path='/jobcard' element={<JobcardBMRCL />} /> // BMRCL Job-Card */}
-            <Route path='/settings' element={<UserDetailsDialog />} />
             <Route path="/quotation/:id" element={<Quotation />} />
-            <Route path="/quotation_essentials" element={<AddModulesAndTests />} />
-            <Route path="/add_customer_data" element={<AddCustomerDetails />} />
+            <Route path="/quotation_essentials" element={<QuotationRequirements />} />
             <Route path="/quotationPdf/:id" element={<QuotationPdf />} />
-
             <Route path="/quotationWordToPdf/:id" element={<DocToPdf />} />
+
+            <Route path='/jobcard' element={<Jobcard />} />
+            <Route path='/jobcard_essentials' element={<JobcardRequirements />} />
+            {/* <Route path='/jobcard' element={<JobcardBMRCL />} /> // BMRCL Job-Card */}
+
+            <Route path='/chamber-calibration' element={<ChamberAndCalibration />} />
+
 
             <Route path="/userlogout" element={<UserLogoutDialog />} />
             <Route path='/trailpage' element={<TrailPage />} />

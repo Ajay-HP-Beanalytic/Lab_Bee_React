@@ -18,6 +18,7 @@ import ListItemButton from '@mui/material/ListItemButton';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 import { Avatar, Tooltip } from '@mui/material';
+
 import HomeIcon from '@mui/icons-material/Home';
 import RequestQuoteIcon from '@mui/icons-material/RequestQuote';
 import EditNoteIcon from '@mui/icons-material/EditNote';
@@ -25,6 +26,7 @@ import CalendarMonthSharpIcon from '@mui/icons-material/CalendarMonthSharp';
 import ArticleIcon from '@mui/icons-material/Article';
 import SettingsIcon from '@mui/icons-material/Settings';
 import NoteAddIcon from '@mui/icons-material/NoteAdd';
+import KitchenIcon from '@mui/icons-material/Kitchen';
 import { Link, Outlet, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
@@ -159,12 +161,13 @@ export default function SidenavigationBar() {
     { i: 2, label: 'Add Quotation', icon: <RequestQuoteIcon />, path: '/quotation' },
     { i: 3, label: 'Quotation Essentials', icon: <NoteAddIcon />, path: '/quotation_essentials' },
     { i: 4, label: 'Jobcard', icon: <ArticleIcon />, path: '/jobcard' },
-    { i: 5, label: 'Slot Booking', icon: <CalendarMonthSharpIcon />, path: '/slot-booking' },
-    // { i: 6, label: 'Add Modules', icon: <NoteAddIcon />, path: '/add_module_or_test' },
+    { i: 5, label: 'Jobcard Essentials', icon: <NoteAddIcon />, path: '/jobcard_essentials' },
+    { i: 6, label: 'Slot Booking', icon: <CalendarMonthSharpIcon />, path: '/slot-booking' },
+    { i: 7, label: 'Chamber & Calibration', icon: <KitchenIcon />, path: '/chamber-calibration' },
   ]
   const items2 = [
-    { i: 6, label: 'Settings', icon: <SettingsIcon />, path: '/settings' },
-    { i: 7, label: loggedInUser, icon: <Avatar sx={{ backgroundColor: 'primary.light' }}> {userAvatar} </Avatar>, path: '/userlogout' },
+    { i: 8, label: 'Settings', icon: <SettingsIcon />, path: '/settings' },
+    { i: 9, label: loggedInUser, icon: <Avatar sx={{ backgroundColor: 'primary.light' }}> {userAvatar} </Avatar>, path: '/userlogout' },
   ]
 
 
