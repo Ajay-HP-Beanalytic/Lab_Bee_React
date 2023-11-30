@@ -208,9 +208,18 @@ function usersDataAPIs(app) {
     });
 
 
-    // Check wheteher connection is established between 
+    // Fetch all the users
     app.get("/api/getAllUsers", (req, res) => {
         const usersList = "SELECT * FROM labbee_users";
+        db.query(usersList, (error, result) => {
+            res.send(result);
+        });
+    });
+
+
+    // Fetch the users who will operate the testings 
+    app.get("/api/getTestingUsers", (req, res) => {
+        const usersList = "SELECT name FROM labbee_users WHERE allowed_components LIKE '%JC%' ";
         db.query(usersList, (error, result) => {
             res.send(result);
         });

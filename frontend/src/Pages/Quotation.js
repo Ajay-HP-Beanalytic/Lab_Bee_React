@@ -844,26 +844,16 @@ export default function Quotation() {
               </Button>
 
 
-              {/* <Button variant='outlined' Link={<DocToPdf id={id} />} > Download </Button> */}
-
-              {/* {editId &&
-                <Tooltip title='Download quotation' arrow>
-                  <Link to={<DocToPdf id={id} />}>
-                    <Button variant='outlined'>Download</Button>
-                  </Link>
-                </Tooltip>
-              } */}
-
-
               {editId &&
-                <IconButton variant='outlined' size="large" >
-                  <Tooltip title='Download quotation' arrow>
-                    <Link to={`/quotationWordToPdf/${id}`}>
-                      {/* <Link to={<DocToPdf id={id} />}> */}
-                      <FileDownloadIcon fontSize="inherit" />
-                    </Link>
-                  </Tooltip>
-                </IconButton>
+                <Tooltip title='Download quotation' arrow>
+                  <Button variant="contained" startIcon={<FileDownloadIcon />}
+                    sx={{ borderRadius: 3, margin: 0.5 }}
+                    component={Link}
+                    to={`/quotationWordToPdf/${id}`}
+                  >
+                    Download
+                  </Button>
+                </Tooltip>
               }
 
             </Box>

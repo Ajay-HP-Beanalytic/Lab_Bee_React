@@ -176,9 +176,9 @@ export default function SidenavigationBar() {
     if (loggedInUserRole === 'Admin') {
       return true; // Show all items for Admin
     } else if (loggedInUserRole === 'Marketing') {
-      return [1, 2, 3, 7].includes(item.i); // Show items 1, 2, 3, and 7 for Marketing
+      return [1, 2, 3, 9].includes(item.i); // Show items 1, 2, 3, and 9 for Marketing
     } else if (loggedInUserRole === 'Lab Manager') {
-      return [4, 5, 7].includes(item.i); // Show items 4, 5, and 7 for Lab Manager
+      return [4, 5, 6, 7, 9].includes(item.i); // Show items 4, 5, and 9 for Lab Manager
     }
     return false; // Default: Hide the item
   });
@@ -187,7 +187,7 @@ export default function SidenavigationBar() {
 
 
 
-  const [leftmargin, setLeftMargin] = useState(200)
+  const [leftmargin, setLeftMargin] = useState(250)
 
 
 

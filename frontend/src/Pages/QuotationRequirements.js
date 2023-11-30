@@ -4,19 +4,22 @@
 import React from 'react'
 import AddCustomerDetails from '../components/AddCustomerDetails'
 import AddModulesAndTests from '../components/AddModulesAndTests'
-import { Box, Grid, Typography } from '@mui/material'
+import { Box, Divider, Grid, Typography } from '@mui/material'
 
 
 
 export default function QuotationRequirements() {
     return (
         <>
-            <Typography variant='h4'> Quotation Requirements </Typography>
-
+            <Typography variant='h4' sx={{ textDecoration: 'underline' }}> Quotation Requirements </Typography>
+            <br />
+            <AddCustomerDetails />
             <br />
             <br />
+            <AddModulesAndTests />
 
-            <Box>
+
+            {/* <Box>
                 <Grid container spacing={3}>
                     <Grid item xs={6} sx={{ border: '1px solid black', padding: '10px', borderRadius: '5px' }}>
                         <AddCustomerDetails />
@@ -27,7 +30,7 @@ export default function QuotationRequirements() {
                         <AddModulesAndTests />
                     </Grid>
                 </Grid>
-            </Box>
+            </Box> */}
 
 
         </>

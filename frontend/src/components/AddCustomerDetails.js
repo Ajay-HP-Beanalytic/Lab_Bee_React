@@ -1,4 +1,4 @@
-import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Tooltip } from '@mui/material'
+import { Autocomplete, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Divider, FormControl, IconButton, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, TextField, Tooltip, Typography } from '@mui/material'
 import React, { useState, useRef, useEffect } from 'react'
 import { toast } from 'react-toastify'
 
@@ -206,12 +206,36 @@ export default function AddCustomerDetails() {
     }
 
 
+    // To filter out the table as per the input
+    const [page, setPage] = useState(0);                          //To setup pages of the table
+
+    const [rowsPerPage, setRowsPerPage] = useState(10);            //To show the number of rows per page
+
+    const [filterRow, setFilterRow] = useState([]);               //To filter out the table based on search
+
+    const [filterText, setFilterText] = useState('');
+
+
+    const handleChangePage = (event, newPage) => {
+        setPage(newPage);
+    };
+
+    const handleRowsPerPage = (event) => {
+        setRowsPerPage(parseInt(event.target.value, 10));
+        setPage(0);
+    };
+
+    // To filter out the row:
+    const filteredCompaniesList = filterRow.length > 0 ? filterRow : companiesList;
+
 
     return (
         <div>
-            <h2>Add Company Detials</h2>
-
             <Box>
+
+                <Divider>
+                    <Typography variant='h5' sx={{ color: '#003366' }}> Add Company Detials </Typography>
+                </Divider>
 
                 {editCustomerDetailsFields && (
                     <Dialog
@@ -338,7 +362,28 @@ export default function AddCustomerDetails() {
                 )}
 
 
-                <h3>Available Customer details</h3>
+                {/* <h3>Available Customer details</h3> */}
+                <Typography variant='h5' color={'#e65100'}>Available Customer Details</Typography>
+
+                <Box align='right' >
+                    <FormControl align='left' sx={{ width: "25%", marginTop: '20px', }}>
+                        <Autocomplete
+                            disablePortal
+                            onChange={(event, value) => { setFilterRow(value ? [value] : []); }}
+                            getOptionLabel={(option) => option.company_name || ''}
+                            options={companiesList}
+                            renderInput={(params) => (
+                                <TextField
+                                    {...params}
+                                    label="Filter the table"
+                                    variant="outlined"
+                                />
+                            )}
+                        />
+                    </FormControl>
+                </Box>
+
+                <br />
 
                 <TableContainer component={Paper}>
                     <Table sx={{ minWidth: 650 }} aria-label="simple table">
@@ -355,7 +400,8 @@ export default function AddCustomerDetails() {
                         </TableHead>
 
                         <TableBody>
-                            {companiesList.map((item, index) => (
+                            {/* {companiesList.map((item, index) => ( */}
+                            {filteredCompaniesList.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((item, index) => (
                                 <TableRow key={index} align='center'>
 
                                     <TableCell component="th" scope="row">
@@ -368,14 +414,14 @@ export default function AddCustomerDetails() {
                                     <TableCell>{item.company_id}</TableCell>
                                     <TableCell>{item.customer_referance}</TableCell>
                                     <TableCell align="center">
-                                        <IconButton variant='outlined' size='large' onClick={() => editCompanyData(index, item.id)}>
+                                        <IconButton variant='outlined' size='small' onClick={() => editCompanyData(index, item.id)}>
                                             <Tooltip title='Edit' arrow>
                                                 <EditIcon fontSize="inherit" />
                                             </Tooltip>
                                         </IconButton>
 
 
-                                        <IconButton variant='outlined' size='large' onClick={() => deleteCompanyData(item.id)}>
+                                        <IconButton variant='outlined' size='small' onClick={() => deleteCompanyData(item.id)}>
                                             <Tooltip title='Delete' arrow>
                                                 <DeleteIcon fontSize="inherit" />
                                             </Tooltip>
@@ -388,6 +434,16 @@ export default function AddCustomerDetails() {
                         </TableBody>
                     </Table>
                 </TableContainer>
+
+                <TablePagination
+                    rowsPerPageOptions={[10, 25, 50]}
+                    component="div"
+                    count={filteredCompaniesList.length}
+                    rowsPerPage={rowsPerPage}
+                    page={page}
+                    onPageChange={handleChangePage}
+                    onRowsPerPageChange={handleRowsPerPage}
+                />
 
             </Box>
         </div>
