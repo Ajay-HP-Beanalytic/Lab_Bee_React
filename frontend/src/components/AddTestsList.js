@@ -8,7 +8,7 @@ import AddIcon from '@mui/icons-material/Add';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, IconButton, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Tooltip, Typography } from '@mui/material';
+import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Divider, IconButton, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Tooltip, Typography } from '@mui/material';
 
 export default function AddTestsList() {
 
@@ -205,9 +205,13 @@ export default function AddTestsList() {
 
     return (
         <>
-            <h2>Add Environmental Tests</h2>
-
             <Box>
+
+                <Divider>
+                    <Typography variant='h5' sx={{ color: '#003366' }} > Add Environmental Tests </Typography>
+                </Divider>
+
+
                 {editTestsFields && (
                     <Dialog
                         open={editTestsFields}
@@ -325,7 +329,9 @@ export default function AddTestsList() {
                 )}
 
 
-                <h3>Available Test Names</h3>
+
+                <Typography variant='h5' color={'#e65100'}>Available Test Names</Typography>
+                <br />
 
                 <TableContainer component={Paper} >
                     <Table sx={{ minWidth: 650 }} aria-label="simple table">
@@ -358,14 +364,14 @@ export default function AddTestsList() {
 
                                     <TableCell align="center">
 
-                                        <IconButton variant='outlined' size='large' onClick={() => editSelectedTest(index, item.id)}>
+                                        <IconButton variant='outlined' size='small' onClick={() => editSelectedTest(index, item.id)}>
                                             <Tooltip title='Edit Test' arrow>
                                                 <EditIcon fontSize="inherit" />
                                             </Tooltip>
                                         </IconButton>
 
 
-                                        <IconButton variant='outlined' size='large' onClick={() => deleteSelectedTest(item.id)}>
+                                        <IconButton variant='outlined' size='small' onClick={() => deleteSelectedTest(item.id)}>
                                             <Tooltip title='Delete Test' arrow>
                                                 <DeleteIcon fontSize="inherit" />
                                             </Tooltip>

@@ -8,7 +8,7 @@ import AddIcon from '@mui/icons-material/Add';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { Autocomplete, Box, Button, Checkbox, Dialog, DialogActions, DialogContent, DialogTitle, Divider, FormControl, Grid, IconButton, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, TextField, Tooltip, Typography } from '@mui/material';
+import { Box, Button, Checkbox, Dialog, DialogActions, DialogContent, DialogTitle, Divider, IconButton, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Tooltip, Typography } from '@mui/material';
 
 import PropTypes from 'prop-types';
 import { alpha } from '@mui/material/styles';
@@ -35,8 +35,6 @@ export default function ChamberAndCalibration() {
     const [uploadedFileName, setUploadedFileName] = useState(null); // Define the uploadedFileName state variable
 
     const [editChamberCalibrationFields, setEditChamberCalibrationFields] = useState(false);
-
-
 
     const [selectedFile, setSelectedFile] = useState(null);
     const fileInputRef = useRef(null);  // Declare fileInputRef
@@ -250,42 +248,24 @@ export default function ChamberAndCalibration() {
     }
 
 
-    const [page, setPage] = useState(0);                          //To setup pages of the table
-
-    const [rowsPerPage, setRowsPerPage] = useState(10);            //To show the number of rows per page
-
-    const [filterRow, setFilterRow] = useState([]);               //To filter out the table based on search
-
-    const [filterText, setFilterText] = useState('');
 
 
-    const handleChangePage = (event, newPage) => {
-        setPage(newPage);
-    };
+    // function EnhancedTableHead(props) {
+    //     const { onSelectAllClick, order, orderBy, numSelected, rowCount, onRequestSort } =
+    //         props;
+    //     const createSortHandler = (property) => (event) => {
+    //         onRequestSort(event, property);
+    //     }
+    // }
 
-    const handleRowsPerPage = (event) => {
-        setRowsPerPage(parseInt(event.target.value, 10));
-        setPage(0);
-    };
-
-    // To filter out the row:
-    const filteredChambersList = filterRow.length > 0 ? filterRow : chambersList;
-
-    // To filter out entire table based on the input
-    // const filteredChambersList = chambersList.filter((item) => {
-    //     const values = Object.values(item).join(' ').toLowerCase();
-    //     return values.includes(filterText.toLowerCase());
-    // });
-
-
-
-    const KpiCard = ({ kpiTitle, kpiValue, kpiColor }) => (
-        <div style={{ padding: '10px', border: '1px solid #ccc' }}>
-            <Typography variant="subtitle2">{kpiTitle}</Typography>
-            <Typography variant="h5" style={{ color: kpiColor }}>{kpiValue}</Typography>
-        </div>
-    );
-
+    // EnhancedTableHead.propTypes = {
+    //     numSelected: PropTypes.number.isRequired,
+    //     onRequestSort: PropTypes.func.isRequired,
+    //     onSelectAllClick: PropTypes.func.isRequired,
+    //     order: PropTypes.oneOf(['asc', 'desc']).isRequired,
+    //     orderBy: PropTypes.string.isRequired,
+    //     rowCount: PropTypes.number.isRequired,
+    // };
 
     return (
         <>
@@ -296,38 +276,6 @@ export default function ChamberAndCalibration() {
                     <Typography variant='h4' sx={{ color: '#003366' }}> Add Chamber and Calibration Data </Typography>
                 </Divider>
 
-                <br />
-                <br />
-
-                <Paper elevation={3} sx={{ padding: '20px' }}>
-                    {/* <Typography variant="h4">Chamber And Calibration</Typography> */}
-                    <Grid container spacing={3}>
-                        <Grid item xs={3} sx={{ borderRadius: '2px' }}>
-                            <KpiCard kpiTitle="Calibration to be done this month" kpiValue="1000" kpiColor="#3f51b5" />
-                        </Grid>
-
-                        <Grid item xs={3}>
-                            <KpiCard kpiTitle="Calibration Up to date" kpiValue="500" kpiColor="#c0ca33" />
-                        </Grid>
-
-                        <Grid item xs={3}>
-                            <KpiCard kpiTitle="Calibration Expired" kpiValue="95%" kpiColor="#2196f3" />
-                        </Grid>
-
-                        <Grid item xs={3}>
-                            <KpiCard kpiTitle="Chamber in Good condition" kpiValue="80%" kpiColor="#f44336" />
-                        </Grid>
-
-                        <Grid item xs={3}>
-                            <KpiCard kpiTitle="Chamber in under maintenance condition" kpiValue="80%" kpiColor="#f44336" />
-                        </Grid>
-                    </Grid>
-                </Paper>
-
-                <Divider />
-
-                <br />
-                <br />
 
                 {editChamberCalibrationFields && (
                     <Dialog
@@ -498,39 +446,26 @@ export default function ChamberAndCalibration() {
 
 
                 <Typography variant='h5' color={'#e65100'}>Available Chambers and Calibration Details</Typography>
-
-
-                <Box align='right' >
-                    <FormControl align='left' sx={{ width: "25%", marginTop: '20px', }}>
-                        <Autocomplete
-                            disablePortal
-                            onChange={(event, value) => { setFilterRow(value ? [value] : []); }}
-                            getOptionLabel={(option) => option.chamber_name || option.chamber_name || option.calibration_status || option.chamber_status}
-                            options={chambersList}
-                            renderInput={(params) => (
-                                <TextField
-                                    {...params}
-                                    label="Filter the table"
-                                    variant="outlined"
-                                />
-                            )}
-                        />
-
-                        {/* <TextField
-                            disablePortal
-                            label="Filter the table"
-                            variant="outlined"
-                            onChange={(e) => setFilterText(e.target.value)}
-                        /> */}
-                    </FormControl>
-                </Box>
-
                 <br />
 
                 <TableContainer component={Paper} >
                     <Table sx={{ minWidth: 650 }} aria-label="simple table">
                         <TableHead sx={{ backgroundColor: '#227DD4', fontWeight: 'bold' }}>
                             <TableRow>
+
+                                <TableCell padding="checkbox">
+                                    <Checkbox
+                                    // color="primary"
+                                    // indeterminate={numSelected > 0 && numSelected < rowCount}
+                                    // checked={rowCount > 0 && numSelected === rowCount}
+                                    // onChange={onSelectAllClick}
+                                    // inputProps={{
+                                    //     'aria-label': 'select all desserts',
+                                    // }}
+                                    />
+                                </TableCell>
+
+
                                 <TableCell>Sl No</TableCell>
                                 <TableCell align="center">Chamber Name</TableCell>
                                 <TableCell align="center">Chamber ID</TableCell>
@@ -545,17 +480,27 @@ export default function ChamberAndCalibration() {
                         </TableHead>
 
                         <TableBody>
-                            {/* //{chambersList.map((item, index) => ( */}
-                            {filteredChambersList.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((item, index) => (
-                                <TableRow key={index}
-                                    align='center'
-                                    style={{
-                                        backgroundColor: item.calibration_status === 'Up to Date' ? '#99ff99' : (item.calibration_status === 'Expired' ? '#ff5c33' : 'white')
-                                    }}
+                            {chambersList.map((item, index) => (
+                                <TableRow
+                                    key={index} align='center'
+                                // style={{
+                                //     backgroundColor: item.calibration_status === 'Up to Date' ? 'green' : (item.calibration_status === 'Expired' ? 'red' : 'white')
+                                // }}
                                 >
+                                    <TableCell padding="checkbox">
+                                        <Checkbox
+                                            color="primary"
+                                        //checked={isItemSelected}
+                                        // inputProps={{
+                                        //     'aria-labelledby': labelId,
+                                        // }}
+                                        />
+                                    </TableCell>
+
                                     <TableCell component="th" scope="row">
                                         {index + 1}
                                     </TableCell>
+
                                     <TableCell align="center">{item.chamber_name}</TableCell>
                                     <TableCell align="center">{item.chamber_id}</TableCell>
                                     <TableCell align="center">{item.calibration_done_date}</TableCell>
@@ -567,14 +512,14 @@ export default function ChamberAndCalibration() {
 
                                     <TableCell align="center">
 
-                                        <IconButton variant='outlined' size='small' onClick={() => editSelectedChamber(index, item.id)}>
+                                        <IconButton variant='outlined' size='large' onClick={() => editSelectedChamber(index, item.id)}>
                                             <Tooltip title='Edit Test' arrow>
                                                 <EditIcon fontSize="inherit" />
                                             </Tooltip>
                                         </IconButton>
 
 
-                                        <IconButton variant='outlined' size='small' onClick={() => deleteSelectedChamber(item.id)}>
+                                        <IconButton variant='outlined' size='large' onClick={() => deleteSelectedChamber(item.id)}>
                                             <Tooltip title='Delete Test' arrow>
                                                 <DeleteIcon fontSize="inherit" />
                                             </Tooltip>
@@ -589,16 +534,6 @@ export default function ChamberAndCalibration() {
                     </Table>
 
                 </TableContainer>
-
-                <TablePagination
-                    rowsPerPageOptions={[10, 25, 50]}
-                    component="div"
-                    count={filteredChambersList.length}
-                    rowsPerPage={rowsPerPage}
-                    page={page}
-                    onPageChange={handleChangePage}
-                    onRowsPerPageChange={handleRowsPerPage}
-                />
 
             </Box>
 

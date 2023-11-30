@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Box, Typography, Container, TextField, Button, Table, TableBody, TableCell, TableContainer, TableHead,
   TableRow, Paper, Grid, InputLabel, MenuItem, FormControl, Select, FormControlLabel, Radio, RadioGroup, Checkbox, FormLabel, IconButton, Tooltip
@@ -12,15 +12,16 @@ import dayjs from 'dayjs';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { toast } from 'react-toastify';
-import JCDialogs from './JCDialogs';
+import axios from 'axios';
 
 
 
-function handleSubmitJobcard() {
-  console.log('This is Jobcard')
-}
+
 
 const Jobcard = () => {
+
+  // State variable to fetch the users list
+  const [users, setUsers] = useState([])
 
   const [dateTimeValue, setDateTimeValue] = useState(dayjs());
   const [eutRows, setEutRows] = useState([]);
@@ -98,6 +99,9 @@ const Jobcard = () => {
     setTestDetailsRows(updatedRows);
   };
 
+  const handleSubmitJobcard = async () => {
+    toast.success('Success')
+  }
 
   // To clear the fields of job card:
   const handleClearJobcard = () => {
@@ -105,11 +109,21 @@ const Jobcard = () => {
   }
 
 
-  // Add tests Dialog:
-  const addTestsDialog = () => {
-    <JCDialogs />
-    //toast.success('Cleared')
-  }
+  // UseEffect to set the quotation data during update of the quotation:
+  useEffect(() => {
+    axios.get(`http://localhost:4000/api/getTestingUsers/`)
+      .then(result => {
+        setUsers(result.data)
+      })
+
+  }, [])
+
+
+
+
+
+
+
 
   return (
 
@@ -174,14 +188,13 @@ const Jobcard = () => {
 
 
                     <FormControl sx={{ width: '45%', borderRadius: 3 }} >
-                      <InputLabel >Test Incharge Name</InputLabel>
+                      <InputLabel >Test Incharge</InputLabel>
                       <Select
-                        label="Test Incharge Name"
+                        label="test-incharge"
+                        value={users}
+                      //onChange={(e) => handleInputChange(row.slno, 'user_id', e.target.value)}
                       >
-                        <MenuItem value="Chandra">Chandra</MenuItem>
-                        <MenuItem value="Kumarvasaya">Kumarvasaya</MenuItem>
-                        <MenuItem value="Kumarvasaya">Mahaboob</MenuItem>
-                        <MenuItem value="Kumarvasaya">Uday</MenuItem>
+                        {users.map((item) => (<MenuItem key={item.id} value={item.id}>{item.name}</MenuItem>))}
                       </Select>
                     </FormControl>
 
@@ -298,7 +311,7 @@ const Jobcard = () => {
                   <TableCell align='center'>Serial No</TableCell>
                   <TableCell>
 
-                    <IconButton>
+                    <IconButton size='small'>
                       <Tooltip title='Add Row' arrow>
                         <AddIcon onClick={handleAddEutRow} />
                       </Tooltip>
@@ -336,7 +349,7 @@ const Jobcard = () => {
                       </TableCell>
 
                       <TableCell>
-                        <IconButton>
+                        <IconButton size='small'>
                           <Tooltip title='Remove Row' arrow>
                             <RemoveIcon onClick={() => handleRemoveEutRow(row.id)} />
                           </Tooltip>
@@ -368,7 +381,7 @@ const Jobcard = () => {
                   <TableCell align="center">Test Standard</TableCell>
                   <TableCell align="center">Reference Document</TableCell>
                   <TableCell>
-                    <IconButton>
+                    <IconButton size='small'>
                       <Tooltip title='Add Row' arrow>
                         <AddIcon onClick={handleAddTestRow} />
                       </Tooltip>
@@ -409,7 +422,7 @@ const Jobcard = () => {
                     </TableCell>
 
                     <TableCell >
-                      <IconButton>
+                      <IconButton size='small'>
                         <Tooltip title='Remove Row' arrow>
                           <RemoveIcon onClick={() => handleRemoveTestRow(row.id)} />
                         </Tooltip>
@@ -440,8 +453,8 @@ const Jobcard = () => {
                   <TableCell sx={{ minWidth: '150px' }} align="center">Standard</TableCell>
                   <TableCell sx={{ minWidth: '150px' }} align="center">Started By</TableCell>
                   <TableCell sx={{ minWidth: '250px' }} align="center">Start Date & Time </TableCell>
-                  <TableCell sx={{ minWidth: '150px' }} align="center">Duration(Hrs)</TableCell>
                   <TableCell sx={{ minWidth: '250px' }} align="center">End Date & Time</TableCell>
+                  <TableCell sx={{ minWidth: '150px' }} align="center">Duration(Hrs)</TableCell>
                   <TableCell sx={{ minWidth: '150px' }} align="center">Ended By</TableCell>
                   <TableCell sx={{ minWidth: '150px' }} align="center">Remarks</TableCell>
                   <TableCell sx={{ minWidth: '150px' }} align="center">Report No</TableCell>
@@ -450,7 +463,7 @@ const Jobcard = () => {
                   <TableCell sx={{ minWidth: '150px' }} align="center">Report Status</TableCell>
 
                   <TableCell>
-                    <IconButton>
+                    <IconButton size='small'>
                       <Tooltip title='Add Row' arrow>
                         <AddIcon onClick={handleAddTestDetailsRow} />
                       </Tooltip>
@@ -480,12 +493,39 @@ const Jobcard = () => {
 
                     <TableCell> <TextField style={{ align: "center" }} variant="outlined" /> </TableCell>
 
-                    <TableCell> <TextField style={{ align: "center" }} variant="outlined" /> </TableCell>
+                    <TableCell>
+                      <FormControl sx={{ width: '100%', borderRadius: 3 }} >
+                        <InputLabel >Started By</InputLabel>
+                        <Select
+                          label="test-started-by"
+                          value={row.user_name}
+                        //onChange={(e) => handleInputChange(row.slno, 'user_id', e.target.value)}
+                        >
+                          {users.map((item) => (<MenuItem key={item.id} value={item.id}>{item.name}</MenuItem>))}
+                        </Select>
+                      </FormControl>
+                    </TableCell>
+
 
                     <TableCell>
                       <LocalizationProvider dateAdapter={AdapterDayjs}>
                         <DateTimePicker sx={{ width: '100%', borderRadius: 3 }}
-                          label="JC Open Date"
+                          label="Test start date"
+                          variant="outlined"
+                          margin="normal"
+                          value={dateTimeValue}
+                          onChange={handleDateChange}
+                          renderInput={(props) => <TextField {...props} />}
+                          format="DD/MM/YYYY HH:mm A"
+                        />
+                      </LocalizationProvider>
+                    </TableCell>
+
+
+                    <TableCell>
+                      <LocalizationProvider dateAdapter={AdapterDayjs}>
+                        <DateTimePicker sx={{ width: '100%', borderRadius: 3 }}
+                          label="Test end date"
                           variant="outlined"
                           margin="normal"
                           value={dateTimeValue}
@@ -499,26 +539,34 @@ const Jobcard = () => {
                     <TableCell> <TextField style={{ align: "center" }} variant="outlined" /> </TableCell>
 
                     <TableCell>
-                      <LocalizationProvider dateAdapter={AdapterDayjs}>
-                        <DateTimePicker sx={{ width: '100%', borderRadius: 3 }}
-                          label="JC Open Date"
-                          variant="outlined"
-                          margin="normal"
-                          value={dateTimeValue}
-                          onChange={handleDateChange}
-                          renderInput={(props) => <TextField {...props} />}
-                          format="DD/MM/YYYY HH:mm A"
-                        />
-                      </LocalizationProvider>
+                      <FormControl sx={{ width: '100%', borderRadius: 3 }} >
+                        <InputLabel >Ended By</InputLabel>
+                        <Select
+                          label="test-ended-by"
+                          value={row.user_name}
+                        //onChange={(e) => handleInputChange(row.slno, 'user_id', e.target.value)}
+                        >
+                          {users.map((item) => (<MenuItem key={item.id} value={item.id}>{item.name}</MenuItem>))}
+                        </Select>
+                      </FormControl>
                     </TableCell>
 
                     <TableCell> <TextField style={{ align: "center" }} variant="outlined" /> </TableCell>
 
                     <TableCell> <TextField style={{ align: "center" }} variant="outlined" /> </TableCell>
 
-                    <TableCell> <TextField style={{ align: "center" }} variant="outlined" /> </TableCell>
-
-                    <TableCell> <TextField style={{ align: "center" }} variant="outlined" /> </TableCell>
+                    <TableCell>
+                      <FormControl sx={{ width: '100%', borderRadius: 3 }} >
+                        <InputLabel >Report Prepared By</InputLabel>
+                        <Select
+                          label="report-prepared-by"
+                          value={row.user_name}
+                        //onChange={(e) => handleInputChange(row.slno, 'user_id', e.target.value)}
+                        >
+                          {users.map((item) => (<MenuItem key={item.id} value={item.id}>{item.name}</MenuItem>))}
+                        </Select>
+                      </FormControl>
+                    </TableCell>
 
                     <TableCell>
                       <FormControl sx={{ width: '100%', borderRadius: 3 }} >
@@ -543,7 +591,7 @@ const Jobcard = () => {
                     </TableCell>
 
                     <TableCell>
-                      <IconButton>
+                      <IconButton size='small'>
                         <Tooltip title='Remove Row' arrow>
                           <RemoveIcon onClick={() => handleRemoveTestDetailsRow(row.id)} />
                         </Tooltip>
@@ -622,7 +670,9 @@ const Jobcard = () => {
 
           <Button sx={{ borderRadius: 3, margin: 0.5 }}
             variant="contained"
-            color="primary">
+            color="primary"
+            onClick={handleSubmitJobcard}
+          >
             Submit
           </Button>
 

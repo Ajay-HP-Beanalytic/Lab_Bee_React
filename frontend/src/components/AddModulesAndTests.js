@@ -1,4 +1,4 @@
-import { TextField, Box, Button, TableContainer, IconButton, TableCell, TableBody, TableRow, Table, Paper, TableHead, Typography, Tooltip, Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material'
+import { TextField, Box, Button, TableContainer, IconButton, TableCell, TableBody, TableRow, Table, Paper, TableHead, Typography, Tooltip, Dialog, DialogTitle, DialogContent, DialogActions, Divider } from '@mui/material'
 
 import axios from 'axios'
 import * as XLSX from 'xlsx';
@@ -205,9 +205,14 @@ const AddModulesAndTests = () => {
 
     return (
         <>
-            <h2>Add Item Soft Modules And Tests</h2>
+            {/* <h2>Add Item Soft Modules And Tests</h2> */}
 
             <Box >
+
+                <Divider  >
+                    <Typography variant='h5' sx={{ color: '#003366' }}> Add Item Soft Modules And Tests </Typography>
+                </Divider>
+
                 {editItemsoftModuleFields && (
 
                     <Dialog open={editItemsoftModuleFields}
@@ -306,7 +311,9 @@ const AddModulesAndTests = () => {
                     >Uploaded File: {uploadedFileName}</Typography>
                 )}
 
-                <h3>Available Item Soft Modules</h3>
+                {/* <h3>Available Item Soft Modules</h3> */}
+                <Typography variant='h5' color={'#e65100'}>Available Item Soft Modules</Typography>
+                <br />
 
                 <TableContainer component={Paper}>
                     <Table sx={{ minWidth: 650 }} aria-label="simple table">
@@ -330,14 +337,14 @@ const AddModulesAndTests = () => {
                                     <TableCell align="center">{item.module_description}</TableCell>
                                     <TableCell align="center">
 
-                                        <IconButton variant='outlined' size='large' onClick={() => editItemsoftModule(index, item.id)}>
+                                        <IconButton variant='outlined' size='small' onClick={() => editItemsoftModule(index, item.id)}>
                                             <Tooltip title='Edit module' arrow>
                                                 <EditIcon fontSize="inherit" />
                                             </Tooltip>
                                         </IconButton>
 
 
-                                        <IconButton variant='outlined' size='large' onClick={() => deleteItemsoftModule(item.id)}>
+                                        <IconButton variant='outlined' size='small' onClick={() => deleteItemsoftModule(item.id)}>
                                             <Tooltip title='Delete module' arrow>
                                                 <DeleteIcon fontSize="inherit" />
                                             </Tooltip>

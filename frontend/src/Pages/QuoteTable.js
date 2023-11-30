@@ -157,7 +157,16 @@ export default function QuoteTable() {
 
       <br />
 
-      <Button variant="contained" color="primary" as={Link} to='/quotation'>Add Quotaion</Button>
+      <Tooltip title='Create new quotation' arrow>
+        <Button variant="contained" color="primary"
+          sx={{ borderRadius: 3, margin: 0.5 }}
+          component={Link}
+          to={'/quotation'}
+        >
+          Add Quotaion
+        </Button>
+      </Tooltip>
+
 
       {quotesTableData.length ? (
         <Card sx={{ minWidth: 900, m: 4 }} elevation={11}>
@@ -206,8 +215,8 @@ export default function QuoteTable() {
                           <TableCell align="center" >{row.quote_category}</TableCell>
                           <TableCell align="center" >{row.quote_created_by}</TableCell>
 
-                          <TableCell align="center">
-                            <IconButton variant='outlined'  >
+                          <TableCell align="center" >
+                            <IconButton variant='outlined'>
                               <Tooltip title='View Quote' arrow>
                                 <Link to={`/quotation/${row.id}`}>
                                   <VisibilityIcon />
