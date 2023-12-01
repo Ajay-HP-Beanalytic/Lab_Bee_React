@@ -170,8 +170,14 @@ export default function AddCustomerDetails() {
 
     // Function to edit the company data:
     const editCompanyData = (index, id) => {
+
+        // Calculate the actual index in the dataset based on the current page and rows per page
+        const actualIndex = index + page * rowsPerPage;
+        const rowData = filteredCompaniesList[actualIndex];
+
+        //const rowData = companiesList[index]
+
         setEditId(id)
-        const rowData = companiesList[index]
         setEditCustomerDetailsFields(true)
         setCompanyName(rowData.company_name)
         setToCompanyAddress(rowData.company_address)

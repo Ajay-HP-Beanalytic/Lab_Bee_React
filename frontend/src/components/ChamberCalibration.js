@@ -8,7 +8,8 @@ import AddIcon from '@mui/icons-material/Add';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { Autocomplete, Box, Button, Checkbox, Dialog, DialogActions, DialogContent, DialogTitle, Divider, FormControl, Grid, IconButton, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, TextField, Tooltip, Typography } from '@mui/material';
+import { Autocomplete, Box, Button, Card, Checkbox, Dialog, DialogActions, DialogContent, DialogTitle, Divider, FormControl, Grid, IconButton, List, ListItem, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, TextField, Tooltip, Typography } from '@mui/material';
+
 
 import PropTypes from 'prop-types';
 import { alpha } from '@mui/material/styles';
@@ -18,6 +19,7 @@ import { alpha } from '@mui/material/styles';
 
 
 export default function ChamberAndCalibration() {
+
 
     //State variables.
     const [chamberName, setChamberName] = useState('')
@@ -204,18 +206,25 @@ export default function ChamberAndCalibration() {
     // Function to edit the chamber data:
     const editSelectedChamber = (index, id) => {
 
+        // setEditId(id)
+        // const rowData = chambersList[index];
+
+        // Calculate the actual index in the dataset based on the current page and rows per page
+        const actualIndex = index + page * rowsPerPage;
+        const rowData = filteredChambersList[actualIndex];
+
+
         setEditId(id)
-        const rowdata = chambersList[index];
         setEditChamberCalibrationFields(true)
 
-        setChamberName(rowdata.chamber_name)
-        setChamberID(rowdata.chamber_id)
-        setCalibrationDoneDate(moment(rowdata.calibration_done_date).format("YYYY-MM-DD"))
-        setCalibrationDueDate(moment(rowdata.calibration_due_date).format("YYYY-MM-DD"))
-        setCalibratedBy(rowdata.calibration_done_by)
-        setCalibrationStatus(rowdata.calibration_status)
-        setChamberStatus(rowdata.chamber_status)
-        setRemarks(rowdata.remarks)
+        setChamberName(rowData.chamber_name)
+        setChamberID(rowData.chamber_id)
+        setCalibrationDoneDate(moment(rowData.calibration_done_date).format("YYYY-MM-DD"))
+        setCalibrationDueDate(moment(rowData.calibration_due_date).format("YYYY-MM-DD"))
+        setCalibratedBy(rowData.calibration_done_by)
+        setCalibrationStatus(rowData.calibration_status)
+        setChamberStatus(rowData.chamber_status)
+        setRemarks(rowData.remarks)
     }
 
 
@@ -278,13 +287,172 @@ export default function ChamberAndCalibration() {
     // });
 
 
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    const KpiCard = ({ kpiTitle, kpiValue, kpiColor }) => (
+    //Function to create the kpi dashboard:
+    const KpiCard = ({ kpiTitle, kpiValue, kpiNames, kpiColor }) => (
         <div style={{ padding: '10px', border: '1px solid #ccc' }}>
-            <Typography variant="subtitle2">{kpiTitle}</Typography>
-            <Typography variant="h5" style={{ color: kpiColor }}>{kpiValue}</Typography>
+            <Typography variant="h5" sx={{ fontSize: 'bold' }} align='center'>{kpiTitle}</Typography>
+            <Typography variant="h1" style={{ color: kpiColor }} align='center'>{kpiValue}</Typography>
+
+
+            {/* {kpiNames && kpiNames.length > 0 && (
+                <ul style={{ margin: 0, padding: '10px' }}>
+                    {kpiNames.map((name, index) => (
+                        // <li key={index}>{name}</li>
+                        <Typography variant='subtitle1' sx={{ fontSize: 'bold' }} key={index}>{name}</Typography>
+                    ))}
+                </ul>
+            )} */}
+
+            {kpiNames && kpiNames.length > 0 && (
+                <List sx={{ padding: '2px' }}>
+                    {kpiNames.map((name, index) => (
+                        <ListItem key={index} sx={{ fontSize: 'bold', align: 'center' }}>
+                            <Typography variant="subtitle1" >
+                                {name}
+                            </Typography>
+                        </ListItem>
+                    ))}
+                </List>
+            )}
         </div>
     );
+
+
+
+    // Function to compare dates of calibration with current date
+
+    // //State variables for the kpi values:
+    // let calibration_due_counts = 0;
+
+    // const currentDate = new Date();
+    // const currentYear = currentDate.getFullYear();
+    // const currentMonth = currentDate.getMonth();
+
+    // // Convert month index to month name
+    // //const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+    // //const currentMonthName = monthNames[currentMonth]
+
+
+    // const currentMonthName = new Intl.DateTimeFormat('en-US', { month: 'long' }).format(currentDate);
+
+
+    // // CAlibration due label for the KPI
+    // const currentYearAndMonth = `${currentMonthName}-${currentYear}`
+
+    // const oneMonthBefore = new Date();
+    // oneMonthBefore.setMonth(oneMonthBefore.getMonth() + 1); // Date one month from now
+
+    // // List to store the calibration dues in the current month
+    // const calibrationsPendingThisMonth = [];
+
+    // // Iterate through the chambersList and filter based on the condition
+    // chambersList.forEach((item) => {
+    //     const dueDate = new Date(item.calibration_due_date);
+
+    //     // Check if the due date is within one month
+    //     if (dueDate > currentDate && dueDate <= oneMonthBefore) {
+    //         calibration_due_counts++
+    //         calibrationsPendingThisMonth.push(`${item.chamber_name} is due on ${item.calibration_due_date}`);
+    //     }
+    // });
+
+    // console.log('Chambers to be calibrated this month:', calibration_due_counts);
+    // console.log('Chambers due in this month:', calibrationsPendingThisMonth);
+
+
+
+
+
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    // Function to compare calibration due month with current month
+
+    // State variables for the kpi values:
+    let calibration_due_counts = 0;
+
+    const currentDate = new Date();
+    const currentYear = currentDate.getFullYear();
+    const currentMonth = currentDate.getMonth();
+
+    // Calibration due label for the KPI
+    const currentMonthName = new Intl.DateTimeFormat('en-US', { month: 'long' }).format(currentDate);
+    const currentYearAndMonth = `${currentMonthName}-${currentYear}`;
+
+    // Calculate the next month
+    const nextMonth = (currentMonth + 1) % 12;
+    const nextYear = currentMonth === 11 ? currentYear + 1 : currentYear;
+
+    // List to store the calibration dues in the next month
+    const calibrationsPendingThisMonth = [];
+
+    // Iterate through the chambersList and filter based on the condition
+    chambersList.forEach((item) => {
+        const dueDate = new Date(item.calibration_due_date);
+
+        // Check if the due date is in the next month
+        if (dueDate.getFullYear() === nextYear && dueDate.getMonth() === nextMonth) {
+            calibration_due_counts++;
+            calibrationsPendingThisMonth.push(`${item.chamber_name} is due on ${item.calibration_due_date}`);
+        }
+    });
+
+    //console.log('Chambers to be calibrated next month:', calibration_due_counts);
+    //console.log('Chambers due in this month:', calibrationsPendingThisMonth);
+
+
+
+    // Calibration status count/KPI:
+    let upToDate_CalibrationCount = 0;
+    let expired_CalibrationCount = 0;
+    let calibration_expiredChamberNames = [];
+
+    // Iterate through the table data
+    chambersList.forEach(item => {
+        // Assuming 'item.calibration_status' contains either 'Up to Date' or 'Expired'
+
+        if (item.calibration_status === 'Up to Date') {
+            upToDate_CalibrationCount++;
+        } else if (item.calibration_status === 'Expired') {
+            expired_CalibrationCount++
+            calibration_expiredChamberNames.push(item.chamber_name);
+        } else {
+            // Handle other cases (optional)
+            console.warn(`Unexpected value in 'calibration_status': ${item.calibration_status}`);
+        }
+    })
+
+    //console.log('Up to Date Count:', upToDate_CalibrationCount);
+    //console.log('Expired Count:', expired_CalibrationCount);
+    //console.log('Expired List:', calibration_expiredChamberNames);
+
+
+
+    // Chamber status KPI or Count:
+    let good_ChamberCount = 0;
+    let underMaintenance_ChamberCount = 0;
+    let chamber_underMaintenanceNames = [];
+
+    chambersList.forEach(item => {
+        // Assuming 'item.chamber_status' contains either 'Good ' or 'Under Maintenance'
+
+        if (item.chamber_status === 'Good') {
+            good_ChamberCount++;
+        } else if (item.chamber_status === 'Under Maintenance') {
+            underMaintenance_ChamberCount++
+            chamber_underMaintenanceNames.push(item.chamber_name)
+        } else {
+            // Handle other cases (optional)
+            console.warn(`Unexpected value in 'chamber_status': ${item.chamber_status}`);
+        }
+    })
+
+    //console.log('Good Count:', good_ChamberCount);
+    //console.log('Under Maintenance Count:', underMaintenance_ChamberCount);
+    //console.log('UMC List:', chamber_underMaintenanceNames);
+
 
 
     return (
@@ -293,34 +461,88 @@ export default function ChamberAndCalibration() {
             <Box>
 
                 <Divider>
-                    <Typography variant='h4' sx={{ color: '#003366' }}> Add Chamber and Calibration Data </Typography>
+                    <Typography variant='h4' sx={{ color: '#003366' }}> Chamber and Calibration Data </Typography>
                 </Divider>
 
                 <br />
                 <br />
 
-                <Paper elevation={3} sx={{ padding: '20px' }}>
-                    {/* <Typography variant="h4">Chamber And Calibration</Typography> */}
-                    <Grid container spacing={3}>
-                        <Grid item xs={3} sx={{ borderRadius: '2px' }}>
-                            <KpiCard kpiTitle="Calibration to be done this month" kpiValue="1000" kpiColor="#3f51b5" />
+
+                <Paper elevation={3} sx={{ padding: '20px', backgroundColor: '#F5F5F5' }}>
+                    <Grid container spacing={4} >
+                        <Grid item xs={3} sx={{ borderRadius: '4px' }}>
+                            <Card elevation={5} sx={{ backgroundColor: '#e6e6ff' }}>
+                                <KpiCard
+                                    kpiTitle={`Calibration to be done in ${currentYearAndMonth}:`}
+                                    kpiValue={calibration_due_counts}
+                                    kpiColor="#3f51b5"
+                                    kpiNames={calibrationsPendingThisMonth}
+                                />
+                            </Card>
                         </Grid>
 
                         <Grid item xs={3}>
-                            <KpiCard kpiTitle="Calibration Up to date" kpiValue="500" kpiColor="#c0ca33" />
+                            <Card elevation={5} sx={{ backgroundColor: '#f9fbe7' }}>
+                                <KpiCard
+                                    kpiTitle="Calibration Up to date:"
+                                    kpiValue={upToDate_CalibrationCount}
+                                    kpiColor="#c0ca33"
+                                />
+                            </Card>
                         </Grid>
 
                         <Grid item xs={3}>
-                            <KpiCard kpiTitle="Calibration Expired" kpiValue="95%" kpiColor="#2196f3" />
+                            {/* #ebf1fe */}
+                            <Card elevation={5} sx={{ backgroundColor: '#b3b3cc' }}>
+                                <KpiCard
+                                    kpiTitle="Calibration Expired:"
+                                    kpiValue={expired_CalibrationCount}
+                                    kpiColor="#f44336"
+                                    kpiNames={calibration_expiredChamberNames}
+                                />
+                                {/* {calibration_expiredChamberNames.length > 0 && (
+                                    <div>
+                                        <ol style={{ margin: '0', padding: '0 10px' }}>
+                                            {calibration_expiredChamberNames.map((name, index) => (
+                                                <li key={index}>{name}</li>
+                                            ))}
+                                        </ol>
+                                    </div>
+                                )} */}
+                            </Card>
                         </Grid>
 
-                        <Grid item xs={3}>
-                            <KpiCard kpiTitle="Chamber in Good condition" kpiValue="80%" kpiColor="#f44336" />
-                        </Grid>
+                        {/* <Grid item xs={3}>
+                            <Card elevation={5} sx={{ backgroundColor: '#f7f4f3' }}>
+                                <KpiCard
+                                    kpiTitle="Chambers & equipments in good condition:"
+                                    kpiValue={good_ChamberCount}
+                                    kpiColor="#2196f3"
+                                />
+                            </Card>
+                        </Grid> */}
 
                         <Grid item xs={3}>
-                            <KpiCard kpiTitle="Chamber in under maintenance condition" kpiValue="80%" kpiColor="#f44336" />
+                            <Card elevation={5} sx={{ backgroundColor: '#f9ecef' }}>
+                                <KpiCard
+                                    kpiTitle="Chambers Under Maintenance:"
+                                    kpiValue={underMaintenance_ChamberCount}
+                                    kpiColor="#f44336"
+                                    kpiNames={chamber_underMaintenanceNames}
+                                />
+                                {/* {chamber_underMaintenanceNames.length > 0 && (
+                                    <div>
+                                        <ol style={{ margin: '0', padding: '0 10px' }}>
+                                            {chamber_underMaintenanceNames.map((name, index) => (
+                                                <li key={index}>{name}</li>
+                                            ))}
+                                        </ol>
+                                    </div>
+                                )} */}
+                            </Card>
                         </Grid>
+
+
                     </Grid>
                 </Paper>
 

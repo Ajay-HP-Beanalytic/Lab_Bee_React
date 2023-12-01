@@ -240,16 +240,16 @@ export default function Register() {
                         <Grid item xs={12} sx={{ ml: "3em", mr: "3em" }}>
 
                           <FormControl sx={{ width: '100%' }} variant="outlined" required>
-                            <InputLabel htmlFor="outlined-adornment-password">Password</InputLabel>
+                            <InputLabel htmlFor="initial-password-id">Password</InputLabel>
                             <OutlinedInput
-                              id="outlined-adornment-password"
+                              id="initial-password-id"
                               value={password} onChange={(e) => setPasswordString(e.target.value)}
 
                               type={showPassword ? 'text' : 'password'}
                               endAdornment={
                                 <InputAdornment position="end">
                                   <IconButton
-                                    aria-label="toggle password visibility"
+                                    aria-label="toggle password1 visibility"
                                     onClick={handleClickShowPassword}
                                     onMouseDown={handleMouseDownPassword1}
                                     edge="end"
@@ -266,15 +266,15 @@ export default function Register() {
                         <Grid item xs={12} sx={{ ml: "3em", mr: "3em" }}>
 
                           <FormControl sx={{ width: '100%' }} variant="outlined" required>
-                            <InputLabel htmlFor="outlined-adornment-password">Confirm Password</InputLabel>
+                            <InputLabel htmlFor="confirm-password-id">Confirm Password</InputLabel>
                             <OutlinedInput
-                              id="outlined-adornment-password"
+                              id="confirm-password-id"
                               value={confirmPassword} onChange={(e) => setConfirmPasswordString(e.target.value)}
                               type={showConfirmPassword ? 'text' : 'password'}
                               endAdornment={
                                 <InputAdornment position="end">
                                   <IconButton
-                                    aria-label="toggle password visibility"
+                                    aria-label="toggle password2 visibility"
                                     onClick={handleClickShowConfirmPassword}
                                     onMouseDown={handleMouseDownPassword2}
                                     edge="end"
@@ -294,7 +294,7 @@ export default function Register() {
                           <Button
                             type="submit"
                             variant="contained"
-                            fullWidth="true"
+                            fullWidth={Boolean("true")}
                             size="large"
                             sx={{
                               mt: "15px",
@@ -313,7 +313,7 @@ export default function Register() {
                         <Grid item xs={12} sx={{ ml: "5em", mr: "5em" }}>
                           <Button
                             variant="contained"
-                            fullWidth="true"
+                            fullWidth={Boolean("true")}
                             size="large"
                             sx={{
                               mt: "15px",

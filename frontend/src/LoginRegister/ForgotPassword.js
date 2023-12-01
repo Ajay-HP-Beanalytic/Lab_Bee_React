@@ -123,7 +123,7 @@ export default function ForgotPassword() {
                           <Button
                             type="submit"
                             variant="contained"
-                            fullWidth="true"
+                            fullWidth={Boolean("true")}
                             size="large"
                             sx={{
                               mt: "15px",
