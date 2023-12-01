@@ -191,8 +191,6 @@ export default function SidenavigationBar() {
 
 
 
-
-
   function MenuItem({ item, index }) {
 
     return (

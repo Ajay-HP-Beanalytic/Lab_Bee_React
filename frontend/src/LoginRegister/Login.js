@@ -311,7 +311,7 @@ export default function Login() {
                           <Button
                             type="submit"
                             variant="contained"
-                            fullWidth="true"
+                            fullWidth={Boolean("true")}
                             size="large"
                             sx={{
                               mt: "10px",
