@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Box, Typography, Container, TextField, Button, Table, TableBody, TableCell, TableContainer, TableHead,
-  TableRow, Paper, IconButton, Tooltip, Grid, InputLabel, MenuItem, FormControl, Select, Checkbox, Autocomplete, FormControlLabel, Stack
+  TableRow, Paper, IconButton, Tooltip, Grid, InputLabel, MenuItem, FormControl, Select, Checkbox, Autocomplete, FormControlLabel, Stack,
 } from '@mui/material';
 import axios from "axios";
 import moment from "moment";                     // To convert the date into desired format
@@ -332,7 +332,7 @@ export default function Quotation() {
     let isAtLeastOneRowIsFilled = false
     // Check at least one row is filled completely or rlse give a error messgae:
     if (quoteCategory === 'Item Soft') {
-      isAtLeastOneRowIsFilled = tableData.some((row) => row.testDescription && row.module_id && row.amount);
+      isAtLeastOneRowIsFilled = tableData.some((row) => row.module_id && row.amount);
     }
     if (quoteCategory === 'Reliability') {
       isAtLeastOneRowIsFilled = tableData.some((row) => row.testDescription && row.amount);
@@ -645,7 +645,7 @@ export default function Quotation() {
                         <TableCell align="center">Amount</TableCell>
 
                         <TableCell align="center">
-                          <IconButton>
+                          <IconButton size='small'>
                             <Tooltip title='Add Row' arrow>
                               <AddIcon onClick={addRow} />
                             </Tooltip>
@@ -699,6 +699,7 @@ export default function Quotation() {
                                     onChange={(e) => handleInputChange(row.slno, 'unit', e.target.value)}>
                                     <MenuItem value='Hour'> Hour </MenuItem>
                                     <MenuItem value='Test'> Test </MenuItem>
+                                    <MenuItem value='Per Sample'> Per Sample </MenuItem>
                                     <MenuItem value='Days'> Days </MenuItem>
                                   </Select>
                                 </FormControl>
@@ -739,7 +740,7 @@ export default function Quotation() {
                           </TableCell>
 
                           <TableCell align="center">
-                            <IconButton color="secondary">
+                            <IconButton color="secondary" size='small'>
                               <Tooltip title="Remove row" arrow>
                                 <RemoveIcon onClick={() => removeRow(row.slno)} />
                               </Tooltip>
