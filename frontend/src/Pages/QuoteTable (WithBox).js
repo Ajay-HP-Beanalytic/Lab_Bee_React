@@ -293,7 +293,8 @@ export default function QuoteTable() {
 
 
 
-    <>
+    /// Only Box Component
+    <Box>
       <Typography variant='h4'>QUOTATIONS DASHBOARD</Typography>
       <br />
       <Tooltip title='Create new quotation' arrow>
@@ -309,75 +310,67 @@ export default function QuoteTable() {
       </Tooltip>
 
       {quotesTableData.length ? (
-        <Card sx={{ minWidth: 900, m: 4 }} elevation={11}>
-          <Typography variant="h6" sx={{ fontWeight: 'bold', color: 'red' }}>
-            Quotations Table
-          </Typography>
-
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', paddingRight: 1, paddingTop: 1 }}>
-            <FormControl sx={{ width: 350 }} align='left'>
-              <Autocomplete
-                disablePortal
-                onChange={(event, value) => {
-                  setFilterRow(value ? [value] : []);
-                }}
-                getOptionLabel={(option) => option.quotation_ids || ' '}
-                options={quotesTableData}
-                renderInput={(params) => (
-                  <TextField {...params} label="Search Quotation" variant="outlined" />
-                )}
-              />
-            </FormControl>
-          </Box>
-
-          <CardContent>
-            <Paper sx={{ width: '100%', overflow: 'hidden' }}>
-              <TableContainer>
-                <Table>
-                  <TableHead sx={{ backgroundColor: '#227DD4', fontWeight: 'bold' }}>
-                    <TableRow>
-                      {tableHeadersText.map((header, index) => (
-                        <TableCell key={index} align="center" style={{ color: 'white' }}>
-                          {header}
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  </TableHead>
-
-                  <TableBody>
-                    {filterRow.length > 0
-                      ? filterRow.map((row, index) => renderTableRow(row, index))
-                      : quotesTableData.slice(page * rowsPerPage, (page + 1) * rowsPerPage).map(renderTableRow)}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-
-              <TablePagination
-                rowsPerPageOptions={[10, 25, 50]}
-                component="div"
-                count={quotesTableData.length}
-                rowsPerPage={rowsPerPage}
-                page={page}
-                onPageChange={handleChangePage}
-                onRowsPerPageChange={handleRowsPerPage}
-              />
-            </Paper>
-          </CardContent>
-
-          <SpeedDial ariaLabel="SpeedDial basic example" sx={{ position: 'absolute', bottom: 2, right: 16 }} icon={<SpeedDialIcon />}>
-            <SpeedDialAction
-              key='Add Quotation'
-              component={Link}
-              to='/quotation'
-              icon={<AddIcon />}
-              tooltipTitle='Add Quotation'
+        <Box sx={{ width: '100%', overflowX: 'auto', mt: 2, borderColor: 'blue' }}>
+          <FormControl sx={{ width: 350 }} align='left'>
+            <Autocomplete
+              disablePortal
+              onChange={(event, value) => {
+                setFilterRow(value ? [value] : []);
+              }}
+              getOptionLabel={(option) => option.quotation_ids || ' '}
+              options={quotesTableData}
+              renderInput={(params) => (
+                <TextField {...params} label="Search Quotation" variant="outlined" />
+              )}
             />
-          </SpeedDial>
-        </Card>
+          </FormControl>
+
+          <Paper sx={{ width: '100%', mt: 2 }}>
+            <TableContainer>
+              <Table>
+                <TableHead sx={{ backgroundColor: '#227DD4', fontWeight: 'bold' }}>
+                  <TableRow>
+                    {tableHeadersText.map((header, index) => (
+                      <TableCell key={index} align="center" style={{ color: 'white' }}>
+                        {header}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                </TableHead>
+
+                <TableBody>
+                  {filterRow.length > 0
+                    ? filterRow.map((row, index) => renderTableRow(row, index))
+                    : quotesTableData.slice(page * rowsPerPage, (page + 1) * rowsPerPage).map(renderTableRow)}
+                </TableBody>
+              </Table>
+            </TableContainer>
+
+            <TablePagination
+              rowsPerPageOptions={[10, 25, 50]}
+              component="div"
+              count={quotesTableData.length}
+              rowsPerPage={rowsPerPage}
+              page={page}
+              onPageChange={handleChangePage}
+              onRowsPerPageChange={handleRowsPerPage}
+            />
+          </Paper>
+        </Box>
       ) : (
         <>{msg}</>
       )}
-    </>
+
+      <SpeedDial ariaLabel="Simple_SpeedDial" sx={{ position: 'absolute', bottom: 16, right: 16 }} icon={<SpeedDialIcon />}>
+        <SpeedDialAction
+          key='Add Quotation'
+          component={Link}
+          to='/quotation'
+          icon={<AddIcon />}
+          tooltipTitle='Add Quotation'
+        />
+      </SpeedDial>
+    </Box>
   );
 
   // Helper function to render each table row

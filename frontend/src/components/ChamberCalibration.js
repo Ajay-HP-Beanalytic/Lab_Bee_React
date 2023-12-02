@@ -4,11 +4,14 @@ import * as XLSX from 'xlsx';
 import { toast } from 'react-toastify'
 import moment from "moment";
 
+
+import { CreateKpiCard, CreatePieChart } from '../functions/DashboardFunctions';
+
 import AddIcon from '@mui/icons-material/Add';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { Autocomplete, Box, Button, Card, Checkbox, Dialog, DialogActions, DialogContent, DialogTitle, Divider, FormControl, Grid, IconButton, List, ListItem, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, TextField, Tooltip, Typography } from '@mui/material';
+import { Autocomplete, Box, Button, Card, Dialog, DialogActions, DialogContent, DialogTitle, Divider, FormControl, Grid, IconButton, List, ListItem, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, TextField, Tooltip, Typography } from '@mui/material';
 
 
 import PropTypes from 'prop-types';
@@ -289,36 +292,22 @@ export default function ChamberAndCalibration() {
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    //Function to create the kpi dashboard:
-    const KpiCard = ({ kpiTitle, kpiValue, kpiNames, kpiColor }) => (
-        <div style={{ padding: '10px', border: '1px solid #ccc' }}>
-            <Typography variant="h5" sx={{ fontSize: 'bold' }} align='center'>{kpiTitle}</Typography>
-            <Typography variant="h1" style={{ color: kpiColor }} align='center'>{kpiValue}</Typography>
+    // Title for the KPI Card dropdown  list:
+    const accordianTitleString = 'Click here to see the list'
 
+    const pieChartData = {
+        title: 'Simple Pie Chart',
+        labels: ['Red', 'Blue', 'Yellow'],
+        datasets: [{
+            data: [300, 50, 100],
+            backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56'],
+        }],
+    }
 
-            {/* {kpiNames && kpiNames.length > 0 && (
-                <ul style={{ margin: 0, padding: '10px' }}>
-                    {kpiNames.map((name, index) => (
-                        // <li key={index}>{name}</li>
-                        <Typography variant='subtitle1' sx={{ fontSize: 'bold' }} key={index}>{name}</Typography>
-                    ))}
-                </ul>
-            )} */}
-
-            {kpiNames && kpiNames.length > 0 && (
-                <List sx={{ padding: '2px' }}>
-                    {kpiNames.map((name, index) => (
-                        <ListItem key={index} sx={{ fontSize: 'bold', align: 'center' }}>
-                            <Typography variant="subtitle1" >
-                                {name}
-                            </Typography>
-                        </ListItem>
-                    ))}
-                </List>
-            )}
-        </div>
-    );
-
+    const optionsForPieChart = {
+        responsive: true,
+        maintainAspectRatio: false,
+    }
 
 
     // Function to compare dates of calibration with current date
@@ -472,21 +461,23 @@ export default function ChamberAndCalibration() {
                     <Grid container spacing={4} >
                         <Grid item xs={3} sx={{ borderRadius: '4px' }}>
                             <Card elevation={5} sx={{ backgroundColor: '#e6e6ff' }}>
-                                <KpiCard
+                                <CreateKpiCard
                                     kpiTitle={`Calibration to be done in ${currentYearAndMonth}:`}
                                     kpiValue={calibration_due_counts}
                                     kpiColor="#3f51b5"
                                     kpiNames={calibrationsPendingThisMonth}
+                                    accordianTitleString={accordianTitleString}
                                 />
                             </Card>
                         </Grid>
 
                         <Grid item xs={3}>
                             <Card elevation={5} sx={{ backgroundColor: '#f9fbe7' }}>
-                                <KpiCard
+                                <CreateKpiCard
                                     kpiTitle="Calibration Up to date:"
                                     kpiValue={upToDate_CalibrationCount}
                                     kpiColor="#c0ca33"
+                                    accordianTitleString={accordianTitleString}
                                 />
                             </Card>
                         </Grid>
@@ -494,11 +485,12 @@ export default function ChamberAndCalibration() {
                         <Grid item xs={3}>
                             {/* #ebf1fe */}
                             <Card elevation={5} sx={{ backgroundColor: '#b3b3cc' }}>
-                                <KpiCard
+                                <CreateKpiCard
                                     kpiTitle="Calibration Expired:"
                                     kpiValue={expired_CalibrationCount}
                                     kpiColor="#f44336"
                                     kpiNames={calibration_expiredChamberNames}
+                                    accordianTitleString={accordianTitleString}
                                 />
                                 {/* {calibration_expiredChamberNames.length > 0 && (
                                     <div>
@@ -514,7 +506,7 @@ export default function ChamberAndCalibration() {
 
                         {/* <Grid item xs={3}>
                             <Card elevation={5} sx={{ backgroundColor: '#f7f4f3' }}>
-                                <KpiCard
+                                <CreateKpiCard
                                     kpiTitle="Chambers & equipments in good condition:"
                                     kpiValue={good_ChamberCount}
                                     kpiColor="#2196f3"
@@ -524,11 +516,12 @@ export default function ChamberAndCalibration() {
 
                         <Grid item xs={3}>
                             <Card elevation={5} sx={{ backgroundColor: '#f9ecef' }}>
-                                <KpiCard
+                                <CreateKpiCard
                                     kpiTitle="Chambers Under Maintenance:"
                                     kpiValue={underMaintenance_ChamberCount}
                                     kpiColor="#f44336"
                                     kpiNames={chamber_underMaintenanceNames}
+                                    accordianTitleString={accordianTitleString}
                                 />
                                 {/* {chamber_underMaintenanceNames.length > 0 && (
                                     <div>
@@ -542,11 +535,25 @@ export default function ChamberAndCalibration() {
                             </Card>
                         </Grid>
 
-
                     </Grid>
                 </Paper>
 
                 <Divider />
+
+                <br />
+
+
+
+                <Paper elevation={3} sx={{ padding: '20px', backgroundColor: '#F5F5F5' }}>
+                    <Grid container spacing={2} >
+                        <Grid item xs={3}>
+                            <CreatePieChart
+                                data={pieChartData}
+                                options={optionsForPieChart}
+                            />
+                        </Grid>
+                    </Grid>
+                </Paper>
 
                 <br />
                 <br />
