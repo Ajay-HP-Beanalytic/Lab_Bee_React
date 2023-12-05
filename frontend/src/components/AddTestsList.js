@@ -208,7 +208,7 @@ export default function AddTestsList() {
             <Box>
 
                 <Divider>
-                    <Typography variant='h5' sx={{ color: '#003366' }} > Add Environmental Tests </Typography>
+                    <Typography variant='h4' sx={{ color: '#003366' }} > Add Environmental Tests </Typography>
                 </Divider>
 
 
@@ -287,50 +287,49 @@ export default function AddTestsList() {
                     </Dialog>
                 )}
 
-
-                {!editTestsFields && (
-                    <IconButton variant="contained" size="large" >
-                        <Tooltip title="Add Test" arrow type="submit">
-                            <div>
-                                <AddIcon fontSize="inherit" onClick={addNewTestButton} />
-                            </div>
-                        </Tooltip>
-                    </IconButton>
-                )}
-
-
-                {!editTestsFields && (
-                    <>
-                        <input
-                            type="file"
-                            accept=".xls, .xlsx"  // Limit file selection to Excel files
-                            onChange={handleFileChange}
-                            style={{ display: 'none' }}  // Hide the input element
-                            ref={(fileInputRef)}
-                        />
-
-
-
-                        <IconButton variant='contained' size="large" >
-                            <Tooltip title="Upload Excel" arrow>
+                {/* Box to keep the searchbar and the action buttons in a single row */}
+                <Box align='right'>
+                    {!editTestsFields && (
+                        <IconButton variant="contained" size="large" >
+                            <Tooltip title="Add Test" arrow type="submit">
                                 <div>
-                                    <UploadFileIcon fontSize="inherit" onClick={() => fileInputRef.current.click()} />
+                                    <AddIcon fontSize="inherit" onClick={addNewTestButton} />
                                 </div>
                             </Tooltip>
                         </IconButton>
-                    </>
-                )}
+                    )}
 
-                {/* Display the uploaded file name or other information here */}
-                {uploadedFileName && (
-                    <Typography variant="h6" align='center'
-                        sx={{ marginBottom: '16px', marginRight: '20px', marginLeft: '20px', fontWeight: 'bold', textDecoration: 'underline' }}
-                    >Uploaded File: {uploadedFileName}</Typography>
-                )}
+                    {!editTestsFields && (
+                        <>
+                            <input
+                                type="file"
+                                accept=".xls, .xlsx"  // Limit file selection to Excel files
+                                onChange={handleFileChange}
+                                style={{ display: 'none' }}  // Hide the input element
+                                ref={(fileInputRef)}
+                            />
 
 
 
-                <Typography variant='h5' color={'#e65100'}>Available Test Names</Typography>
+                            <IconButton variant='contained' size="large" >
+                                <Tooltip title="Upload Excel" arrow>
+                                    <div>
+                                        <UploadFileIcon fontSize="inherit" onClick={() => fileInputRef.current.click()} />
+                                    </div>
+                                </Tooltip>
+                            </IconButton>
+                        </>
+                    )}
+
+                    {/* Display the uploaded file name or other information here */}
+                    {uploadedFileName && (
+                        <Typography variant="h6" align='center'
+                            sx={{ marginBottom: '16px', marginRight: '20px', marginLeft: '20px', fontWeight: 'bold', textDecoration: 'underline' }}
+                        >Uploaded File: {uploadedFileName}</Typography>
+                    )}
+                </Box>
+
+
                 <br />
 
                 <TableContainer component={Paper} >

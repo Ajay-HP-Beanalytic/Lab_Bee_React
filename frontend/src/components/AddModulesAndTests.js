@@ -210,7 +210,7 @@ const AddModulesAndTests = () => {
             <Box >
 
                 <Divider  >
-                    <Typography variant='h5' sx={{ color: '#003366' }}> Add Item Soft Modules And Tests </Typography>
+                    <Typography variant='h4' sx={{ color: '#003366' }}> Add Item Soft Modules And Tests </Typography>
                 </Divider>
 
                 {editItemsoftModuleFields && (
@@ -271,48 +271,50 @@ const AddModulesAndTests = () => {
                 )}
 
 
-                {!editItemsoftModuleFields && (
-                    <IconButton variant="contained" size="large" >
-                        <Tooltip title="Add module" arrow type="submit">
-                            <div>
-                                <AddIcon fontSize="inherit" onClick={addNewModuleButton} />
-                            </div>
-                        </Tooltip>
-                    </IconButton>
-                )}
+                {/* Box to keep the searchbar and the action buttons in a single row */}
+                <Box align='right'>
 
-                {!editItemsoftModuleFields && (
-                    <>
-                        <input
-                            type="file"
-                            accept=".xls, .xlsx"  // Limit file selection to Excel files
-                            onChange={handleFileChange}
-                            style={{ display: 'none' }}  // Hide the input element
-                            ref={(fileInputRef)}
-                        />
-
-
-
-                        <IconButton variant='contained' size="large" >
-                            <Tooltip title="Upload Excel" arrow>
+                    {!editItemsoftModuleFields && (
+                        <IconButton variant="contained" size="large" >
+                            <Tooltip title="Add module" arrow type="submit">
                                 <div>
-                                    <UploadFileIcon fontSize="inherit" onClick={() => fileInputRef.current.click()} />
+                                    <AddIcon fontSize="inherit" onClick={addNewModuleButton} />
                                 </div>
                             </Tooltip>
                         </IconButton>
-                    </>
-                )}
+                    )}
+
+                    {!editItemsoftModuleFields && (
+                        <>
+                            <input
+                                type="file"
+                                accept=".xls, .xlsx"  // Limit file selection to Excel files
+                                onChange={handleFileChange}
+                                style={{ display: 'none' }}  // Hide the input element
+                                ref={(fileInputRef)}
+                            />
 
 
-                {/* Display the uploaded file name or other information here */}
-                {uploadedFileName && (
-                    <Typography variant="h6" align='center'
-                        sx={{ marginBottom: '16px', marginRight: '20px', marginLeft: '20px', fontWeight: 'bold', textDecoration: 'underline' }}
-                    >Uploaded File: {uploadedFileName}</Typography>
-                )}
 
-                {/* <h3>Available Item Soft Modules</h3> */}
-                <Typography variant='h5' color={'#e65100'}>Available Item Soft Modules</Typography>
+                            <IconButton variant='contained' size="large" >
+                                <Tooltip title="Upload Excel" arrow>
+                                    <div>
+                                        <UploadFileIcon fontSize="inherit" onClick={() => fileInputRef.current.click()} />
+                                    </div>
+                                </Tooltip>
+                            </IconButton>
+                        </>
+                    )}
+
+                    {/* Display the uploaded file name or other information here */}
+                    {uploadedFileName && (
+                        <Typography variant="h6" align='center'
+                            sx={{ marginBottom: '16px', marginRight: '20px', marginLeft: '20px', fontWeight: 'bold', textDecoration: 'underline' }}
+                        >Uploaded File: {uploadedFileName}</Typography>
+                    )}
+
+                </Box>
+
                 <br />
 
                 <TableContainer component={Paper}>

@@ -240,7 +240,7 @@ export default function AddCustomerDetails() {
             <Box>
 
                 <Divider>
-                    <Typography variant='h5' sx={{ color: '#003366' }}> Add Company Detials </Typography>
+                    <Typography variant='h4' sx={{ color: '#003366' }}> Add Company Detials </Typography>
                 </Divider>
 
                 {editCustomerDetailsFields && (
@@ -337,42 +337,41 @@ export default function AddCustomerDetails() {
                     </Dialog>
                 )}
 
-                {!editCustomerDetailsFields && (
-                    <IconButton variant="contained" size="large" onClick={addNewCustomerDetailsButton}>
-                        <Tooltip title="Add customer data" arrow type="submit">
-                            <div>
-                                <AddIcon fontSize="inherit" />
-                            </div>
-                        </Tooltip>
-                    </IconButton>
-                )}
 
-                {!editCustomerDetailsFields && (
-                    <>
-                        <input
-                            type="file"
-                            accept=".xls, .xlsx"  // Limit file selection to Excel files
-                            onChange={handleCustomerFileChange}
-                            style={{ display: 'none' }}  // Hide the input element
-                            ref={(fileInputRef)}
-                        />
+                {/* Box to keep the searchbar and the action buttons in a single row */}
+                <Box align='right' >
 
-                        <IconButton variant='contained' size="large" onClick={() => fileInputRef.current.click()}>
-                            <Tooltip title="Upload data using Excel" arrow>
+                    {!editCustomerDetailsFields && (
+                        <IconButton variant="contained" size="large" onClick={addNewCustomerDetailsButton}>
+                            <Tooltip title="Add customer data" arrow type="submit">
                                 <div>
-                                    <UploadFileIcon fontSize="inherit" />
+                                    <AddIcon fontSize="inherit" />
                                 </div>
                             </Tooltip>
                         </IconButton>
-                    </>
-                )}
+                    )}
 
+                    {!editCustomerDetailsFields && (
+                        <>
+                            <input
+                                type="file"
+                                accept=".xls, .xlsx"  // Limit file selection to Excel files
+                                onChange={handleCustomerFileChange}
+                                style={{ display: 'none' }}  // Hide the input element
+                                ref={(fileInputRef)}
+                            />
 
-                {/* <h3>Available Customer details</h3> */}
-                <Typography variant='h5' color={'#e65100'}>Available Customer Details</Typography>
+                            <IconButton variant='contained' size="large" onClick={() => fileInputRef.current.click()}>
+                                <Tooltip title="Upload data using Excel" arrow>
+                                    <div>
+                                        <UploadFileIcon fontSize="inherit" />
+                                    </div>
+                                </Tooltip>
+                            </IconButton>
+                        </>
+                    )}
 
-                <Box align='right' >
-                    <FormControl align='left' sx={{ width: "25%", marginTop: '20px', }}>
+                    <FormControl sx={{ width: "25%" }}>
                         <Autocomplete
                             disablePortal
                             onChange={(event, value) => { setFilterRow(value ? [value] : []); }}
