@@ -3,6 +3,12 @@ import axios from 'axios'
 import * as XLSX from 'xlsx';
 import { toast } from 'react-toastify'
 import moment from "moment";
+import CountUp from 'react-countup'
+
+import { FcOvertime } from "react-icons/fc";
+import { FcApproval } from "react-icons/fc";
+import { FcHighPriority } from "react-icons/fc";
+import { FcExpired } from "react-icons/fc";
 
 
 import { CreateKpiCard, CreatePieChart } from '../functions/DashboardFunctions';
@@ -11,12 +17,7 @@ import AddIcon from '@mui/icons-material/Add';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { Autocomplete, Box, Button, Card, Dialog, DialogActions, DialogContent, DialogTitle, Divider, FormControl, Grid, IconButton, List, ListItem, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, TextField, Tooltip, Typography } from '@mui/material';
-
-
-import PropTypes from 'prop-types';
-import { alpha } from '@mui/material/styles';
-
+import { Autocomplete, Box, Button, Card, Container, Dialog, DialogActions, DialogContent, DialogTitle, Divider, FormControl, Grid, IconButton, List, ListItem, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, TextField, Tooltip, Typography } from '@mui/material';
 
 
 
@@ -290,24 +291,7 @@ export default function ChamberAndCalibration() {
     // });
 
 
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    // Title for the KPI Card dropdown  list:
-    const accordianTitleString = 'Click here to see the list'
-
-    const pieChartData = {
-        title: 'Simple Pie Chart',
-        labels: ['Red', 'Blue', 'Yellow'],
-        datasets: [{
-            data: [300, 50, 100],
-            backgroundColor: ['#FF6384', '#36A2EB', '#FFCE56'],
-        }],
-    }
-
-    const optionsForPieChart = {
-        responsive: true,
-        maintainAspectRatio: false,
-    }
 
 
     // Function to compare dates of calibration with current date
@@ -444,6 +428,118 @@ export default function ChamberAndCalibration() {
 
 
 
+
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    // Title for the KPI Card dropdown  list:
+    const accordianTitleString = 'Click here to see the list'
+
+
+    // Creating a pie chart for calibration status for chambers and equipments:
+    const calibrationStatusPieChart = {
+        labels: ['Up to Date', 'Expired'],
+        datasets: [{
+            data: [upToDate_CalibrationCount, expired_CalibrationCount],
+            backgroundColor: ['#8cd9b3', '#ff6666'],
+        }],
+    }
+
+    const optionsForCalibrationStatusPieChart = {
+        responsive: true,
+        //maintainAspectRatio: false,   // False will keep the size small. If it's true then we can define the size using aspectRatio
+        aspectRatio: 2.5,
+        plugins: {
+            legend: {
+                position: 'top',
+                display: true,
+            },
+            title: {
+                display: true,
+                text: 'Calibration Status',
+                font: {
+                    family: 'Helvetica Neue',
+                    size: 30,
+                    weight: 'bold'
+                }
+            },
+            subtitle: {
+                display: true,
+                text: 'Up to Date & Expired chamber & equipments calibrations count',
+                font: {
+                    family: 'Arial',
+                    size: 15,
+                    weight: 'bold'
+                }
+            },
+            datalabels: {
+                display: true,
+                color: 'black',
+                fontWeight: 'bold',
+                font: {
+                    family: 'Arial',
+                    size: 15,
+                    weight: 'bold'
+                }
+            }
+        }
+    }
+
+
+    // Creating a pie chart for chamber and equipments status:
+    const chamberStatusPieChart = {
+        labels: ['Good', 'Under Maintenance'],
+        datasets: [{
+            data: [good_ChamberCount, underMaintenance_ChamberCount],
+            backgroundColor: ['#8cd9b3', '#ff6666'],
+        }],
+    }
+
+    const optionsForChamberStatusPieChart = {
+        responsive: true,
+        //maintainAspectRatio: false,   // False will keep the size small. If it's true then we can define the size using aspectRatio
+        aspectRatio: 2.5,
+        plugins: {
+            legend: {
+                position: 'top',
+                display: true,
+            },
+            title: {
+                display: true,
+                text: 'Chamber Status',
+                font: {
+                    family: 'Helvetica Neue',
+                    size: 30,
+                    weight: 'bold'
+                }
+            },
+            subtitle: {
+                display: true,
+                text: 'Good & Under Maintenance chamber & equipments count',
+                font: {
+                    family: 'Arial',
+                    size: 15,
+                    weight: 'bold'
+                }
+            },
+            datalabels: {
+                display: true,
+                color: 'black',
+                fontWeight: 'bold',
+                font: {
+                    family: 'Arial',
+                    size: 15,
+                    weight: 'bold'
+                }
+            }
+
+        }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
     return (
         <>
 
@@ -456,104 +552,87 @@ export default function ChamberAndCalibration() {
                 <br />
                 <br />
 
-
-                <Paper elevation={3} sx={{ padding: '20px', backgroundColor: '#F5F5F5' }}>
+                <Box>
                     <Grid container spacing={4} >
-                        <Grid item xs={3} sx={{ borderRadius: '4px' }}>
+                        <Grid item xs={12} md={3} >
                             <Card elevation={5} sx={{ backgroundColor: '#e6e6ff' }}>
                                 <CreateKpiCard
-                                    kpiTitle={`Calibration to be done in ${currentYearAndMonth}:`}
-                                    kpiValue={calibration_due_counts}
+                                    kpiTitle={`Calibrations pending in ${currentYearAndMonth}:`}
+                                    kpiValue={<CountUp start={0} end={calibration_due_counts} delay={1} />}
                                     kpiColor="#3f51b5"
                                     kpiNames={calibrationsPendingThisMonth}
                                     accordianTitleString={accordianTitleString}
+                                    kpiIcon={<FcOvertime size='130px' />}
                                 />
                             </Card>
                         </Grid>
 
-                        <Grid item xs={3}>
+                        <Grid item xs={12} md={3}>
                             <Card elevation={5} sx={{ backgroundColor: '#f9fbe7' }}>
                                 <CreateKpiCard
                                     kpiTitle="Calibration Up to date:"
-                                    kpiValue={upToDate_CalibrationCount}
+                                    kpiValue={<CountUp start={0} end={upToDate_CalibrationCount} delay={1} />}
                                     kpiColor="#c0ca33"
                                     accordianTitleString={accordianTitleString}
+                                    kpiIcon={<FcApproval size='130px' />}
                                 />
                             </Card>
                         </Grid>
 
-                        <Grid item xs={3}>
+                        <Grid item xs={12} md={3}>
                             {/* #ebf1fe */}
                             <Card elevation={5} sx={{ backgroundColor: '#b3b3cc' }}>
                                 <CreateKpiCard
                                     kpiTitle="Calibration Expired:"
-                                    kpiValue={expired_CalibrationCount}
+                                    kpiValue={<CountUp start={0} end={expired_CalibrationCount} delay={1} />}
                                     kpiColor="#f44336"
                                     kpiNames={calibration_expiredChamberNames}
                                     accordianTitleString={accordianTitleString}
+                                    kpiIcon={<FcExpired size='130px' />}
                                 />
-                                {/* {calibration_expiredChamberNames.length > 0 && (
-                                    <div>
-                                        <ol style={{ margin: '0', padding: '0 10px' }}>
-                                            {calibration_expiredChamberNames.map((name, index) => (
-                                                <li key={index}>{name}</li>
-                                            ))}
-                                        </ol>
-                                    </div>
-                                )} */}
                             </Card>
                         </Grid>
 
-                        {/* <Grid item xs={3}>
-                            <Card elevation={5} sx={{ backgroundColor: '#f7f4f3' }}>
-                                <CreateKpiCard
-                                    kpiTitle="Chambers & equipments in good condition:"
-                                    kpiValue={good_ChamberCount}
-                                    kpiColor="#2196f3"
-                                />
-                            </Card>
-                        </Grid> */}
-
-                        <Grid item xs={3}>
+                        <Grid item xs={12} md={3} >
                             <Card elevation={5} sx={{ backgroundColor: '#f9ecef' }}>
                                 <CreateKpiCard
                                     kpiTitle="Chambers Under Maintenance:"
-                                    kpiValue={underMaintenance_ChamberCount}
+                                    kpiValue={<CountUp start={0} end={underMaintenance_ChamberCount} delay={1} />}
                                     kpiColor="#f44336"
                                     kpiNames={chamber_underMaintenanceNames}
                                     accordianTitleString={accordianTitleString}
+                                    kpiIcon={<FcHighPriority size='130px' />}
                                 />
-                                {/* {chamber_underMaintenanceNames.length > 0 && (
-                                    <div>
-                                        <ol style={{ margin: '0', padding: '0 10px' }}>
-                                            {chamber_underMaintenanceNames.map((name, index) => (
-                                                <li key={index}>{name}</li>
-                                            ))}
-                                        </ol>
-                                    </div>
-                                )} */}
                             </Card>
                         </Grid>
 
                     </Grid>
-                </Paper>
-
-                <Divider />
+                </Box>
 
                 <br />
 
-
-
-                <Paper elevation={3} sx={{ padding: '20px', backgroundColor: '#F5F5F5' }}>
+                <Box>
                     <Grid container spacing={2} >
-                        <Grid item xs={3}>
-                            <CreatePieChart
-                                data={pieChartData}
-                                options={optionsForPieChart}
-                            />
+                        <Grid item xs={12} md={6}>
+                            <Card elevation={5} sx={{ backgroundColor: 'transparent' }}>
+                                <CreatePieChart
+                                    data={calibrationStatusPieChart}
+                                    options={optionsForCalibrationStatusPieChart}
+                                />
+                            </Card>
+                        </Grid>
+
+                        <Grid item xs={12} md={6}>
+                            <Card elevation={5} sx={{ backgroundColor: 'transparent' }}>
+                                <CreatePieChart
+                                    data={chamberStatusPieChart}
+                                    options={optionsForChamberStatusPieChart}
+                                />
+                            </Card>
                         </Grid>
                     </Grid>
-                </Paper>
+                </Box>
+
 
                 <br />
                 <br />
@@ -683,54 +762,46 @@ export default function ChamberAndCalibration() {
                 )}
 
 
-                {!editChamberCalibrationFields && (
-                    <IconButton variant="contained" size="large" >
-                        <Tooltip title="Add Chamber" arrow type="submit">
-                            <div>
+                {/* <Typography variant='h5' color={'#e65100'}>Available Chambers and Calibration Details</Typography> */}
+
+                <br />
+
+                {/* Box to keep the searchbar and the action buttons in a single row */}
+                <Box align='right' >
+
+                    {!editChamberCalibrationFields && (
+                        <IconButton variant="contained" size="large">
+                            <Tooltip title="Add Chamber" arrow type="submit">
                                 <AddIcon fontSize="inherit" onClick={addNewChamberButton} />
-                            </div>
-                        </Tooltip>
-                    </IconButton>
-                )}
-
-
-                {!editChamberCalibrationFields && (
-                    <>
-                        <input
-                            type="file"
-                            accept=".xls, .xlsx"  // Limit file selection to Excel files
-                            onChange={handleFileChange}
-                            style={{ display: 'none' }}  // Hide the input element
-                            ref={(fileInputRef)}
-                        />
-
-
-
-                        <IconButton variant='contained' size="large" >
-                            <Tooltip title="Upload Excel" arrow>
-                                <div>
-                                    <UploadFileIcon fontSize="inherit" onClick={() => fileInputRef.current.click()} />
-                                </div>
                             </Tooltip>
                         </IconButton>
-                    </>
-                )}
+                    )}
 
-                {/* Display the uploaded file name or other information here */}
-                {uploadedFileName && (
-                    <Typography variant="h6" align='center'
-                        sx={{ marginBottom: '16px', marginRight: '20px', marginLeft: '20px', fontWeight: 'bold', textDecoration: 'underline' }}
-                    >Uploaded File: {uploadedFileName}</Typography>
-                )}
+                    {!editChamberCalibrationFields && (
+                        <>
+                            <input
+                                type="file"
+                                accept=".xls, .xlsx"  // Limit file selection to Excel files
+                                onChange={handleFileChange}
+                                style={{ display: 'none' }}  // Hide the input element
+                                ref={fileInputRef}
+                            />
 
+                            <IconButton variant='contained' size="large">
+                                <Tooltip title="Upload Excel" arrow>
+                                    <UploadFileIcon fontSize="inherit" onClick={() => fileInputRef.current.click()} />
+                                </Tooltip>
+                            </IconButton>
+                        </>
+                    )}
 
+                    {uploadedFileName && (
+                        <Typography variant="h6" align='center'
+                            sx={{ marginBottom: '16px', marginRight: '20px', marginLeft: '20px', fontWeight: 'bold', textDecoration: 'underline' }}
+                        >Uploaded File: {uploadedFileName}</Typography>
+                    )}
 
-
-                <Typography variant='h5' color={'#e65100'}>Available Chambers and Calibration Details</Typography>
-
-
-                <Box align='right' >
-                    <FormControl align='left' sx={{ width: "25%", marginTop: '20px', }}>
+                    <FormControl sx={{ width: '25%' }}>
                         <Autocomplete
                             disablePortal
                             onChange={(event, value) => { setFilterRow(value ? [value] : []); }}
@@ -744,13 +815,6 @@ export default function ChamberAndCalibration() {
                                 />
                             )}
                         />
-
-                        {/* <TextField
-                            disablePortal
-                            label="Filter the table"
-                            variant="outlined"
-                            onChange={(e) => setFilterText(e.target.value)}
-                        /> */}
                     </FormControl>
                 </Box>
 
