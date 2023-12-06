@@ -56,7 +56,7 @@ const CreateKpiCard = ({ kpiTitle, kpiValue, kpiNames, kpiColor, accordianTitleS
                 </AccordionSummary>
 
                 <AccordionDetails >
-                    <List sx={{ padding: '2px', backgroundColor: '#ffb3b3' }}>
+                    <List sx={{ padding: '2px', }}>
                         {kpiNames.map((name, index) => (
                             <ListItem key={index} sx={{ fontSize: 'bold', align: 'center' }}>
                                 <Typography variant="subtitle1">

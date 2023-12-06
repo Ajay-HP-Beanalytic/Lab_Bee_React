@@ -46,7 +46,7 @@ export default function QuoteTable() {
 
   const [loading, setLoading] = useState(true);                 //To show loading label
 
-  const [msg, setMsg] = useState(<h2>Loading...</h2>);
+  const [msg, setMsg] = useState(<Typography variant='h4'>Loading...</Typography>);
 
   const [error, setError] = useState(null);                     //To show error label
 
@@ -210,16 +210,15 @@ export default function QuoteTable() {
 
   // Creating a pie chart for calibration status for chambers and equipments:
   const categorywiseQuotesPieChart = {
-    //labels: ['EMI & EMC', 'Environmental Testing', 'Item Soft', 'Reliability'],
     labels: quoteCategoryLabels,
     datasets: [{
       data: quoteCategoryCountsInCurrentMonth,
-      //data: [10, 20, 24, 15],
-      backgroundColor: ['#8cd9b3', '#ff6666', '#C7B040', '#929292'],
+      backgroundColor: ['#8cd9b3', '#ffad99', '#C7B040', '#929292'],
     }],
   }
 
   const optionsForQuotesPieChart = {
+    backgroundColor: '#e6ffe6',
     responsive: true,
     //maintainAspectRatio: false,   // False will keep the size small. If it's true then we can define the size using aspectRatio
     aspectRatio: 2,
@@ -255,7 +254,7 @@ export default function QuoteTable() {
           size: 15,
           weight: 'bold'
         }
-      }
+      },
     }
   }
 

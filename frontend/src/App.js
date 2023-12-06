@@ -21,6 +21,10 @@ import UserLogoutDialog from "./components/UserLogoutDialog";
 import QuotationRequirements from "./Pages/QuotationRequirements";
 import JobcardRequirements from "./Pages/JobcardRequirements";
 import ChamberAndCalibration from "./components/ChamberCalibration";
+import Home from "./Pages/Home";
+import JCHome from "./Pages/JCHome";
+import Slotbooking from "./Pages/Slotbooking";
+
 
 
 
@@ -40,19 +44,22 @@ function App() {
 
           <Route path="" element={<SidenavigationBar />} >
 
-            <Route path='home' element={<QuoteTable />} />
+            <Route path='home' element={<Home />} />
+            <Route path='/quotation_dashboard' element={<QuoteTable />} />
             <Route path='/quotation' element={<Quotation />} />
             <Route path="/quotation/:id" element={<Quotation />} />
             <Route path="/quotation_essentials" element={<QuotationRequirements />} />
             <Route path="/quotationPdf/:id" element={<QuotationPdf />} />
             <Route path="/quotationWordToPdf/:id" element={<DocToPdf />} />
 
+            <Route path='/jobcard_dashboard' element={<JCHome />} />
             <Route path='/jobcard' element={<Jobcard />} />
             <Route path='/jobcard_essentials' element={<JobcardRequirements />} />
             {/* <Route path='/jobcard' element={<JobcardBMRCL />} /> // BMRCL Job-Card */}
 
             <Route path='/chamber-calibration' element={<ChamberAndCalibration />} />
 
+            <Route path='/slot_booking' element={<Slotbooking />} />
 
             <Route path="/userlogout" element={<UserLogoutDialog />} />
             <Route path='/trailpage' element={<TrailPage />} />

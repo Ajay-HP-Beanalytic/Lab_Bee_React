@@ -42,6 +42,9 @@ export default function ChamberAndCalibration() {
 
     const [editChamberCalibrationFields, setEditChamberCalibrationFields] = useState(false);
 
+    const [loading, setLoading] = useState(true);                 //To show loading label
+
+    const [msg, setMsg] = useState(<Typography variant='h4'>Loading...</Typography>);
 
 
     const [selectedFile, setSelectedFile] = useState(null);
@@ -766,8 +769,10 @@ export default function ChamberAndCalibration() {
 
                 <br />
 
+
+
                 {/* Box to keep the searchbar and the action buttons in a single row */}
-                <Box align='right' >
+                <Box Box align='right' >
 
                     {!editChamberCalibrationFields && (
                         <IconButton variant="contained" size="large">
@@ -893,7 +898,9 @@ export default function ChamberAndCalibration() {
                     onRowsPerPageChange={handleRowsPerPage}
                 />
 
-            </Box>
+            </Box >
+
+
 
         </>
     )
