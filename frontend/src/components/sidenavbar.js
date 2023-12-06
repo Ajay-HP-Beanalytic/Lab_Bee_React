@@ -20,6 +20,7 @@ import ListItemText from '@mui/material/ListItemText';
 import { Avatar, Tooltip } from '@mui/material';
 
 import HomeIcon from '@mui/icons-material/Home';
+import SpaceDashboardIcon from '@mui/icons-material/SpaceDashboard';
 import RequestQuoteIcon from '@mui/icons-material/RequestQuote';
 import EditNoteIcon from '@mui/icons-material/EditNote';
 import CalendarMonthSharpIcon from '@mui/icons-material/CalendarMonthSharp';
@@ -158,16 +159,18 @@ export default function SidenavigationBar() {
   // Create items to display in the side navigation bar
   const items = [
     { i: 1, label: 'Home', icon: <HomeIcon />, path: '/home' },
-    { i: 2, label: 'Add Quotation', icon: <RequestQuoteIcon />, path: '/quotation' },
-    { i: 3, label: 'Quotation Essentials', icon: <NoteAddIcon />, path: '/quotation_essentials' },
-    { i: 4, label: 'Jobcard', icon: <ArticleIcon />, path: '/jobcard' },
-    { i: 5, label: 'Jobcard Essentials', icon: <NoteAddIcon />, path: '/jobcard_essentials' },
-    { i: 6, label: 'Slot Booking', icon: <CalendarMonthSharpIcon />, path: '/slot-booking' },
-    { i: 7, label: 'Chamber & Calibration', icon: <KitchenIcon />, path: '/chamber-calibration' },
+    { i: 2, label: 'Quotation Dashboard', icon: <SpaceDashboardIcon />, path: '/quotation_dashboard' },
+    { i: 3, label: 'Add Quotation', icon: <RequestQuoteIcon />, path: '/quotation' },
+    { i: 4, label: 'Quotation Essentials', icon: <NoteAddIcon />, path: '/quotation_essentials' },
+    { i: 5, label: 'JC Dashboard', icon: <SpaceDashboardIcon />, path: '/jobcard_dashboard' },
+    { i: 6, label: 'Jobcard', icon: <ArticleIcon />, path: '/jobcard' },
+    { i: 7, label: 'Jobcard Essentials', icon: <NoteAddIcon />, path: '/jobcard_essentials' },
+    { i: 8, label: 'Slot Booking', icon: <CalendarMonthSharpIcon />, path: '/slot_booking' },
+    { i: 9, label: 'Chamber & Calibration', icon: <KitchenIcon />, path: '/chamber-calibration' },
   ]
   const items2 = [
-    { i: 8, label: 'Settings', icon: <SettingsIcon />, path: '/settings' },
-    { i: 9, label: loggedInUser, icon: <Avatar sx={{ backgroundColor: 'primary.light' }}> {userAvatar} </Avatar>, path: '/userlogout' },
+    { i: 10, label: 'Settings', icon: <SettingsIcon />, path: '/settings' },
+    { i: 11, label: loggedInUser, icon: <Avatar sx={{ backgroundColor: 'primary.light' }}> {userAvatar} </Avatar>, path: '/userlogout' },
   ]
 
 
@@ -176,9 +179,9 @@ export default function SidenavigationBar() {
     if (loggedInUserRole === 'Admin') {
       return true; // Show all items for Admin
     } else if (loggedInUserRole === 'Marketing') {
-      return [1, 2, 3, 9].includes(item.i); // Show items 1, 2, 3, and 9 for Marketing
+      return [2, 3, 4, 10, 11].includes(item.i); // Show items 1, 2, 3, and 9 for Marketing
     } else if (loggedInUserRole === 'Lab Manager') {
-      return [4, 5, 6, 7, 9].includes(item.i); // Show items 4, 5, and 9 for Lab Manager
+      return [5, 6, 7, 8, 9, 10, 11, 12].includes(item.i); // Show items 4, 5, and 9 for Lab Manager
     }
     return false; // Default: Hide the item
   });
