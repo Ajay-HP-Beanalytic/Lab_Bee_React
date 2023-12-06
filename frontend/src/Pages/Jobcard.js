@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import {
   Box, Typography, Container, TextField, Button, Table, TableBody, TableCell, TableContainer, TableHead,
-  TableRow, Paper, Grid, InputLabel, MenuItem, FormControl, Select, FormControlLabel, Radio, RadioGroup, Checkbox, FormLabel, IconButton, Tooltip
+  TableRow, Paper, Grid, InputLabel, MenuItem, FormControl, Select, FormControlLabel, Radio, RadioGroup, Checkbox, FormLabel, IconButton, Tooltip, Divider
 } from '@mui/material';
 
 import AddIcon from '@mui/icons-material/Add';
@@ -120,15 +120,25 @@ const Jobcard = () => {
 
 
 
+  //Font for thetable headers:
+  const tableHeaderFont = { fontSize: 16, fontWeight: 'bold' }
 
-
-
+  const HeaderCell = ({ children }) => (
+    <TableCell>
+      <Typography sx={tableHeaderFont}>
+        {children}
+      </Typography>
+    </TableCell>
+  );
 
 
   return (
 
     <>
-      <Typography variant='h5' align='center'> Job Card </Typography>
+      <Divider>
+        <Typography variant='h4' sx={{ color: '#003366' }}> Job Card </Typography>
+      </Divider>
+      <br />
 
       <form onSubmit={handleSubmitJobcard}>
 
@@ -299,17 +309,17 @@ const Jobcard = () => {
 
           <TableContainer component={Paper} >
             <Table size='small' aria-label="simple table">
-              <TableHead sx={{ backgroundColor: '#227DD4', fontWeight: 'bold' }}>
+              <TableHead sx={{ backgroundColor: '#227DD4' }}>
                 <TableRow >
-                  <TableCell >Sl No</TableCell>
-                  <TableCell align='center'>JC Number</TableCell>
-                  <TableCell align='center'>Nomenculature</TableCell>
-                  <TableCell align='center'>Eut Description</TableCell>
-                  <TableCell align='center'>Qty</TableCell>
-                  <TableCell align='center'>Part No</TableCell>
-                  <TableCell align='center'>Model No</TableCell>
-                  <TableCell align='center'>Serial No</TableCell>
-                  <TableCell>
+                  <HeaderCell >Sl No</HeaderCell>
+                  <HeaderCell align='center'>JC Number</HeaderCell>
+                  <HeaderCell align='center'>Nomenculature</HeaderCell>
+                  <HeaderCell align='center'>Eut Description</HeaderCell>
+                  <HeaderCell align='center'>Qty</HeaderCell>
+                  <HeaderCell align='center'>Part No</HeaderCell>
+                  <HeaderCell align='center'>Model No</HeaderCell>
+                  <HeaderCell align='center'>Serial No</HeaderCell>
+                  <HeaderCell>
 
                     <IconButton size='small'>
                       <Tooltip title='Add Row' arrow>
@@ -317,7 +327,7 @@ const Jobcard = () => {
                       </Tooltip>
                     </IconButton>
 
-                  </TableCell>
+                  </HeaderCell>
                 </TableRow>
               </TableHead>
 
@@ -373,20 +383,20 @@ const Jobcard = () => {
 
           <TableContainer component={Paper} >
             <Table size='small' aria-label="simple table">
-              <TableHead sx={{ backgroundColor: '#227DD4', fontWeight: 'bold' }}>
+              <TableHead sx={{ backgroundColor: '#227DD4' }}>
                 <TableRow>
-                  <TableCell >Sl No</TableCell>
-                  <TableCell align="center">Test</TableCell>
-                  <TableCell align="center">NABL</TableCell>
-                  <TableCell align="center">Test Standard</TableCell>
-                  <TableCell align="center">Reference Document</TableCell>
-                  <TableCell>
+                  <HeaderCell >Sl No</HeaderCell>
+                  <HeaderCell align="center">Test</HeaderCell>
+                  <HeaderCell align="center">NABL</HeaderCell>
+                  <HeaderCell align="center">Test Standard</HeaderCell>
+                  <HeaderCell align="center">Reference Document</HeaderCell>
+                  <HeaderCell>
                     <IconButton size='small'>
                       <Tooltip title='Add Row' arrow>
                         <AddIcon onClick={handleAddTestRow} />
                       </Tooltip>
                     </IconButton>
-                  </TableCell>
+                  </HeaderCell>
 
                 </TableRow>
               </TableHead>
@@ -443,10 +453,9 @@ const Jobcard = () => {
 
           <TableContainer component={Paper}  >
             <Table size='small' aria-label="simple table" >
-              <TableHead sx={{ backgroundColor: '#227DD4', fontWeight: 'bold' }}>
+              <TableHead sx={{ backgroundColor: '#227DD4' }}>
                 <TableRow>
-                  <TableCell>Sl No</TableCell>
-                  <TableCell sx={{ minWidth: '150px' }} align="center">JC Number</TableCell>
+                  <TableCell >Sl No</TableCell>
                   <TableCell sx={{ minWidth: '300px' }} align="center">Test</TableCell>
                   <TableCell sx={{ minWidth: '150px' }} align="center">Chamber</TableCell>
                   <TableCell sx={{ minWidth: '150px' }} align="center">EUT Serial No</TableCell>
@@ -477,11 +486,6 @@ const Jobcard = () => {
                 {testdetailsRows.map((row, index) => (
                   <TableRow key={row.id}>
                     <TableCell>{index + 1}</TableCell>
-
-                    <TableCell>
-                      {jcNumber}
-                    </TableCell>
-
 
                     <TableCell>
                       <TextField style={{ align: "center" }} variant="outlined" />
