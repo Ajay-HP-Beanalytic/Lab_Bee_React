@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   Box, Typography, Container, TextField, Button, Table, TableBody, TableCell, TableContainer, TableHead,
-  TableRow, Paper, IconButton, Tooltip, Grid, InputLabel, MenuItem, FormControl, Select, Checkbox, Autocomplete, FormControlLabel, Stack,
+  TableRow, Paper, IconButton, Tooltip, Grid, InputLabel, MenuItem, FormControl, Select, Checkbox, Autocomplete, FormControlLabel, Stack, Divider,
 } from '@mui/material';
 import axios from "axios";
 import moment from "moment";                     // To convert the date into desired format
@@ -16,6 +16,8 @@ import RemoveIcon from '@mui/icons-material/Remove';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import { Link, Navigate, useParams } from 'react-router-dom';
+
+
 
 const StyledTableRow = styled(TableRow)(({ theme }) => ({
   '&:nth-of-type(odd)': {
@@ -86,6 +88,7 @@ export default function Quotation() {
   const [editId, setEditId] = useState('')
   const formattedDate = moment(new Date()).format("DD-MM-YYYY");
   const [selectedDate, setSelectedDate] = useState(formattedDate);
+
   // State variable to set the user name:
   const [quotationCreatedBy, setQuotationCreatedBy] = useState('')
 
@@ -123,6 +126,8 @@ export default function Quotation() {
       .then(result => {
         setModules(result.data)
       })
+
+
   }, [])
 
 
@@ -442,8 +447,12 @@ export default function Quotation() {
   return (
 
     <div>
+      <Divider>
+        <Typography variant='h4' sx={{ color: '#003366' }}> {editId ? 'Update Quotation' : 'Add New Quotation'}</Typography>
+      </Divider>
 
-      <Typography variant='h5'>{editId ? 'Update Quotation' : 'Add New Quotation'}</Typography>
+      <br />
+
       <form onSubmit={handleSubmitETQuotation}>
         <Box >
 
