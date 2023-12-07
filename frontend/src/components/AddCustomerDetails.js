@@ -10,6 +10,8 @@ import UploadFileIcon from '@mui/icons-material/UploadFile';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 
+import { apiToAddNewCompanyData, apiToGetCompanyDetails } from '../Pages/APIPage'
+
 export default function AddCustomerDetails() {
 
     const [companyName, setCompanyName] = useState('')
@@ -39,7 +41,8 @@ export default function AddCustomerDetails() {
         }
 
         try {
-            const addCompanyDetilsRequest = await axios.post("http://localhost:4000/api/addNewCompanyDetails/" + editId, {
+            // const addCompanyDetilsRequest = await axios.post("http://localhost:4000/api/addNewCompanyDetails/" + editId, {
+            const addCompanyDetilsRequest = await axios.post(apiToAddNewCompanyData + editId, {
                 companyName, toCompanyAddress, kindAttention, customerId, customerReferance
             });
 
@@ -67,7 +70,8 @@ export default function AddCustomerDetails() {
 
         const fetchCompaniesDataList = async () => {
             try {
-                const companiesURL = await axios.get("http://localhost:4000/api/getCompanyDetails");
+                // const companiesURL = await axios.get("http://localhost:4000/api/getCompanyDetails");
+                const companiesURL = await axios.get(apiToGetCompanyDetails);
                 setCompaniesList(companiesURL.data)
             } catch (error) {
                 console.error('Failed to fetch the data', error);
@@ -128,7 +132,9 @@ export default function AddCustomerDetails() {
                             const [companyName, toCompanyAddress, kindAttention, customerId, customerReferance] = row;
 
                             try {
-                                const addCompanyRequest = await axios.post("http://localhost:4000/api/addNewCompanyDetails", {
+                                // const addCompanyRequest = await axios.post("http://localhost:4000/api/addNewCompanyDetails", {
+                                const addCompanyRequest = await axios.post(apiToAddNewCompanyData, {
+
                                     companyName, toCompanyAddress, kindAttention, customerId, customerReferance
                                 });
 
@@ -193,7 +199,8 @@ export default function AddCustomerDetails() {
         const confirmDelete = window.confirm('Are you sure you want to delete this company data?');
 
         if (confirmDelete) {
-            fetch(`http://localhost:4000/api/getCompanyDetails/${id}`, { method: 'DELETE', })
+            // fetch(`http://localhost:4000/api/getCompanyDetails/${id}`, { method: 'DELETE', })
+            fetch(`${apiToGetCompanyDetails}/${id}`, { method: 'DELETE', })
                 .then(res => {
                     if (res.status === 200) {
                         const updatedCompaniesList = companiesList.filter((item) => item.id !== id);

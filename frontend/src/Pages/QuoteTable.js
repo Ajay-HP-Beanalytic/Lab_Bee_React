@@ -1,20 +1,25 @@
 import React, { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom';
 import axios from 'axios';
 import {
   Box, Card, Table, TableBody, Button, TableCell, TableRow, TableContainer, TableHead, Paper,
   TablePagination, Typography, CardContent, TextField, Autocomplete, IconButton, Tooltip, FormControl,
   SpeedDial, SpeedDialIcon, SpeedDialAction, Grid, Container, CssBaseline, Divider
 } from '@mui/material';
-import CountUp from 'react-countup'
+
+
+import {
+  apiToFetchQuotesDataToCreateTable, apiToAddAndUpdateQuotation
+} from './APIPage'
 
 import PendingIcon from '@mui/icons-material/Pending';
 import { FcDocument } from "react-icons/fc";
-
-
-import { Link } from 'react-router-dom';
 import moment from 'moment';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import AddIcon from '@mui/icons-material/Add';
+
+import CountUp from 'react-countup'
+
 import { CreateBarChart, CreateKpiCard, CreatePieChart } from '../functions/DashboardFunctions';
 
 
@@ -38,9 +43,7 @@ export default function QuoteTable() {
   // Define the table headers:
   const tableHeadersText = ['Sl No', 'Quotation ID', 'Company', 'Quote Given Date', 'Category', 'Quote Given By', 'Action'];
 
-  // State to hold the data fetched from the database:
-  //const quotesURL = "http://localhost:4000/api/getQuotationdata?_fields=quotation_ids,company_name,quote_given_date,quote_category,quote_created_by"
-
+  // State variables to hold the data fetched from the database:
 
   const [quotesTableData, setQuotesTableData] = useState([]);   //fetch data from the database & to show inside a table
 
@@ -62,36 +65,38 @@ export default function QuoteTable() {
 
   //To filter out the table as per the search input:
   // Simulate fetching data from the database
-  useEffect(() => {
+  // useEffect(() => {
 
-    let requiredAPIdata = {
-      _fields: 'quotation_ids, company_name, formatted_quote_given_date, quote_category, quote_created_by'
-    }
+  //   let requiredAPIdata = {
+  //     _fields: 'quotation_ids, company_name, formatted_quote_given_date, quote_category, quote_created_by'
+  //   }
 
-    const urlParameters = new URLSearchParams(requiredAPIdata).toString()
+  //   const urlParameters = new URLSearchParams(requiredAPIdata).toString()
 
-    const quotesURL = "http://localhost:4000/api/getQuotationdata?" + urlParameters
+  //   // const quotesURL = "http://localhost:4000/api/getQuotationdata?" + urlParameters
+  //   const quotesURL = apiToFetchQuotesDataToCreateTable + urlParameters
 
-    const fetchQuotesDataFromDatabase = async () => {
-      try {
-        const response = await axios.get(quotesURL);
-        if (response.data.length !== 0) {
-          setQuotesTableData(response.data);
-        } else {
-          setMsg(<>
-            <h2>No Quotations found...</h2>
-          </>)
-        }
-        setLoading(false);
-      } catch (error) {
-        console.error('Failed to fetch the data', error);
-        setError(error);
-        setLoading(false);
-      }
-    };
+  //   const fetchQuotesDataFromDatabase = async () => {
+  //     try {
+  //       const response = await axios.get(quotesURL);
+  //       if (response.data.length !== 0) {
+  //         setQuotesTableData(response.data);
+  //       } else {
+  //         setMsg(<>
+  //           {/* <h2>No Quotations Found...</h2> */}
+  //           <Typography variant='h4'>No Quotations Found...</Typography>
+  //         </>)
+  //       }
+  //       setLoading(false);
+  //     } catch (error) {
+  //       console.error('Failed to fetch the data', error);
+  //       setError(error);
+  //       setLoading(false);
+  //     }
+  //   };
 
-    fetchQuotesDataFromDatabase();
-  }, []);
+  //   fetchQuotesDataFromDatabase();
+  // }, []);
 
 
   // Simulate fetching data from the database
@@ -103,7 +108,8 @@ export default function QuoteTable() {
 
     const urlParameters = new URLSearchParams(requiredAPIdata).toString()
 
-    const quotesURL = "http://localhost:4000/api/getQuotationdata?" + urlParameters
+    // const quotesURL = "http://localhost:4000/api/getQuotationdata?" + urlParameters
+    const quotesURL = apiToFetchQuotesDataToCreateTable + urlParameters
 
     //if (filterRow) 
     if (filterRow.length > 0) {
@@ -147,7 +153,8 @@ export default function QuoteTable() {
   };
 
   /* function deleteQuote(id) {
-    axios.delete(`http://localhost:4000/api/quotation/` + id)
+    //axios.delete(`http://localhost:4000/api/quotation/` + id)
+    axios.delete(apiToAddAndUpdateQuotation + id)
       .then(res => {
         console.log(res.data)
         setRefresh(!refresh)

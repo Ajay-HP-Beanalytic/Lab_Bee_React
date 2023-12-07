@@ -25,6 +25,7 @@ function createUsersTable() {
             email VARCHAR(255),
             password VARCHAR(255),
             role VARCHAR(255),
+            allowed_components VARCHAR(255),
             PRIMARY KEY(id) 
         )`;
 

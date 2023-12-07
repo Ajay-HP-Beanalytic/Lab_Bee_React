@@ -31,6 +31,20 @@ import KitchenIcon from '@mui/icons-material/Kitchen';
 import { Link, Outlet, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
+import RobotoBoldFont from '../fonts/Roboto-Bold.ttf'
+
+
+
+
+const styles = {
+  '@font-face': {
+    fontFamily: 'Roboto-Bold',
+    src: `url(${RobotoBoldFont}) format('truetype')`,
+  },
+};
+
+
+
 
 const drawerWidth = 200;
 
@@ -170,7 +184,7 @@ export default function SidenavigationBar() {
   ]
   const items2 = [
     { i: 10, label: 'Settings', icon: <SettingsIcon />, path: '/settings' },
-    { i: 11, label: loggedInUser, icon: <Avatar sx={{ backgroundColor: 'primary.light' }}> {userAvatar} </Avatar>, path: '/userlogout' },
+    { i: 11, label: loggedInUser, icon: <Avatar sx={{ backgroundColor: '#ff3333' }}> {userAvatar} </Avatar>, path: '/userlogout' },
   ]
 
 
@@ -208,7 +222,11 @@ export default function SidenavigationBar() {
             <ListItemIcon sx={{ minWidth: 0, mr: open ? 3 : 'auto', justifyContent: 'center', }}>
               {item.icon}
             </ListItemIcon>
-            <ListItemText primary={item.label} sx={{ opacity: open ? 1 : 0, fontFamily: 'Roboto' }} />
+            <ListItemText
+              // primary={item.label}
+              // primary={<span style={{ fontWeight: 'bold' }}>{item.label}</span>}
+              primary={<span style={{ fontFamily: 'Roboto-Bold', fontSize: '19px', fontWeight: 'bold' }}>{item.label}</span>}
+              sx={{ opacity: open ? 1 : 0, color: 'black' }} />
           </ListItemButton>
         </ListItem>
       </Tooltip>
