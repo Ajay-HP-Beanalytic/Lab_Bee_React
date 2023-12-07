@@ -1,4 +1,8 @@
-import { TextField, Box, Button, TableContainer, IconButton, TableCell, TableBody, TableRow, Table, Paper, TableHead, Typography, Tooltip, Dialog, DialogTitle, DialogContent, DialogActions, Divider } from '@mui/material'
+import {
+    TextField, Box, Button, TableContainer, IconButton, TableCell, TableBody, TableRow,
+    Table, Paper, TableHead, Typography, Tooltip, Dialog, DialogTitle, DialogContent, DialogActions,
+    Divider
+} from '@mui/material'
 
 import axios from 'axios'
 import * as XLSX from 'xlsx';
@@ -9,6 +13,9 @@ import AddIcon from '@mui/icons-material/Add';
 import UploadFileIcon from '@mui/icons-material/UploadFile';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+
+
+import { apiToAddItemSoftModule, apiToGetItemSoftModulesList } from '../Pages/APIPage'
 
 
 const AddModulesAndTests = () => {
@@ -37,7 +44,8 @@ const AddModulesAndTests = () => {
         }
 
         try {
-            const addItemModulesRequest = await axios.post("http://localhost:4000/api/addItemsoftModules/" + editId, {
+            // const addItemModulesRequest = await axios.post("http://localhost:4000/api/addItemsoftModules/" + editId, {
+            const addItemModulesRequest = await axios.post(apiToAddItemSoftModule + editId, {
                 moduleName,
                 moduleDescription
             });
@@ -78,7 +86,8 @@ const AddModulesAndTests = () => {
 
         const fetchModulesList = async () => {
             try {
-                const quotesURL = await axios.get("http://localhost:4000/api/getItemsoftModules");
+                // const quotesURL = await axios.get("http://localhost:4000/api/getItemsoftModules");
+                const quotesURL = await axios.get(apiToGetItemSoftModulesList);
                 setModulesList(quotesURL.data)
             } catch (error) {
                 console.error('Failed to fetch the data', error);
@@ -117,7 +126,8 @@ const AddModulesAndTests = () => {
                             const [moduleName, moduleDescription] = row;
 
                             try {
-                                const addItemModulesRequest = await axios.post("http://localhost:4000/api/addItemsoftModules", {
+                                // const addItemModulesRequest = await axios.post("http://localhost:4000/api/addItemsoftModules", {
+                                const addItemModulesRequest = await axios.post(apiToAddItemSoftModule, {
                                     moduleName,
                                     moduleDescription
                                 });
@@ -177,7 +187,8 @@ const AddModulesAndTests = () => {
         const confirmDelete = window.confirm('Are you sure you want to delete this module?');
 
         if (confirmDelete) {
-            fetch(`http://localhost:4000/api/getItemsoftModules/${id}`, { method: 'DELETE', })
+            // fetch(`http://localhost:4000/api/getItemsoftModules/${id}`, { method: 'DELETE', })
+            fetch(`${apiToGetItemSoftModulesList}${id}`, { method: 'DELETE', })
                 .then(res => {
                     if (res.status === 200) {
                         const updatedModulesList = modulesList.filter((item) => item.id !== id);
