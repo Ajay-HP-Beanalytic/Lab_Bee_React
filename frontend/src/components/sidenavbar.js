@@ -224,7 +224,6 @@ export default function SidenavigationBar() {
             </ListItemIcon>
             <ListItemText
               // primary={item.label}
-              // primary={<span style={{ fontWeight: 'bold' }}>{item.label}</span>}
               primary={<span style={{ fontFamily: 'Roboto-Bold', fontSize: '19px', fontWeight: 'bold' }}>{item.label}</span>}
               sx={{ opacity: open ? 1 : 0, color: 'black' }} />
           </ListItemButton>

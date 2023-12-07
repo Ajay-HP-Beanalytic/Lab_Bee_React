@@ -13,7 +13,6 @@ const apiToFetchCompanyDetails = `http://localhost:4000/api/getCompanyDetails/`
 //API to fetch the latest or last quotation ID:
 const apiToFetchLatestQuoteID = "http://localhost:4000/api/getLatestQuoationID"
 
-
 // API to fetch the logged in user name:
 const apiToGetLoggedInUserName = 'http://localhost:4000/api/getLoggedInUser'
 
