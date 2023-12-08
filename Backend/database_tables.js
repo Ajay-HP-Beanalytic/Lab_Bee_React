@@ -56,6 +56,7 @@ function createBEAQuotationsTable() {
             quote_category VARCHAR(255),
             total_amount VARCHAR(255),
             total_discount_amount VARCHAR(255),
+            total_amount_after_discount VARCHAR(255),
             total_taxable_amount_in_words VARCHAR(1000),
             quote_created_by VARCHAR(255),
             PRIMARY KEY (id)
