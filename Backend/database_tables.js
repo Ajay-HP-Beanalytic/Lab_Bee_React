@@ -58,18 +58,41 @@ function createBEAQuotationsTable() {
             total_discount_amount VARCHAR(255),
             total_taxable_amount_in_words VARCHAR(1000),
             quote_created_by VARCHAR(255),
-            PRIMARY KEY(id)
+            PRIMARY KEY (id)
         )`;
 
     db.query(createBEAQuotationsTablequery, function (err, result) {
         if (err) {
-            console.log("Error occurred while creating environmental_tests_quotes table", err)
+            console.log("Error occurred while bea_quotations_table table", err)
         } else {
             //console.log("environmental_tests_quotes table created successfully.")
         }
     })
 };
 
+
+////////////////////////////////////////////////////////////////////////////
+// Function to create a 'quotations_discount' table:
+function createQuotesDiscountTable() {
+    const createQuotesDiscountTableQuery = `
+            CREATE TABLE IF NOT EXISTS quotations_discount (
+                id INT NOT NULL AUTO_INCREMENT,
+                quotation_ids VARCHAR(255),
+                company_name VARCHAR(255),
+                total_amount VARCHAR(255),
+                total_discount_amount VARCHAR(255),
+                discount_given_date DATE,
+                PRIMARY KEY (id)
+            )` ;
+
+    db.query(createQuotesDiscountTableQuery, function (err, result) {
+        if (err) {
+            console.log("Error occurred while creating quotations_discount table", err)
+        } else {
+            //console.log("quotations_discount table created successfully.")
+        }
+    })
+}
 
 
 
@@ -260,6 +283,7 @@ process.on('exit', function () {
 module.exports = {
     db, createUsersTable,
     createBEAQuotationsTable,
+    createQuotesDiscountTable,
     createChamberCalibrationTable,
     createCustomerDetailsTable,
     createItemSoftModulestable,

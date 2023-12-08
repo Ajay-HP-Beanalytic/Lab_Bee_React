@@ -31,7 +31,8 @@ const apiToAddItemSoftModule = "http://localhost:4000/api/addItemsoftModules/"
 // To fetch Item Soft Modules list:
 const apiToGetItemSoftModulesList = `http://localhost:4000/api/getItemsoftModules/`
 
-
+//To add the discounted quotations data to the 'quotations_discount' table:
+const apiToAddDiscountDataOfQuotations = `http://localhost:4000/api/discounted_quotation`
 
 
 
@@ -40,4 +41,5 @@ export {
     apiToFetchLatestQuoteID, apiToGetLoggedInUserName,
     apiToFetchQuotesDataToCreateTable, apiToAddNewCompanyData, apiToGetCompanyDetails,
     apiToAddItemSoftModule, apiToGetItemSoftModulesList,
+    apiToAddDiscountDataOfQuotations,
 };

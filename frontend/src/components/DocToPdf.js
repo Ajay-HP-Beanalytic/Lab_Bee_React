@@ -13,10 +13,7 @@ import PizZipUtils from 'pizzip/utils/index.js';
 import axios from 'axios';
 import moment from 'moment';
 import { useParams } from 'react-router-dom';
-import DocViewer, { DocViewerRenderers } from "@cyntler/react-doc-viewer";
 import { toast } from 'react-toastify';
-import GoogleDocsViewer from "react-google-docs-viewer";
-import * as Docx from "docx";
 
 
 
@@ -72,7 +69,7 @@ export default function DocToPdf() {
     const [companyLogoImage, setCompanyLogoImage] = useState(null);
     const fileInputRef = useRef(null);
 
-    const [fileInputRefOfDoc, setFileInputRefOfDoc] = useState(useRef(null));
+    //const [fileInputRefOfDoc, setFileInputRefOfDoc] = useState(useRef(null));
 
 
 
@@ -171,7 +168,7 @@ export default function DocToPdf() {
 
     // Function to submit the title and the image of the dialog
     function onSubmitQuoteTitleButton() {
-        if (quotationTitle != '') {
+        if (quotationTitle !== '') {
             generatePDF()
             setQuotationTitle('')
             setCompanyLogoImage(null)

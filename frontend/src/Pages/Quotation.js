@@ -19,7 +19,8 @@ import { Link, Navigate, useParams } from 'react-router-dom';
 
 import {
   apiToAddAndUpdateQuotation, apiToFetchCompanyList, apiToFetchCompanyDetails, apiToFetchLatestQuoteID,
-  apiToGetItemSoftModulesList, apiToGetLoggedInUserName
+  apiToGetItemSoftModulesList, apiToGetLoggedInUserName,
+  apiToAddDiscountDataOfQuotations
 } from './APIPage'
 
 
@@ -410,9 +411,32 @@ export default function Quotation() {
       if (res.status === 200) toast.success(editId ? "Changes Saved" : "Quotation Added")
       if (res.status === 500) toast.error("Failed to create the quotation")
     })
+
+    //To add discount data of the quotations to the 'quotations_discount' table if there is discount given:
+    axios.post(apiToAddDiscountDataOfQuotations, {
+      quotationIdString,
+      companyName,
+      taxableAmount,
+      discountAmount,
+      selectedDate: moment(selectedDate, "DD-MM-YYYY").toDate(), // Format the date before sending
+    }).then(res => {
+      // if (res.status === 200) toast.success('Done')
+      // if (res.status === 500) toast.error("Not Done")
+      if (res.status === 200) {
+        console.log('Discount data saved')
+      }
+      if (res.status === 500) {
+        console.log('Discount data not saved')
+      }
+    })
+
     if (!editId) {
       handleCancelBtnIsClicked();
     }
+
+
+
+
   }
 
 
@@ -470,6 +494,8 @@ export default function Quotation() {
     setSelectedCompanyId('')
   };
 
+
+
   // Useeffect to calculate the total amount, to display that in word. 
   useEffect(() => {
     const subtotal = tableData.map(({ amount }) => parseFloat(amount || 0)).reduce((sum, value) => sum + value, 0);
@@ -479,6 +505,7 @@ export default function Quotation() {
 
     setTaxableAmount(subTotalAfterDiscount);
     setTotalAmountWords(numberToWords.toWords(subTotalAfterDiscount).toUpperCase());
+
   }, [tableData, isTotalDiscountVisible, discountAmount]);
 
 
