@@ -34,6 +34,7 @@ function mainQuotationsTableAPIs(app) {
         })
     })
 
+
     // To fetch the quoatation data from the 'bea_quotations_table' based on the quoatation id:
     app.get("/api/quotation/:id", (req, res) => {
         const id = req.params.id
@@ -119,8 +120,8 @@ function mainQuotationsTableAPIs(app) {
     // Fetch the all quotation data from the 'bea_quotations_table' table :
     app.get("/api/getQuotationdata", (req, res) => {
 
-        //quotation_ids, company_name, company_address, quote_given_date, customer_id, customer_referance, kind_attention, quote_category, quote_created_by
         const quotesList = "SELECT id,quotation_ids, company_name, DATE_FORMAT(quote_given_date, '%Y-%m-%d') AS formatted_quote_given_date, quote_category, quote_created_by FROM bea_quotations_table";
+        // const quotesList = "SELECT id,quotation_ids, company_name, quote_given_date, quote_category, quote_created_by FROM bea_quotations_table";
 
         //const quotesList = "SELECT * FROM bea_quotations_table";
         db.query(quotesList, (error, result) => {
@@ -150,6 +151,23 @@ function mainQuotationsTableAPIs(app) {
             res.send(result);
         });
     }); */
+
+
+
+    // Add the quotations data to the discount table:
+    app.post("/api/discounted_quotation", (req, res) => {
+
+        const { quotationIdString, companyName, discountAmount, taxableAmount, selectedDate } = req.body;
+        const formattedDate = new Date(selectedDate);
+
+        let sql = "INSERT INTO quotations_discount (quotation_ids, company_name, total_amount, total_discount_amount, discount_given_date) VALUES (?,?,?,?,?)";
+
+        db.query(sql, [quotationIdString, companyName, taxableAmount, discountAmount, formattedDate], (error, result) => {
+            if (error) return res.status(500).json(error)
+            return res.status(200).json(result)
+        })
+    })
+
 }
 
 
