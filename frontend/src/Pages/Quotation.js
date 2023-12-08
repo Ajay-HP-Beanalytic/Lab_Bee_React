@@ -17,11 +17,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import { Link, Navigate, useParams } from 'react-router-dom';
 
-import {
-  apiToAddAndUpdateQuotation, apiToFetchCompanyList, apiToFetchCompanyDetails, apiToFetchLatestQuoteID,
-  apiToGetItemSoftModulesList, apiToGetLoggedInUserName,
-  apiToAddDiscountDataOfQuotations
-} from './APIPage'
+import { serverBaseAddress } from './APIPage'
 
 
 
@@ -75,6 +71,7 @@ export default function Quotation() {
     unit: defUnit,
     perUnitCharge: defPerUnitCharge,
     amount: defAmount,
+    module_id: 0
   },];
 
   const [modules, setModules] = useState([])
@@ -111,8 +108,7 @@ export default function Quotation() {
   // UseEffect to set the quotation data during update of the quotation:
   useEffect(() => {
     if (id) {
-      // axios.get(`http://localhost:4000/api/quotation/` + id)
-      axios.get(apiToAddAndUpdateQuotation + id)
+      axios.get(`${serverBaseAddress}/api/quotation/` + id)
         .then(result => {
           setCompanyName(result.data[0].company_name)
           setQuotationIDString(result.data[0].quotation_ids)
@@ -131,8 +127,7 @@ export default function Quotation() {
     }
 
     //Fetch companyIds from the table in order to autofill the data:
-    // axios.get(`http://localhost:4000/api/getCompanyIdList`)
-    axios.get(apiToFetchCompanyList)
+    axios.get(`${serverBaseAddress}/api/getCompanyIdList`)
       .then(result => {
         const companyIds = result.data.map(item => item.company_id);
         setCompanyIdList(companyIds);
@@ -140,8 +135,7 @@ export default function Quotation() {
       })
 
     //Fetch item soft modules list from the table :
-    // axios.get(`http://localhost:4000/api/getItemsoftModules/`)
-    axios.get(apiToGetItemSoftModulesList)
+    axios.get(`${serverBaseAddress}/api/getItemsoftModules/`)
       .then(result => {
         setModules(result.data)
       })
@@ -152,11 +146,16 @@ export default function Quotation() {
     // Fetch the last Booking ID when the component mounts
     fetchLatestQuotationId();
 
+
+    // To validate the user credential its very much important
+    axios.defaults.withCredentials = true;
+
     // Fetch the logged in user name
-    axios.get(apiToGetLoggedInUserName)
+    axios.get(`${serverBaseAddress}/api/getLoggedInUser`)
       .then(res => {
         if (res.data.valid) {
           setQuotationCreatedBy(res.data.username)
+          console.log('username: ', res.data.username);
         } else {
           console.log('An error is occured while setting up quote created by')
         }
@@ -170,8 +169,7 @@ export default function Quotation() {
   // To prefill the primary company details on selecting company name:
   const prefillTextFields = (selectedCompanyId) => {
     if (selectedCompanyId) {
-      // axios.get(`http://localhost:4000/api/getCompanyDetails/` + selectedCompanyId)
-      axios.get(apiToFetchCompanyDetails + selectedCompanyId)
+      axios.get(`${serverBaseAddress}/api/getCompanyDetails/` + selectedCompanyId)
         .then(result => {
           setCompanyName(result.data[0].company_name)
           setToCompanyAddress(result.data[0].company_address)
@@ -187,16 +185,6 @@ export default function Quotation() {
     }
   }
 
-
-  //Fetch companyIds from the table in order to autofill the data:
-  // useEffect(() => {
-  //   axios.get(`http://localhost:4000/api/getCompanyIdList`)
-  //     .then(result => {
-  //       const companyIds = result.data.map(item => item.company_id);
-  //       setCompanyIdList(companyIds);
-
-  //     })
-  // }, [])
 
 
   // Function to add the new row on clicking plus btn:
@@ -230,19 +218,6 @@ export default function Quotation() {
   };
 
 
-
-  // // Set initial quotation ID when the component mounts
-  // useEffect(() => {
-  //   setInitialQuotationId(initialCompanyName);
-  // }, []);
-
-
-  // // Fetch the last Booking ID when the component mounts
-  // useEffect(() => {
-  //   fetchLatestQuotationId();
-  // }, []);
-
-
   // To handle company names field:
   const handleCompanyNameChange = (e) => {
     const newCompanyName = e.target.value.toUpperCase();
@@ -263,7 +238,7 @@ export default function Quotation() {
 
   // To generate quotation ID dynamically based on the last saved quoataion ID:
   const generateDynamicQuotationIdString = async (newCompanyName, catCodefromTarget = '') => {
-    //console.log('working');
+
     let final_date = ''
     let newIncrementedNumber = ''
     if (id) {
@@ -278,8 +253,8 @@ export default function Quotation() {
       const currentDay = currentDate.getDate().toString();
       final_date = `${currentYear}${currentMonth}${currentDay}`
       try {
-        // const response = await axios.get("http://localhost:4000/api/getLatestQuoationID")
-        const response = await axios.get(apiToFetchLatestQuoteID)
+        const response = await axios.get(`${serverBaseAddress}/api/getLatestQuoationID`)
+
         if (response.status === 200) {
           // Assign the last fetched quotation ID to the variable:
           const lastQuotationID = response.data[0]?.quotation_ids;
@@ -322,8 +297,7 @@ export default function Quotation() {
   const fetchLatestQuotationId = async () => {
     try {
       // Make an API call to fetch the last quotation ID from your database
-      // const response = await axios.get("http://localhost:4000/api/getLatestQuoationID");
-      const response = await axios.get(apiToFetchLatestQuoteID);
+      const response = await axios.get(`${serverBaseAddress}/api/getLatestQuoationID`);
 
       if (response.status === 200) {
         //const latestQuotationID = response.data; // Assuming your backend sends the latest Quotation ID in the response data       
@@ -344,25 +318,6 @@ export default function Quotation() {
       console.error("An error occurred while fetching the latest Quotation ID.");
     }
   };
-
-
-  // To validate the user credential its very much important
-  axios.defaults.withCredentials = true;
-
-  // UseEffect to get the logged in user name to set quotation created by variable:
-  // useEffect(() => {
-  //   // axios.get('http://localhost:4000/api/getLoggedInUser')
-  //   axios.get(apiToGetLoggedInUserName)
-  //     .then(res => {
-  //       if (res.data.valid) {
-  //         setQuotationCreatedBy(res.data.username)
-  //       } else {
-  //         console.log('An error is occured while setting up quote created by')
-  //       }
-  //     })
-  //     .catch(err => console.log(err))
-  // }, [])
-
 
   // To submit the data and store it in a database:
   const handleSubmitETQuotation = async (e) => {
@@ -391,8 +346,7 @@ export default function Quotation() {
       return;
     }
 
-    // axios.post("http://localhost:4000/api/quotation/" + editId, {
-    axios.post(apiToAddAndUpdateQuotation + editId, {
+    axios.post(`${serverBaseAddress}/api/quotation/` + editId, {
       quotationIdString,
       companyName,
       toCompanyAddress,
@@ -412,23 +366,23 @@ export default function Quotation() {
       if (res.status === 500) toast.error("Failed to create the quotation")
     })
 
-    //To add discount data of the quotations to the 'quotations_discount' table if there is discount given:
-    axios.post(apiToAddDiscountDataOfQuotations, {
-      quotationIdString,
-      companyName,
-      taxableAmount,
-      discountAmount,
-      selectedDate: moment(selectedDate, "DD-MM-YYYY").toDate(), // Format the date before sending
-    }).then(res => {
-      // if (res.status === 200) toast.success('Done')
-      // if (res.status === 500) toast.error("Not Done")
-      if (res.status === 200) {
-        console.log('Discount data saved')
-      }
-      if (res.status === 500) {
-        console.log('Discount data not saved')
-      }
-    })
+    // //To add discount data of the quotations to the 'quotations_discount' table if there is discount given:
+    // axios.post(apiToAddDiscountDataOfQuotations, {
+    //   quotationIdString,
+    //   companyName,
+    //   taxableAmount,
+    //   discountAmount,
+    //   selectedDate: moment(selectedDate, "DD-MM-YYYY").toDate(), // Format the date before sending
+    // }).then(res => {
+    //   // if (res.status === 200) toast.success('Done')
+    //   // if (res.status === 500) toast.error("Not Done")
+    //   if (res.status === 200) {
+    //     console.log('Discount data saved')
+    //   }
+    //   if (res.status === 500) {
+    //     console.log('Discount data not saved')
+    //   }
+    // })
 
     if (!editId) {
       handleCancelBtnIsClicked();
@@ -492,6 +446,7 @@ export default function Quotation() {
     setTaxableAmount(0)
     setTotalAmountWords('')
     setSelectedCompanyId('')
+
   };
 
 
@@ -915,7 +870,8 @@ export default function Quotation() {
                 sx={{ borderRadius: 3, margin: 0.5 }}
                 variant="contained"
                 color="primary"
-                onClick={() => window.history.back()}
+                // onClick={() => window.history.back()}
+                onClick={handleCancelBtnIsClicked}
               >
                 Close
               </Button>
