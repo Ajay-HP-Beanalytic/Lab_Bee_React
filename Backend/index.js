@@ -16,15 +16,16 @@ const app = express();
 
 
 // Get all the connections from the db
-const { db,
+const {
   createUsersTable,
   createBEAQuotationsTable,
   createQuotesDiscountTable,
   createChamberCalibrationTable,
   createCustomerDetailsTable,
   createItemSoftModulestable,
-  createTestsListTable } = require('./database_tables');
-
+  createTestsListTable
+} = require('./database_tables');
+const { db } = require("./db");
 
 // Establish a connection with the database and to use the tables:
 db.getConnection(function (err, connection) {
