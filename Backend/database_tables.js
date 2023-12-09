@@ -1,20 +1,6 @@
 // Import the necessary cdependancies:
 const mysql = require("mysql2");
-
-//Create a connection between the backend server and the database:
-const db = mysql.createPool({
-    host: "localhost",
-    user: "root",
-    password: "FRACAS@22",
-    database: "labbee"
-
-
-    //host : "92.205.7.122",
-    //user : "beaLab",
-    //password : "FIycjLM5BTF;",
-    //database : "i7627920_labbee"
-});
-
+const { db } = require("./db");
 
 //Function to create a users table:
 function createUsersTable() {
@@ -282,7 +268,7 @@ process.on('exit', function () {
 
 // Export the database connection and table creation functions
 module.exports = {
-    db, createUsersTable,
+    createUsersTable,
     createBEAQuotationsTable,
     createQuotesDiscountTable,
     createChamberCalibrationTable,
