@@ -5,23 +5,10 @@ const saltRounds = 10                               // Let saltRoulds be '10' fo
 const jwt = require("jsonwebtoken")                 // Import jsonwebtoken package in order to create tokens
 
 const session = require("express-session")          // Import 'express-session' module to create user session
-const cookieParser = require("cookie-parser")       // Import 'cookie-parser' module to create cookies for a logge in user 
+const cookieParser = require("cookie-parser");       // Import 'cookie-parser' module to create cookies for a logge in user 
+const { db } = require("./db");
 
 const jwtSecret = "RANDOM-TOKEN";                   // To create a random token
-
-//Create a connection between the backend server and the database:
-const db = mysql.createPool({
-    host: "localhost",
-    user: "root",
-    password: "FRACAS@22",
-    database: "labbee"
-
-    //host : "92.205.7.122",
-    //user : "beaLab",
-    //password : "FIycjLM5BTF;",
-    //database : "i7627920_labbee"
-});
-
 
 // Function to handle the operations of the User Registraion and Login process:
 
