@@ -15,7 +15,7 @@ import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 
 
-import { apiToAddItemSoftModule, apiToGetItemSoftModulesList } from '../Pages/APIPage'
+import { serverBaseAddress } from '../Pages/APIPage'
 
 
 const AddModulesAndTests = () => {
@@ -44,8 +44,7 @@ const AddModulesAndTests = () => {
         }
 
         try {
-            // const addItemModulesRequest = await axios.post("http://localhost:4000/api/addItemsoftModules/" + editId, {
-            const addItemModulesRequest = await axios.post(apiToAddItemSoftModule + editId, {
+            const addItemModulesRequest = await axios.post(`${serverBaseAddress}/api/addItemsoftModules/` + editId, {
                 moduleName,
                 moduleDescription
             });
@@ -86,8 +85,7 @@ const AddModulesAndTests = () => {
 
         const fetchModulesList = async () => {
             try {
-                // const quotesURL = await axios.get("http://localhost:4000/api/getItemsoftModules");
-                const quotesURL = await axios.get(apiToGetItemSoftModulesList);
+                const quotesURL = await axios.get(`${serverBaseAddress}/api/getItemsoftModules`);
                 setModulesList(quotesURL.data)
             } catch (error) {
                 console.error('Failed to fetch the data', error);
@@ -126,8 +124,7 @@ const AddModulesAndTests = () => {
                             const [moduleName, moduleDescription] = row;
 
                             try {
-                                // const addItemModulesRequest = await axios.post("http://localhost:4000/api/addItemsoftModules", {
-                                const addItemModulesRequest = await axios.post(apiToAddItemSoftModule, {
+                                const addItemModulesRequest = await axios.post(`${serverBaseAddress}/api/addItemsoftModules`, {
                                     moduleName,
                                     moduleDescription
                                 });
@@ -187,8 +184,7 @@ const AddModulesAndTests = () => {
         const confirmDelete = window.confirm('Are you sure you want to delete this module?');
 
         if (confirmDelete) {
-            // fetch(`http://localhost:4000/api/getItemsoftModules/${id}`, { method: 'DELETE', })
-            fetch(`${apiToGetItemSoftModulesList}${id}`, { method: 'DELETE', })
+            fetch(`${serverBaseAddress}/api/getItemsoftModules/${id}`, { method: 'DELETE', })
                 .then(res => {
                     if (res.status === 200) {
                         const updatedModulesList = modulesList.filter((item) => item.id !== id);

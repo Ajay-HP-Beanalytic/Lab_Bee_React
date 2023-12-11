@@ -195,7 +195,7 @@ export default function SidenavigationBar() {
     } else if (loggedInUserRole === 'Marketing') {
       return [2, 3, 4, 10, 11].includes(item.i); // Show items 1, 2, 3, and 9 for Marketing
     } else if (loggedInUserRole === 'Lab Manager') {
-      return [5, 6, 7, 8, 9, 10, 11, 12].includes(item.i); // Show items 4, 5, and 9 for Lab Manager
+      return [5, 6, 7, 8, 9, 10, 11, 12].includes(item.i); // Show items 4, 5, and 9 for Lab Manager 
     }
     return false; // Default: Hide the item
   });
@@ -224,7 +224,7 @@ export default function SidenavigationBar() {
             </ListItemIcon>
             <ListItemText
               // primary={item.label}
-              primary={<span style={{ fontFamily: 'Roboto-Bold', fontSize: '19px', fontWeight: 'bold' }}>{item.label}</span>}
+              primary={<span style={{ fontFamily: 'Roboto-Bold', fontSize: '14px', fontWeight: 'bold' }}>{item.label}</span>}
               sx={{ opacity: open ? 1 : 0, color: 'black' }} />
           </ListItemButton>
         </ListItem>

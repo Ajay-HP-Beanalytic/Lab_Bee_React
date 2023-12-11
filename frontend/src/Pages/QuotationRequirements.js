@@ -11,7 +11,7 @@ import { Box, Divider, Grid, Typography } from '@mui/material'
 export default function QuotationRequirements() {
     return (
         <>
-            <Typography variant='h4' sx={{ textDecoration: 'underline' }}> Quotation Requirements </Typography>
+            <Typography variant='h4' sx={{ textDecoration: 'underline', color: '#003366' }}> Quotation Requirements </Typography>
             <br />
             <AddCustomerDetails />
             <br />

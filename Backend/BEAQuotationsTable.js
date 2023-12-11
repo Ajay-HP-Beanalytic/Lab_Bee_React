@@ -22,13 +22,13 @@ function mainQuotationsTableAPIs(app) {
     // To store the table data in the 'bea_quotations_table' table:
     app.post("/api/quotation", (req, res) => {
 
-        const { quotationIdString, companyName, toCompanyAddress, selectedDate, customerId, customerReferance, kindAttention, projectName, quoteCategory, taxableAmount, discountAmount, totalAmountWords, tableData, quotationCreatedBy } = req.body;
+        const { quotationIdString, companyName, toCompanyAddress, selectedDate, customerId, customerReferance, kindAttention, projectName, quoteCategory, taxableAmount, discountAmount, totalAmountAfterDiscount, totalAmountWords, tableData, quotationCreatedBy } = req.body;
         const formattedDate = new Date(selectedDate);
 
 
-        let sql = "INSERT INTO bea_quotations_table (quotation_ids, company_name, company_address, quote_given_date, customer_id, customer_referance, kind_attention, project_name, quote_category, total_amount, total_discount_amount, total_taxable_amount_in_words, quote_created_by, tests) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+        let sql = "INSERT INTO bea_quotations_table (quotation_ids, company_name, company_address, quote_given_date, customer_id, customer_referance, kind_attention, project_name, quote_category, total_amount, total_discount_amount, total_amount_after_discount, total_taxable_amount_in_words, quote_created_by, tests) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
-        db.query(sql, [quotationIdString, companyName, toCompanyAddress, formattedDate, customerId, customerReferance, kindAttention, projectName, quoteCategory, taxableAmount, discountAmount, totalAmountWords, quotationCreatedBy, JSON.stringify(tableData)], (error, result) => {
+        db.query(sql, [quotationIdString, companyName, toCompanyAddress, formattedDate, customerId, customerReferance, kindAttention, projectName, quoteCategory, taxableAmount, discountAmount, totalAmountAfterDiscount, totalAmountWords, quotationCreatedBy, JSON.stringify(tableData)], (error, result) => {
             if (error) return res.status(500).json(error)
             return res.status(200).json(result)
         })
@@ -67,10 +67,10 @@ function mainQuotationsTableAPIs(app) {
         const id = req.params.id
         if (!id) return res.status(400).json({ error: "quotationID is missing or invalid" })
 
-        const { quotationIdString, companyName, toCompanyAddress, selectedDate, customerId, customerReferance, kindAttention, projectName, quoteCategory, taxableAmount, discountAmount, totalAmountWords, tableData } = req.body
+        const { quotationIdString, companyName, toCompanyAddress, selectedDate, customerId, customerReferance, kindAttention, projectName, quoteCategory, taxableAmount, discountAmount, totalAmountAfterDiscount, totalAmountWords, tableData } = req.body
 
         const formattedDate = new Date(selectedDate);
-        let sql = "UPDATE bea_quotations_table SET quotation_ids=?, company_name=?, company_address=?, kind_attention=?, customer_id=?, customer_referance=?, quote_given_date=?, project_name=?,quote_category=?, total_amount=?, total_discount_amount=?, total_taxable_amount_in_words=?, tests=? WHERE id = ?";
+        let sql = "UPDATE bea_quotations_table SET quotation_ids=?, company_name=?, company_address=?, kind_attention=?, customer_id=?, customer_referance=?, quote_given_date=?, project_name=?,quote_category=?, total_amount=?, total_discount_amount=?, total_amount_after_discount=?, total_taxable_amount_in_words=?, tests=? WHERE id = ?";
 
         db.query(sql, [
             quotationIdString,
@@ -84,6 +84,7 @@ function mainQuotationsTableAPIs(app) {
             quoteCategory,
             taxableAmount,
             discountAmount,
+            totalAmountAfterDiscount,
             totalAmountWords,
             JSON.stringify(tableData),
             id

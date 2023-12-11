@@ -19,23 +19,23 @@ const serverBaseAddress = `http://localhost:4000`
 // const apiToGetLoggedInUserName = 'http://localhost:4000/api/getLoggedInUser'
 
 // // API to fetch quotations data to create quote table:
-const apiToFetchQuotesDataToCreateTable = "http://localhost:4000/api/getQuotationdata?"
+// const apiToFetchQuotesDataToCreateTable = "http://localhost:4000/api/getQuotationdata?"
 
 // // API to add new company details for quotaton purpose:
-const apiToAddNewCompanyData = "http://localhost:4000/api/addNewCompanyDetails/"
+// const apiToAddNewCompanyData = "http://localhost:4000/api/addNewCompanyDetails/"
 
 // // API to get company details based on the company id for quotaton purpose in AddCustomerDetails page:
-const apiToGetCompanyDetails = "http://localhost:4000/api/getCompanyDetails"
+// const apiToGetCompanyDetails = "http://localhost:4000/api/getCompanyDetails"
 
 // //API to add item soft modules:
-const apiToAddItemSoftModule = "http://localhost:4000/api/addItemsoftModules/"
+// const apiToAddItemSoftModule = "http://localhost:4000/api/addItemsoftModules/"
 
 // // To fetch Item Soft Modules list:
-const apiToGetItemSoftModulesList = `http://localhost:4000/api/getItemsoftModules/`
+// const apiToGetItemSoftModulesList = `http://localhost:4000/api/getItemsoftModules/`
 
 // //To add the discounted quotations data to the 'quotations_discount' table:
 // const apiToAddDiscountDataOfQuotations = `http://localhost:4000/api/discounted_quotation`
 
 
 
-export { apiToFetchQuotesDataToCreateTable, serverBaseAddress, apiToAddNewCompanyData, apiToGetCompanyDetails, apiToAddItemSoftModule, apiToGetItemSoftModulesList };
+export { serverBaseAddress };
