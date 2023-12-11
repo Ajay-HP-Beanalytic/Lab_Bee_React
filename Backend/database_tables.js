@@ -250,6 +250,127 @@ function createTestsListTable() {
 }
 
 
+/// Job-card tables:
+/////////////////////////////////////////////////////////////////////////////////
+//Function to create a 'Jobcards' table:
+function createJobcardsTable() {
+    const createJobcardsTableQuery = `
+    CREATE TABLE IF NOT EXISTS bea_jobcards (
+        id INT NOT NULL AUTO_INCREMENT,
+        jc_number VARCHAR(255) ,
+        dcform_number VARCHAR(255) ,
+        jc_open_date DATETIME,
+        po_number  VARCHAR(255),
+        test_category VARCHAR(1000),
+        test_incharge VARCHAR(1000),
+        company_name VARCHAR(1000),
+        customer_name VARCHAR(1000),
+        customer_number INT(100),
+        project_name VARCHAR(1000),
+        sample_condition VARCHAR(500),
+        referance_document VARCHAR(500),
+        jc_status  VARCHAR(500),
+        jc_closed_date DATETIME,
+        jc_text VARCHAR(500),
+        observations VARCHAR(500),
+        PRIMARY KEY(id)
+    )`;
+
+    db.query(createJobcardsTableQuery, function (err, result) {
+        if (err) {
+            console.log("Error occurred while creating bea_jobcards table", err)
+        } else {
+            //console.log("bea_jobcards table created successfully.")
+        }
+    })
+}
+
+
+//Function to create a 'EutDetails' table:
+function createEutDetailsTable() {
+    const createEutDetailsTableQuery = `
+    CREATE TABLE IF NOT EXISTS eut_details (
+        id INT NOT NULL AUTO_INCREMENT,
+        jc_number VARCHAR(255),
+        nomenclature VARCHAR(1000),
+        eut_description VARCHAR(2000),
+        quantity VARCHAR(1000),
+        part_number VARCHAR(1000),
+        model_number VARCHAR(1000),
+        serial_number VARCHAR(1000),
+        PRIMARY KEY(id)
+    )`;
+
+    db.query(createEutDetailsTableQuery, function (err, result) {
+        if (err) {
+            console.log("Error occurred while creating eut_details table", err)
+        } else {
+            //console.log("eut_details table created successfully.")
+        }
+    })
+}
+
+
+//Function to create a 'Tests' table:
+function createJobcardTestsTable() {
+    const createTestsTableQuery = `
+    CREATE TABLE IF NOT EXISTS jc_tests (
+        id INT NOT NULL AUTO_INCREMENT,
+        jc_number VARCHAR(255) ,
+        test_name VARCHAR(1000), 
+        nabl VARCHAR(255),
+        test_standard VARCHAR(1000),
+        reference_document VARCHAR(1000),
+        PRIMARY KEY(id)
+    )`;
+
+    db.query(createTestsTableQuery, function (err, result) {
+        if (err) {
+            console.log("Error occurred while creating jc_tests table", err)
+        } else {
+            //console.log("jc_tests table created successfully.")
+        }
+    })
+}
+
+
+//Function to create a 'TestDetails' table:
+function createTestDetailsTable() {
+    const createTestDetailsTableQuery = `
+    CREATE TABLE IF NOT EXISTS tests_details (
+        id INT NOT NULL AUTO_INCREMENT,
+        jc_number VARCHAR(255),
+        test VARCHAR(1000), 
+        chamber VARCHAR(1000),
+        eut_serial_no VARCHAR(1000),
+        standard VARCHAR(1000),
+        test_started_by VARCHAR(500),
+        start_date DATETIME,
+        end_date DATETIME,
+        duration VARCHAR(2000),
+        test_ended_by VARCHAR(500),
+        remarks VARCHAR(2000),
+        report_no VARCHAR(500),
+        report_prepared_by VARCHAR(500),
+        nabl_uploaded VARCHAR(500),
+        report_status VARCHAR(500),
+        PRIMARY KEY(id)
+    )`;
+
+    db.query(createTestDetailsTableQuery, function (err, result) {
+        if (err) {
+            console.log("Error occurred while creating tests_details table", err)
+        } else {
+            //console.log("tests_details table created successfully.")
+        }
+    })
+}
+
+////////////////////////////////////////////////////////////////////////////////////
+
+
+
+
 
 
 
@@ -274,6 +395,14 @@ module.exports = {
     createChamberCalibrationTable,
     createCustomerDetailsTable,
     createItemSoftModulestable,
-    createTestsListTable
+    createTestsListTable,
+
+
+    createJobcardsTable,
+    createEutDetailsTable,
+    createJobcardTestsTable,
+    createTestDetailsTable
+
+
 };
 
