@@ -76,8 +76,8 @@ export default function Quotation() {
 
   const [modules, setModules] = useState([])
   const [tableData, setTableData] = useState(initialTableData);
-  const [taxableAmount, setTaxableAmount] = useState(0);
-  const [totalAmountWords, setTotalAmountWords] = useState('');
+
+
   const [counter, setCounter] = useState(tableData.length + 1);
 
   const [companyName, setCompanyName] = useState(initialCompanyName)
@@ -97,7 +97,12 @@ export default function Quotation() {
 
 
   const [isTotalDiscountVisible, setIsTotalDiscountVisible] = useState(false);
+
+  const [originalTaxableAmount, setOriginalTaxableAmount] = useState(0);
+  const [taxableAmount, setTaxableAmount] = useState(0);
   const [discountAmount, setDiscountAmount] = useState('')
+  const [totalAmountWords, setTotalAmountWords] = useState('');
+  const [totalAmountAfterDiscount, setTotalAmountAfterDiscount] = useState(0);
 
   const { id } = useParams('id')
 
@@ -358,6 +363,9 @@ export default function Quotation() {
       quoteCategory,
       taxableAmount,
       discountAmount,
+
+      totalAmountAfterDiscount,
+
       totalAmountWords,
       quotationCreatedBy,
       tableData
@@ -442,13 +450,30 @@ export default function Quotation() {
       fetchLatestQuotationId();   // Call the function here to which will fetch the latest quotation id
     }
     //setQuotationIDString(quotationIdString);
-
+    setIsTotalDiscountVisible(false)
     setTaxableAmount(0)
+    setDiscountAmount(0)
+    setTotalAmountAfterDiscount(0);
     setTotalAmountWords('')
     setSelectedCompanyId('')
 
   };
 
+
+
+  // // Useeffect to calculate the total amount, to display that in word. 
+  // useEffect(() => {
+  //   const subtotal = tableData.map(({ amount }) => parseFloat(amount || 0)).reduce((sum, value) => sum + value, 0);
+
+  //   // Apply the discount if it is visible
+  //   const subTotalAfterDiscount = isTotalDiscountVisible ? subtotal - parseFloat(discountAmount || 0) : subtotal;
+
+  //   setTaxableAmount(subTotalAfterDiscount);
+  //   setTotalAmountWords(numberToWords.toWords(subTotalAfterDiscount).toUpperCase());
+
+  //   setTotalAmountAfterDiscount(subTotalAfterDiscount)
+
+  // }, [tableData, isTotalDiscountVisible, discountAmount]);
 
 
   // Useeffect to calculate the total amount, to display that in word. 
@@ -458,10 +483,16 @@ export default function Quotation() {
     // Apply the discount if it is visible
     const subTotalAfterDiscount = isTotalDiscountVisible ? subtotal - parseFloat(discountAmount || 0) : subtotal;
 
-    setTaxableAmount(subTotalAfterDiscount);
-    setTotalAmountWords(numberToWords.toWords(subTotalAfterDiscount).toUpperCase());
+    // Save the original taxableAmount when it's not set yet
+    if (originalTaxableAmount === 0) {
+      setOriginalTaxableAmount(subTotalAfterDiscount);
+    }
 
-  }, [tableData, isTotalDiscountVisible, discountAmount]);
+    setTaxableAmount(subtotal);
+    setTotalAmountWords(numberToWords.toWords(subTotalAfterDiscount).toUpperCase());
+    setTotalAmountAfterDiscount(subTotalAfterDiscount);
+
+  }, [tableData, isTotalDiscountVisible, discountAmount, originalTaxableAmount]);
 
 
 
@@ -822,21 +853,42 @@ export default function Quotation() {
                     </TableRow>
 
                     {isTotalDiscountVisible && (
-                      <TableRow>
-                        <TableCell colSpan={3}>
-                          <Typography variant='h6'>Total Discount:</Typography>
-                        </TableCell>
-                        <TableCell align="center">
-                          <Typography variant='h6'>
-                            <TextField
-                              value={discountAmount}
-                              type='number'
-                              onChange={(e) => setDiscountAmount(e.target.value)}
-                            />
-                          </Typography>
-                        </TableCell>
-                      </TableRow>
+
+                      <>
+                        < TableRow >
+                          <TableCell colSpan={3}>
+                            <Typography variant='h6'>Total Discount:</Typography>
+                          </TableCell>
+
+                          <TableCell align="center">
+                            <Typography variant='h6'>
+                              <TextField
+                                value={discountAmount}
+                                type='number'
+                                onChange={(e) => setDiscountAmount(e.target.value)}
+                              />
+                            </Typography>
+                          </TableCell>
+                        </TableRow>
+
+
+                        <TableRow>
+                          <TableCell colSpan={3}>
+                            <Typography variant='h6'>Total Amount after discount: {totalAmountAfterDiscount} </Typography>
+                          </TableCell>
+                        </TableRow>
+
+                      </>
+
+
+
                     )}
+
+
+
+
+
+
 
 
                     <TableRow>

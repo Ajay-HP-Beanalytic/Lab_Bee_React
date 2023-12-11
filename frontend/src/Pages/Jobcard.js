@@ -136,7 +136,7 @@ const Jobcard = () => {
 
     <>
       <Divider>
-        <Typography variant='h4' sx={{ color: '#003366' }}> Job Card </Typography>
+        <Typography variant='h4' sx={{ color: '#003366' }}> Job-Card </Typography>
       </Divider>
       <br />
 

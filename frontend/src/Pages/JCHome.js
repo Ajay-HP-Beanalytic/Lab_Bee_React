@@ -5,7 +5,7 @@ export default function JCHome() {
     return (
         <div>
             <Divider>
-                <Typography variant='h4' sx={{ color: '#003366' }}> Jobcard Dashboard </Typography>
+                <Typography variant='h4' sx={{ color: '#003366' }}> Job-Card Dashboard </Typography>
             </Divider>
         </div>
     )

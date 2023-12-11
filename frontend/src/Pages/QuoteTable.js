@@ -8,9 +8,7 @@ import {
 } from '@mui/material';
 
 
-import {
-  apiToFetchQuotesDataToCreateTable, apiToAddAndUpdateQuotation
-} from './APIPage'
+import { serverBaseAddress } from './APIPage'
 
 import PendingIcon from '@mui/icons-material/Pending';
 import { FcDocument } from "react-icons/fc";
@@ -21,6 +19,7 @@ import AddIcon from '@mui/icons-material/Add';
 import CountUp from 'react-countup'
 
 import { CreateBarChart, CreateKpiCard, CreatePieChart } from '../functions/DashboardFunctions';
+import { toast } from 'react-toastify';
 
 
 
@@ -49,7 +48,7 @@ export default function QuoteTable() {
 
   const [loading, setLoading] = useState(true);                 //To show loading label
 
-  const [msg, setMsg] = useState(<Typography variant='h4'>Loading...</Typography>);
+  const [msg, setMsg] = useState(<Typography variant='h4'> Loading...</Typography>);
 
   const [error, setError] = useState(null);                     //To show error label
 
@@ -73,8 +72,7 @@ export default function QuoteTable() {
 
   //   const urlParameters = new URLSearchParams(requiredAPIdata).toString()
 
-  //   // const quotesURL = "http://localhost:4000/api/getQuotationdata?" + urlParameters
-  //   const quotesURL = apiToFetchQuotesDataToCreateTable + urlParameters
+  // const quotesURL = `${serverBaseAddress}/api/getQuotationdata?` + urlParameters
 
   //   const fetchQuotesDataFromDatabase = async () => {
   //     try {
@@ -108,8 +106,7 @@ export default function QuoteTable() {
 
     const urlParameters = new URLSearchParams(requiredAPIdata).toString()
 
-    // const quotesURL = "http://localhost:4000/api/getQuotationdata?" + urlParameters
-    const quotesURL = apiToFetchQuotesDataToCreateTable + urlParameters
+    const quotesURL = `${serverBaseAddress}/api/getQuotationdata?` + urlParameters
 
     //if (filterRow) 
     if (filterRow.length > 0) {
@@ -152,15 +149,14 @@ export default function QuoteTable() {
     setPage(0)
   };
 
-  /* function deleteQuote(id) {
-    //axios.delete(`http://localhost:4000/api/quotation/` + id)
-    axios.delete(apiToAddAndUpdateQuotation + id)
-      .then(res => {
-        console.log(res.data)
-        setRefresh(!refresh)
-        toast.success("Quotation deleted.")
-      })
-  } */
+  // function deleteQuote(id) {
+  //   axios.delete(`${serverBaseAddress}/api/quotation/` + id)
+  //     .then(res => {
+  //       console.log(res.data)
+  //       setRefresh(!refresh)
+  //       toast.success("Quotation deleted.")
+  //     })
+  // }
 
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////
