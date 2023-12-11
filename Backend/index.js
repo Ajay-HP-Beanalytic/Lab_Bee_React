@@ -23,8 +23,15 @@ const {
   createChamberCalibrationTable,
   createCustomerDetailsTable,
   createItemSoftModulestable,
-  createTestsListTable
+  createTestsListTable,
+
+  createJobcardsTable,
+  createEutDetailsTable,
+  createJobcardTestsTable,
+  createTestDetailsTable
 } = require('./database_tables');
+
+//Get db connection from the db.js file
 const { db } = require("./db");
 
 // Establish a connection with the database and to use the tables:
@@ -41,7 +48,12 @@ db.getConnection(function (err, connection) {
   createChamberCalibrationTable();
   createCustomerDetailsTable();
   createItemSoftModulestable();
-  createTestsListTable()
+  createTestsListTable();
+
+  createJobcardsTable();
+  createEutDetailsTable();
+  createJobcardTestsTable();
+  createTestDetailsTable();
 
   connection.release();  // Release the connection back to the pool when done
 });
@@ -106,6 +118,10 @@ itemSoftModulesAPIs(app)
 const { ts1TestsListAPIs } = require('./EnvitestsList')
 ts1TestsListAPIs(app)
 
+
+// backend connection of jobcard data API's from 'JobcardBackend' page
+const { jobcardsAPIs } = require('./JobcardBackend')
+jobcardsAPIs(app)
 
 
 
