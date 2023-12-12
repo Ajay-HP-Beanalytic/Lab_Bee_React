@@ -294,8 +294,8 @@ function createEutDetailsTable() {
         jc_number VARCHAR(255),
         nomenclature VARCHAR(1000),
         eut_description VARCHAR(2000),
-        quantity VARCHAR(1000),
-        part_number VARCHAR(1000),
+        qty VARCHAR(1000),
+        part_no VARCHAR(1000),
         model_number VARCHAR(1000),
         serial_number VARCHAR(1000),
         PRIMARY KEY(id)
@@ -317,7 +317,7 @@ function createJobcardTestsTable() {
     CREATE TABLE IF NOT EXISTS jc_tests (
         id INT NOT NULL AUTO_INCREMENT,
         jc_number VARCHAR(255) ,
-        test_name VARCHAR(1000), 
+        test VARCHAR(1000), 
         nabl VARCHAR(255),
         test_standard VARCHAR(1000),
         reference_document VARCHAR(1000),
