@@ -24,6 +24,16 @@ function jobcardsAPIs(app) {
     });
 
 
+    // API to fetch the primary data of JC's & to create JC Table: 
+    app.get('/api/getPrimaryJCData', (req, res) => {
+
+        const getJCColumns = `SELECT id, jc_number, company_name, customer_name, customer_number, jc_status FROM bea_jobcards`;
+
+        db.query(getJCColumns, (error, result) => {
+            res.send(result);
+        });
+    })
+
 
 
     // To delete the jobcards  from the table:
