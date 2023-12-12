@@ -20,6 +20,7 @@ import CountUp from 'react-countup'
 
 import { CreateBarChart, CreateKpiCard, CreatePieChart } from '../functions/DashboardFunctions';
 import { toast } from 'react-toastify';
+import { CreateButtonWithLink } from '../functions/ComponentsFunctions';
 
 
 
@@ -40,7 +41,7 @@ import { toast } from 'react-toastify';
 export default function QuoteTable() {
 
   // Define the table headers:
-  const tableHeadersText = ['Sl No', 'Quotation ID', 'Company', 'Quote Given Date', 'Category', 'Quote Given By', 'Action'];
+  const quotationTableHeadersText = ['Sl No', 'Quotation ID', 'Company', 'Quote Given Date', 'Category', 'Quote Given By', 'Action'];
 
   // State variables to hold the data fetched from the database:
 
@@ -131,19 +132,22 @@ export default function QuoteTable() {
   }, [filterRow, refresh]);
 
 
+  //If data is loading then show Loading text
   if (loading) {
     return <div>Loading... <PendingIcon /> </div>;
   }
 
+  //If any error found then show the error
   if (error) {
     return <div>Error: {error.message}</div>;
   }
 
-
+  // Function to change the page of a table using Tablepagination
   const handleChangePage = (event, newPage) => {
     setPage(newPage)
   };
 
+  // Function to handle or show the rows per page of a table using Tablepagination
   const handleRowsPerPage = (event) => {
     setRowsPerPage(+event.target.value)
     setPage(0)
@@ -391,6 +395,8 @@ export default function QuoteTable() {
     },
   };
 
+  // Custom style for the table header
+  const tableHeaderStyle = { backgroundColor: '#227DD4', fontWeight: 'bold' }
 
 
   return (
@@ -465,17 +471,14 @@ export default function QuoteTable() {
       <br />
       <Divider />
 
-      <Tooltip title='Create new quotation' arrow>
-        <Button
-          variant="contained"
-          color="primary"
-          sx={{ borderRadius: 3, margin: 0.5 }}
-          component={Link}
-          to={'/quotation'}
-        >
-          Add Quotation
-        </Button>
-      </Tooltip>
+
+      {/* Create a button with a link using 'CreateButtonWithLink' function */}
+      <CreateButtonWithLink
+        title='Create a new quotation'
+        to={`/quotation`} >
+
+        Create Quotation
+      </CreateButtonWithLink>
 
       {quotesTableData.length ? (
         <div>
@@ -498,9 +501,9 @@ export default function QuoteTable() {
           {/* Creating quotation table */}
           <TableContainer component={Paper}>
             <Table sx={{ minWidth: 650 }} aria-label="simple table" >
-              <TableHead sx={{ backgroundColor: '#227DD4', fontWeight: 'bold' }}>
+              <TableHead sx={tableHeaderStyle}>
                 <TableRow>
-                  {tableHeadersText.map((header, index) => (
+                  {quotationTableHeadersText.map((header, index) => (
                     <TableCell key={index} align="center" style={{ color: 'white' }}>
                       {header}
                     </TableCell>
