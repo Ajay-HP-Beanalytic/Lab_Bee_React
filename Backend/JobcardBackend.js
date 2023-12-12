@@ -176,7 +176,7 @@ function jobcardsAPIs(app) {
         db.query(sql, [jcNumber, nomenclature, eutDescription, qty, partNo, modelNo, serialNo], (error, result) => {
             if (error) {
                 console.log(error);
-                return res.status(500).json({ message: 'Internal server error' });
+                return res.status(500).json({ message: 'Internal server error', error });
             } else {
                 return res.status(200).json({ message: 'eut_details added successfully' });
             }
@@ -272,7 +272,7 @@ function jobcardsAPIs(app) {
         db.query(sql, [jcNumber, test, nabl, testStandard, referenceDocument], (error, result) => {
             if (error) {
                 console.log(error);
-                return res.status(500).json({ message: 'Internal server error' });
+                return res.status(500).json({ message: 'Internal server error', error });
             } else {
                 return res.status(200).json({ message: 'tests added successfully' });
             }

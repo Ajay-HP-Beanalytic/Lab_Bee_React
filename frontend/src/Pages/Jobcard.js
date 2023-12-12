@@ -338,6 +338,7 @@ const Jobcard = () => {
               toast.success('eutdetails  Submitted Succesfully')
           }
         )
+        .catch((error) => console.log(error))
     })
 
 
@@ -347,9 +348,9 @@ const Jobcard = () => {
       return {
         test: testRows[i].test,
         nabl: testRows[i].nabl,
-        teststandard: testRows[i].testStandard,
-        referencedocument: testRows[i].referenceDocument,
-        jcNumber: jcNumberString,
+        test_standard: testRows[i].testStandard,
+        reference_document: testRows[i].referenceDocument,
+        jc_number: jcNumberString,
       }
     }
     // Iterating over testRows using map to submit data to the server
@@ -363,6 +364,7 @@ const Jobcard = () => {
               toast.success('tests  Submitted Succesfully')
           }
         )
+        .catch(error => console.log(error))
 
     })
 
@@ -409,6 +411,7 @@ const Jobcard = () => {
               toast.success('testdetails  Submitted Succesfully')
           }
         )
+        .catch(error => console.log(error))
     })
   }
 
