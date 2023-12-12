@@ -11,23 +11,9 @@ function jobcardsAPIs(app) {
     app.post('/api/add_jobcard', (req, res) => {
         const { jcNumber, dcNumber, jcOpenDate, poNumber, jcCategory, testInchargeName, companyName, customerName, customerNumber, projectName, sampleCondition, referanceDocs, jcStatus, jcCloseDate, jcText, observations } = req.body
 
-
-        //console.log('jcOpenDate is', jcOpenDate);
-        const formattedDate = dayjs(jcOpenDate, 'YYYY-MM-DD HH:mm:ss').format('YYYY-MM-DD HH:mm:ss');
-        let formattedCloseDate = null;
-
-
-        if (jcStatus === 'Close') {
-            formattedCloseDate = dayjs(jcCloseDate, 'YYYY-MM-DD HH:mm:ss').format('YYYY-MM-DD HH:mm:ss');
-        }
-
-        console.log('ggggggggg')
-
         const sql = `INSERT INTO bea_jobcards(jc_number, dcform_number, jc_open_date, po_number, test_category, test_incharge, company_name, customer_name, customer_number, project_name, sample_condition, referance_document, jc_status, jc_closed_date, jc_text, observations ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
 
-        console.log('Query Values:', [dcNumber, formattedDate, poNumber, jcCategory, testInchargeName, companyName, customerNumber, customerName, projectName, sampleCondition, referanceDocs, jcStatus, formattedCloseDate, jcText, observations]);
-
-        db.query(sql, [jcNumber, dcNumber, jcOpenDate, poNumber, jcCategory, testInchargeName, companyName, customerName, customerNumber, projectName, sampleCondition, referanceDocs, jcStatus, formattedCloseDate, jcText, observations], (error, result) => {
+        db.query(sql, [jcNumber, dcNumber, jcOpenDate, poNumber, jcCategory, testInchargeName, companyName, customerName, customerNumber, projectName, sampleCondition, referanceDocs, jcStatus, jcCloseDate, jcText, observations], (error, result) => {
             if (error) {
                 console.log(error);
                 return res.status(500).json({ message: 'Internal server error' });

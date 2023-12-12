@@ -218,7 +218,7 @@ const Jobcard = () => {
 
   ////////////////////////////////////////////////
 
-  const [jcnumberstring, setJcnumberstring] = useState("");
+  const [jcNumberString, setJcumberString] = useState("");
   const [jcCount, setJcCount] = useState()
 
 
@@ -236,7 +236,7 @@ const Jobcard = () => {
 
     const { currentYear, currentMonth } = getCurrentYearAndMonth();
 
-    let finYear = currentYear;
+    let finYear = 0;
 
     if (currentMonth > 2) {
       finYear = `${currentYear}-${currentYear + 1}/${currentMonth}`;
@@ -250,28 +250,22 @@ const Jobcard = () => {
     //fetch the latest jcnumber count
     const fetchJCCount = async () => {
 
-      axios.post(`${serverBaseAddress}/api/getJCCount`, {
-        finYear
-      }).then(res => {
-        if (res.status === 200) {
-          console.log(res.data);
-          setJcCount(res.data)
-        }
-        if (res.status === 500) {
-          console.log(res.status);
-        }
-      })
+      axios.post(`${serverBaseAddress}/api/getJCCount`, { finYear })
+        .then(res => {
+          if (res.status === 200) {
+            setJcCount(res.data)
+          }
+          if (res.status === 500) {
+            console.log(res.status);
+          }
+        })
     }
-    fetchJCCount().then(() => {
-      console.log("jcCount:", jcCount);
 
-    });
-
+    fetchJCCount()
 
     //generate jcnumber dynamically
-    const dynamicjcnumberstring = `${finYear}-${(jcCount + 1).toString().padStart(3, '0')}`;
-    setJcnumberstring(dynamicjcnumberstring);
-    //console.log('final value is', dynamicjcnumberstring);
+    const dynamicJcNumberString = `${finYear}-${(jcCount + 1).toString().padStart(3, '0')}`;
+    setJcumberString(dynamicJcNumberString);
 
   }, [jcCount]);
 
@@ -281,7 +275,7 @@ const Jobcard = () => {
     console.log('this is jobcard')
 
     e.preventDefault()
-    setJcnumberstring((prev) => {
+    setJcumberString((prev) => {
       const numericPart = parseInt(prev.slice(-3), 10);
       const nextNumericPart = numericPart + 1;
       const formattedNumericPart = nextNumericPart.toString().padStart(3, '0');
@@ -292,7 +286,7 @@ const Jobcard = () => {
     try {
 
       axios.post(`${serverBaseAddress}/api/add_jobcard`, {
-        jcNumber: jcnumberstring,
+        jcNumber: jcNumberString,
         dcNumber,
         jcOpenDate,
         poNumber,
@@ -328,7 +322,7 @@ const Jobcard = () => {
         partno: eutRows[i].partNo,
         modelno: eutRows[i].modelNo,
         serialno: eutRows[i].serialNo,
-        jcNumber: jcnumberstring,
+        jcNumber: jcNumberString,
       }
     }
 
@@ -355,7 +349,7 @@ const Jobcard = () => {
         nabl: testRows[i].nabl,
         teststandard: testRows[i].testStandard,
         referencedocument: testRows[i].referenceDocument,
-        jcNumber: jcnumberstring,
+        jcNumber: jcNumberString,
       }
     }
     // Iterating over testRows using map to submit data to the server
@@ -400,7 +394,7 @@ const Jobcard = () => {
         preparedby: testdetailsRows[i].preparedBy,
         nabluploaded: testdetailsRows[i].nablUploaded,
         reportstatus: testdetailsRows[i].reportStatus,
-        jcNumber: jcnumberstring,
+        jcNumber: jcNumberString,
       }
 
     }
@@ -529,7 +523,7 @@ const Jobcard = () => {
 
                 <Box >
                   <Typography variant="h6" align='center' sx={{ marginBottom: '16px', marginRight: '20px', marginLeft: '20px', fontWeight: 'bold', fontStyle: 'italic', color: 'blue', textDecoration: 'underline' }}>
-                    JC Number : {jcnumberstring}
+                    JC Number : {jcNumberString}
                   </Typography>
 
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
@@ -1115,7 +1109,7 @@ const Jobcard = () => {
                     // />
                     <LocalizationProvider dateAdapter={AdapterDayjs}>
                       <DateTimePicker sx={{ width: '75%', marginBottom: '20px', marginTop: '20px', marginLeft: '15px', marginRight: '15px', borderRadius: 3 }}
-                        label="JC close Date"
+                        label="JC Close Date"
                         variant="outlined"
                         margin="normal"
                         value={jcCloseDate}
@@ -1137,7 +1131,7 @@ const Jobcard = () => {
                   )}
                   <TextField
                     sx={{ width: '75%', marginBottom: '20px', marginLeft: '15px', marginRight: '15px', borderRadius: 3 }}
-                    label="Observations(if any)"
+                    label="Observations(If any)"
                     margin="normal"
                     variant="outlined"
                     multiline={true}
