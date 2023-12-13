@@ -287,6 +287,9 @@ export default function ChamberAndCalibration() {
     // To filter out the row:
     const filteredChambersList = filterRow.length > 0 ? filterRow : chambersList;
 
+    // Custom style for the table header
+    const tableHeaderStyle = { backgroundColor: '#668799', fontWeight: 'bold' }
+
     // To filter out entire table based on the input
     // const filteredChambersList = chambersList.filter((item) => {
     //     const values = Object.values(item).join(' ').toLowerCase();
@@ -827,7 +830,7 @@ export default function ChamberAndCalibration() {
 
                 <TableContainer component={Paper} >
                     <Table sx={{ minWidth: 650 }} aria-label="simple table">
-                        <TableHead sx={{ backgroundColor: '#227DD4', fontWeight: 'bold' }}>
+                        <TableHead sx={tableHeaderStyle}>
                             <TableRow>
                                 <TableCell>Sl No</TableCell>
                                 <TableCell align="center">Chamber Name</TableCell>
