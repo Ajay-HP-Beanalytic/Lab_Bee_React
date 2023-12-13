@@ -1,4 +1,4 @@
-import { Divider, IconButton, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, Tooltip, Typography } from '@mui/material'
+import { Autocomplete, Box, Divider, FormControl, IconButton, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, TextField, Tooltip, Typography } from '@mui/material'
 import React, { useEffect, useState } from 'react'
 
 import { serverBaseAddress } from './APIPage'
@@ -90,7 +90,7 @@ export default function JCHome() {
 
 
     // Custom style for the table header
-    const tableHeaderStyle = { backgroundColor: '#227DD4', fontWeight: 'bold' }
+    const tableHeaderStyle = { backgroundColor: '#0f6675', fontWeight: 'bold' }
 
     // Temporary function to view the JC:
     function viewJcData() {
@@ -114,9 +114,25 @@ export default function JCHome() {
             </CreateButtonWithLink>
 
             <br />
+            <br />
+
 
             {jcTableData.length ? (
                 <div>
+
+                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', paddingTop: 1, marginBottom: 1 }}>
+                        <FormControl sx={{ width: 350 }} align='left'>
+                            <Autocomplete
+                                disablePortal
+                                onChange={(event, value) => { setFilterRow(value ? [value] : []); }}
+                                getOptionLabel={(option) => option.jc_number || option.company_name}
+                                options={jcTableData}
+                                renderInput={(params) => (
+                                    <TextField {...params} label="Search Job-Card" variant="outlined" />
+                                )}
+                            />
+                        </FormControl>
+                    </Box>
 
                     {/* Creating basic Job-Card table */}
                     <TableContainer component={Paper}>

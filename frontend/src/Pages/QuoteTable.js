@@ -396,7 +396,7 @@ export default function QuoteTable() {
   };
 
   // Custom style for the table header
-  const tableHeaderStyle = { backgroundColor: '#227DD4', fontWeight: 'bold' }
+  const tableHeaderStyle = { backgroundColor: '#0f6675', fontWeight: 'bold' }
 
 
   return (
@@ -482,7 +482,7 @@ export default function QuoteTable() {
 
       {quotesTableData.length ? (
         <div>
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', paddingRight: 1, paddingTop: 1, marginBottom: 1 }}>
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', paddingTop: 1, marginBottom: 1 }}>
             <FormControl sx={{ width: 350 }} align='left'>
               <Autocomplete
                 disablePortal
