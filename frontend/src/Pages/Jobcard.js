@@ -54,8 +54,6 @@ const Jobcard = () => {
   const [observations, setObservations] = useState();
 
 
-
-
   // Set Initial table data for the 'EUT' Table:
   let defNomenclature = ''
   let defEutDescription = ''
@@ -101,7 +99,7 @@ const Jobcard = () => {
   let defDuration = ''
   let defTestEndedBy = ''
   let defRemarks = ''
-  let defReportNo = ''
+  let defReportNumber = ''
   let defReportPreparedBy = ''
   let defNablploaded = ''
   let defReportStatus = ''
@@ -118,7 +116,7 @@ const Jobcard = () => {
     duration: defDuration,
     testEndedBy: defTestEndedBy,
     remarks: defRemarks,
-    reportNo: defReportNo,
+    reportNumber: defReportNumber,
     preparedBy: defReportPreparedBy,
     nablUploaded: defNablploaded,
     reportStatus: defReportStatus
@@ -272,15 +270,14 @@ const Jobcard = () => {
 
   // To submit the Job-card data and store it in a database:
   const handleSubmitJobcard = (e) => {
-    console.log('this is jobcard')
-
     e.preventDefault()
-    setJcumberString((prev) => {
-      const numericPart = parseInt(prev.slice(-3), 10);
-      const nextNumericPart = numericPart + 1;
-      const formattedNumericPart = nextNumericPart.toString().padStart(3, '0');
-      return prev.slice(0, -3) + formattedNumericPart;
-    });
+
+    // setJcumberString((prev) => {
+    //   const numericPart = parseInt(prev.slice(-3), 10);
+    //   const nextNumericPart = numericPart + 1;
+    //   const formattedNumericPart = nextNumericPart.toString().padStart(3, '0');
+    //   return prev.slice(0, -3) + formattedNumericPart;
+    // });
 
 
     try {
@@ -303,12 +300,11 @@ const Jobcard = () => {
         jcText,
         observations,
 
-
       })
-      // toast.success('JC Submitted Successfully');
     } catch (error) {
-      console.error('Error submitting jobcard:', error);
+      console.error('Error submitting Job-Card:', error);
     }
+
 
 
     // Function to extract EUT details based on the index
@@ -317,11 +313,11 @@ const Jobcard = () => {
       return {
 
         nomenclature: eutRows[i].nomenclature,
-        eutdescription: eutRows[i].eutDescription,
+        eutDescription: eutRows[i].eutDescription,
         qty: eutRows[i].qty,
-        partno: eutRows[i].partNo,
-        modelno: eutRows[i].modelNo,
-        serialno: eutRows[i].serialNo,
+        partNo: eutRows[i].partNo,
+        modelNo: eutRows[i].modelNo,
+        serialNo: eutRows[i].serialNo,
         jcNumber: jcNumberString,
       }
     }
@@ -341,23 +337,20 @@ const Jobcard = () => {
         .catch((error) => console.log(error))
     })
 
-
-
     // Function to extract tests data based on the index
     const testsdata = (i) => {
       return {
         test: testRows[i].test,
         nabl: testRows[i].nabl,
-        test_standard: testRows[i].testStandard,
-        reference_document: testRows[i].referenceDocument,
-        jc_number: jcNumberString,
+        testStandard: testRows[i].testStandard,
+        referenceDocument: testRows[i].referenceDocument,
+        jcNumber: jcNumberString,
       }
     }
     // Iterating over testRows using map to submit data to the server
     testRows.map((row, index) => {
-      //console.log('unicorn', index);
-      axios.post(`${serverBaseAddress}/api/tests`, testsdata(index))
 
+      axios.post(`${serverBaseAddress}/api/tests`, testsdata(index))
         .then(
           res => {
             if (res.status === 200)
@@ -365,15 +358,12 @@ const Jobcard = () => {
           }
         )
         .catch(error => console.log(error))
-
     })
 
 
     // Function to extract test details based on the index
-
-    console.log('AAAAAAAA', testdetailsRows[0].test);
     const testdetailsdata = (i) => {
-      console.log('pppppppppp', testdetailsRows[i].startDate);
+
       const formattedstartDate = moment(testdetailsRows[i].startDate).format('YYYY-MM-DD');
       const formattedendDate = moment(testdetailsRows[i].endDate).format('YYYY-MM-DD');
 
@@ -382,20 +372,20 @@ const Jobcard = () => {
 
       return {
 
-        test: testdetailsRows[i].test,
-        chamber: testdetailsRows[i].chamber,
-        eutserialno: testdetailsRows[i].eutSerialNo,
+        testName: testdetailsRows[i].testName,
+        testChamber: testdetailsRows[i].testChamber,
+        eutSerialNo: testdetailsRows[i].eutSerialNo,
         standard: testdetailsRows[i].standard,
         testStartedBy: testdetailsRows[i].testStartedBy,
-        startdate: testdetailsRows[i].startDate,
-        enddate: testdetailsRows[i].endDate,
+        startDate: testdetailsRows[i].startDate,
+        endDate: testdetailsRows[i].endDate,
         duration: testdetailsRows[i].duration,
-        endedby: testdetailsRows[i].endedBy,
+        testEndedBy: testdetailsRows[i].testEndedBy,
         remarks: testdetailsRows[i].remarks,
-        reportno: testdetailsRows[i].reportNo,
-        preparedby: testdetailsRows[i].preparedBy,
-        nabluploaded: testdetailsRows[i].nablUploaded,
-        reportstatus: testdetailsRows[i].reportStatus,
+        reportNumber: testdetailsRows[i].reportNumber,
+        preparedBy: testdetailsRows[i].preparedBy,
+        nablUploaded: testdetailsRows[i].nablUploaded,
+        reportStatus: testdetailsRows[i].reportStatus,
         jcNumber: jcNumberString,
       }
 
@@ -403,7 +393,6 @@ const Jobcard = () => {
     //console.log('the data is :', testdetailsdata);
     // Iterating over testdetailsRows using map to submit data to the server
     testdetailsRows.map((row, index) => {
-      //console.log('insex iss', index);
       axios.post(`${serverBaseAddress}/api/testdetails`, testdetailsdata(index))
         .then(
           res => {
@@ -416,24 +405,22 @@ const Jobcard = () => {
   }
 
 
-  // function handle changes in eutrow data
+  // function handle changes in "eut" table row data
   const handleEutRowChange = (index, field, value) => {
     const updatedRows = [...eutRows];
     updatedRows[index][field] = value; // Update the particular field in EUTrow at the given index with a new value
     setEutRows(updatedRows);
   };
 
-  // function handle changes in testrow data
+  // function handle changes in "tests" table row data
   const handleTestRowChange = (index, field, value) => {
     const updatedRows = [...testRows];
     updatedRows[index][field] = value;
     setTestRows(updatedRows);
   };
 
-  // function handle changes in testdetailsrow data
+  // function handle changes in "testdetails" table row data
   const handleTestDetailsRowChange = (index, field, value) => {
-    //console.log(index, field, value);
-    //console.log('testdetailsRows is ', testdetailsRows);
     const updatedRows = [...testdetailsRows];
     updatedRows[index] = { ...updatedRows[index], [field]: value };
 
@@ -456,12 +443,10 @@ const Jobcard = () => {
 
   // To clear the fields of job card:
   const handleClearJobcard = () => {
-    //toast.success('Cleared')
     setJcnumber('');
     setDcnumber('');
     setJcOpenDate('');
     setPonumber('');
-    //setJcCategory('');
     setTestCategory('');
     setTestInchargeName('');
     setCompanyName('');
@@ -1013,8 +998,8 @@ const Jobcard = () => {
                     </TableCell>
 
                     <TableCell> <TextField style={{ align: "center" }} variant="outlined"
-                      value={row.reportNo}
-                      onChange={(e) => handleTestDetailsRowChange(index, 'reportNo', e.target.value)} />
+                      value={row.reportNumber}
+                      onChange={(e) => handleTestDetailsRowChange(index, 'reportNumber', e.target.value)} />
                     </TableCell>
 
                     <TableCell>
@@ -1034,13 +1019,13 @@ const Jobcard = () => {
 
                     <TableCell>
                       <FormControl sx={{ width: '100%', borderRadius: 3 }} >
-                        <InputLabel >Status</InputLabel>
+                        <InputLabel >NABL Status</InputLabel>
                         <Select label="Nabl-upload-status"
                           value={row.nablUploaded}
                           onChange={(e) => handleTestDetailsRowChange(index, 'nablUploaded', e.target.value)}
                         >
-                          <MenuItem value="not-sent">Uploaded</MenuItem>
-                          <MenuItem value="sent">Not-Uploaded</MenuItem>
+                          <MenuItem value="Uploaded">Uploaded</MenuItem>
+                          <MenuItem value="Not-Uploaded">Not-Uploaded</MenuItem>
                         </Select>
                       </FormControl>
                     </TableCell>
@@ -1053,9 +1038,9 @@ const Jobcard = () => {
                           value={row.reportStatus}
                           onChange={(e) => handleTestDetailsRowChange(index, 'reportStatus', e.target.value)}>
 
-                          <MenuItem value="not-sent">Not Sent</MenuItem>
-                          <MenuItem value="sent">Sent</MenuItem>
-                          <MenuItem value="on-hold">On Hold</MenuItem>
+                          <MenuItem value="Not-Sent">Not-Sent</MenuItem>
+                          <MenuItem value="Sent">Sent</MenuItem>
+                          <MenuItem value="On-Hold">On-Hold</MenuItem>
                         </Select>
                       </FormControl>
                     </TableCell>

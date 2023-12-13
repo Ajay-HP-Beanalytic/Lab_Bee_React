@@ -11,6 +11,9 @@ function jobcardsAPIs(app) {
     app.post('/api/add_jobcard', (req, res) => {
         const { jcNumber, dcNumber, jcOpenDate, poNumber, jcCategory, testInchargeName, companyName, customerName, customerNumber, projectName, sampleCondition, referanceDocs, jcStatus, jcCloseDate, jcText, observations } = req.body
 
+        console.log('1', jcOpenDate)
+        console.log('2', jcCloseDate)
+
         const sql = `INSERT INTO bea_jobcards(jc_number, dcform_number, jc_open_date, po_number, test_category, test_incharge, company_name, customer_name, customer_number, project_name, sample_condition, referance_document, jc_status, jc_closed_date, jc_text, observations ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
 
         db.query(sql, [jcNumber, dcNumber, jcOpenDate, poNumber, jcCategory, testInchargeName, companyName, customerName, customerNumber, projectName, sampleCondition, referanceDocs, jcStatus, jcCloseDate, jcText, observations], (error, result) => {
@@ -171,7 +174,7 @@ function jobcardsAPIs(app) {
     app.post('/api/eutdetails', (req, res) => {
         const { jcNumber, nomenclature, eutDescription, qty, partNo, modelNo, serialNo } = req.body;
 
-        const sql = `INSERT INTO eut_details (jc_number,nomenclature, eut_description, qty, part_no, model_no, serial_no) VALUES (?,?,?,?,?,?,?)`;
+        const sql = `INSERT INTO eut_details (jc_number,nomenclature, eut_description, qty, part_no, model_number, serial_number) VALUES (?,?,?,?,?,?,?)`;
 
         db.query(sql, [jcNumber, nomenclature, eutDescription, qty, partNo, modelNo, serialNo], (error, result) => {
             if (error) {
@@ -204,14 +207,13 @@ function jobcardsAPIs(app) {
         const jc_number = req.params.jc_number; // Use jc_number instead of id
 
         const sqlQuery = `
-        UPDATE eut_details
-        SET 
+        UPDATE eut_details SET 
           nomenclature = ?, 
           eut_description = ?, 
           qty = ?, 
           part_no = ?,
-          model_no = ?,
-          serial_no = ?
+          model_number = ?,
+          serial_number = ?
         WHERE jc_number = ?`;
 
         // Use an array to provide values for placeholders in the query
@@ -252,7 +254,7 @@ function jobcardsAPIs(app) {
     // To fetch the data based on the jcnumber from the table 'eut_details'
     app.get('/api/geteutdetailslist/:jc_number', (req, res) => {
         const jcNumber = req.params.jc_number;
-        const sqlQuery = `SELECT  nomenclature, eut_description, qty, part_no, model_no, serial_no FROM eut_details WHERE jc_number = ?`;
+        const sqlQuery = `SELECT  nomenclature, eut_description, qty, part_no, model_number, serial_number FROM eut_details WHERE jc_number = ?`;
 
         db.query(sqlQuery, [jcNumber], (error, result) => {
             if (error) {
@@ -360,123 +362,124 @@ function jobcardsAPIs(app) {
 
 
     // To add new testdetails to the database:
-    // app.post('/api/testdetails', (req, res) => {
-    //     const { jcNumber, test, chamber, eutserialno, standard, startby, startdate, enddate, duration, endedby, remarks, reportno, preparedby, nabluploaded, reportstatus } = req.body;
+    app.post('/api/testdetails', (req, res) => {
+        const { jcNumber, testName, testChamber, eutSerialNo, standard, testStartedBy, startDate, endDate, duration, testEndedBy, remarks, reportNumber, preparedBy, nablUploaded, reportStatus } = req.body;
 
-    //     // Parse the date using moment.js
-    //     // const formattedstartDate = moment(startdate, 'DD/MM/YYYY', true).format('%Y-%m-%d %H:%i:%s');
-    //     const formattedstartDate = dayjs(startdate, 'YYYY-MM-DD HH:mm:ss').format('YYYY-MM-DD HH:mm:ss');
-    //     const formattedendDate = dayjs(startdate, 'YYYY-MM-DD HH:mm:ss').format('YYYY-MM-DD HH:mm:ss');
-    //     // const formattedendDate = moment(enddate, 'DD/MM/YYYY', true).format('%Y-%m-%d %H:%i:%s');
-    //     // const formattedDuration = `${hours}:${minutes}:${seconds}`;
+        console.log('nablUploaded', nablUploaded)
+        // Parse the date using moment.js
+        // const formattedstartDate = moment(startDate, 'DD/MM/YYYY', true).format('%Y-%m-%d %H:%i:%s');
+        const formattedstartDate = dayjs(startDate, 'YYYY-MM-DD HH:mm:ss').format('YYYY-MM-DD HH:mm:ss');
+        const formattedendDate = dayjs(endDate, 'YYYY-MM-DD HH:mm:ss').format('YYYY-MM-DD HH:mm:ss');
+        // const formattedendDate = moment(endDate, 'DD/MM/YYYY', true).format('%Y-%m-%d %H:%i:%s');
+        // const formattedDuration = `${hours}:${minutes}:${seconds}`;
 
-    //     const sql = `INSERT INTO tests_details (jc_number, test, chamber, eut_serial_no, standard, start_by, start_date, end_date, duration, ended_by, remarks, report_no, prepared_by, nabl_uploaded, report_status) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
+        const sql = `INSERT INTO tests_details (jc_number, test, chamber, eut_serial_no, standard, test_started_by, start_date, end_date, duration, test_ended_by, remarks, report_no, report_prepared_by, nabl_uploaded, report_status) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
 
-    //     // console.log('SQL Query:', sql);
-    //     // console.log('Query Values:', [jcNumber, test, chamber, eutserialno, standard, startby, startdate, enddate, duration, endedby, remarks, reportno, preparedby, nabluploaded, reportstatus]);
-
-
-    //     db.query(sql, [jcNumber, test, chamber, eutserialno, standard, startby, formattedstartDate, formattedendDate, duration, endedby, remarks, reportno, preparedby, nabluploaded, reportstatus], (error, result) => {
-    //         if (error) {
-    //             console.log(error);
-    //             return res.status(500).json({ message: 'Internal server error' });
-    //         } else {
-    //             return res.status(200).json({ message: 'testdetails added successfully' });
-    //         }
-
-    //     });
-    // });
+        // console.log('SQL Query:', sql);
+        // console.log('Query Values:', [jcNumber, test, chamber, eutSerialNo, standard, testStartedBy, startDate, endDate, duration, testEndedBy, remarks, reportNumber, preparedBy, nablUploaded, reportStatus]);
 
 
+        db.query(sql, [jcNumber, testName, testChamber, eutSerialNo, standard, testStartedBy, formattedstartDate, formattedendDate, duration, testEndedBy, remarks, reportNumber, preparedBy, nablUploaded, reportStatus], (error, result) => {
+            if (error) {
+                console.log(error);
+                return res.status(500).json({ message: 'Internal server error' });
+            } else {
+                return res.status(200).json({ message: 'testdetails added successfully' });
+            }
 
-    // To delete the testdetails from the table:
-    // app.delete("/api/gettestdetails/:jc_number", (req, res) => {
-    //     const jcnumber = req.params.jc_number;
-    //     const deleteQuery = "DELETE FROM tests_details WHERE jc_number = ?";
-
-    //     db.query(deleteQuery, [jcnumber], (error, result) => {
-    //         if (error) {
-    //             return res.status(500).json({ error: "An error occurred while deleting the module" });
-
-    //         }
-    //         res.status(200).json({ message: "testdetails data deleted successfully" });
-    //     });
-    // });
-
-
-    // To Edit the selected testdetails:
-    // app.post('/api/testdetails/:jc_number', (req, res) => {
-    //     const { test, chamber, eutserialno, standard, startby, startdate, enddate, duration, endedby, remarks, reportno, preparedby, nabluploaded, reportstatus } = req.body;
-    //     const jc_number = req.params.jc_number;
-
-    //     const hours = req.body.hours || 0;
-    //     const minutes = req.body.minutes || 0;
-    //     const seconds = req.body.seconds || 0;
-
-    //     // Parse the date using moment.js
-    //     const formattedstartDate = moment(startdate, 'DD/MM/YYYY', true).format('YYYY-MM-DD');
-    //     const formattedendDate = moment(enddate, 'DD/MM/YYYY', true).format('YYYY-MM-DD');
-    //     const formattedDuration = `${hours}:${minutes}:${seconds}`;
-
-
-    //     const sqlQuery = `
-    //     UPDATE tests_details
-    //     SET 
-    //       test = ?, 
-    //       chamber = ?, 
-    //       eut_serial_no = ?, 
-    //       standard = ? ,
-    //       start_by = ? ,
-    //       start_date = ? ,
-    //       end_date = ? ,
-    //       duration = ? ,
-    //       ended_by = ? ,
-    //       remarks = ? ,
-    //       report_no = ? ,
-    //       prepared_by = ? ,
-    //       nabl_uploaded = ? ,
-    //       report_status = ? 
-    //     WHERE jc_number = ?`;
-
-    //     const values = [test, chamber, eutserialno, standard, startby, startdate, enddate, duration, endedby, remarks, reportno, preparedby, nabluploaded, reportstatus, jc_number
-    //     ];
-
-    //     db.query(sqlQuery, values, (error, result) => {
-    //         if (error) {
-    //             console.log(error);
-    //             return res.status(500).json({ message: "Internal server error", result });
-    //         } else {
-    //             res.status(200).json({ message: "tests_details updated successfully" });
-    //         }
-    //     });
-    // });
-
-
-    // To fetch the jcnumber from the table 'tests_details'
-    // app.get('/api/gettestdetails', (req, res) => {
-    //     const sqlQuery = `SELECT jc_number FROM tests_details`;
-    //     db.query(sqlQuery, (error, result) => {
-    //         if (error) {
-    //             return res.status(500).json({ error: "An error occurred while fetching data" })
-    //         }
-    //         res.send(result)
-    //     })
-    // });
+        });
+    });
 
 
 
-    // To fetch the data based on the jcnumber from the table 'tests_details'
-    // app.get('/api/gettestdetailslist/:jc_number', (req, res) => {
-    //     const jcnumber = req.params.jc_number;
-    //     const sqlQuery = `SELECT  test, chamber, eut_serial_no, standard, start_by, start_date, end_date, duration, ended_by, remarks, report_no, prepared_by, nabl_uploaded, report_status FROM tests_details  WHERE jc_number = ?`;
+    //To delete the testdetails from the table:
+    app.delete("/api/gettestdetails/:jc_number", (req, res) => {
+        const jcnumber = req.params.jc_number;
+        const deleteQuery = "DELETE FROM tests_details WHERE jc_number = ?";
 
-    //     db.query(sqlQuery, [jcnumber], (error, result) => {
-    //         if (error) {
-    //             return res.status(500).json({ error: "An error occurred while fetching data" })
-    //         }
-    //         res.send(result)
-    //     })
-    // });
+        db.query(deleteQuery, [jcnumber], (error, result) => {
+            if (error) {
+                return res.status(500).json({ error: "An error occurred while deleting the module" });
+
+            }
+            res.status(200).json({ message: "testdetails data deleted successfully" });
+        });
+    });
+
+
+    //To Edit the selected testdetails:
+    app.post('/api/testdetails/:jc_number', (req, res) => {
+        const { testName, testChamber, eutSerialNo, standard, testStartedBy, startDate, endDate, duration, testEndedBy, remarks, reportNumber, preparedBy, nablUploaded, reportStatus } = req.body;
+        const jc_number = req.params.jc_number;
+
+        const hours = req.body.hours || 0;
+        const minutes = req.body.minutes || 0;
+        const seconds = req.body.seconds || 0;
+
+        // Parse the date using moment.js
+        const formattedstartDate = moment(startDate, 'DD/MM/YYYY', true).format('YYYY-MM-DD');
+        const formattedendDate = moment(endDate, 'DD/MM/YYYY', true).format('YYYY-MM-DD');
+        const formattedDuration = `${hours}:${minutes}:${seconds}`;
+
+
+        const sqlQuery = `
+        UPDATE tests_details
+        SET 
+          test = ?, 
+          chamber = ?, 
+          eut_serial_no = ?, 
+          standard = ? ,
+          test_started_by = ? ,
+          start_date = ? ,
+          end_date = ? ,
+          duration = ? ,
+          test_ended_by = ? ,
+          remarks = ? ,
+          report_no = ? ,
+          report_prepared_by = ? ,
+          nabl_uploaded = ? ,
+          report_status = ? 
+        WHERE jc_number = ?`;
+
+        const values = [testName, testChamber, eutSerialNo, standard, testStartedBy, startDate, endDate, duration, testEndedBy, remarks, reportNumber, preparedBy, nablUploaded, reportStatus, jc_number
+        ];
+
+        db.query(sqlQuery, values, (error, result) => {
+            if (error) {
+                console.log(error);
+                return res.status(500).json({ message: "Internal server error", result });
+            } else {
+                res.status(200).json({ message: "tests_details updated successfully" });
+            }
+        });
+    });
+
+
+    //To fetch the jcnumber from the table 'tests_details'
+    app.get('/api/gettestdetails', (req, res) => {
+        const sqlQuery = `SELECT jc_number FROM tests_details`;
+        db.query(sqlQuery, (error, result) => {
+            if (error) {
+                return res.status(500).json({ error: "An error occurred while fetching data" })
+            }
+            res.send(result)
+        })
+    });
+
+
+
+    //To fetch the data based on the jcnumber from the table 'tests_details'
+    app.get('/api/gettestdetailslist/:jc_number', (req, res) => {
+        const jcnumber = req.params.jc_number;
+        const sqlQuery = `SELECT  test, chamber, eut_serial_no, standard, test_started_by, start_date, end_date, duration, test_ended_by, remarks, report_no, report_prepared_by, nabl_uploaded, report_status FROM tests_details  WHERE jc_number = ?`;
+
+        db.query(sqlQuery, [jcnumber], (error, result) => {
+            if (error) {
+                return res.status(500).json({ error: "An error occurred while fetching data" })
+            }
+            res.send(result)
+        })
+    });
 
 
 }
