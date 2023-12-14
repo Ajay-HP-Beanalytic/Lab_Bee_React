@@ -27,9 +27,9 @@ const Jobcard = () => {
   const [users, setUsers] = useState([])
 
   const [dateTimeValue, setDateTimeValue] = useState(dayjs());
-  const [eutRows, setEutRows] = useState([]);
-  const [testRows, setTestRows] = useState([]);
-  const [testdetailsRows, setTestDetailsRows] = useState([]);
+  const [eutRows, setEutRows] = useState([{ id: 0 }]);
+  const [testRows, setTestRows] = useState([{ id: 0 }]);
+  const [testdetailsRows, setTestDetailsRows] = useState([{ id: 0 }]);
 
 
   ////////////////////////
