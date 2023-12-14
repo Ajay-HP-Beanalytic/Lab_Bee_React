@@ -495,6 +495,8 @@ export default function Quotation() {
   }, [tableData, isTotalDiscountVisible, discountAmount, originalTaxableAmount]);
 
 
+  // Custom style for the table header
+  const tableHeaderStyle = { backgroundColor: '#d1b054', fontWeight: 'bold' }
 
 
   return (
@@ -687,7 +689,7 @@ export default function Quotation() {
               <Grid item xs={12} >
                 <TableContainer component={Paper}>
                   <Table sx={{ minWidth: 650 }} aria-label="simple table">
-                    <TableHead sx={{ backgroundColor: '#227DD4', fontWeight: 'bold' }}>
+                    <TableHead sx={tableHeaderStyle}>
                       <TableRow>
                         <TableCell>Sl No</TableCell>
                         {(quoteCategory === 'Environmental Testing' || quoteCategory === 'EMI & EMC' || quoteCategory === 'Reliability') &&
@@ -880,16 +882,7 @@ export default function Quotation() {
 
                       </>
 
-
-
                     )}
-
-
-
-
-
-
-
 
                     <TableRow>
                       <TableCell colSpan={3}>
