@@ -481,6 +481,34 @@ function jobcardsAPIs(app) {
         })
     });
 
+    // One single end point to "GET" all details based on jc_number used for editing
+    app.get('/api/jobcard/:id', (req, res) => {
+        const id = req.params.id;
+        let output = {}
+        let sqlQuery = `SELECT jc_number, dcform_number, jc_open_date, po_number, test_category, test_incharge,company_name, customer_number, customer_name, project_name, sample_condition, referance_document FROM bea_jobcards WHERE id = ?`;
+        db.query(sqlQuery, [id], (error, result) => {
+            if (error) return res.status(500).json({ error })
+            output['jobcard'] = result[0]
+            const jc_number = result[0].jc_number
+            sqlQuery = "SELECT * FROM eut_details WHERE jc_number = ?"
+            db.query(sqlQuery, [jc_number], (error, result) => {
+                if (error) return res.status(500).json({ error })
+                output['eut_details'] = result
+                sqlQuery = "SELECT * FROM jc_tests WHERE jc_number = ?"
+                db.query(sqlQuery, [jc_number], (error, result) => {
+                    if (error) return res.status(500).json({ error })
+                    output['tests'] = result
+                    sqlQuery = "SELECT * FROM tests_details WHERE jc_number = ?"
+                    db.query(sqlQuery, [jc_number], (error, result) => {
+                        if (error) return res.status(500).json({ error })
+                        output['tests_details'] = result
+                        res.send(output)
+                    })
+                })
+            })
+        })
+    });
+
 
 }
 
