@@ -2,12 +2,13 @@
 import React, { useEffect, useState } from 'react';
 import {
   Box, Typography, Container, TextField, Button, Table, TableBody, TableCell, TableContainer, TableHead,
-  TableRow, Paper, Grid, InputLabel, MenuItem, FormControl, Select, FormControlLabel, Radio, RadioGroup, FormLabel, IconButton, Tooltip, Divider
+  TableRow, Paper, Grid, InputLabel, MenuItem, FormControl, Select, FormControlLabel, Radio, RadioGroup, FormLabel, IconButton, Tooltip, Divider, Accordion, AccordionSummary, AccordionDetails
 } from '@mui/material';
 
 import moment from 'moment';
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import dayjs from 'dayjs';
@@ -268,6 +269,15 @@ const Jobcard = () => {
   }, [jcCount]);
 
 
+  // UseEffect to set the quotation data during update of the quotation:
+  useEffect(() => {
+    axios.get(`${serverBaseAddress}/api/getTestingUsers/`)
+      .then(result => {
+        setUsers(result.data)
+      })
+  }, [])
+
+
   // To submit the Job-card data and store it in a database:
   const handleSubmitJobcard = (e) => {
     e.preventDefault()
@@ -464,15 +474,11 @@ const Jobcard = () => {
 
   //////////////////////////////////////////////////////////
 
+  // Custom style for the table header
+  const tableHeaderStyle = { backgroundColor: '#0f6675', fontWeight: 'bold' }
 
-  // UseEffect to set the quotation data during update of the quotation:
-  useEffect(() => {
-    axios.get(`${serverBaseAddress}/api/getTestingUsers/`)
-      .then(result => {
-        setUsers(result.data)
-      })
+  const tableCellStyle = { color: 'white' }
 
-  }, [])
 
 
 
@@ -685,251 +691,276 @@ const Jobcard = () => {
 
         <Box >
           {/* Table Container */}
-          <Typography sx={{ marginTop: '5', paddingBottom: '3', paddingTop: '5' }} variant="h5"> EUT Details </Typography>
 
-          <TableContainer component={Paper} >
-            <Table size='small' aria-label="simple table">
-              <TableHead sx={{ backgroundColor: '#227DD4' }}>
-                <TableRow >
-                  <HeaderCell >Sl No</HeaderCell>
-                  {/* <HeaderCell align='center'>JC Number</HeaderCell> */}
-                  <HeaderCell align='center'>Nomenclature</HeaderCell>
-                  <HeaderCell align='center'>Eut Description</HeaderCell>
-                  <HeaderCell align='center'>Qty</HeaderCell>
-                  <HeaderCell align='center'>Part No</HeaderCell>
-                  <HeaderCell align='center'>Model No</HeaderCell>
-                  <HeaderCell align='center'>Serial No</HeaderCell>
-                  <HeaderCell>
+          <Accordion>
+            <AccordionSummary
+              expandIcon={<ExpandMoreIcon />}
+              sx={{ backgroundColor: '#a6b28c' }}
+              aria-controls="eut-details-table-content"
+              id="eut-details-table-header"
 
-                    <IconButton size='small'>
-                      <Tooltip title='Add Row' arrow>
-                        <AddIcon onClick={handleAddEutRow} />
-                      </Tooltip>
-                    </IconButton>
-
-                  </HeaderCell>
-                </TableRow>
-              </TableHead>
-
-              <TableBody>
-                {eutRows.map((row, index) => {
-                  return (
-                    <TableRow key={row.id}>
-                      <TableCell>{index + 1}</TableCell>
-                      {/* <TableCell>
-                        <TextField style={{ align: "center" }} variant="outlined" />
-                      </TableCell> */}
+            >
+              <Typography variant='h6' >EUT Details:</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+              <TableContainer component={Paper} >
+                <Table size='small' aria-label="simple table">
+                  <TableHead sx={tableHeaderStyle}>
+                    <TableRow >
+                      <TableCell sx={tableCellStyle} >Sl No</TableCell>
+                      <TableCell align='center' sx={tableCellStyle} >Nomenclature</TableCell>
+                      <TableCell align='center' sx={tableCellStyle}>Eut Description</TableCell>
+                      <TableCell align='center' sx={tableCellStyle}>Qty</TableCell>
+                      <TableCell align='center' sx={tableCellStyle}>Part No</TableCell>
+                      <TableCell align='center' sx={tableCellStyle}>Model No</TableCell>
+                      <TableCell align='center' sx={tableCellStyle}>Serial No</TableCell>
                       <TableCell>
-                        <TextField style={{ align: "center" }} variant="outlined"
-                          value={row.nomenclature}
-                          onChange={(e) => handleEutRowChange(index, 'nomenclature', e.target.value)} />
-                      </TableCell>
 
-                      <TableCell>
-                        <TextField style={{ align: "center" }} variant="outlined"
-                          value={row.eutDescription}
-                          onChange={(e) => handleEutRowChange(index, 'eutDescription', e.target.value)} />
-                      </TableCell>
+                        <IconButton size='small'>
+                          <Tooltip title='Add Row' arrow>
+                            <AddIcon onClick={handleAddEutRow} />
+                          </Tooltip>
+                        </IconButton>
 
-                      <TableCell>
-                        <TextField style={{ align: "center" }} variant="outlined"
-                          value={row.qty}
-                          onChange={(e) => handleEutRowChange(index, 'qty', e.target.value)} />
                       </TableCell>
+                    </TableRow>
+                  </TableHead>
 
-                      <TableCell>
-                        <TextField style={{ align: "center" }} variant="outlined"
-                          value={row.partNo}
-                          onChange={(e) => handleEutRowChange(index, 'partNo', e.target.value)} />
-                      </TableCell>
+                  <TableBody>
+                    {eutRows.map((row, index) => {
+                      return (
+                        <TableRow key={row.id}>
+                          <TableCell>{index + 1}</TableCell>
+                          <TableCell>
+                            <TextField style={{ align: "center" }} variant="outlined"
+                              value={row.nomenclature}
+                              onChange={(e) => handleEutRowChange(index, 'nomenclature', e.target.value)} />
+                          </TableCell>
 
-                      <TableCell>
-                        <TextField style={{ align: "center" }} variant="outlined"
-                          value={row.modelNo}
-                          onChange={(e) => handleEutRowChange(index, 'modelNo', e.target.value)}
-                        />
-                      </TableCell>
+                          <TableCell>
+                            <TextField style={{ align: "center" }} variant="outlined"
+                              value={row.eutDescription}
+                              onChange={(e) => handleEutRowChange(index, 'eutDescription', e.target.value)} />
+                          </TableCell>
 
-                      <TableCell>
-                        <TextField style={{ align: "center" }} variant="outlined"
-                          value={row.serialNo}
-                          onChange={(e) => handleEutRowChange(index, 'serialNo', e.target.value)}
-                        />
-                      </TableCell>
+                          <TableCell>
+                            <TextField style={{ align: "center" }} variant="outlined"
+                              value={row.qty}
+                              onChange={(e) => handleEutRowChange(index, 'qty', e.target.value)} />
+                          </TableCell>
 
+                          <TableCell>
+                            <TextField style={{ align: "center" }} variant="outlined"
+                              value={row.partNo}
+                              onChange={(e) => handleEutRowChange(index, 'partNo', e.target.value)} />
+                          </TableCell>
+
+                          <TableCell>
+                            <TextField style={{ align: "center" }} variant="outlined"
+                              value={row.modelNo}
+                              onChange={(e) => handleEutRowChange(index, 'modelNo', e.target.value)}
+                            />
+                          </TableCell>
+
+                          <TableCell>
+                            <TextField style={{ align: "center" }} variant="outlined"
+                              value={row.serialNo}
+                              onChange={(e) => handleEutRowChange(index, 'serialNo', e.target.value)}
+                            />
+                          </TableCell>
+
+                          <TableCell>
+                            <IconButton size='small'>
+                              <Tooltip title='Remove Row' arrow>
+                                <RemoveIcon onClick={() => handleRemoveEutRow(row.id)} />
+                              </Tooltip>
+                            </IconButton>
+                          </TableCell>
+
+                        </TableRow>
+                      )
+                    }
+                    )}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+
+            </AccordionDetails>
+          </Accordion>
+
+          <br />
+
+          <Accordion>
+            <AccordionSummary
+              expandIcon={<ExpandMoreIcon />}
+              sx={{ backgroundColor: '#a6b28c' }}
+              aria-controls="tests-table-content"
+              id="tests-table-header"
+            >
+              <Typography variant='h6'>Tests: </Typography>
+            </AccordionSummary>
+            <AccordionDetails>
+
+              <TableContainer component={Paper} >
+                <Table size='small' aria-label="simple table">
+                  <TableHead sx={tableHeaderStyle}>
+                    <TableRow>
+                      <TableCell sx={tableCellStyle} >Sl No</TableCell>
+                      <TableCell sx={{ ...tableCellStyle }} align="center" >Test</TableCell>
+                      <TableCell sx={{ ...tableCellStyle }} align="center" >NABL</TableCell>
+                      <TableCell sx={{ ...tableCellStyle }} align="center" >Test Standard</TableCell>
+                      <TableCell sx={{ ...tableCellStyle }} align="center" >Reference Document</TableCell>
                       <TableCell>
                         <IconButton size='small'>
-                          <Tooltip title='Remove Row' arrow>
-                            <RemoveIcon onClick={() => handleRemoveEutRow(row.id)} />
+                          <Tooltip title='Add Row' arrow>
+                            <AddIcon onClick={handleAddTestRow} />
                           </Tooltip>
                         </IconButton>
                       </TableCell>
 
                     </TableRow>
-                  )
-                }
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
+                  </TableHead>
+                  <TableBody>
+                    {testRows.map((row, index) => (
+                      <TableRow key={row.id}>
+                        <TableCell>{index + 1}</TableCell>
+
+                        <TableCell>
+                          <TextField style={{ align: "center" }} variant="outlined"
+                            value={row.test}
+                            onChange={(e) => handleTestRowChange(index, 'test', e.target.value)} />
+                        </TableCell>
+
+                        <TableCell >
+
+                          <FormControl sx={{ width: '100%', borderRadius: 3, align: "center" }} >
+                            <InputLabel >Test Category</InputLabel>
+                            <Select label="Nabl-non-nabl-status"
+                              value={row.nabl}
+                              onChange={(e) => handleTestRowChange(index, 'nabl', e.target.value)}>
+                              <MenuItem value="nabl">NABL</MenuItem>
+                              <MenuItem value="non-nabl">Non-NABL</MenuItem>
+                            </Select>
+                          </FormControl>
+                        </TableCell>
+
+                        <TableCell>
+                          <TextField style={{ align: "center" }} variant="outlined"
+                            value={row.testStandard}
+                            onChange={(e) => handleTestRowChange(index, 'testStandard', e.target.value)} />
+                        </TableCell>
 
 
+                        <TableCell>
+                          <TextField style={{ align: "center" }} variant="outlined"
+                            value={row.referenceDocument}
+                            onChange={(e) => handleTestRowChange(index, 'referenceDocument', e.target.value)} />
+                        </TableCell>
 
-          <br />
+                        <TableCell >
+                          <IconButton size='small'>
+                            <Tooltip title='Remove Row' arrow>
+                              <RemoveIcon onClick={() => handleRemoveTestRow(row.id)} />
+                            </Tooltip>
+                          </IconButton>
+                        </TableCell>
 
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
 
-          <Typography sx={{ marginTop: '5', paddingBottom: '3', paddingTop: '5' }} variant="h5"> Tests </Typography>
-
-          <TableContainer component={Paper} >
-            <Table size='small' aria-label="simple table">
-              <TableHead sx={{ backgroundColor: '#227DD4' }}>
-                <TableRow>
-                  <HeaderCell >Sl No</HeaderCell>
-                  <HeaderCell align="center">Test</HeaderCell>
-                  <HeaderCell align="center">NABL</HeaderCell>
-                  <HeaderCell align="center">Test Standard</HeaderCell>
-                  <HeaderCell align="center">Reference Document</HeaderCell>
-                  <HeaderCell>
-                    <IconButton size='small'>
-                      <Tooltip title='Add Row' arrow>
-                        <AddIcon onClick={handleAddTestRow} />
-                      </Tooltip>
-                    </IconButton>
-                  </HeaderCell>
-
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {testRows.map((row, index) => (
-                  <TableRow key={row.id}>
-                    <TableCell>{index + 1}</TableCell>
-
-                    <TableCell>
-                      <TextField style={{ align: "center" }} variant="outlined"
-                        value={row.test}
-                        onChange={(e) => handleTestRowChange(index, 'test', e.target.value)} />
-                    </TableCell>
-
-                    <TableCell >
-
-                      <FormControl sx={{ width: '100%', borderRadius: 3, align: "center" }} >
-                        <InputLabel >Test Category</InputLabel>
-                        <Select label="Nabl-non-nabl-status"
-                          value={row.nabl}
-                          onChange={(e) => handleTestRowChange(index, 'nabl', e.target.value)}>
-                          <MenuItem value="nabl">NABL</MenuItem>
-                          <MenuItem value="non-nabl">Non-NABL</MenuItem>
-                        </Select>
-                      </FormControl>
-                    </TableCell>
-
-                    <TableCell>
-                      <TextField style={{ align: "center" }} variant="outlined"
-                        value={row.testStandard}
-                        onChange={(e) => handleTestRowChange(index, 'testStandard', e.target.value)} />
-                    </TableCell>
-
-
-                    <TableCell>
-                      <TextField style={{ align: "center" }} variant="outlined"
-                        value={row.referenceDocument}
-                        onChange={(e) => handleTestRowChange(index, 'referenceDocument', e.target.value)} />
-                    </TableCell>
-
-                    <TableCell >
-                      <IconButton size='small'>
-                        <Tooltip title='Remove Row' arrow>
-                          <RemoveIcon onClick={() => handleRemoveTestRow(row.id)} />
-                        </Tooltip>
-                      </IconButton>
-                    </TableCell>
-
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-
-
+            </AccordionDetails>
+          </Accordion>
 
           <br />
 
-          <Typography sx={{ marginTop: '5', paddingBottom: '3', paddingTop: '5' }} variant="h5">Test Details</Typography>
+          <Accordion>
+            <AccordionSummary
+              expandIcon={<ExpandMoreIcon />}
+              sx={{ backgroundColor: '#a6b28c' }}
+              aria-controls="test-details-table-content"
+              id="test-details-table-header"
+            >
+              <Typography variant='h6'>Test Details:</Typography>
+            </AccordionSummary>
+            <AccordionDetails>
 
-          <TableContainer component={Paper}  >
-            <Table size='small' aria-label="simple table" >
-              <TableHead sx={{ backgroundColor: '#227DD4' }}>
-                <TableRow>
-                  <TableCell >Sl No</TableCell>
-                  <TableCell sx={{ minWidth: '300px' }} align="center">Test</TableCell>
-                  <TableCell sx={{ minWidth: '150px' }} align="center">Chamber</TableCell>
-                  <TableCell sx={{ minWidth: '150px' }} align="center">EUT Serial No</TableCell>
-                  <TableCell sx={{ minWidth: '150px' }} align="center">Standard</TableCell>
-                  <TableCell sx={{ minWidth: '150px' }} align="center">Started By</TableCell>
-                  <TableCell sx={{ minWidth: '250px' }} align="center">Start Date & Time </TableCell>
-                  <TableCell sx={{ minWidth: '250px' }} align="center">End Date & Time</TableCell>
-                  <TableCell sx={{ minWidth: '150px' }} align="center">Duration(Hrs)</TableCell>
-                  <TableCell sx={{ minWidth: '150px' }} align="center">Ended By</TableCell>
-                  <TableCell sx={{ minWidth: '150px' }} align="center">Remarks</TableCell>
-                  <TableCell sx={{ minWidth: '150px' }} align="center">Report No</TableCell>
-                  <TableCell sx={{ minWidth: '150px' }} align="center">Prepared By</TableCell>
-                  <TableCell sx={{ minWidth: '150px' }} align="center">NABL Uploaded</TableCell>
-                  <TableCell sx={{ minWidth: '150px' }} align="center">Report Status</TableCell>
+              <TableContainer component={Paper}  >
+                <Table size='small' aria-label="simple table" >
+                  <TableHead sx={tableHeaderStyle}>
+                    <TableRow>
+                      <TableCell sx={tableCellStyle}>Sl No</TableCell>
+                      <TableCell sx={{ ...tableCellStyle, minWidth: '300px' }} align="center"  >Test</TableCell>
+                      <TableCell sx={{ ...tableCellStyle, minWidth: '150px' }} align="center"  >Chamber</TableCell>
+                      <TableCell sx={{ ...tableCellStyle, minWidth: '150px' }} align="center"  >EUT Serial No</TableCell>
+                      <TableCell sx={{ ...tableCellStyle, minWidth: '150px' }} align="center"  >Standard</TableCell>
+                      <TableCell sx={{ ...tableCellStyle, minWidth: '150px' }} align="center"  >Started By</TableCell>
+                      <TableCell sx={{ ...tableCellStyle, minWidth: '250px' }} align="center"  >Start Date & Time </TableCell>
+                      <TableCell sx={{ ...tableCellStyle, minWidth: '250px' }} align="center"  >End Date & Time</TableCell>
+                      <TableCell sx={{ ...tableCellStyle, minWidth: '150px' }} align="center"  >Duration(Hrs)</TableCell>
+                      <TableCell sx={{ ...tableCellStyle, minWidth: '150px' }} align="center"  >Ended By</TableCell>
+                      <TableCell sx={{ ...tableCellStyle, minWidth: '150px' }} align="center"  >Remarks</TableCell>
+                      <TableCell sx={{ ...tableCellStyle, minWidth: '150px' }} align="center"  >Report No</TableCell>
+                      <TableCell sx={{ ...tableCellStyle, minWidth: '150px' }} align="center"  >Prepared By</TableCell>
+                      <TableCell sx={{ ...tableCellStyle, minWidth: '150px' }} align="center"  >NABL Uploaded</TableCell>
+                      <TableCell sx={{ ...tableCellStyle, minWidth: '150px' }} align="center"  >Report Status</TableCell>
 
-                  <TableCell>
-                    <IconButton size='small'>
-                      <Tooltip title='Add Row' arrow>
-                        <AddIcon onClick={handleAddTestDetailsRow} />
-                      </Tooltip>
-                    </IconButton>
-                  </TableCell>
+                      <TableCell>
+                        <IconButton size='small'>
+                          <Tooltip title='Add Row' arrow>
+                            <AddIcon onClick={handleAddTestDetailsRow} />
+                          </Tooltip>
+                        </IconButton>
+                      </TableCell>
 
-                </TableRow>
-              </TableHead>
+                    </TableRow>
+                  </TableHead>
 
-              <TableBody>
-                {testdetailsRows.map((row, index) => (
-                  <TableRow key={row.id}>
-                    <TableCell>{index + 1}</TableCell>
+                  <TableBody>
+                    {testdetailsRows.map((row, index) => (
+                      <TableRow key={row.id}>
+                        <TableCell>{index + 1}</TableCell>
 
 
-                    <TableCell> <TextField style={{ align: "center" }} variant="outlined"
-                      value={row.testName}
-                      onChange={(e) => handleTestDetailsRowChange(index, 'testName', e.target.value)} />
-                    </TableCell>
+                        <TableCell> <TextField style={{ align: "center" }} variant="outlined"
+                          value={row.testName}
+                          onChange={(e) => handleTestDetailsRowChange(index, 'testName', e.target.value)} />
+                        </TableCell>
 
-                    <TableCell> <TextField style={{ align: "center" }} variant="outlined"
-                      value={row.testChamber}
-                      onChange={(e) => handleTestDetailsRowChange(index, 'testChamber', e.target.value)} />
-                    </TableCell>
+                        <TableCell> <TextField style={{ align: "center" }} variant="outlined"
+                          value={row.testChamber}
+                          onChange={(e) => handleTestDetailsRowChange(index, 'testChamber', e.target.value)} />
+                        </TableCell>
 
-                    <TableCell> <TextField style={{ align: "center" }} variant="outlined"
-                      value={row.eutSerialNo}
-                      onChange={(e) => handleTestDetailsRowChange(index, 'eutSerialNo', e.target.value)} />
-                    </TableCell>
+                        <TableCell> <TextField style={{ align: "center" }} variant="outlined"
+                          value={row.eutSerialNo}
+                          onChange={(e) => handleTestDetailsRowChange(index, 'eutSerialNo', e.target.value)} />
+                        </TableCell>
 
-                    <TableCell>
-                      <TextField style={{ align: "center" }} variant="outlined"
-                        value={row.standard}
-                        onChange={(e) => handleTestDetailsRowChange(index, 'standard', e.target.value)}
-                      />
-                    </TableCell>
+                        <TableCell>
+                          <TextField style={{ align: "center" }} variant="outlined"
+                            value={row.standard}
+                            onChange={(e) => handleTestDetailsRowChange(index, 'standard', e.target.value)}
+                          />
+                        </TableCell>
 
-                    <TableCell>
-                      <FormControl sx={{ width: '100%', borderRadius: 3 }} >
-                        <InputLabel >Started By</InputLabel>
-                        <Select
-                          label="test-started-by"
-                          value={row.user_name}
-                          onChange={(e) => handleTestDetailsRowChange(index, 'testStartedBy', e.target.value)}
-                        >
-                          {users.map((item) => (<MenuItem key={item.id} value={item.name}>{item.name}</MenuItem>))}
-                        </Select>
-                      </FormControl>
-                    </TableCell>
+                        <TableCell>
+                          <FormControl sx={{ width: '100%', borderRadius: 3 }} >
+                            <InputLabel >Started By</InputLabel>
+                            <Select
+                              label="test-started-by"
+                              value={row.user_name}
+                              onChange={(e) => handleTestDetailsRowChange(index, 'testStartedBy', e.target.value)}
+                            >
+                              {users.map((item) => (<MenuItem key={item.id} value={item.name}>{item.name}</MenuItem>))}
+                            </Select>
+                          </FormControl>
+                        </TableCell>
 
-                    <TableCell>
-                      {/* <LocalizationProvider dateAdapter={AdapterDayjs}>
+                        <TableCell>
+                          {/* <LocalizationProvider dateAdapter={AdapterDayjs}>
                         <DateTimePicker sx={{ width: '100%', borderRadius: 3 }}
                           label="Test start date"
                           variant="outlined"
@@ -939,125 +970,128 @@ const Jobcard = () => {
                           renderInput={(props) => <TextField {...props} />}
                         />
                       </LocalizationProvider> */}
-                      <LocalizationProvider dateAdapter={AdapterDayjs}>
-                        <DateTimePicker sx={{ width: '100%', borderRadius: 3 }}
-                          label="Test start date"
-                          variant="outlined"
-                          margin="normal"
-                          // value={dateTimeValue}
-                          // onChange={handleDateChange}
-                          value={row.startDate}
-                          onChange={(date) => handleTestDetailsRowChange(index, 'startDate', date)}
+                          <LocalizationProvider dateAdapter={AdapterDayjs}>
+                            <DateTimePicker sx={{ width: '100%', borderRadius: 3 }}
+                              label="Test start date"
+                              variant="outlined"
+                              margin="normal"
+                              // value={dateTimeValue}
+                              // onChange={handleDateChange}
+                              value={row.startDate}
+                              onChange={(date) => handleTestDetailsRowChange(index, 'startDate', date)}
 
-                          renderInput={(props) => <TextField {...props} />}
-                          format="DD/MM/YYYY HH:mm A"
-                        />
-                      </LocalizationProvider>
-                    </TableCell>
-
-
-                    <TableCell>
-                      <LocalizationProvider dateAdapter={AdapterDayjs}>
-                        <DateTimePicker sx={{ width: '100%', borderRadius: 3 }}
-                          label="Test end date"
-                          variant="outlined"
-                          margin="normal"
-                          // value={dateTimeValue}
-                          // onChange={handleDateChange}
-                          value={row.endDate}
-                          onChange={(date) => handleTestDetailsRowChange(index, 'endDate', date)}
-
-                          renderInput={(props) => <TextField {...props} />}
-                          format="DD/MM/YYYY HH:mm A"
-                        />
-                      </LocalizationProvider>
-                    </TableCell>
-
-                    <TableCell> <TextField style={{ align: "center" }} variant="outlined"
-                      value={row.duration}
-                      onChange={(e) => handleTestDetailsRowChange(index, 'duration', e.target.value)} />
-                    </TableCell>
-
-                    <TableCell>
-                      <FormControl sx={{ width: '100%', borderRadius: 3 }} >
-                        <InputLabel >Ended By</InputLabel>
-                        <Select
-                          label="test-ended-by"
-                          value={row.user_name}
-                          onChange={(e) => handleTestDetailsRowChange(index, 'testEndedBy', e.target.value)}
-                        //onChange={(e) => handleInputChange(row.slno, 'user_id', e.target.value)}
-                        >
-                          {users.map((item) => (<MenuItem key={item.id} value={item.name}>{item.name}</MenuItem>))}
-                        </Select>
-                      </FormControl>
-                    </TableCell>
-
-                    <TableCell> <TextField style={{ align: "center" }} variant="outlined"
-                      value={row.remarks}
-                      onChange={(e) => handleTestDetailsRowChange(index, 'remarks', e.target.value)} />
-                    </TableCell>
-
-                    <TableCell> <TextField style={{ align: "center" }} variant="outlined"
-                      value={row.reportNumber}
-                      onChange={(e) => handleTestDetailsRowChange(index, 'reportNumber', e.target.value)} />
-                    </TableCell>
-
-                    <TableCell>
-                      <FormControl sx={{ width: '100%', borderRadius: 3 }} >
-                        <InputLabel >Report Prepared By</InputLabel>
-                        <Select
-                          label="report-prepared-by"
-                          value={row.user_name}
-                          onChange={(e) => handleTestDetailsRowChange(index, 'preparedBy', e.target.value)}
-                        //onChange={(e) => handleInputChange(row.slno, 'user_id', e.target.value)}
-                        >
-                          {users.map((item) => (<MenuItem key={item.id} value={item.name}>{item.name}</MenuItem>))}
-                        </Select>
-                      </FormControl>
-
-                    </TableCell>
-
-                    <TableCell>
-                      <FormControl sx={{ width: '100%', borderRadius: 3 }} >
-                        <InputLabel >NABL Status</InputLabel>
-                        <Select label="Nabl-upload-status"
-                          value={row.nablUploaded}
-                          onChange={(e) => handleTestDetailsRowChange(index, 'nablUploaded', e.target.value)}
-                        >
-                          <MenuItem value="Uploaded">Uploaded</MenuItem>
-                          <MenuItem value="Not-Uploaded">Not-Uploaded</MenuItem>
-                        </Select>
-                      </FormControl>
-                    </TableCell>
+                              renderInput={(props) => <TextField {...props} />}
+                              format="DD/MM/YYYY HH:mm A"
+                            />
+                          </LocalizationProvider>
+                        </TableCell>
 
 
-                    <TableCell>
-                      <FormControl sx={{ width: '100%', borderRadius: 3 }} >
-                        <InputLabel >Status</InputLabel>
-                        <Select label="Report-delivery-status"
-                          value={row.reportStatus}
-                          onChange={(e) => handleTestDetailsRowChange(index, 'reportStatus', e.target.value)}>
+                        <TableCell>
+                          <LocalizationProvider dateAdapter={AdapterDayjs}>
+                            <DateTimePicker sx={{ width: '100%', borderRadius: 3 }}
+                              label="Test end date"
+                              variant="outlined"
+                              margin="normal"
+                              // value={dateTimeValue}
+                              // onChange={handleDateChange}
+                              value={row.endDate}
+                              onChange={(date) => handleTestDetailsRowChange(index, 'endDate', date)}
 
-                          <MenuItem value="Not-Sent">Not-Sent</MenuItem>
-                          <MenuItem value="Sent">Sent</MenuItem>
-                          <MenuItem value="On-Hold">On-Hold</MenuItem>
-                        </Select>
-                      </FormControl>
-                    </TableCell>
+                              renderInput={(props) => <TextField {...props} />}
+                              format="DD/MM/YYYY HH:mm A"
+                            />
+                          </LocalizationProvider>
+                        </TableCell>
 
-                    <TableCell>
-                      <IconButton size='small'>
-                        <Tooltip title='Remove Row' arrow>
-                          <RemoveIcon onClick={() => handleRemoveTestDetailsRow(row.id)} />
-                        </Tooltip>
-                      </IconButton>
-                    </TableCell>
+                        <TableCell> <TextField style={{ align: "center" }} variant="outlined"
+                          value={row.duration}
+                          onChange={(e) => handleTestDetailsRowChange(index, 'duration', e.target.value)} />
+                        </TableCell>
 
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
+                        <TableCell>
+                          <FormControl sx={{ width: '100%', borderRadius: 3 }} >
+                            <InputLabel >Ended By</InputLabel>
+                            <Select
+                              label="test-ended-by"
+                              value={row.user_name}
+                              onChange={(e) => handleTestDetailsRowChange(index, 'testEndedBy', e.target.value)}
+                            //onChange={(e) => handleInputChange(row.slno, 'user_id', e.target.value)}
+                            >
+                              {users.map((item) => (<MenuItem key={item.id} value={item.name}>{item.name}</MenuItem>))}
+                            </Select>
+                          </FormControl>
+                        </TableCell>
+
+                        <TableCell> <TextField style={{ align: "center" }} variant="outlined"
+                          value={row.remarks}
+                          onChange={(e) => handleTestDetailsRowChange(index, 'remarks', e.target.value)} />
+                        </TableCell>
+
+                        <TableCell> <TextField style={{ align: "center" }} variant="outlined"
+                          value={row.reportNumber}
+                          onChange={(e) => handleTestDetailsRowChange(index, 'reportNumber', e.target.value)} />
+                        </TableCell>
+
+                        <TableCell>
+                          <FormControl sx={{ width: '100%', borderRadius: 3 }} >
+                            <InputLabel >Report Prepared By</InputLabel>
+                            <Select
+                              label="report-prepared-by"
+                              value={row.user_name}
+                              onChange={(e) => handleTestDetailsRowChange(index, 'preparedBy', e.target.value)}
+                            //onChange={(e) => handleInputChange(row.slno, 'user_id', e.target.value)}
+                            >
+                              {users.map((item) => (<MenuItem key={item.id} value={item.name}>{item.name}</MenuItem>))}
+                            </Select>
+                          </FormControl>
+
+                        </TableCell>
+
+                        <TableCell>
+                          <FormControl sx={{ width: '100%', borderRadius: 3 }} >
+                            <InputLabel >NABL Status</InputLabel>
+                            <Select label="Nabl-upload-status"
+                              value={row.nablUploaded}
+                              onChange={(e) => handleTestDetailsRowChange(index, 'nablUploaded', e.target.value)}
+                            >
+                              <MenuItem value="Uploaded">Uploaded</MenuItem>
+                              <MenuItem value="Not-Uploaded">Not-Uploaded</MenuItem>
+                            </Select>
+                          </FormControl>
+                        </TableCell>
+
+
+                        <TableCell>
+                          <FormControl sx={{ width: '100%', borderRadius: 3 }} >
+                            <InputLabel >Status</InputLabel>
+                            <Select label="Report-delivery-status"
+                              value={row.reportStatus}
+                              onChange={(e) => handleTestDetailsRowChange(index, 'reportStatus', e.target.value)}>
+
+                              <MenuItem value="Not-Sent">Not-Sent</MenuItem>
+                              <MenuItem value="Sent">Sent</MenuItem>
+                              <MenuItem value="On-Hold">On-Hold</MenuItem>
+                            </Select>
+                          </FormControl>
+                        </TableCell>
+
+                        <TableCell>
+                          <IconButton size='small'>
+                            <Tooltip title='Remove Row' arrow>
+                              <RemoveIcon onClick={() => handleRemoveTestDetailsRow(row.id)} />
+                            </Tooltip>
+                          </IconButton>
+                        </TableCell>
+
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+
+            </AccordionDetails>
+          </Accordion>
 
           <br />
 
