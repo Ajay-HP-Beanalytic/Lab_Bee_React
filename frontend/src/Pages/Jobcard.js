@@ -37,7 +37,7 @@ const Jobcard = () => {
   const [jcNumber, setJcnumber] = useState()
 
   const [dcNumber, setDcnumber] = useState()
-  const [jcOpenDate, setJcOpenDate] = useState()
+  const [jcOpenDate, setJcOpenDate] = useState(dayjs())
   const [poNumber, setPonumber] = useState()
   const [jcCategory, setJcCategory] = useState("")
   const [testCategory, setTestCategory] = useState("Environmental");
