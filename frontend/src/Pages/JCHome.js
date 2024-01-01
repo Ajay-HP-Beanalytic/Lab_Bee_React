@@ -187,10 +187,10 @@ export default function JCHome() {
                 <TableCell align="center">
                     <Tooltip title='View JC' arrow>
                         <IconButton variant='outlined' size='small'>
-                            <VisibilityIcon onClick={viewJcData} />
-                            {/* <Link to={`/quotation/${row.id}`}>
+                            {/* <VisibilityIcon onClick={viewJcData} /> */}
+                            <Link to={`/jobcard/${row.id}`}>
                                 <VisibilityIcon />
-                            </Link> */}
+                            </Link>
                         </IconButton>
                     </Tooltip>
                 </TableCell>

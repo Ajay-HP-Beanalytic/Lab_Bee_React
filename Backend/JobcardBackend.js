@@ -174,7 +174,7 @@ function jobcardsAPIs(app) {
     app.post('/api/eutdetails', (req, res) => {
         const { jcNumber, nomenclature, eutDescription, qty, partNo, modelNo, serialNo } = req.body;
 
-        const sql = `INSERT INTO eut_details (jc_number,nomenclature, eut_description, qty, part_no, model_number, serial_number) VALUES (?,?,?,?,?,?,?)`;
+        const sql = `INSERT INTO eut_details (jc_number,nomenclature, eutDescription, qty, partNo, modelNo, serialNo) VALUES (?,?,?,?,?,?,?)`;
 
         db.query(sql, [jcNumber, nomenclature, eutDescription, qty, partNo, modelNo, serialNo], (error, result) => {
             if (error) {
@@ -209,11 +209,11 @@ function jobcardsAPIs(app) {
         const sqlQuery = `
         UPDATE eut_details SET 
           nomenclature = ?, 
-          eut_description = ?, 
+          eutDescription = ?, 
           qty = ?, 
-          part_no = ?,
-          model_number = ?,
-          serial_number = ?
+          partNo = ?,
+          modelNo = ?,
+          serialNo = ?
         WHERE jc_number = ?`;
 
         // Use an array to provide values for placeholders in the query
@@ -254,7 +254,7 @@ function jobcardsAPIs(app) {
     // To fetch the data based on the jcnumber from the table 'eut_details'
     app.get('/api/geteutdetailslist/:jc_number', (req, res) => {
         const jcNumber = req.params.jc_number;
-        const sqlQuery = `SELECT  nomenclature, eut_description, qty, part_no, model_number, serial_number FROM eut_details WHERE jc_number = ?`;
+        const sqlQuery = `SELECT  nomenclature, eutDescription, qty, partNo, modelNo, serialNo FROM eut_details WHERE jc_number = ?`;
 
         db.query(sqlQuery, [jcNumber], (error, result) => {
             if (error) {
@@ -269,7 +269,7 @@ function jobcardsAPIs(app) {
     app.post('/api/tests', (req, res) => {
         const { jcNumber, test, nabl, testStandard, referenceDocument } = req.body;
 
-        const sql = `INSERT INTO jc_tests (jc_number, test, nabl, test_standard, reference_document) VALUES (?,?,?,?,?)`;
+        const sql = `INSERT INTO jc_tests (jc_number, test, nabl, testStandard, referenceDocument) VALUES (?,?,?,?,?)`;
 
         db.query(sql, [jcNumber, test, nabl, testStandard, referenceDocument], (error, result) => {
             if (error) {
@@ -308,8 +308,8 @@ function jobcardsAPIs(app) {
         SET 
           test = ?, 
           nabl = ?, 
-          test_standard = ?, 
-          reference_document = ? 
+          testStandard = ?, 
+          referenceDocument = ? 
         WHERE jc_number = ?`;
 
         const values = [
@@ -348,7 +348,7 @@ function jobcardsAPIs(app) {
     // To fetch the data based on the jcnumber from the table 'tests'
     app.get('/api/gettestslist/:jc_number', (req, res) => {
         const jcNumber = req.params.jc_number;
-        const sqlQuery = `SELECT test, nabl, test_standard, reference_document FROM jc_tests WHERE jc_number = ?`;
+        const sqlQuery = `SELECT test, nabl, testStandard, referenceDocument FROM jc_tests WHERE jc_number = ?`;
 
 
         db.query(sqlQuery, [jcNumber], (error, result) => {
@@ -373,7 +373,7 @@ function jobcardsAPIs(app) {
         // const formattedendDate = moment(endDate, 'DD/MM/YYYY', true).format('%Y-%m-%d %H:%i:%s');
         // const formattedDuration = `${hours}:${minutes}:${seconds}`;
 
-        const sql = `INSERT INTO tests_details (jc_number, test, chamber, eut_serial_no, standard, test_started_by, start_date, end_date, duration, test_ended_by, remarks, report_no, report_prepared_by, nabl_uploaded, report_status) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
+        const sql = `INSERT INTO tests_details (jc_number, testName, testChamber, eutSerialNo, standard, testStartedBy, startDate, endDate, duration, testEndedBy, remarks, reportNumber, preparedBy, nablUploaded, reportStatus) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
 
         // console.log('SQL Query:', sql);
         // console.log('Query Values:', [jcNumber, test, chamber, eutSerialNo, standard, testStartedBy, startDate, endDate, duration, testEndedBy, remarks, reportNumber, preparedBy, nablUploaded, reportStatus]);
@@ -425,20 +425,20 @@ function jobcardsAPIs(app) {
         const sqlQuery = `
         UPDATE tests_details
         SET 
-          test = ?, 
-          chamber = ?, 
-          eut_serial_no = ?, 
+          testName = ?, 
+          testChamber = ?, 
+          eutSerialNo = ?, 
           standard = ? ,
-          test_started_by = ? ,
-          start_date = ? ,
-          end_date = ? ,
+          testStartedBy = ? ,
+          startDate = ? ,
+          endDate = ? ,
           duration = ? ,
-          test_ended_by = ? ,
+          testEndedBy = ? ,
           remarks = ? ,
-          report_no = ? ,
-          report_prepared_by = ? ,
-          nabl_uploaded = ? ,
-          report_status = ? 
+          reportNumber = ? ,
+          preparedBy = ? ,
+          nablUploaded = ? ,
+          reportStatus = ? 
         WHERE jc_number = ?`;
 
         const values = [testName, testChamber, eutSerialNo, standard, testStartedBy, startDate, endDate, duration, testEndedBy, remarks, reportNumber, preparedBy, nablUploaded, reportStatus, jc_number
@@ -471,7 +471,7 @@ function jobcardsAPIs(app) {
     //To fetch the data based on the jcnumber from the table 'tests_details'
     app.get('/api/gettestdetailslist/:jc_number', (req, res) => {
         const jcnumber = req.params.jc_number;
-        const sqlQuery = `SELECT  test, chamber, eut_serial_no, standard, test_started_by, start_date, end_date, duration, test_ended_by, remarks, report_no, report_prepared_by, nabl_uploaded, report_status FROM tests_details  WHERE jc_number = ?`;
+        const sqlQuery = `SELECT  testName,testChamber,eutSerialNo,standard,testStartedBy,startDate,endDate,duration,testEndedBy,remarks,reportNumber,preparedBy,nablUploaded,reportStatus FROM tests_details  WHERE jc_number = ?`;
 
         db.query(sqlQuery, [jcnumber], (error, result) => {
             if (error) {
@@ -485,7 +485,7 @@ function jobcardsAPIs(app) {
     app.get('/api/jobcard/:id', (req, res) => {
         const id = req.params.id;
         let output = {}
-        let sqlQuery = `SELECT jc_number, dcform_number, jc_open_date, po_number, test_category, test_incharge,company_name, customer_number, customer_name, project_name, sample_condition, referance_document FROM bea_jobcards WHERE id = ?`;
+        let sqlQuery = `SELECT * FROM bea_jobcards WHERE id = ?`;
         db.query(sqlQuery, [id], (error, result) => {
             if (error) return res.status(500).json({ error })
             output['jobcard'] = result[0]

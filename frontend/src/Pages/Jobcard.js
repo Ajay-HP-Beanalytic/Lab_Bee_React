@@ -18,6 +18,7 @@ import { toast } from 'react-toastify';
 import axios from 'axios';
 
 import { serverBaseAddress } from './APIPage'
+import { useParams } from 'react-router-dom';
 
 
 
@@ -33,8 +34,6 @@ const Jobcard = () => {
 
 
   ////////////////////////
-
-  const [jcNumber, setJcnumber] = useState()
 
   const [dcNumber, setDcnumber] = useState()
   const [jcOpenDate, setJcOpenDate] = useState(dayjs())
@@ -54,81 +53,35 @@ const Jobcard = () => {
   const [jcText, setJcText] = useState();
   const [observations, setObservations] = useState();
 
-
-  // Set Initial table data for the 'EUT' Table:
-  let defNomenclature = ''
-  let defEutDescription = ''
-  let defQty = ''
-  let defPartNo = ''
-  let defModelNo = ''
-  let defSerialNo = ''
-
-  const initialEutTableData = [{
-    slno: 1,
-    nomenclature: defNomenclature,
-    eutDescription: defEutDescription,
-    qty: defQty,
-    partNo: defPartNo,
-    modelNo: defModelNo,
-    serialNo: defSerialNo,
-  }]
-
-
-  // Set Initial table data for the 'Tests' Table:
-  let defTest = ''
-  let defNabl = ''
-  let defTestStandard = ''
-  let defReferanceDocument = ''
+  const { id } = useParams('id')
+  useEffect(() => {
+    if (id) {
+      axios.get(`${serverBaseAddress}/api/jobcard/${id}`)
+        .then((res) => {
+          setJcumberString(res.data.jobcard.jc_number)
+          setDcnumber(res.data.jobcard.dcform_number)
+          setPonumber(res.data.jobcard.po_number)
+          setTestCategory(res.data.jobcard.test_category)
+          setTestInchargeName(res.data.jobcard.test_incharge)
+          setCompanyName(res.data.jobcard.company_name)
+          setCustomerNumber(res.data.jobcard.customer_number)
+          setCustomerName(res.data.jobcard.customer_name)
+          setProjectName(res.data.jobcard.project_name)
+          setSampleCondition(res.data.jobcard.sample_condition)
+          setReferanceDocs(res.data.jobcard.referance_document)
+          setJcStatus(res.data.jobcard.jc_status)
+          setJcCloseDate(res.data.jobcard.jc_closed_date)
+          setJcText(res.data.jobcard.jc_text)
+          setObservations(res.data.jobcard.observations)
 
 
-  const initialTestsTableData = [{
-    slno: 1,
-    test: defTest,
-    nabl: defNabl,
-    testStandard: defTestStandard,
-    referenceDocument: defReferanceDocument,
-  }]
-
-  // Set Initial table data for the 'Tests Detail' Table:
-  let defTestName = ''
-  let defTestChamber = ''
-  let defEutSerialNo = ''
-  let defStanadrd = ''
-  let defStartedBy = ''
-  let defStartDate = ''
-  let defEndDate = ''
-  let defDuration = ''
-  let defTestEndedBy = ''
-  let defRemarks = ''
-  let defReportNumber = ''
-  let defReportPreparedBy = ''
-  let defNablploaded = ''
-  let defReportStatus = ''
-
-  const initialTestDetailsTableData = [{
-    slno: 1,
-    testName: defTestName,
-    testChamber: defTestChamber,
-    eutSerialNo: defEutSerialNo,
-    standard: defStanadrd,
-    testStartedBy: defStartedBy,
-    startDate: defStartDate,
-    endDate: defEndDate,
-    duration: defDuration,
-    testEndedBy: defTestEndedBy,
-    remarks: defRemarks,
-    reportNumber: defReportNumber,
-    preparedBy: defReportPreparedBy,
-    nablUploaded: defNablploaded,
-    reportStatus: defReportStatus
-  }]
-
-
-  //State variables to operate the tabular data of the Job-card page tables:
-  const [eutTableData, setEutTableData] = useState(initialEutTableData);
-  const [testsTableData, setTestsTableData] = useState(initialTestsTableData);
-  const [testDetailsTableData, settestDetailsTableData] = useState(initialTestDetailsTableData);
-
+          setEutRows(res.data.eut_details)
+          setTestRows(res.data.tests)
+          setTestDetailsRows(res.data.tests_details)
+        })
+        .catch(error => console.error(error))
+    }
+  }, [])
 
   // Function to get the selected sample condition state:
   const handleSampleConditionChange = (event) => {
@@ -232,40 +185,40 @@ const Jobcard = () => {
 
   // Use Effect to fetch the last jc number and generate the new jc number:
   useEffect(() => {
+    if (!id) {
+      const { currentYear, currentMonth } = getCurrentYearAndMonth();
 
-    const { currentYear, currentMonth } = getCurrentYearAndMonth();
+      let finYear = 0;
 
-    let finYear = 0;
+      if (currentMonth > 2) {
+        finYear = `${currentYear}-${currentYear + 1}/${currentMonth}`;
+        //console.log('2', finYear)
+      } else {
+        finYear = `${currentYear - 1}-${currentYear}/${currentMonth}`;
+        //console.log('3', finYear)
+      }
 
-    if (currentMonth > 2) {
-      finYear = `${currentYear}-${currentYear + 1}/${currentMonth}`;
-      //console.log('2', finYear)
-    } else {
-      finYear = `${currentYear - 1}-${currentYear}/${currentMonth}`;
-      //console.log('3', finYear)
+
+      //fetch the latest jcnumber count
+      const fetchJCCount = async () => {
+
+        axios.post(`${serverBaseAddress}/api/getJCCount`, { finYear })
+          .then(res => {
+            if (res.status === 200) {
+              setJcCount(res.data)
+            }
+            if (res.status === 500) {
+              console.log(res.status);
+            }
+          })
+      }
+
+      fetchJCCount()
+
+      //generate jcnumber dynamically
+      const dynamicJcNumberString = `${finYear}-${(jcCount + 1).toString().padStart(3, '0')}`;
+      setJcumberString(dynamicJcNumberString);
     }
-
-
-    //fetch the latest jcnumber count
-    const fetchJCCount = async () => {
-
-      axios.post(`${serverBaseAddress}/api/getJCCount`, { finYear })
-        .then(res => {
-          if (res.status === 200) {
-            setJcCount(res.data)
-          }
-          if (res.status === 500) {
-            console.log(res.status);
-          }
-        })
-    }
-
-    fetchJCCount()
-
-    //generate jcnumber dynamically
-    const dynamicJcNumberString = `${finYear}-${(jcCount + 1).toString().padStart(3, '0')}`;
-    setJcumberString(dynamicJcNumberString);
-
   }, [jcCount]);
 
 
@@ -453,7 +406,7 @@ const Jobcard = () => {
 
   // To clear the fields of job card:
   const handleClearJobcard = () => {
-    setJcnumber('');
+
     setDcnumber('');
     setJcOpenDate('');
     setPonumber('');
@@ -977,7 +930,7 @@ const Jobcard = () => {
                               margin="normal"
                               // value={dateTimeValue}
                               // onChange={handleDateChange}
-                              value={row.startDate}
+                              value={dayjs(row.startDate)}
                               onChange={(date) => handleTestDetailsRowChange(index, 'startDate', date)}
 
                               renderInput={(props) => <TextField {...props} />}
@@ -995,7 +948,7 @@ const Jobcard = () => {
                               margin="normal"
                               // value={dateTimeValue}
                               // onChange={handleDateChange}
-                              value={row.endDate}
+                              value={dayjs(row.endDate)}
                               onChange={(date) => handleTestDetailsRowChange(index, 'endDate', date)}
 
                               renderInput={(props) => <TextField {...props} />}
@@ -1148,6 +1101,7 @@ const Jobcard = () => {
                     <Typography variant="h6">
                       <TextField sx={{ width: '75%', marginBottom: '20px', marginTop: '20px', marginLeft: '15px', marginRight: '15px', borderRadius: 3 }}
                         onChange={(e) => setJcText(e.target.value)}
+                        value={jcText}
                       />
                     </Typography>
                   )}
@@ -1159,6 +1113,7 @@ const Jobcard = () => {
                     multiline={true}
                     rows={4}
                     autoComplete="on"
+                    value={observations}
                     onChange={(e) => setObservations(e.target.value)}
                   />
                 </Grid>
