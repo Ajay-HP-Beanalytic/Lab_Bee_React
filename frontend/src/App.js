@@ -54,6 +54,7 @@ function App() {
 
             <Route path='/jobcard_dashboard' element={<JCHome />} />
             <Route path='/jobcard' element={<Jobcard />} />
+            <Route path='/jobcard/:id' element={<Jobcard />} />
             <Route path='/jobcard_essentials' element={<JobcardRequirements />} />
             {/* <Route path='/jobcard' element={<JobcardBMRCL />} /> // BMRCL Job-Card */}
 
