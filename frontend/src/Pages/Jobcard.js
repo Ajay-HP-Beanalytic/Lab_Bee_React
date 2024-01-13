@@ -245,7 +245,7 @@ const Jobcard = () => {
 
     try {
 
-      axios.post(`${serverBaseAddress}/api/add_jobcard`, {
+      axios.post(`${serverBaseAddress}/api/jobcard/${id}`, {
         jcNumber: jcNumberString,
         dcNumber,
         jcOpenDate,
@@ -268,7 +268,10 @@ const Jobcard = () => {
       console.error('Error submitting Job-Card:', error);
     }
 
-
+    if (id) {
+      console.log('only Jobcard details saved');
+      return
+    }
 
     // Function to extract EUT details based on the index
     const eutdetailsdata = (i) => {
