@@ -8,7 +8,7 @@ const moment = require('moment');
 function jobcardsAPIs(app) {
 
     // Add primary details of the jobcard to the 'bea_jobcards' table:
-    app.post('/api/add_jobcard', (req, res) => {
+    app.post('/api/jobcard', (req, res) => {
         const { jcNumber, dcNumber, jcOpenDate, poNumber, jcCategory, testInchargeName, companyName, customerName, customerNumber, projectName, sampleCondition, referanceDocs, jcStatus, jcCloseDate, jcText, observations } = req.body
 
         console.log('1', jcOpenDate)
@@ -54,55 +54,45 @@ function jobcardsAPIs(app) {
 
 
     // To Edit the selected jobcards:
-    // app.post('/api/jobcard/:jc_number', (req, res) => {
-    //     const { dcformnumber, jcopendate, ponumber, category, testinchargename, companyname, customernumber, customersignature, projectname, samplecondition, referancedocument } = req.body;
-    //     const jc_number = req.params.jc_number; // Use jc_number instead of id
+    app.post('/api/jobcard/:id', (req, res) => {
+        const { jcNumber, dcNumber, jcOpenDate, poNumber, jcCategory, testInchargeName, companyName, customerName, customerNumber, projectName, sampleCondition, referanceDocs, jcStatus, jcCloseDate, jcText, observations } = req.body;
 
-    //     // Parse the date using moment.js
-    //     const formattedDate = moment(jcopendate, 'DD/MM/YYYY', true).format('YYYY-MM-DD');
+        const sqlQuery = `
+        UPDATE bea_jobcards SET
+         
+        dcform_number=?, 
+        jc_open_date=?, 
+        po_number=?, 
+        test_category=?, 
+        test_incharge=?, 
+        company_name=?, 
+        customer_name=?, 
+        customer_number=?, 
+        project_name=?, 
+        sample_condition=?, 
+        referance_document=?, 
+        jc_status=?, 
+        jc_closed_date=?, 
+        jc_text=?, 
+        observations=?
 
+        WHERE jc_number = ?`;
 
-    //     const sqlQuery = `
-    //     UPDATE bea_jobcards
-    //     SET 
-    //       dcform_number = ?,
-    //       jc_opendate = ?,
-    //       po_number = ?,
-    //       category = ?,
-    //       test_inchargename = ?,
-    //       company_name = ?,
-    //       customer_number = ?,
-    //       customer_signature = ?,
-    //       project_name = ?,
-    //       sample_condition = ?,
-    //       referance_document = ? 
-    //     WHERE jc_number = ?`;
+        // Use an array to provide values for placeholders in the query
+        const values = [
+            dcNumber, jcOpenDate, poNumber, jcCategory, testInchargeName, companyName, customerName, customerNumber, projectName, sampleCondition, referanceDocs, jcStatus, jcCloseDate, jcText, observations,
+            jcNumber // jc_number should be included in the values array
+        ];
 
-    //     // Use an array to provide values for placeholders in the query
-    //     const values = [
-    //         dcformnumber,
-    //         formattedDate,
-    //         ponumber,
-    //         category,
-    //         testinchargename,
-    //         companyname,
-    //         customernumber,
-    //         customersignature,
-    //         projectname,
-    //         samplecondition,
-    //         referancedocument,
-    //         jc_number // jc_number should be included in the values array
-    //     ];
-
-    //     db.query(sqlQuery, values, (error, result) => {
-    //         if (error) {
-    //             console.log(error);
-    //             return res.status(500).json({ message: "Internal server error", result });
-    //         } else {
-    //             res.status(200).json({ message: "Jobcard updated successfully" });
-    //         }
-    //     });
-    // });
+        db.query(sqlQuery, values, (error, result) => {
+            if (error) {
+                console.log(error.message);
+                return res.status(200).json({ message: "Internal server error", error: error.message });
+            } else {
+                res.status(200).json({ message: "Jobcard updated successfully" });
+            }
+        });
+    });
 
 
     // To fetch the jcnumber from the table 'jobcards'
