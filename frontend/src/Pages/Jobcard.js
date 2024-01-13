@@ -242,10 +242,14 @@ const Jobcard = () => {
     //   return prev.slice(0, -3) + formattedNumericPart;
     // });
 
+    let api_url = `${serverBaseAddress}/api/jobcard/`
+    if (id) {
+      api_url = `${serverBaseAddress}/api/jobcard/${id}`
+    }
 
     try {
 
-      axios.post(`${serverBaseAddress}/api/jobcard/${id}`, {
+      axios.post(api_url, {
         jcNumber: jcNumberString,
         dcNumber,
         jcOpenDate,
@@ -263,6 +267,9 @@ const Jobcard = () => {
         jcText,
         observations,
 
+      }).then(res => {
+        console.log(res.data)
+        toast.success('JobCard Submitted Succesfully')
       })
     } catch (error) {
       console.error('Error submitting Job-Card:', error);
