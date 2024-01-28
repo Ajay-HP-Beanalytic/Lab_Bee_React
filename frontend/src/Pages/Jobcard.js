@@ -52,8 +52,10 @@ const Jobcard = () => {
   const [jcCloseDate, setJcCloseDate] = useState();
   const [jcText, setJcText] = useState();
   const [observations, setObservations] = useState();
-
-  const { id } = useParams('id')
+  let { id } = useParams('id')
+  if (!id) {
+    id = ''
+  }
   useEffect(() => {
     if (id) {
       axios.get(`${serverBaseAddress}/api/jobcard/${id}`)
@@ -242,10 +244,7 @@ const Jobcard = () => {
     //   return prev.slice(0, -3) + formattedNumericPart;
     // });
 
-    let api_url = `${serverBaseAddress}/api/jobcard/`
-    if (id) {
-      api_url = `${serverBaseAddress}/api/jobcard/${id}`
-    }
+    let api_url = `${serverBaseAddress}/api/jobcard/${id}`
 
     try {
 
@@ -268,17 +267,13 @@ const Jobcard = () => {
         observations,
 
       }).then(res => {
-        console.log(res.data)
+        // console.log(res.data)
         toast.success('JobCard Submitted Succesfully')
       })
     } catch (error) {
       console.error('Error submitting Job-Card:', error);
     }
 
-    if (id) {
-      console.log('only Jobcard details saved');
-      return
-    }
 
     // Function to extract EUT details based on the index
     const eutdetailsdata = (i) => {
@@ -295,20 +290,32 @@ const Jobcard = () => {
       }
     }
 
+    // First we should send all the serial numbers. (so that they can be inserted or deleted)
+    const serialNos = eutRows.map(item => Number(item.serialNo))
+    axios.post(`${serverBaseAddress}/api/eutdetails/serialNos/${id}`, { jcNumberString, serialNos })
+      .then(res => {
+        // console.log(res.data);
+        // Iterating over eutRows using map to submit data to the server
+        eutRows.map((row, index) => {
+          //console.log('tata', index);
+          axios.post(`${serverBaseAddress}/api/eutdetails/${id}`, eutdetailsdata(index))
+            .then(
+              res => {
+                if (res.status === 200)
+                  toast.success('eutdetails  Submitted Succesfully')
+              }
+            )
+            .catch((error) => console.log(error))
+        })
 
-    // Iterating over eutRows using map to submit data to the server
-    eutRows.map((row, index) => {
-      //console.log('tata', index);
-      axios.post(`${serverBaseAddress}/api/eutdetails`, eutdetailsdata(index))
+      })
+      .catch(error => console.error(error))
 
-        .then(
-          res => {
-            if (res.status === 200)
-              toast.success('eutdetails  Submitted Succesfully')
-          }
-        )
-        .catch((error) => console.log(error))
-    })
+
+    if (id) {
+      console.log('only Jobcard, eutdetails saved');
+      return
+    }
 
     // Function to extract tests data based on the index
     const testsdata = (i) => {
