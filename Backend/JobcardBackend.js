@@ -191,40 +191,71 @@ function jobcardsAPIs(app) {
         });
     });
 
+    // To Insert or delete EUTDetails:
+    app.post('/api/eutdetails/serialNos/:id', (req, res) => {
+        let { serialNos, jcNumberString } = req.body;
+        let sqlQuery = "SELECT serialNo FROM eut_details WHERE jc_number=?"
+        db.query(sqlQuery, [jcNumberString], (error, result) => {
+            if (error) res.status(500).json(error.message)
+            let newResult = result.map(item => Number(item.serialNo))
+            let toDelete = newResult.filter(function (el) {
+                return !serialNos.includes(el);
+            });
+            let toAdd = serialNos.filter(function (el) {
+                return !newResult.includes(el);
+            });
+            toDelete.forEach(serialNo => {
+                sqlQuery = "DELETE FROM eut_details WHERE serialNo=?"
+                db.query(sqlQuery, [serialNo], (error, result) => {
+                    if (error) res.status(500).json(error.message)
+                })
+            });
+            toAdd.forEach(serialNo => {
+                sqlQuery = "INSERT INTO eut_details (jc_number,serialNo) VALUES (?,?)"
+                db.query(sqlQuery, [jcNumberString, serialNo], (error, result) => {
+                    if (error) res.status(500).json(error.message)
+                })
+            });
+            res.status(200).json({ message: `eut_details synced successfully`, toDelete, toAdd });
+        })
+
+
+    })
+
     // To Edit the selected eut_details:
-    app.post('/api/eutdetails/:jc_number', (req, res) => {
-        const { nomenclature, eutDescription, qty, partNo, modelNo, serialNo } = req.body;
-        const jc_number = req.params.jc_number; // Use jc_number instead of id
+    app.post('/api/eutdetails/:id', (req, res) => {
+        const { nomenclature, eutDescription, qty, partNo, modelNo, jcNumber, serialNo } = req.body;
+        let sqlQuery = ``;
 
-        const sqlQuery = `
-        UPDATE eut_details SET 
-          nomenclature = ?, 
-          eutDescription = ?, 
-          qty = ?, 
-          partNo = ?,
-          modelNo = ?,
-          serialNo = ?
-        WHERE jc_number = ?`;
+        if (serialNo) {
+            sqlQuery = `UPDATE eut_details SET 
+                nomenclature = ?, 
+                eutDescription = ?, 
+                qty = ?, 
+                partNo = ?,
+                modelNo = ?,
+                jc_number=?
+                WHERE serialNo=?`;
 
-        // Use an array to provide values for placeholders in the query
-        const values = [
-            nomenclature,
-            eutDescription,
-            qty,
-            partNo,
-            modelNo,
-            serialNo,
-            jc_number
-        ];
+            // Use an array to provide values for placeholders in the query
+            const values = [
+                nomenclature,
+                eutDescription,
+                qty,
+                partNo,
+                modelNo,
+                jcNumber,
+                serialNo,
+            ];
 
-        db.query(sqlQuery, values, (error, result) => {
-            if (error) {
-                console.log(error);
-                return res.status(500).json({ message: "Internal server error", result });
-            } else {
-                res.status(200).json({ message: "eut_details updated successfully" });
-            }
-        });
+            db.query(sqlQuery, values, (error, result) => {
+                if (error) {
+                    return res.status(500).json({ message: "Internal server error", error });
+                } else {
+                    res.status(200).json({ message: "eut_details updated successfully", result });
+                }
+            });
+        }
     });
 
 
