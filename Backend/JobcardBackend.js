@@ -205,8 +205,8 @@ function jobcardsAPIs(app) {
                 return !newResult.includes(el);
             });
             toDelete.forEach(serialNo => {
-                sqlQuery = "DELETE FROM eut_details WHERE serialNo=?"
-                db.query(sqlQuery, [serialNo], (error, result) => {
+                sqlQuery = "DELETE FROM eut_details WHERE serialNo=? AND jc_number=?"
+                db.query(sqlQuery, [serialNo, jcNumberString], (error, result) => {
                     if (error) res.status(500).json(error.message)
                 })
             });
@@ -233,9 +233,8 @@ function jobcardsAPIs(app) {
                 eutDescription = ?, 
                 qty = ?, 
                 partNo = ?,
-                modelNo = ?,
-                jc_number=?
-                WHERE serialNo=?`;
+                modelNo = ?
+                WHERE jc_number=? AND serialNo=?`;
 
             // Use an array to provide values for placeholders in the query
             const values = [
@@ -318,27 +317,53 @@ function jobcardsAPIs(app) {
     });
 
 
+    // To Insert or delete Tests based on test name:
+    app.post('/api/tests_sync/names/:id', (req, res) => {
+        let { tests, jcNumberString } = req.body;
+        let sqlQuery = "SELECT test FROM jc_tests WHERE jc_number=?"
+        db.query(sqlQuery, [jcNumberString.toString()], (error, result) => {
+            if (error) res.status(500).json(error.message)
+            let newResult = result.map(item => item.test.toString())
+            let toDelete = newResult.filter(function (el) {
+                return !tests.includes(el);
+            });
+            let toAdd = tests.filter(function (el) {
+                return !newResult.includes(el);
+            });
+            toDelete.forEach(test => {
+                sqlQuery = "DELETE FROM jc_tests WHERE test=? AND jc_number=?"
+                db.query(sqlQuery, [test, jcNumberString], (error, result) => {
+                    if (error) res.status(500).json(error.message)
+                })
+            });
+            toAdd.forEach(test => {
+                sqlQuery = "INSERT INTO jc_tests (jc_number,test) VALUES (?,?)"
+                db.query(sqlQuery, [jcNumberString, test], (error, result) => {
+                    if (error) res.status(500).json(error.message)
+                })
+            });
+            res.status(200).json({ message: `tests synced successfully`, toDelete, toAdd });
+        })
+    })
 
     // To Edit the selected tests:
-    app.post('/api/tests/:jc_number', (req, res) => {
-        const { test, nabl, testStandard, referenceDocument } = req.body;
-        const jc_number = req.params.jc_number;
+    app.post('/api/tests/:id', (req, res) => {
+        const { test, nabl, testStandard, referenceDocument, jcNumber } = req.body;
 
         const sqlQuery = `
         UPDATE jc_tests
-        SET 
-          test = ?, 
+        SET
           nabl = ?, 
           testStandard = ?, 
           referenceDocument = ? 
-        WHERE jc_number = ?`;
+        WHERE jc_number = ? AND test = ?`;
 
         const values = [
-            test,
             nabl,
             testStandard,
             referenceDocument,
-            jc_number
+            jcNumber,
+            test
         ];
 
         db.query(sqlQuery, values, (error, result) => {
