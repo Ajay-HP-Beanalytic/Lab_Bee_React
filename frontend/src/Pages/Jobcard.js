@@ -301,8 +301,10 @@ const Jobcard = () => {
           axios.post(`${serverBaseAddress}/api/eutdetails/${id}`, eutdetailsdata(index))
             .then(
               res => {
-                if (res.status === 200)
-                  toast.success('eutdetails  Submitted Succesfully')
+                if (res.status === 200) {
+                  // toast.success('eutdetails  Submitted Succesfully')
+                  // this generates multiple toasts for multiple euts
+                }
               }
             )
             .catch((error) => console.log(error))
@@ -310,12 +312,8 @@ const Jobcard = () => {
 
       })
       .catch(error => console.error(error))
+      .finally(() => toast.success('eutdetails  Submitted Succesfully'))
 
-
-    if (id) {
-      console.log('only Jobcard, eutdetails saved');
-      return
-    }
 
     // Function to extract tests data based on the index
     const testsdata = (i) => {
@@ -327,19 +325,33 @@ const Jobcard = () => {
         jcNumber: jcNumberString,
       }
     }
-    // Iterating over testRows using map to submit data to the server
-    testRows.map((row, index) => {
 
-      axios.post(`${serverBaseAddress}/api/tests`, testsdata(index))
-        .then(
-          res => {
-            if (res.status === 200)
-              toast.success('tests  Submitted Succesfully')
-          }
-        )
-        .catch(error => console.log(error))
-    })
+    // first sync tests (add or delete) based on test name
+    const tests = testRows.map(item => item.test)
+    axios.post(`${serverBaseAddress}/api/tests_sync/names/${id}`, { jcNumberString, tests })
+      .then(() => {
 
+        // Iterating over testRows using map to submit data to the server
+        testRows.map((row, index) => {
+          axios.post(`${serverBaseAddress}/api/tests/${id}`, testsdata(index))
+            .then(
+              res => {
+                if (res.status === 200) {
+                  // toast.success('Tests Submitted Succesfully')
+                  // this generates multiple toasts for multiple tests
+                }
+              }
+            )
+            .catch(error => console.log(error))
+        })
+      })
+      .catch(error => console.log(error))
+      .finally(() => toast.success('Tests  Submitted Succesfully'))
+
+    if (id) {
+      console.log('Test Details not saved');
+      return
+    }
 
     // Function to extract test details based on the index
     const testdetailsdata = (i) => {
