@@ -11,8 +11,8 @@ function jobcardsAPIs(app) {
     app.post('/api/jobcard', (req, res) => {
         const { jcNumber, dcNumber, jcOpenDate, poNumber, jcCategory, testInchargeName, companyName, customerName, customerNumber, projectName, sampleCondition, referanceDocs, jcStatus, jcCloseDate, jcText, observations } = req.body
 
-        console.log('1', jcOpenDate)
-        console.log('2', jcCloseDate)
+        // console.log('1', jcOpenDate)
+        // console.log('2', jcCloseDate)
 
         const sql = `INSERT INTO bea_jobcards(jc_number, dcform_number, jc_open_date, po_number, test_category, test_incharge, company_name, customer_name, customer_number, project_name, sample_condition, referance_document, jc_status, jc_closed_date, jc_text, observations ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
 
@@ -161,20 +161,21 @@ function jobcardsAPIs(app) {
 
 
     // To add new eut_details to the database:
-    app.post('/api/eutdetails', (req, res) => {
-        const { jcNumber, nomenclature, eutDescription, qty, partNo, modelNo, serialNo } = req.body;
+    // we are not inserting this way
+    // app.post('/api/eutdetails', (req, res) => {
+    //     const { jcNumber, nomenclature, eutDescription, qty, partNo, modelNo, serialNo } = req.body;
 
-        const sql = `INSERT INTO eut_details (jc_number,nomenclature, eutDescription, qty, partNo, modelNo, serialNo) VALUES (?,?,?,?,?,?,?)`;
+    //     const sql = `INSERT INTO eut_details (jc_number,nomenclature, eutDescription, qty, partNo, modelNo, serialNo) VALUES (?,?,?,?,?,?,?)`;
 
-        db.query(sql, [jcNumber, nomenclature, eutDescription, qty, partNo, modelNo, serialNo], (error, result) => {
-            if (error) {
-                console.log(error);
-                return res.status(500).json({ message: 'Internal server error', error });
-            } else {
-                return res.status(200).json({ message: 'eut_details added successfully' });
-            }
-        });
-    });
+    //     db.query(sql, [jcNumber, nomenclature, eutDescription, qty, partNo, modelNo, serialNo], (error, result) => {
+    //         if (error) {
+    //             console.log(error);
+    //             return res.status(500).json({ message: 'Internal server error', error });
+    //         } else {
+    //             return res.status(200).json({ message: 'eut_details added successfully' });
+    //         }
+    //     });
+    // });
 
 
 
@@ -192,12 +193,12 @@ function jobcardsAPIs(app) {
     });
 
     // To Insert or delete EUTDetails:
-    app.post('/api/eutdetails/serialNos/:id', (req, res) => {
+    app.post('/api/eutdetails/serialNos/', (req, res) => {
         let { serialNos, jcNumberString } = req.body;
         let sqlQuery = "SELECT serialNo FROM eut_details WHERE jc_number=?"
         db.query(sqlQuery, [jcNumberString], (error, result) => {
             if (error) res.status(500).json(error.message)
-            let newResult = result.map(item => Number(item.serialNo))
+            let newResult = result.map(item => item.serialNo)
             let toDelete = newResult.filter(function (el) {
                 return !serialNos.includes(el);
             });
@@ -223,7 +224,7 @@ function jobcardsAPIs(app) {
     })
 
     // To Edit the selected eut_details:
-    app.post('/api/eutdetails/:id', (req, res) => {
+    app.post('/api/eutdetails/', (req, res) => {
         const { nomenclature, eutDescription, qty, partNo, modelNo, jcNumber, serialNo } = req.body;
         let sqlQuery = ``;
 
@@ -286,20 +287,20 @@ function jobcardsAPIs(app) {
 
 
     // To add new tests to the database:
-    app.post('/api/tests', (req, res) => {
-        const { jcNumber, test, nabl, testStandard, referenceDocument } = req.body;
+    // app.post('/api/tests', (req, res) => {
+    //     const { jcNumber, test, nabl, testStandard, referenceDocument } = req.body;
 
-        const sql = `INSERT INTO jc_tests (jc_number, test, nabl, testStandard, referenceDocument) VALUES (?,?,?,?,?)`;
+    //     const sql = `INSERT INTO jc_tests (jc_number, test, nabl, testStandard, referenceDocument) VALUES (?,?,?,?,?)`;
 
-        db.query(sql, [jcNumber, test, nabl, testStandard, referenceDocument], (error, result) => {
-            if (error) {
-                console.log(error);
-                return res.status(500).json({ message: 'Internal server error', error });
-            } else {
-                return res.status(200).json({ message: 'tests added successfully' });
-            }
-        });
-    });
+    //     db.query(sql, [jcNumber, test, nabl, testStandard, referenceDocument], (error, result) => {
+    //         if (error) {
+    //             console.log(error);
+    //             return res.status(500).json({ message: 'Internal server error', error });
+    //         } else {
+    //             return res.status(200).json({ message: 'tests added successfully' });
+    //         }
+    //     });
+    // });
 
 
 
@@ -318,12 +319,12 @@ function jobcardsAPIs(app) {
 
 
     // To Insert or delete Tests based on test name:
-    app.post('/api/tests_sync/names/:id', (req, res) => {
+    app.post('/api/tests_sync/names/', (req, res) => {
         let { tests, jcNumberString } = req.body;
         let sqlQuery = "SELECT test FROM jc_tests WHERE jc_number=?"
-        db.query(sqlQuery, [jcNumberString.toString()], (error, result) => {
+        db.query(sqlQuery, [jcNumberString], (error, result) => {
             if (error) res.status(500).json(error.message)
-            let newResult = result.map(item => item.test.toString())
+            let newResult = result.map(item => item.test)
             let toDelete = newResult.filter(function (el) {
                 return !tests.includes(el);
             });
@@ -347,7 +348,7 @@ function jobcardsAPIs(app) {
     })
 
     // To Edit the selected tests:
-    app.post('/api/tests/:id', (req, res) => {
+    app.post('/api/tests/', (req, res) => {
         const { test, nabl, testStandard, referenceDocument, jcNumber } = req.body;
 
         const sqlQuery = `
@@ -408,33 +409,32 @@ function jobcardsAPIs(app) {
 
 
     // To add new testdetails to the database:
-    app.post('/api/testdetails', (req, res) => {
-        const { jcNumber, testName, testChamber, eutSerialNo, standard, testStartedBy, startDate, endDate, duration, testEndedBy, remarks, reportNumber, preparedBy, nablUploaded, reportStatus } = req.body;
+    // app.post('/api/testdetails', (req, res) => {
+    //     const { jcNumber, testName, testChamber, eutSerialNo, standard, testStartedBy, startDate, endDate, duration, testEndedBy, remarks, reportNumber, preparedBy, nablUploaded, reportStatus } = req.body;
 
-        console.log('nablUploaded', nablUploaded)
-        // Parse the date using moment.js
-        // const formattedstartDate = moment(startDate, 'DD/MM/YYYY', true).format('%Y-%m-%d %H:%i:%s');
-        const formattedstartDate = dayjs(startDate, 'YYYY-MM-DD HH:mm:ss').format('YYYY-MM-DD HH:mm:ss');
-        const formattedendDate = dayjs(endDate, 'YYYY-MM-DD HH:mm:ss').format('YYYY-MM-DD HH:mm:ss');
-        // const formattedendDate = moment(endDate, 'DD/MM/YYYY', true).format('%Y-%m-%d %H:%i:%s');
-        // const formattedDuration = `${hours}:${minutes}:${seconds}`;
+    //     // Parse the date using moment.js
+    //     // const formattedstartDate = moment(startDate, 'DD/MM/YYYY', true).format('%Y-%m-%d %H:%i:%s');
+    //     const formattedstartDate = dayjs(startDate, 'YYYY-MM-DD HH:mm:ss').format('YYYY-MM-DD HH:mm:ss');
+    //     const formattedendDate = dayjs(endDate, 'YYYY-MM-DD HH:mm:ss').format('YYYY-MM-DD HH:mm:ss');
+    //     // const formattedendDate = moment(endDate, 'DD/MM/YYYY', true).format('%Y-%m-%d %H:%i:%s');
+    //     // const formattedDuration = `${hours}:${minutes}:${seconds}`;
 
-        const sql = `INSERT INTO tests_details (jc_number, testName, testChamber, eutSerialNo, standard, testStartedBy, startDate, endDate, duration, testEndedBy, remarks, reportNumber, preparedBy, nablUploaded, reportStatus) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
+    //     const sql = `INSERT INTO tests_details (jc_number, testName, testChamber, eutSerialNo, standard, testStartedBy, startDate, endDate, duration, testEndedBy, remarks, reportNumber, preparedBy, nablUploaded, reportStatus) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
 
-        // console.log('SQL Query:', sql);
-        // console.log('Query Values:', [jcNumber, test, chamber, eutSerialNo, standard, testStartedBy, startDate, endDate, duration, testEndedBy, remarks, reportNumber, preparedBy, nablUploaded, reportStatus]);
+    //     // console.log('SQL Query:', sql);
+    //     // console.log('Query Values:', [jcNumber, test, chamber, eutSerialNo, standard, testStartedBy, startDate, endDate, duration, testEndedBy, remarks, reportNumber, preparedBy, nablUploaded, reportStatus]);
 
 
-        db.query(sql, [jcNumber, testName, testChamber, eutSerialNo, standard, testStartedBy, formattedstartDate, formattedendDate, duration, testEndedBy, remarks, reportNumber, preparedBy, nablUploaded, reportStatus], (error, result) => {
-            if (error) {
-                console.log(error);
-                return res.status(500).json({ message: 'Internal server error' });
-            } else {
-                return res.status(200).json({ message: 'testdetails added successfully' });
-            }
+    //     db.query(sql, [jcNumber, testName, testChamber, eutSerialNo, standard, testStartedBy, formattedstartDate, formattedendDate, duration, testEndedBy, remarks, reportNumber, preparedBy, nablUploaded, reportStatus], (error, result) => {
+    //         if (error) {
+    //             console.log(error);
+    //             return res.status(500).json({ message: 'Internal server error' });
+    //         } else {
+    //             return res.status(200).json({ message: 'testdetails added successfully' });
+    //         }
 
-        });
-    });
+    //     });
+    // });
 
 
 
@@ -452,26 +452,42 @@ function jobcardsAPIs(app) {
         });
     });
 
+    // To Insert or delete Test Details based on test name:
+    app.post('/api/testdetails_sync/names/', (req, res) => {
+        let { testNames, jcNumberString } = req.body;
+        let sqlQuery = "SELECT testName FROM tests_details WHERE jc_number=?"
+        db.query(sqlQuery, [jcNumberString], (error, result) => {
+            if (error) res.status(500).json(error.message)
+            let newResult = result.map(item => item.testName)
+            let toDelete = newResult.filter(function (el) {
+                return !testNames.includes(el);
+            });
+            let toAdd = testNames.filter(function (el) {
+                return !newResult.includes(el);
+            });
+            toDelete.forEach(test => {
+                sqlQuery = "DELETE FROM tests_details WHERE testName=? AND jc_number=?"
+                db.query(sqlQuery, [test, jcNumberString], (error, result) => {
+                    if (error) res.status(500).json(error.message)
+                })
+            });
+            toAdd.forEach(test => {
+                sqlQuery = "INSERT INTO tests_details (jc_number,testName) VALUES (?,?)"
+                db.query(sqlQuery, [jcNumberString, test], (error, result) => {
+                    if (error) res.status(500).json(error.message)
+                })
+            });
+            res.status(200).json({ message: `tests synced successfully`, toDelete, toAdd });
+        })
+    })
 
     //To Edit the selected testdetails:
-    app.post('/api/testdetails/:jc_number', (req, res) => {
-        const { testName, testChamber, eutSerialNo, standard, testStartedBy, startDate, endDate, duration, testEndedBy, remarks, reportNumber, preparedBy, nablUploaded, reportStatus } = req.body;
-        const jc_number = req.params.jc_number;
-
-        const hours = req.body.hours || 0;
-        const minutes = req.body.minutes || 0;
-        const seconds = req.body.seconds || 0;
-
-        // Parse the date using moment.js
-        const formattedstartDate = moment(startDate, 'DD/MM/YYYY', true).format('YYYY-MM-DD');
-        const formattedendDate = moment(endDate, 'DD/MM/YYYY', true).format('YYYY-MM-DD');
-        const formattedDuration = `${hours}:${minutes}:${seconds}`;
-
+    app.post('/api/testdetails/', (req, res) => {
+        const { testName, testChamber, eutSerialNo, standard, testStartedBy, startDate, endDate, duration, testEndedBy, remarks, reportNumber, preparedBy, nablUploaded, reportStatus, jcNumber } = req.body;
 
         const sqlQuery = `
         UPDATE tests_details
         SET 
-          testName = ?, 
           testChamber = ?, 
           eutSerialNo = ?, 
           standard = ? ,
@@ -485,15 +501,14 @@ function jobcardsAPIs(app) {
           preparedBy = ? ,
           nablUploaded = ? ,
           reportStatus = ? 
-        WHERE jc_number = ?`;
+        WHERE jc_number = ? AND testName = ?`;
 
-        const values = [testName, testChamber, eutSerialNo, standard, testStartedBy, startDate, endDate, duration, testEndedBy, remarks, reportNumber, preparedBy, nablUploaded, reportStatus, jc_number
+        const values = [testChamber, eutSerialNo, standard, testStartedBy, startDate, endDate, duration, testEndedBy, remarks, reportNumber, preparedBy, nablUploaded, reportStatus, jcNumber, testName
         ];
-
+        console.log(startDate, endDate);
         db.query(sqlQuery, values, (error, result) => {
             if (error) {
-                console.log(error);
-                return res.status(500).json({ message: "Internal server error", result });
+                return res.status(500).json({ message: "Internal server error", error });
             } else {
                 res.status(200).json({ message: "tests_details updated successfully" });
             }
