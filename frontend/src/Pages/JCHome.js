@@ -109,7 +109,7 @@ export default function JCHome() {
             {/* Create a button with a link using 'CreateButtonWithLink' function */}
             <CreateButtonWithLink
                 title='Create a new JC'
-                to={`/quotation`} >
+                to={`/jobcard`} >
                 Create new Job-Card
             </CreateButtonWithLink>
 

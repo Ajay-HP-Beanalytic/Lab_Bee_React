@@ -30,7 +30,9 @@ const Jobcard = () => {
   const [dateTimeValue, setDateTimeValue] = useState(dayjs());
   const [eutRows, setEutRows] = useState([{ id: 0 }]);
   const [testRows, setTestRows] = useState([{ id: 0 }]);
-  const [testdetailsRows, setTestDetailsRows] = useState([{ id: 0 }]);
+  const cd = new Date();
+  const fd = cd.toISOString().slice(0, 19).replace('T', ' ');
+  const [testdetailsRows, setTestDetailsRows] = useState([{ id: 0, startDate: fd, endDate: fd, duration: 0 }]);
 
 
   ////////////////////////
@@ -154,15 +156,16 @@ const Jobcard = () => {
 
   // Functions to add and remove the 'Test Details' table rows on clicking the add and remove icon. 
   const handleAddTestDetailsRow = () => {
+    let newRow = {}
     if (testdetailsRows.length > 0) {
       const lastId = testdetailsRows[testdetailsRows.length - 1].id
-      const newRow = { id: lastId + 1 };
+      newRow = { id: lastId + 1, startDate: fd, endDate: fd, duration: 0 };
+      setTestDetailsRows([...testdetailsRows, newRow]);
+    } else {
+      newRow = { id: testdetailsRows.length, startDate: fd, endDate: fd, duration: 0 };
       setTestDetailsRows([...testdetailsRows, newRow]);
     }
-    else {
-      const newRow = { id: testdetailsRows.length };
-      setTestDetailsRows([...testdetailsRows, newRow]);
-    }
+    console.log(newRow);
   };
 
   const handleRemoveTestDetailsRow = (id) => {
@@ -291,14 +294,14 @@ const Jobcard = () => {
     }
 
     // First we should send all the serial numbers. (so that they can be inserted or deleted)
-    const serialNos = eutRows.map(item => Number(item.serialNo))
-    axios.post(`${serverBaseAddress}/api/eutdetails/serialNos/${id}`, { jcNumberString, serialNos })
+    const serialNos = eutRows.map(item => item.serialNo)
+    axios.post(`${serverBaseAddress}/api/eutdetails/serialNos/`, { jcNumberString, serialNos })
       .then(res => {
         // console.log(res.data);
         // Iterating over eutRows using map to submit data to the server
         eutRows.map((row, index) => {
           //console.log('tata', index);
-          axios.post(`${serverBaseAddress}/api/eutdetails/${id}`, eutdetailsdata(index))
+          axios.post(`${serverBaseAddress}/api/eutdetails/`, eutdetailsdata(index))
             .then(
               res => {
                 if (res.status === 200) {
@@ -328,12 +331,12 @@ const Jobcard = () => {
 
     // first sync tests (add or delete) based on test name
     const tests = testRows.map(item => item.test)
-    axios.post(`${serverBaseAddress}/api/tests_sync/names/${id}`, { jcNumberString, tests })
+    axios.post(`${serverBaseAddress}/api/tests_sync/names/`, { jcNumberString, tests })
       .then(() => {
 
         // Iterating over testRows using map to submit data to the server
         testRows.map((row, index) => {
-          axios.post(`${serverBaseAddress}/api/tests/${id}`, testsdata(index))
+          axios.post(`${serverBaseAddress}/api/tests/`, testsdata(index))
             .then(
               res => {
                 if (res.status === 200) {
@@ -348,10 +351,6 @@ const Jobcard = () => {
       .catch(error => console.log(error))
       .finally(() => toast.success('Tests  Submitted Succesfully'))
 
-    if (id) {
-      console.log('Test Details not saved');
-      return
-    }
 
     // Function to extract test details based on the index
     const testdetailsdata = (i) => {
@@ -359,8 +358,8 @@ const Jobcard = () => {
       const formattedstartDate = moment(testdetailsRows[i].startDate).format('YYYY-MM-DD');
       const formattedendDate = moment(testdetailsRows[i].endDate).format('YYYY-MM-DD');
 
-      console.log('Formatted Start Date:', formattedstartDate);
-      console.log('Formatted End Date:', formattedendDate);
+      // console.log('Formatted Start Date:', formattedstartDate);
+      // console.log('Formatted End Date:', formattedendDate);
 
       return {
 
@@ -383,17 +382,26 @@ const Jobcard = () => {
 
     }
     //console.log('the data is :', testdetailsdata);
-    // Iterating over testdetailsRows using map to submit data to the server
-    testdetailsRows.map((row, index) => {
-      axios.post(`${serverBaseAddress}/api/testdetails`, testdetailsdata(index))
-        .then(
-          res => {
-            if (res.status === 200)
-              toast.success('testdetails  Submitted Succesfully')
-          }
-        )
-        .catch(error => console.log(error))
-    })
+
+    // first sync tests (add or delete) based on test name
+    const testNames = testdetailsRows.map(item => item.testName)
+    axios.post(`${serverBaseAddress}/api/testdetails_sync/names/`, { jcNumberString, testNames })
+      .then((res) => {
+        // Iterating over testdetailsRows using map to submit data to the server
+        testdetailsRows.map((row, index) => {
+          axios.post(`${serverBaseAddress}/api/testdetails/`, testdetailsdata(index))
+            .then(
+              res => {
+                if (res.status === 200) {
+                  // console.log(res.data);
+                }
+              }
+            )
+            .catch(error => console.log(error))
+        })
+        toast.success('testdetails  Submitted Succesfully')
+
+      })
   }
 
 
@@ -535,7 +543,7 @@ const Jobcard = () => {
                         label="JC Open Date"
                         variant="outlined"
                         margin="normal"
-                        value={dateTimeValue}
+                        value={dayjs(dateTimeValue)}
                         onChange={handleDateChange}
                         renderInput={(props) => <TextField {...props} />}
                         format="YYYY-MM-DD HH:mm:ss"
@@ -1116,7 +1124,7 @@ const Jobcard = () => {
                         label="JC Close Date"
                         variant="outlined"
                         margin="normal"
-                        value={jcCloseDate}
+                        value={dayjs(jcCloseDate)}
                         onChange={handlecloseDateChange}
                         renderInput={(props) => <TextField {...props} />}
                         format="YYYY-MM-DD HH:mm:ss"
