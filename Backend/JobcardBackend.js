@@ -484,10 +484,22 @@ function jobcardsAPIs(app) {
         })
     })
 
+    function covertDateTime(originalTimestamp) {
+        const dateObject = new Date(originalTimestamp);
+        const year = dateObject.getFullYear();
+        const month = String(dateObject.getMonth() + 1).padStart(2, '0'); // Month is zero-indexed
+        const day = String(dateObject.getDate()).padStart(2, '0');
+        const hours = String(dateObject.getHours()).padStart(2, '0');
+        const minutes = String(dateObject.getMinutes()).padStart(2, '0');
+
+        return `${year}-${month}-${day} ${hours}:${minutes}`;
+    }
+
     //To Edit the selected testdetails:
     app.post('/api/testdetails/', (req, res) => {
         const { testName, testChamber, eutSerialNo, standard, testStartedBy, startDate, endDate, duration, testEndedBy, remarks, reportNumber, preparedBy, nablUploaded, reportStatus, jcNumber } = req.body;
-
+        const formattedStartDate = covertDateTime(startDate)
+        const formattedEndDate = covertDateTime(endDate)
         const sqlQuery = `
         UPDATE tests_details
         SET 
@@ -506,7 +518,7 @@ function jobcardsAPIs(app) {
           reportStatus = ? 
         WHERE jc_number = ? AND testName = ?`;
 
-        const values = [testChamber, eutSerialNo, standard, testStartedBy, startDate, endDate, duration, testEndedBy, remarks, reportNumber, preparedBy, nablUploaded, reportStatus, jcNumber, testName
+        const values = [testChamber, eutSerialNo, standard, testStartedBy, formattedStartDate, formattedEndDate, duration, testEndedBy, remarks, reportNumber, preparedBy, nablUploaded, reportStatus, jcNumber, testName
         ];
         // console.log(startDate, endDate);
         db.query(sqlQuery, values, (error, result) => {
