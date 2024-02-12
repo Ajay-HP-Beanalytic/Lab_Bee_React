@@ -293,11 +293,11 @@ function createEutDetailsTable() {
         id INT NOT NULL AUTO_INCREMENT,
         jc_number VARCHAR(255),
         nomenclature VARCHAR(1000),
-        eut_description VARCHAR(2000),
+        eutDescription VARCHAR(2000),
         qty VARCHAR(1000),
-        part_no VARCHAR(1000),
-        model_number VARCHAR(1000),
-        serial_number VARCHAR(1000),
+        partNo VARCHAR(1000),
+        modelNo VARCHAR(1000),
+        serialNo VARCHAR(1000),
         PRIMARY KEY(id)
     )`;
 
@@ -319,8 +319,8 @@ function createJobcardTestsTable() {
         jc_number VARCHAR(255) ,
         test VARCHAR(1000), 
         nabl VARCHAR(255),
-        test_standard VARCHAR(1000),
-        reference_document VARCHAR(1000),
+        testStandard VARCHAR(1000),
+        referenceDocument VARCHAR(1000),
         PRIMARY KEY(id)
     )`;
 
@@ -340,20 +340,20 @@ function createTestDetailsTable() {
     CREATE TABLE IF NOT EXISTS tests_details (
         id INT NOT NULL AUTO_INCREMENT,
         jc_number VARCHAR(255),
-        test VARCHAR(1000), 
-        chamber VARCHAR(1000),
-        eut_serial_no VARCHAR(1000),
+        testName VARCHAR(1000), 
+        testChamber VARCHAR(1000),
+        eutSerialNo VARCHAR(1000),
         standard VARCHAR(1000),
-        test_started_by VARCHAR(500),
-        start_date DATETIME,
-        end_date DATETIME,
+        testStartedBy VARCHAR(500),
+        startDate DATETIME,
+        endDate DATETIME,
         duration VARCHAR(2000),
-        test_ended_by VARCHAR(500),
+        testEndedBy VARCHAR(500),
         remarks VARCHAR(2000),
-        report_no VARCHAR(500),
-        report_prepared_by VARCHAR(500),
-        nabl_uploaded VARCHAR(500),
-        report_status VARCHAR(500),
+        reportNumber VARCHAR(500),
+        preparedBy VARCHAR(500),
+        nablUploaded VARCHAR(500),
+        reportStatus VARCHAR(500),
         PRIMARY KEY(id)
     )`;
 
