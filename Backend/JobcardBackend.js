@@ -11,9 +11,6 @@ function jobcardsAPIs(app) {
     app.post('/api/jobcard', (req, res) => {
         const { jcNumber, dcNumber, jcOpenDate, poNumber, jcCategory, testInchargeName, companyName, customerName, customerNumber, projectName, sampleCondition, referanceDocs, jcStatus, jcCloseDate, jcText, observations } = req.body
 
-        // console.log('1', jcOpenDate)
-        // console.log('2', jcCloseDate)
-
         const sql = `INSERT INTO bea_jobcards(jc_number, dcform_number, jc_open_date, po_number, test_category, test_incharge, company_name, customer_name, customer_number, project_name, sample_condition, referance_document, jc_status, jc_closed_date, jc_text, observations ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
 
         db.query(sql, [jcNumber, dcNumber, jcOpenDate, poNumber, jcCategory, testInchargeName, companyName, customerName, customerNumber, projectName, sampleCondition, referanceDocs, jcStatus, jcCloseDate, jcText, observations], (error, result) => {
@@ -197,7 +194,7 @@ function jobcardsAPIs(app) {
         let { serialNos, jcNumberString } = req.body;
         let sqlQuery = "SELECT serialNo FROM eut_details WHERE jc_number=?"
         db.query(sqlQuery, [jcNumberString], (error, result) => {
-            if (error) res.status(500).json(error.message)
+            if (error) return res.status(500).json(error.message)
             let newResult = result.map(item => item.serialNo)
             let toDelete = newResult.filter(function (el) {
                 return !serialNos.includes(el);
@@ -208,14 +205,16 @@ function jobcardsAPIs(app) {
             toDelete.forEach(serialNo => {
                 sqlQuery = "DELETE FROM eut_details WHERE serialNo=? AND jc_number=?"
                 db.query(sqlQuery, [serialNo, jcNumberString], (error, result) => {
-                    if (error) res.status(500).json(error.message)
+                    if (error) return res.status(500).json(error.message)
                 })
             });
             toAdd.forEach(serialNo => {
                 sqlQuery = "INSERT INTO eut_details (jc_number,serialNo) VALUES (?,?)"
-                db.query(sqlQuery, [jcNumberString, serialNo], (error, result) => {
-                    if (error) res.status(500).json(error.message)
-                })
+                if (serialNo) {
+                    db.query(sqlQuery, [jcNumberString, serialNo], (error, result) => {
+                        if (error) return res.status(500).json(error.message)
+                    })
+                }
             });
             res.status(200).json({ message: `eut_details synced successfully`, toDelete, toAdd });
         })
@@ -323,7 +322,7 @@ function jobcardsAPIs(app) {
         let { tests, jcNumberString } = req.body;
         let sqlQuery = "SELECT test FROM jc_tests WHERE jc_number=?"
         db.query(sqlQuery, [jcNumberString], (error, result) => {
-            if (error) res.status(500).json(error.message)
+            if (error) return res.status(500).json(error.message)
             let newResult = result.map(item => item.test)
             let toDelete = newResult.filter(function (el) {
                 return !tests.includes(el);
@@ -334,14 +333,16 @@ function jobcardsAPIs(app) {
             toDelete.forEach(test => {
                 sqlQuery = "DELETE FROM jc_tests WHERE test=? AND jc_number=?"
                 db.query(sqlQuery, [test, jcNumberString], (error, result) => {
-                    if (error) res.status(500).json(error.message)
+                    if (error) return res.status(500).json(error.message)
                 })
             });
             toAdd.forEach(test => {
                 sqlQuery = "INSERT INTO jc_tests (jc_number,test) VALUES (?,?)"
-                db.query(sqlQuery, [jcNumberString, test], (error, result) => {
-                    if (error) res.status(500).json(error.message)
-                })
+                if (test) {
+                    db.query(sqlQuery, [jcNumberString, test], (error, result) => {
+                        if (error) return res.status(500).json(error.message)
+                    })
+                }
             });
             res.status(200).json({ message: `tests synced successfully`, toDelete, toAdd });
         })
@@ -457,7 +458,7 @@ function jobcardsAPIs(app) {
         let { testNames, jcNumberString } = req.body;
         let sqlQuery = "SELECT testName FROM tests_details WHERE jc_number=?"
         db.query(sqlQuery, [jcNumberString], (error, result) => {
-            if (error) res.status(500).json(error.message)
+            if (error) return res.status(500).json(error.message)
             let newResult = result.map(item => item.testName)
             let toDelete = newResult.filter(function (el) {
                 return !testNames.includes(el);
@@ -468,14 +469,16 @@ function jobcardsAPIs(app) {
             toDelete.forEach(test => {
                 sqlQuery = "DELETE FROM tests_details WHERE testName=? AND jc_number=?"
                 db.query(sqlQuery, [test, jcNumberString], (error, result) => {
-                    if (error) res.status(500).json(error.message)
+                    if (error) return res.status(500).json(error.message)
                 })
             });
             toAdd.forEach(test => {
                 sqlQuery = "INSERT INTO tests_details (jc_number,testName) VALUES (?,?)"
-                db.query(sqlQuery, [jcNumberString, test], (error, result) => {
-                    if (error) res.status(500).json(error.message)
-                })
+                if (test) {
+                    db.query(sqlQuery, [jcNumberString, test], (error, result) => {
+                        if (error) return res.status(500).json(error.message)
+                    })
+                }
             });
             res.status(200).json({ message: `tests synced successfully`, toDelete, toAdd });
         })
@@ -505,7 +508,7 @@ function jobcardsAPIs(app) {
 
         const values = [testChamber, eutSerialNo, standard, testStartedBy, startDate, endDate, duration, testEndedBy, remarks, reportNumber, preparedBy, nablUploaded, reportStatus, jcNumber, testName
         ];
-        console.log(startDate, endDate);
+        // console.log(startDate, endDate);
         db.query(sqlQuery, values, (error, result) => {
             if (error) {
                 return res.status(500).json({ message: "Internal server error", error });
