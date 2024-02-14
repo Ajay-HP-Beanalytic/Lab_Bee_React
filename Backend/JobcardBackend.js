@@ -11,9 +11,12 @@ function jobcardsAPIs(app) {
     app.post('/api/jobcard', (req, res) => {
         const { jcNumber, dcNumber, jcOpenDate, poNumber, jcCategory, testInchargeName, companyName, customerName, customerNumber, projectName, sampleCondition, referanceDocs, jcStatus, jcCloseDate, jcText, observations } = req.body
 
+        const formattedOpenDate = covertDateTime(jcOpenDate)
+        const formattedCloseDate = covertDateTime(jcCloseDate)
+
         const sql = `INSERT INTO bea_jobcards(jc_number, dcform_number, jc_open_date, po_number, test_category, test_incharge, company_name, customer_name, customer_number, project_name, sample_condition, referance_document, jc_status, jc_closed_date, jc_text, observations ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
 
-        db.query(sql, [jcNumber, dcNumber, jcOpenDate, poNumber, jcCategory, testInchargeName, companyName, customerName, customerNumber, projectName, sampleCondition, referanceDocs, jcStatus, jcCloseDate, jcText, observations], (error, result) => {
+        db.query(sql, [jcNumber, dcNumber, formattedOpenDate, poNumber, jcCategory, testInchargeName, companyName, customerName, customerNumber, projectName, sampleCondition, referanceDocs, jcStatus, formattedCloseDate, jcText, observations], (error, result) => {
             if (error) {
                 console.log(error);
                 return res.status(500).json({ message: 'Internal server error' });
@@ -54,6 +57,9 @@ function jobcardsAPIs(app) {
     app.post('/api/jobcard/:id', (req, res) => {
         const { jcNumber, dcNumber, jcOpenDate, poNumber, jcCategory, testInchargeName, companyName, customerName, customerNumber, projectName, sampleCondition, referanceDocs, jcStatus, jcCloseDate, jcText, observations } = req.body;
 
+        const formattedOpenDate = covertDateTime(jcOpenDate)
+        const formattedCloseDate = covertDateTime(jcCloseDate)
+
         const sqlQuery = `
         UPDATE bea_jobcards SET
          
@@ -77,7 +83,7 @@ function jobcardsAPIs(app) {
 
         // Use an array to provide values for placeholders in the query
         const values = [
-            dcNumber, jcOpenDate, poNumber, jcCategory, testInchargeName, companyName, customerName, customerNumber, projectName, sampleCondition, referanceDocs, jcStatus, jcCloseDate, jcText, observations,
+            dcNumber, formattedOpenDate, poNumber, jcCategory, testInchargeName, companyName, customerName, customerNumber, projectName, sampleCondition, referanceDocs, jcStatus, formattedCloseDate, jcText, observations,
             jcNumber // jc_number should be included in the values array
         ];
 
