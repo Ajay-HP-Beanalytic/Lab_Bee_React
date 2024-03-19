@@ -1,0 +1,31 @@
+/* Calendar Header */
+.rbc-header {
+  background: #009999;
+  color: whitesmoke;
+  padding: 6px;
+  font-size: 15px;
+  font-weight: bold;
+}
+
+/* For the event  */
+.rbc-event {
+  padding: 0 !important;
+  font-size: 15px;
+  position: relative;
+  /* z-index: 2; */
+}
+
+/* For the event label to display */
+.rbc-event-label {
+  display: none !important
+}
+
+/* .rbc-event-container {
+  width: 100% !important;
+} */
+
+/* .rbc-time-slot {
+  background-color: #eaf3fa;
+  color: #74a4c3;
+  border-color: aqua;
+} */

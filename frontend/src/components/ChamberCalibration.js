@@ -360,21 +360,40 @@ export default function ChamberAndCalibration() {
     const currentMonthName = new Intl.DateTimeFormat('en-US', { month: 'long' }).format(currentDate);
     const currentYearAndMonth = `${currentMonthName}-${currentYear}`;
 
-    // Calculate the next month
-    const nextMonth = (currentMonth + 1) % 12;
-    const nextYear = currentMonth === 11 ? currentYear + 1 : currentYear;
+    // // Calculate the next month
+    // const nextMonth = (currentMonth + 1) % 12;
+    // const nextYear = currentMonth === 11 ? currentYear + 1 : currentYear;
 
-    // List to store the calibration dues in the next month
-    const calibrationsPendingThisMonth = [];
+    // // List to store the calibration dues in the next month
+    // const calibrationsPendingThisMonth = [];
+
+    // // Iterate through the chambersList and filter based on the condition
+    // chambersList.forEach((item) => {
+    //     const dueDate = new Date(item.calibration_due_date);
+
+    //     // Check if the due date is in the next month
+    //     if (dueDate.getFullYear() === nextYear && dueDate.getMonth() === nextMonth) {
+    //         calibration_due_counts++;
+    //         calibrationsPendingThisMonth.push(`${item.chamber_name} is due on ${item.calibration_due_date}`);
+    //     }
+    // });
+
+
+    // Calculate 45 days ahead
+    const nextDate = new Date(currentDate);
+    nextDate.setDate(currentDate.getDate() + 45);
+
+    // List to store the calibration dues in the next 45 days
+    const calibrationsPendingNext45Days = [];
 
     // Iterate through the chambersList and filter based on the condition
     chambersList.forEach((item) => {
         const dueDate = new Date(item.calibration_due_date);
 
-        // Check if the due date is in the next month
-        if (dueDate.getFullYear() === nextYear && dueDate.getMonth() === nextMonth) {
+        // Check if the due date is within the next 45 days
+        if (dueDate >= currentDate && dueDate <= nextDate) {
             calibration_due_counts++;
-            calibrationsPendingThisMonth.push(`${item.chamber_name} is due on ${item.calibration_due_date}`);
+            calibrationsPendingNext45Days.push(`${item.chamber_name} is due on ${item.calibration_due_date}`);
         }
     });
 
@@ -566,7 +585,8 @@ export default function ChamberAndCalibration() {
                                     kpiTitle={`Calibrations pending in ${currentYearAndMonth}:`}
                                     kpiValue={<CountUp start={0} end={calibration_due_counts} delay={1} />}
                                     kpiColor="#3f51b5"
-                                    kpiNames={calibrationsPendingThisMonth}
+                                    // kpiNames={calibrationsPendingThisMonth}
+                                    kpiNames={calibrationsPendingNext45Days}
                                     accordianTitleString={accordianTitleString}
                                     kpiIcon={<FcOvertime size='130px' />}
                                 />

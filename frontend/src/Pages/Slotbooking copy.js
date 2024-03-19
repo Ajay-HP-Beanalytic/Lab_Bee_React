@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react'
-import { Box, Button, Card, ClickAwayListener, Dialog, DialogActions, DialogContent, DialogTitle, Divider, Grid, Menu, MenuItem, MenuList, Paper, TextField, Typography } from '@mui/material'
+import React, { useEffect, useState } from 'react'
+import { ClickAwayListener, Divider, Menu, MenuItem, MenuList, Typography } from '@mui/material'
 import { momentLocalizer } from 'react-big-calendar'
 import moment from 'moment'
 import withDragAndDrop from "react-big-calendar/lib/addons/dragAndDrop";
@@ -13,8 +13,6 @@ import axios from 'axios';
 import { serverBaseAddress } from './APIPage';
 import ChambersListForSlotBookingCalendar from '../components/ChambersList';
 import CustomModal from '../components/CustomModal';
-import { Form, useFormAction } from 'react-router-dom';
-import { useForm } from "react-hook-form";
 
 const DnDCalendar = withDragAndDrop(Calendar);
 const localizer = momentLocalizer(moment)
@@ -137,70 +135,35 @@ const components = {
 export default function Slotbooking() {
     const [myResourcesList, setMyResourceList] = useState([]);
     const [contextMenuOpen, setContextMenuOpen] = useState(false);
-    const [xPosition, setXPosition] = useState(0);
-    const [yPosition, setYPosition] = useState(0);
-    // const [openNewBookingDialog, setOpenNewBookingDialog] = useState(false);
-    const [openDialog, setOpenDialog] = useState(false);
-    // const [clickedDate, setClickedDate] = useState(null); // State to store clicked date
-    // const [clickedTimeSlot, setClickedTimeSlot] = useState(null); // State to store clicked time slot
+    // const [contextMenuPosition, setContextMenuPosition] = useState({ x: 0, y: 0 });
+    const [xPosition, setXPosition] = useState();
+    const [yPosition, setYPosition] = useState();
 
-    // Initialize useRef hook
-    const calendarRef = useRef(null)
 
-    // Initialize useForm hook
-    const { register, handleSubmit, setError } = useForm()
+    // const handleContextMenu = (event, eventObject) => {
+    //     // Handle right-click on events or time slots (if eventObject exists)
+    //     if (eventObject) {
+    //         event.preventDefault();
+    //         console.log('Right-clicked on event:', eventObject);
+    //         setContextMenuPosition({ x: event.clientX, y: event.clientY });
+    //         setContextMenuOpen(true);
+    //     }
+    // };
 
     const handleCalendarContextMenu = (e) => {
-
-        if (calendarRef.current) {
-            e.preventDefault();
-            const rect = calendarRef.current.getBoundingClientRect();
-            const xPosition = e.clientX
-            const yPosition = e.clientY
-
-            // Check if the click is within the calendar header
-            const headerHeight = 100; // Adjust this value according to your calendar header height
-            if (yPosition < rect.top + headerHeight) {
-                setContextMenuOpen(false);
-                return;
-            }
-
-            setXPosition(xPosition);
-            setYPosition(yPosition);
-            setContextMenuOpen(true);
-        }
+        e.preventDefault();
+        console.log('Right-clicked on calendar area');
+        setXPosition(`${e.clientX}px`);
+        setYPosition(`${e.clientY}px`);
+        // setContextMenuPosition({ x: e.clientX + 'px', y: e.clientY + 'px' });
+        setContextMenuOpen(true);
     };
 
-    // Function to close the context menu
+
+
     const handleCloseContextMenu = () => {
         setContextMenuOpen(false);
     };
-
-    const handleOpenDialog = () => {
-        setOpenDialog(true);
-    };
-
-    const handleCloseDialog = () => {
-        setOpenDialog(false);
-    };
-
-    const onSubmit = (data) => {
-        // Handle form submission here
-        console.log(data);
-    };
-
-    // Function to create the new booking:
-    const onClickingNewBooking = (e) => {
-        setContextMenuOpen(false);
-        handleOpenDialog();
-
-    }
-
-    // Function to delete the existing or selected booking:
-    const onClickingDeleteBooking = (e) => {
-        alert('Delete Booking Request')
-    }
-
 
     useEffect(() => {
         const getChambersListForResource = async () => {
@@ -229,7 +192,7 @@ export default function Slotbooking() {
                 <Typography variant='h4' sx={{ color: '#003366' }}>Slot Booking</Typography>
             </Divider>
 
-            <div ref={calendarRef} onContextMenu={handleCalendarContextMenu} style={{ cursor: 'context-menu' }}>
+            <div onContextMenu={handleCalendarContextMenu}>
                 <DnDCalendar
                     localizer={localizer}
                     defaultView="month"
@@ -244,58 +207,23 @@ export default function Slotbooking() {
                 {contextMenuOpen && (
                     <ClickAwayListener onClickAway={() => setContextMenuOpen(false)}>
                         <Menu
+                            // anchorEl={{ x: contextMenuPosition.x, y: contextMenuPosition.y }}
+                            anchorEl={{ top: yPosition, left: xPosition, }}
                             open={contextMenuOpen}
-                            onClose={() => handleCloseContextMenu(false)}
-                            anchorReference="anchorPosition"
-                            anchorPosition={{ top: yPosition, left: xPosition }}
+                            onClose={() => setContextMenuOpen(false)}
+                            style={{
+                                // position: "fixed",
+                                // zIndex: 1000,
+                                zIndex: 10,
+                                position: "relative"
+                            }}
                         >
-                            <MenuItem onClick={(e) => { onClickingNewBooking(e) }}>New Booking</MenuItem>
-                            <MenuItem onClick={(e) => { onClickingDeleteBooking(e) }}>Delete Booking</MenuItem>
+                            <MenuItem onClick={() => { /* Handle view details click */ }}>New Booking</MenuItem>
+                            <MenuItem onClick={() => { /* Handle delete event click */ }}>Delete Booking</MenuItem>
                         </Menu>
                     </ClickAwayListener>
                 )}
             </div>
-
-
-            {openDialog &&
-                <Box sx={{ paddingTop: '5', paddingBottom: '5px', marginTop: '5px', marginBottom: '5px', border: 1, borderColor: 'primary.main' }}>
-                    <Grid container style={{ display: 'flex' }}>
-                        <Dialog open={handleOpenDialog} onClose={handleCloseDialog}>
-                            <DialogTitle>New Booking</DialogTitle>
-                            <DialogContent>
-
-                                <form onSubmit={handleSubmit(onSubmit)}>
-                                    <TextField
-                                        variant='outlined'
-                                        type="text"
-                                        label="Company Name"
-                                        {...register('company')}
-                                    />
-
-                                    <TextField
-                                        variant='outlined'
-                                        type="text"
-                                        label="Customer Name"
-                                        {...register('customer')}
-                                    />
-                                    <TextField
-                                        variant='outlined'
-                                        type="text"
-                                        label="Test Name"
-                                        {...register('testName')}
-                                    />
-
-                                </form>
-
-                            </DialogContent>
-                            <DialogActions>
-                                <Button variant='contained' onClick={handleCloseDialog}>CANCEL</Button>
-                                <Button variant='contained' type='submit' onSubmit={handleSubmit(onSubmit)}> SUBMIT</Button>
-                            </DialogActions>
-                        </Dialog>
-                    </Grid>
-                </Box >
-            } : <></>
 
         </>
     );
@@ -306,8 +234,20 @@ export default function Slotbooking() {
 {/* <ChambersListForSlotBookingCalendar /> */ }
 
 // max={moment("2024-03-12T16:00:00").toDate()} min={moment("2024-03-12T08:00:00").toDate()}// In order to control the time range
-//
+// 
 
+
+
+{/* <DnDCalendar
+                defaultDate={moment().toDate()}
+                defaultView="month"
+                localizer={localizer}
+                events={myEventsList}
+                resizable
+                startAccessor="start"
+                endAccessor="end"
+                style={{ height: "100vh" }}
+            /> */}
 
 
 
@@ -363,3 +303,102 @@ export default function Slotbooking() {
 
 
 
+
+{/* <CustomModal /> */ }
+{/* <div>
+                {/* <button onClick={handleOpenModal}>Open Modal</button> */}
+{/* <CustomModal
+                    open={modalOpen}
+                    onClose={handleCloseModal}
+                    title="Booking Actions"
+                    button1text="New Booking"
+                    button2text="Update Booking"
+                    onClickBtn1={handleButton1Click}
+                    onClickBtn2={handleButton2Click}
+                /> */}
+{/* <CustomModal
+                    open={modalOpen}
+                    onClose={handleCloseModal}
+                    title="Booking Actions"
+                    options={bookingActionsList}
+                    onItemClick={handleButton1Click}
+                /> */}
+// </div > * /}
+
+
+
+
+
+// export default function Slotbooking() {
+
+//     const [myResourcesList, setMyResourceList] = useState([{}])
+//     const [modalOpen, setModalOpen] = useState(false);
+//     const [xPosition, setXPosition] = useState();
+//     const [yPosition, setYPosition] = useState();
+
+
+//     useEffect(() => {
+
+//         const getChambersListForResource = async () => {
+//             try {
+//                 const response = await axios.get(`${serverBaseAddress}/api/getChambersList`)
+//                 if (response.status === 200) {
+//                     // Transform the fetched data to match the expected resource structure
+//                     const transformedData = response.data.map(chamber => ({
+//                         id: chamber.id,
+//                         title: chamber.chamber_name
+//                     }))
+//                     setMyResourceList(transformedData)
+//                 } else {
+//                     console.error('Failed to fetch chambers list. Status:', response.status);
+//                 }
+//             } catch (error) {
+//                 console.error('Failed to fetch the data', error);
+//             }
+//         }
+//         getChambersListForResource()
+
+//     }, [])
+
+//     const handleContextMenu = (e) => {
+//         e.preventDefault(); // Prevent the default context menu from appearing
+//         setXPosition(`${e.pageX}px`);
+//         setYPosition(`${e.pageY}px`);
+//         setModalOpen(true);
+//     };
+
+//     return (
+//         <>
+//             <Divider>
+//                 <Typography variant='h4' sx={{ color: '#003366' }} >Slot Booking</Typography>
+//             </Divider>
+
+//             <br />
+
+//             <div style={{ zIndex: 10, position: "relative" }}>
+//                 <Menu
+//                     open={modalOpen}
+//                     onClose={() => setModalOpen(false)}
+//                     anchorReference="anchorPosition"
+//                     anchorPosition={{ top: yPosition, left: xPosition }}
+//                 >
+//                     <MenuList>
+//                         <MenuItem>New Booking</MenuItem>
+//                         <MenuItem>Update Booking</MenuItem>
+//                     </MenuList>
+//                 </Menu>
+//             </div>
+
+//             <DnDCalendar
+//                 defaultView="month"                 // month is default
+//                 views={['month', 'week', 'day']}    // In order to remove the agenda from the toolbar
+//                 events={myEventsList}
+//                 resources={myResourcesList}
+//                 toolbar={true}
+//                 components={components}
+//                 onContextMenu={handleContextMenu}
+//                 selectable
+//             />
+//         </>
+//     )
+// }

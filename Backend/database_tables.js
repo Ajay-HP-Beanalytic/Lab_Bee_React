@@ -367,7 +367,23 @@ function createTestDetailsTable() {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////
+//Function to create a users table:
+function createChambersForSlotBookingTable() {
+    const createTableQuery = `
+        CREATE TABLE IF NOT EXISTS chambers_list (
+            id INT NOT NULL AUTO_INCREMENT,
+            chamber_name VARCHAR(255),
+            PRIMARY KEY(id) 
+        )`;
 
+    db.query(createTableQuery, function (err, result) {
+        if (err) {
+            console.error("Error while creating chambers_list", err);
+        } else {
+            //console.log("Users_table created successfully.")
+        }
+    });
+}
 
 
 
@@ -401,7 +417,9 @@ module.exports = {
     createJobcardsTable,
     createEutDetailsTable,
     createJobcardTestsTable,
-    createTestDetailsTable
+    createTestDetailsTable,
+
+    createChambersForSlotBookingTable
 
 
 };
