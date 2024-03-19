@@ -19,10 +19,13 @@ import axios from 'axios';
 
 import { serverBaseAddress } from './APIPage'
 import { useParams } from 'react-router-dom';
+import { useNavigate } from "react-router-dom";
 
 
 
 const Jobcard = () => {
+
+  const navigate = useNavigate();
 
   // State variable to fetch the users list
   const [users, setUsers] = useState([])
@@ -402,6 +405,7 @@ const Jobcard = () => {
         toast.success('testdetails  Submitted Succesfully')
 
       })
+    navigate('/jobcard_dashboard')
   }
 
 
