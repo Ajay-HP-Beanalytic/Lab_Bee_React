@@ -28,7 +28,8 @@ const {
   createJobcardsTable,
   createEutDetailsTable,
   createJobcardTestsTable,
-  createTestDetailsTable
+  createTestDetailsTable,
+  createChambersForSlotBookingTable
 } = require('./database_tables');
 
 //Get db connection from the db.js file
@@ -54,6 +55,8 @@ db.getConnection(function (err, connection) {
   createEutDetailsTable();
   createJobcardTestsTable();
   createTestDetailsTable();
+
+  createChambersForSlotBookingTable();
 
   connection.release();  // Release the connection back to the pool when done
 });
@@ -123,6 +126,10 @@ ts1TestsListAPIs(app)
 const { jobcardsAPIs } = require('./JobcardBackend')
 jobcardsAPIs(app)
 
+
+// backend connection of slotbooking data API's from 'slotbookingBackend' page
+const { slotBookingAPIs } = require('./slotbookingBackend')
+slotBookingAPIs(app)
 
 
 // Check wheteher connection is established between 

@@ -11,8 +11,11 @@ function jobcardsAPIs(app) {
     app.post('/api/jobcard', (req, res) => {
         const { jcNumber, dcNumber, jcOpenDate, poNumber, jcCategory, testInchargeName, companyName, customerName, customerNumber, projectName, sampleCondition, referanceDocs, jcStatus, jcCloseDate, jcText, observations } = req.body
 
+        console.log('1', jcCloseDate)
         const formattedOpenDate = covertDateTime(jcOpenDate)
         const formattedCloseDate = covertDateTime(jcCloseDate)
+        console.log('2', formattedCloseDate)
+
 
         const sql = `INSERT INTO bea_jobcards(jc_number, dcform_number, jc_open_date, po_number, test_category, test_incharge, company_name, customer_name, customer_number, project_name, sample_condition, referance_document, jc_status, jc_closed_date, jc_text, observations ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
 
@@ -491,6 +494,10 @@ function jobcardsAPIs(app) {
     })
 
     function covertDateTime(originalTimestamp) {
+        if (!originalTimestamp) {
+            return ''
+        }
+        console.log('timestamp', originalTimestamp);
         const dateObject = new Date(originalTimestamp);
         const year = dateObject.getFullYear();
         const month = String(dateObject.getMonth() + 1).padStart(2, '0'); // Month is zero-indexed
