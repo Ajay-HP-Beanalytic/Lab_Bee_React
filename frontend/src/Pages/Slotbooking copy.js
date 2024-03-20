@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react'
-import { ClickAwayListener, Divider, Menu, MenuItem, MenuList, Typography } from '@mui/material'
+import React, { useEffect, useRef, useState } from 'react'
+import { Controller, useForm } from "react-hook-form";
+import { Box, Button, Card, ClickAwayListener, Dialog, DialogActions, DialogContent, DialogTitle, Divider, Grid, Menu, MenuItem, MenuList, Paper, TextField, Typography } from '@mui/material'
 import { momentLocalizer } from 'react-big-calendar'
 import moment from 'moment'
 import withDragAndDrop from "react-big-calendar/lib/addons/dragAndDrop";
@@ -13,6 +14,11 @@ import axios from 'axios';
 import { serverBaseAddress } from './APIPage';
 import ChambersListForSlotBookingCalendar from '../components/ChambersList';
 import CustomModal from '../components/CustomModal';
+
+import dayjs from 'dayjs';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 
 const DnDCalendar = withDragAndDrop(Calendar);
 const localizer = momentLocalizer(moment)
@@ -135,36 +141,99 @@ const components = {
 export default function Slotbooking() {
     const [myResourcesList, setMyResourceList] = useState([]);
     const [contextMenuOpen, setContextMenuOpen] = useState(false);
-    // const [contextMenuPosition, setContextMenuPosition] = useState({ x: 0, y: 0 });
-    const [xPosition, setXPosition] = useState();
-    const [yPosition, setYPosition] = useState();
+    const [xPosition, setXPosition] = useState(0);
+    const [yPosition, setYPosition] = useState(0);
+    const [openDialog, setOpenDialog] = useState(false);
+    const [dateTimeValue, setDateTimeValue] = useState(dayjs());
+    const [slotStartDateTime, setSlotStartDateTime] = useState(dayjs());
+    const [slotEndDateTime, setSlotEndDateTime] = useState(dayjs());
 
+    // Initialize useRef hook
+    const calendarRef = useRef(null)
 
-    // const handleContextMenu = (event, eventObject) => {
-    //     // Handle right-click on events or time slots (if eventObject exists)
-    //     if (eventObject) {
-    //         event.preventDefault();
-    //         console.log('Right-clicked on event:', eventObject);
-    //         setContextMenuPosition({ x: event.clientX, y: event.clientY });
-    //         setContextMenuOpen(true);
-    //     }
-    // };
+    // Initialize useForm hook
+    const { register, handleSubmit, control, setError } = useForm()
 
     const handleCalendarContextMenu = (e) => {
-        e.preventDefault();
-        console.log('Right-clicked on calendar area');
-        setXPosition(`${e.clientX}px`);
-        setYPosition(`${e.clientY}px`);
-        // setContextMenuPosition({ x: e.clientX + 'px', y: e.clientY + 'px' });
-        setContextMenuOpen(true);
+
+        if (calendarRef.current) {
+            e.preventDefault();
+            const rect = calendarRef.current.getBoundingClientRect();
+            const xPosition = e.clientX
+            const yPosition = e.clientY
+
+            // Check if the click is within the calendar header
+            const headerHeight = 100; // Adjust this value according to your calendar header height
+            if (yPosition < rect.top + headerHeight) {
+                setContextMenuOpen(false);
+                return;
+            }
+
+            setXPosition(xPosition);
+            setYPosition(yPosition);
+            setContextMenuOpen(true);
+        }
     };
 
-
-
+    // Function to close the context menu
     const handleCloseContextMenu = () => {
         setContextMenuOpen(false);
     };
 
+    const handleOpenDialog = () => {
+        setOpenDialog(true);
+    };
+
+    const handleCloseDialog = () => {
+        setOpenDialog(false);
+    };
+
+
+
+
+
+    // Function to create the new booking:
+    const onClickingNewBooking = (e) => {
+        setContextMenuOpen(false);
+        handleOpenDialog();
+    }
+
+    const onSubmitForm = (data) => {
+        console.log('Form Submitted');
+        console.log(data);
+        // handleCloseDialog()
+    };
+
+
+
+    // const onSubmit = (data, e) => console.log(data, e)
+    const onError = (errors, e) => console.log(errors, e)
+
+    // Function to delete the existing or selected booking:
+    const onClickingDeleteBooking = (e) => {
+        alert('Delete Booking Request')
+    }
+
+    // On selecting the slot from date and time
+    const handleSlotStartDateTime = (newDateTime) => {
+        if (newDateTime) {
+            const formattedSlotStartDate = dayjs(newDateTime).format('YYYY-MM-DD HH:mm');
+            setSlotStartDateTime(formattedSlotStartDate);
+        }
+    }
+
+    // On selecting the slot to date and time
+    const handleSlotEndDateTime = (newDateTime) => {
+        if (newDateTime) {
+            const formattedSlotEndDate = dayjs(newDateTime).format('YYYY-MM-DD HH:mm');
+            setSlotEndDateTime(formattedSlotEndDate)
+        }
+    }
+
+
+
+
+    // Use Effect to fetch the chambers list:
     useEffect(() => {
         const getChambersListForResource = async () => {
             try {
@@ -192,8 +261,8 @@ export default function Slotbooking() {
                 <Typography variant='h4' sx={{ color: '#003366' }}>Slot Booking</Typography>
             </Divider>
 
-            <div onContextMenu={handleCalendarContextMenu}>
-                <DnDCalendar
+            <div ref={calendarRef} onContextMenu={handleCalendarContextMenu} style={{ cursor: 'context-menu' }}>
+                <Calendar
                     localizer={localizer}
                     defaultView="month"
                     views={['month', 'week', 'day']}
@@ -207,23 +276,146 @@ export default function Slotbooking() {
                 {contextMenuOpen && (
                     <ClickAwayListener onClickAway={() => setContextMenuOpen(false)}>
                         <Menu
-                            // anchorEl={{ x: contextMenuPosition.x, y: contextMenuPosition.y }}
-                            anchorEl={{ top: yPosition, left: xPosition, }}
                             open={contextMenuOpen}
-                            onClose={() => setContextMenuOpen(false)}
-                            style={{
-                                // position: "fixed",
-                                // zIndex: 1000,
-                                zIndex: 10,
-                                position: "relative"
-                            }}
+                            onClose={() => handleCloseContextMenu(false)}
+                            anchorReference="anchorPosition"
+                            anchorPosition={{ top: yPosition, left: xPosition }}
                         >
-                            <MenuItem onClick={() => { /* Handle view details click */ }}>New Booking</MenuItem>
-                            <MenuItem onClick={() => { /* Handle delete event click */ }}>Delete Booking</MenuItem>
+                            <MenuItem onClick={(e) => { onClickingNewBooking(e) }}>New Booking</MenuItem>
+                            <MenuItem onClick={(e) => { onClickingDeleteBooking(e) }}>Delete Booking</MenuItem>
                         </Menu>
                     </ClickAwayListener>
                 )}
             </div>
+
+
+            {openDialog &&
+                <Grid container style={{ display: 'flex' }}>
+                    <Dialog open={openDialog} onClose={handleCloseDialog}>
+                        <form onSubmit={handleSubmit(onSubmitForm)}>
+                            <DialogTitle variant='h4'>New Booking</DialogTitle>
+                            <DialogContent>
+
+                                <Grid item >
+                                    <TextField
+                                        variant='outlined'
+                                        type="text"
+                                        name="company"
+                                        label="Company Name"
+                                        fullWidth
+                                        sx={{ mt: 2 }}
+                                        {...register('company')}
+                                    />
+                                </Grid>
+
+                                <Grid item >
+                                    <TextField
+                                        variant='outlined'
+                                        type="text"
+                                        name="customerName"
+                                        label="Customer Name"
+                                        fullWidth
+                                        sx={{ mt: 2 }}
+                                        {...register('customerName')}
+                                    />
+                                </Grid>
+
+                                <Grid item >
+                                    <TextField
+                                        variant='outlined'
+                                        type="email"
+                                        name="customerEmail"
+                                        label="Customer Email"
+                                        sx={{ width: '52%', mt: 2, pr: 1 }}
+                                        {...register('customerEmail')}
+                                    />
+
+                                    <TextField
+                                        variant='outlined'
+                                        type="tel"
+                                        name="customerPhone"
+                                        label="Customer Phone"
+                                        sx={{ width: '48%', mt: 2, pl: 1 }}
+                                        {...register('customerPhone')}
+                                    />
+                                </Grid>
+
+                                <Grid item >
+                                    <TextField
+                                        variant='outlined'
+                                        type="text"
+                                        name="testName"
+                                        label="Test Requested For"
+                                        fullWidth
+                                        sx={{ mt: 2 }}
+                                        {...register('testName')}
+                                    />
+                                </Grid>
+
+                                <Grid item  >
+
+                                    {/* <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                        <DateTimePicker
+                                            sx={{ width: '52%', mt: 2, pr: 1, borderRadius: 3 }}
+                                            label="Slot From"
+                                            variant="outlined"
+                                            margin="normal"
+                                            defaultValue={slotStartDateTime}
+                                            onChange={handleSlotStartDateTime}
+                                            renderInput={(props) => <TextField {...props} />}
+                                            format="YYYY-MM-DD HH:mm:ss"
+                                            valueType="date time"
+                                            {...register('slotStartDateTime')}
+                                        />
+                                    </LocalizationProvider> */}
+
+
+
+                                    <Controller
+                                        name="slotStartDateTime"
+                                        control={control}
+                                        defaultValue={slotStartDateTime}
+                                        render={({ field }) => (
+                                            <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                                <DateTimePicker
+                                                    label="Slot From"
+                                                    value={field.value ? dayjs(field.value) : null} // Use field.value instead of slotStartDateTime
+                                                    onChange={(newValue) => {
+                                                        const formattedValue = newValue ? newValue.format('YYYY-MM-DD HH:mm') : null; // Format the new value if it exists
+                                                        field.onChange(formattedValue); // Update the field value
+                                                    }}
+                                                    renderInput={(props) => <TextField {...props} />}
+                                                />
+                                            </LocalizationProvider>
+                                        )}
+                                        {...register('slotStartDateTime')}
+                                    />
+
+
+                                    <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                        <DateTimePicker sx={{ width: '48%', mt: 2, pl: 1, borderRadius: 3 }}
+                                            label="Slot To"
+                                            variant="outlined"
+                                            margin="normal"
+                                            value={slotEndDateTime}
+                                            onChange={handleSlotEndDateTime}
+                                            renderInput={(props) => <TextField {...props} />}
+                                            format="YYYY-MM-DD HH:mm"
+                                            {...register('slotEndDateTime')}
+                                        />
+                                    </LocalizationProvider>
+                                </Grid>
+
+                            </DialogContent>
+                            <DialogActions sx={{ justifyContent: 'center' }}>
+                                <Button variant='contained' color='secondary' onClick={handleCloseDialog}>CANCEL</Button>
+                                <Button variant='contained' color='primary' type="submit"> SUBMIT</Button>
+                            </DialogActions>
+                        </form>
+                    </Dialog>
+
+                </Grid >
+            } : <></>
 
         </>
     );
@@ -234,20 +426,9 @@ export default function Slotbooking() {
 {/* <ChambersListForSlotBookingCalendar /> */ }
 
 // max={moment("2024-03-12T16:00:00").toDate()} min={moment("2024-03-12T08:00:00").toDate()}// In order to control the time range
-// 
+//
 
 
-
-{/* <DnDCalendar
-                defaultDate={moment().toDate()}
-                defaultView="month"
-                localizer={localizer}
-                events={myEventsList}
-                resizable
-                startAccessor="start"
-                endAccessor="end"
-                style={{ height: "100vh" }}
-            /> */}
 
 
 
@@ -303,102 +484,3 @@ export default function Slotbooking() {
 
 
 
-
-{/* <CustomModal /> */ }
-{/* <div>
-                {/* <button onClick={handleOpenModal}>Open Modal</button> */}
-{/* <CustomModal
-                    open={modalOpen}
-                    onClose={handleCloseModal}
-                    title="Booking Actions"
-                    button1text="New Booking"
-                    button2text="Update Booking"
-                    onClickBtn1={handleButton1Click}
-                    onClickBtn2={handleButton2Click}
-                /> */}
-{/* <CustomModal
-                    open={modalOpen}
-                    onClose={handleCloseModal}
-                    title="Booking Actions"
-                    options={bookingActionsList}
-                    onItemClick={handleButton1Click}
-                /> */}
-// </div > * /}
-
-
-
-
-
-// export default function Slotbooking() {
-
-//     const [myResourcesList, setMyResourceList] = useState([{}])
-//     const [modalOpen, setModalOpen] = useState(false);
-//     const [xPosition, setXPosition] = useState();
-//     const [yPosition, setYPosition] = useState();
-
-
-//     useEffect(() => {
-
-//         const getChambersListForResource = async () => {
-//             try {
-//                 const response = await axios.get(`${serverBaseAddress}/api/getChambersList`)
-//                 if (response.status === 200) {
-//                     // Transform the fetched data to match the expected resource structure
-//                     const transformedData = response.data.map(chamber => ({
-//                         id: chamber.id,
-//                         title: chamber.chamber_name
-//                     }))
-//                     setMyResourceList(transformedData)
-//                 } else {
-//                     console.error('Failed to fetch chambers list. Status:', response.status);
-//                 }
-//             } catch (error) {
-//                 console.error('Failed to fetch the data', error);
-//             }
-//         }
-//         getChambersListForResource()
-
-//     }, [])
-
-//     const handleContextMenu = (e) => {
-//         e.preventDefault(); // Prevent the default context menu from appearing
-//         setXPosition(`${e.pageX}px`);
-//         setYPosition(`${e.pageY}px`);
-//         setModalOpen(true);
-//     };
-
-//     return (
-//         <>
-//             <Divider>
-//                 <Typography variant='h4' sx={{ color: '#003366' }} >Slot Booking</Typography>
-//             </Divider>
-
-//             <br />
-
-//             <div style={{ zIndex: 10, position: "relative" }}>
-//                 <Menu
-//                     open={modalOpen}
-//                     onClose={() => setModalOpen(false)}
-//                     anchorReference="anchorPosition"
-//                     anchorPosition={{ top: yPosition, left: xPosition }}
-//                 >
-//                     <MenuList>
-//                         <MenuItem>New Booking</MenuItem>
-//                         <MenuItem>Update Booking</MenuItem>
-//                     </MenuList>
-//                 </Menu>
-//             </div>
-
-//             <DnDCalendar
-//                 defaultView="month"                 // month is default
-//                 views={['month', 'week', 'day']}    // In order to remove the agenda from the toolbar
-//                 events={myEventsList}
-//                 resources={myResourcesList}
-//                 toolbar={true}
-//                 components={components}
-//                 onContextMenu={handleContextMenu}
-//                 selectable
-//             />
-//         </>
-//     )
-// }

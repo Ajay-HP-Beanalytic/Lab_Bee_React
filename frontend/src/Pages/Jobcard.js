@@ -274,7 +274,7 @@ const Jobcard = () => {
 
       }).then(res => {
         // console.log(res.data)
-        toast.success('JobCard Submitted Succesfully')
+        toast.success('JobCard Submitted Successfully')
       })
     } catch (error) {
       console.error('Error submitting Job-Card:', error);
