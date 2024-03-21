@@ -386,6 +386,40 @@ function createChambersForSlotBookingTable() {
 }
 
 
+////////////////////////////////////////////////////////////////////////////////////
+//Function to create a slot-booking table:
+function createSlotBookingTable() {
+    const createTableQuery = `
+        CREATE TABLE IF NOT EXISTS bookings_table (
+            id INT NOT NULL AUTO_INCREMENT,
+            booking_id VARCHAR(255),
+            company_name VARCHAR(255),
+            customer_name VARCHAR(255),
+            customer_email VARCHAR(255),
+            customer_phone VARCHAR(255),
+            test_name VARCHAR(255),
+            chamber_allotted VARCHAR(255),
+            slot_start_datetime DATETIME,
+            slot_end_datetime DATETIME,
+            slot_duration VARCHAR(255),
+            remarks VARCHAR(2500),
+            slot_booked_by VARCHAR(255),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            deleted_at TIMESTAMP DEFAULT NULL,
+            PRIMARY KEY(id) 
+        )`;
+
+    db.query(createTableQuery, function (err, result) {
+        if (err) {
+            console.error("Error while creating chambers_list", err);
+        } else {
+            //console.log("Users_table created successfully.")
+        }
+    });
+}
+
+
 
 
 
@@ -419,7 +453,8 @@ module.exports = {
     createJobcardTestsTable,
     createTestDetailsTable,
 
-    createChambersForSlotBookingTable
+    createChambersForSlotBookingTable,
+    createSlotBookingTable
 
 
 };

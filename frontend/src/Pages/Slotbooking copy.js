@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { Controller, useForm } from "react-hook-form";
-import { Box, Button, Card, ClickAwayListener, Dialog, DialogActions, DialogContent, DialogTitle, Divider, Grid, Menu, MenuItem, MenuList, Paper, TextField, Typography } from '@mui/material'
+import { Box, Button, Card, ClickAwayListener, Dialog, DialogActions, DialogContent, DialogTitle, Divider, FormControl, Grid, InputLabel, Menu, MenuItem, MenuList, Paper, Select, TextField, Typography } from '@mui/material'
 import { momentLocalizer } from 'react-big-calendar'
 import moment from 'moment'
 import withDragAndDrop from "react-big-calendar/lib/addons/dragAndDrop";
@@ -16,14 +16,24 @@ import ChambersListForSlotBookingCalendar from '../components/ChambersList';
 import CustomModal from '../components/CustomModal';
 
 import dayjs from 'dayjs';
+// import timezone from 'dayjs/plugin/timezone.js'
+import utc from 'dayjs/plugin/utc'; // Optional, for working with UTC time
+import timezone from 'dayjs/plugin/timezone';
+
+
+
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
+import { yupResolver } from '@hookform/resolvers/yup';
+import * as yup from 'yup';
+import { toast } from 'react-toastify';
 
 const DnDCalendar = withDragAndDrop(Calendar);
 const localizer = momentLocalizer(moment)
 
-
+dayjs.extend(utc); // Optional, if needed
+dayjs.extend(timezone);
 
 
 
@@ -144,15 +154,36 @@ export default function Slotbooking() {
     const [xPosition, setXPosition] = useState(0);
     const [yPosition, setYPosition] = useState(0);
     const [openDialog, setOpenDialog] = useState(false);
-    const [dateTimeValue, setDateTimeValue] = useState(dayjs());
     const [slotStartDateTime, setSlotStartDateTime] = useState(dayjs());
     const [slotEndDateTime, setSlotEndDateTime] = useState(dayjs());
+    const [slotDuration, setSlotDuration] = useState(0)
+
+    const [selectedChamber, setSelectedChamber] = useState('');
+
+
 
     // Initialize useRef hook
     const calendarRef = useRef(null)
 
+    // Define Yup schema for validation
+    const slotBookingFormSchema = yup.object().shape({
+        company: yup.string().required("Enter the company name"),
+        customerName: yup.string().required("Enter the customer name"),
+        customerEmail: yup.string()
+            .matches(/@/, 'Email must contain "@"')
+            .email('Invalid email')
+            .required('Email is required'),
+        customerPhone: yup.string().matches(/^\d{10}$/, "Invalid phone number, it must be 10 digits").required("Phone number is required"),
+        testName: yup.string().required("Enter the test name"),
+        // slotStartDateTime: yup.date().required("Select the start date and time"),
+        // slotEndDateTime: yup.date().required("Select the end date and time"),
+        selectedChamber: yup.string().required("Select the Chamber"),
+    });
+
     // Initialize useForm hook
-    const { register, handleSubmit, control, setError } = useForm()
+    const { register, handleSubmit, reset, control, formState: { errors } } = useForm(
+        { resolver: yupResolver(slotBookingFormSchema) }
+    )
 
     const handleCalendarContextMenu = (e) => {
 
@@ -186,6 +217,7 @@ export default function Slotbooking() {
 
     const handleCloseDialog = () => {
         setOpenDialog(false);
+        reset()
     };
 
 
@@ -195,40 +227,64 @@ export default function Slotbooking() {
     // Function to create the new booking:
     const onClickingNewBooking = (e) => {
         setContextMenuOpen(false);
+
         handleOpenDialog();
     }
 
+    // On submitting the slot booking form:
     const onSubmitForm = (data) => {
         console.log('Form Submitted');
         console.log(data);
-        // handleCloseDialog()
+        toast.success('Slot Booked Successfully')
+        reset()
+        handleCloseDialog()
     };
 
+    // Functions to handle the errors while submission of slot booking form:
+    const onError = (errors) => { };
 
-
-    // const onSubmit = (data, e) => console.log(data, e)
-    const onError = (errors, e) => console.log(errors, e)
 
     // Function to delete the existing or selected booking:
     const onClickingDeleteBooking = (e) => {
         alert('Delete Booking Request')
     }
 
-    // On selecting the slot from date and time
-    const handleSlotStartDateTime = (newDateTime) => {
-        if (newDateTime) {
-            const formattedSlotStartDate = dayjs(newDateTime).format('YYYY-MM-DD HH:mm');
-            setSlotStartDateTime(formattedSlotStartDate);
+    const handleSelectedChamber = (event) => {
+        setSelectedChamber(event.target.value)
+    };
+
+
+    //Calculate the total slot duration:
+    const handleCalculateSlotDuration = (newValue) => {
+        const startDateTime = slotStartDateTime ? dayjs(slotStartDateTime) : null;
+        const endDateTime = newValue ? dayjs(newValue) : null
+
+        if (startDateTime && endDateTime) {
+            const durationInHours = endDateTime.diff(startDateTime, 'hour', true);
+            console.log('startDateTime is-->', startDateTime)
+            console.log('endDateTime is-->', endDateTime)
+            console.log('durationInHours is-->', durationInHours.toFixed(2))
+
+            // Update the slot duration state
+            setSlotDuration(durationInHours.toFixed(2));
         }
+
+
+        // const startDateTime = slotStartDateTime ? moment(slotStartDateTime) : null;
+        // const endDateTime = newValue ? moment(newValue) : null
+
+        // if (startDateTime && endDateTime) {
+        //     const durationInHours = endDateTime.diff(startDateTime, 'hour');
+        //     console.log('startDateTime is-->', startDateTime)
+        //     console.log('endDateTime is-->', endDateTime)
+        //     console.log('durationInHours is-->', durationInHours.toFixed(2))
+
+        //     // Update the slot duration state
+        //     setSlotDuration(durationInHours.toFixed(2));
+        // }
     }
 
-    // On selecting the slot to date and time
-    const handleSlotEndDateTime = (newDateTime) => {
-        if (newDateTime) {
-            const formattedSlotEndDate = dayjs(newDateTime).format('YYYY-MM-DD HH:mm');
-            setSlotEndDateTime(formattedSlotEndDate)
-        }
-    }
+
 
 
 
@@ -254,6 +310,10 @@ export default function Slotbooking() {
         };
         getChambersListForResource();
     }, []);
+
+
+
+    register('slotDuration')
 
     return (
         <>
@@ -290,9 +350,11 @@ export default function Slotbooking() {
 
 
             {openDialog &&
-                <Grid container style={{ display: 'flex' }}>
-                    <Dialog open={openDialog} onClose={handleCloseDialog}>
-                        <form onSubmit={handleSubmit(onSubmitForm)}>
+                <Grid container sx={{ display: 'flex' }}>
+                    <Dialog open={openDialog} onClose={handleCloseDialog} fullWidth maxWidth="sm" >
+
+                        <form onSubmit={handleSubmit(onSubmitForm, onError)}>
+
                             <DialogTitle variant='h4'>New Booking</DialogTitle>
                             <DialogContent>
 
@@ -306,7 +368,11 @@ export default function Slotbooking() {
                                         sx={{ mt: 2 }}
                                         {...register('company')}
                                     />
+                                    <Typography variant='body2' color='error'>
+                                        {errors?.company && errors.company.message}
+                                    </Typography>
                                 </Grid>
+
 
                                 <Grid item >
                                     <TextField
@@ -318,6 +384,9 @@ export default function Slotbooking() {
                                         sx={{ mt: 2 }}
                                         {...register('customerName')}
                                     />
+                                    <Typography variant='body2' color='error'>
+                                        {errors?.customerName && errors.customerName.message}
+                                    </Typography>
                                 </Grid>
 
                                 <Grid item >
@@ -338,39 +407,35 @@ export default function Slotbooking() {
                                         sx={{ width: '48%', mt: 2, pl: 1 }}
                                         {...register('customerPhone')}
                                     />
+
+                                    <div sx={{ justifyContent: 'flex-row' }}>
+                                        <Typography variant='body2' color='error'>
+                                            {errors?.customerEmail && errors.customerEmail.message}
+                                        </Typography>
+
+                                        <Typography variant='body2' color='error'>
+                                            {errors?.customerPhone && errors.customerPhone.message}
+                                        </Typography>
+                                    </div>
                                 </Grid>
+
 
                                 <Grid item >
                                     <TextField
                                         variant='outlined'
                                         type="text"
                                         name="testName"
-                                        label="Test Requested For"
+                                        label="Test Name"
                                         fullWidth
                                         sx={{ mt: 2 }}
                                         {...register('testName')}
                                     />
+                                    <Typography variant='body2' color='error'>
+                                        {errors?.testName && errors.testName.message}
+                                    </Typography>
                                 </Grid>
 
                                 <Grid item  >
-
-                                    {/* <LocalizationProvider dateAdapter={AdapterDayjs}>
-                                        <DateTimePicker
-                                            sx={{ width: '52%', mt: 2, pr: 1, borderRadius: 3 }}
-                                            label="Slot From"
-                                            variant="outlined"
-                                            margin="normal"
-                                            defaultValue={slotStartDateTime}
-                                            onChange={handleSlotStartDateTime}
-                                            renderInput={(props) => <TextField {...props} />}
-                                            format="YYYY-MM-DD HH:mm:ss"
-                                            valueType="date time"
-                                            {...register('slotStartDateTime')}
-                                        />
-                                    </LocalizationProvider> */}
-
-
-
                                     <Controller
                                         name="slotStartDateTime"
                                         control={control}
@@ -378,32 +443,93 @@ export default function Slotbooking() {
                                         render={({ field }) => (
                                             <LocalizationProvider dateAdapter={AdapterDayjs}>
                                                 <DateTimePicker
-                                                    label="Slot From"
-                                                    value={field.value ? dayjs(field.value) : null} // Use field.value instead of slotStartDateTime
+                                                    sx={{ width: '52%', mt: 2, pr: 1, borderRadius: 3 }}
+                                                    label="From"
+                                                    value={slotStartDateTime ? dayjs(slotStartDateTime) : null}
                                                     onChange={(newValue) => {
-                                                        const formattedValue = newValue ? newValue.format('YYYY-MM-DD HH:mm') : null; // Format the new value if it exists
-                                                        field.onChange(formattedValue); // Update the field value
+                                                        field.onChange(newValue);
+                                                        setSlotStartDateTime(newValue);
+                                                        handleCalculateSlotDuration(newValue);
                                                     }}
                                                     renderInput={(props) => <TextField {...props} />}
+
                                                 />
                                             </LocalizationProvider>
                                         )}
                                         {...register('slotStartDateTime')}
                                     />
 
+                                    <Controller
+                                        name="slotEndDateTime"
+                                        control={control}
+                                        defaultValue={slotEndDateTime}
+                                        render={({ field }) => (
+                                            <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                                <DateTimePicker
+                                                    sx={{ width: '48%', mt: 2, pl: 1, borderRadius: 3 }}
+                                                    label="To"
+                                                    value={slotEndDateTime ? dayjs(slotEndDateTime) : null} // Use slotStartDateTime directly
+                                                    onChange={(newValue) => {
 
-                                    <LocalizationProvider dateAdapter={AdapterDayjs}>
-                                        <DateTimePicker sx={{ width: '48%', mt: 2, pl: 1, borderRadius: 3 }}
-                                            label="Slot To"
-                                            variant="outlined"
-                                            margin="normal"
-                                            value={slotEndDateTime}
-                                            onChange={handleSlotEndDateTime}
-                                            renderInput={(props) => <TextField {...props} />}
-                                            format="YYYY-MM-DD HH:mm"
-                                            {...register('slotEndDateTime')}
-                                        />
-                                    </LocalizationProvider>
+                                                        field.onChange(newValue); // Pass newValue directly
+                                                        setSlotEndDateTime(newValue);
+                                                        handleCalculateSlotDuration(newValue);
+                                                    }}
+                                                    renderInput={(props) => <TextField {...props} />}
+
+                                                />
+                                            </LocalizationProvider>
+                                        )}
+                                        {...register('slotEndDateTime')}
+                                    />
+
+                                    <Typography variant='body2' color='error'>
+                                        {errors?.slotStartDateTime && errors.slotStartDateTime.message}
+                                    </Typography>
+
+                                    <Typography variant='body2' color='error'>
+                                        {errors?.slotEndDateTime && errors.slotEndDateTime.message}
+                                    </Typography>
+                                </Grid>
+
+
+                                <Grid sx={{ mt: 2 }}>
+
+                                    {/* {slotDuration &&
+                                        <Typography variant='h5' name='slotDuration'>
+                                            Total Slot Duration (Hrs): {slotDuration}
+                                        </Typography>
+                                    } */}
+
+                                    {slotDuration !== null ? (
+                                        <Typography variant='h5' name='slotDuration'>
+                                            Total Slot Duration (Hrs): {slotDuration}
+                                        </Typography>
+                                    ) : (
+                                        <Typography variant='h5'>
+                                            Total Slot Duration (Hrs): 0
+                                        </Typography>
+                                    )}
+
+                                </Grid>
+
+                                <Grid item>
+
+                                    <FormControl fullWidth sx={{ mt: 2, width: '100%' }}>
+                                        <InputLabel>Chamber/Equipment</InputLabel>
+                                        <Select
+                                            label="Chamber"
+                                            onChange={handleSelectedChamber}
+                                            {...register('selectedChamber')}
+                                        >
+                                            {myResourcesList.map((item) => (
+                                                <MenuItem key={item.id} value={item.title}>{item.title}</MenuItem>
+                                            ))}
+                                        </Select>
+                                    </FormControl>
+                                    <Typography variant='body2' color='error'>
+                                        {errors?.selectedChamber && errors.selectedChamber.message}
+                                    </Typography>
                                 </Grid>
 
                             </DialogContent>
@@ -417,6 +543,9 @@ export default function Slotbooking() {
                 </Grid >
             } : <></>
 
+            <br />
+            <ChambersListForSlotBookingCalendar />
+
         </>
     );
 }
@@ -425,57 +554,7 @@ export default function Slotbooking() {
 {/* <br /> */ }
 {/* <ChambersListForSlotBookingCalendar /> */ }
 
-// max={moment("2024-03-12T16:00:00").toDate()} min={moment("2024-03-12T08:00:00").toDate()}// In order to control the time range
-//
 
-
-
-
-
-
-
-
-
-
-// const components = {
-//     event: (props) => {
-//         const { title, status, priority } = props.event;
-
-//         return (
-//             <div style={{ height: '100%' }}>
-//                 <div style={{ background: getColorForEventType(props.event.type), color: 'black' }}>
-//                     {title}
-//                 </div>
-
-//                 {status && (
-//                     <div style={{ background: 'yellow', color: 'black' }}>
-//                         {`Status: ${status}`}
-//                     </div>
-//                 )}
-
-//                 {priority && (
-//                     <div style={{ background: 'yellow', color: 'black' }}>
-//                         {`Priority: ${priority}`}
-//                     </div>
-//                 )}
-//             </div>
-//         );
-//     },
-// };
-
-// // Function to get color based on event type
-// const getColorForEventType = (eventType) => {
-//     switch (eventType) {
-//         case 'Vibration':
-//             return 'red';
-//         case 'Thermal':
-//             return 'yellow';
-//         case 'IP':
-//             return 'green';
-//         default:
-//             return 'gray'; // Default color if the event type is not recognized
-//     }
-// };
 
 
 
