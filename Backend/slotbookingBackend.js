@@ -67,6 +67,49 @@ function slotBookingAPIs(app) {
     });
   });
 
+
+
+  // To create a new slot booking and save that to the database:
+  app.post("/api/createNewSlotBooking/", (req, res) => {
+    const { formData } = req.body;
+
+    const sqlQuery = `
+    INSERT INTO bookings_table (booking_id, company_name, customer_name, customer_email, customer_phone, test_name, chamber_allotted, slot_start_datetime, slot_end_datetime, slot_duration, remarks, slot_booked_by)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+
+    const formattedSlotStartDateTime = moment(formData.slotStartDateTime).format('YYYY-MM-DD HH:mm');
+    const formattedSlotEndDateTime = moment(formData.slotEndDateTime).format('YYYY-MM-DD HH:mm');
+
+    const values = [
+      formData.bookingID,
+
+      formData.company,
+      formData.customerName,
+      formData.customerEmail,
+      formData.customerPhone,
+      formData.testName,
+      formData.selectedChamber,
+      formattedSlotStartDateTime,
+      formattedSlotEndDateTime,
+      formData.slotDuration,
+      formData.remarks,
+      formData.slotBookedBy
+    ];
+
+    console.log('valuess', values)
+
+    db.query(sqlQuery, values, (error, result) => {
+      if (error) {
+        return res.status(500).json({ error: "An error occurred while booking the slot" });
+      } else {
+        res.status(200).json({ message: "Slot Booked Successfully" });
+      }
+    });
+  })
+
+
+
+
 }
 
 

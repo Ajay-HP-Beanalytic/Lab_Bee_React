@@ -83,7 +83,6 @@ export default function ChambersListForSlotBookingCalendar() {
         const response = await axios.get(`${serverBaseAddress}/api/getChambersList`)
         if (response.status === 200) {
           setChambersList(response.data)
-          console.log('chambers list---->', response.data)
         } else {
           console.error('Failed to fetch chambers list. Status:', response.status);
         }
