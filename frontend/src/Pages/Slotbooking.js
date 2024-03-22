@@ -22,6 +22,7 @@ import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import { toast } from 'react-toastify';
+import CustomModal from '../components/CustomModal';
 
 const DnDCalendar = withDragAndDrop(Calendar);
 const localizer = momentLocalizer(moment)
@@ -29,78 +30,15 @@ const localizer = momentLocalizer(moment)
 
 
 
-
-// const myResourcesList = [
-//     { id: 'resourceId1', title: 'VIB-1' },
-//     { id: 'resourceId2', title: 'VIB-2' },
-//     { id: 'resourceId3', title: 'TCC-1' },
-//     { id: 'resourceId4', title: 'TCC-2' },
-//     { id: 'resourceId5', title: 'TCC-3' },
-//     { id: 'resourceId6', title: 'TCC-4' },
-//     { id: 'resourceId7', title: 'TCC-5' },
-//     { id: 'resourceId8', title: 'TCC-6' },
-//     { id: 'resourceId9', title: 'RAIN CHAMBER' },
-//     { id: 'resourceId10', title: 'HUMD-1' },
-//     { id: 'resourceId11', title: 'HUMD-2' },
-//     { id: 'resourceId12', title: 'HUMD-3' },
-//     { id: 'resourceId13', title: 'HUMD-4' },
-//     { id: 'resourceId14', title: 'DHC-1' },
-//     { id: 'resourceId15', title: 'DHC-2' },
-//     { id: 'resourceId16', title: 'DHC-3' },
-//     { id: 'resourceId17', title: 'DHC-4' },
-// ];
-
 const myEventsList = [
-    {
-        title: 'Accord RV-1',
-        start: moment("2024-03-12T12:00:00").toDate(), // Year, Month (0-indexed), Day, Hour, Minute
-        end: moment("2024-03-12T13:30:00").toDate(),
-        type: 'Vibration',
-        priority: 'No Urgency',
-        status: 'Completed',
-        resourceId: 'resourceId1',
-    },
-    {
-        title: 'Mistral TC',
-        start: moment("2024-03-13T10:30:00").toDate(),
-        end: moment("2024-03-13T12:30:00").toDate(),
-        type: 'Thermal',
-        priority: 'Urgent',
-        status: 'Pending',
-        isDraggable: true,
-        resourceId: 'resourceId3',
-    },
-    {
-        title: 'Mistral RV-2',
-        start: moment("2024-03-13T14:00:00").toDate(),
-        end: moment("2024-03-14T14:00:00").toDate(),
-        type: 'Vibration',
-        priority: 'Urgent',
-        status: 'Pending',
-        isDraggable: false,
-        resourceId: 'resourceId2',
-    },
-    {
-        title: 'Bosch IPX9K',
-        start: moment("2024-03-15T10:00:00").toDate(),
-        end: moment("2024-03-15T16:00:00").toDate(),
-        type: 'IP',
-        priority: 'Urgent',
-        status: 'Pending',
-        resourceId: 'resourceId9',
-    },
-    {
-        title: 'Tonbo Humidity',
-        start: moment("2024-03-15T10:00:00").toDate(),
-        end: moment("2024-03-15T16:00:00").toDate(),
-        type: 'Thermal',
-        company: 'Tonbo',
-        slotRequestedBy: 'Shridhar',
-        slotBookedBy: 'Rohit',
-        priority: 'Urgent',
-        status: 'Pending',
-        resourceId: 'resourceId10',
-    },
+    // {
+    //     title: 'Accord RV-1',
+    //     start: moment("2024-03-12T12:00:00").toDate(), // Year, Month (0-indexed), Day, Hour, Minute
+    //     end: moment("2024-03-12T13:30:00").toDate(),
+    //     duration: '2',
+    //     status: 'Completed',
+    //     resourceId: 'resourceId1',
+    // },
 ]
 
 
@@ -153,6 +91,14 @@ export default function Slotbooking() {
     const [selectedChamber, setSelectedChamber] = useState('');
 
     const [slotBookedBy, setSlotBookedBy] = useState('')
+
+    const [newBookingAdded, setNewBookingAdded] = useState(false);
+    const [allBookings, setAllBookings] = useState([])
+    const [myEventsList, setMyEventsList] = useState([]);
+
+    const [selectedEvent, setSelectedEvent] = useState(null);
+    const [showOverlapDialog, setShowOverlapDialog] = useState(false);
+    const [overlapBooking, setOverlapBooking] = useState(null);
 
 
 
@@ -212,10 +158,7 @@ export default function Slotbooking() {
     const handleCloseDialog = () => {
         setOpenDialog(false);
         reset()
-        // resetDateTimePickers();
     };
-
-
 
 
 
@@ -225,25 +168,145 @@ export default function Slotbooking() {
         handleOpenDialog();
     }
 
-    // useEffect(() => {
-    //     // Function to know and set the slot booked by:
-    //     axios.defaults.withCredentials = true;
-    //     const getLoggedInUser = async () => {
-    //         try {
-    //             const response = await axios.get(`${serverBaseAddress}/api/getLoggedInUser`);
-    //             if (response.data.valid) {
-    //                 setSlotBookedBy(response.data.username);
-    //                 console.log('username: ', response.data.username);
-    //             } else {
-    //                 console.log('An error occurred while setting up slot created by');
-    //             }
-    //         } catch (error) {
-    //             console.error('Failed to fetch the logged-in user', error);
-    //         }
-    //     };
-    //     getLoggedInUser()
-    // }, [])
 
+
+
+
+    const handleEventClick = (event) => {
+        setSelectedEvent(event);
+    };
+
+    const handleCloseModal = () => {
+        setSelectedEvent(null);
+    };
+
+    const handleCloseOverlapModal = () => {
+        setShowOverlapDialog(false);
+    }
+
+    /////////////////////////////////////////////////////////////////////////////////////
+
+
+
+    // Function to check if there is an overlap between two date-time ranges
+
+
+    // On submitting the slot booking form:
+    const onSubmitForm = async (data) => {
+        console.log(data);
+
+        // Get the selected start and end date-time, along with the selected chamber
+        const selectedSlotStartDate = new Date(data.slotStartDateTime);
+        const selectedSlotEndDate = new Date(data.slotEndDateTime);
+        const selectedChamberForBooking = data.selectedChamber;
+
+        if (allBookings && allBookings.length > 0) {
+            // Check for overlap with each existing booking
+            for (const booking of allBookings) {
+                const existingStart = new Date(booking.slot_start_datetime);
+                const existingEnd = new Date(booking.slot_end_datetime);
+                const existingChamber = booking.chamber_allotted;
+
+                if (selectedChamberForBooking === existingChamber) {
+                    // Check for overlap only if the bookings are for the same chamber
+                    if (
+                        (selectedSlotStartDate <= existingEnd && selectedSlotEndDate >= existingStart) ||
+                        (selectedSlotStartDate >= existingStart && selectedSlotStartDate <= existingEnd)
+                    ) {
+                        // Overlap found, show alert and stop further processing
+                        toast.error(`${selectedChamberForBooking} already booked for ${booking.company_name}\n
+                        From ${moment(existingStart).format('YYYY-MM-DD HH:mm')} \n To ${moment(existingEnd).format('YYYY-MM-DD HH:mm')} \n Please book another slot.`);
+
+                        return;
+                    }
+                }
+            }
+        }
+
+        // No overlap found, proceed with booking
+        const bookingID = await generateBookingID();
+        const completeFormData = {
+            ...data,
+            bookingID: bookingID,
+            slotBookedBy: slotBookedBy
+        };
+
+        try {
+            const submitBooking = await axios.post(`${serverBaseAddress}/api/createNewSlotBooking/`, {
+                formData: completeFormData
+            });
+            setNewBookingAdded(!newBookingAdded);
+            console.log('submitted data is--->', submitBooking.data);
+            toast.success(`Slot Booked Successfully.\n Booking ID:${bookingID}`)
+            await reset()
+            setSlotStartDateTime(dayjs())
+            setSlotEndDateTime(dayjs())
+            handleCloseDialog();
+            setSlotDuration(0);
+        } catch (error) {
+            console.error('Failed to book the slot', error);
+        }
+    }
+
+
+
+
+
+    //////////////////////////////////////////////////////////////////////////////////////
+
+    // Functions to handle the errors while submission of slot booking form:
+    const onError = (errors) => { };
+
+    // Function to delete the existing or selected booking:
+    const onClickingDeleteBooking = (e) => {
+        alert('Delete Booking Request')
+    }
+
+    const handleSelectedChamber = (event) => {
+        setSelectedChamber(event.target.value)
+    };
+
+    // Function to calculate the slot duration:
+    const handleCalculateSlotDuration = (startDateTime, endDateTime) => {
+        if (startDateTime && endDateTime) {
+            const durationInHours = endDateTime.diff(startDateTime, 'hour');
+            setSlotDuration(durationInHours);
+        }
+    };
+
+
+
+
+
+    // Use Effect to fetch the chambers list:
+    useEffect(() => {
+        const getChambersListForResource = async () => {
+            try {
+                const response = await axios.get(`${serverBaseAddress}/api/getChambersList`);
+                if (response.status === 200) {
+                    // Transform the fetched data to match the expected resource structure
+                    const transformedData = response.data.map(chamber => ({
+                        id: chamber.chamber_name,
+                        title: chamber.chamber_name
+                    }));
+                    setMyResourceList(transformedData);
+                } else {
+                    console.error('Failed to fetch chambers list. Status:', response.status);
+                }
+            } catch (error) {
+                console.error('Failed to fetch the data', error);
+            }
+        };
+        getChambersListForResource();
+    }, []);
+
+
+    //Use effect to register the slotDuration to the form data/ useForm
+    useEffect(() => {
+        setValue('slotDuration', slotDuration);
+    }, [setValue, slotDuration]);
+
+    // Use effect to get the logged in user name
     useEffect(() => {
         axios.defaults.withCredentials = true;
         const getLoggedInUser = async () => {
@@ -267,91 +330,33 @@ export default function Slotbooking() {
     }, []);
 
 
-    // On submitting the slot booking form:
-    const onSubmitForm = async (data) => {
-        console.log(data);
-
-        const bookingID = await generateBookingID();
-        // const slotBookedBy = await getLoggedInUser();
-        // const [bookingID, slotBookedBy] = await Promise.all([generateBookingID(), getLoggedInUser()]);
-        console.log('slotBookedBy--->', slotBookedBy);
-        // Include booking ID in the form data
-        const completeFormData = {
-            ...data,
-            bookingID: bookingID,
-            slotBookedBy: slotBookedBy
-        };
-
-        try {
-            const submitBooking = await axios.post(`${serverBaseAddress}/api/createNewSlotBooking/`, {
-                formData: completeFormData
-            });
-            console.log('submitted data is--->', submitBooking.data);
-            toast.success('Slot Booked Successfully')
-            await reset()
-            setSlotStartDateTime(dayjs())
-            setSlotEndDateTime(dayjs())
-            handleCloseDialog();
-            setSlotDuration(0);
-        } catch (error) {
-            console.error('Failed to book the slot', error);
-        }
-    };
-
-    // Functions to handle the errors while submission of slot booking form:
-    const onError = (errors) => { };
-
-    // Function to delete the existing or selected booking:
-    const onClickingDeleteBooking = (e) => {
-        alert('Delete Booking Request')
-    }
-
-    const handleSelectedChamber = (event) => {
-        setSelectedChamber(event.target.value)
-    };
-
-
-    const handleCalculateSlotDuration = (startDateTime, endDateTime) => {
-        if (startDateTime && endDateTime) {
-            const durationInHours = endDateTime.diff(startDateTime, 'hour');
-            setSlotDuration(durationInHours);
-        }
-    };
-
-
-
-
-
-
-    // Use Effect to fetch the chambers list:
+    // get all the bookings:
     useEffect(() => {
-        const getChambersListForResource = async () => {
+        const fetchAllTheBookings = async () => {
             try {
-                const response = await axios.get(`${serverBaseAddress}/api/getChambersList`);
-                if (response.status === 200) {
-                    // Transform the fetched data to match the expected resource structure
-                    const transformedData = response.data.map(chamber => ({
-                        id: chamber.id,
-                        title: chamber.chamber_name
-                    }));
-                    setMyResourceList(transformedData);
-                } else {
-                    console.error('Failed to fetch chambers list. Status:', response.status);
-                }
+                const allBookingsData = await axios.get(`${serverBaseAddress}/api/getAllBookings`);
+                setAllBookings(allBookingsData.data)
+                console.log('bookings are:', allBookingsData.data)
+                const events = allBookingsData.data.map(booking => ({
+                    id: booking.booking_id,
+                    title: `${booking.test_name} for ${booking.customer_name} ,${booking.company_name}`,
+                    start: new Date(booking.slot_start_datetime),
+                    end: new Date(booking.slot_end_datetime),
+                    duration: booking.slot_duration,
+                    resourceId: booking.chamber_allotted,
+                }));
+                setMyEventsList(events);
             } catch (error) {
-                console.error('Failed to fetch the data', error);
+                console.error('Failed to fetch the bookings', error);
+                return null;
             }
-        };
-        getChambersListForResource();
-    }, []);
+        }
+
+        fetchAllTheBookings()
+
+    }, [newBookingAdded])
 
 
-    useEffect(() => {
-        setValue('slotDuration', slotDuration);
-    }, [setValue, slotDuration]);
-
-
-    // register('slotDuration')
 
     return (
         <>
@@ -367,8 +372,9 @@ export default function Slotbooking() {
                     events={myEventsList}
                     resources={myResourcesList}
                     toolbar={true}
-                    components={components}
+                    // components={components}
                     selectable
+                    onSelectEvent={handleEventClick}
                 />
 
                 {contextMenuOpen && (
@@ -380,7 +386,7 @@ export default function Slotbooking() {
                             anchorPosition={{ top: yPosition, left: xPosition }}
                         >
                             <MenuItem onClick={(e) => { onClickingNewBooking(e) }}>New Booking</MenuItem>
-                            <MenuItem onClick={(e) => { onClickingDeleteBooking(e) }}>Delete Booking</MenuItem>
+                            {/* <MenuItem onClick={(e) => { onClickingDeleteBooking(e) }}>Delete Booking</MenuItem> */}
                         </Menu>
                     </ClickAwayListener>
                 )}
@@ -590,6 +596,31 @@ export default function Slotbooking() {
                 </Grid >
             } : <></>
 
+
+            <CustomModal
+                open={!!selectedEvent}
+                onClose={handleCloseModal}
+                title="Booking Details"
+                options={[
+                    { label: `Booking ID: ${selectedEvent?.id}` },
+                    { label: `Booking Info: ${selectedEvent?.title}` },
+                    { label: `Slot Start Date & Time: ${moment(selectedEvent?.start).format('YYYY-MM-DD HH:mm')}` },
+                    { label: `Slot End Date & Time: ${moment(selectedEvent?.end).format('YYYY-MM-DD HH:mm')}` },
+                    { label: `Slot Duration: ${selectedEvent?.duration}` },
+                    { label: `Allotted Chamber: ${selectedEvent?.resourceId}` },
+
+                ]}
+            />
+
+            {/* <CustomModal
+                open={showOverlapDialog}
+                onClose={handleCloseOverlapModal}
+                title="Over Lap Alert"
+                options={[
+                    `${selectedChamberForBooking} already booked for ${booking.company_name} from ${booking.slot_start_datetime} to ${booking.slot_end_datetime}`
+                ]}
+            /> */}
+
             <br />
             <ChambersListForSlotBookingCalendar />
 
@@ -599,23 +630,28 @@ export default function Slotbooking() {
 
 
 // Function to generate booking ID
-function generateBookingID() {
-    // Get current date in YYYYMMDD format
+const generateBookingID = async () => {
+
+    const prefix = 'BEATS';
     const currentDate = moment().format('YYYYMMDD');
 
-    // Define the prefix
-    const prefix = 'BEATS';
-
-    // Generate a unique sequential number (starting from 1)
-    // You may need to fetch the latest booking ID from the database
-    // and increment it by one to ensure uniqueness
-    let sequentialNumber = '001';
-
-    // Format the booking ID
-    const bookingID = `${prefix}${currentDate}${sequentialNumber}`;
-
-    return bookingID;
+    try {
+        const response = await axios.get(`${serverBaseAddress}/api/getLatestBookingID`);
+        if (response.data && response.data.length > 0) {
+            const lastBookingId = response.data[0].booking_id;
+            const lastNumber = parseInt(lastBookingId.slice(-3), 10)
+            const nextNumber = lastNumber + 1;
+            const formattedNextNumber = String(nextNumber).padStart(3, '0')
+            const nextBookingId = `${prefix}${currentDate}${formattedNextNumber}`;
+            return nextBookingId;
+        } else {
+            return `${prefix}${currentDate}001`
+        }
+    } catch (error) {
+        console.error('Failed to generate booking ID:', error);
+    }
 }
+
 
 
 
