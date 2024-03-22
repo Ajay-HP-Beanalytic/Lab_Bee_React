@@ -258,7 +258,7 @@ export default function Quotation() {
       const currentDay = currentDate.getDate().toString();
       final_date = `${currentYear}${currentMonth}${currentDay}`
       try {
-        const response = await axios.get(`${serverBaseAddress}/api/getLatestQuoationID`)
+        const response = await axios.get(`${serverBaseAddress}/api/getLatestQuotationID`)
 
         if (response.status === 200) {
           // Assign the last fetched quotation ID to the variable:
@@ -302,7 +302,7 @@ export default function Quotation() {
   const fetchLatestQuotationId = async () => {
     try {
       // Make an API call to fetch the last quotation ID from your database
-      const response = await axios.get(`${serverBaseAddress}/api/getLatestQuoationID`);
+      const response = await axios.get(`${serverBaseAddress}/api/getLatestQuotationID`);
 
       if (response.status === 200) {
         //const latestQuotationID = response.data; // Assuming your backend sends the latest Quotation ID in the response data       

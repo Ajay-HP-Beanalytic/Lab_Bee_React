@@ -109,6 +109,38 @@ function slotBookingAPIs(app) {
 
 
 
+  // To fetch the last saved booking Id from the table bookings_table table:
+  app.get("/api/getLatestBookingID", (req, res) => {
+    const latestBookingId = "SELECT booking_id FROM bookings_table ORDER BY id DESC LIMIT 1 "
+    db.query(latestBookingId, (error, result) => {
+      if (error) {
+        console.error("Error fetching the latest booking ID", error)
+        return res.status(500).json({ error: "An error occurred while fetching the latest booking ID" });
+      }
+      if (result.length === 0) {
+        const currentDate = moment().format("YYYYMMDD");
+        const firstBookingId = `BEATS${currentDate}000`;
+        return res.json([{ booking_id: firstBookingId }]);
+      }
+      return res.json(result);
+    });
+  });
+
+
+  // Fetch all the bookings: 
+  app.get("/api/getAllBookings", (req, res) => {
+    const allBookings = "SELECT booking_id, company_name, customer_name, test_name, chamber_allotted,slot_start_datetime, slot_end_datetime, slot_duration FROM bookings_table"
+    db.query(allBookings, (error, result) => {
+      if (error) {
+        console.error("Error fetching the bookings data", error)
+        return res.status(500).json({ error: "An error occurred while fetching the bookings data" });
+      } else {
+        return res.json(result)
+      }
+    })
+  })
+
+
 
 }
 

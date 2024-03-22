@@ -1,46 +1,44 @@
 import React from 'react'
-import { Button, Dialog, DialogActions, DialogTitle, List, ListItem, ListItemText, Typography, } from '@mui/material'
-
-// export default function CustomModal({ open, onClose, title, button1text, button2text, onClickBtn1, onClickBtn2 }) {
-//   return (
-//     <>
-//       <Dialog open={open} onClose={onClose}>
-//         <DialogTitle>
-//           {title}
-//         </DialogTitle>
-//         <DialogActions style={{ padding: 20, display: 'flex', flexDirection: 'column' }}>
-//           {button1text && (
-//             <Button variant='outlined' onClick={onClickBtn1}>
-//               {button1text}
-//             </Button>
-//           )}
-//           {button2text && (
-//             <Button variant='outlined' onClick={onClickBtn2}>
-//               {button2text}
-//             </Button>
-//           )}
-//         </DialogActions>
-//       </Dialog>
-//     </>
-//   )
-// }
+import { Button, Dialog, DialogActions, DialogTitle, Divider, IconButton, List, ListItem, ListItemText, Typography, } from '@mui/material'
+import CloseIcon from '@mui/icons-material/Close';
 
 
-export default function CustomModal({ open, onClose, title, options, onItemClick }) {
+export default function CustomModal({ open, onClose, title, options, onDelete, onUpdate }) {
   return (
     <>
       <Dialog open={open} onClose={onClose}>
         <div style={{ padding: 20 }}>
           <DialogTitle sx={{ color: '#003366' }}>
-            <Typography variant='h6' sx={{ color: '#003366' }}> {title} </Typography>
+            <Typography variant='h5' sx={{ color: '#003366' }}> {title} </Typography>
           </DialogTitle>
+          <IconButton
+            aria-label="close"
+            onClick={onClose}
+            sx={{
+              position: 'absolute',
+              right: 8,
+              top: 8,
+              color: (theme) => theme.palette.grey[500],
+            }}
+          >
+            <CloseIcon />
+          </IconButton>
+          <Divider />
           <List>
-            {options.map((option, index) => (
-              <ListItem key={index} button onClick={() => onItemClick(option)}>
-                <ListItemText primary={option.label} />
-              </ListItem>
-            ))}
+            <Typography variant='body1' >
+              {options.map((option, index) => (
+                <ListItem key={index}>
+                  <ListItemText primary={option.label} />
+                </ListItem>
+              ))}
+            </Typography>
+
           </List>
+
+          <DialogActions sx={{ justifyContent: 'center' }}>
+            <Button variant='contained' color='secondary' onClick={onDelete}>DELETE</Button>
+            <Button variant='contained' color='primary' type="submit" onClick={onUpdate}> UPDATE</Button>
+          </DialogActions>
         </div>
       </Dialog>
     </>
