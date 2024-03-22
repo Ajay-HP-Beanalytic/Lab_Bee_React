@@ -83,7 +83,7 @@ function mainQuotationsTableAPIs(app) {
 
 
     // To fetch the last saved quotation Id from the table envi_tests_quotes_data table:
-    app.get("/api/getLatestQuoationID", (req, res) => {
+    app.get("/api/getLatestQuotationID", (req, res) => {
         const latestQIdFromETQT = "SELECT quotation_ids FROM bea_quotations_table ORDER BY id DESC LIMIT 1 "
         db.query(latestQIdFromETQT, (error, result) => {
             if (result.length === 0) {
