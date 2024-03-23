@@ -36,8 +36,8 @@ export default function CustomModal({ open, onClose, title, options, onDelete, o
           </List>
 
           <DialogActions sx={{ justifyContent: 'center' }}>
-            <Button variant='contained' color='secondary' onClick={onDelete}>DELETE</Button>
-            <Button variant='contained' color='primary' type="submit" onClick={onUpdate}> UPDATE</Button>
+            <Button variant='contained' sx={{ mx: 2, mb: 1, bgcolor: "orange", color: "white", borderColor: "black" }} onClick={onDelete}>DELETE</Button>
+            <Button variant='contained' sx={{ mx: 2, mb: 1, bgcolor: "orange", color: "white", borderColor: "black" }} type="submit" onClick={onUpdate}> UPDATE</Button>
           </DialogActions>
         </div>
       </Dialog>
