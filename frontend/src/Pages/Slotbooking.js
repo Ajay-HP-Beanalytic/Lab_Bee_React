@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { Controller, useForm } from "react-hook-form";
-import { Box, Button, Card, ClickAwayListener, Dialog, DialogActions, DialogContent, DialogTitle, Divider, FormControl, Grid, InputLabel, Menu, MenuItem, MenuList, Paper, Select, TextField, Typography } from '@mui/material'
+import { Box, Button, Card, ClickAwayListener, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Divider, FormControl, Grid, InputLabel, Menu, MenuItem, MenuList, Paper, Select, TextField, Typography } from '@mui/material'
 import { momentLocalizer } from 'react-big-calendar'
 import moment from 'moment'
 import withDragAndDrop from "react-big-calendar/lib/addons/dragAndDrop";
@@ -23,6 +23,7 @@ import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
 import { toast } from 'react-toastify';
 import CustomModal from '../components/CustomModal';
+import ConfirmationDialog from '../components/ConfirmationDialog';
 
 const DnDCalendar = withDragAndDrop(Calendar);
 const localizer = momentLocalizer(moment)
@@ -93,12 +94,17 @@ export default function Slotbooking() {
     const [slotBookedBy, setSlotBookedBy] = useState('')
 
     const [newBookingAdded, setNewBookingAdded] = useState(false);
+    const [slotDeleted, setSlotDeleted] = useState(false);
+    const [openDeleteSlotDialog, setOpenDeleteSlotDialog] = useState(false);
     const [allBookings, setAllBookings] = useState([])
     const [myEventsList, setMyEventsList] = useState([]);
 
     const [selectedEvent, setSelectedEvent] = useState(null);
     const [showOverlapDialog, setShowOverlapDialog] = useState(false);
     const [overlapBooking, setOverlapBooking] = useState(null);
+
+
+    const [bookingDetails, setBookingDetails] = useState(null);
 
 
 
@@ -120,10 +126,24 @@ export default function Slotbooking() {
         selectedChamber: yup.string().required("Select the Chamber"),
     });
 
+    const defaultValues = {
+        companyName: '',
+        customerName: '',
+        customerEmail: '',
+        customerPhone: '',
+        testName: '',
+        // selectedChamber: ,
+        slotStartDateTime: '',
+        slotEndDateTime: '',
+        slotDuration: '',
+        remarks: ''
+    }
+
     // Initialize useForm hook
-    const { register, handleSubmit, control, formState: { values, errors }, setValue, reset, } = useForm(
-        { resolver: yupResolver(slotBookingFormSchema) }
-    )
+    const { register, handleSubmit, control, formState: { values, errors }, setValue, reset, } = useForm({
+        defaultValues: defaultValues,
+        resolver: yupResolver(slotBookingFormSchema),
+    })
 
     const handleCalendarContextMenu = (e) => {
 
@@ -182,6 +202,16 @@ export default function Slotbooking() {
 
     const handleCloseOverlapModal = () => {
         setShowOverlapDialog(false);
+    }
+
+
+    const handleOpenDeleteSlotDialog = () => {
+        setOpenDeleteSlotDialog(true)
+
+    }
+
+    const handleCloseDeleteSlotDialog = () => {
+        setOpenDeleteSlotDialog(false)
     }
 
     /////////////////////////////////////////////////////////////////////////////////////
@@ -258,9 +288,68 @@ export default function Slotbooking() {
     const onError = (errors) => { };
 
     // Function to delete the existing or selected booking:
-    const onClickingDeleteBooking = (e) => {
-        alert('Delete Booking Request')
+    const handleDeleteBooking = async (e) => {
+
+        const bookingIDToBeDeleted = selectedEvent.id;
+
+        try {
+            const deleteResponse = await axios.delete(`${serverBaseAddress}/api/deleteBooking`, {
+                data: { bookingID: bookingIDToBeDeleted }
+            })
+
+            if (deleteResponse.status === 200) {
+                toast.success('Slot removed successfully ');
+                setSlotDeleted(!slotDeleted)
+                setOpenDeleteSlotDialog(false)
+                handleCloseModal()
+            }
+        } catch (error) {
+            console.error('Failed to delete booking:', error);
+            alert('Failed to delete booking. Please try again.');
+        }
+
     }
+
+
+    const fetchBookingData = async (selectedBookingId) => {
+        try {
+            const response = await axios.get(`${serverBaseAddress}/api/getBookingData/${selectedBookingId}`);
+            const bookingData = response.data[0];
+            console.log('selected booking data', bookingData);
+
+            // Set form values using setValue
+            setValue('company', bookingData.company_name);
+            setValue('customerName', bookingData.customer_name);
+            setValue('customerEmail', bookingData.customer_email);
+            setValue('customerPhone', bookingData.customer_phone);
+            setValue('testName', bookingData.test_name);
+            setValue('remarks', bookingData.remarks);
+            // setValue('selectedChamber', bookingData.chamber_allotted);
+            // setValue('slotStartDateTime', bookingData.slot_start_datetime);
+            // setValue('slotEndDateTime', bookingData.slot_end_datetime);
+            // setValue('slotDuration', bookingData.slot_duration);
+
+            setSelectedChamber(bookingData.chamber_allotted)
+            // setSlotStartDateTime(bookingData.slot_start_datetime)
+            // setSlotEndDateTime(dayjs(bookingData.slot_end_datetime).format('YYYY-MM-DD HH:mm'))
+            setSlotDuration(bookingData.slot_duration)
+
+
+
+        } catch (error) {
+            console.error('Error fetching booking data:', error);
+        }
+    };
+
+
+    //Function to edit or update the selected booking:
+    const handleUpdateBooking = async (selectedBookingId) => {
+        await fetchBookingData(selectedBookingId)
+        setOpenDialog(true)
+    }
+
+
+
 
     const handleSelectedChamber = (event) => {
         setSelectedChamber(event.target.value)
@@ -346,6 +435,7 @@ export default function Slotbooking() {
                     resourceId: booking.chamber_allotted,
                 }));
                 setMyEventsList(events);
+
             } catch (error) {
                 console.error('Failed to fetch the bookings', error);
                 return null;
@@ -354,7 +444,27 @@ export default function Slotbooking() {
 
         fetchAllTheBookings()
 
-    }, [newBookingAdded])
+        // fetchBookingData(selectedEvent);
+
+    }, [newBookingAdded, slotDeleted])
+
+
+    // Function to fetch booking data from the backend API
+
+
+
+    // Get the selected booking data:
+    // useEffect(() => {
+
+    //     const fetchSelectedBookingDetails = async (bookingId) => {
+    //         try {
+    //             const response = await axios.get(`${serverBaseAddress}/api/getBookingData/${bookingId}`);
+    //             setBookingDetails(response.data);
+    //         } catch (error) {
+    //             console.error('Failed to fetch booking details:', error);
+    //         }
+    //     };
+    // }, [])
 
 
 
@@ -600,6 +710,8 @@ export default function Slotbooking() {
             <CustomModal
                 open={!!selectedEvent}
                 onClose={handleCloseModal}
+                onDelete={handleOpenDeleteSlotDialog}
+                onUpdate={() => handleUpdateBooking(selectedEvent.id)}
                 title="Booking Details"
                 options={[
                     { label: `Booking ID: ${selectedEvent?.id}` },
@@ -610,6 +722,18 @@ export default function Slotbooking() {
                     { label: `Allotted Chamber: ${selectedEvent?.resourceId}` },
 
                 ]}
+            />
+
+            <ConfirmationDialog
+                open={openDeleteSlotDialog}
+                onClose={handleCloseDeleteSlotDialog}
+                onConfirm={handleDeleteBooking}
+                title='Delete Confirmation'
+                contentText='Are you sure you want to delete this slot?'
+                confirmButtonText="Delete"
+                cancelButtonText="Cancel"
+
+
             />
 
             {/* <CustomModal

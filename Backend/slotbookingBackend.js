@@ -96,7 +96,6 @@ function slotBookingAPIs(app) {
       formData.slotBookedBy
     ];
 
-    console.log('valuess', values)
 
     db.query(sqlQuery, values, (error, result) => {
       if (error) {
@@ -129,13 +128,46 @@ function slotBookingAPIs(app) {
 
   // Fetch all the bookings: 
   app.get("/api/getAllBookings", (req, res) => {
-    const allBookings = "SELECT booking_id, company_name, customer_name, test_name, chamber_allotted,slot_start_datetime, slot_end_datetime, slot_duration FROM bookings_table"
+    const allBookings = "SELECT booking_id, company_name, customer_name, test_name, chamber_allotted,slot_start_datetime, slot_end_datetime, slot_duration FROM bookings_table WHERE deleted_at IS NULL"
     db.query(allBookings, (error, result) => {
       if (error) {
         console.error("Error fetching the bookings data", error)
         return res.status(500).json({ error: "An error occurred while fetching the bookings data" });
       } else {
         return res.json(result)
+      }
+    })
+  })
+
+
+  //API to edit or update the selected booking id:
+  app.get('/api/getBookingData/:booking_id', (req, res) => {
+    const bookingId = req.params.booking_id;
+    const sqlQuery = `SELECT company_name, customer_name, customer_email, customer_phone, test_name, chamber_allotted, slot_start_datetime, slot_end_datetime, slot_duration, remarks, slot_booked_by FROM bookings_table WHERE booking_id = ? AND deleted_at IS NULL`;
+
+    db.query(sqlQuery, [bookingId], (error, result) => {
+      if (error) {
+        return res.status(500).json({ error: "An error occurred while fetching data" })
+      }
+      res.send(result)
+    })
+  });
+
+
+  // Delete or remove the selected booking: 
+  app.delete("/api/deleteBooking", (req, res) => {
+    const { bookingID } = req.body;
+    const deleteBookings = "UPDATE bookings_table SET deleted_at = NOW() WHERE booking_id = ?";
+    db.query(deleteBookings, [bookingID], (error, result) => {
+      if (error) {
+        console.error("Error while marking the selected booking as deleted", error);
+        return res.status(500).json({ error: "An error occurred while updating the booking status" });
+      } else {
+        if (result.affectedRows > 0) {
+          return res.json({ message: "Booking marked as deleted successfully" });
+        } else {
+          return res.status(404).json({ message: "Booking not found" });
+        }
       }
     })
   })
