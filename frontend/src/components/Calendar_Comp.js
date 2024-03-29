@@ -1,3 +1,4 @@
+import React from 'react'
 import {
   Calendar as BigCalendar,
   CalendarProps,
@@ -6,6 +7,7 @@ import {
 import moment from "moment";
 
 const localizer = momentLocalizer(moment);
+
 
 export default function Calendar(props) {
   return <BigCalendar {...props} localizer={localizer}

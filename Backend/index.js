@@ -30,7 +30,8 @@ const {
   createJobcardTestsTable,
   createTestDetailsTable,
   createChambersForSlotBookingTable,
-  createSlotBookingTable
+  createSlotBookingTable,
+  createPoStatusTable
 } = require('./database_tables');
 
 //Get db connection from the db.js file
@@ -59,6 +60,7 @@ db.getConnection(function (err, connection) {
 
   createChambersForSlotBookingTable();
   createSlotBookingTable();
+  createPoStatusTable();
 
   connection.release();  // Release the connection back to the pool when done
 });
