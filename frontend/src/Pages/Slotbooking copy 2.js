@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { Controller, useForm, useWatch } from "react-hook-form";
 import { Box, Button, Card, ClickAwayListener, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Divider, FormControl, Grid, InputLabel, Menu, MenuItem, MenuList, Paper, Select, TextField, Typography } from '@mui/material'
-import { Views, momentLocalizer } from 'react-big-calendar'
+import { momentLocalizer } from 'react-big-calendar'
 import moment from 'moment'
 import withDragAndDrop from "react-big-calendar/lib/addons/dragAndDrop";
 import Calendar from '../components/Calendar_Comp'
@@ -49,23 +49,23 @@ const myEventsList = [
 
 const components = {
     event: (props) => {
-        const chamberName = props?.event?.type;
-        switch (chamberName) {
-            case 'HUMD-3':
+        const testType = props?.event?.type;
+        switch (testType) {
+            case 'Vibration':
                 return (
                     <div style={{ background: 'red', color: 'white', height: '100%' }}>
                         {props.title}
                     </div>
                 );
 
-            case 'TSC-1':
+            case 'Thermal':
                 return (
                     <div style={{ background: 'yellow', color: 'black', height: '100%' }}>
                         {props.title}
                     </div>
                 );
 
-            case 'DHC-4':
+            case 'IP':
                 return (
                     <div style={{ background: 'green', color: 'black', height: '100%' }}>
                         {props.title}
@@ -523,7 +523,7 @@ export default function Slotbooking() {
                 console.log('bookings are:', allBookingsData.data)
                 const events = allBookingsData.data.map(booking => ({
                     id: booking.booking_id,
-                    title: `${booking.test_name} for ${booking.company_name}, ${booking.customer_name}`,
+                    title: `${booking.test_name} for ${booking.customer_name} ,${booking.company_name}`,
                     start: new Date(booking.slot_start_datetime),
                     end: new Date(booking.slot_end_datetime),
                     duration: booking.slot_duration,
@@ -561,40 +561,6 @@ export default function Slotbooking() {
     //     };
     // }, [])
 
-    console.log('myEventsList', myEventsList)
-
-    // Define a function to get event props based on start date
-    const eventPropGetter = (event, start, end, isSelected) => {
-        // Get the current date
-        const currentDate = moment();
-
-        // Get the start date of the event
-        const eventStartDate = moment(event.start);
-
-        // Define colors for different date comparisons
-        let backgroundColor = '#00b300'; // Default, 'Green' color
-
-        if (eventStartDate.isBefore(currentDate, 'day')) {
-            backgroundColor = '#ff4d4d'; // Completed Event ,'Red' color
-
-        } else if (eventStartDate.isAfter(currentDate, 'day')) {
-            backgroundColor = '#00b300'; // Upcoming, 'Green' color
-
-        } else {
-            backgroundColor = '#004080'; // Event starts on current date,  'Blue' color
-        }
-
-        // Return props with background color
-        return {
-            style: {
-                backgroundColor: backgroundColor,
-            },
-        };
-    };
-
-
-
-
 
 
     return (
@@ -611,7 +577,7 @@ export default function Slotbooking() {
                     events={myEventsList}
                     resources={myResourcesList}
                     toolbar={true}
-                    eventPropGetter={eventPropGetter}
+                    // components={components}
                     selectable
                     onSelectEvent={handleEventClick}
                 />
@@ -874,6 +840,8 @@ export default function Slotbooking() {
                 contentText='Are you sure you want to delete this slot?'
                 confirmButtonText="Delete"
                 cancelButtonText="Cancel"
+
+
             />
 
             {/* <CustomModal

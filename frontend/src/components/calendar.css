@@ -10,9 +10,8 @@
 /* For the event  */
 .rbc-event {
   padding: 0 !important;
-  font-size: 15px;
+  font-size: 18px;
   position: relative;
-  /* z-index: 2; */
 }
 
 /* For the event label to display */
@@ -20,12 +19,22 @@
   display: none !important
 }
 
-/* .rbc-event-container {
-  width: 100% !important;
-} */
+.rbc-event-container {
+  width: 100%;
+}
 
 /* .rbc-time-slot {
   background-color: #eaf3fa;
   color: #74a4c3;
   border-color: aqua;
 } */
+
+
+.rbc-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  /* background-color: #5c5cd6; */
+  /* Set background color */
+  padding: 10px;
+}

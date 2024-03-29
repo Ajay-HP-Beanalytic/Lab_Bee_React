@@ -421,6 +421,34 @@ function createSlotBookingTable() {
 
 
 
+////////////////////////////////////////////////////////////////////////////////////
+//Function to create a po_table table:
+function createPoStatusTable() {
+    const createTableQuery = `
+        CREATE TABLE IF NOT EXISTS po_table (
+            id INT NOT NULL AUTO_INCREMENT,
+            jc_number VARCHAR(255),
+            jc_category VARCHAR(255),
+            rfq_number VARCHAR(255),
+            invoice_number VARCHAR(255),
+            status VARCHAR(255),
+            remarks VARCHAR(2500),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+            deleted_at TIMESTAMP DEFAULT NULL,
+            PRIMARY KEY(id) 
+        )`;
+
+    db.query(createTableQuery, function (err, result) {
+        if (err) {
+            console.error("Error while creating po_table", err);
+        } else {
+            //console.log("Users_table created successfully.")
+        }
+    });
+}
+
+
 
 
 
@@ -454,7 +482,8 @@ module.exports = {
     createTestDetailsTable,
 
     createChambersForSlotBookingTable,
-    createSlotBookingTable
+    createSlotBookingTable,
+    createPoStatusTable
 
 
 };
