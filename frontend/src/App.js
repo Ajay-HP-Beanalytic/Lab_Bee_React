@@ -64,6 +64,7 @@ function App() {
             <Route path='/chamber-calibration' element={<ChamberAndCalibration />} />
 
             <Route path='/slot_booking' element={<Slotbooking />} />
+            {/* <Route path='/update_booking/:id' element={<Slotbooking />} /> */}
 
             <Route path="/userlogout" element={<UserLogoutDialog />} />
             <Route path='/trailpage' element={<TrailPage />} />
