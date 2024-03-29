@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { Controller, useForm } from "react-hook-form";
+import { Controller, useForm, useWatch } from "react-hook-form";
 import { Box, Button, Card, ClickAwayListener, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Divider, FormControl, Grid, InputLabel, Menu, MenuItem, MenuList, Paper, Select, TextField, Typography } from '@mui/material'
 import { momentLocalizer } from 'react-big-calendar'
 import moment from 'moment'
@@ -24,6 +24,7 @@ import * as yup from 'yup';
 import { toast } from 'react-toastify';
 import CustomModal from '../components/CustomModal';
 import ConfirmationDialog from '../components/ConfirmationDialog';
+import { useParams } from 'react-router-dom';
 
 const DnDCalendar = withDragAndDrop(Calendar);
 const localizer = momentLocalizer(moment)
@@ -96,6 +97,7 @@ export default function Slotbooking() {
     const [newBookingAdded, setNewBookingAdded] = useState(false);
     const [slotDeleted, setSlotDeleted] = useState(false);
     const [openDeleteSlotDialog, setOpenDeleteSlotDialog] = useState(false);
+    const [editBooking, setEditBooking] = useState(false);
     const [allBookings, setAllBookings] = useState([])
     const [myEventsList, setMyEventsList] = useState([]);
 
@@ -106,7 +108,9 @@ export default function Slotbooking() {
 
     const [bookingDetails, setBookingDetails] = useState(null);
 
+    const [editId, setEditId] = useState('')
 
+    const { id } = useParams('id')
 
     // Initialize useRef hook
     const calendarRef = useRef(null)
@@ -132,15 +136,15 @@ export default function Slotbooking() {
         customerEmail: '',
         customerPhone: '',
         testName: '',
-        // selectedChamber: ,
-        slotStartDateTime: '',
-        slotEndDateTime: '',
+        selectedChamber: '',
+        slotStartDateTime: dayjs(),
+        slotEndDateTime: dayjs(),
         slotDuration: '',
         remarks: ''
     }
 
     // Initialize useForm hook
-    const { register, handleSubmit, control, formState: { values, errors }, setValue, reset, } = useForm({
+    const { register, handleSubmit, control, formState: { values, errors }, setValue, getValues, reset, watch } = useForm({
         defaultValues: defaultValues,
         resolver: yupResolver(slotBookingFormSchema),
     })
@@ -178,6 +182,12 @@ export default function Slotbooking() {
     const handleCloseDialog = () => {
         setOpenDialog(false);
         reset()
+        setEditBooking(false);
+        setSlotStartDateTime(dayjs())
+        setSlotEndDateTime(dayjs())
+        setSlotDuration(0);
+        setSelectedChamber('');
+        setEditId('')
     };
 
 
@@ -222,6 +232,63 @@ export default function Slotbooking() {
 
 
     // On submitting the slot booking form:
+    // const onSubmitForm = async (data) => {
+    //     console.log(data);
+
+    //     // Get the selected start and end date-time, along with the selected chamber
+    //     const selectedSlotStartDate = new Date(data.slotStartDateTime);
+    //     const selectedSlotEndDate = new Date(data.slotEndDateTime);
+    //     const selectedChamberForBooking = data.selectedChamber;
+
+    //     if (allBookings && allBookings.length > 0) {
+    //         // Check for overlap with each existing booking
+    //         for (const booking of allBookings) {
+    //             const existingStart = new Date(booking.slot_start_datetime);
+    //             const existingEnd = new Date(booking.slot_end_datetime);
+    //             const existingChamber = booking.chamber_allotted;
+
+    //             if (selectedChamberForBooking === existingChamber) {
+    //                 // Check for overlap only if the bookings are for the same chamber
+    //                 if (
+    //                     (selectedSlotStartDate <= existingEnd && selectedSlotEndDate >= existingStart) ||
+    //                     (selectedSlotStartDate >= existingStart && selectedSlotStartDate <= existingEnd)
+    //                 ) {
+    //                     // Overlap found, show alert and stop further processing
+    //                     toast.error(`${selectedChamberForBooking} already booked for ${booking.company_name}\n
+    //                     From ${moment(existingStart).format('YYYY-MM-DD HH:mm')} \n To ${moment(existingEnd).format('YYYY-MM-DD HH:mm')} \n Please book another slot.`);
+
+    //                     return;
+    //                 }
+    //             }
+    //         }
+    //     }
+
+    //     // No overlap found, proceed with booking
+    //     const bookingID = await generateBookingID();
+    //     const completeFormData = {
+    //         ...data,
+    //         bookingID: bookingID,
+    //         slotBookedBy: slotBookedBy
+    //     };
+
+    //     try {
+    //         const submitBooking = await axios.post(`${serverBaseAddress}/api/createNewSlotBooking/`, {
+    //             formData: completeFormData
+    //         });
+    //         setNewBookingAdded(!newBookingAdded);
+    //         console.log('submitted data is--->', submitBooking.data);
+    //         toast.success(`Slot Booked Successfully.\n Booking ID:${bookingID}`)
+    //         await reset()
+    //         setSlotStartDateTime(dayjs())
+    //         setSlotEndDateTime(dayjs())
+    //         handleCloseDialog();
+    //         setSlotDuration(0);
+    //     } catch (error) {
+    //         console.error('Failed to book the slot', error);
+    //     }
+    // }
+
+
     const onSubmitForm = async (data) => {
         console.log(data);
 
@@ -233,6 +300,11 @@ export default function Slotbooking() {
         if (allBookings && allBookings.length > 0) {
             // Check for overlap with each existing booking
             for (const booking of allBookings) {
+
+                if (editId && booking.booking_id === editId) {
+                    continue; // Skip the rest of the loop iteration
+                }
+
                 const existingStart = new Date(booking.slot_start_datetime);
                 const existingEnd = new Date(booking.slot_end_datetime);
                 const existingChamber = booking.chamber_allotted;
@@ -254,7 +326,8 @@ export default function Slotbooking() {
         }
 
         // No overlap found, proceed with booking
-        const bookingID = await generateBookingID();
+        // const bookingID = await generateBookingID();
+        const bookingID = editId ? editId : await generateBookingID();
         const completeFormData = {
             ...data,
             bookingID: bookingID,
@@ -262,21 +335,30 @@ export default function Slotbooking() {
         };
 
         try {
-            const submitBooking = await axios.post(`${serverBaseAddress}/api/createNewSlotBooking/`, {
+            const submitBooking = await axios.post(`${serverBaseAddress}/api/slotBooking/` + editId, {
                 formData: completeFormData
             });
+            console.log('updated data', submitBooking.data)
             setNewBookingAdded(!newBookingAdded);
-            console.log('submitted data is--->', submitBooking.data);
-            toast.success(`Slot Booked Successfully.\n Booking ID:${bookingID}`)
+
             await reset()
-            setSlotStartDateTime(dayjs())
-            setSlotEndDateTime(dayjs())
             handleCloseDialog();
-            setSlotDuration(0);
+            handleCloseModal()
+
+            toast.success(editId ? `Booking ID: ${editId} Updated Successfully.` : `Slot Booked Successfully.\n Booking ID:${bookingID}`)
+
         } catch (error) {
             console.error('Failed to book the slot', error);
         }
+
+        if (!editId) {
+            await reset()
+            handleCloseDialog();
+        }
     }
+
+
+
 
 
 
@@ -311,30 +393,40 @@ export default function Slotbooking() {
     }
 
 
+
+
     const fetchBookingData = async (selectedBookingId) => {
         try {
             const response = await axios.get(`${serverBaseAddress}/api/getBookingData/${selectedBookingId}`);
             const bookingData = response.data[0];
             console.log('selected booking data', bookingData);
 
-            // Set form values using setValue
             setValue('company', bookingData.company_name);
             setValue('customerName', bookingData.customer_name);
             setValue('customerEmail', bookingData.customer_email);
             setValue('customerPhone', bookingData.customer_phone);
             setValue('testName', bookingData.test_name);
-            setValue('remarks', bookingData.remarks);
-            // setValue('selectedChamber', bookingData.chamber_allotted);
-            // setValue('slotStartDateTime', bookingData.slot_start_datetime);
-            // setValue('slotEndDateTime', bookingData.slot_end_datetime);
-            // setValue('slotDuration', bookingData.slot_duration);
 
-            setSelectedChamber(bookingData.chamber_allotted)
-            // setSlotStartDateTime(bookingData.slot_start_datetime)
-            // setSlotEndDateTime(dayjs(bookingData.slot_end_datetime).format('YYYY-MM-DD HH:mm'))
+
+            const selectedChamberId = myResourcesList.find(item => item.id === bookingData.chamber_allotted)?.id;
+            if (selectedChamberId) {
+                const selectedChamberName = myResourcesList.find(item => item.id === selectedChamberId)?.title;
+                if (selectedChamberName) {
+                    setValue('selectedChamber', selectedChamberId); // Set value using react-hook-form
+                    setSelectedChamber(selectedChamberName); // Update selectedChamber state variable
+                } else {
+                    console.error('Error: Chamber title not found in myResourceList');
+                }
+            } else {
+                console.error('Error: Chamber not found in myResourceList');
+            }
+
+            setSlotStartDateTime(dayjs(bookingData.slot_start_datetime))
+            setSlotEndDateTime(dayjs(bookingData.slot_end_datetime))
             setSlotDuration(bookingData.slot_duration)
+            setValue('remarks', bookingData.remarks);
 
-
+            setEditId(selectedBookingId)
 
         } catch (error) {
             console.error('Error fetching booking data:', error);
@@ -342,12 +434,15 @@ export default function Slotbooking() {
     };
 
 
+
+
+
     //Function to edit or update the selected booking:
     const handleUpdateBooking = async (selectedBookingId) => {
         await fetchBookingData(selectedBookingId)
+        setEditBooking(!!selectedBookingId)
         setOpenDialog(true)
     }
-
 
 
 
@@ -509,8 +604,15 @@ export default function Slotbooking() {
 
                         <form onSubmit={handleSubmit(onSubmitForm, onError)}>
 
-                            <DialogTitle variant='h4'>New Booking</DialogTitle>
+                            {editBooking ? (
+                                <DialogTitle variant='h4'>Update Booking</DialogTitle>
+                            ) : (<DialogTitle variant='h4'>New Booking</DialogTitle>
+                            )}
+
+                            {/* <DialogTitle variant='h4'>New Booking</DialogTitle> */}
                             <DialogContent>
+
+                                {editBooking ? <Typography variant='h6'> ID:{editId} </Typography> : null}
 
                                 <Grid item >
                                     <TextField
@@ -594,8 +696,10 @@ export default function Slotbooking() {
                                         <InputLabel>Chamber/Equipment</InputLabel>
                                         <Select
                                             label="Chamber"
-                                            onChange={handleSelectedChamber}
+                                            type="text"
                                             {...register('selectedChamber')}
+                                            onChange={handleSelectedChamber}
+                                            value={selectedChamber}
                                         >
                                             {myResourcesList.map((item) => (
                                                 <MenuItem key={item.id} value={item.title}>{item.title}</MenuItem>
@@ -611,6 +715,7 @@ export default function Slotbooking() {
 
                                     <Controller
                                         name="slotStartDateTime"
+                                        type="date"
                                         control={control}
                                         defaultValue={slotStartDateTime}
                                         render={({ field }) => (
@@ -625,14 +730,16 @@ export default function Slotbooking() {
                                                         handleCalculateSlotDuration(newValue, slotEndDateTime);
                                                     }}
                                                     renderInput={(props) => <TextField {...props} />}
+                                                    format="YYYY-MM-DD HH:mm"
                                                 />
                                             </LocalizationProvider>
                                         )}
-                                        {...register('slotStartDateTime')}
+                                        {...register('slotStartDateTime', { valueAsDate: true })}
                                     />
 
                                     <Controller
                                         name="slotEndDateTime"
+                                        type="date"
                                         control={control}
                                         defaultValue={slotEndDateTime}
                                         render={({ field }) => (
@@ -647,6 +754,7 @@ export default function Slotbooking() {
                                                         handleCalculateSlotDuration(slotStartDateTime, newValue);
                                                     }}
                                                     renderInput={(props) => <TextField {...props} />}
+                                                    format="YYYY-MM-DD HH:mm"
                                                 />
                                             </LocalizationProvider>
                                         )}
@@ -698,7 +806,7 @@ export default function Slotbooking() {
                             </DialogContent>
                             <DialogActions sx={{ justifyContent: 'center' }}>
                                 <Button variant='contained' color='secondary' onClick={handleCloseDialog}>CANCEL</Button>
-                                <Button variant='contained' color='primary' type="submit"> SUBMIT</Button>
+                                <Button variant='contained' color='primary' type="submit">SUBMIT</Button>
                             </DialogActions>
                         </form>
                     </Dialog>

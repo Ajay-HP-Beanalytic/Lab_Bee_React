@@ -70,7 +70,7 @@ function slotBookingAPIs(app) {
 
 
   // To create a new slot booking and save that to the database:
-  app.post("/api/createNewSlotBooking/", (req, res) => {
+  app.post("/api/slotBooking", (req, res) => {
     const { formData } = req.body;
 
     const sqlQuery = `
@@ -152,6 +152,64 @@ function slotBookingAPIs(app) {
       res.send(result)
     })
   });
+
+
+  //API to update the selected booking:
+
+  app.post("/api/slotBooking/:booking_id", (req, res) => {
+
+    const { formData } = req.body;
+    console.log('formData is', formData)
+    console.log('1', formData.customerPhone)
+
+    const bookingId = req.params.booking_id;
+    if (!bookingId) return res.status(400).json({ error: "Selected booking Id is missing or invalid" })
+
+    const sqlQuery = `
+        UPDATE bookings_table 
+        SET 
+            company_name = ?,
+            customer_name = ?,
+            customer_email = ?,
+            customer_phone = ?,
+            test_name = ?,
+            chamber_allotted = ?,
+            slot_start_datetime = ?,
+            slot_end_datetime = ?,
+            slot_duration = ?,
+            remarks = ?,
+            slot_booked_by = ?
+        WHERE booking_id = ?
+    `;
+
+    const formattedSlotStartDateTime = moment(formData.slotStartDateTime).format('YYYY-MM-DD HH:mm');
+    const formattedSlotEndDateTime = moment(formData.slotEndDateTime).format('YYYY-MM-DD HH:mm');
+
+    const values = [
+      formData.company,
+      formData.customerName,
+      formData.customerEmail,
+      formData.customerPhone,
+      formData.testName,
+      formData.selectedChamber,
+      formattedSlotStartDateTime,
+      formattedSlotEndDateTime,
+      formData.slotDuration,
+      formData.remarks,
+      formData.slotBookedBy,
+      bookingId,
+    ];
+
+
+    db.query(sqlQuery, values, (error, result) => {
+      if (error) {
+        console.error('Error updating booking:', error);
+        return res.status(500).json({ error: "An error occurred while updating the booking" });
+      } else {
+        res.status(200).json({ message: "Booking updated successfully" });
+      }
+    });
+  })
 
 
   // Delete or remove the selected booking: 
