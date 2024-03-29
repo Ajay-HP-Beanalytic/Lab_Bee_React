@@ -192,10 +192,13 @@ export default function SidenavigationBar() {
   const filteredItems = items.filter(item => {
     if (loggedInUserRole === 'Admin') {
       return true; // Show all items for Admin
+
     } else if (loggedInUserRole === 'Marketing') {
       return [2, 3, 4, 10, 11].includes(item.i); // Show items 1, 2, 3, and 9 for Marketing
-    } else if (loggedInUserRole === 'Lab Manager') {
+
+    } else if (loggedInUserRole === 'Lab Manager' || loggedInUserRole === 'Lab Engineer' || loggedInUserRole === 'Lab Tech') {
       return [5, 6, 7, 8, 9, 10, 11, 12].includes(item.i); // Show items 4, 5, and 9 for Lab Manager 
+
     }
     return false; // Default: Hide the item
   });
