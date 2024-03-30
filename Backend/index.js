@@ -136,6 +136,11 @@ const { slotBookingAPIs } = require('./slotbookingBackend')
 slotBookingAPIs(app)
 
 
+// backend connection of po_invoice data API's from 'PoInvoiceBackend' page
+const { poInvoiceBackendAPIs } = require('./PoInvoiceBackend')
+poInvoiceBackendAPIs(app)
+
+
 // Check wheteher connection is established between 
 app.get("/", (req, res) => {
   res.send("Hello Welcome to Labbee...");
