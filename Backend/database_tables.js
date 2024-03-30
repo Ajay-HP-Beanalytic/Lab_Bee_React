@@ -425,12 +425,17 @@ function createSlotBookingTable() {
 //Function to create a po_table table:
 function createPoStatusTable() {
     const createTableQuery = `
-        CREATE TABLE IF NOT EXISTS po_table (
+        CREATE TABLE IF NOT EXISTS po_invoice_table (
             id INT NOT NULL AUTO_INCREMENT,
             jc_number VARCHAR(255),
+            jc_month DATE,
             jc_category VARCHAR(255),
             rfq_number VARCHAR(255),
+            rfq_value VARCHAR(255),
+            po_number VARCHAR(255),
+            po_value VARCHAR(255),
             invoice_number VARCHAR(255),
+            invoice_value VARCHAR(255),
             status VARCHAR(255),
             remarks VARCHAR(2500),
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

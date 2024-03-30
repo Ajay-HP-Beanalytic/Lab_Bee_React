@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 
 import {
   Autocomplete,
@@ -14,11 +14,20 @@ import {
   TablePagination,
   TableRow,
   TextField,
+  Tooltip,
   Typography
 } from '@mui/material'
+import { serverBaseAddress } from '../Pages/APIPage';
+import axios from 'axios';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
 
 
 export default function PoInvoiceStatusTable() {
+
+  const [poDataList, setPoDataList] = useState([])
+  const [page, setPage] = useState(0);                          //To setup pages of the table
+  const [rowsPerPage, setRowsPerPage] = useState(10);            //To show the number of rows per page
 
   // Custom style for the table header
   const tableHeaderStyle = { backgroundColor: '#668799', fontWeight: 'extra-bold' }
@@ -30,6 +39,52 @@ export default function PoInvoiceStatusTable() {
   // Calibration due label for the KPI
   const currentMonthName = new Intl.DateTimeFormat('en-US', { month: 'long' }).format(currentDate);
   const currentYearAndMonth = `${currentMonthName}-${currentYear}`;
+
+
+  // Use Effect to fetch the po and invoice list:
+  useEffect(() => {
+    const getPoAndInvoiceList = async () => {
+      try {
+        const response = await axios.get(`${serverBaseAddress}/api/getPoInvoiceDataList`);
+        if (response.status === 200) {
+          setPoDataList(response.data);
+        } else {
+          console.error('Failed to fetch chambers list. Status:', response.status);
+        }
+      } catch (error) {
+        console.error('Failed to fetch the data', error);
+      }
+    };
+    getPoAndInvoiceList();
+  }, []);
+
+  console.log('poDataList', poDataList)
+
+  const editSelectedChamber = () => {
+
+  }
+
+
+  const deleteSelectedChamber = () => {
+
+  }
+
+
+  const tableHeadersList = [
+    { id: 'Sl No', label: 'Sl No' },
+    { id: 'jcNumber', label: 'JC Number' },
+    { id: 'jcDate', label: 'JC Date' },
+    { id: 'jcCategory', label: 'JC Category' },
+    { id: 'rfqNumber', label: 'RFQ' },
+    { id: 'rfqValue', label: 'RFQ Value' },
+    { id: 'poNumber', label: 'PO' },
+    { id: 'poValue', label: 'PO Value' },
+    { id: 'invoiceNumber', label: 'Invoice' },
+    { id: 'invoiceValue', label: 'Invoice Value' },
+    { id: 'status', label: 'Status' },
+    { id: 'remarks', label: 'Remarks' },
+    { id: 'actions', label: 'Action' }
+  ]
 
   return (
     <>
@@ -60,39 +115,35 @@ export default function PoInvoiceStatusTable() {
           <Table sx={{ minWidth: 650 }} aria-label="simple table">
             <TableHead sx={tableHeaderStyle}>
               <TableRow>
-                <TableCell>Sl No</TableCell>
-                <TableCell align="center">JC Number</TableCell>
-                <TableCell align="center">JC Category</TableCell>
-                <TableCell align="center">RFQ</TableCell>
-                <TableCell align="center">RFQ Value</TableCell>
-                <TableCell align="center">PO</TableCell>
-                <TableCell align="center">PO Value</TableCell>
-                <TableCell align="center">Invoice</TableCell>
-                <TableCell align="center">Invoice Value</TableCell>
-                <TableCell align="center">Status</TableCell>
-                <TableCell align="center">Remarks</TableCell>
-                <TableCell align="center">Action</TableCell>
+                {tableHeadersList?.map((header) => (
+                  <TableCell
+                    key={header.id}
+                    align="center"
+                  >
+                    {header.label}
+                  </TableCell>
+                ))}
               </TableRow>
             </TableHead>
 
             {/* <TableBody>
-              {filteredChambersList.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((item, index) => (
+              {poDataList.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((item, index) => (
                 <TableRow key={index}
                   align='center'
-                  style={{
-                    backgroundColor: item.calibration_status === 'Up to Date' ? '#99ff99' : (item.calibration_status === 'Expired' ? '#ff5c33' : 'white')
-                  }}
                 >
                   <TableCell component="th" scope="row">
                     {index + 1}
                   </TableCell>
-                  <TableCell align="center">{item.chamber_name}</TableCell>
-                  <TableCell align="center">{item.chamber_id}</TableCell>
-                  <TableCell align="center">{item.calibration_done_date}</TableCell>
-                  <TableCell align="center">{item.calibration_due_date}</TableCell>
-                  <TableCell align="center">{item.calibration_done_by}</TableCell>
-                  <TableCell align="center">{item.calibration_status}</TableCell>
-                  <TableCell align="center">{item.chamber_status}</TableCell>
+                  <TableCell align="center">{item.jc_number}</TableCell>
+                  <TableCell align="center">{item.jc_month}</TableCell>
+                  <TableCell align="center">{item.jc_category}</TableCell>
+                  <TableCell align="center">{item.rfq_number}</TableCell>
+                  <TableCell align="center">{item.rfq_value}</TableCell>
+                  <TableCell align="center">{item.po_number}</TableCell>
+                  <TableCell align="center">{item.po_value}</TableCell>
+                  <TableCell align="center">{item.invoice_number}</TableCell>
+                  <TableCell align="center">{item.invoice_value}</TableCell>
+                  <TableCell align="center">{item.status}</TableCell>
                   <TableCell align="center">{item.remarks}</TableCell>
 
                   <TableCell align="center">
@@ -101,7 +152,7 @@ export default function PoInvoiceStatusTable() {
                       <Tooltip title='Edit Test' arrow>
                         <EditIcon fontSize="inherit" />
                       </Tooltip>
-                    </IconButton>
+                    </IconButton> 
 
 
                     <IconButton variant='outlined' size='small' onClick={() => deleteSelectedChamber(item.id)}>
@@ -115,6 +166,32 @@ export default function PoInvoiceStatusTable() {
                 </TableRow>
               ))}
             </TableBody> */}
+
+            <TableBody>
+              {poDataList.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((item, index) => (
+                <TableRow key={index} align='center'>
+                  <TableCell component="th" scope="row">{index + 1}</TableCell>
+                  {Object.values(item).map((value, index) => (
+                    <TableCell key={index} align="center">{value}</TableCell>
+                  ))}
+
+                  {/* <TableCell align="center">
+                    <IconButton variant='outlined' size='small' onClick={() => editSelectedChamber(index, item.id)}>
+                      <Tooltip title='Edit Test' arrow>
+                        <EditIcon fontSize="inherit" />
+                      </Tooltip>
+                    </IconButton>
+                    <IconButton variant='outlined' size='small' onClick={() => deleteSelectedChamber(item.id)}>
+                      <Tooltip title='Delete Test' arrow>
+                        <DeleteIcon fontSize="inherit" />
+                      </Tooltip>
+                    </IconButton>
+                  </TableCell> */}
+
+                </TableRow>
+              ))}
+            </TableBody>
+
 
           </Table>
 
