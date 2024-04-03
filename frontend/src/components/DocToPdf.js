@@ -24,8 +24,8 @@ function loadFile(url, callback) {
 }
 
 
-export default function DocToPdf() {
-    const { id } = useParams('id')
+export default function DocToPdf({ id }) {
+    // const { id } = useParams('id')
 
     let defTestDescription = ''
     let defSacNo = ''
@@ -64,7 +64,7 @@ export default function DocToPdf() {
     const [taxableAmount, setTaxableAmount] = useState(0);
 
     const [quotationTitle, setQuotationTitle] = useState('');
-    const [quotationTitleDialog, setQuotationTitleDialog] = useState(false);
+    const [quotationTitleDialog, setQuotationTitleDialog] = useState(true);
 
     const [companyLogoImage, setCompanyLogoImage] = useState(null);
     const fileInputRef = useRef(null);
@@ -89,7 +89,7 @@ export default function DocToPdf() {
     };
 
 
-    // Function to generate the wrod document based on the data:
+    // Function to generate the word document based on the data:
     const generatePDF = async () => {
 
         let templateDocument = ''
@@ -230,81 +230,83 @@ export default function DocToPdf() {
 
     return (
         <>
-            <div>
-                <Button variant='contained' onClick={() => setQuotationTitleDialog(true)}>
+
+            {/* <Button variant='contained' onClick={() => setQuotationTitleDialog(true)}>
                     DOWNLOAD QUOTATION
-                </Button>
+                </Button> */}
+
+            {quotationTitleDialog && (
+                <Dialog
+                    open={quotationTitleDialog}
+                    onClose={handleCancelBtnIsClicked}
+                    aria-labelledby="quotation_title-dialog"
+                >
+
+                    <DialogTitle id="quotation_title-dialog">Enter Quotation Title </DialogTitle>
+                    <DialogContent>
+                        <TextField
+                            sx={{ minWidth: '400px', borderRadius: 3 }}
+                            value={quotationTitle}
+                            onChange={(e) => setQuotationTitle(e.target.value.toUpperCase())}
+                            label="Quotation Title"
+                            margin="normal"
+                            fullWidth
+                            variant="outlined"
+                            autoComplete="on"
+                        />
 
 
-                {quotationTitleDialog && (
-                    <Dialog
-                        open={quotationTitleDialog}
-                        onClose={handleCancelBtnIsClicked}
-                        aria-labelledby="quotation_title-dialog"
-                    >
+                    </DialogContent>
 
-                        <DialogTitle id="quotation_title-dialog">Enter Quotation Title And Logo</DialogTitle>
-                        <DialogContent>
-                            <TextField
-                                sx={{ minWidth: '400px', borderRadius: 3 }}
-                                value={quotationTitle}
-                                onChange={(e) => setQuotationTitle(e.target.value.toUpperCase())}
-                                label="Quotation Title"
-                                margin="normal"
-                                fullWidth
-                                variant="outlined"
-                                autoComplete="on"
-                            />
-
-
-                            <>
-                                <h4>Select the image: </h4>
-                                <FormControl ref={fileInputRef}>
-                                    <TextField
-                                        type="file"
-                                        accept="image/jpg, image/jpeg, image/png"
-                                        onChange={handleFileChange}
-                                    />
-                                </FormControl>
-
-                                {companyLogoImage && (
-                                    <img
-                                        src={companyLogoImage}
-                                        alt="Company Logo"
-                                        style={{ maxWidth: '100%', marginTop: '10px', borderRadius: '5px' }}
-                                    />
-                                )}
-                            </>
-                        </DialogContent>
-
-                        <DialogActions sx={{ alignItems: 'center' }}>
-                            <Button
-                                variant="contained"
-                                color="secondary"
-                                type="submit"
-                                onClick={onSubmitQuoteTitleButton}
-                            >
-                                Submit
-                            </Button>
-                            <Button
-                                variant="contained"
-                                color="primary"
-                                onClick={handleCancelBtnIsClicked}
-                            >
-                                Cancel
-                            </Button>
-                        </DialogActions>
-                    </Dialog>
-
-                )}
-
-
-                {/* Hidden input element to allow directory selection */}
-                {/* <input type="file" directory="" webkitdirectory="" style={{ display: 'none' }} ref={fileInputRefOfDoc} onChange={handleDirectorySelection} /> */}
-
-            </div>
-
+                    <DialogActions sx={{ alignItems: 'center' }}>
+                        <Button
+                            variant="contained"
+                            color="secondary"
+                            type="submit"
+                            onClick={onSubmitQuoteTitleButton}
+                        >
+                            Submit
+                        </Button>
+                        <Button
+                            variant="contained"
+                            color="primary"
+                            onClick={handleCancelBtnIsClicked}
+                        >
+                            Cancel
+                        </Button>
+                    </DialogActions>
+                </Dialog>
+            )}
         </>
     )
 }
+
+
+
+
+
+
+
+
+
+
+
+{/* <>
+                            <h4>Select the image: </h4>
+                            <FormControl ref={fileInputRef}>
+                                <TextField
+                                    type="file"
+                                    accept="image/jpg, image/jpeg, image/png"
+                                    onChange={handleFileChange}
+                                />
+                            </FormControl>
+
+                            {companyLogoImage && (
+                                <img
+                                    src={companyLogoImage}
+                                    alt="Company Logo"
+                                    style={{ maxWidth: '100%', marginTop: '10px', borderRadius: '5px' }}
+                                />
+                            )}
+                        </> */}
 

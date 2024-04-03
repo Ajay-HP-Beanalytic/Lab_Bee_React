@@ -119,13 +119,6 @@ export default function SidenavigationBar() {
   const [open, setOpen] = useState(false);          // "true" to keep open, and "false" is for keep it closed
   const [menudata, setMenudata] = useState("Home");
 
-  // const handleDrawerOpen = () => {
-  //   setOpen(true);
-  // };
-
-  const handleDrawerClose = () => {
-    setOpen(!open);
-  };
 
 
   // To highlight the selected or clicked buton 
@@ -182,6 +175,7 @@ export default function SidenavigationBar() {
     { i: 8, label: 'Slot Booking', icon: <CalendarMonthSharpIcon />, path: '/slot_booking' },
     { i: 9, label: 'Chamber & Calibration', icon: <KitchenIcon />, path: '/chamber-calibration' },
   ]
+
   const items2 = [
     { i: 10, label: 'Settings', icon: <SettingsIcon />, path: '/settings' },
     { i: 11, label: loggedInUser, icon: <Avatar sx={{ backgroundColor: '#ff3333' }}> {userAvatar} </Avatar>, path: '/userlogout' },
@@ -207,7 +201,17 @@ export default function SidenavigationBar() {
 
 
 
-  const [leftmargin, setLeftMargin] = useState(250)
+  const [leftmargin, setLeftMargin] = useState(70)
+
+
+  const handleDrawerClose = () => {
+    setOpen(false);
+  };
+
+  const handleMenuToggle = () => {
+    setOpen(!open);
+    setLeftMargin(open ? 70 : 200);
+  };
 
 
 
@@ -243,14 +247,11 @@ export default function SidenavigationBar() {
 
         {/* To cutomize the top header or the app bar */}
         <AppBar position="fixed" elevation={4} sx={{ backgroundColor: "#0D809D", color: "#2f2f2f", height: "64px" }}>
-          <Toolbar >
+          <Toolbar  >
             <IconButton
               color="inherit"
               aria-label="open drawer"
-              onClick={() => {
-                setOpen(!open);
-                open ? setLeftMargin(70) : setLeftMargin(200)
-              }}
+              onClick={handleMenuToggle}
               edge="start"
             >
               <MenuIcon />
@@ -259,21 +260,18 @@ export default function SidenavigationBar() {
               {/*<img src="./LabBee_Icon.png" height={25} alignItems="center" />*/}
               Lab Bee
             </Typography>
+
           </Toolbar>
         </AppBar>
 
         <Drawer variant="permanent" open={open} >
           <DrawerHeader>
-            {/* <IconButton onClick={handleDrawerClose}>
+            <IconButton onClick={handleDrawerClose}>
               {theme.direction === 'rtl' ? <ChevronRightIcon /> : <ChevronLeftIcon />}
-            </IconButton> */}
+            </IconButton>
           </DrawerHeader>
 
           {/* Create a list and add the number of items in order show it in a sidebar */}
-
-          {/* <List>
-            {items.map((item) => (<MenuItem key={item.i} item={item} index={item.i} />))}
-          </List> */}
 
           {filteredItems.map(item => (
             // Render your item component here

@@ -102,7 +102,6 @@ export default function Slotbooking() {
     const [myEventsList, setMyEventsList] = useState([]);
 
     const [selectedEvent, setSelectedEvent] = useState(null);
-    const [showOverlapDialog, setShowOverlapDialog] = useState(false);
     const [overlapBooking, setOverlapBooking] = useState(null);
 
 
@@ -210,9 +209,7 @@ export default function Slotbooking() {
         setSelectedEvent(null);
     };
 
-    const handleCloseOverlapModal = () => {
-        setShowOverlapDialog(false);
-    }
+
 
 
     const handleOpenDeleteSlotDialog = () => {
@@ -876,14 +873,7 @@ export default function Slotbooking() {
                 cancelButtonText="Cancel"
             />
 
-            {/* <CustomModal
-                open={showOverlapDialog}
-                onClose={handleCloseOverlapModal}
-                title="Over Lap Alert"
-                options={[
-                    `${selectedChamberForBooking} already booked for ${booking.company_name} from ${booking.slot_start_datetime} to ${booking.slot_end_datetime}`
-                ]}
-            /> */}
+
 
             <br />
             <ChambersListForSlotBookingCalendar />
