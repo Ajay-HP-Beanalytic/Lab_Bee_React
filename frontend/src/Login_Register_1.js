@@ -121,13 +121,17 @@ const Login = () => {
       <Typography sx={{ marginTop: 10 }} variant="h3" textAlign={"center"} > Welcome to Lab Bee </Typography>
       <Box
         display="flex" flexDirection="column"
-        width={500}
+        // width={500}
         maxWidth={600}
         alignItems="center"
         justifyContent={"center"}
         margin='auto' marginTop={12} padding={3} borderRadius={5}
         boxShadow={'5px 5px 10px #ccc'}
         sx={{
+          width: '90%',
+          "@media (min-width: 768px)": {
+            width: '500px',
+          },
           ":hover": {
             boxShadow: '20px 20px 20px #ccc',
           }

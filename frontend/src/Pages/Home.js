@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { createContext, useContext, useEffect, useState } from 'react'
 import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Divider, FormControl, Grid, InputLabel, MenuItem, Select, TextField, Typography } from '@mui/material'
 
 import PoInvoiceStatusTable from '../components/Po_Invoice_Table'
@@ -9,6 +9,12 @@ import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import { serverBaseAddress } from './APIPage';
 import axios from 'axios';
 import { toast } from 'react-toastify';
+import { useParams } from 'react-router-dom';
+
+
+// const PoInvoiceStatusContext = createContext();
+
+// export const usePoInvoiceContextData = () => useContext(PoInvoiceStatusContext)
 
 export default function Home() {
 
@@ -19,14 +25,63 @@ export default function Home() {
         },
     })
 
-    let jcCategoryNames = ['TS1', 'TS2', 'RE', 'ITEM', 'Others']
-    let jcStatusNames = ['Open', 'Running', 'Closed']
+    let jcCategoryNames = [{ id: 1, label: 'TS1' }, { id: 2, label: 'TS2' }, { id: 3, label: 'RE' }, { id: 4, label: 'ITEM' }, { id: 5, label: 'Others' }]
+    let jcStatusNames = [{ id: 1, label: 'Open' }, { id: 2, label: 'Running' }, { id: 3, label: 'Closed' }];
+
 
     const [openDialog, setOpenDialog] = useState(false)
     const [editPoData, setEditPoData] = useState(false)
     const [jcOpenDate, setJcOpenDate] = useState()
     const [jcCategory, setJcCategory] = useState()
     const [jcStatus, setJcStatus] = useState()
+    const [newJcAdded, setNewJcAdded] = useState(false)
+
+    const [editId, setEditId] = useState('')
+
+    const [selectedRowData, setSelectedRowData] = useState(null);
+
+
+    const [poMonthYear, setPoMonthYear] = useState()
+    const [monthYearList, setMonthYearList] = useState([])
+
+
+
+    // Code to fetch the data from the selected row of the PO_Invoice data table:
+    const handleRowClick = async (rowData) => {
+        // Set the selected row data and open the dialog
+        setEditPoData(true)
+        setSelectedRowData(rowData);
+        let selectedId = rowData.id
+
+        try {
+            const response = await axios.get(`${serverBaseAddress}/api/getPoData/${selectedId}`);
+            const poData = response.data[0];
+
+            setValue('jcNumber', poData.jc_number);
+            setJcOpenDate(dayjs(poData.jc_month))
+
+            setValue('jcCategory', poData.jc_category);
+            setJcCategory(poData.jc_category)
+
+            setValue('rfqNumber', poData.rfq_number);
+            setValue('rfqValue', poData.rfq_value);
+            setValue('poNumber', poData.po_number);
+            setValue('poValue', poData.po_value);
+            setValue('invoiceNumber', poData.invoice_number);
+            setValue('invoiceValue', poData.invoice_value);
+
+            setValue('jcStatus', poData.status);
+            setJcStatus(poData.status)
+
+            setValue('remarks', poData.remarks);
+            setEditId(poData.id)
+            console.log('editId after setting:', poData.id);
+
+        } catch (error) {
+            console.error('Error fetching booking data:', error);
+        }
+        setOpenDialog(true);
+    };
 
     const handleOpenDialog = () => {
         setOpenDialog(true);
@@ -51,18 +106,17 @@ export default function Home() {
 
     //Function to submit the form data:
     const onSubmitForm = async (data) => {
-        console.log('po data is-->', data)
 
-        const completePoAndInvoiceData = { ...data }
+        const completePoAndInvoiceData = { ...data, id: editId }
 
         try {
-            const submitData = await axios.post(`${serverBaseAddress}/api/addPoInvoice/`, {
+            const submitData = await axios.post(`${serverBaseAddress}/api/addPoInvoice/` + editId, {
                 formData: completePoAndInvoiceData
             });
-            console.log('updated data', submitData.data)
+            setNewJcAdded(!newJcAdded);
+            toast.success(editId ? `Data Updated Successfully.` : `Data Submitted Successfully`)
             handleCloseDialog();
-            // toast.success(editId ? `Booking ID: ${editId} Updated Successfully.` : `Slot Booked Successfully.\n Booking ID:${bookingID}`)
-            toast.success('Data Submitted Successfully.')
+            await reset()
 
         } catch (error) {
             console.error('Failed to submit the data', error);
@@ -72,15 +126,62 @@ export default function Home() {
     // Functions to handle the errors while submission of slot booking form:
     const onError = (errors) => { };
 
+
+    useEffect(() => {
+        const getMonthYearListOfPO = async () => {
+            try {
+                const response = await axios.get(`${serverBaseAddress}/api/getPoDataYearMonth`);
+                if (response.status === 200) {
+                    setMonthYearList(response.data);
+                } else {
+                    console.error('Failed to fetch chambers list. Status:', response.status);
+                }
+            } catch (error) {
+                console.error('Failed to fetch the data', error);
+            }
+        }
+        getMonthYearListOfPO()
+    }, [])
+
+    console.log('monthYearList', monthYearList)
+
+
+    const handleMonthYearOfPo = (event) => {
+        setPoMonthYear(event.target.value)
+    }
+
+
     return (
         <>
-            <Divider>
+            {/* <Divider>
                 <Typography variant='h4' sx={{ color: '#003366' }}> Home </Typography>
             </Divider>
 
-            <br />
+            <br /> */}
 
-            <Button variant='contained' onClick={handleOpenDialog}>Add</Button>
+            <Typography variant='h4' sx={{ color: '#003366' }}> Home </Typography>
+
+            <Grid container sx={{ display: 'flex' }}>
+                <FormControl fullWidth sx={{ display: 'flex', justifyItems: 'flex-start', mt: 2, width: '25%', pb: 2 }}>
+                    <InputLabel>Select Month-Year</InputLabel>
+                    <Select
+                        label="Month-Year"
+                        type="text"
+                        onChange={handleMonthYearOfPo}
+                        value={poMonthYear}
+                    >
+                        {monthYearList.map((item, index) => (
+                            <MenuItem key={index} value={item}>{item}</MenuItem>
+                        ))}
+
+                    </Select>
+                </FormControl>
+
+
+
+            </Grid>
+
+            <Button variant='contained' onClick={handleOpenDialog} sx={{ justifyItems: 'flex-end' }}>Add</Button>
 
             <Grid container sx={{ display: 'flex' }}>
                 <Dialog open={openDialog} onClose={handleCloseDialog} fullWidth maxWidth="sm" >
@@ -117,13 +218,12 @@ export default function Home() {
                                     name="jcOpenDate"
                                     type="date"
                                     control={control}
-                                    // defaultValue={jcOpenDate}
                                     render={({ field }) => (
                                         <LocalizationProvider dateAdapter={AdapterDayjs}>
                                             <DatePicker
                                                 sx={{ width: '52%', mt: 2, pr: 1, borderRadius: 3 }}
                                                 label="JC Date"
-                                                // value={jcOpenDate}
+                                                value={jcOpenDate}
                                                 onChange={(newValue) => {
                                                     field.onChange(newValue);
                                                     setJcOpenDate(newValue);
@@ -136,7 +236,6 @@ export default function Home() {
                                     {...register('jcOpenDate', { valueAsDate: true })}
                                 />
 
-
                                 <FormControl sx={{ width: '48%', mt: 2, pl: 1, }}>
                                     <InputLabel>JC Category</InputLabel>
                                     <Select
@@ -146,9 +245,14 @@ export default function Home() {
                                         onChange={handleJcCategory}
                                         value={jcCategory}
                                     >
-                                        {jcCategoryNames.map((categoryName) => (
+                                        {/* {jcCategoryNames.map((categoryName) => (
                                             <MenuItem key={categoryName} value={categoryName}>{categoryName}</MenuItem>
+                                        ))} */}
+
+                                        {jcCategoryNames.map((categoryName) => (
+                                            <MenuItem key={categoryName.id} value={categoryName.label}>{categoryName.label}</MenuItem>
                                         ))}
+
                                     </Select>
                                 </FormControl>
                                 <Typography variant='body2' color='error'>
@@ -259,9 +363,14 @@ export default function Home() {
                                         onChange={handleJcStatus}
                                         value={jcStatus}
                                     >
-                                        {jcStatusNames.map((statusName) => (
+                                        {/* {jcStatusNames.map((statusName) => (
                                             <MenuItem key={statusName} value={statusName}>{statusName}</MenuItem>
+                                        ))} */}
+
+                                        {jcStatusNames.map((status) => (
+                                            <MenuItem key={status.id} value={status.label}>{status.label}</MenuItem>
                                         ))}
+
                                     </Select>
                                 </FormControl>
                                 <Typography variant='body2' color='error'>
@@ -283,8 +392,6 @@ export default function Home() {
                                 />
                             </Grid>
 
-
-
                         </DialogContent>
                         <DialogActions sx={{ justifyContent: 'center' }}>
                             <Button variant='contained' color='secondary' onClick={handleCloseDialog}>CANCEL</Button>
@@ -295,9 +402,11 @@ export default function Home() {
 
             </Grid >
 
-            <PoInvoiceStatusTable />
-
-
+            <PoInvoiceStatusTable
+                newJcAdded={newJcAdded}
+                openDialog={openDialog}
+                setOpenDialog={setOpenDialog}
+                onRowClick={handleRowClick} />
         </>
     )
 }

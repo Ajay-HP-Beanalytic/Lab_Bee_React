@@ -18,6 +18,7 @@ import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import { Link, Navigate, useParams } from 'react-router-dom';
 
 import { serverBaseAddress } from './APIPage'
+import DocToPdf from '../components/DocToPdf';
 
 
 
@@ -499,6 +500,18 @@ export default function Quotation() {
   const tableHeaderStyle = { backgroundColor: '#d1b054', fontWeight: 'bold' }
 
 
+
+
+  const [showPdfDialog, setShowPdfDialog] = useState(false);
+
+  // Function to handle download action
+  const handleDownloadQuote = () => {
+    setShowPdfDialog(true); // Show the PDF generation dialog
+  };
+
+
+
+
   return (
 
     <div>
@@ -926,13 +939,15 @@ export default function Quotation() {
                 <Tooltip title='Download quotation' arrow>
                   <Button variant="contained" startIcon={<FileDownloadIcon />}
                     sx={{ borderRadius: 3, margin: 0.5 }}
-                    component={Link}
-                    to={`/quotationWordToPdf/${id}`}
+                    onClick={handleDownloadQuote}
                   >
                     Download
                   </Button>
                 </Tooltip>
               }
+
+              {/* Dialog for PDF generation */}
+              {showPdfDialog && <DocToPdf id={editId} onClose={() => setShowPdfDialog(false)} />}
 
             </Box>
 
