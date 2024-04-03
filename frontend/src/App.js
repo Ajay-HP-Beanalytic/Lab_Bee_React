@@ -52,8 +52,6 @@ function App() {
             <Route path='/quotation' element={<Quotation />} />
             <Route path="/quotation/:id" element={<Quotation />} />
             <Route path="/quotation_essentials" element={<QuotationRequirements />} />
-            <Route path="/quotationPdf/:id" element={<QuotationPdf />} />
-            <Route path="/quotationWordToPdf/:id" element={<DocToPdf />} />
 
             <Route path='/jobcard_dashboard' element={<JCHome />} />
             <Route path='/jobcard' element={<Jobcard />} />
