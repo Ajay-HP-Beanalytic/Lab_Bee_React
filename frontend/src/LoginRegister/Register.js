@@ -205,7 +205,7 @@ export default function Register() {
                       sx={{ mt: 2 }}
                     >
 
-                      <Grid container spacing={1}>
+                      <Grid item xs={12} md={6} container spacing={1}>
 
                         <Grid item xs={12} sx={{ ml: "3em", mr: "3em" }}>
                           <TextField
@@ -290,7 +290,7 @@ export default function Register() {
                         </Grid>
 
 
-                        <Grid item xs={12} sx={{ ml: "5em", mr: "5em" }}>
+                        <Grid item xs={6} sx={{ ml: "5em", mr: "5em" }}>
                           <Button
                             type="submit"
                             variant="contained"
@@ -310,7 +310,7 @@ export default function Register() {
                         </Grid>
 
 
-                        <Grid item xs={12} sx={{ ml: "5em", mr: "5em" }}>
+                        <Grid item xs={6} sx={{ ml: "5em", mr: "5em" }}>
                           <Button
                             variant="contained"
                             fullWidth={Boolean("true")}
@@ -330,7 +330,7 @@ export default function Register() {
                         </Grid>
 
 
-                        <Grid item xs={12} sx={{ ml: "3em", mr: "3em" }}>
+                        <Grid item xs={6} sx={{ ml: "3em", mr: "3em" }}>
                           <Stack direction="row" spacing={2}>
                             <Typography
                               variant="h6"
@@ -357,7 +357,7 @@ export default function Register() {
             </Grid>
           </Grid>
         </Box>
-      </div>
+      </div >
     </>
   );
 }

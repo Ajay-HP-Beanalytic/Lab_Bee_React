@@ -1,4 +1,4 @@
-import { Autocomplete, Box, Divider, FormControl, IconButton, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, TextField, Tooltip, Typography } from '@mui/material'
+import { Autocomplete, Box, Divider, FormControl, Grid, IconButton, InputLabel, MenuItem, Paper, Select, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, TextField, Tooltip, Typography } from '@mui/material'
 import React, { useEffect, useState } from 'react'
 
 import { serverBaseAddress } from './APIPage'
@@ -10,6 +10,7 @@ import { Link } from 'react-router-dom';
 import { toast } from 'react-toastify';
 
 import { CreateButtonWithLink } from '../functions/ComponentsFunctions';
+import { getCurrentMonthYear } from '../functions/UtilityFunctions';
 
 export default function JCHome() {
 
@@ -34,12 +35,16 @@ export default function JCHome() {
 
     const [refresh, setRefresh] = useState(false)
 
+    const [jcMonthYear, setJCMonthYear] = useState(getCurrentMonthYear())
+    const [jcMonthYearList, setJcMonthYearList] = useState([])
+
 
     // Simulate fetching jc data from the database
     useEffect(() => {
 
         let requiredAPIdata = {
-            _fields: 'jc_number, company_name, customer_name, customer_number, jc_status'
+            _fields: 'jc_number, company_name, customer_name, customer_number, jc_status',
+            monthYear: jcMonthYear,
         }
 
         const urlParameters = new URLSearchParams(requiredAPIdata).toString()
@@ -63,7 +68,29 @@ export default function JCHome() {
             fetchJCDataFromDatabase();
         }
 
-    }, [filterRow, refresh]);
+    }, [jcMonthYear, filterRow, refresh]);
+
+
+
+    useEffect(() => {
+        const getMonthYearListOfJC = async () => {
+            try {
+                const response = await axios.get(`${serverBaseAddress}/api/getJCYearMonth`);
+                if (response.status === 200) {
+                    setJcMonthYearList(response.data);
+                } else {
+                    console.error('Failed to fetch JC months list. Status:', response.status);
+                }
+            } catch (error) {
+                console.error('Failed to fetch the data', error);
+            }
+        }
+        getMonthYearListOfJC()
+    }, [jcMonthYear, jcMonthYearList, refresh])
+
+    const handleMonthYearOfJC = (event) => {
+        setJCMonthYear(event.target.value)
+    }
 
 
     //If data is loading then show Loading text
@@ -104,6 +131,23 @@ export default function JCHome() {
                 <Typography variant='h4' sx={{ color: '#003366' }}> Job-Card Dashboard </Typography>
             </Divider>
 
+            <Grid container sx={{ display: 'flex' }}>
+                <FormControl fullWidth sx={{ display: 'flex', justifyItems: 'flex-start', mt: 2, width: '25%', pb: 2 }}>
+                    <InputLabel>Select Month-Year</InputLabel>
+                    <Select
+                        label="Month-Year"
+                        type="text"
+                        onChange={handleMonthYearOfJC}
+                        value={jcMonthYear}
+                    >
+                        {jcMonthYearList.map((item, index) => (
+                            <MenuItem key={index} value={item}>{item}</MenuItem>
+                        ))}
+
+                    </Select>
+                </FormControl>
+            </Grid>
+
             <br />
 
             {/* Create a button with a link using 'CreateButtonWithLink' function */}
@@ -136,7 +180,7 @@ export default function JCHome() {
 
                     {/* Creating basic Job-Card table */}
                     <TableContainer component={Paper}>
-                        <Table sx={{ minWidth: 650 }} aria-label="simple table">
+                        <Table sx={{ minWidth: 650 }} aria-label="simple table" size='small'>
                             <TableHead sx={tableHeaderStyle}>
                                 <TableRow>
                                     {JcTableHeadersText.map((header, index) => (

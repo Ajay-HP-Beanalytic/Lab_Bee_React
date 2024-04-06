@@ -393,7 +393,7 @@ export default function AddCustomerDetails() {
                 <br />
 
                 <TableContainer component={Paper}>
-                    <Table sx={{ minWidth: 650 }} aria-label="simple table">
+                    <Table sx={{ minWidth: 650 }} aria-label="simple table" size="small">
                         <TableHead sx={{ backgroundColor: '#227DD4', fontWeight: 'bold' }}>
                             <TableRow>
                                 <TableCell> Sl No</TableCell>

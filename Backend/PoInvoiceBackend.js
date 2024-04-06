@@ -148,7 +148,7 @@ function poInvoiceBackendAPIs(app) {
   // });
 
   app.get('/api/getPoDataYearMonth', (req, res) => {
-    const sqlQuery = `SELECT DISTINCT DATE_FORMAT(jc_month, '%b - %Y') AS monthYear FROM po_invoice_table WHERE deleted_at IS NULL`;
+    const sqlQuery = `SELECT DISTINCT DATE_FORMAT(jc_month, '%b-%Y') AS monthYear FROM po_invoice_table WHERE deleted_at IS NULL`;
 
     db.query(sqlQuery, (error, result) => {
       if (error) {
