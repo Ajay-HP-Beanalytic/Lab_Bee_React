@@ -33,10 +33,21 @@ function jobcardsAPIs(app) {
     // API to fetch the primary data of JC's & to create JC Table: 
     app.get('/api/getPrimaryJCData', (req, res) => {
 
-        const getJCColumns = `SELECT id, jc_number, company_name, customer_name, customer_number, jc_status FROM bea_jobcards`;
+        const { monthYear } = req.query;
+        const [month, year] = monthYear.split('-');
 
-        db.query(getJCColumns, (error, result) => {
-            res.send(result);
+        const getJCColumns = `
+        SELECT id, jc_number, company_name, customer_name, customer_number, jc_status
+        FROM bea_jobcards
+        WHERE DATE_FORMAT(jc_open_date, '%b-%Y') = ?
+        `;
+
+        db.query(getJCColumns, [month + '-' + year], (error, result) => {
+            if (error) {
+                return res.status(500).json({ error: "An error occurred while fetching JC table data" })
+            }
+            res.send(result)
+            console.log('result', result)
         });
     })
 
@@ -596,6 +607,22 @@ function jobcardsAPIs(app) {
                 })
             })
         })
+    });
+
+
+    // To get the month-year of the Job-card
+    app.get('/api/getJCYearMonth', (req, res) => {
+        const sqlQuery = `SELECT DISTINCT DATE_FORMAT(jc_open_date, '%b-%Y') AS monthYear FROM bea_jobcards WHERE deleted_at IS NULL`;
+
+        db.query(sqlQuery, (error, result) => {
+            if (error) {
+                return res.status(500).json({ error: "An error occurred while fetching JC Month Year data" })
+            }
+
+            const formattedData = result.map(row => row.monthYear);
+
+            res.json(formattedData);
+        });
     });
 
 

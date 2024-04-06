@@ -502,7 +502,7 @@ const Jobcard = () => {
 
           {/* First Grid box */}
           <Grid container justifyContent="center" spacing={2} >
-            <Grid item xs={6} elevation={4} sx={{ borderRadius: 3 }} >
+            <Grid item xs={12} md={6} elevation={4} sx={{ borderRadius: 3 }} >
 
               <Typography variant='h5' align='center'> Primary JC Details </Typography>
               <br />
@@ -550,7 +550,7 @@ const Jobcard = () => {
                         value={dayjs(dateTimeValue)}
                         onChange={handleDateChange}
                         renderInput={(props) => <TextField {...props} />}
-                        format="YYYY-MM-DD HH:mm:ss"
+                        format="YYYY-MM-DD HH:mm"
                       />
                     </LocalizationProvider>
 
@@ -590,7 +590,7 @@ const Jobcard = () => {
 
 
             {/* Second Grid box */}
-            <Grid item xs={6} elevation={4} sx={{ borderRadius: 3 }}>
+            <Grid item xs={12} md={6} elevation={4} sx={{ borderRadius: 3 }}>
 
               <Typography variant='h5' align='center'> Customer Details </Typography>
               <br />
@@ -683,10 +683,10 @@ const Jobcard = () => {
 
         <br />
 
-        <Box >
+        <Box sx={{ overflowX: 'auto' }} >
           {/* Table Container */}
 
-          <Accordion>
+          <Accordion >
             <AccordionSummary
               expandIcon={<ExpandMoreIcon />}
               sx={{ backgroundColor: '#a6b28c' }}
@@ -698,7 +698,7 @@ const Jobcard = () => {
             </AccordionSummary>
             <AccordionDetails>
               <TableContainer component={Paper} >
-                <Table size='small' aria-label="simple table">
+                <Table size='small' aria-label="simple table" sx={{ minWidth: '100%' }}>
                   <TableHead sx={tableHeaderStyle}>
                     <TableRow >
                       <TableCell sx={tableCellStyle} >Sl No</TableCell>
@@ -796,7 +796,7 @@ const Jobcard = () => {
             <AccordionDetails>
 
               <TableContainer component={Paper} >
-                <Table size='small' aria-label="simple table">
+                <Table size='small' aria-label="simple table" sx={{ minWidth: '100%' }}>
                   <TableHead sx={tableHeaderStyle}>
                     <TableRow>
                       <TableCell sx={tableCellStyle} >Sl No</TableCell>
@@ -882,7 +882,7 @@ const Jobcard = () => {
             <AccordionDetails>
 
               <TableContainer component={Paper}  >
-                <Table size='small' aria-label="simple table" >
+                <Table size='small' aria-label="simple table" sx={{ minWidth: '100%' }} >
                   <TableHead sx={tableHeaderStyle}>
                     <TableRow>
                       <TableCell sx={tableCellStyle}>Sl No</TableCell>
@@ -1094,7 +1094,7 @@ const Jobcard = () => {
 
             <Container maxWidth="s">
               <Grid container spacing={2}>
-                <Grid item xs={6}>
+                <Grid item xs={12} md={6}>
                   <FormControl sx={{ width: '50%', marginBottom: '20px', marginRight: '15px', marginTop: '20px', borderRadius: 3, alignContent: 'left' }} >
                     <InputLabel >JC Status</InputLabel>
                     <Select
@@ -1111,18 +1111,8 @@ const Jobcard = () => {
                   </FormControl>
                 </Grid>
 
-                <Grid item xs={6} >
+                <Grid item  >
                   {jcStatus === 'Close' && (
-                    // <DateTimePicker sx={{ marginBottom: '16px', marginTop: '20px', marginLeft: '15px', borderRadius: 3 }}
-                    //   label="JC Close Date"
-                    //   variant="outlined"
-                    //   fullWidth
-                    //   // defaultValue={dayjs()}
-                    //   value={jcCloseDate}
-                    //   onChange={handlecloseDateChange}
-                    //   renderInput={(props) => <TextField {...props} />}
-                    //   format="DD/MM/YYYY HH:mm A"
-                    // />
                     <LocalizationProvider dateAdapter={AdapterDayjs}>
                       <DateTimePicker sx={{ width: '75%', marginBottom: '20px', marginTop: '20px', marginLeft: '15px', marginRight: '15px', borderRadius: 3 }}
                         label="JC Close Date"
@@ -1131,7 +1121,7 @@ const Jobcard = () => {
                         value={dayjs(jcCloseDate)}
                         onChange={handlecloseDateChange}
                         renderInput={(props) => <TextField {...props} />}
-                        format="YYYY-MM-DD HH:mm:ss"
+                        format="YYYY-MM-DD HH:mm"
                       />
                     </LocalizationProvider>
 

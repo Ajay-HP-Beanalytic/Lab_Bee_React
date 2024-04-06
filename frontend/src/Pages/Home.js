@@ -10,6 +10,8 @@ import { serverBaseAddress } from './APIPage';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import { useParams } from 'react-router-dom';
+import { getCurrentMonthYear } from '../functions/UtilityFunctions';
+
 
 
 // const PoInvoiceStatusContext = createContext();
@@ -41,7 +43,7 @@ export default function Home() {
     const [selectedRowData, setSelectedRowData] = useState(null);
 
 
-    const [poMonthYear, setPoMonthYear] = useState()
+    const [poMonthYear, setPoMonthYear] = useState(getCurrentMonthYear())
     const [monthYearList, setMonthYearList] = useState([])
 
 
@@ -134,14 +136,14 @@ export default function Home() {
                 if (response.status === 200) {
                     setMonthYearList(response.data);
                 } else {
-                    console.error('Failed to fetch chambers list. Status:', response.status);
+                    console.error('Failed to fetch PO Month list. Status:', response.status);
                 }
             } catch (error) {
                 console.error('Failed to fetch the data', error);
             }
         }
         getMonthYearListOfPO()
-    }, [])
+    }, [poMonthYear, monthYearList])
 
     console.log('monthYearList', monthYearList)
 
@@ -176,9 +178,6 @@ export default function Home() {
 
                     </Select>
                 </FormControl>
-
-
-
             </Grid>
 
             <Button variant='contained' onClick={handleOpenDialog} sx={{ justifyItems: 'flex-end' }}>Add</Button>

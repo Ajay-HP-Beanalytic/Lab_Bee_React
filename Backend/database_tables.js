@@ -273,6 +273,9 @@ function createJobcardsTable() {
         jc_closed_date DATETIME,
         jc_text VARCHAR(500),
         observations VARCHAR(500),
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        deleted_at TIMESTAMP DEFAULT NULL,
         PRIMARY KEY(id)
     )`;
 
@@ -280,7 +283,7 @@ function createJobcardsTable() {
         if (err) {
             console.log("Error occurred while creating bea_jobcards table", err)
         } else {
-            //console.log("bea_jobcards table created successfully.")
+            // console.log("bea_jobcards table created successfully.")
         }
     })
 }

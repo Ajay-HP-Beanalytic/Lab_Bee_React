@@ -637,7 +637,7 @@ export default function ChamberAndCalibration() {
 
                 <br />
 
-                <Box>
+                {/* <Box >
                     <Grid container spacing={2} >
                         <Grid item xs={12} md={6}>
                             <Card elevation={5} sx={{ backgroundColor: 'transparent' }}>
@@ -657,7 +657,32 @@ export default function ChamberAndCalibration() {
                             </Card>
                         </Grid>
                     </Grid>
+                </Box> */}
+
+                <Box sx={{ padding: '20px' }}>
+                    <Grid container spacing={2} justifyContent="center">
+                        {/* First Grid Item */}
+                        <Grid item xs={12} md={6}>
+                            <Card elevation={5} sx={{ backgroundColor: 'transparent' }}>
+                                <CreatePieChart
+                                    data={calibrationStatusPieChart}
+                                    options={optionsForCalibrationStatusPieChart}
+                                />
+                            </Card>
+                        </Grid>
+
+                        {/* Second Grid Item */}
+                        <Grid item xs={12} md={6}>
+                            <Card elevation={5} sx={{ backgroundColor: 'transparent' }}>
+                                <CreatePieChart
+                                    data={chamberStatusPieChart}
+                                    options={optionsForChamberStatusPieChart}
+                                />
+                            </Card>
+                        </Grid>
+                    </Grid>
                 </Box>
+
 
 
                 <br />
@@ -849,7 +874,7 @@ export default function ChamberAndCalibration() {
                 <br />
 
                 <TableContainer component={Paper} >
-                    <Table sx={{ minWidth: 650 }} aria-label="simple table">
+                    <Table sx={{ minWidth: 650 }} aria-label="simple table" size="small">
                         <TableHead sx={tableHeaderStyle}>
                             <TableRow>
                                 <TableCell>Sl No</TableCell>
