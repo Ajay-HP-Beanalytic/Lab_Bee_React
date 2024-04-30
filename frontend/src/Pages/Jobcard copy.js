@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import {
   Box, Typography, Container, TextField, Button, Table, TableBody, TableCell, TableContainer, TableHead,
@@ -11,8 +12,6 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import dayjs from 'dayjs';
-import utc from 'dayjs/plugin/utc';  // Import the UTC plugin
-// dayjs.extend(utc);  // Use the UTC plugin
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { toast } from 'react-toastify';
@@ -21,7 +20,6 @@ import axios from 'axios';
 import { serverBaseAddress } from './APIPage'
 import { useParams } from 'react-router-dom';
 import { useNavigate } from "react-router-dom";
-import JCDocument from '../components/JCDocument';
 
 
 
@@ -32,41 +30,33 @@ const Jobcard = () => {
   // State variable to fetch the users list
   const [users, setUsers] = useState([])
 
-  const [dateTimeValue, setDateTimeValue] = useState(null);
+  const [dateTimeValue, setDateTimeValue] = useState(dayjs());
   const [eutRows, setEutRows] = useState([{ id: 0 }]);
   const [testRows, setTestRows] = useState([{ id: 0 }]);
   const cd = new Date();
   const fd = cd.toISOString().slice(0, 19).replace('T', ' ');
-  // const [testdetailsRows, setTestDetailsRows] = useState([{ id: 0, startDate: fd, endDate: fd, duration: 0 }]);
-  const [testdetailsRows, setTestDetailsRows] = useState([{ id: 0, startDate: null, endDate: null, duration: 0 }]);
-
+  const [testdetailsRows, setTestDetailsRows] = useState([{ id: 0, startDate: fd, endDate: fd, duration: 0 }]);
 
 
   ////////////////////////
 
-  const [dcNumber, setDcnumber] = useState('')
-  // const [jcOpenDate, setJcOpenDate] = useState(dayjs())
-  const [jcOpenDate, setJcOpenDate] = useState(null)
-  const [poNumber, setPonumber] = useState('')
-  const [jcCategory, setJcCategory] = useState("Environmental")
+  const [dcNumber, setDcnumber] = useState()
+  const [jcOpenDate, setJcOpenDate] = useState(dayjs())
+  const [poNumber, setPonumber] = useState()
+  const [jcCategory, setJcCategory] = useState("")
   const [testCategory, setTestCategory] = useState("Environmental");
-  const [typeOfRequest, setTypeOfRequest] = useState('Equipment')
   const [testInchargeName, setTestInchargeName] = useState('')
 
-  const [companyName, setCompanyName] = useState('')
-  const [customerNumber, setCustomerNumber] = useState('')
-  const [customerEmail, setCustomerEmail] = useState('')
-  const [customerName, setCustomerName] = useState('')
-  const [projectName, setProjectName] = useState('')
+  const [companyName, setCompanyName] = useState()
+  const [customerNumber, setCustomerNumber] = useState()
+  const [customerName, setCustomerName] = useState()
+  const [projectName, setProjectName] = useState()
   const [sampleCondition, setSampleCondition] = useState("Good")
-  const [referanceDocs, setReferanceDocs] = useState('')
+  const [referanceDocs, setReferanceDocs] = useState()
   const [jcStatus, setJcStatus] = useState('Open');
-  const [jcCloseDate, setJcCloseDate] = useState(null);
-  const [jcText, setJcText] = useState('');
-  const [observations, setObservations] = useState('');
-
-
-  const [editJc, setEditJc] = useState(false)
+  const [jcCloseDate, setJcCloseDate] = useState();
+  const [jcText, setJcText] = useState();
+  const [observations, setObservations] = useState();
   let { id } = useParams('id')
   if (!id) {
     id = ''
@@ -76,17 +66,13 @@ const Jobcard = () => {
       axios.get(`${serverBaseAddress}/api/jobcard/${id}`)
         .then((res) => {
           setJcumberString(res.data.jobcard.jc_number)
-          setDcnumber(res.data.jobcard.dcform_number || '')
-          const parsedJcStartDate = dayjs(res.data.jobcard.jc_open_date);
-          setJcOpenDate(parsedJcStartDate.isValid() ? parsedJcStartDate : null);
+          setDcnumber(res.data.jobcard.dcform_number)
           setPonumber(res.data.jobcard.po_number)
           setTestCategory(res.data.jobcard.test_category)
-          setTypeOfRequest(res.data.jobcard.type_of_request)
           setTestInchargeName(res.data.jobcard.test_incharge)
           setCompanyName(res.data.jobcard.company_name)
           setCustomerNumber(res.data.jobcard.customer_number)
           setCustomerName(res.data.jobcard.customer_name)
-          setCustomerEmail(res.data.jobcard.customer_email)
           setProjectName(res.data.jobcard.project_name)
           setSampleCondition(res.data.jobcard.sample_condition)
           setReferanceDocs(res.data.jobcard.referance_document)
@@ -99,8 +85,6 @@ const Jobcard = () => {
           setEutRows(res.data.eut_details)
           setTestRows(res.data.tests)
           setTestDetailsRows(res.data.tests_details)
-
-          setEditJc(true)
         })
         .catch(error => console.error(error))
     }
@@ -116,33 +100,21 @@ const Jobcard = () => {
     setTestCategory(event.target.value);
   };
 
-  //Function to get the selected type of request:
-  const handleTypeOfRequestChange = (event) => {
-    setTypeOfRequest(event.target.value)
-  }
-
   // To get the selected date and Time
-  const handleJcStartDateChange = (newDate) => {
+  const handleDateChange = (newDate) => {
 
-    try {
-      // Format the selected date into DATETIME format
-      const formattedJcOpenDate = newDate ? dayjs(newDate).format('YYYY-MM-DD HH:mm') : null;
-      setJcOpenDate(formattedJcOpenDate);
-    } catch (error) {
-      console.error('Error formatting JC open date:', error);
-    }
+    // Format the selected date into DATETIME format
+    const formattedDate = newDate ? dayjs(newDate).format('YYYY-MM-DD HH:mm:ss') : null;
+    setJcOpenDate(formattedDate);
   };
 
   // To get the selected date and Time
-  const handleJcCloseDateChange = (newDate) => {
+  const handlecloseDateChange = (newDate) => {
 
-    try {
-      const formattedCloseDate = newDate ? dayjs(newDate).format('YYYY-MM-DD HH:mm') : null;
-      setJcCloseDate(formattedCloseDate);
-    } catch (error) {
-      console.error('Error formatting JC close date:', error);
-    }
-  }
+    // Format the selected date into DATETIME format
+    const formattedCloseDate = newDate ? dayjs(newDate).format('YYYY-MM-DD HH:mm:ss') : null;
+    setJcCloseDate(formattedCloseDate);
+  };
 
   /////////////////////////////////////////
 
@@ -190,13 +162,13 @@ const Jobcard = () => {
     let newRow = {}
     if (testdetailsRows.length > 0) {
       const lastId = testdetailsRows[testdetailsRows.length - 1].id
-      newRow = { id: lastId + 1, startDate: null, endDate: null, duration: 0 };
+      newRow = { id: lastId + 1, startDate: fd, endDate: fd, duration: 0 };
       setTestDetailsRows([...testdetailsRows, newRow]);
     } else {
-      newRow = { id: 0, startDate: null, endDate: null, duration: 0 };
+      newRow = { id: testdetailsRows.length, startDate: fd, endDate: fd, duration: 0 };
+      setTestDetailsRows([...testdetailsRows, newRow]);
     }
-    setTestDetailsRows([...testdetailsRows, newRow]);
-
+    console.log(newRow);
   };
 
   const handleRemoveTestDetailsRow = (id) => {
@@ -271,6 +243,13 @@ const Jobcard = () => {
   const handleSubmitJobcard = (e) => {
     e.preventDefault()
 
+    // setJcumberString((prev) => {
+    //   const numericPart = parseInt(prev.slice(-3), 10);
+    //   const nextNumericPart = numericPart + 1;
+    //   const formattedNumericPart = nextNumericPart.toString().padStart(3, '0');
+    //   return prev.slice(0, -3) + formattedNumericPart;
+    // });
+
     let api_url = `${serverBaseAddress}/api/jobcard/${id}`
 
     try {
@@ -281,12 +260,10 @@ const Jobcard = () => {
         jcOpenDate,
         poNumber,
         jcCategory: testCategory,
-        typeOfRequest,
         testInchargeName,
         companyName,
-        customerName,
-        customerEmail,
         customerNumber,
+        customerName,
         projectName,
         sampleCondition,
         referanceDocs,
@@ -297,7 +274,7 @@ const Jobcard = () => {
 
       }).then(res => {
         // console.log(res.data)
-        { editJc ? toast.success('JobCard Updated Successfully') : toast.success('JobCard Created Successfully') }
+        toast.success('JobCard Submitted Successfully')
       })
     } catch (error) {
       console.error('Error submitting Job-Card:', error);
@@ -341,6 +318,7 @@ const Jobcard = () => {
 
       })
       .catch(error => console.error(error))
+      .finally(() => toast.success('eutdetails  Submitted Succesfully'))
 
 
     // Function to extract tests data based on the index
@@ -374,11 +352,17 @@ const Jobcard = () => {
         })
       })
       .catch(error => console.log(error))
+      .finally(() => toast.success('Tests  Submitted Succesfully'))
 
 
     // Function to extract test details based on the index
     const testdetailsdata = (i) => {
 
+      const formattedstartDate = moment(testdetailsRows[i].startDate).format('YYYY-MM-DD');
+      const formattedendDate = moment(testdetailsRows[i].endDate).format('YYYY-MM-DD');
+
+      // console.log('Formatted Start Date:', formattedstartDate);
+      // console.log('Formatted End Date:', formattedendDate);
 
       return {
 
@@ -400,6 +384,7 @@ const Jobcard = () => {
       }
 
     }
+    //console.log('the data is :', testdetailsdata);
 
     // first sync tests (add or delete) based on test name
     const testNames = testdetailsRows.map(item => item.testName)
@@ -417,7 +402,7 @@ const Jobcard = () => {
             )
             .catch(error => console.log(error))
         })
-        // toast.success('testdetails  Submitted Succesfully')
+        toast.success('testdetails  Submitted Succesfully')
 
       })
     navigate('/jobcard_dashboard')
@@ -455,8 +440,6 @@ const Jobcard = () => {
         updatedRows[index] = { ...updatedRows[index], duration: durationInMinutes };
       }
     }
-
-    console.log('updatedRows', updatedRows)
     setTestDetailsRows(updatedRows);
   };
 
@@ -481,16 +464,6 @@ const Jobcard = () => {
     setJcCloseDate('');
     setObservations('');
 
-  }
-
-
-  const handleCloseJobcard = () => {
-    navigate('/jobcard_dashboard')
-  }
-
-
-  const handleDownloadJobcard = () => {
-    alert('Download')
   }
 
   //////////////////////////////////////////////////////////
@@ -519,7 +492,7 @@ const Jobcard = () => {
 
     <>
       <Divider>
-        {editJc ? <Typography variant='h4' sx={{ color: '#003366' }}> Update Job-Card </Typography> : <Typography variant='h4' sx={{ color: '#003366' }}> Job-Card </Typography>}
+        <Typography variant='h4' sx={{ color: '#003366' }}> Job-Card </Typography>
       </Divider>
       <br />
 
@@ -544,12 +517,14 @@ const Jobcard = () => {
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <TextField
                       sx={{ width: '50%', borderRadius: 3 }}
-                      value={dcNumber}
-                      onChange={(e) => setDcnumber(e.target.value)}
                       label="DC Number"
                       margin="normal"
                       variant="outlined"
                       autoComplete="on"
+                      type="text"
+                      name="dc_formnumber"
+                      value={dcNumber}
+                      onChange={(e) => setDcnumber(e.target.value)}
                     />
 
                     <TextField
@@ -558,6 +533,7 @@ const Jobcard = () => {
                       margin="normal"
                       variant="outlined"
                       autoComplete="on"
+                      type="text" name="po_number"
                       value={poNumber}
                       onChange={(e) => setPonumber(e.target.value)}
                     />
@@ -571,9 +547,8 @@ const Jobcard = () => {
                         label="JC Open Date"
                         variant="outlined"
                         margin="normal"
-                        // value={jcOpenDate}
-                        value={jcOpenDate ? dayjs(jcOpenDate) : null} // Pass null if jcOpenDate is null
-                        onChange={handleJcStartDateChange}
+                        value={dayjs(dateTimeValue)}
+                        onChange={handleDateChange}
                         renderInput={(props) => <TextField {...props} />}
                         format="YYYY-MM-DD HH:mm"
                       />
@@ -592,41 +567,22 @@ const Jobcard = () => {
                         {users.map((item) => (<MenuItem key={item.id} value={item.name}>{item.name}</MenuItem>))}
                       </Select>
                     </FormControl>
-
-
                   </div>
                   <br />
 
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }} >
-                    <FormControl sx={{ width: '50%', }}>
-                      <FormLabel id="test-category-buttons-group-label">Test Category:</FormLabel>
-                      <RadioGroup
-                        row
-                        aria-label="Category"
-                        name="category"
-                        value={testCategory}
-                        onChange={handleTestCategoryChange}>
-                        <FormControlLabel value="Environmental" control={<Radio />} label="Environmental" />
-                        <FormControlLabel value="Screening" control={<Radio />} label="Screening " />
-                        <FormControlLabel value="Other" control={<Radio />} label="Other " />
-                      </RadioGroup>
-                    </FormControl>
-
-                    <FormControl sx={{ width: '45%', }}>
-                      <FormLabel id="type-of-request-buttons-group-label">Type of Request</FormLabel>
-                      <RadioGroup
-                        row
-                        aria-label="type-of-request"
-                        name="Type of Request"
-                        value={typeOfRequest}
-                        onChange={handleTypeOfRequestChange}>
-                        <FormControlLabel value="Testing of Component" control={<Radio />} label="Testing of Component" />
-                        <FormControlLabel value="Equipment " control={<Radio />} label="Equipment" />
-                        <FormControlLabel value="System" control={<Radio />} label="System" />
-                      </RadioGroup>
-                    </FormControl>
-                  </div>
-
+                  <FormControl sx={{ width: '50%', }}>
+                    <FormLabel id="test-category-buttons-group-label">Test Category:</FormLabel>
+                    <RadioGroup
+                      row
+                      aria-label="Category"
+                      name="category"
+                      value={testCategory}
+                      onChange={handleTestCategoryChange}  >
+                      <FormControlLabel value="Environmental" control={<Radio />} label="Environmental " />
+                      <FormControlLabel value="Screening" control={<Radio />} label="Screening " />
+                      <FormControlLabel value="Other" control={<Radio />} label="Other " />
+                    </RadioGroup>
+                  </FormControl>
 
                 </Box>
               </Container>
@@ -641,22 +597,22 @@ const Jobcard = () => {
 
               <Container component="span" margin={1} paddingright={1} elevation={11}>
                 <Box >
+                  <TextField
+                    sx={{ borderRadius: 3, marginRight: '10px' }}
+                    label="Company Name"
+                    margin="normal"
+                    variant="outlined"
+                    autoComplete="on"
+                    fullWidth
+                    input type="text" name="company_name"
+                    value={companyName}
+                    onChange={(e) => setCompanyName(e.target.value)}
+                  />
+
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <TextField
-                      // sx={{ borderRadius: 3, marginRight: '10px' }}
-                      sx={{ width: '45%', borderRadius: 3 }}
-                      label="Company Name"
-                      margin="normal"
-                      variant="outlined"
-                      autoComplete="on"
-                      fullWidth
-                      input type="text" name="company_name"
-                      value={companyName}
-                      onChange={(e) => setCompanyName(e.target.value)}
-                    />
 
                     <TextField
-                      sx={{ width: '50%', borderRadius: 3 }}
+                      sx={{ width: '45%', borderRadius: 3 }}
                       label="Customer Name/Signature"
                       margin="normal"
                       variant="outlined"
@@ -664,21 +620,6 @@ const Jobcard = () => {
                       name="customer_signature"
                       value={customerName}
                       onChange={(e) => setCustomerName(e.target.value)}
-                    />
-
-                  </div>
-
-
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-
-                    <TextField
-                      sx={{ width: '45%', borderRadius: 3 }}
-                      label="Customer Email"
-                      margin="normal"
-                      variant="outlined"
-                      type="email"
-                      value={customerEmail}
-                      onChange={(e) => setCustomerEmail(e.target.value)}
                     />
 
                     <TextField
@@ -700,6 +641,7 @@ const Jobcard = () => {
                       margin="normal"
                       variant="outlined"
                       fullWidth
+                      type="text" name="project_name"
                       value={projectName}
                       onChange={(e) => setProjectName(e.target.value)}
                     />
@@ -710,6 +652,7 @@ const Jobcard = () => {
                       margin="normal"
                       variant="outlined"
                       fullWidth
+                      type="text" name="referance_document"
                       value={referanceDocs}
                       onChange={(e) => setReferanceDocs(e.target.value)}
                     />
@@ -1002,7 +945,7 @@ const Jobcard = () => {
                             <InputLabel >Started By</InputLabel>
                             <Select
                               label="test-started-by"
-                              value={row.testStartedBy}
+                              value={row.user_name}
                               onChange={(e) => handleTestDetailsRowChange(index, 'testStartedBy', e.target.value)}
                             >
                               {users.map((item) => (<MenuItem key={item.id} value={item.name}>{item.name}</MenuItem>))}
@@ -1011,35 +954,49 @@ const Jobcard = () => {
                         </TableCell>
 
                         <TableCell>
+                          {/* <LocalizationProvider dateAdapter={AdapterDayjs}>
+                        <DateTimePicker sx={{ width: '100%', borderRadius: 3 }}
+                          label="Test start date"
+                          variant="outlined"
+                          margin="normal"
+                          // value={dateTimeValue}
+                          // onChange={handleDateChange}                         
+                          renderInput={(props) => <TextField {...props} />}
+                        />
+                      </LocalizationProvider> */}
                           <LocalizationProvider dateAdapter={AdapterDayjs}>
-                            <DateTimePicker
-                              sx={{ width: '100%', borderRadius: 3 }}
+                            <DateTimePicker sx={{ width: '100%', borderRadius: 3 }}
                               label="Test start date"
                               variant="outlined"
                               margin="normal"
-                              value={testdetailsRows[index].startDate ? dayjs(testdetailsRows[index].startDate) : dateTimeValue}
-                              onChange={(date) => handleTestDetailsRowChange(index, 'startDate', date ? date.toISOString() : null)}
+                              // value={dateTimeValue}
+                              // onChange={handleDateChange}
+                              value={dayjs(row.startDate)}
+                              onChange={(date) => handleTestDetailsRowChange(index, 'startDate', date)}
+
                               renderInput={(props) => <TextField {...props} />}
-                              format="DD/MM/YYYY HH:mm"
+                              format="DD/MM/YYYY HH:mm A"
                             />
                           </LocalizationProvider>
                         </TableCell>
+
 
                         <TableCell>
                           <LocalizationProvider dateAdapter={AdapterDayjs}>
-                            <DateTimePicker
-                              sx={{ width: '100%', borderRadius: 3 }}
+                            <DateTimePicker sx={{ width: '100%', borderRadius: 3 }}
                               label="Test end date"
                               variant="outlined"
                               margin="normal"
-                              value={testdetailsRows[index].endDate ? dayjs(testdetailsRows[index].endDate) : dateTimeValue}
-                              onChange={(date) => handleTestDetailsRowChange(index, 'endDate', date ? date.toISOString() : null)}
+                              // value={dateTimeValue}
+                              // onChange={handleDateChange}
+                              value={dayjs(row.endDate)}
+                              onChange={(date) => handleTestDetailsRowChange(index, 'endDate', date)}
+
                               renderInput={(props) => <TextField {...props} />}
-                              format="DD/MM/YYYY HH:mm"
+                              format="DD/MM/YYYY HH:mm A"
                             />
                           </LocalizationProvider>
                         </TableCell>
-
 
                         <TableCell> <TextField style={{ align: "center" }} variant="outlined"
                           value={row.duration}
@@ -1051,8 +1008,9 @@ const Jobcard = () => {
                             <InputLabel >Ended By</InputLabel>
                             <Select
                               label="test-ended-by"
-                              value={row.testEndedBy}
+                              value={row.user_name}
                               onChange={(e) => handleTestDetailsRowChange(index, 'testEndedBy', e.target.value)}
+                            //onChange={(e) => handleInputChange(row.slno, 'user_id', e.target.value)}
                             >
                               {users.map((item) => (<MenuItem key={item.id} value={item.name}>{item.name}</MenuItem>))}
                             </Select>
@@ -1074,8 +1032,9 @@ const Jobcard = () => {
                             <InputLabel >Report Prepared By</InputLabel>
                             <Select
                               label="report-prepared-by"
-                              value={row.preparedBy}
+                              value={row.user_name}
                               onChange={(e) => handleTestDetailsRowChange(index, 'preparedBy', e.target.value)}
+                            //onChange={(e) => handleInputChange(row.slno, 'user_id', e.target.value)}
                             >
                               {users.map((item) => (<MenuItem key={item.id} value={item.name}>{item.name}</MenuItem>))}
                             </Select>
@@ -1159,10 +1118,10 @@ const Jobcard = () => {
                         label="JC Close Date"
                         variant="outlined"
                         margin="normal"
-                        value={jcCloseDate ? dayjs(jcCloseDate) : null}
-                        onChange={handleJcCloseDateChange}
+                        value={dayjs(jcCloseDate)}
+                        onChange={handlecloseDateChange}
                         renderInput={(props) => <TextField {...props} />}
-                        format="DD/MM/YYYY HH:mm"
+                        format="YYYY-MM-DD HH:mm"
                       />
                     </LocalizationProvider>
 
@@ -1197,49 +1156,20 @@ const Jobcard = () => {
         </Box>
 
         <Box sx={{ marginTop: 3, marginBottom: 0.5, alignContent: 'center' }}>
+          <Button sx={{ borderRadius: 3, margin: 0.5 }}
+            variant="contained"
+            color="primary"
+            onClick={handleClearJobcard}>
+            Clear
+          </Button>
 
-          {!editJc ? (
-            <Button
-              sx={{ borderRadius: 3, mx: 0.5, mb: 1, bgcolor: "orange", color: "white", borderColor: "black" }}
-              variant="contained"
-              color="primary"
-              onClick={handleClearJobcard}
-            >
-              Clear
-            </Button>
-          ) : (
-            <Button
-              sx={{ borderRadius: 3, mx: 0.5, mb: 1, bgcolor: "orange", color: "white", borderColor: "black" }}
-              variant="contained"
-              color="primary"
-              onClick={handleCloseJobcard}
-            >
-              Close
-            </Button>
-          )}
-
-          <Button
-            sx={{ borderRadius: 3, mx: 0.5, mb: 1, bgcolor: "orange", color: "white", borderColor: "black" }}
+          <Button sx={{ borderRadius: 3, margin: 0.5 }}
             variant="contained"
             color="primary"
             onClick={handleSubmitJobcard}
           >
-            {editJc ? 'Update' : 'Submit'}
+            Submit
           </Button>
-
-          {editJc ?
-            <Button
-              sx={{ borderRadius: 3, mx: 0.5, mb: 1, bgcolor: "orange", color: "white", borderColor: "black" }}
-              variant="contained"
-              color="primary"
-              onClick={handleDownloadJobcard}
-            // onClick={<JCDocument />}
-            >
-              Download
-            </Button>
-            :
-            null
-          }
 
         </Box>
 

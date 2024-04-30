@@ -499,7 +499,7 @@ export default function QuoteTable() {
           </Box>
 
           {/* Creating quotation table */}
-          <TableContainer component={Paper}>
+          <TableContainer component={Paper} size='small'>
             <Table sx={{ minWidth: 650 }} aria-label="simple table" >
               <TableHead sx={tableHeaderStyle}>
                 <TableRow>

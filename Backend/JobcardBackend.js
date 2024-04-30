@@ -4,22 +4,22 @@ const dayjs = require('dayjs');
 const moment = require('moment');
 
 
-// functio of jobcard api's:
+// function of jobcard api's:
 function jobcardsAPIs(app) {
 
     // Add primary details of the jobcard to the 'bea_jobcards' table:
     app.post('/api/jobcard', (req, res) => {
-        const { jcNumber, dcNumber, jcOpenDate, poNumber, jcCategory, testInchargeName, companyName, customerName, customerNumber, projectName, sampleCondition, referanceDocs, jcStatus, jcCloseDate, jcText, observations } = req.body
+        const { jcNumber, dcNumber, jcOpenDate, poNumber, jcCategory, typeOfRequest, testInchargeName, companyName, customerName, customerEmail, customerNumber, projectName, sampleCondition, referanceDocs, jcStatus, formattedCloseDate, jcText, observations } = req.body
 
-        console.log('1', jcCloseDate)
         const formattedOpenDate = covertDateTime(jcOpenDate)
-        const formattedCloseDate = covertDateTime(jcCloseDate)
-        console.log('2', formattedCloseDate)
 
+        console.log(jcNumber, dcNumber, jcOpenDate, poNumber, jcCategory, typeOfRequest, testInchargeName, companyName, customerName, customerEmail, customerNumber, projectName, sampleCondition, referanceDocs, jcStatus, formattedCloseDate, jcText, observations)
 
-        const sql = `INSERT INTO bea_jobcards(jc_number, dcform_number, jc_open_date, po_number, test_category, test_incharge, company_name, customer_name, customer_number, project_name, sample_condition, referance_document, jc_status, jc_closed_date, jc_text, observations ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
+        // const { jcNumber, dcNumber, formattedJcOpenDate, poNumber, jcCategory, testInchargeName, companyName, customerName, customerNumber, projectName, sampleCondition, referanceDocs, jcStatus, formattedCloseDate, jcText, observations } = req.body
 
-        db.query(sql, [jcNumber, dcNumber, formattedOpenDate, poNumber, jcCategory, testInchargeName, companyName, customerName, customerNumber, projectName, sampleCondition, referanceDocs, jcStatus, formattedCloseDate, jcText, observations], (error, result) => {
+        const sql = `INSERT INTO bea_jobcards(jc_number, dcform_number, jc_open_date, po_number, test_category, type_of_request, test_incharge, company_name, customer_name, customer_email, customer_number, project_name, sample_condition, referance_document, jc_status, jc_closed_date, jc_text, observations ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
+
+        db.query(sql, [jcNumber, dcNumber, formattedOpenDate, poNumber, jcCategory, typeOfRequest, testInchargeName, companyName, customerName, customerEmail, customerNumber, projectName, sampleCondition, referanceDocs, jcStatus, formattedCloseDate, jcText, observations], (error, result) => {
             if (error) {
                 console.log(error);
                 return res.status(500).json({ message: 'Internal server error' });
@@ -47,7 +47,7 @@ function jobcardsAPIs(app) {
                 return res.status(500).json({ error: "An error occurred while fetching JC table data" })
             }
             res.send(result)
-            console.log('result', result)
+            // console.log('result', result)
         });
     })
 
@@ -69,7 +69,7 @@ function jobcardsAPIs(app) {
 
     // To Edit the selected jobcards:
     app.post('/api/jobcard/:id', (req, res) => {
-        const { jcNumber, dcNumber, jcOpenDate, poNumber, jcCategory, testInchargeName, companyName, customerName, customerNumber, projectName, sampleCondition, referanceDocs, jcStatus, jcCloseDate, jcText, observations } = req.body;
+        const { jcNumber, dcNumber, jcOpenDate, poNumber, testCategory, typeOfRequest, testInchargeName, companyName, customerName, customerEmail, customerNumber, projectName, sampleCondition, referanceDocs, jcStatus, jcCloseDate, jcText, observations } = req.body;
 
         const formattedOpenDate = covertDateTime(jcOpenDate)
         const formattedCloseDate = covertDateTime(jcCloseDate)
@@ -81,9 +81,11 @@ function jobcardsAPIs(app) {
         jc_open_date=?, 
         po_number=?, 
         test_category=?, 
+        type_of_request = ?,
         test_incharge=?, 
         company_name=?, 
         customer_name=?, 
+        customer_email =?,
         customer_number=?, 
         project_name=?, 
         sample_condition=?, 
@@ -97,8 +99,13 @@ function jobcardsAPIs(app) {
 
         // Use an array to provide values for placeholders in the query
         const values = [
-            dcNumber, formattedOpenDate, poNumber, jcCategory, testInchargeName, companyName, customerName, customerNumber, projectName, sampleCondition, referanceDocs, jcStatus, formattedCloseDate, jcText, observations,
-            jcNumber // jc_number should be included in the values array
+            // dcNumber, formattedOpenDate, poNumber, jcCategory, testInchargeName, companyName, customerName, customerNumber, projectName, sampleCondition, referanceDocs, jcStatus, formattedCloseDate, jcText, observations,
+            // jcNumber // jc_number should be included in the values array
+
+            dcNumber, formattedOpenDate, poNumber, testCategory, typeOfRequest, testInchargeName, companyName, customerName, customerEmail, customerNumber, projectName, sampleCondition, referanceDocs, jcStatus, formattedCloseDate, jcText, observations,
+            jcNumber
+
+
         ];
 
         db.query(sqlQuery, values, (error, result) => {
@@ -127,7 +134,7 @@ function jobcardsAPIs(app) {
     // To fetch the data based on the jcnumber from the table 'jobcards'
     app.get('/api/getjobcardlist/:jc_number', (req, res) => {
         const jcnumber = req.params.jc_number;
-        const sqlQuery = `SELECT  dcform_number, jc_opendate, po_number, category, test_inchargename,company_name, customer_number, customer_signature, project_name, sample_condition, referance_document FROM bea_jobcards WHERE jc_number = ?`;
+        const sqlQuery = `SELECT  dcform_number, jc_opendate, po_number, category, test_inchargename, company_name, customer_number, customer_signature, project_name, sample_condition, referance_document FROM bea_jobcards WHERE jc_number = ?`;
 
         db.query(sqlQuery, [jcnumber], (error, result) => {
             if (error) {
@@ -508,7 +515,6 @@ function jobcardsAPIs(app) {
         if (!originalTimestamp) {
             return ''
         }
-        console.log('timestamp', originalTimestamp);
         const dateObject = new Date(originalTimestamp);
         const year = dateObject.getFullYear();
         const month = String(dateObject.getMonth() + 1).padStart(2, '0'); // Month is zero-indexed

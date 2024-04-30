@@ -218,9 +218,9 @@ const Jobcard = () => {
                       row
                       aria-label="Category"
                       name="category"  >
-                      <FormControlLabel value="Environmental" control={<Radio />} label="Good " />
-                      <FormControlLabel value="Screening" control={<Radio />} label="Screening " />
-                      <FormControlLabel value="Other" control={<Radio />} label="Other " />
+                      <FormControlLabel value="Environmental" control={<Radio />} label="Environmental" />
+                      <FormControlLabel value="Screening" control={<Radio />} label="Screening" />
+                      <FormControlLabel value="Other" control={<Radio />} label="Other" />
                     </RadioGroup>
                   </FormControl>
 

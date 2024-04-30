@@ -95,7 +95,8 @@ export default function JCHome() {
 
     //If data is loading then show Loading text
     if (loading) {
-        return <div>Loading... <PendingIcon /> </div>;
+        // return <div>Loading... <PendingIcon /> </div>
+        return <div>No Job-cards Found <PendingIcon /> </div>
     }
 
 

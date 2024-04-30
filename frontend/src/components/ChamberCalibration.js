@@ -637,31 +637,8 @@ export default function ChamberAndCalibration() {
 
                 <br />
 
-                {/* <Box >
-                    <Grid container spacing={2} >
-                        <Grid item xs={12} md={6}>
-                            <Card elevation={5} sx={{ backgroundColor: 'transparent' }}>
-                                <CreatePieChart
-                                    data={calibrationStatusPieChart}
-                                    options={optionsForCalibrationStatusPieChart}
-                                />
-                            </Card>
-                        </Grid>
-
-                        <Grid item xs={12} md={6}>
-                            <Card elevation={5} sx={{ backgroundColor: 'transparent' }}>
-                                <CreatePieChart
-                                    data={chamberStatusPieChart}
-                                    options={optionsForChamberStatusPieChart}
-                                />
-                            </Card>
-                        </Grid>
-                    </Grid>
-                </Box> */}
-
                 <Box sx={{ padding: '20px' }}>
-                    <Grid container spacing={2} justifyContent="center">
-                        {/* First Grid Item */}
+                    <Grid container spacing={2} justifyContent="center" >
                         <Grid item xs={12} md={6}>
                             <Card elevation={5} sx={{ backgroundColor: 'transparent' }}>
                                 <CreatePieChart
@@ -671,7 +648,6 @@ export default function ChamberAndCalibration() {
                             </Card>
                         </Grid>
 
-                        {/* Second Grid Item */}
                         <Grid item xs={12} md={6}>
                             <Card elevation={5} sx={{ backgroundColor: 'transparent' }}>
                                 <CreatePieChart
@@ -682,6 +658,8 @@ export default function ChamberAndCalibration() {
                         </Grid>
                     </Grid>
                 </Box>
+
+
 
 
 
