@@ -114,7 +114,7 @@ function poInvoiceBackendAPIs(app) {
       formData.remarks,
       formData.id,
     ];
-    console.log('update values', values)
+    // console.log('update values', values)
 
     db.query(sqlQuery, values, (error, result) => {
       if (error) {
