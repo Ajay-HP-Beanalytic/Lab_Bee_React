@@ -22,10 +22,13 @@ import { serverBaseAddress } from './APIPage'
 import { useParams } from 'react-router-dom';
 import { useNavigate } from "react-router-dom";
 import JCDocument from '../components/JCDocument';
+import { generateJcDocument } from '../components/JCDocument';
+import JobCardComponent from '../components/JobCardComponent';
 
 
 
-const Jobcard = () => {
+// const Jobcard = () => {
+const Jobcard = ({ jobCardData }) => {
 
   const navigate = useNavigate();
 
@@ -1227,16 +1230,21 @@ const Jobcard = () => {
             {editJc ? 'Update' : 'Submit'}
           </Button>
 
-          {editJc ?
+          {/* {editJc ?
             <Button
               sx={{ borderRadius: 3, mx: 0.5, mb: 1, bgcolor: "orange", color: "white", borderColor: "black" }}
               variant="contained"
               color="primary"
-              onClick={handleDownloadJobcard}
-            // onClick={<JCDocument />}
+              onClick={<JobCardComponent id={id} />}
             >
               Download
             </Button>
+            :
+            null
+          } */}
+
+          {editJc ?
+            <JobCardComponent id={id} />
             :
             null
           }
