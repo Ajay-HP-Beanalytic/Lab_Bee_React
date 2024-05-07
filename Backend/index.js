@@ -24,6 +24,8 @@ const {
   createCustomerDetailsTable,
   createItemSoftModulestable,
   createTestsListTable,
+  createReliabilityTasksTable,
+  createReliabilityTasksDetailsTable,
 
   createJobcardsTable,
   createEutDetailsTable,
@@ -52,6 +54,9 @@ db.getConnection(function (err, connection) {
   createCustomerDetailsTable();
   createItemSoftModulestable();
   createTestsListTable();
+
+  createReliabilityTasksTable();
+  createReliabilityTasksDetailsTable();
 
   createJobcardsTable();
   createEutDetailsTable();
@@ -124,6 +129,10 @@ itemSoftModulesAPIs(app)
 // backend connection of TS1_Tests List API's from 'EnvitestsList' page:
 const { ts1TestsListAPIs } = require('./EnvitestsList')
 ts1TestsListAPIs(app)
+
+// backend connection of reliability_tasks List API's from 'ReliabilityTasksList' page:
+const { reliabilityTasksListAPIs } = require('./ReliabilityTasksList')
+reliabilityTasksListAPIs(app)
 
 
 // backend connection of jobcard data API's from 'JobcardBackend' page

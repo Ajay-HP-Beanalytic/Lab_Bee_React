@@ -9,17 +9,17 @@ function jobcardsAPIs(app) {
 
     // Add primary details of the jobcard to the 'bea_jobcards' table:
     app.post('/api/jobcard', (req, res) => {
-        const { jcNumber, dcNumber, jcOpenDate, poNumber, jcCategory, typeOfRequest, testInchargeName, companyName, customerName, customerEmail, customerNumber, projectName, sampleCondition, referanceDocs, jcStatus, formattedCloseDate, jcText, observations } = req.body
+        const { jcNumber, dcNumber, jcOpenDate, poNumber, testCategory, typeOfRequest, testInchargeName, jcCategory, companyName, customerName, customerEmail, customerNumber, projectName, sampleCondition, referanceDocs, jcStatus, reliabilityReportStatus, formattedCloseDate, observations } = req.body
 
         const formattedOpenDate = covertDateTime(jcOpenDate)
 
-        console.log(jcNumber, dcNumber, jcOpenDate, poNumber, jcCategory, typeOfRequest, testInchargeName, companyName, customerName, customerEmail, customerNumber, projectName, sampleCondition, referanceDocs, jcStatus, formattedCloseDate, jcText, observations)
+        console.log(jcNumber, dcNumber, jcOpenDate, poNumber, jcCategory, typeOfRequest, testInchargeName, companyName, customerName, customerEmail, customerNumber, projectName, sampleCondition, referanceDocs, jcStatus, formattedCloseDate, observations)
 
         // const { jcNumber, dcNumber, formattedJcOpenDate, poNumber, jcCategory, testInchargeName, companyName, customerName, customerNumber, projectName, sampleCondition, referanceDocs, jcStatus, formattedCloseDate, jcText, observations } = req.body
 
-        const sql = `INSERT INTO bea_jobcards(jc_number, dcform_number, jc_open_date, po_number, test_category, type_of_request, test_incharge, company_name, customer_name, customer_email, customer_number, project_name, sample_condition, referance_document, jc_status, jc_closed_date, jc_text, observations ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
+        const sql = `INSERT INTO bea_jobcards(jc_number, dcform_number, jc_open_date, po_number, test_category, type_of_request, test_incharge, jc_category, company_name, customer_name, customer_email, customer_number, project_name, sample_condition, referance_document, jc_status, reliability_report_status, jc_closed_date,  observations ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
 
-        db.query(sql, [jcNumber, dcNumber, formattedOpenDate, poNumber, jcCategory, typeOfRequest, testInchargeName, companyName, customerName, customerEmail, customerNumber, projectName, sampleCondition, referanceDocs, jcStatus, formattedCloseDate, jcText, observations], (error, result) => {
+        db.query(sql, [jcNumber, dcNumber, formattedOpenDate, poNumber, testCategory, typeOfRequest, testInchargeName, jcCategory, companyName, customerName, customerEmail, customerNumber, projectName, sampleCondition, referanceDocs, jcStatus, reliabilityReportStatus, formattedCloseDate, observations], (error, result) => {
             if (error) {
                 console.log(error);
                 return res.status(500).json({ message: 'Internal server error' });
@@ -37,7 +37,7 @@ function jobcardsAPIs(app) {
         const [month, year] = monthYear.split('-');
 
         const getJCColumns = `
-        SELECT id, jc_number, company_name, customer_name, customer_number, jc_status
+        SELECT id, jc_number, jc_category, company_name, customer_name, customer_number, jc_status
         FROM bea_jobcards
         WHERE DATE_FORMAT(jc_open_date, '%b-%Y') = ?
         `;
@@ -69,7 +69,7 @@ function jobcardsAPIs(app) {
 
     // To Edit the selected jobcards:
     app.post('/api/jobcard/:id', (req, res) => {
-        const { jcNumber, dcNumber, jcOpenDate, poNumber, testCategory, typeOfRequest, testInchargeName, companyName, customerName, customerEmail, customerNumber, projectName, sampleCondition, referanceDocs, jcStatus, jcCloseDate, jcText, observations } = req.body;
+        const { jcNumber, dcNumber, jcOpenDate, poNumber, testCategory, typeOfRequest, testInchargeName, jcCategory, companyName, customerName, customerEmail, customerNumber, projectName, sampleCondition, referanceDocs, jcStatus, reliabilityReportStatus, jcCloseDate, observations } = req.body;
 
         const formattedOpenDate = covertDateTime(jcOpenDate)
         const formattedCloseDate = covertDateTime(jcCloseDate)
@@ -82,7 +82,8 @@ function jobcardsAPIs(app) {
         po_number=?, 
         test_category=?, 
         type_of_request = ?,
-        test_incharge=?, 
+        test_incharge=?,
+        jc_category = ?,
         company_name=?, 
         customer_name=?, 
         customer_email =?,
@@ -91,8 +92,8 @@ function jobcardsAPIs(app) {
         sample_condition=?, 
         referance_document=?, 
         jc_status=?, 
+        reliability_report_status=?,
         jc_closed_date=?, 
-        jc_text=?, 
         observations=?
 
         WHERE jc_number = ?`;
@@ -102,7 +103,7 @@ function jobcardsAPIs(app) {
             // dcNumber, formattedOpenDate, poNumber, jcCategory, testInchargeName, companyName, customerName, customerNumber, projectName, sampleCondition, referanceDocs, jcStatus, formattedCloseDate, jcText, observations,
             // jcNumber // jc_number should be included in the values array
 
-            dcNumber, formattedOpenDate, poNumber, testCategory, typeOfRequest, testInchargeName, companyName, customerName, customerEmail, customerNumber, projectName, sampleCondition, referanceDocs, jcStatus, formattedCloseDate, jcText, observations,
+            dcNumber, formattedOpenDate, poNumber, testCategory, typeOfRequest, testInchargeName, jcCategory, companyName, customerName, customerEmail, customerNumber, projectName, sampleCondition, referanceDocs, jcStatus, reliabilityReportStatus, formattedCloseDate, observations,
             jcNumber
 
 
@@ -527,7 +528,7 @@ function jobcardsAPIs(app) {
 
     //To Edit the selected testdetails:
     app.post('/api/testdetails/', (req, res) => {
-        const { testName, testChamber, eutSerialNo, standard, testStartedBy, startDate, endDate, duration, testEndedBy, remarks, reportNumber, preparedBy, nablUploaded, reportStatus, jcNumber } = req.body;
+        const { testName, testChamber, eutSerialNo, standard, testStartedBy, startTemp, startRh, startDate, endDate, duration, endTemp, endRh, testEndedBy, remarks, reportNumber, preparedBy, nablUploaded, reportStatus, jcNumber } = req.body;
         const formattedStartDate = covertDateTime(startDate)
         const formattedEndDate = covertDateTime(endDate)
         const sqlQuery = `
@@ -537,9 +538,13 @@ function jobcardsAPIs(app) {
           eutSerialNo = ?, 
           standard = ? ,
           testStartedBy = ? ,
+          startTemp = ? ,
+          startRh = ? ,
           startDate = ? ,
           endDate = ? ,
           duration = ? ,
+          endTemp = ? ,
+          endRh = ? ,
           testEndedBy = ? ,
           remarks = ? ,
           reportNumber = ? ,
@@ -548,7 +553,7 @@ function jobcardsAPIs(app) {
           reportStatus = ? 
         WHERE jc_number = ? AND testName = ?`;
 
-        const values = [testChamber, eutSerialNo, standard, testStartedBy, formattedStartDate, formattedEndDate, duration, testEndedBy, remarks, reportNumber, preparedBy, nablUploaded, reportStatus, jcNumber, testName
+        const values = [testChamber, eutSerialNo, standard, testStartedBy, startTemp, startRh, formattedStartDate, formattedEndDate, duration, endTemp, endRh, testEndedBy, remarks, reportNumber, preparedBy, nablUploaded, reportStatus, jcNumber, testName
         ];
         // console.log(startDate, endDate);
         db.query(sqlQuery, values, (error, result) => {

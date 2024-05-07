@@ -3,10 +3,8 @@ import { Controller, useForm, useWatch } from "react-hook-form";
 import { Box, Button, Card, ClickAwayListener, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Divider, FormControl, Grid, InputLabel, Menu, MenuItem, MenuList, Paper, Select, TextField, Typography } from '@mui/material'
 import { Views, momentLocalizer } from 'react-big-calendar'
 import moment from 'moment'
-import withDragAndDrop from "react-big-calendar/lib/addons/dragAndDrop";
 import Calendar from '../components/Calendar_Comp'
 import "../components/calendar.css"
-import { DateTime } from 'luxon';  // Import luxon DateTime
 
 import 'react-big-calendar/lib/css/react-big-calendar.css';
 import "react-big-calendar/lib/addons/dragAndDrop/styles.css";
@@ -16,6 +14,7 @@ import ChambersListForSlotBookingCalendar from '../components/ChambersList';
 
 
 import dayjs from 'dayjs';
+
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
@@ -26,57 +25,7 @@ import CustomModal from '../components/CustomModal';
 import ConfirmationDialog from '../components/ConfirmationDialog';
 import { useParams } from 'react-router-dom';
 
-const DnDCalendar = withDragAndDrop(Calendar);
 const localizer = momentLocalizer(moment)
-
-
-
-
-const myEventsList = [
-    // {
-    //     title: 'Accord RV-1',
-    //     start: moment("2024-03-12T12:00:00").toDate(), // Year, Month (0-indexed), Day, Hour, Minute
-    //     end: moment("2024-03-12T13:30:00").toDate(),
-    //     duration: '2',
-    //     status: 'Completed',
-    //     resourceId: 'resourceId1',
-    // },
-]
-
-
-
-
-
-const components = {
-    event: (props) => {
-        const chamberName = props?.event?.type;
-        switch (chamberName) {
-            case 'HUMD-3':
-                return (
-                    <div style={{ background: 'red', color: 'white', height: '100%' }}>
-                        {props.title}
-                    </div>
-                );
-
-            case 'TSC-1':
-                return (
-                    <div style={{ background: 'yellow', color: 'black', height: '100%' }}>
-                        {props.title}
-                    </div>
-                );
-
-            case 'DHC-4':
-                return (
-                    <div style={{ background: 'green', color: 'black', height: '100%' }}>
-                        {props.title}
-                    </div>
-                );
-            default:
-                return null;
-
-        }
-    }
-}
 
 
 
@@ -86,8 +35,9 @@ export default function Slotbooking() {
     const [xPosition, setXPosition] = useState(0);
     const [yPosition, setYPosition] = useState(0);
     const [openDialog, setOpenDialog] = useState(false);
-    const [slotStartDateTime, setSlotStartDateTime] = useState(dayjs());
-    const [slotEndDateTime, setSlotEndDateTime] = useState(dayjs());
+    const [slotStartDateTime, setSlotStartDateTime] = useState('');
+    const [slotEndDateTime, setSlotEndDateTime] = useState('');
+
     const [slotDuration, setSlotDuration] = useState(0)
 
     const [selectedChamber, setSelectedChamber] = useState('');
@@ -102,7 +52,6 @@ export default function Slotbooking() {
     const [myEventsList, setMyEventsList] = useState([]);
 
     const [selectedEvent, setSelectedEvent] = useState(null);
-    const [overlapBooking, setOverlapBooking] = useState(null);
 
 
     const [bookingDetails, setBookingDetails] = useState(null);
@@ -124,8 +73,6 @@ export default function Slotbooking() {
             .required('Email is required'),
         customerPhone: yup.string().matches(/^\d{10}$/, "Invalid phone number, it must be 10 digits").required("Phone number is required"),
         testName: yup.string().required("Enter the test name"),
-        // slotStartDateTime: yup.date().required("Select the start date and time"),
-        // slotEndDateTime: yup.date().required("Select the end date and time"),
         selectedChamber: yup.string().required("Select the Chamber"),
     });
 
@@ -136,8 +83,8 @@ export default function Slotbooking() {
         customerPhone: '',
         testName: '',
         selectedChamber: '',
-        slotStartDateTime: dayjs(),
-        slotEndDateTime: dayjs(),
+        slotStartDateTime: '',
+        slotEndDateTime: '',
         slotDuration: '',
         remarks: ''
     }
@@ -182,8 +129,8 @@ export default function Slotbooking() {
         setOpenDialog(false);
         reset()
         setEditBooking(false);
-        setSlotStartDateTime(dayjs())
-        setSlotEndDateTime(dayjs())
+        setSlotStartDateTime(null);
+        setSlotEndDateTime(null);
         setSlotDuration(0);
         setSelectedChamber('');
         setEditId('')
@@ -196,8 +143,6 @@ export default function Slotbooking() {
         setContextMenuOpen(false);
         handleOpenDialog();
     }
-
-
 
 
 
@@ -227,71 +172,12 @@ export default function Slotbooking() {
 
     // Function to check if there is an overlap between two date-time ranges
 
-
-    // On submitting the slot booking form:
-    // const onSubmitForm = async (data) => {
-    //     console.log(data);
-
-    //     // Get the selected start and end date-time, along with the selected chamber
-    //     const selectedSlotStartDate = new Date(data.slotStartDateTime);
-    //     const selectedSlotEndDate = new Date(data.slotEndDateTime);
-    //     const selectedChamberForBooking = data.selectedChamber;
-
-    //     if (allBookings && allBookings.length > 0) {
-    //         // Check for overlap with each existing booking
-    //         for (const booking of allBookings) {
-    //             const existingStart = new Date(booking.slot_start_datetime);
-    //             const existingEnd = new Date(booking.slot_end_datetime);
-    //             const existingChamber = booking.chamber_allotted;
-
-    //             if (selectedChamberForBooking === existingChamber) {
-    //                 // Check for overlap only if the bookings are for the same chamber
-    //                 if (
-    //                     (selectedSlotStartDate <= existingEnd && selectedSlotEndDate >= existingStart) ||
-    //                     (selectedSlotStartDate >= existingStart && selectedSlotStartDate <= existingEnd)
-    //                 ) {
-    //                     // Overlap found, show alert and stop further processing
-    //                     toast.error(`${selectedChamberForBooking} already booked for ${booking.company_name}\n
-    //                     From ${moment(existingStart).format('YYYY-MM-DD HH:mm')} \n To ${moment(existingEnd).format('YYYY-MM-DD HH:mm')} \n Please book another slot.`);
-
-    //                     return;
-    //                 }
-    //             }
-    //         }
-    //     }
-
-    //     // No overlap found, proceed with booking
-    //     const bookingID = await generateBookingID();
-    //     const completeFormData = {
-    //         ...data,
-    //         bookingID: bookingID,
-    //         slotBookedBy: slotBookedBy
-    //     };
-
-    //     try {
-    //         const submitBooking = await axios.post(`${serverBaseAddress}/api/createNewSlotBooking/`, {
-    //             formData: completeFormData
-    //         });
-    //         setNewBookingAdded(!newBookingAdded);
-    //         console.log('submitted data is--->', submitBooking.data);
-    //         toast.success(`Slot Booked Successfully.\n Booking ID:${bookingID}`)
-    //         await reset()
-    //         setSlotStartDateTime(dayjs())
-    //         setSlotEndDateTime(dayjs())
-    //         handleCloseDialog();
-    //         setSlotDuration(0);
-    //     } catch (error) {
-    //         console.error('Failed to book the slot', error);
-    //     }
-    // }
-
-
     const onSubmitForm = async (data) => {
-        console.log(data);
 
         // Get the selected start and end date-time, along with the selected chamber
-        const selectedSlotStartDate = new Date(data.slotStartDateTime);
-        const selectedSlotEndDate = new Date(data.slotEndDateTime);
+        const selectedSlotStartDate = editId ? dayjs(slotStartDateTime) : dayjs(data.slotStartDateTime);
+        const selectedSlotEndDate = editId ? dayjs(slotEndDateTime) : dayjs(data.slotEndDateTime);
+
         const selectedChamberForBooking = data.selectedChamber;
 
         if (allBookings && allBookings.length > 0) {
@@ -325,20 +211,23 @@ export default function Slotbooking() {
         // No overlap found, proceed with booking
         // const bookingID = await generateBookingID();
         const bookingID = editId ? editId : await generateBookingID();
+
         const completeFormData = {
             ...data,
             bookingID: bookingID,
-            slotBookedBy: slotBookedBy
+            slotBookedBy: slotBookedBy,
+
+            slotStartDateTime: selectedSlotStartDate.format('YYYY-MM-DD HH:mm'),
+            slotEndDateTime: selectedSlotEndDate.format('YYYY-MM-DD HH:mm'),
         };
 
         try {
             const submitBooking = await axios.post(`${serverBaseAddress}/api/slotBooking/` + editId, {
                 formData: completeFormData
             });
-            console.log('updated data', submitBooking.data)
             setNewBookingAdded(!newBookingAdded);
 
-            await reset()
+            reset()
             handleCloseDialog();
             handleCloseModal()
 
@@ -348,10 +237,10 @@ export default function Slotbooking() {
             console.error('Failed to book the slot', error);
         }
 
-        if (!editId) {
-            await reset()
-            handleCloseDialog();
-        }
+        // if (!editId) {
+        //     reset()
+        //     handleCloseDialog();
+        // }
     }
 
 
@@ -390,13 +279,10 @@ export default function Slotbooking() {
     }
 
 
-
-
     const fetchBookingData = async (selectedBookingId) => {
         try {
             const response = await axios.get(`${serverBaseAddress}/api/getBookingData/${selectedBookingId}`);
             const bookingData = response.data[0];
-            console.log('selected booking data', bookingData);
 
             setValue('company', bookingData.company_name);
             setValue('customerName', bookingData.customer_name);
@@ -404,13 +290,12 @@ export default function Slotbooking() {
             setValue('customerPhone', bookingData.customer_phone);
             setValue('testName', bookingData.test_name);
 
-
             const selectedChamberId = myResourcesList.find(item => item.id === bookingData.chamber_allotted)?.id;
             if (selectedChamberId) {
                 const selectedChamberName = myResourcesList.find(item => item.id === selectedChamberId)?.title;
                 if (selectedChamberName) {
-                    setValue('selectedChamber', selectedChamberId); // Set value using react-hook-form
-                    setSelectedChamber(selectedChamberName); // Update selectedChamber state variable
+                    setValue('selectedChamber', selectedChamberId);
+                    setSelectedChamber(selectedChamberName);
                 } else {
                     console.error('Error: Chamber title not found in myResourceList');
                 }
@@ -418,12 +303,17 @@ export default function Slotbooking() {
                 console.error('Error: Chamber not found in myResourceList');
             }
 
-            setSlotStartDateTime(dayjs(bookingData.slot_start_datetime))
-            setSlotEndDateTime(dayjs(bookingData.slot_end_datetime))
-            setSlotDuration(bookingData.slot_duration)
+            // Format the dates using dayjs
+            const formattedStartDate = dayjs(bookingData.slot_start_datetime);
+            const formattedEndDate = dayjs(bookingData.slot_end_datetime);
+
+            setSlotStartDateTime(formattedStartDate);
+            setSlotEndDateTime(formattedEndDate);
+
+            setSlotDuration(bookingData.slot_duration);
             setValue('remarks', bookingData.remarks);
 
-            setEditId(selectedBookingId)
+            setEditId(selectedBookingId);
 
         } catch (error) {
             console.error('Error fetching booking data:', error);
@@ -434,11 +324,15 @@ export default function Slotbooking() {
 
 
 
+
+
+
     //Function to edit or update the selected booking:
     const handleUpdateBooking = async (selectedBookingId) => {
         await fetchBookingData(selectedBookingId)
         setEditBooking(!!selectedBookingId)
         setOpenDialog(true)
+
     }
 
 
@@ -450,12 +344,15 @@ export default function Slotbooking() {
     // Function to calculate the slot duration:
     const handleCalculateSlotDuration = (startDateTime, endDateTime) => {
         if (startDateTime && endDateTime) {
-            const durationInHours = endDateTime.diff(startDateTime, 'hour');
-            setSlotDuration(durationInHours);
+            const durationInMillis = endDateTime.diff(startDateTime)
+            const durationInHours = Math.floor(durationInMillis / (1000 * 60 * 60));
+            const remainingMillis = durationInMillis - (durationInHours * (1000 * 60 * 60));
+            const durationInMinutes = Math.round(remainingMillis / (1000 * 60));
+            const duration = `${durationInHours}.${durationInMinutes}`;
+            setSlotDuration(duration);
+
         }
-    };
-
-
+    }
 
 
 
@@ -517,7 +414,7 @@ export default function Slotbooking() {
             try {
                 const allBookingsData = await axios.get(`${serverBaseAddress}/api/getAllBookings`);
                 setAllBookings(allBookingsData.data)
-                console.log('bookings are:', allBookingsData.data)
+
                 const events = allBookingsData.data.map(booking => ({
                     id: booking.booking_id,
                     title: `${booking.test_name} for ${booking.company_name}, ${booking.customer_name}`,
@@ -541,24 +438,7 @@ export default function Slotbooking() {
     }, [newBookingAdded, slotDeleted])
 
 
-    // Function to fetch booking data from the backend API
 
-
-
-    // Get the selected booking data:
-    // useEffect(() => {
-
-    //     const fetchSelectedBookingDetails = async (bookingId) => {
-    //         try {
-    //             const response = await axios.get(`${serverBaseAddress}/api/getBookingData/${bookingId}`);
-    //             setBookingDetails(response.data);
-    //         } catch (error) {
-    //             console.error('Failed to fetch booking details:', error);
-    //         }
-    //     };
-    // }, [])
-
-    console.log('myEventsList', myEventsList)
 
     // Define a function to get event props based on start date
     const eventPropGetter = (event, start, end, isSelected) => {
@@ -748,7 +628,7 @@ export default function Slotbooking() {
                                         name="slotStartDateTime"
                                         type="date"
                                         control={control}
-                                        defaultValue={slotStartDateTime}
+                                        // defaultValue={slotStartDateTime}
                                         render={({ field }) => (
                                             <LocalizationProvider dateAdapter={AdapterDayjs}>
                                                 <DateTimePicker
@@ -761,7 +641,7 @@ export default function Slotbooking() {
                                                         handleCalculateSlotDuration(newValue, slotEndDateTime);
                                                     }}
                                                     renderInput={(props) => <TextField {...props} />}
-                                                    format="YYYY-MM-DD HH:mm"
+                                                    format="DD-MM-YYYY HH:mm"
                                                 />
                                             </LocalizationProvider>
                                         )}
@@ -772,7 +652,7 @@ export default function Slotbooking() {
                                         name="slotEndDateTime"
                                         type="date"
                                         control={control}
-                                        defaultValue={slotEndDateTime}
+                                        // defaultValue={slotEndDateTime}
                                         render={({ field }) => (
                                             <LocalizationProvider dateAdapter={AdapterDayjs}>
                                                 <DateTimePicker
@@ -783,9 +663,10 @@ export default function Slotbooking() {
                                                         field.onChange(newValue);
                                                         setSlotEndDateTime(newValue);
                                                         handleCalculateSlotDuration(slotStartDateTime, newValue);
+
                                                     }}
                                                     renderInput={(props) => <TextField {...props} />}
-                                                    format="YYYY-MM-DD HH:mm"
+                                                    format="DD-MM-YYYY HH:mm"
                                                 />
                                             </LocalizationProvider>
                                         )}
@@ -855,8 +736,12 @@ export default function Slotbooking() {
                 options={[
                     { label: `Booking ID: ${selectedEvent?.id}` },
                     { label: `Booking Info: ${selectedEvent?.title}` },
-                    { label: `Slot Start Date & Time: ${moment(selectedEvent?.start).format('YYYY-MM-DD HH:mm')}` },
-                    { label: `Slot End Date & Time: ${moment(selectedEvent?.end).format('YYYY-MM-DD HH:mm')}` },
+                    // { label: `Slot Start Date & Time: ${moment(selectedEvent?.start).format('YYYY-MM-DD HH:mm')}` },
+                    // { label: `Slot End Date & Time: ${moment(selectedEvent?.end).format('YYYY-MM-DD HH:mm')}` },
+
+                    { label: `Slot Start Date & Time: ${moment(selectedEvent?.start).format("DD/MM/YYYY HH:mm")}` },
+                    { label: `Slot End Date & Time: ${moment(selectedEvent?.end).format("DD/MM/YYYY HH:mm")}` },
+
                     { label: `Slot Duration: ${selectedEvent?.duration}` },
                     { label: `Allotted Chamber: ${selectedEvent?.resourceId}` },
 
@@ -907,10 +792,6 @@ const generateBookingID = async () => {
 }
 
 
-
-
-{/* <br /> */ }
-{/* <ChambersListForSlotBookingCalendar /> */ }
 
 
 
