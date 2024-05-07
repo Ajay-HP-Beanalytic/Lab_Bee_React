@@ -71,26 +71,6 @@ const Jobcard = ({ jobCardData }) => {
   const [observations, setObservations] = useState('');
 
 
-  const [reliabilityTaskRow, setReliabilityTaskRow] = useState([]);
-  const [reliabilityReportStatus, setReliabilityReportStatus] = useState('')
-
-
-  const fileInputRef = useRef(null);
-
-  // Function to handle the uploaded image:
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        // setCompanyLogoImage(reader.result);
-        alert('Reading')
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
-
   const [editJc, setEditJc] = useState(false)
   let { id } = useParams('id')
   if (!id) {
@@ -240,6 +220,7 @@ const Jobcard = ({ jobCardData }) => {
   const [jcNumberString, setJcumberString] = useState("");
   const [jcCount, setJcCount] = useState()
 
+  const [openModal, setOpenModal] = useState(false);
 
   // Function to get the current year and month:
   const getCurrentYearAndMonth = () => {
@@ -296,6 +277,9 @@ const Jobcard = ({ jobCardData }) => {
         setUsers(result.data)
       })
   }, [])
+
+
+
 
 
   // To submit the Job-card data and store it in a database:
@@ -545,6 +529,92 @@ const Jobcard = ({ jobCardData }) => {
   };
 
 
+  // const eutData = eutdetailsdata(i);
+
+  const staticOptions = [
+    { label: `Jc Number: ${jcNumberString}` },
+    { label: `Dc Number: ${dcNumber}` },
+    { label: `Po Number: ${poNumber}` },
+    { label: `Jc Open : ${jcOpenDate}` },
+    { label: `Test Incharge: ${testInchargeName}` },
+    { label: `Test Category: ${jcCategory}` },
+    { label: `Type of Requst: ${typeOfRequest}` },
+    { label: `Company Name: ${companyName}` },
+    { label: `Customer Name: ${customerName}` },
+    { label: `Customer Email: ${customerEmail}` },
+    { label: `Contact Number: ${customerNumber}` },
+    { label: `Project Name: ${projectName}` },
+    { label: `Reference Document(ifany): ${referanceDocs}` },
+    { label: `Sample Condition: ${sampleCondition}` },
+    { label: `Jc Status: ${jcStatus}` },
+    { label: `Jc Close State: ${jcCloseDate}` },
+    { label: `Jc Text: ${jcText}` },
+    { label: `Observations: ${observations}` },
+
+  ];
+
+  // const generateEutTableRows = () => {
+  //   return eutRows.map((row, index) => {
+  //     return (
+  //       <TableRow key={index}>
+  //         <TableCell>Nomenclature {index + 1}: {row.nomenclature}</TableCell>
+  //         <TableCell>Eut Description: {row.eutDescription}</TableCell>
+  //         <TableCell>Qty: {row.qty}</TableCell>
+  //         <TableCell>Part No: {row.partNo}</TableCell>
+  //         <TableCell>Model No: {row.modelNo}</TableCell>
+  //         <TableCell>Serial No: {row.serialNo}</TableCell>
+  //       </TableRow>
+  //     );
+  //   });
+  // };
+
+
+  // Combine static options with dynamically generated EUT details
+  const options = [
+    ...staticOptions,
+    // ...generateEutTableRows(),
+  ];
+
+  // Dynamically generate options for each EUT row
+  // ...eutRows.flatMap((row, index) => ([
+  //   { label: `Nomenclature ${index + 1}: ${row.nomenclature}` },
+  //   { label: `Eut Description : ${row.eutDescription}` },
+  //   { label: `Qty : ${row.qty}` },
+  //   { label: `Part No : ${row.partNo}` },
+  //   { label: `Model No : ${row.modelNo}` },
+  //   { label: `Serial No : ${row.serialNo}` }
+  // ])),
+
+  // ...testRows.flatMap((row, index) => ([
+  //   { label: `Test ${index + 1}: ${row.test}` },
+  //   { label: `nabl : ${row.nabl}` },
+  //   { label: `testStandard: ${row.testStandard}` },
+  //   { label: `referenceDocument : ${row.referenceDocument}` },
+
+  // ])),
+
+  // ...testdetailsRows.flatMap((row, index) => ([
+  //   { label: `Test ${index + 1}: ${row.testName}` },
+  //   { label: `Chamber : ${row.testChamber}` },
+  //   { label: `Eut Serial No: ${row.eutSerialNo}` },
+  //   { label: `Standard : ${row.standard}` },
+  //   { label: `Started By : ${row.testStartedBy}` },
+  //   { label: `Start Date & Time : ${row.startDate}` },
+  //   { label: `End Date & Time: ${row.endDate}` },
+  //   { label: `Duration(Hrs) : ${row.duration}` },
+  //   { label: `Ended By  : ${row.testEndedBy}` },
+  //   { label: `Remarks : ${row.remarks}` },
+  //   { label: `Report No: ${row.reportNumber}` },
+  //   { label: `Prepared By : ${row.preparedBy}` },
+  //   { label: `NABL Uploaded: ${row.nablUploaded}` },
+  //   { label: `Report Status : ${row.reportStatus}` },
+
+
+  // ]))
+
+  // ];
+
+
 
   // To clear the fields of job card:
   const handleClearJobcard = () => {
@@ -566,6 +636,32 @@ const Jobcard = ({ jobCardData }) => {
     setObservations('');
 
   }
+
+
+  // const handleOpenDialog = () => {
+  //   setOpenDialog(true);
+  // };
+
+  // // Function to close the dialog
+  // const handleCloseDialog = () => {
+  //   setOpenDialog(false);
+  // };
+
+  const handleOpenModal = () => {
+    setOpenModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setOpenModal(false);
+  };
+
+  // To Preview the fields of job card:
+  const handlePreviewJobcard = () => {
+    // handleOpenDialog();
+    handleOpenModal();
+
+  }
+
 
 
   const handleCloseJobcard = () => {
@@ -1399,14 +1495,35 @@ const Jobcard = ({ jobCardData }) => {
             {editJc ? 'Update' : 'Submit'}
           </Button>
 
+          <Button
+            sx={{ borderRadius: 3, mx: 0.5, mb: 1, bgcolor: "orange", color: "white", borderColor: "black" }}
+            variant="contained"
+            color="primary"
+            onClick={handlePreviewJobcard}
+          >
+            Preview
+          </Button>
 
-          {editJc ?
-            <JobCardComponent id={id} />
-            :
-            null
+          <CustomModal
+            open={openModal}
+            onClose={handleCloseModal}
+            title="Preview Jobcard Details"
+            options={options}
+            containTable={true}
+            tableData={[eutRows, testRows, testdetailsRows]}
+          />
+
+
+
+
+          {
+            editJc ?
+              <JobCardComponent id={id} />
+              :
+              null
           }
 
-        </Box>
+        </Box >
 
 
       </form >
