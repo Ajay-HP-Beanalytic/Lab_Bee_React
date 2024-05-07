@@ -159,8 +159,6 @@ function slotBookingAPIs(app) {
   app.post("/api/slotBooking/:booking_id", (req, res) => {
 
     const { formData } = req.body;
-    console.log('formData is', formData)
-    console.log('1', formData.customerPhone)
 
     const bookingId = req.params.booking_id;
     if (!bookingId) return res.status(400).json({ error: "Selected booking Id is missing or invalid" })
@@ -215,7 +213,7 @@ function slotBookingAPIs(app) {
   // Delete or remove the selected booking: 
   app.delete("/api/deleteBooking", (req, res) => {
     const { bookingID } = req.body;
-    const deleteBookings = "UPDATE bookings_table SET deleted_at = NOW() WHERE booking_id = ?";
+    const deleteBookings = "DELETE FROM bookings_table  WHERE booking_id = ?";
     db.query(deleteBookings, [bookingID], (error, result) => {
       if (error) {
         console.error("Error while marking the selected booking as deleted", error);

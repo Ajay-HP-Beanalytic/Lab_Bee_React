@@ -250,9 +250,55 @@ function createTestsListTable() {
 }
 
 
+////////////////////////////////////////////////////////////////////////////////////
+//Function to create a reliability_tasks table:
+function createReliabilityTasksTable() {
+    const sqlQuery = `
+    CREATE TABLE IF NOT EXISTS reliability_tasks (
+        id INT NOT NULL AUTO_INCREMENT,
+        task_description VARCHAR(1000),
+        PRIMARY KEY(id)
+    )`;
+
+    db.query(sqlQuery, function (err, result) {
+        if (err) {
+            console.log("Error occurred while creating reliability_tasks table", err)
+        } else {
+            // console.log("reliability_tasks table created successfully.")
+        }
+    })
+}
+
+
+//Function to create a 'reliability_tasks_details' table:
+function createReliabilityTasksDetailsTable() {
+    const createReliabilityTaskDetailsTableQuery = `
+    CREATE TABLE IF NOT EXISTS reliability_tasks_details (
+        id INT NOT NULL AUTO_INCREMENT,
+        jc_number VARCHAR(255),
+        task_description VARCHAR(1000),
+        task_assigned_by VARCHAR(1000),
+        task_start_date DATE,
+        task_end_date DATE,
+        task_assigned_to VARCHAR(1000),
+        task_status VARCHAR(1000),
+        task_completed_date DATE,
+        note_remarks VARCHAR(5000),
+        PRIMARY KEY(id)
+    )`;
+
+    db.query(createReliabilityTaskDetailsTableQuery, function (err, result) {
+        if (err) {
+            console.log("Error occurred while creating reliability_tasks_details table", err)
+        } else {
+            //console.log("jc_tests table created successfully.")
+        }
+    })
+}
+
+
 /// Job-card tables:
 /////////////////////////////////////////////////////////////////////////////////
-//Function to create a 'Jobcards' table:
 function createJobcardsTable() {
     const createJobcardsTableQuery = `
     CREATE TABLE IF NOT EXISTS bea_jobcards (
@@ -264,6 +310,7 @@ function createJobcardsTable() {
         test_category VARCHAR(1000),
         type_of_request VARCHAR(1000),
         test_incharge VARCHAR(1000),
+        jc_category VARCHAR(500),
         company_name VARCHAR(1000),
         customer_name VARCHAR(1000),
         customer_email VARCHAR(1000),
@@ -272,8 +319,8 @@ function createJobcardsTable() {
         sample_condition VARCHAR(500),
         referance_document VARCHAR(500),
         jc_status  VARCHAR(500),
+        reliability_report_status VARCHAR(500),
         jc_closed_date DATETIME,
-        jc_text VARCHAR(500),
         observations VARCHAR(500),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -350,9 +397,13 @@ function createTestDetailsTable() {
         eutSerialNo VARCHAR(1000),
         standard VARCHAR(1000),
         testStartedBy VARCHAR(500),
+        startTemp VARCHAR(500),
+        startRh VARCHAR(500),
         startDate DATETIME,
         endDate DATETIME,
         duration VARCHAR(2000),
+        endTemp VARCHAR(500),
+        endRh VARCHAR(500),
         testEndedBy VARCHAR(500),
         remarks VARCHAR(2000),
         reportNumber VARCHAR(500),
@@ -370,6 +421,9 @@ function createTestDetailsTable() {
         }
     })
 }
+
+
+
 
 ////////////////////////////////////////////////////////////////////////////////////
 //Function to create a users table:
@@ -484,6 +538,8 @@ module.exports = {
     createCustomerDetailsTable,
     createItemSoftModulestable,
     createTestsListTable,
+    createReliabilityTasksTable,
+    createReliabilityTasksDetailsTable,
 
 
     createJobcardsTable,

@@ -9,6 +9,7 @@ import UploadFileIcon from '@mui/icons-material/UploadFile';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Divider, IconButton, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Tooltip, Typography } from '@mui/material';
+import { serverBaseAddress } from '../Pages/APIPage';
 
 export default function AddTestsList() {
 
@@ -37,7 +38,7 @@ export default function AddTestsList() {
         }
 
         try {
-            const addTestRequest = await axios.post("http://localhost:4000/api/addTS1Tests/" + editId, {
+            const addTestRequest = await axios.post(`${serverBaseAddress}/api/addTS1Tests/` + editId, {
                 testName,
                 testCode,
                 testDescription,
@@ -84,7 +85,7 @@ export default function AddTestsList() {
 
         const fetchTestsList = async () => {
             try {
-                const testsURL = await axios.get("http://localhost:4000/api/getTS1Tests");
+                const testsURL = await axios.get(`${serverBaseAddress}/api/getTS1Tests`);
                 setTestsList(testsURL.data)
             } catch (error) {
                 console.error('Failed to fetch the data', error);
@@ -116,7 +117,7 @@ export default function AddTestsList() {
                 // Convert worksheet to an array of arrays & Filter out the first row (headers) from the dataArr
                 const dataArr = XLSX.utils.sheet_to_json(worksheet, { header: 1 }).slice(1);
 
-                // Check if the dataArr has at least one row with two columns (excluding headers)
+                // Check if the dataArr has at least one row with 4 columns (excluding headers)
                 if (dataArr.length > 1 && dataArr[0].length === 4) {
 
                     if (dataArr.length > 0) {
@@ -124,7 +125,7 @@ export default function AddTestsList() {
                             const [testName, testCode, testDescription, testCategory] = row;
 
                             try {
-                                const addTestsRequest = await axios.post("http://localhost:4000/api/addTS1Tests", {
+                                const addTestsRequest = await axios.post(`${serverBaseAddress}/api/addTS1Tests`, {
                                     testName,
                                     testCode,
                                     testDescription,
@@ -152,7 +153,7 @@ export default function AddTestsList() {
                         toast.error("All rows are empty or invalid.");
                     }
                 } else {
-                    toast.error("The Excel file must have exactly 2 columns (excluding headers).");
+                    toast.error("The Excel file must have exactly 4 columns (excluding headers).");
                 }
             };
             reader.readAsArrayBuffer(file);
@@ -180,7 +181,7 @@ export default function AddTestsList() {
         const confirmDelete = window.confirm('Are you sure you want to delete this test?');
 
         if (confirmDelete) {
-            fetch(`http://localhost:4000/api/getTS1Tests/${id}`, { method: 'DELETE', })
+            fetch(`${serverBaseAddress}/api/getTS1Tests/${id}`, { method: 'DELETE', })
                 .then(res => {
                     if (res.status === 200) {
                         const updatedTestsList = testsList.filter((item) => item.id !== id);
@@ -333,7 +334,7 @@ export default function AddTestsList() {
                 <br />
 
                 <TableContainer component={Paper} >
-                    <Table sx={{ minWidth: 650 }} aria-label="simple table">
+                    <Table sx={{ minWidth: 650 }} aria-label="simple table" size='small'>
                         <TableHead sx={{ backgroundColor: '#227DD4', fontWeight: 'bold' }}>
                             <TableRow>
                                 <TableCell>Sl No</TableCell>

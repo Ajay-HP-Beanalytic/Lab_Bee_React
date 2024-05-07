@@ -50,40 +50,44 @@ const JobCardComponent = () => {
 
 
 
-  // useEffect(() => {
-  //   axios.get(`${serverBaseAddress}/api/jobcard/${id}`)
-  //     .then(result => {
-  //       const data = result.data.jobcard;
-  //       setJobCard({
-  //         jcNumber: data.jc_number,
-  //         jcOpenDate: dayjs(data.jc_open_date).isValid() ? dayjs(data.jc_open_date).format('YYYY-MM-DD') : '',
-  //         jcCloseDate: dayjs(data.jc_closed_date).isValid() ? dayjs(data.jc_closed_date).format('YYYY-MM-DD') : '',
-  //         companyName: data.company_name,
-  //         typeOfRequest: data.type_of_request,
-  //         testCategory: data.test_category,
-  //         sampleCondition: data.sample_condition,
-  //         projectName: data.project_name,
-  //         customerName: data.customer_name,
-  //         customerEmail: data.customer_email,
-  //         customerPhone: data.customer_number,
-  //         testIncharge: data.test_incharge,
-  //         observations: data.observations,
-  //         jcStatus: data.jc_status
-
-
-
-  //       });
-  //     })
-  //     .catch(error => {
-  //       console.error(error);
-  //     });
-  // }, [id]);
-
-
   useEffect(() => {
     axios.get(`${serverBaseAddress}/api/jobcard/${id}`)
       .then(response => {
         const { jobcard, eut_details, tests, tests_details } = response.data;
+
+        // Parse and segregate date and time for tests_details
+        const parsedTestsDetails = tests_details.map((test, index) => {
+          const startDate = new Date(test.startDate);
+          const endDate = new Date(test.endDate);
+
+          const startDateObj = {
+            date: startDate.toISOString().split('T')[0],
+            time: startDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          };
+
+          const endDateObj = {
+            date: endDate.toISOString().split('T')[0],
+            time: endDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+          };
+
+          return {
+            ...test,
+            startDate: startDateObj,
+            endDate: endDateObj,
+            slNoCounter: index + 1
+          };
+
+        });
+
+
+        const parsedEUTDetails = eut_details.map((detail, index) => {
+          return {
+            ...detail,
+            slNoCounter: index + 1
+          };
+        });
+
+
         setJobCard({
           jcNumber: jobcard.jc_number,
           itemReceivedDate: dayjs(jobcard.item_received_date).isValid() ? dayjs(jobcard.item_received_date).format('YYYY-MM-DD') : '',
@@ -101,10 +105,12 @@ const JobCardComponent = () => {
           observations: jobcard.observations,
           jcStatus: jobcard.jc_status,
 
-          eutDetails: eut_details,
+
+          eutDetails: parsedEUTDetails,
           tests: tests,
-          testDetails: tests_details,
+          testDetails: parsedTestsDetails,
         });
+
       })
       .catch(error => {
         console.error("Error fetching job card data:", error);

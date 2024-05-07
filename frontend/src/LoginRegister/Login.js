@@ -255,7 +255,7 @@ export default function Login() {
                             type="email"
                             variant="outlined"
                             label='Email'
-                            placeholder="Enter your email">
+                          >
                             Email
                           </TextField>
                         </Grid>

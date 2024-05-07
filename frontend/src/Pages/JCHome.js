@@ -15,7 +15,7 @@ import { getCurrentMonthYear } from '../functions/UtilityFunctions';
 export default function JCHome() {
 
     // Define the table headers:
-    const JcTableHeadersText = ['Sl No', 'JC Number', 'Company', 'Customer Name', 'Contact Number', 'JC Status', 'Action'];
+    const JcTableHeadersText = ['Sl No', 'JC Number', 'JC Category', 'Company', 'Customer Name', 'Contact Number', 'JC Status', 'Action'];
 
     // State variables to hold the data fetched from the database:
 
@@ -43,7 +43,7 @@ export default function JCHome() {
     useEffect(() => {
 
         let requiredAPIdata = {
-            _fields: 'jc_number, company_name, customer_name, customer_number, jc_status',
+            _fields: 'jc_number, jc_category, company_name, customer_name, customer_number, jc_status',
             monthYear: jcMonthYear,
         }
 
@@ -172,6 +172,12 @@ export default function JCHome() {
                                 onChange={(event, value) => { setFilterRow(value ? [value] : []); }}
                                 getOptionLabel={(option) => option.jc_number || option.company_name}
                                 options={jcTableData}
+                                // filterOptions={(options, { inputValue }) =>
+                                //     options.filter((option) =>
+                                //         option.jc_number.toLowerCase().includes(inputValue.toLowerCase()) ||
+                                //         option.company_name.toLowerCase().includes(inputValue.toLowerCase())
+                                //     )
+                                // }
                                 renderInput={(params) => (
                                     <TextField {...params} label="Search Job-Card" variant="outlined" />
                                 )}
@@ -225,6 +231,7 @@ export default function JCHome() {
             <TableRow key={index} align="center">
                 <TableCell align="center">{index + 1}</TableCell>
                 <TableCell align="center">{row.jc_number}</TableCell>
+                <TableCell align="center">{row.jc_category}</TableCell>
                 <TableCell align="center">{row.company_name}</TableCell>
                 <TableCell align="center">{row.customer_name}</TableCell>
                 <TableCell align="center">{row.customer_number}</TableCell>
