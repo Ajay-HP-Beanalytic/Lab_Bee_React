@@ -44,18 +44,63 @@ function poInvoiceBackendAPIs(app) {
 
 
   // Get all po and invoice data to display that in a table:
-  app.get("/api/getPoInvoiceDataList", (req, res) => {
-    const getPoAndInvoiceList = `SELECT id, jc_number, jc_month, jc_category, rfq_number, rfq_value, po_number, po_value, invoice_number, invoice_value, status, remarks FROM po_invoice_table WHERE deleted_at IS NULL`;
 
-    db.query(getPoAndInvoiceList, (error, results) => {
+  // app.get("/api/getPoInvoiceDataList", (req, res) => {
+
+  //   const { monthYear } = req.query;
+  //   const [month, year] = monthYear.split('-');
+
+  //   const getPoAndInvoiceList = `SELECT id, jc_number, jc_month, jc_category, rfq_number, rfq_value, po_number, po_value, invoice_number, invoice_value, status, remarks FROM po_invoice_table WHERE deleted_at IS NULL`;
+
+
+  //   db.query(getPoAndInvoiceList, (error, results) => {
+  //     if (error) {
+  //       console.error("Error fetching PO and invoice data:", error);
+  //       res.status(500).json({ error: "Failed to retrieve PO and invoice data" });
+  //     } else {
+  //       res.status(200).json(result);
+  //     }
+  //   });
+  // })
+
+  app.get("/api/getPoInvoiceDataList", (req, res) => {
+
+    const { monthYear } = req.query;
+    const [month, year] = monthYear.split('-');
+
+    const getPoAndInvoiceList = `SELECT 
+                                id, jc_number, jc_month, jc_category, rfq_number, rfq_value, po_number, po_value, invoice_number, invoice_value, status, remarks 
+                                FROM po_invoice_table 
+                                WHERE DATE_FORMAT(jc_month, '%b-%Y') = ? `;
+
+
+    db.query(getPoAndInvoiceList, [month + '-' + year], (error, result) => {
       if (error) {
         console.error("Error fetching PO and invoice data:", error);
         res.status(500).json({ error: "Failed to retrieve PO and invoice data" });
       } else {
-        res.status(200).json(results);
+        res.status(200).json(result);
+        // res.send(result)
       }
     });
   })
+
+
+  //API to delete the selected po and invoice data:
+  app.delete('/api/deletePoData/:jc_number', (req, res) => {
+
+    const jc_number = req.params.jc_number;
+
+    const deleteQuery = "DELETE FROM po_invoice_table WHERE jc_number = ?";
+
+    db.query(deleteQuery, [jc_number], (error, result) => {
+      if (error) {
+        return res.status(500).json({ error: "An error occurred while deleting the selected PO JC" });
+      }
+      res.status(200).json({ message: "PO data for the selected JC number deleted successfully" });
+    });
+
+  });
 
 
 
@@ -63,7 +108,7 @@ function poInvoiceBackendAPIs(app) {
   app.get('/api/getPoData/:id', (req, res) => {
     const id = req.params.id;
 
-    const sqlQuery = `SELECT id, jc_number, jc_month, jc_category, rfq_number, rfq_value, po_number, po_value, invoice_number, invoice_value, status, remarks FROM po_invoice_table WHERE id = ? AND deleted_at IS NULL`;
+    const sqlQuery = `SELECT id, jc_number, jc_month, jc_category, rfq_number, rfq_value, po_number, po_value, invoice_number, invoice_value, status, remarks FROM po_invoice_table WHERE id = ?`;
 
     db.query(sqlQuery, [id], (error, result) => {
       if (error) {
@@ -148,7 +193,7 @@ function poInvoiceBackendAPIs(app) {
   // });
 
   app.get('/api/getPoDataYearMonth', (req, res) => {
-    const sqlQuery = `SELECT DISTINCT DATE_FORMAT(jc_month, '%b-%Y') AS monthYear FROM po_invoice_table WHERE deleted_at IS NULL`;
+    const sqlQuery = `SELECT DISTINCT DATE_FORMAT(jc_month, '%b-%Y') AS monthYear FROM po_invoice_table`;
 
     db.query(sqlQuery, (error, result) => {
       if (error) {
@@ -156,7 +201,6 @@ function poInvoiceBackendAPIs(app) {
       }
 
       const formattedData = result.map(row => row.monthYear);
-
       res.json(formattedData);
     });
   });

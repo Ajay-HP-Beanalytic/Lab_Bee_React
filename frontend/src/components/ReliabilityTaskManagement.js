@@ -11,9 +11,10 @@ import { toast } from 'react-toastify';
 import axios from 'axios';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { serverBaseAddress } from '../Pages/APIPage';
+import { useParams } from 'react-router-dom';
 
 
-const ReliabilityTaskManagement = ({ reliabilityTaskRow, setReliabilityTaskRow }) => {
+const ReliabilityTaskManagement = ({ reliabilityTaskRow, setReliabilityTaskRow, onReliabilityTaskRowChange }) => {
 
 
   // const [reliabilityTaskRow, setReliabilityTaskRow] = useState([{ id: 0, startDate: null, endDate: null, completedDate: null }]);
@@ -25,6 +26,28 @@ const ReliabilityTaskManagement = ({ reliabilityTaskRow, setReliabilityTaskRow }
   const tableHeaderStyle = { backgroundColor: '#0f6675', fontWeight: 'bold' }
 
   const tableCellStyle = { color: 'white' }
+
+
+  const [editJc, setEditJc] = useState(false)
+
+  let { id } = useParams('id')
+  if (!id) {
+    id = ''
+  }
+
+  useEffect(() => {
+    if (id) {
+      axios.get(`${serverBaseAddress}/api/jobcard/${id}`)
+        .then((res) => {
+
+          setReliabilityTaskRow(res.data.reliability_tasks_details)
+          console.log('aj11', res.data.reliability_tasks_details)
+
+          setEditJc(true)
+        })
+        .catch(error => console.error(error))
+    }
+  }, [])
 
   // Function to add the row:
   const handleAddNewRow = () => {
@@ -73,9 +96,11 @@ const ReliabilityTaskManagement = ({ reliabilityTaskRow, setReliabilityTaskRow }
     const updatedRows = [...reliabilityTaskRow];
     updatedRows[index] = { ...updatedRows[index], [field]: value };
 
-    console.log('updatedRows', updatedRows[index])
+    // console.log('updatedRows', updatedRows[index])
 
     setReliabilityTaskRow(updatedRows);
+
+    onReliabilityTaskRowChange(updatedRows)
   };
 
 
@@ -125,7 +150,6 @@ const ReliabilityTaskManagement = ({ reliabilityTaskRow, setReliabilityTaskRow }
 
             <TableBody>
               {reliabilityTaskRow.map((row, index) => (
-
                 <TableRow key={row.id}>
                   <TableCell>{index + 1}</TableCell>
 
@@ -134,8 +158,9 @@ const ReliabilityTaskManagement = ({ reliabilityTaskRow, setReliabilityTaskRow }
                       <InputLabel >Task Description</InputLabel>
                       <Select
                         label="task-description"
-                        value={row.taskDescription}
-                        onChange={(e) => handleTaskRowChange(index, 'taskDescription', e.target.value)}
+                        // value={row.taskDescription}
+                        value={row.task_description || ''}
+                        onChange={(e) => handleTaskRowChange(index, 'task_description', e.target.value)}
                       >
                         {reliabilityTasks.map((item) => (<MenuItem key={item.id} value={item.task_description}>{item.task_description}</MenuItem>))}
                       </Select>
@@ -174,8 +199,9 @@ const ReliabilityTaskManagement = ({ reliabilityTaskRow, setReliabilityTaskRow }
                       <InputLabel >Assigned By</InputLabel>
                       <Select
                         label="task-assigned-by"
-                        value={row.taskAssignedBy}
-                        onChange={(e) => handleTaskRowChange(index, 'taskAssignedBy', e.target.value)}
+                        // value={row.taskAssignedBy}
+                        value={row.task_assigned_by || ''}
+                        onChange={(e) => handleTaskRowChange(index, 'task_assigned_by', e.target.value)}
                       >
                         {users.map((item) => (<MenuItem key={item.id} value={item.name}>{item.name}</MenuItem>))}
                       </Select>
@@ -189,8 +215,9 @@ const ReliabilityTaskManagement = ({ reliabilityTaskRow, setReliabilityTaskRow }
                         label="Start Date"
                         variant="outlined"
                         margin="normal"
-                        value={reliabilityTaskRow[index].startDate ? dayjs(reliabilityTaskRow[index].startDate) : dateTimeValue}
-                        onChange={(date) => handleTaskRowChange(index, 'startDate', date ? date.toISOString() : null)}
+                        value={reliabilityTaskRow[index].task_start_date ? dayjs(reliabilityTaskRow[index].task_start_date) : null}
+                        // value={reliabilityTaskRow[index].startDate ? dayjs(reliabilityTaskRow[index].startDate) : dateTimeValue}
+                        onChange={(date) => handleTaskRowChange(index, 'task_start_date', date ? date.toISOString() : null)}
                         renderInput={(props) => <TextField {...props} />}
                         format="DD/MM/YYYY "
                       />
@@ -204,8 +231,9 @@ const ReliabilityTaskManagement = ({ reliabilityTaskRow, setReliabilityTaskRow }
                         label="End Date"
                         variant="outlined"
                         margin="normal"
-                        value={reliabilityTaskRow[index].endDate ? dayjs(reliabilityTaskRow[index].endDate) : dateTimeValue}
-                        onChange={(date) => handleTaskRowChange(index, 'endDate', date ? date.toISOString() : null)}
+                        value={reliabilityTaskRow[index].task_end_date ? dayjs(reliabilityTaskRow[index].task_end_date) : null}
+                        // value={reliabilityTaskRow[index].endDate ? dayjs(reliabilityTaskRow[index].endDate) : dateTimeValue}
+                        onChange={(date) => handleTaskRowChange(index, 'task_end_date', date ? date.toISOString() : null)}
                         renderInput={(props) => <TextField {...props} />}
                         format="DD/MM/YYYY "
                       />
@@ -215,11 +243,12 @@ const ReliabilityTaskManagement = ({ reliabilityTaskRow, setReliabilityTaskRow }
                   <TableCell >
 
                     <FormControl sx={{ width: '100%', borderRadius: 3 }} >
-                      <InputLabel >Assigned By</InputLabel>
+                      <InputLabel >Assigned To</InputLabel>
                       <Select
-                        label="task-assigned-by"
-                        value={row.taskAssignedTo}
-                        onChange={(e) => handleTaskRowChange(index, 'taskAssignedTo', e.target.value)}
+                        label="task-assigned-to"
+                        // value={row.taskAssignedTo}
+                        value={row.task_assigned_to || ''}
+                        onChange={(e) => handleTaskRowChange(index, 'task_assigned_to', e.target.value)}
                       >
                         {users.map((item) => (<MenuItem key={item.id} value={item.name}>{item.name}</MenuItem>))}
                       </Select>
@@ -231,8 +260,9 @@ const ReliabilityTaskManagement = ({ reliabilityTaskRow, setReliabilityTaskRow }
                     <FormControl sx={{ width: '100%', borderRadius: 3 }} >
                       <InputLabel > Task Status</InputLabel>
                       <Select label="task-status"
-                        value={row.taskStatus}
-                        onChange={(e) => handleTaskRowChange(index, 'taskStatus', e.target.value)}>
+                        // value={row.taskStatus}
+                        value={row.task_status || ''}
+                        onChange={(e) => handleTaskRowChange(index, 'task_status', e.target.value)}>
 
                         <MenuItem value="On-Going">On-Going</MenuItem>
                         <MenuItem value="On-Hold">On-Hold</MenuItem>
@@ -248,8 +278,9 @@ const ReliabilityTaskManagement = ({ reliabilityTaskRow, setReliabilityTaskRow }
                         label="Completed Date"
                         variant="outlined"
                         margin="normal"
-                        value={reliabilityTaskRow[index].completedDate ? dayjs(reliabilityTaskRow[index].completedDate) : dateTimeValue}
-                        onChange={(date) => handleTaskRowChange(index, 'completedDate', date ? date.toISOString() : null)}
+                        value={reliabilityTaskRow[index].task_completed_date ? dayjs(reliabilityTaskRow[index].task_completed_date) : null}
+                        // value={reliabilityTaskRow[index].completedDate ? dayjs(reliabilityTaskRow[index].completedDate) : dateTimeValue}
+                        onChange={(date) => handleTaskRowChange(index, 'task_completed_date', date ? date.toISOString() : null)}
                         renderInput={(props) => <TextField {...props} />}
                         format="DD/MM/YYYY"
                       />
@@ -258,8 +289,9 @@ const ReliabilityTaskManagement = ({ reliabilityTaskRow, setReliabilityTaskRow }
 
                   <TableCell >
                     <TextField style={{ align: "center" }} variant="outlined"
-                      value={row.noteRemarks}
-                      onChange={(e) => handleTaskRowChange(index, 'noteRemarks', e.target.value)} />
+                      // value={row.noteRemarks}
+                      value={row.note_remarks || ''}
+                      onChange={(e) => handleTaskRowChange(index, 'note_remarks', e.target.value)} />
                   </TableCell>
 
 
@@ -285,3 +317,169 @@ const ReliabilityTaskManagement = ({ reliabilityTaskRow, setReliabilityTaskRow }
 }
 
 export default ReliabilityTaskManagement
+
+
+
+
+//   < TableBody >
+// {
+//   reliabilityTaskRow.map((row, index) => (
+//     <TableRow key={row.id}>
+//       <TableCell>{index + 1}</TableCell>
+
+//       <TableCell >
+//         <FormControl sx={{ width: '100%', borderRadius: 3 }} >
+//           <InputLabel >Task Description</InputLabel>
+//           <Select
+//             label="task-description"
+//             // value={row.taskDescription}
+//             value={row.task_description || ''}
+//             onChange={(e) => handleTaskRowChange(index, 'taskDescription', e.target.value)}
+//           >
+//             {reliabilityTasks.map((item) => (<MenuItem key={item.id} value={item.task_description}>{item.task_description}</MenuItem>))}
+//           </Select>
+//         </FormControl>
+
+//         {/* <FormControl sx={{ width: '100%', borderRadius: 3 }}>
+//                       <InputLabel>Task Description</InputLabel>
+//                       <Select
+//                         label="task-description"
+//                         multiple
+//                         // value={row.taskDescription}
+//                         value={row.taskDescription || []} // Ensure value is an array
+//                         onChange={(e) => handleTaskRowChange(index, 'taskDescription', e.target.value)}
+
+//                         renderValue={(selected) => (
+//                           <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+//                             {selected.map((value) => (
+//                               <Chip key={value} label={value} />
+//                             ))}
+//                           </Box>
+//                         )}
+//                         MenuProps={MenuProps}
+//                       >
+//                         {reliabilityTasks.map((item) => (
+//                           <MenuItem key={item.id} value={item.task_description}>
+//                             {item.task_description}
+//                           </MenuItem>
+//                         ))}
+//                       </Select>
+//                     </FormControl> */}
+
+//       </TableCell>
+
+//       <TableCell >
+//         <FormControl sx={{ width: '100%', borderRadius: 3 }} >
+//           <InputLabel >Assigned By</InputLabel>
+//           <Select
+//             label="task-assigned-by"
+//             // value={row.taskAssignedBy}
+//             value={row.task_assigned_by || ''}
+//             onChange={(e) => handleTaskRowChange(index, 'taskAssignedBy', e.target.value)}
+//           >
+//             {users.map((item) => (<MenuItem key={item.id} value={item.name}>{item.name}</MenuItem>))}
+//           </Select>
+//         </FormControl>
+//       </TableCell>
+
+//       <TableCell >
+//         <LocalizationProvider dateAdapter={AdapterDayjs}>
+//           <DatePicker
+//             sx={{ width: '100%', borderRadius: 3 }}
+//             label="Start Date"
+//             variant="outlined"
+//             margin="normal"
+//             value={reliabilityTaskRow[index].task_start_date ? dayjs(reliabilityTaskRow[index].task_start_date) : null}
+//             // value={reliabilityTaskRow[index].startDate ? dayjs(reliabilityTaskRow[index].startDate) : dateTimeValue}
+//             onChange={(date) => handleTaskRowChange(index, 'startDate', date ? date.toISOString() : null)}
+//             renderInput={(props) => <TextField {...props} />}
+//             format="DD/MM/YYYY "
+//           />
+//         </LocalizationProvider>
+//       </TableCell>
+
+//       <TableCell >
+//         <LocalizationProvider dateAdapter={AdapterDayjs}>
+//           <DatePicker
+//             sx={{ width: '100%', borderRadius: 3 }}
+//             label="End Date"
+//             variant="outlined"
+//             margin="normal"
+//             value={reliabilityTaskRow[index].task_end_date ? dayjs(reliabilityTaskRow[index].task_end_date) : null}
+//             // value={reliabilityTaskRow[index].endDate ? dayjs(reliabilityTaskRow[index].endDate) : dateTimeValue}
+//             onChange={(date) => handleTaskRowChange(index, 'endDate', date ? date.toISOString() : null)}
+//             renderInput={(props) => <TextField {...props} />}
+//             format="DD/MM/YYYY "
+//           />
+//         </LocalizationProvider>
+//       </TableCell>
+
+//       <TableCell >
+
+//         <FormControl sx={{ width: '100%', borderRadius: 3 }} >
+//           <InputLabel >Assigned To</InputLabel>
+//           <Select
+//             label="task-assigned-to"
+//             // value={row.taskAssignedTo}
+//             value={row.task_assigned_to || ''}
+//             onChange={(e) => handleTaskRowChange(index, 'taskAssignedTo', e.target.value)}
+//           >
+//             {users.map((item) => (<MenuItem key={item.id} value={item.name}>{item.name}</MenuItem>))}
+//           </Select>
+//         </FormControl>
+//       </TableCell>
+
+//       <TableCell >
+
+//         <FormControl sx={{ width: '100%', borderRadius: 3 }} >
+//           <InputLabel > Task Status</InputLabel>
+//           <Select label="task-status"
+//             // value={row.taskStatus}
+//             value={row.task_status || ''}
+//             onChange={(e) => handleTaskRowChange(index, 'taskStatus', e.target.value)}>
+
+//             <MenuItem value="On-Going">On-Going</MenuItem>
+//             <MenuItem value="On-Hold">On-Hold</MenuItem>
+//             <MenuItem value="Completed">Completed</MenuItem>
+//           </Select>
+//         </FormControl>
+//       </TableCell>
+
+//       <TableCell >
+//         <LocalizationProvider dateAdapter={AdapterDayjs}>
+//           <DatePicker
+//             sx={{ width: '100%', borderRadius: 3 }}
+//             label="Completed Date"
+//             variant="outlined"
+//             margin="normal"
+//             value={reliabilityTaskRow[index].task_completed_date ? dayjs(reliabilityTaskRow[index].task_completed_date) : null}
+//             // value={reliabilityTaskRow[index].completedDate ? dayjs(reliabilityTaskRow[index].completedDate) : dateTimeValue}
+//             onChange={(date) => handleTaskRowChange(index, 'completedDate', date ? date.toISOString() : null)}
+//             renderInput={(props) => <TextField {...props} />}
+//             format="DD/MM/YYYY"
+//           />
+//         </LocalizationProvider>
+//       </TableCell>
+
+//       <TableCell >
+//         <TextField style={{ align: "center" }} variant="outlined"
+//           // value={row.noteRemarks}
+//           value={row.note_remarks || ''}
+//           onChange={(e) => handleTaskRowChange(index, 'noteRemarks', e.target.value)} />
+//       </TableCell>
+
+
+
+//       <TableCell>
+//         <IconButton size='small'>
+//           <Tooltip title='Remove Row' arrow>
+//             <RemoveIcon onClick={() => handleRemoveRow(row.id)} />
+//           </Tooltip>
+//         </IconButton>
+//       </TableCell>
+
+
+//     </TableRow>
+//   ))
+// }
+//             </ >

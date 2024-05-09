@@ -23,7 +23,7 @@ export default function Home() {
     //Initialize useForm Hook:
     const { register, handleSubmit, setValue, getValues, reset, watch, formState: { values, errors }, control } = useForm({
         defaultValues: {
-            jcOpenDate: dayjs(),
+            // jcOpenDate: dayjs(),
         },
     })
 
@@ -33,12 +33,15 @@ export default function Home() {
 
     const [openDialog, setOpenDialog] = useState(false)
     const [editPoData, setEditPoData] = useState(false)
-    const [jcOpenDate, setJcOpenDate] = useState()
+    const [jcOpenDate, setJcOpenDate] = useState(null)
     const [jcCategory, setJcCategory] = useState()
     const [jcStatus, setJcStatus] = useState()
     const [newJcAdded, setNewJcAdded] = useState(false)
 
     const [editId, setEditId] = useState('')
+
+
+
 
     const [selectedRowData, setSelectedRowData] = useState(null);
 
@@ -60,7 +63,8 @@ export default function Home() {
             const poData = response.data[0];
 
             setValue('jcNumber', poData.jc_number);
-            setJcOpenDate(dayjs(poData.jc_month))
+
+            setValue('jcOpenDate', dayjs(poData.jc_month));
 
             setValue('jcCategory', poData.jc_category);
             setJcCategory(poData.jc_category)
@@ -77,7 +81,6 @@ export default function Home() {
 
             setValue('remarks', poData.remarks);
             setEditId(poData.id)
-            console.log('editId after setting:', poData.id);
 
         } catch (error) {
             console.error('Error fetching booking data:', error);
@@ -93,6 +96,7 @@ export default function Home() {
         reset()
         setJcCategory('')
         setJcStatus('')
+        setJcOpenDate(null)
         setOpenDialog(false);
     };
 
@@ -118,7 +122,7 @@ export default function Home() {
             setNewJcAdded(!newJcAdded);
             toast.success(editId ? `Data Updated Successfully.` : `Data Submitted Successfully`)
             handleCloseDialog();
-            await reset()
+            reset()
 
         } catch (error) {
             console.error('Failed to submit the data', error);
@@ -129,56 +133,15 @@ export default function Home() {
     const onError = (errors) => { };
 
 
-    useEffect(() => {
-        const getMonthYearListOfPO = async () => {
-            try {
-                const response = await axios.get(`${serverBaseAddress}/api/getPoDataYearMonth`);
-                if (response.status === 200) {
-                    setMonthYearList(response.data);
-                } else {
-                    console.error('Failed to fetch PO Month list. Status:', response.status);
-                }
-            } catch (error) {
-                console.error('Failed to fetch the data', error);
-            }
-        }
-        getMonthYearListOfPO()
-    }, [poMonthYear, monthYearList])
-
-    console.log('monthYearList', monthYearList)
-
-
-    const handleMonthYearOfPo = (event) => {
-        setPoMonthYear(event.target.value)
-    }
-
-
     return (
         <>
-            {/* <Divider>
+            <Divider>
                 <Typography variant='h4' sx={{ color: '#003366' }}> Home </Typography>
             </Divider>
 
-            <br /> */}
+            <br />
 
-            <Typography variant='h4' sx={{ color: '#003366' }}> Home </Typography>
 
-            <Grid container sx={{ display: 'flex' }}>
-                <FormControl fullWidth sx={{ display: 'flex', justifyItems: 'flex-start', mt: 2, width: '25%', pb: 2 }}>
-                    <InputLabel>Select Month-Year</InputLabel>
-                    <Select
-                        label="Month-Year"
-                        type="text"
-                        onChange={handleMonthYearOfPo}
-                        value={poMonthYear}
-                    >
-                        {monthYearList.map((item, index) => (
-                            <MenuItem key={index} value={item}>{item}</MenuItem>
-                        ))}
-
-                    </Select>
-                </FormControl>
-            </Grid>
 
             <Button variant='contained' onClick={handleOpenDialog} sx={{ justifyItems: 'flex-end' }}>Add</Button>
 
@@ -213,7 +176,7 @@ export default function Home() {
                             </Grid>
 
                             <Grid item>
-                                <Controller
+                                {/* <Controller
                                     name="jcOpenDate"
                                     type="date"
                                     control={control}
@@ -226,6 +189,27 @@ export default function Home() {
                                                 onChange={(newValue) => {
                                                     field.onChange(newValue);
                                                     setJcOpenDate(newValue);
+                                                }}
+                                                renderInput={(props) => <TextField {...props} />}
+                                                format="YYYY-MM-DD"
+                                            />
+                                        </LocalizationProvider>
+                                    )}
+                                    {...register('jcOpenDate', { valueAsDate: true })}
+                                /> */}
+
+
+                                <Controller
+                                    name="jcOpenDate"
+                                    control={control}
+                                    render={({ field }) => (
+                                        <LocalizationProvider dateAdapter={AdapterDayjs}>
+                                            <DatePicker
+                                                sx={{ width: '52%', mt: 2, pr: 1, borderRadius: 3 }}
+                                                label="JC Date"
+                                                value={field.value || null} // Set the value using field.value
+                                                onChange={(newValue) => {
+                                                    field.onChange(newValue);
                                                 }}
                                                 renderInput={(props) => <TextField {...props} />}
                                                 format="YYYY-MM-DD"

@@ -76,12 +76,10 @@ const Jobcard = ({ jobCardData }) => {
 
 
   const [editJc, setEditJc] = useState(false)
-
   let { id } = useParams('id')
   if (!id) {
     id = ''
   }
-
   useEffect(() => {
     if (id) {
       axios.get(`${serverBaseAddress}/api/jobcard/${id}`)
@@ -112,11 +110,6 @@ const Jobcard = ({ jobCardData }) => {
           setEutRows(res.data.eut_details)
           setTestRows(res.data.tests)
           setTestDetailsRows(res.data.tests_details)
-
-
-          // setReliabilityTaskRow(res.data.reliability_tasks_details)
-          // console.log('aj', res.data.reliability_tasks_details)
-
 
           setEditJc(true)
         })
@@ -291,44 +284,6 @@ const Jobcard = ({ jobCardData }) => {
 
 
 
-  // Define a function to receive updated table data from ReliabilityTaskManagement
-  const handleReliabilityTaskRowChange = (updatedRows) => {
-    console.log('Updated reliability task rows:', updatedRows);
-    setReliabilityTaskRow(updatedRows);
-    // You can perform further actions with the updated data here
-  };
-
-
-  // const saveReliabilityTaskDetails = (reliabilityTaskData) => {
-  //   axios.post(`${serverBaseAddress}/api/reliabilityTaskDetails/:id`, { reliabilityTaskData, jcNumberString })
-  //     .then(response => {
-  //       console.log(response.data);
-  //       // Handle success (e.g., show a success message to the user)
-  //     })
-  //     .catch(error => {
-  //       console.error('Error saving reliability task details:', error);
-  //       // Handle error (e.g., show an error message to the user)
-  //     });
-  // };
-
-  const saveReliabilityTaskDetails = (reliabilityTaskData, id) => {
-    const isNewData = !reliabilityTaskData.some(task => task.id);
-
-    const endpoint = isNewData
-      ? `${serverBaseAddress}/api/reliabilityTaskDetails/`
-      : `${serverBaseAddress}/api/reliabilityTaskDetails/${id}`;
-
-    axios.post(endpoint, reliabilityTaskData)
-      .then(response => {
-        console.log(response.data);
-        // Handle success (e.g., show a success message to the user)
-      })
-      .catch(error => {
-        console.error('Error saving reliability task details:', error);
-        // Handle error (e.g., show an error message to the user)
-      });
-  };
-
 
 
   // To submit the Job-card data and store it in a database:
@@ -494,31 +449,81 @@ const Jobcard = ({ jobCardData }) => {
       })
 
 
-    //Call the function to save the reliability tasks details to store in the database
-    // saveReliabilityTaskDetails(reliabilityTaskRow)
+    // //Function to submit the reliability task allocation data:
+    // const reliabilityTaskAllocationData = (i) => {
 
-    // Define reliability task data for updating
-    const reliabilityTaskData = reliabilityTaskRow.map(row => ({
-      task_description: row.task_description,
-      task_assigned_by: row.task_assigned_by,
-      task_start_date: row.task_start_date,
-      task_end_date: row.task_end_date,
-      task_assigned_to: row.task_assigned_to,
-      task_status: row.task_status,
-      task_completed_date: row.task_completed_date,
-      note_remarks: row.note_remarks,
-      id: row.id // Include id for updating existing data
-    }));
+    //   return {
+    //     taskDescription: reliabilityTaskRow[i].taskDescription,
+    //     taskAssignedBy: reliabilityTaskRow[i].taskAssignedBy,
+    //     startDate: reliabilityTaskRow[i].startDate,
+    //     endDate: reliabilityTaskRow[i].endDate,
+    //     taskAssignedTo: reliabilityTaskRow[i].taskAssignedTo,
+    //     taskStatus: reliabilityTaskRow[i].taskStatus,
+    //     completedDate: reliabilityTaskRow[i].completedDate,
+    //     noteRemarks: reliabilityTaskRow[i].noteRemarks,
+    //     jcNumber: jcNumberString,
+    //   }
 
-    console.log('reliabilityTaskData', reliabilityTaskData)
-
-    // saveReliabilityTaskDetails(reliabilityTaskData, jcNumberString)
-
-    // {
-    //   jcCategory === 'Reliability' && (
-    //     saveReliabilityTaskDetails(reliabilityTaskRow, id)
-    //   )
     // }
+    // // console.log('rel data is', taskDescription, taskAssignedBy, startDate, endDate, taskAssignedTo, taskStatus, completedDate, noteRemarks)
+    // const taskNames = reliabilityTaskRow.map(item => item.taskDescription)
+    // console.log('rel data is', taskNames)
+
+
+    // Function to extract reliability task allocation data based on the index
+    // const reliabilityTaskAllocationData = reliabilityTaskRow.map(row => ({
+    //   taskDescription: row.taskDescription,
+    //   taskAssignedBy: row.taskAssignedBy,
+    //   startDate: row.startDate,
+    //   endDate: row.endDate,
+    //   taskAssignedTo: row.taskAssignedTo,
+    //   taskStatus: row.taskStatus,
+    //   completedDate: row.completedDate,
+    //   noteRemarks: row.noteRemarks,
+    //   jcNumber: jcNumberString,
+    // }));
+
+    // Log reliability task allocation data
+    // console.log('Reliability Task Allocation Data:', reliabilityTaskAllocationData);
+
+
+    const reliabilityTaskAllocationData = (i) => {
+
+      return {
+        taskDescription: reliabilityTaskRow[i].taskDescription,
+        taskAssignedBy: reliabilityTaskRow[i].taskAssignedBy,
+        startDate: reliabilityTaskRow[i].startDate,
+        endDate: reliabilityTaskRow[i].endDate,
+        taskAssignedTo: reliabilityTaskRow[i].taskAssignedTo,
+        taskStatus: reliabilityTaskRow[i].taskStatus,
+        completedDate: reliabilityTaskRow[i].completedDate,
+        noteRemarks: reliabilityTaskRow[i].noteRemarks,
+        jcNumber: jcNumberString,
+
+      }
+    };
+
+    const relTaskLists = reliabilityTaskRow.map(item => item.taskDescription)
+    console.log('relTaskLists', relTaskLists)
+    axios.post(`${serverBaseAddress}/api/reliability_tasks/taskName/`, { jcNumberString, relTaskLists })
+      .then((res) => {
+        reliabilityTaskRow.map((row, index) => {
+          axios.post(`${serverBaseAddress}/api/reliabilityTaskDetails/`, reliabilityTaskAllocationData(index))
+            .then(
+              res => {
+                if (res.status === 200) {
+                  console.log(res.data);
+                  toast.success('Reliability Details are added successfully')
+                }
+              }
+            )
+            .catch(error => console.log(error))
+        })
+      })
+
+
+
+
 
     navigate('/jobcard_dashboard')
   }
@@ -1362,11 +1367,12 @@ const Jobcard = ({ jobCardData }) => {
 
         {/* Fetch the table component for the task management */}
         {jcCategory === 'Reliability' && (
+          // <ReliabilityTaskManagement />
           <ReliabilityTaskManagement
             reliabilityTaskRow={reliabilityTaskRow}
             setReliabilityTaskRow={setReliabilityTaskRow}
-            onReliabilityTaskRowChange={handleReliabilityTaskRowChange}
           />
+
         )}
 
         <Box sx={{ paddingTop: '5', paddingBottom: '5px', marginTop: '5px', marginBottom: '5px', border: 1, borderColor: 'primary.main' }}>
