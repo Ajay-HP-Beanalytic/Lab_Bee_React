@@ -4,8 +4,12 @@ import {
   Autocomplete,
   Box,
   FormControl,
+  Grid,
   IconButton,
+  InputLabel,
+  MenuItem,
   Paper,
+  Select,
   Table,
   TableBody,
   TableCell,
@@ -23,6 +27,8 @@ import { toast } from 'react-toastify';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import moment from 'moment';
+import { getCurrentMonthYear } from '../functions/UtilityFunctions';
+import ConfirmationDialog from './ConfirmationDialog';
 
 
 export default function PoInvoiceStatusTable({ newJcAdded, openDialog, setOpenDialog, onRowClick }) {
@@ -31,6 +37,16 @@ export default function PoInvoiceStatusTable({ newJcAdded, openDialog, setOpenDi
   const [poDataList, setPoDataList] = useState([])
   const [page, setPage] = useState(0);                          //To setup pages of the table
   const [rowsPerPage, setRowsPerPage] = useState(10);            //To show the number of rows per page
+
+  const [filterRow, setFilterRow] = useState([]);               //To filter out the table based on search
+  const [refresh, setRefresh] = useState(false)
+
+  const [poMonthYear, setPoMonthYear] = useState(getCurrentMonthYear())
+  const [monthYearList, setMonthYearList] = useState([])
+
+
+  const [openDeleteDataDialog, setOpenDeleteDataDialog] = useState(false);
+  const [selectedItemForDeletion, setSelectedItemForDeletion] = useState(null);
 
 
   // Custom style for the table header
@@ -45,50 +61,119 @@ export default function PoInvoiceStatusTable({ newJcAdded, openDialog, setOpenDi
   const currentYearAndMonth = `${currentMonthName}-${currentYear}`;
 
 
-  // Use Effect to fetch the po and invoice list:
   useEffect(() => {
-    const getPoAndInvoiceList = async () => {
+
+    let requiredAPIdata = {
+      _fields: 'jc_number, jc_month, jc_category, rfq_number, rfq_value, po_number, po_value, invoice_number, invoice_value, status, remarks',
+      monthYear: poMonthYear,
+    }
+
+    const urlParameters = new URLSearchParams(requiredAPIdata).toString()
+
+
+    if (filterRow.length > 0) {
+      setFilterRow(filterRow)
+    } else {
+
+      const getPoAndInvoiceList = async () => {
+        try {
+          const response = await axios.get(`${serverBaseAddress}/api/getPoInvoiceDataList?` + urlParameters);
+
+
+
+          if (response.status === 200) {
+            setPoDataList(response.data);
+          } else {
+            console.error('Failed to fetch PO Month list. Status:', response.status);
+          }
+        } catch (error) {
+          console.error('Failed to fetch the data', error);
+        }
+      }
+      getPoAndInvoiceList()
+    }
+  }, [newJcAdded, poMonthYear, filterRow, refresh])
+
+
+  useEffect(() => {
+    const getMonthYearListOfPO = async () => {
       try {
-        const response = await axios.get(`${serverBaseAddress}/api/getPoInvoiceDataList`);
+        const response = await axios.get(`${serverBaseAddress}/api/getPoDataYearMonth`);
         if (response.status === 200) {
-          setPoDataList(response.data);
-          console.log('response.data', response.data)
+          setMonthYearList(response.data);
         } else {
-          console.error('Failed to fetch the list. Status:', response.status);
+          console.error('Failed to fetch PO Month list. Status:', response.status);
         }
       } catch (error) {
         console.error('Failed to fetch the data', error);
       }
-    };
-    // console.log('Effect triggered');
-    // toast.success('Updated')
-    getPoAndInvoiceList();
-    // Only refetch data if newJcAdded changes
-    if (newJcAdded) {
-      getPoAndInvoiceList();
     }
-
-
-  }, [newJcAdded]);
-
-
+    getMonthYearListOfPO()
+  }, [poMonthYear, monthYearList])
 
 
 
+  const handleMonthYearOfPo = (event) => {
+    setPoMonthYear(event.target.value)
+  }
 
-  console.log('poDataList', poDataList)
+
+
 
   const editSelectedRowData = (item) => {
-    // alert(`Selected JC is: ${item.jc_number}`)
     setOpenDialog(true)
     onRowClick(item);
   }
 
 
-  const deleteSelectedRowData = (e, item) => {
-    e.stopPropagation()
-    alert(`JC to be deleted is: ${item.jc_number}`)
+  // Function to open the dialog and set the selected item for deletion
+  const handleOpenDeleteDataDialog = (e, item) => {
+    e.stopPropagation();
+    setSelectedItemForDeletion(item);
+    setOpenDeleteDataDialog(true);
+
   }
+
+  // Function to close the dialog
+  const handleCloseDeleteDataDialog = () => {
+    setOpenDeleteDataDialog(false)
+  }
+
+  const handleDeleteData = async () => {
+
+    if (!selectedItemForDeletion) {
+      console.error('No item selected for deletion');
+      return;
+    }
+
+    // USe JavaScript 'encodeURIComponent' to encode the strings with the forward slashes(/)
+    const jcNumberToBeDeleted = encodeURIComponent(selectedItemForDeletion.jc_number);
+
+    try {
+      const deleteResponse = await axios.delete(`${serverBaseAddress}/api/deletePoData/${jcNumberToBeDeleted}`);
+
+      if (deleteResponse.status === 200) {
+        toast.success('PO Data Deleted Successfully');
+        setOpenDeleteDataDialog(false)
+        setRefresh(!refresh)
+      }
+    } catch (error) {
+      console.error('Failed to delete data:', error);
+    }
+
+  }
+
+
+  // Function to change the page of a table using Tablepagination
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage)
+  };
+
+  // Function to handle or show the rows per page of a table using Tablepagination
+  const handleRowsPerPage = (event) => {
+    setRowsPerPage(+event.target.value)
+    setPage(0)
+  };
 
 
   const tableHeadersList = [
@@ -110,7 +195,26 @@ export default function PoInvoiceStatusTable({ newJcAdded, openDialog, setOpenDi
   return (
     <>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pb: 2 }}>
-        <Typography variant='h5'>Data for: {currentYearAndMonth}</Typography>
+
+
+        <Grid container sx={{ display: 'flex' }}>
+          <FormControl fullWidth sx={{ display: 'flex', justifyItems: 'flex-start', mt: 2, width: '25%', pb: 2 }}>
+            <InputLabel>Select Month-Year</InputLabel>
+            <Select
+              label="Month-Year"
+              type="text"
+              onChange={handleMonthYearOfPo}
+              value={poMonthYear}
+            >
+              {monthYearList.map((item, index) => (
+                <MenuItem key={index} value={item}>{item}</MenuItem>
+              ))}
+
+            </Select>
+          </FormControl>
+        </Grid>
+
+        {/* <Typography variant='h5'>Data for: {currentYearAndMonth}</Typography> */}
 
         <FormControl sx={{ width: '25%' }}>
           <Autocomplete
@@ -166,7 +270,8 @@ export default function PoInvoiceStatusTable({ newJcAdded, openDialog, setOpenDi
                     })}
 
                     <TableCell align="center">
-                      <IconButton variant='outlined' size='small' onClick={(e) => deleteSelectedRowData(e, item)}>
+                      {/* <IconButton variant='outlined' size='small' onClick={(e) => deleteSelectedRowData(e, item)}> */}
+                      <IconButton variant='outlined' size='small' onClick={(e) => handleOpenDeleteDataDialog(e, item)}>
                         <Tooltip title='Remove' arrow>
                           <DeleteIcon fontSize="inherit" />
                         </Tooltip>
@@ -185,11 +290,22 @@ export default function PoInvoiceStatusTable({ newJcAdded, openDialog, setOpenDi
           <TablePagination
             rowsPerPageOptions={[10, 25, 50]}
             component="div"
-          // count={filteredChambersList.length}
-          // rowsPerPage={rowsPerPage}
-          // page={page}
-          // onPageChange={handleChangePage}
-          // onRowsPerPageChange={handleRowsPerPage}
+            count={poDataList.length}
+            rowsPerPage={rowsPerPage}
+            page={page}
+            onPageChange={handleChangePage}
+            onRowsPerPageChange={handleRowsPerPage}
+          />
+
+
+          <ConfirmationDialog
+            open={openDeleteDataDialog}
+            onClose={handleCloseDeleteDataDialog}
+            onConfirm={handleDeleteData}
+            title='Delete Confirmation'
+            contentText='Are you sure you want to delete this data?'
+            confirmButtonText="Delete"
+            cancelButtonText="Cancel"
           />
 
         </Box >

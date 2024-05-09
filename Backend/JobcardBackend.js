@@ -592,6 +592,118 @@ function jobcardsAPIs(app) {
         })
     });
 
+
+
+    ///////////////////////////////////////////////////////////////////////////////////////////
+    // Reliability tasks data base backend API endpoints:
+    app.post('/api/reliabilityTaskDetails/', (req, res) => {
+        let { reliabilityTaskData, jcNumberString } = req.body;
+
+        // Loop through each object in the reliabilityTaskData array
+        reliabilityTaskData.forEach(taskData => {
+            const {
+                task_description,
+                task_assigned_by,
+                task_start_date,
+                task_end_date,
+                task_assigned_to,
+                task_status,
+                task_completed_date,
+                note_remarks
+            } = taskData;
+
+            const formattedTaskStartDate = moment(task_start_date).format('YYYY-MM-DD')
+            const formattedTaskEndDate = moment(task_end_date).format('YYYY-MM-DD')
+            const formattedTaskCompletedDate = moment(task_completed_date).format('YYYY-MM-DD')
+
+            const sqlQuery = "INSERT INTO reliability_tasks_details(jc_number, task_description, task_assigned_by, task_start_date, task_end_date, task_assigned_to, task_status, task_completed_date, note_remarks) VALUES (?,?,?,?,?,?,?,?,?)";
+
+            const values = [
+                jcNumberString,
+                task_description,
+                task_assigned_by,
+                formattedTaskStartDate,
+                formattedTaskEndDate,
+                task_assigned_to,
+                task_status,
+                formattedTaskCompletedDate,
+                note_remarks
+            ];
+
+            db.query(sqlQuery, values, (error, result) => {
+                if (error) {
+                    console.log("Error inserting reliability task details:", error)
+                    return res.status(500).json({ message: "Internal server error" });
+                } else {
+                    res.status(200).json({ message: "Reliability Task Data Added Successfully" });
+                }
+            });
+        })
+
+        res.status(200).json({ message: "Reliability Task Data Added Successfully" });
+    });
+
+
+
+    app.post('/api/reliabilityTaskDetails/:jc_number', (req, res) => {
+        const { id } = req.params;
+
+        const {
+            jcNumberString,
+            task_description,
+            task_assigned_by,
+            task_start_date,
+            task_end_date,
+            task_assigned_to,
+            task_status,
+            task_completed_date,
+            note_remarks,
+
+        } = req.body;
+        // const formattedStartDate = covertDateTime(startDate)
+        // const formattedEndDate = covertDateTime(endDate)
+
+        console.log('id', id)
+        console.log(task_description, task_assigned_by, task_start_date, task_end_date, task_assigned_to, task_status, task_completed_date, note_remarks, jcNumberString)
+
+        const sqlQuery = `
+        UPDATE reliability_tasks_details
+        SET 
+          task_description = ?,
+          task_assigned_by = ?,
+          task_start_date = ? ,
+          task_end_date = ? ,
+          task_assigned_to = ? ,
+          task_status = ? ,
+          task_completed_date = ? ,
+          note_remarks = ?
+        WHERE id = ? AND jc_number = ? `;
+
+        const values = [
+            task_description,
+            task_assigned_by,
+            task_start_date,
+            task_end_date,
+            task_assigned_to,
+            task_status,
+            task_completed_date,
+            note_remarks,
+            id,
+            jcNumberString
+        ];
+
+        db.query(sqlQuery, values, (error, result) => {
+            if (error) {
+                console.log("Error updating reliability task details:", error)
+                return res.status(500).json({ message: "Internal server error", error });
+            } else {
+                res.status(200).json({ message: "Reliability Task Details Updated Successfully" });
+            }
+        });
+    });
+
+    ///////////////////////////////////////////////////////////////////////////////////////////
+
     // One single end point to "GET" all details based on jc_number used for editing
     app.get('/api/jobcard/:id', (req, res) => {
         const id = req.params.id;
@@ -601,23 +713,39 @@ function jobcardsAPIs(app) {
             if (error) return res.status(500).json({ error })
             output['jobcard'] = result[0]
             const jc_number = result[0].jc_number
+
+            // Fetch data from eut_details table
             sqlQuery = "SELECT * FROM eut_details WHERE jc_number = ?"
             db.query(sqlQuery, [jc_number], (error, result) => {
                 if (error) return res.status(500).json({ error })
-                output['eut_details'] = result
+                output['eut_details'] = result;
+
+                // Fetch data from jc_tests table
                 sqlQuery = "SELECT * FROM jc_tests WHERE jc_number = ?"
                 db.query(sqlQuery, [jc_number], (error, result) => {
                     if (error) return res.status(500).json({ error })
-                    output['tests'] = result
+                    output['tests'] = result;
+
+                    // Fetch data from tests_details table
                     sqlQuery = "SELECT * FROM tests_details WHERE jc_number = ?"
                     db.query(sqlQuery, [jc_number], (error, result) => {
                         if (error) return res.status(500).json({ error })
-                        output['tests_details'] = result
-                        res.send(output)
+                        output['tests_details'] = result;
+
+                        // Fetch data from reliability_tasks_details table
+                        sqlQuery = "SELECT * FROM reliability_tasks_details WHERE jc_number = ?";
+                        db.query(sqlQuery, [jc_number], (error, result) => {
+                            if (error) return res.status(500).json({ error });
+                            output['reliability_tasks_details'] = result;
+
+                            // Send the combined output
+                            res.send(output)
+                        })
                     })
                 })
             })
-        })
+        });
+
     });
 
 
@@ -641,3 +769,116 @@ function jobcardsAPIs(app) {
 
 
 module.exports = { jobcardsAPIs }
+
+
+
+
+
+
+
+
+///////////////////////////////////////////////////////////////////////////////////////////
+// Reliability tasks data base backend API endpoints:
+// app.post('/api/reliabilityTaskDetails/', (req, res) => {
+//     let { reliabilityTaskData, jcNumberString } = req.body;
+
+//     // Loop through each object in the reliabilityTaskData array
+//     reliabilityTaskData.forEach(taskData => {
+//         const {
+//             taskDescription,
+//             taskAssignedBy,
+//             startDate,
+//             endDate,
+//             taskAssignedTo,
+//             taskStatus,
+//             completedDate,
+//             noteRemarks
+//         } = taskData;
+
+//         const formattedTaskStartDate = moment(startDate).format('YYYY-MM-DD')
+//         const formattedTaskEndDate = moment(endDate).format('YYYY-MM-DD')
+//         const formattedTaskCompletedDate = moment(completedDate).format('YYYY-MM-DD')
+
+//         // console.log('reliabilityTaskTableData is', taskData)
+//         // console.log('jcNumberString is', jcNumberString)
+
+//         const sqlQuery = "INSERT INTO reliability_tasks_details(jc_number, task_description, task_assigned_by, task_start_date, task_end_date, task_assigned_to, task_status, task_completed_date, note_remarks) VALUES (?,?,?,?,?,?,?,?,?)";
+
+//         const values = [
+//             jcNumberString,
+//             taskDescription,
+//             taskAssignedBy,
+//             formattedTaskStartDate,
+//             formattedTaskEndDate,
+//             taskAssignedTo,
+//             taskStatus,
+//             formattedTaskCompletedDate,
+//             noteRemarks
+//         ];
+
+//         db.query(sqlQuery, values, (error, result) => {
+//             if (error) {
+//                 console.log("Error inserting reliability task details:", error)
+//                 return res.status(500).json({ message: "Internal server error" });
+//             } else {
+//                 res.status(200).json({ message: "Reliability Task Data Added Successfully" });
+//             }
+//         });
+//     })
+
+//     res.status(200).json({ message: "Reliability Task Data Added Successfully" });
+// });
+
+
+
+// app.post('/api/reliabilityTaskDetails/:id', (req, res) => {
+//     const { id } = req.params;
+
+//     const {
+//         taskDescription,
+//         taskAssignedBy,
+//         startDate,
+//         endDate,
+//         taskAssignedTo,
+//         taskStatus,
+//         completedDate,
+//         noteRemarks
+//     } = req.body;
+//     // const formattedStartDate = covertDateTime(startDate)
+//     // const formattedEndDate = covertDateTime(endDate)
+//     const sqlQuery = `
+//         UPDATE reliability_tasks_details
+//         SET
+//           task_description = ?,
+//           task_assigned_by = ?,
+//           task_start_date = ? ,
+//           task_end_date = ? ,
+//           task_assigned_to = ? ,
+//           task_status = ? ,
+//           task_completed_date = ? ,
+//           note_remarks = ?
+//         WHERE jc_number = ? `;
+
+//     const values = [
+//         taskDescription,
+//         taskAssignedBy,
+//         startDate,
+//         endDate,
+//         taskAssignedTo,
+//         taskStatus,
+//         completedDate,
+//         noteRemarks,
+//         id
+//     ];
+
+//     db.query(sqlQuery, values, (error, result) => {
+//         if (error) {
+//             console.log("Error updating reliability task details:", error)
+//             return res.status(500).json({ message: "Internal server error", error });
+//         } else {
+//             res.status(200).json({ message: "Reliability Task Details Updated Successfully" });
+//         }
+//     });
+// });
+
+///////////////////////////////////////////////////////////////////////////////////////////
