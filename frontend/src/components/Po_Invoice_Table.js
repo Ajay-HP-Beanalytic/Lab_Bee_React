@@ -29,12 +29,15 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import moment from 'moment';
 import { getCurrentMonthYear } from '../functions/UtilityFunctions';
 import ConfirmationDialog from './ConfirmationDialog';
+import SearchBar from './SearchBar';
+import DateRangeFilter from './DateRangeFilter';
 
 
 export default function PoInvoiceStatusTable({ newJcAdded, openDialog, setOpenDialog, onRowClick }) {
 
 
   const [poDataList, setPoDataList] = useState([])
+  const [originalPoDataList, setOriginalPoDataList] = useState([]);
   const [page, setPage] = useState(0);                          //To setup pages of the table
   const [rowsPerPage, setRowsPerPage] = useState(10);            //To show the number of rows per page
 
@@ -83,6 +86,7 @@ export default function PoInvoiceStatusTable({ newJcAdded, openDialog, setOpenDi
 
           if (response.status === 200) {
             setPoDataList(response.data);
+            setOriginalPoDataList(response.data)
           } else {
             console.error('Failed to fetch PO Month list. Status:', response.status);
           }
@@ -192,6 +196,40 @@ export default function PoInvoiceStatusTable({ newJcAdded, openDialog, setOpenDi
     { id: 'actions', label: 'Action' }
   ]
 
+
+  //Function for the search bar and to filter the table based on the user search input
+  const [searchInputText, setSearchInputText] = useState("")
+
+
+  const onChangeOfSearchInput = (e) => {
+    const searchText = e.target.value.toLowerCase(); // Convert search text to lowercase
+    setSearchInputText(searchText);
+
+
+    const filteredData = originalPoDataList.filter(item => (
+      item.jc_number.toLowerCase().includes(searchText) ||
+      item.jc_month.toLowerCase().includes(searchText) ||
+      item.jc_category.toLowerCase().includes(searchText) ||
+      item.rfq_number.toLowerCase().includes(searchText) ||
+      item.rfq_value.toLowerCase().includes(searchText) ||
+      item.po_number.toLowerCase().includes(searchText) ||
+      item.po_value.toLowerCase().includes(searchText) ||
+      item.invoice_number.toLowerCase().includes(searchText) ||
+      item.invoice_value.toLowerCase().includes(searchText) ||
+      item.status.toLowerCase().includes(searchText) ||
+      item.remarks.toLowerCase().includes(searchText)
+    ));
+
+    // Update the poDataList with the filtered data
+    setPoDataList(filteredData);
+  };
+
+
+  const onClearSearchInput = () => {
+    setSearchInputText("")
+    setPoDataList(originalPoDataList);
+  }
+
   return (
     <>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', pb: 2 }}>
@@ -212,25 +250,21 @@ export default function PoInvoiceStatusTable({ newJcAdded, openDialog, setOpenDi
 
             </Select>
           </FormControl>
+
+          {/* Import DateRange Filter Component */}
+          <DateRangeFilter />
         </Grid>
 
-        {/* <Typography variant='h5'>Data for: {currentYearAndMonth}</Typography> */}
 
-        <FormControl sx={{ width: '25%' }}>
-          <Autocomplete
-            disablePortal
-            // onChange={(event, value) => { setFilterRow(value ? [value] : []); }}
-            // getOptionLabel={(option) => option.chamber_name || option.chamber_name || option.calibration_status || option.chamber_status}
-            // options={chambersList}
-            renderInput={(params) => (
-              <TextField
-                {...params}
-                label="Filter the table"
-                variant="outlined"
-              />
-            )}
-          />
-        </FormControl>
+
+        {/* searchbar component */}
+        <SearchBar
+          placeholder='Search'
+          searchInputText={searchInputText}
+          onChangeOfSearchInput={onChangeOfSearchInput}
+          onClearSearchInput={onClearSearchInput}
+        />
+
       </Box>
 
       {poDataList.length === 0 ? 'No Data Found' :
@@ -314,53 +348,3 @@ export default function PoInvoiceStatusTable({ newJcAdded, openDialog, setOpenDi
   )
 }
 
-
-
-
-{/* <TableBody>
-              {poDataList.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((item, index) => (
-                <TableRow key={index}
-                  align='center'
-                >
-                  <TableCell component="th" scope="row">
-                    {index + 1}
-                  </TableCell>
-                  <TableCell align="center">{item.jc_number}</TableCell>
-                  <TableCell align="center">{item.jc_month}</TableCell>
-                  <TableCell align="center">{item.jc_category}</TableCell>
-                  <TableCell align="center">{item.rfq_number}</TableCell>
-                  <TableCell align="center">{item.rfq_value}</TableCell>
-                  <TableCell align="center">{item.po_number}</TableCell>
-                  <TableCell align="center">{item.po_value}</TableCell>
-                  <TableCell align="center">{item.invoice_number}</TableCell>
-                  <TableCell align="center">{item.invoice_value}</TableCell>
-                  <TableCell align="center">{item.status}</TableCell>
-                  <TableCell align="center">{item.remarks}</TableCell>
-
-                  <TableCell align="center">
-
-                    <IconButton variant='outlined' size='small' onClick={() => editSelectedChamber(index, item.id)}>
-                      <Tooltip title='Edit Test' arrow>
-                        <EditIcon fontSize="inherit" />
-                      </Tooltip>
-                    </IconButton> 
-
-
-                    <IconButton variant='outlined' size='small' onClick={() => deleteSelectedChamber(item.id)}>
-                      <Tooltip title='Delete Test' arrow>
-                        <DeleteIcon fontSize="inherit" />
-                      </Tooltip>
-                    </IconButton>
-
-                  </TableCell>
-
-                </TableRow>
-              ))}
-            </TableBody> */}
-
-
-{/* <IconButton variant='outlined' size='small' onClick={() => editSelectedChamber(index, item.id)}>
-                      <Tooltip title='Edit Test' arrow>
-                        <EditIcon fontSize="inherit" />
-                      </Tooltip>
-                    </IconButton> */}
