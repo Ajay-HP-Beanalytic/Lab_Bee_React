@@ -2,6 +2,7 @@ const { db } = require("./db");
 
 const dayjs = require('dayjs');
 const moment = require('moment');
+// const { getFinancialYear } = require('../frontend/src/functions/UtilityFunctions');
 
 
 function poInvoiceBackendAPIs(app) {
@@ -12,8 +13,8 @@ function poInvoiceBackendAPIs(app) {
     const { formData } = req.body;
 
     const sqlQuery = `
-    INSERT INTO po_invoice_table (jc_number, jc_month, jc_category, rfq_number, rfq_value, po_number, po_value, invoice_number, invoice_value, status, remarks)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    INSERT INTO po_invoice_table (jc_number, jc_month, jc_category, rfq_number, rfq_value, po_number, po_value, po_status, invoice_number, invoice_value, invoice_status, payment_status, remarks)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
     const formattedJcOpenDate = moment(formData.jcOpenDate).format('YYYY-MM-DD');
 
@@ -25,12 +26,13 @@ function poInvoiceBackendAPIs(app) {
       formData.rfqValue,
       formData.poNumber,
       formData.poValue,
+      formData.poStatus,
       formData.invoiceNumber,
       formData.invoiceValue,
-      formData.jcStatus,
+      formData.invoiceStatus,
+      formData.paymentStatus,
       formData.remarks
     ];
-
 
     db.query(sqlQuery, values, (error, result) => {
       if (error) {
@@ -69,7 +71,7 @@ function poInvoiceBackendAPIs(app) {
     const [month, year] = monthYear.split('-');
 
     const getPoAndInvoiceList = `SELECT 
-                                id, jc_number, jc_month, jc_category, rfq_number, rfq_value, po_number, po_value, invoice_number, invoice_value, status, remarks 
+                                id, jc_number, jc_month, jc_category, rfq_number, rfq_value, po_number, po_value, po_status, invoice_number, invoice_value, invoice_status, payment_status, remarks
                                 FROM po_invoice_table 
                                 WHERE DATE_FORMAT(jc_month, '%b-%Y') = ? `;
 
@@ -108,7 +110,7 @@ function poInvoiceBackendAPIs(app) {
   app.get('/api/getPoData/:id', (req, res) => {
     const id = req.params.id;
 
-    const sqlQuery = `SELECT id, jc_number, jc_month, jc_category, rfq_number, rfq_value, po_number, po_value, invoice_number, invoice_value, status, remarks FROM po_invoice_table WHERE id = ?`;
+    const sqlQuery = `SELECT id, jc_number, jc_month, jc_category, rfq_number, rfq_value, po_number, po_value, po_status, invoice_number, invoice_value, invoice_status, payment_status, remarks FROM po_invoice_table WHERE id = ?`;
 
     db.query(sqlQuery, [id], (error, result) => {
       if (error) {
@@ -137,9 +139,11 @@ function poInvoiceBackendAPIs(app) {
             rfq_value = ?,
             po_number = ?,
             po_value = ?,
+            po_status = ?,
             invoice_number = ?,
             invoice_value = ?,
-            status = ?,
+            invoice_status = ?,
+            payment_status = ?,
             remarks = ?
         WHERE id = ?
     `;
@@ -153,13 +157,15 @@ function poInvoiceBackendAPIs(app) {
       formData.rfqValue,
       formData.poNumber,
       formData.poValue,
+      formData.poStatus,
       formData.invoiceNumber,
       formData.invoiceValue,
-      formData.jcStatus,
+      formData.invoiceStatus,
+      formData.paymentStatus,
       formData.remarks,
       formData.id,
     ];
-    // console.log('update values', values)
+
 
     db.query(sqlQuery, values, (error, result) => {
       if (error) {
@@ -204,6 +210,131 @@ function poInvoiceBackendAPIs(app) {
       res.json(formattedData);
     });
   });
+
+
+  // Backend code to fetch the financial years:
+  // app.get('/api/getPoDataFinancialYear', (req, res) => {
+  //   const sqlQuery = `
+  //   SELECT DISTINCT 
+  //     jc_month
+  //   FROM po_invoice_table
+  // `;
+
+  //   db.query(sqlQuery, (error, result) => {
+  //     if (error) {
+  //       return res.status(500).json({ error: "An error occurred while fetching data" });
+  //     }
+
+  //     // Process the fetched data to calculate financial years
+  //     const financialYears = result.map(row => {
+  //       const jc_month = new Date(row.jc_month);
+  //       return getFinancialYear(jc_month);
+  //     });
+
+  //     res.json(financialYears);
+  //   });
+  // });
+
+
+  app.get('/api/getPoDataFinancialYear', (req, res) => {
+    const sqlQuery = `
+      SELECT DISTINCT 
+        jc_month
+      FROM po_invoice_table
+    `;
+
+
+    // const sqlQuery = `
+    //                 SELECT DISTINCT
+    //                 CONCAT(
+    //                   DATE_FORMAT(jc_month, '%b-%Y'),
+    //                   ' (',
+    //                   CONCAT(
+    //                     DATE_FORMAT(jc_month, '%b'),
+    //                     '-',
+    //                     IF(MONTH(jc_month) < 4, YEAR(jc_month) - 1, YEAR(jc_month)),
+    //                     ' to ',
+    //                     CONCAT(DATE_FORMAT(jc_month, '%b'), '-'),
+    //                     IF(MONTH(jc_month) < 4, YEAR(jc_month), YEAR(jc_month) + 1)
+    //                   ),
+    //                   ')'
+    //                 ) AS financialYear
+    //               FROM po_invoice_table;`
+
+    db.query(sqlQuery, (error, result) => {
+      if (error) {
+        return res.status(500).json({ error: "An error occurred while fetching data" });
+      }
+
+      // Process the fetched data to calculate financial years
+      const financialYears = result.map(row => {
+        const jc_month = new Date(row.jc_month);
+        const currentMonthIndex = jc_month.getMonth();
+        const currentYear = jc_month.getFullYear();
+
+        const startYear = currentMonthIndex < 3 ? currentYear - 1 : currentYear;
+        const endYear = currentMonthIndex < 3 ? currentYear : currentYear + 1;
+
+        const startMonth = currentMonthIndex < 3 ? 'Apr' : 'Apr';
+        const endMonth = currentMonthIndex < 3 ? 'Mar' : 'Mar';
+
+        return `${startMonth}-${startYear} to ${endMonth}-${endYear}`;
+      });
+
+      res.json(financialYears);
+    });
+  });
+
+
+
+
+
+
+  app.get('/api/getPoStatusData/:monthYear', (req, res) => {
+    const { monthYear } = req.params;
+
+    const [month, year] = monthYear.split('-');
+
+    const getPoStatusDataQuery = `
+                      SELECT
+                        SUM(CASE WHEN po_status = 'PO Received' THEN 1 ELSE 0 END) AS receivedPoCount,
+                        SUM(CASE WHEN po_status = 'PO Not Received' THEN 1 ELSE 0 END) AS notReceivedPoCount,
+                        SUM(CASE WHEN po_status = 'PO Received' THEN po_value ELSE 0 END) AS receivedPoSum,
+                        SUM(CASE WHEN po_status = 'PO Not Received' THEN po_value ELSE 0 END) AS notReceivedPoSum,
+
+
+                        SUM(CASE WHEN invoice_status = 'Invoice Sent' THEN 1 ELSE 0 END) AS invoiceSentCount,
+                        SUM(CASE WHEN invoice_status = 'Invoice Not Sent' THEN 1 ELSE 0 END) AS invoiceNotSentCount,
+                        SUM(CASE WHEN invoice_status = 'Invoice Sent' THEN invoice_value ELSE 0 END) AS invoiceSentSum,
+                        SUM(CASE WHEN invoice_status = 'Invoice Not Sent' THEN invoice_value ELSE 0 END) AS invoiceNotSentSum,
+
+                        SUM(CASE WHEN payment_status = 'Payment Received' THEN 1 ELSE 0 END) AS paymentReceivedCount,
+                        SUM(CASE WHEN payment_status = 'Payment Not Received' THEN 1 ELSE 0 END) AS paymentNotReceivedCount,
+                        SUM(CASE WHEN payment_status = 'Payment on Hold' THEN 1 ELSE 0 END) AS paymentOnHoldCount,
+                        SUM(CASE WHEN payment_status = 'Payment on Hold' THEN invoice_value ELSE 0 END) AS paymentOnHoldSum
+
+
+                      FROM 
+                        po_invoice_table 
+                      WHERE 
+                        DATE_FORMAT(jc_month, '%b-%Y') = ?
+                      `;
+
+
+    db.query(getPoStatusDataQuery, [`${month}-${year}`], (error, result) => {
+      if (error) {
+        console.error("Error fetching PO Status data:", error);
+        res.status(500).json({ error: "Failed to retrieve PO Status data" });
+      } else {
+        res.status(200).json(result); // Send the first row of the result (assuming only one row is returned)
+      }
+    });
+  });
+
+
+
+
+
 
 
 

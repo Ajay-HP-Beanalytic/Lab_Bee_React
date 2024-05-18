@@ -4,7 +4,7 @@ import {
   TableRow, Paper, Grid, InputLabel, MenuItem, FormControl, Select, FormControlLabel, Radio, RadioGroup, FormLabel, IconButton, Tooltip, Divider, Accordion, AccordionSummary, AccordionDetails
 } from '@mui/material';
 
-import moment from 'moment';
+
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
@@ -68,7 +68,7 @@ const Jobcard = ({ jobCardData }) => {
   const [referanceDocs, setReferanceDocs] = useState('')
   const [jcStatus, setJcStatus] = useState('Open');
   const [jcCloseDate, setJcCloseDate] = useState(null);
-  const [jcText, setJcText] = useState('');
+  // const [jcText, setJcText] = useState('');
   const [observations, setObservations] = useState('');
 
   const [reliabilityReportStatus, setReliabilityReportStatus] = useState('')
@@ -105,7 +105,7 @@ const Jobcard = ({ jobCardData }) => {
           setJcStatus(res.data.jobcard.jc_status)
           setReliabilityReportStatus(res.data.jobcard.reliability_report_status)
           setJcCloseDate(res.data.jobcard.jc_closed_date)
-          setJcText(res.data.jobcard.jc_text)
+          // setJcText(res.data.jobcard.jc_text)
           setObservations(res.data.jobcard.observations)
 
 
@@ -293,40 +293,7 @@ const Jobcard = ({ jobCardData }) => {
 
   // Define a function to receive updated table data from ReliabilityTaskManagement
   const handleReliabilityTaskRowChange = (updatedRows) => {
-    console.log('Updated reliability task rows:', updatedRows);
     setReliabilityTaskRow(updatedRows);
-    // You can perform further actions with the updated data here
-  };
-
-
-  // const saveReliabilityTaskDetails = (reliabilityTaskData) => {
-  //   axios.post(`${serverBaseAddress}/api/reliabilityTaskDetails/:id`, { reliabilityTaskData, jcNumberString })
-  //     .then(response => {
-  //       console.log(response.data);
-  //       // Handle success (e.g., show a success message to the user)
-  //     })
-  //     .catch(error => {
-  //       console.error('Error saving reliability task details:', error);
-  //       // Handle error (e.g., show an error message to the user)
-  //     });
-  // };
-
-  const saveReliabilityTaskDetails = (reliabilityTaskData, id) => {
-    const isNewData = !reliabilityTaskData.some(task => task.id);
-
-    const endpoint = isNewData
-      ? `${serverBaseAddress}/api/reliabilityTaskDetails/`
-      : `${serverBaseAddress}/api/reliabilityTaskDetails/${id}`;
-
-    axios.post(endpoint, reliabilityTaskData)
-      .then(response => {
-        console.log(response.data);
-        // Handle success (e.g., show a success message to the user)
-      })
-      .catch(error => {
-        console.error('Error saving reliability task details:', error);
-        // Handle error (e.g., show an error message to the user)
-      });
   };
 
 
@@ -358,169 +325,170 @@ const Jobcard = ({ jobCardData }) => {
         jcStatus,
         reliabilityReportStatus,
         jcCloseDate,
-        jcText,
         observations,
 
       }).then(res => {
-        // console.log(res.data)
         { editJc ? toast.success('JobCard Updated Successfully') : toast.success('JobCard Created Successfully') }
+        console.log('jcCategory', jcCategory)
       })
     } catch (error) {
       console.error('Error submitting Job-Card:', error);
     }
 
+    if (jcCategory === 'TS1') {
+      console.log('ts1')
 
-    // Function to extract EUT details based on the index
-    const eutdetailsdata = (i) => {
+      // Function to extract EUT details based on the index
+      const eutdetailsdata = (i) => {
 
-      return {
+        return {
 
-        nomenclature: eutRows[i].nomenclature,
-        eutDescription: eutRows[i].eutDescription,
-        qty: eutRows[i].qty,
-        partNo: eutRows[i].partNo,
-        modelNo: eutRows[i].modelNo,
-        serialNo: eutRows[i].serialNo,
-        jcNumber: jcNumberString,
-      }
-    }
-
-    // First we should send all the serial numbers. (so that they can be inserted or deleted)
-    const serialNos = eutRows.map(item => item.serialNo)
-    axios.post(`${serverBaseAddress}/api/eutdetails/serialNos/`, { jcNumberString, serialNos })
-      .then(res => {
-        // console.log(res.data);
-        // Iterating over eutRows using map to submit data to the server
-        eutRows.map((row, index) => {
-          //console.log('tata', index);
-          axios.post(`${serverBaseAddress}/api/eutdetails/`, eutdetailsdata(index))
-            .then(
-              res => {
-                if (res.status === 200) {
-                  // toast.success('eutdetails  Submitted Succesfully')
-                  // this generates multiple toasts for multiple euts
-                }
-              }
-            )
-            .catch((error) => console.log(error))
-        })
-
-      })
-      .catch(error => console.error(error))
-
-
-    // Function to extract tests data based on the index
-    const testsdata = (i) => {
-      return {
-        test: testRows[i].test,
-        nabl: testRows[i].nabl,
-        testStandard: testRows[i].testStandard,
-        referenceDocument: testRows[i].referenceDocument,
-        jcNumber: jcNumberString,
-      }
-    }
-
-    // first sync tests (add or delete) based on test name
-    const tests = testRows.map(item => item.test)
-    axios.post(`${serverBaseAddress}/api/tests_sync/names/`, { jcNumberString, tests })
-      .then(() => {
-
-        // Iterating over testRows using map to submit data to the server
-        testRows.map((row, index) => {
-          axios.post(`${serverBaseAddress}/api/tests/`, testsdata(index))
-            .then(
-              res => {
-                if (res.status === 200) {
-                  // toast.success('Tests Submitted Succesfully')
-                  // this generates multiple toasts for multiple tests
-                }
-              }
-            )
-            .catch(error => console.log(error))
-        })
-      })
-      .catch(error => console.log(error))
-
-
-    // Function to extract test details based on the index
-    const testdetailsdata = (i) => {
-
-
-      return {
-
-        testName: testdetailsRows[i].testName,
-        testChamber: testdetailsRows[i].testChamber,
-        eutSerialNo: testdetailsRows[i].eutSerialNo,
-        standard: testdetailsRows[i].standard,
-        testStartedBy: testdetailsRows[i].testStartedBy,
-
-        startTemp: testdetailsRows[i].startTemp,
-        startRh: testdetailsRows[i].startRh,
-
-        startDate: testdetailsRows[i].startDate,
-        endDate: testdetailsRows[i].endDate,
-        duration: testdetailsRows[i].duration,
-
-        endTemp: testdetailsRows[i].endTemp,
-        endRh: testdetailsRows[i].endRh,
-
-        testEndedBy: testdetailsRows[i].testEndedBy,
-        remarks: testdetailsRows[i].remarks,
-        reportNumber: testdetailsRows[i].reportNumber,
-        preparedBy: testdetailsRows[i].preparedBy,
-        nablUploaded: testdetailsRows[i].nablUploaded,
-        reportStatus: testdetailsRows[i].reportStatus,
-        jcNumber: jcNumberString,
+          nomenclature: eutRows[i].nomenclature,
+          eutDescription: eutRows[i].eutDescription,
+          qty: eutRows[i].qty,
+          partNo: eutRows[i].partNo,
+          modelNo: eutRows[i].modelNo,
+          serialNo: eutRows[i].serialNo,
+          jcNumber: jcNumberString,
+        }
       }
 
+      // First we should send all the serial numbers. (so that they can be inserted or deleted)
+      const serialNos = eutRows.map(item => item.serialNo)
+      axios.post(`${serverBaseAddress}/api/eutdetails/serialNos/`, { jcNumberString, serialNos })
+        .then(res => {
+          eutRows.map((row, index) => {
+            axios.post(`${serverBaseAddress}/api/eutdetails/`, eutdetailsdata(index))
+              .then(
+                res => {
+                  if (res.status === 200) {
+                  }
+                }
+              )
+              .catch((error) => console.log(error))
+          })
+
+        })
+        .catch(error => console.error(error))
+
+
+      // Function to extract tests data based on the index
+      const testsdata = (i) => {
+        return {
+          test: testRows[i].test,
+          nabl: testRows[i].nabl,
+          testStandard: testRows[i].testStandard,
+          referenceDocument: testRows[i].referenceDocument,
+          jcNumber: jcNumberString,
+        }
+      }
+
+      // first sync tests (add or delete) based on test name
+      const tests = testRows.map(item => item.test)
+      axios.post(`${serverBaseAddress}/api/tests_sync/names/`, { jcNumberString, tests })
+        .then(() => {
+
+          // Iterating over testRows using map to submit data to the server
+          testRows.map((row, index) => {
+            axios.post(`${serverBaseAddress}/api/tests/`, testsdata(index))
+              .then(
+                res => {
+                  if (res.status === 200) {
+                  }
+                }
+              )
+              .catch(error => console.log(error))
+          })
+        })
+        .catch(error => console.log(error))
+
+
+      // Function to extract test details based on the index
+      const testdetailsdata = (i) => {
+        return {
+          testName: testdetailsRows[i].testName,
+          testChamber: testdetailsRows[i].testChamber,
+          eutSerialNo: testdetailsRows[i].eutSerialNo,
+          standard: testdetailsRows[i].standard,
+          testStartedBy: testdetailsRows[i].testStartedBy,
+
+          startTemp: testdetailsRows[i].startTemp,
+          startRh: testdetailsRows[i].startRh,
+
+          startDate: testdetailsRows[i].startDate,
+          endDate: testdetailsRows[i].endDate,
+          duration: testdetailsRows[i].duration,
+
+          endTemp: testdetailsRows[i].endTemp,
+          endRh: testdetailsRows[i].endRh,
+
+          testEndedBy: testdetailsRows[i].testEndedBy,
+          remarks: testdetailsRows[i].remarks,
+          reportNumber: testdetailsRows[i].reportNumber,
+          preparedBy: testdetailsRows[i].preparedBy,
+          nablUploaded: testdetailsRows[i].nablUploaded,
+          reportStatus: testdetailsRows[i].reportStatus,
+          jcNumber: jcNumberString,
+        }
+
+      }
+
+      // first sync tests (add or delete) based on test name
+      const testNames = testdetailsRows.map(item => item.testName)
+      axios.post(`${serverBaseAddress}/api/testdetails_sync/names/`, { jcNumberString, testNames })
+        .then((res) => {
+          testdetailsRows.map((row, index) => {
+            axios.post(`${serverBaseAddress}/api/testdetails/`, testdetailsdata(index))
+              .then(
+                res => {
+                  if (res.status === 200) {
+                  }
+                }
+              )
+              .catch(error => console.log(error))
+          })
+        })
+
     }
 
-    // first sync tests (add or delete) based on test name
-    const testNames = testdetailsRows.map(item => item.testName)
-    axios.post(`${serverBaseAddress}/api/testdetails_sync/names/`, { jcNumberString, testNames })
-      .then((res) => {
-        // Iterating over testdetailsRows using map to submit data to the server
-        testdetailsRows.map((row, index) => {
-          axios.post(`${serverBaseAddress}/api/testdetails/`, testdetailsdata(index))
-            .then(
-              res => {
+    // Handle RE specific data
+    if (jcCategory === 'Reliability') {
+      console.log('re')
+
+      // Function to extract test details based on the index
+      const relTaskData = (i) => {
+        return {
+          task_description: reliabilityTaskRow[i].task_description,
+          task_assigned_by: reliabilityTaskRow[i].task_assigned_by,
+          task_start_date: reliabilityTaskRow[i].task_start_date,
+          task_end_date: reliabilityTaskRow[i].task_end_date,
+          task_assigned_to: reliabilityTaskRow[i].task_assigned_to,
+          task_status: reliabilityTaskRow[i].task_status,
+          task_completed_date: reliabilityTaskRow[i].task_completed_date,
+          note_remarks: reliabilityTaskRow[i].note_remarks,
+          jcNumberString: jcNumberString
+        }
+      }
+
+
+      const taskDescriptions = reliabilityTaskRow.map(item => item.task_description);
+
+      axios.post(`${serverBaseAddress}/api/relTasks/taskName/`, { task_description: taskDescriptions, jcNumberString })
+        .then(res => {
+          reliabilityTaskRow.forEach((row, index) => {
+            axios.post(`${serverBaseAddress}/api/relTasks/`, relTaskData(index))
+              .then(res => {
                 if (res.status === 200) {
-                  // console.log(res.data);
                 }
-              }
-            )
-            .catch(error => console.log(error))
+              })
+              .catch((error) => console.log('Error in relTasks API for index', index, ':', error));
+          });
         })
-      })
+        .catch(error => console.error('Error in taskName API:', error));
+    }
 
-
-    //Call the function to save the reliability tasks details to store in the database
-    // saveReliabilityTaskDetails(reliabilityTaskRow)
-
-    // Define reliability task data for updating
-    const reliabilityTaskData = reliabilityTaskRow.map(row => ({
-      task_description: row.task_description,
-      task_assigned_by: row.task_assigned_by,
-      task_start_date: row.task_start_date,
-      task_end_date: row.task_end_date,
-      task_assigned_to: row.task_assigned_to,
-      task_status: row.task_status,
-      task_completed_date: row.task_completed_date,
-      note_remarks: row.note_remarks,
-      id: row.id // Include id for updating existing data
-    }));
-
-    console.log('reliabilityTaskData', reliabilityTaskData)
-
-    // saveReliabilityTaskDetails(reliabilityTaskData, jcNumberString)
-
-    // {
-    //   jcCategory === 'Reliability' && (
-    //     saveReliabilityTaskDetails(reliabilityTaskRow, id)
-    //   )
-    // }
-
-    navigate('/jobcard_dashboard')
+    // navigate('/jobcard_dashboard')
+    navigate('/jobcard_dashboard', { state: { updated: true } });
   }
 
 
@@ -583,7 +551,7 @@ const Jobcard = ({ jobCardData }) => {
     { label: `Sample Condition: ${sampleCondition}` },
     { label: `Jc Status: ${jcStatus}` },
     { label: `Jc Close State: ${jcCloseDate}` },
-    { label: `Jc Text: ${jcText}` },
+    // { label: `Jc Text: ${jcText}` },
     { label: `Observations: ${observations}` },
 
   ];
@@ -611,7 +579,7 @@ const Jobcard = ({ jobCardData }) => {
     setSampleCondition('');
     setReferanceDocs('');
     setJcStatus('');
-    setJcText('');
+    // setJcText('');
     setJcCloseDate('');
     setObservations('');
 

@@ -11,6 +11,7 @@ import axios from 'axios';
 import { toast } from 'react-toastify';
 import { useParams } from 'react-router-dom';
 import { getCurrentMonthYear } from '../functions/UtilityFunctions';
+import ChamberRunHours from '../components/ChamberRunHours';
 
 
 
@@ -27,18 +28,52 @@ export default function Home() {
         },
     })
 
-    let jcCategoryNames = [{ id: 1, label: 'TS1' }, { id: 2, label: 'TS2' }, { id: 3, label: 'RE' }, { id: 4, label: 'ITEM' }, { id: 5, label: 'Others' }]
-    let jcStatusNames = [{ id: 1, label: 'Open' }, { id: 2, label: 'Running' }, { id: 3, label: 'Closed' }];
+    let jcCategoryNames = [
+        { id: 1, label: 'TS1' },
+        { id: 2, label: 'TS2' },
+        { id: 3, label: 'RE' },
+        { id: 4, label: 'ITEM' },
+        { id: 5, label: 'Others' }
+    ]
+
+    // let paymentStatusNames = [
+    //     { id: 1, label: 'Open / Test or Work not started' },
+    //     { id: 2, label: 'Test or Work in Progress' },
+    //     { id: 3, label: 'Closed / Test or Work Completed' },
+    //     { id: 4, label: 'Report in progress' },
+    //     { id: 5, label: 'Report Completed' },
+    //     { id: 6, label: 'Invoice Sent' },
+    //     { id: 7, label: 'Payment Received' },
+    // ];
+
+    let poStatusOptions = [
+        { id: 1, label: 'PO Received' },
+        { id: 2, label: 'PO Not Received' },
+    ];
+
+    let invoiceStatusOptions = [
+        { id: 1, label: 'Invoice Sent' },
+        { id: 2, label: 'Invoice Not Sent' },
+    ];
+
+    let paymentStatusOptions = [
+        { id: 1, label: 'Payment Received' },
+        { id: 2, label: 'Payment Not Received' },
+        { id: 3, label: 'Payment on Hold' },
+    ];
 
 
     const [openDialog, setOpenDialog] = useState(false)
     const [editPoData, setEditPoData] = useState(false)
     const [jcOpenDate, setJcOpenDate] = useState(null)
     const [jcCategory, setJcCategory] = useState()
-    const [jcStatus, setJcStatus] = useState()
+
+    const [poStatus, setPoStatus] = useState('')
+    const [invoiceStatus, setInvoiceStatus] = useState('')
+    const [paymentStatus, setPaymentStatus] = useState('')
     const [newJcAdded, setNewJcAdded] = useState(false)
 
-    const [editId, setEditId] = useState('')
+    const [editId, setEditId] = useState(null)
 
 
 
@@ -73,11 +108,18 @@ export default function Home() {
             setValue('rfqValue', poData.rfq_value);
             setValue('poNumber', poData.po_number);
             setValue('poValue', poData.po_value);
+
+            setValue('poStatus', poData.po_status);
+            setPoStatus(poData.po_status)
+
             setValue('invoiceNumber', poData.invoice_number);
             setValue('invoiceValue', poData.invoice_value);
 
-            setValue('jcStatus', poData.status);
-            setJcStatus(poData.status)
+            setValue('invoiceStatus', poData.invoice_status);
+            setInvoiceStatus(poData.invoice_status)
+
+            setValue('paymentStatus', poData.payment_status);
+            setPaymentStatus(poData.payment_status)
 
             setValue('remarks', poData.remarks);
             setEditId(poData.id)
@@ -95,9 +137,13 @@ export default function Home() {
     const handleCloseDialog = () => {
         reset()
         setJcCategory('')
-        setJcStatus('')
+        setPoStatus(null)
+        setInvoiceStatus(null)
+        setPaymentStatus('')
         setJcOpenDate(null)
         setOpenDialog(false);
+        setEditPoData(false)
+        setEditId(null)
     };
 
 
@@ -105,24 +151,39 @@ export default function Home() {
         setJcCategory(event.target.value)
     }
 
-    const handleJcStatus = (event) => {
-        setJcStatus(event.target.value)
+    const handlePoStatus = (event) => {
+        setPoStatus(event.target.value)
+    }
+
+    const handleInvoiceStatus = (event) => {
+        setInvoiceStatus(event.target.value)
+    }
+
+    const handlePaymentStatus = (event) => {
+        setPaymentStatus(event.target.value)
     }
 
 
     //Function to submit the form data:
     const onSubmitForm = async (data) => {
-
-        const completePoAndInvoiceData = { ...data, id: editId }
-
         try {
-            const submitData = await axios.post(`${serverBaseAddress}/api/addPoInvoice/` + editId, {
-                formData: completePoAndInvoiceData
-            });
+            if (editId) {
+                const completePoAndInvoiceData = { ...data, id: editId };
+                await axios.post(`${serverBaseAddress}/api/addPoInvoice/${editId}`, {
+                    formData: completePoAndInvoiceData
+                });
+                toast.success('Data Updated Successfully.');
+            } else {
+                const submitData = await axios.post(`${serverBaseAddress}/api/addPoInvoice`, {
+                    formData: data
+                });
+                toast.success('Data Submitted Successfully');
+            }
+
             setNewJcAdded(!newJcAdded);
-            toast.success(editId ? `Data Updated Successfully.` : `Data Submitted Successfully`)
+            reset();
             handleCloseDialog();
-            reset()
+
 
         } catch (error) {
             console.error('Failed to submit the data', error);
@@ -294,6 +355,26 @@ export default function Home() {
                                     {...register('poValue')}
                                 />
 
+
+                                <FormControl fullWidth sx={{ mt: 2, width: '100%' }}>
+                                    <InputLabel>PO Status</InputLabel>
+                                    <Select
+                                        label="PO Status"
+                                        type="text"
+                                        {...register('poStatus')}
+                                        onChange={handlePoStatus}
+                                        value={poStatus}
+                                    >
+
+                                        {poStatusOptions.map((status) => (
+                                            <MenuItem key={status.id} value={status.label}>{status.label}</MenuItem>
+                                        ))}
+
+                                    </Select>
+                                </FormControl>
+
+
+
                                 <div sx={{ justifyContent: 'flex-row' }}>
                                     <Typography variant='body2' color='error'>
                                         {errors?.poNumber && errors.poNumber.message}
@@ -301,6 +382,10 @@ export default function Home() {
 
                                     <Typography variant='body2' color='error'>
                                         {errors?.poValue && errors.poValue.message}
+                                    </Typography>
+
+                                    <Typography variant='body2' color='error'>
+                                        {errors?.poStatus && errors.poStatus.message}
                                     </Typography>
                                 </div>
                             </Grid>
@@ -325,6 +410,25 @@ export default function Home() {
                                     {...register('invoiceValue')}
                                 />
 
+
+                                <FormControl fullWidth sx={{ mt: 2, width: '100%' }}>
+                                    <InputLabel>Invoice Status</InputLabel>
+                                    <Select
+                                        label="Invoice Status"
+                                        type="text"
+                                        {...register('invoiceStatus')}
+                                        onChange={handleInvoiceStatus}
+                                        value={invoiceStatus}
+                                    >
+
+                                        {invoiceStatusOptions.map((status) => (
+                                            <MenuItem key={status.id} value={status.label}>{status.label}</MenuItem>
+                                        ))}
+
+                                    </Select>
+                                </FormControl>
+
+
                                 <div sx={{ justifyContent: 'flex-row' }}>
                                     <Typography variant='body2' color='error'>
                                         {errors?.invoiceNumber && errors.invoiceNumber.message}
@@ -333,31 +437,35 @@ export default function Home() {
                                     <Typography variant='body2' color='error'>
                                         {errors?.invoiceValue && errors.invoiceValue.message}
                                     </Typography>
+
+                                    <Typography variant='body2' color='error'>
+                                        {errors?.invoiceStatus && errors.invoiceStatus.message}
+                                    </Typography>
                                 </div>
                             </Grid>
 
                             <Grid item>
                                 <FormControl fullWidth sx={{ mt: 2, width: '100%' }}>
-                                    <InputLabel>Status</InputLabel>
+                                    <InputLabel>Payment Status</InputLabel>
                                     <Select
                                         label="Status"
                                         type="text"
-                                        {...register('jcStatus')}
-                                        onChange={handleJcStatus}
-                                        value={jcStatus}
+                                        {...register('paymentStatus')}
+                                        onChange={handlePaymentStatus}
+                                        value={paymentStatus}
                                     >
-                                        {/* {jcStatusNames.map((statusName) => (
+                                        {/* {paymentStatusOptions.map((statusName) => (
                                             <MenuItem key={statusName} value={statusName}>{statusName}</MenuItem>
                                         ))} */}
 
-                                        {jcStatusNames.map((status) => (
+                                        {paymentStatusOptions.map((status) => (
                                             <MenuItem key={status.id} value={status.label}>{status.label}</MenuItem>
                                         ))}
 
                                     </Select>
                                 </FormControl>
                                 <Typography variant='body2' color='error'>
-                                    {errors?.jcStatus && errors.jcStatus.message}
+                                    {errors?.paymentStatus && errors.paymentStatus.message}
                                 </Typography>
                             </Grid>
 
@@ -389,7 +497,12 @@ export default function Home() {
                 newJcAdded={newJcAdded}
                 openDialog={openDialog}
                 setOpenDialog={setOpenDialog}
-                onRowClick={handleRowClick} />
+                onRowClick={handleRowClick}
+            />
+
+            <br />
+
+            <ChamberRunHours />
         </>
     )
 }

@@ -17,7 +17,6 @@ import { useParams } from 'react-router-dom';
 const ReliabilityTaskManagement = ({ reliabilityTaskRow, setReliabilityTaskRow, onReliabilityTaskRowChange }) => {
 
 
-  // const [reliabilityTaskRow, setReliabilityTaskRow] = useState([{ id: 0, startDate: null, endDate: null, completedDate: null }]);
   const [reliabilityTasks, setReliabilityTasks] = useState([])
   const [users, setUsers] = useState([])
 
@@ -41,7 +40,6 @@ const ReliabilityTaskManagement = ({ reliabilityTaskRow, setReliabilityTaskRow, 
         .then((res) => {
 
           setReliabilityTaskRow(res.data.reliability_tasks_details)
-          console.log('aj11', res.data.reliability_tasks_details)
 
           setEditJc(true)
         })
@@ -95,8 +93,6 @@ const ReliabilityTaskManagement = ({ reliabilityTaskRow, setReliabilityTaskRow, 
   const handleTaskRowChange = (index, field, value) => {
     const updatedRows = [...reliabilityTaskRow];
     updatedRows[index] = { ...updatedRows[index], [field]: value };
-
-    // console.log('updatedRows', updatedRows[index])
 
     setReliabilityTaskRow(updatedRows);
 

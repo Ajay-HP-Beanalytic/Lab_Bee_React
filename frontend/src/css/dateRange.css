@@ -1,0 +1,45 @@
+.date-range-filter {
+  position: relative;
+  display: inline-block;
+}
+
+.button-to-open-calendar {
+  padding: 14px;
+  /* border: 2px solid gray; */
+  cursor: pointer;
+  height: 56px;
+}
+
+.date-range-picker {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 1000;
+  /* Ensure it appears above other content */
+  /* Ensure the picker fits within the container */
+  width: fit-content;
+  border: 1px solid black;
+}
+
+.dateRange {
+  margin-top: 10px;
+  /* Adjusting the width to fit the content */
+  width: fit-content;
+  padding: 0;
+  /* Remove any padding */
+}
+
+.dateRange .rdrCalendarWrapper {
+  width: 100%;
+  /* Ensure calendar wrapper takes full width */
+}
+
+.dateRange .rdrDefinedRangesWrapper {
+  display: none;
+  /* Hide the defined ranges section */
+}
+
+.dateRange .rdrDateRangeWrapper {
+  margin: 0;
+  /* Remove any margin */
+}

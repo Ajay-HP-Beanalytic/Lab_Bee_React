@@ -1,29 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useParams } from 'react-router-dom';
-import { toast } from 'react-toastify';
 import dayjs from 'dayjs';
 import { serverBaseAddress } from '../Pages/APIPage';
-// import { generateJcDocument } from './generateJcDocument';  // Assuming you export it from another file
 import { generateJcDocument } from './JCDocument';
 import { Button } from '@mui/material';
 
 const JobCardComponent = () => {
 
   const { id } = useParams();
-
-
-  // const initialEUTTableData = [{
-  //   slNo: 1,
-  //   eutOrNomenclature: '',
-  //   quantity: '',
-  //   partNumber: '',
-  //   modelNumber: '',
-  //   serialNumber: '',
-  //   amount: '',
-  // },];
-
-  // const [eutTableData, setEutTableData] = useState(initialEUTTableData);
 
   const [jobCard, setJobCard] = useState({
     jcNumber: '',
@@ -39,12 +24,18 @@ const JobCardComponent = () => {
     customerEmail: '',
     customerPhone: '',
     testIncharge: '',
+
+    relReportStatus: '',
+    jcCategory: '',
+
     observations: '',
     jcStatus: '',
 
     eutDetails: [],
     tests: [],
     testDetails: [],
+
+    reliabiltyTasks: []
 
   });
 
@@ -53,7 +44,7 @@ const JobCardComponent = () => {
   useEffect(() => {
     axios.get(`${serverBaseAddress}/api/jobcard/${id}`)
       .then(response => {
-        const { jobcard, eut_details, tests, tests_details } = response.data;
+        const { jobcard, eut_details, tests, tests_details, reliability_tasks_details } = response.data;
 
         // Parse and segregate date and time for tests_details
         const parsedTestsDetails = tests_details.map((test, index) => {
@@ -87,6 +78,21 @@ const JobCardComponent = () => {
           };
         });
 
+        const parsedRelTasksDetails = reliability_tasks_details.map((detail, index) => {
+
+          const taskStartDate = dayjs(detail.task_start_date).format('YYYY-MM-DD')
+          const taskEndDate = dayjs(detail.task_end_date).format('YYYY-MM-DD')
+          const taskCompletionDate = dayjs(detail.task_completed_date).format('YYYY-MM-DD')
+
+          return {
+            ...detail,
+            taskStartDate,
+            taskEndDate,
+            taskCompletionDate,
+            slNoCounter: index + 1
+          };
+        });
+
 
         setJobCard({
           jcNumber: jobcard.jc_number,
@@ -102,6 +108,10 @@ const JobCardComponent = () => {
           customerEmail: jobcard.customer_email,
           customerPhone: jobcard.customer_number,
           testIncharge: jobcard.test_incharge,
+
+          relReportStatus: jobcard.reliability_report_status,
+          jcCategory: jobcard.jc_category,
+
           observations: jobcard.observations,
           jcStatus: jobcard.jc_status,
 
@@ -109,6 +119,9 @@ const JobCardComponent = () => {
           eutDetails: parsedEUTDetails,
           tests: tests,
           testDetails: parsedTestsDetails,
+
+          reliabiltyTasks: parsedRelTasksDetails
+
         });
 
       })
