@@ -28,14 +28,12 @@ import { toast } from 'react-toastify';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import moment from 'moment';
-import { getCurrentMonthYear, getFinancialYear } from '../functions/UtilityFunctions';
+import { getCurrentMonthYear } from '../functions/UtilityFunctions';
 import ConfirmationDialog from './ConfirmationDialog';
 import SearchBar from './SearchBar';
 import DateRangeFilter from './DateRangeFilter';
-import { CreatePieChart, CreateBarChart } from '../functions/DashboardFunctions';
-
+import { CreatePieChart } from '../functions/DashboardFunctions';
 import { DataGrid, GridColumns } from '@mui/x-data-grid';
-import HomeCharts from '../Pages/HomeCharts';
 
 
 
@@ -52,9 +50,6 @@ export default function PoInvoiceStatusTable({ newJcAdded, openDialog, setOpenDi
 
   const [poMonthYear, setPoMonthYear] = useState(getCurrentMonthYear())
   const [monthYearList, setMonthYearList] = useState([])
-
-  const [financialYear, setFinancialYear] = useState(getFinancialYear())
-  const [financialYearList, setFinancialYearList] = useState([])
 
   const [poDataForChart, setPoDataForChart] = useState('')
 
@@ -113,8 +108,6 @@ export default function PoInvoiceStatusTable({ newJcAdded, openDialog, setOpenDi
         const response = await axios.get(`${serverBaseAddress}/api/getPoDataYearMonth`);
         if (response.status === 200) {
           setMonthYearList(response.data);
-          // setFinancialYearList(response.data)
-          // console.log('fin is', financialYear)
         } else {
           console.error('Failed to fetch PO Month list. Status:', response.status);
         }
@@ -126,55 +119,17 @@ export default function PoInvoiceStatusTable({ newJcAdded, openDialog, setOpenDi
 
 
 
-    const getFinancialYearListOfPO = async () => {
-      try {
-        const response = await axios.get(`${serverBaseAddress}/api/getPoDataFinancialYear`);
-        if (response.status === 200) {
-          setFinancialYearList(response.data)
-        } else {
-          console.error('Failed to fetch PO Month list. Status:', response.status);
-        }
-      } catch (error) {
-        console.error('Failed to fetch the data', error);
-      }
-    }
-    getFinancialYearListOfPO()
-
-
-
   }, [poMonthYear, monthYearList])
 
 
-  //////////////////////////////////////////////////////////////////////////////
   // Data fetching to plot the charts:
 
   const getDataForPOPieChart = async () => {
     try {
       const poStatusResponse = await axios.get(`${serverBaseAddress}/api/getPoStatusData/${poMonthYear}`);
       if (poStatusResponse.status === 200) {
-
-        const poData = poStatusResponse.data[0]; // Access the first element of the response array
-        // console.log('Response data:', poData);
-        setPoDataForChart({
-          receivedPoCount: poData.receivedPoCount,
-          notReceivedPoCount: poData.notReceivedPoCount,
-          receivedPoSum: poData.receivedPoSum,
-          notReceivedPoSum: poData.notReceivedPoSum,
-
-          invoiceSentCount: poData.invoiceSentCount,
-          invoiceNotSentCount: poData.invoiceNotSentCount,
-          invoiceSentSum: poData.invoiceSentSum,
-          invoiceNotSentSum: poData.invoiceNotSentSum,
-
-          paymentReceivedCount: poData.paymentReceivedCount,
-          paymentNotReceivedCount: poData.paymentNotReceivedCount,
-          paymentOnHoldCount: poData.paymentOnHoldCount,
-          paymentOnHoldSum: poData.paymentOnHoldSum
-
-
-
-        });
-
+        setPoDataForChart(poStatusResponse.data);
+        console.log('daaaa', poStatusResponse.data);
       } else {
         console.error('Failed to fetch PO data for chart. Status:', poStatusResponse.status);
       }
@@ -185,202 +140,14 @@ export default function PoInvoiceStatusTable({ newJcAdded, openDialog, setOpenDi
 
   getDataForPOPieChart();
 
-  // Creating a pie chart for calibration status for chambers and equipments:
-  const poStatusPieChart = {
-    labels: ['PO Received', 'PO Not Received'],
-    datasets: [{
-      data: [poDataForChart.receivedPoCount, poDataForChart.notReceivedPoCount],
-      backgroundColor: ['#8cd9b3', '#ff6666'],
-    }],
-  }
-
-  const optionsForPoStatusPieChart = {
-    responsive: true,
-    // maintainAspectRatio: false,   // False will keep the size small. If it's true then we can define the size using aspectRatio
-    aspectRatio: 2.5,
-    plugins: {
-      legend: {
-        position: 'top',
-        display: true,
-      },
-      title: {
-        display: true,
-        text: 'PO Status',
-        font: {
-          family: 'Helvetica Neue',
-          size: 30,
-          weight: 'bold'
-        }
-      },
-      subtitle: {
-        display: true,
-        text: 'Monthly Received & Not Received PO',
-        font: {
-          family: 'Arial',
-          size: 15,
-          weight: 'bold'
-        }
-      },
-      datalabels: {
-        display: true,
-        color: 'black',
-        fontWeight: 'bold',
-        font: {
-          family: 'Arial',
-          size: 15,
-          weight: 'bold'
-        }
-      }
-    }
-  }
-
-  const invoiceStatusPieChart = {
-    labels: ['Invoice Sent', 'Invoice Not Sent'],
-    datasets: [{
-      data: [poDataForChart.invoiceSentCount, poDataForChart.invoiceNotSentCount],
-      backgroundColor: ['#8cd9b3', '#ff6666'],
-    }],
-  }
-
-  const optionsForInvoiceStatusPieChart = {
-    responsive: true,
-    // maintainAspectRatio: false,   // False will keep the size small. If it's true then we can define the size using aspectRatio
-    aspectRatio: 2.5,
-    plugins: {
-      legend: {
-        position: 'top',
-        display: true,
-      },
-      title: {
-        display: true,
-        text: 'Invoice Status',
-        font: {
-          family: 'Helvetica Neue',
-          size: 30,
-          weight: 'bold'
-        }
-      },
-      subtitle: {
-        display: true,
-        text: 'Monthly Sent & Not Sent Invoices',
-        font: {
-          family: 'Arial',
-          size: 15,
-          weight: 'bold'
-        }
-      },
-      datalabels: {
-        display: true,
-        color: 'black',
-        fontWeight: 'bold',
-        font: {
-          family: 'Arial',
-          size: 15,
-          weight: 'bold'
-        }
-      }
-    }
-  }
 
 
-  const paymentStatusPieChart = {
-    labels: ['Payment Received', 'Payment Not Received', 'Payment on Hold'],
-    datasets: [{
-      data: [poDataForChart.paymentReceivedCount, poDataForChart.paymentNotReceivedCount, poDataForChart.paymentOnHoldCount],
-      backgroundColor: ['#8cd9b3', '#ff6666', '#668799'],
-    }],
-  }
-
-  const optionsForPaymentStatusPieChart = {
-    responsive: true,
-    // maintainAspectRatio: false,   // False will keep the size small. If it's true then we can define the size using aspectRatio
-    aspectRatio: 2.5,
-    plugins: {
-      legend: {
-        position: 'top',
-        display: true,
-      },
-      title: {
-        display: true,
-        text: 'Payment Status',
-        font: {
-          family: 'Helvetica Neue',
-          size: 30,
-          weight: 'bold'
-        }
-      },
-      subtitle: {
-        display: true,
-        text: 'Monthly Recieved and Pending Payment Status',
-        font: {
-          family: 'Arial',
-          size: 15,
-          weight: 'bold'
-        }
-      },
-      datalabels: {
-        display: true,
-        color: 'black',
-        fontWeight: 'bold',
-        font: {
-          family: 'Arial',
-          size: 15,
-          weight: 'bold'
-        }
-      }
-    }
-  }
-
-
-
-  const labels = ['January', 'February', 'March', 'April', 'May', 'June', 'July'];
-
-
-
-  const monthWisePoCount = {
-    labels,
-    datasets: [
-      {
-        label: 'Dataset 1',
-        // data: labels.map(() => faker.datatype.number({ min: 0, max: 1000 })),
-        data: [10, 25, 15, 14, 75, 45, 60],
-        backgroundColor: 'rgba(255, 99, 132, 0.5)',
-      },
-      // {
-      //   label: 'Dataset 2',
-      //   // data: labels.map(() => faker.datatype.number({ min: 0, max: 1000 })),
-      //   data: [20, 35, 18, 27, 60, 90, 30],
-      //   backgroundColor: 'rgba(53, 162, 235, 0.5)',
-      // },
-    ],
-  }
-
-  const optionsForMonthWisePoCount = {
-    responsive: true,
-    plugins: {
-      legend: {
-        position: 'top'
-      },
-      title: {
-        display: true,
-        text: 'Chart.js Bar Chart',
-      },
-    },
-  }
-
-
-  // // Pie Chart Options for 
 
 
 
 
   const handleMonthYearOfPo = (event) => {
     setPoMonthYear(event.target.value)
-  }
-
-
-  const handleFinancialYearChange = (event) => {
-    setFinancialYear(event.target.value)
   }
 
 
@@ -442,23 +209,23 @@ export default function PoInvoiceStatusTable({ newJcAdded, openDialog, setOpenDi
   };
 
 
-  // const tableHeadersList = [
-  //   { id: 'Sl No', label: 'Sl No' },
-  //   { id: 'jcNumber', label: 'JC Number' },
-  //   { id: 'jcDate', label: 'JC Date' },
-  //   { id: 'jcCategory', label: 'JC Category' },
-  //   { id: 'rfqNumber', label: 'RFQ' },
-  //   { id: 'rfqValue', label: 'RFQ Value' },
-  //   { id: 'poNumber', label: 'PO' },
-  //   { id: 'poValue', label: 'PO Value' },
-  //   { id: 'poStatus', label: 'PO Status' },
-  //   { id: 'invoiceNumber', label: 'Invoice' },
-  //   { id: 'invoiceValue', label: 'Invoice Value' },
-  //   { id: 'invoiceStatus', label: 'Invoice Status' },
-  //   { id: 'status', label: 'Status' },
-  //   { id: 'remarks', label: 'Remarks' },
-  //   { id: 'actions', label: 'Action' }
-  // ]
+  const tableHeadersList = [
+    { id: 'Sl No', label: 'Sl No' },
+    { id: 'jcNumber', label: 'JC Number' },
+    { id: 'jcDate', label: 'JC Date' },
+    { id: 'jcCategory', label: 'JC Category' },
+    { id: 'rfqNumber', label: 'RFQ' },
+    { id: 'rfqValue', label: 'RFQ Value' },
+    { id: 'poNumber', label: 'PO' },
+    { id: 'poValue', label: 'PO Value' },
+    { id: 'poStatus', label: 'PO Status' },
+    { id: 'invoiceNumber', label: 'Invoice' },
+    { id: 'invoiceValue', label: 'Invoice Value' },
+    { id: 'invoiceStatus', label: 'Invoice Status' },
+    { id: 'status', label: 'Status' },
+    { id: 'remarks', label: 'Remarks' },
+    { id: 'actions', label: 'Action' }
+  ]
 
 
   //Function for the search bar and to filter the table based on the user search input
@@ -496,9 +263,57 @@ export default function PoInvoiceStatusTable({ newJcAdded, openDialog, setOpenDi
     setPoDataList(originalPoDataList);
   }
 
+  console.log(poDataList)
 
+  // Creating a pie chart for calibration status for chambers and equipments:
+  const poStatusPieChart = {
+    labels: ['PO Received', 'PO Not Received'],
+    datasets: [{
+      // data: [poDataForChart.totalPoCount, poDataForChart.totalPoValue],
+      data: [10, 24],
+      backgroundColor: ['#8cd9b3', '#ff6666'],
+    }],
+  }
 
-
+  const optionsForPoStatusPieChart = {
+    responsive: true,
+    //maintainAspectRatio: false,   // False will keep the size small. If it's true then we can define the size using aspectRatio
+    aspectRatio: 2.5,
+    plugins: {
+      legend: {
+        position: 'top',
+        display: true,
+      },
+      title: {
+        display: true,
+        text: 'PO Status',
+        font: {
+          family: 'Helvetica Neue',
+          size: 30,
+          weight: 'bold'
+        }
+      },
+      subtitle: {
+        display: true,
+        text: 'Monthly Received & Not Received PO',
+        font: {
+          family: 'Arial',
+          size: 15,
+          weight: 'bold'
+        }
+      },
+      datalabels: {
+        display: true,
+        color: 'black',
+        fontWeight: 'bold',
+        font: {
+          family: 'Arial',
+          size: 15,
+          weight: 'bold'
+        }
+      }
+    }
+  }
 
 
   // const rows = [
@@ -525,50 +340,34 @@ export default function PoInvoiceStatusTable({ newJcAdded, openDialog, setOpenDi
   ];
 
 
-  const [selectedDateRange, setSelectedDateRange] = useState(null);
-
-  const handleDateRangeChange = (selectedDateRange) => {
-    setSelectedDateRange(selectedDateRange);
-  };
-
-  const handleDateRangeClear = () => {
-    setSelectedDateRange(null);
-  }
-
-
   return (
     <>
+      <Grid container spacing={2} >
+        <Grid item xs={4}>
+          <FormControl sx={{ display: 'flex', justifyItems: 'flex-start', mt: 2, width: '50%', pb: 2 }}>
+            <InputLabel>Select Month-Year</InputLabel>
+            <Select
+              label="Month-Year"
+              type="text"
+              value={poMonthYear}
+              onChange={handleMonthYearOfPo}
+            >
+              {monthYearList.map((item, index) => (
+                <MenuItem key={index} value={item}>{item}</MenuItem>
+              ))}
 
-      <Grid container spacing={2} alignItems="center">
-        {/* Container for FormControl and DateRangeFilter aligned to the left */}
-        <Grid item xs={8} container alignItems="center">
-          <Grid item sx={{ mr: 2 }}>
-            <FormControl sx={{ width: '200px' }}>
-              <InputLabel>Select Month-Year</InputLabel>
-              <Select
-                label="Month-Year"
-                type="text"
-                value={poMonthYear}
-                onChange={handleMonthYearOfPo}
-              >
-                {monthYearList.map((item, index) => (
-                  <MenuItem key={index} value={item}>{item}</MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Grid>
-
-          <Grid item >
-            <DateRangeFilter
-              onClickDateRangeSelectDoneButton={handleDateRangeChange}
-              onClickDateRangeSelectClearButton={handleDateRangeClear}
-            />
-          </Grid>
-
+            </Select>
+          </FormControl>
         </Grid>
 
-        {/* Container for search bar aligned to the right */}
-        <Grid item xs={4} container justifyContent="flex-end">
+        {/* Import DateRange Filter Component */}
+        <Grid item xs={4} container justifyContent="flex-end" sx={{ mt: 2, pb: 2 }}>
+          <DateRangeFilter />
+        </Grid>
+
+
+        <Grid item xs={4} container justifyContent="flex-end" sx={{ mt: 2, pb: 2, width: '100%', }}>
+          {/* searchbar component */}
           <SearchBar
             placeholder='Search'
             searchInputText={searchInputText}
@@ -577,7 +376,6 @@ export default function PoInvoiceStatusTable({ newJcAdded, openDialog, setOpenDi
           />
         </Grid>
       </Grid>
-
       {/* </Box> */}
 
 
@@ -661,81 +459,31 @@ export default function PoInvoiceStatusTable({ newJcAdded, openDialog, setOpenDi
       } */}
 
 
-      <Box sx={{ mt: 1, mb: 1, border: '1px solid black' }}>
+      <Box>
 
-        <Grid container spacing={2} >
-          <Grid item xs={12} md={4} >
+        <Grid item xs={12} md={6}>
+          <Card elevation={5} sx={{ backgroundColor: 'transparent' }}>
             <CreatePieChart
               data={poStatusPieChart}
               options={optionsForPoStatusPieChart}
             />
-
-            <Typography variant='h6'> Total PO Received Value: {poDataForChart.receivedPoSum} </Typography>
-            <Typography variant='h6'> Total PO Pending Value: {poDataForChart.notReceivedPoSum} </Typography>
-
-          </Grid>
-
-          <Grid item xs={12} md={4} >
-            <CreatePieChart
-              data={invoiceStatusPieChart}
-              options={optionsForInvoiceStatusPieChart}
-            />
-
-
-          </Grid>
-
-          <Grid item xs={12} md={4}>
-            <CreatePieChart
-              data={paymentStatusPieChart}
-              options={optionsForPaymentStatusPieChart}
-            />
-
-            <Typography variant='h6'> Total Payment Received: {poDataForChart.receivedPoSum} </Typography>
-            <Typography variant='h6'> Total Payment Pending: {poDataForChart.notReceivedPoSum} </Typography>
-            <Typography variant='h6'> Total Payment On Hold: {poDataForChart.paymentOnHoldSum} </Typography>
-          </Grid>
+          </Card>
         </Grid>
 
+        <div style={{ height: 300, width: '100%', pt: 2 }}>
+          <DataGrid
+            rows={poDataList}
+            columns={columns}
+            sx={{ '&:hover': { cursor: 'pointer' } }}
+            onRowClick={(params) => editSelectedRowData(params.row)}
+            pageSize={5}
+            rowsPerPageOptions={[5, 10, 20]}
+            headerStyle={tableHeaderStyle}
+          />
+        </div>
+
+
       </Box>
-
-      <Box>
-
-        <Grid item xs={4}>
-          <FormControl sx={{ display: 'flex', justifyItems: 'flex-start', mt: 2, width: '50%', pb: 2 }}>
-            <InputLabel>Select Financial Year</InputLabel>
-            <Select
-              label="Year"
-              type="text"
-              value={financialYear}
-              onChange={handleFinancialYearChange}
-            >
-              {financialYearList.map((item, index) => (
-                <MenuItem key={index} value={item}>{item}</MenuItem>
-              ))}
-
-            </Select>
-          </FormControl>
-        </Grid>
-
-        <CreateBarChart
-          data={monthWisePoCount}
-          options={optionsForMonthWisePoCount}
-        />
-      </Box>
-
-      {/* <HomeCharts /> */}
-
-      <div style={{ height: 300, width: '100%', pt: 2 }}>
-        <DataGrid
-          rows={poDataList}
-          columns={columns}
-          sx={{ '&:hover': { cursor: 'pointer' } }}
-          onRowClick={(params) => editSelectedRowData(params.row)}
-          pageSize={5}
-          rowsPerPageOptions={[5, 10, 20]}
-          headerStyle={tableHeaderStyle}
-        />
-      </div>
     </>
   )
 }

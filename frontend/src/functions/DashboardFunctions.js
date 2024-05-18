@@ -18,6 +18,7 @@ import { Pie, Bar } from 'react-chartjs-2';
 
 
 
+
 //Import ArcElement for the piechart
 //Import BarElement, CategoryScale, LinearScale for the barchart 
 

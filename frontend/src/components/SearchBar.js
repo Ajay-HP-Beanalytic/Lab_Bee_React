@@ -10,7 +10,8 @@ export default function SearchBar({ placeholder, searchInputText, onChangeOfSear
 
     <TextField
       variant='outlined'
-      sx={{ width: '50%' }}
+      // sx={{ width: '50%' }}
+      fullWidth
       placeholder={placeholder}
       value={searchInputText}
       onChange={onChangeOfSearchInput}

@@ -1,18 +1,37 @@
-import { Autocomplete, Box, Divider, FormControl, Grid, IconButton, InputLabel, MenuItem, Paper, Select, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, TextField, Tooltip, Typography } from '@mui/material'
 import React, { useEffect, useState } from 'react'
+import { Link, useLocation } from 'react-router-dom';
+import {
+    Box,
+    Divider,
+    FormControl,
+    Grid,
+    IconButton,
+    InputLabel,
+    MenuItem,
+    Select,
+    TableCell,
+    TableRow,
+    Tooltip,
+    Typography,
+} from '@mui/material'
 
 import { serverBaseAddress } from './APIPage'
 import axios from 'axios';
 
 import PendingIcon from '@mui/icons-material/Pending';
 import VisibilityIcon from '@mui/icons-material/Visibility';
-import { Link } from 'react-router-dom';
+
 import { toast } from 'react-toastify';
 
 import { CreateButtonWithLink } from '../functions/ComponentsFunctions';
 import { getCurrentMonthYear } from '../functions/UtilityFunctions';
+import { DataGrid } from '@mui/x-data-grid';
+
+
 
 export default function JCHome() {
+
+    const location = useLocation();
 
     // Define the table headers:
     const JcTableHeadersText = ['Sl No', 'JC Number', 'JC Category', 'Company', 'Customer Name', 'Contact Number', 'JC Status', 'Action'];
@@ -42,8 +61,10 @@ export default function JCHome() {
     // Simulate fetching jc data from the database
     useEffect(() => {
 
+        const jcTableDataRefresh = location.state?.updated;
+
         let requiredAPIdata = {
-            _fields: 'jc_number, jc_category, company_name, customer_name, customer_number, jc_status',
+            _fields: 'jc_number, jc_category, jc_open_date, company_name,  jc_status',
             monthYear: jcMonthYear,
         }
 
@@ -68,7 +89,7 @@ export default function JCHome() {
             fetchJCDataFromDatabase();
         }
 
-    }, [jcMonthYear, filterRow, refresh]);
+    }, [jcMonthYear, filterRow, refresh, location.state]);
 
 
 
@@ -86,7 +107,7 @@ export default function JCHome() {
             }
         }
         getMonthYearListOfJC()
-    }, [jcMonthYear, jcMonthYearList, refresh])
+    }, [jcMonthYear, jcMonthYearList, refresh, location.state])
 
     const handleMonthYearOfJC = (event) => {
         setJCMonthYear(event.target.value)
@@ -126,14 +147,27 @@ export default function JCHome() {
     }
 
 
+    const columns = [
+        { field: 'id', headerName: 'SL No', width: 100, align: 'center', headerAlign: 'center', headerClassName: 'custom-header-color' },
+        { field: 'jc_number', headerName: 'JC Number', width: 200, align: 'center', headerAlign: 'center', headerClassName: 'custom-header-color' },
+        { field: 'jc_open_date', headerName: 'JC Open Date', width: 200, align: 'center', headerAlign: 'center', headerClassName: 'custom-header-color' },
+        { field: 'jc_category', headerName: 'JC Category', width: 200, align: 'center', headerAlign: 'center', headerClassName: 'custom-header-color' },
+        { field: 'company_name', headerName: 'Company', width: 200, align: 'center', headerAlign: 'center', headerClassName: 'custom-header-color' },
+        { field: 'jc_status', headerName: 'JC Status', width: 200, align: 'center', headerAlign: 'center', headerClassName: 'custom-header-color' },
+    ];
+
+
+
+
     return (
+
         <>
             <Divider>
                 <Typography variant='h4' sx={{ color: '#003366' }}> Job-Card Dashboard </Typography>
             </Divider>
 
             <Grid container sx={{ display: 'flex' }}>
-                <FormControl fullWidth sx={{ display: 'flex', justifyItems: 'flex-start', mt: 2, width: '25%', pb: 2 }}>
+                <FormControl sx={{ display: 'flex', justifyItems: 'flex-start', mt: 2, width: '25%', pb: 2 }}>
                     <InputLabel>Select Month-Year</InputLabel>
                     <Select
                         label="Month-Year"
@@ -162,7 +196,72 @@ export default function JCHome() {
             <br />
 
 
-            {jcTableData.length ? (
+
+            {/* <div style={{ height: 500, width: '100%', pt: 2 }}>
+                <DataGrid
+                    rows={jcTableData}
+                    columns={columns}
+                    sx={{ '&:hover': { cursor: 'pointer' } }}
+                    // onRowClick={(params) => editSelectedRowData(params.row)}
+                    pageSize={5}
+                    rowsPerPageOptions={[5, 10, 20]}
+                    headerStyle={tableHeaderStyle}
+                />
+            </div> */}
+
+
+
+            <Box
+                sx={{
+                    height: 500,
+                    width: '80%',
+                    '& .custom-header-color': {
+                        backgroundColor: '#0f6675',
+                        color: 'whitesmoke',
+                        fontWeight: 'bold',
+                        fontSize: '15px',
+                    },
+                }}
+            >
+                <DataGrid
+                    rows={jcTableData}
+                    columns={columns}
+                    pageSize={5}
+                    rowsPerPageOptions={[5, 10, 20]}
+                />
+            </Box>
+        </>
+    )
+
+
+
+    // Helper function to render each table row
+    function renderTableRow(row, index) {
+        return (
+            <TableRow key={index} align="center">
+                <TableCell align="center">{index + 1}</TableCell>
+                <TableCell align="center">{row.jc_number}</TableCell>
+                <TableCell align="center">{row.jc_category}</TableCell>
+                <TableCell align="center">{row.company_name}</TableCell>
+                <TableCell align="center">{row.customer_name}</TableCell>
+                <TableCell align="center">{row.customer_number}</TableCell>
+                <TableCell align="center">{row.jc_status}</TableCell>
+                <TableCell align="center">
+                    <Tooltip title='View JC' arrow>
+                        <IconButton variant='outlined' size='small'>
+                            {/* <VisibilityIcon onClick={viewJcData} /> */}
+                            <Link to={`/jobcard/${row.id}`}>
+                                <VisibilityIcon />
+                            </Link>
+                        </IconButton>
+                    </Tooltip>
+                </TableCell>
+            </TableRow>
+        );
+    }
+}
+
+{/* {jcTableData.length ? (
                 <div>
 
                     <Box sx={{ display: 'flex', justifyContent: 'flex-end', paddingTop: 1, marginBottom: 1 }}>
@@ -172,12 +271,12 @@ export default function JCHome() {
                                 onChange={(event, value) => { setFilterRow(value ? [value] : []); }}
                                 getOptionLabel={(option) => option.jc_number || option.company_name}
                                 options={jcTableData}
-                                // filterOptions={(options, { inputValue }) =>
-                                //     options.filter((option) =>
-                                //         option.jc_number.toLowerCase().includes(inputValue.toLowerCase()) ||
-                                //         option.company_name.toLowerCase().includes(inputValue.toLowerCase())
-                                //     )
-                                // }
+                                filterOptions={(options, { inputValue }) =>
+                                    options.filter((option) =>
+                                        option.jc_number.toLowerCase().includes(inputValue.toLowerCase()) ||
+                                        option.company_name.toLowerCase().includes(inputValue.toLowerCase())
+                                    )
+                                }
                                 renderInput={(params) => (
                                     <TextField {...params} label="Search Job-Card" variant="outlined" />
                                 )}
@@ -185,7 +284,7 @@ export default function JCHome() {
                         </FormControl>
                     </Box>
 
-                    {/* Creating basic Job-Card table */}
+                   
                     <TableContainer component={Paper}>
                         <Table sx={{ minWidth: 650 }} aria-label="simple table" size='small'>
                             <TableHead sx={tableHeaderStyle}>
@@ -219,34 +318,4 @@ export default function JCHome() {
                 </div>
             ) : (
                 <>{msg}</>
-            )}
-        </>
-    )
-
-
-
-    // Helper function to render each table row
-    function renderTableRow(row, index) {
-        return (
-            <TableRow key={index} align="center">
-                <TableCell align="center">{index + 1}</TableCell>
-                <TableCell align="center">{row.jc_number}</TableCell>
-                <TableCell align="center">{row.jc_category}</TableCell>
-                <TableCell align="center">{row.company_name}</TableCell>
-                <TableCell align="center">{row.customer_name}</TableCell>
-                <TableCell align="center">{row.customer_number}</TableCell>
-                <TableCell align="center">{row.jc_status}</TableCell>
-                <TableCell align="center">
-                    <Tooltip title='View JC' arrow>
-                        <IconButton variant='outlined' size='small'>
-                            {/* <VisibilityIcon onClick={viewJcData} /> */}
-                            <Link to={`/jobcard/${row.id}`}>
-                                <VisibilityIcon />
-                            </Link>
-                        </IconButton>
-                    </Tooltip>
-                </TableCell>
-            </TableRow>
-        );
-    }
-}
+            )} */}

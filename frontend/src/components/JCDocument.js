@@ -5,15 +5,32 @@ import PizZipUtils from 'pizzip/utils/index.js';
 import { saveAs } from 'file-saver';
 import JCTemplate from '../templates/JobcardTemplate.docx';
 
+import RelJCTemplate from '../templates/ReliabilityJCTemplate.docx'
+
 function loadFile(url, callback) {
   PizZipUtils.getBinaryContent(url, callback);
 }
 
 export const generateJcDocument = (jobCardData) => {
 
-  console.log('jobCardData', jobCardData)
+  // console.log('jobCardData', jobCardData)
 
-  loadFile(JCTemplate, function (error, content) {
+
+
+  let templateDocument = ''
+
+  if (jobCardData.jcCategory === 'TS1') {
+    templateDocument = JCTemplate;
+  } else if (jobCardData.jcCategory === 'Reliability') {
+    templateDocument = RelJCTemplate;
+  } else {
+    console.error('Unknown jcCategory:', jobCardData.jcCategory);
+    return;
+  }
+
+
+
+  loadFile(templateDocument, function (error, content) {
     if (error) {
       throw error;
     }
