@@ -68,6 +68,8 @@ const Jobcard = ({ jobCardData }) => {
   const [referanceDocs, setReferanceDocs] = useState('')
   const [jcStatus, setJcStatus] = useState('Open');
   const [jcCloseDate, setJcCloseDate] = useState(null);
+
+  const [chambersList, setChambersList] = useState([])
   // const [jcText, setJcText] = useState('');
   const [observations, setObservations] = useState('');
 
@@ -112,10 +114,6 @@ const Jobcard = ({ jobCardData }) => {
           setEutRows(res.data.eut_details)
           setTestRows(res.data.tests)
           setTestDetailsRows(res.data.tests_details)
-
-
-          // setReliabilityTaskRow(res.data.reliability_tasks_details)
-          // console.log('aj', res.data.reliability_tasks_details)
 
 
           setEditJc(true)
@@ -251,10 +249,8 @@ const Jobcard = ({ jobCardData }) => {
 
       if (currentMonth > 2) {
         finYear = `${currentYear}-${currentYear + 1}/${currentMonth}`;
-        //console.log('2', finYear)
       } else {
         finYear = `${currentYear - 1}-${currentYear}/${currentMonth}`;
-        //console.log('3', finYear)
       }
 
 
@@ -281,11 +277,16 @@ const Jobcard = ({ jobCardData }) => {
   }, [jcCount]);
 
 
-  // UseEffect to set the quotation data during update of the quotation:
+  // UseEffect to set the users and chambers list:
   useEffect(() => {
     axios.get(`${serverBaseAddress}/api/getTestingUsers/`)
       .then(result => {
         setUsers(result.data)
+      })
+
+    axios.get(`${serverBaseAddress}/api/getChambersList/`)
+      .then(chamberResult => {
+        setChambersList(chamberResult.data)
       })
   }, [])
 
@@ -329,14 +330,13 @@ const Jobcard = ({ jobCardData }) => {
 
       }).then(res => {
         { editJc ? toast.success('JobCard Updated Successfully') : toast.success('JobCard Created Successfully') }
-        console.log('jcCategory', jcCategory)
+
       })
     } catch (error) {
       console.error('Error submitting Job-Card:', error);
     }
 
     if (jcCategory === 'TS1') {
-      console.log('ts1')
 
       // Function to extract EUT details based on the index
       const eutdetailsdata = (i) => {
@@ -453,7 +453,6 @@ const Jobcard = ({ jobCardData }) => {
 
     // Handle RE specific data
     if (jcCategory === 'Reliability') {
-      console.log('re')
 
       // Function to extract test details based on the index
       const relTaskData = (i) => {
@@ -1146,9 +1145,20 @@ const Jobcard = ({ jobCardData }) => {
                               onChange={(e) => handleTestDetailsRowChange(index, 'testName', e.target.value)} />
                           </TableCell>
 
-                          <TableCell> <TextField style={{ align: "center" }} variant="outlined"
-                            value={row.testChamber}
-                            onChange={(e) => handleTestDetailsRowChange(index, 'testChamber', e.target.value)} />
+                          <TableCell>
+
+                            <FormControl sx={{ width: '100%', borderRadius: 3 }} >
+                              <InputLabel >Chamber</InputLabel>
+                              <Select
+                                label="test-started-by"
+                                value={row.testChamber}
+                                onChange={(e) => handleTestDetailsRowChange(index, 'testChamber', e.target.value)}
+                              >
+                                {chambersList.map((item) => (<MenuItem key={item.id} value={item.chamber_name}>{item.chamber_name}</MenuItem>))}
+                              </Select>
+                            </FormControl>
+
+
                           </TableCell>
 
                           <TableCell> <TextField style={{ align: "center" }} variant="outlined"

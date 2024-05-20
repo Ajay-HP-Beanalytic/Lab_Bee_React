@@ -52,6 +52,37 @@ function jobcardsAPIs(app) {
     })
 
 
+    // Get the JC's between two date ranges:
+    app.get('/api/getPrimaryJCDataBwTwoDates', (req, res) => {
+
+        const { selectedJCDateRange } = req.query;
+
+        if (!selectedJCDateRange || typeof selectedJCDateRange !== 'string') {
+            return res.status(400).json({ error: "Invalid date range format" });
+        }
+
+        const [fromDate, toDate] = selectedJCDateRange.split(' - ');
+
+        if (!fromDate || !toDate) {
+            return res.status(400).json({ error: "Invalid date range format" });
+        }
+
+        const getJCColumns = `
+        SELECT id, jc_number, jc_category, DATE_FORMAT(jc_open_date, '%Y-%m-%d') as jc_open_date, company_name, jc_status
+        FROM bea_jobcards
+        WHERE jc_open_date BETWEEN ? AND ?
+    `;
+
+        db.query(getJCColumns, [fromDate, toDate], (error, result) => {
+            if (error) {
+                return res.status(500).json({ error: "An error occurred while fetching JC table data" });
+            }
+            res.send(result);
+            // console.log('Result:', result);
+        });
+    })
+
+
 
     // To delete the jobcards  from the table:
     // app.delete("/api/getjobcard/:jc_number", (req, res) => {
@@ -761,6 +792,45 @@ function jobcardsAPIs(app) {
             res.json(formattedData);
         });
     });
+
+
+    //Fetch chambers utilization hours list:
+    app.get('/api/getChamberUtilization', (req, res) => {
+        const chamberUtilizationQuery = `
+                    SELECT 
+                        testChamber,
+                        SUM(CASE WHEN MONTH(startDate) = MONTH(CURDATE()) - 1 THEN duration ELSE 0 END) AS prevMonthRunHours,
+                        SUM(CASE WHEN MONTH(startDate) = MONTH(CURDATE()) THEN duration ELSE 0 END) AS currentMonthRunHours,
+                        SUM(duration) AS totalRunHours
+                    FROM 
+                        tests_details
+                    GROUP BY
+                        testChamber
+                    `
+        db.query(chamberUtilizationQuery, (error, results) => {
+            if (error) {
+                console.log('An error occurred while fetching the chamber utilization data', error)
+            }
+
+            const formattedChamberUtilizationResult = results.map((row, index) => {
+                const prevMonthRunHours = parseFloat(row.prevMonthRunHours) || 0;
+                const currentMonthRunHours = parseFloat(row.currentMonthRunHours) || 0;
+                const totalRunHours = parseFloat(row.totalRunHours) || 0;
+                const chamberUtilization = currentMonthRunHours > prevMonthRunHours ? 'More' : 'Less';
+
+                return {
+                    id: index + 1,
+                    chamberName: row.testChamber,
+                    prevMonthRunHours: prevMonthRunHours.toString(),
+                    currentMonthRunHours: currentMonthRunHours.toString(),
+                    chamberUtilization,
+                    totalRunHours: totalRunHours.toString()
+                }
+            })
+
+            res.json(formattedChamberUtilizationResult);
+        })
+    })
 
 
 }
