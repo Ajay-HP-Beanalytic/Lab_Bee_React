@@ -71,7 +71,7 @@ function poInvoiceBackendAPIs(app) {
     const [month, year] = monthYear.split('-');
 
     const getPoAndInvoiceList = `SELECT 
-                                id, jc_number, jc_month, jc_category, rfq_number, rfq_value, po_number, po_value, po_status, invoice_number, invoice_value, invoice_status, payment_status, remarks
+                                id, jc_number, DATE_FORMAT(jc_month, '%Y-%m-%d') as jc_month, jc_category, rfq_number, rfq_value, po_number, po_value, po_status, invoice_number, invoice_value, invoice_status, payment_status, remarks
                                 FROM po_invoice_table 
                                 WHERE DATE_FORMAT(jc_month, '%b-%Y') = ? `;
 
@@ -86,6 +86,41 @@ function poInvoiceBackendAPIs(app) {
       }
     });
   })
+
+
+  ////////////////////////////////////////////////////////////////////
+  // Get the PO data between two date ranges:
+  app.get('/api/getPoInvoiceDataBwTwoDates', (req, res) => {
+
+    const { selectedPODateRange } = req.query;
+
+    if (!selectedPODateRange || typeof selectedPODateRange !== 'string') {
+      return res.status(400).json({ error: "Invalid date range format" });
+    }
+
+    const [fromDate, toDate] = selectedPODateRange.split(' - ');
+
+    if (!fromDate || !toDate) {
+      return res.status(400).json({ error: "Invalid date range format" });
+    }
+
+    const getPOColumns = `
+        SELECT 
+        id, jc_number, DATE_FORMAT(jc_month, '%Y-%m-%d') as jc_month, jc_category, rfq_number, rfq_value, po_number, po_value, po_status, invoice_number, invoice_value, invoice_status, payment_status, remarks
+        FROM po_invoice_table
+        WHERE jc_month BETWEEN ? AND ?
+      `;
+
+    db.query(getPOColumns, [fromDate, toDate], (error, result) => {
+      if (error) {
+        return res.status(500).json({ error: "An error occurred while fetching PO table data" });
+      }
+      res.send(result);
+    });
+  })
+
+  ////////////////////////////////////////////////////////////////////
+
 
 
   //API to delete the selected po and invoice data:

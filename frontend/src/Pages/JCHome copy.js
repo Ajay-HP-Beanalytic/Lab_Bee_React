@@ -1,13 +1,17 @@
 import React, { useEffect, useState } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import {
     Box,
     Divider,
     FormControl,
     Grid,
+    IconButton,
     InputLabel,
     MenuItem,
     Select,
+    TableCell,
+    TableRow,
+    Tooltip,
     Typography,
 } from '@mui/material'
 
@@ -15,6 +19,7 @@ import { serverBaseAddress } from './APIPage'
 import axios from 'axios';
 
 import PendingIcon from '@mui/icons-material/Pending';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 
 import { toast } from 'react-toastify';
 
@@ -23,7 +28,6 @@ import { getCurrentMonthYear } from '../functions/UtilityFunctions';
 import { DataGrid } from '@mui/x-data-grid';
 import DateRangeFilter from '../components/DateRangeFilter';
 import SearchBar from '../components/SearchBar';
-import dayjs from 'dayjs';
 
 
 
@@ -31,13 +35,12 @@ export default function JCHome() {
 
     const location = useLocation();
 
-    const navigate = useNavigate();
+    // Define the table headers:
+    const JcTableHeadersText = ['Sl No', 'JC Number', 'JC Category', 'Company', 'Customer Name', 'Contact Number', 'JC Status', 'Action'];
 
     // State variables to hold the data fetched from the database:
 
     const [jcTableData, setJcTableData] = useState([]);   //fetch data from the database & to show inside a table
-
-    const [originalJcTableData, setOriginalJcTableData] = useState([]);
 
     const [loading, setLoading] = useState(true);                 //To show loading label
 
@@ -47,7 +50,9 @@ export default function JCHome() {
 
     const [filterRow, setFilterRow] = useState([]);               //To filter out the table based on search
 
+    const [page, setPage] = useState(0);                          //To setup pages of the table
 
+    const [rowsPerPage, setRowsPerPage] = useState(10);            //To show the number of rows per page
 
     const [refresh, setRefresh] = useState(false)
 
@@ -57,10 +62,6 @@ export default function JCHome() {
     const [selectedJCDateRange, setSelectedJCDateRange] = useState(null);
 
     const [searchInputTextOfJC, setSearchInputTextOfJC] = useState("")
-
-    const [filteredJcData, setFilteredJcData] = useState(jcTableData);
-
-
 
 
     // Simulate fetching jc data from the database
@@ -84,7 +85,6 @@ export default function JCHome() {
                 try {
                     const response = await axios.get(quotesURL);
                     setJcTableData(response.data);
-                    setOriginalJcTableData(response.data)
                     setLoading(false);
                 } catch (error) {
                     console.error('Failed to fetch the data', error);
@@ -115,12 +115,9 @@ export default function JCHome() {
         getMonthYearListOfJC()
     }, [jcMonthYear, jcMonthYearList, refresh, location.state])
 
-
-
-    //useEffect to filter the table based on the search input
-    useEffect(() => {
-        setFilteredJcData(jcTableData);
-    }, [jcTableData]);
+    const handleMonthYearOfJC = (event) => {
+        setJCMonthYear(event.target.value)
+    }
 
 
     //If data is loading then show Loading text
@@ -135,11 +132,27 @@ export default function JCHome() {
         return <div>Error: {error.message}</div>;
     }
 
+    // Function to change the page of a table using Tablepagination
+    const handleChangePage = (event, newPage) => {
+        setPage(newPage)
+    };
+
+    // Function to handle or show the rows per page of a table using Tablepagination
+    const handleRowsPerPage = (event) => {
+        setRowsPerPage(+event.target.value)
+        setPage(0)
+    };
+
 
     // Custom style for the table header
     const tableHeaderStyle = { backgroundColor: '#0f6675', fontWeight: 'bold' }
 
-    //Table columns
+    // Temporary function to view the JC:
+    function viewJcData() {
+        toast.error('View')
+    }
+
+
     const columns = [
         { field: 'id', headerName: 'SL No', width: 100, align: 'center', headerAlign: 'center', headerClassName: 'custom-header-color' },
         { field: 'jc_number', headerName: 'JC Number', width: 200, align: 'center', headerAlign: 'center', headerClassName: 'custom-header-color' },
@@ -149,71 +162,31 @@ export default function JCHome() {
         { field: 'jc_status', headerName: 'JC Status', width: 200, align: 'center', headerAlign: 'center', headerClassName: 'custom-header-color' },
     ];
 
-    // on changing the month-year selection:
-    const handleMonthYearOfJC = (event) => {
-        setJCMonthYear(event.target.value)
-    }
 
 
-    // To edit the selected JC
-    const editSelectedRowData = (item) => {
-        navigate(`/jobcard/${item.id}`)
-    }
-
-
-    // on selecting the two different dates or date ranges.
     const handleJCDateRangeChange = (selectedJCDateRange) => {
-
-        if (selectedJCDateRange && selectedJCDateRange.startDate && selectedJCDateRange.endDate) {
-            const formattedDateRange = `${dayjs(selectedJCDateRange.startDate).format('YYYY-MM-DD')} - ${dayjs(selectedJCDateRange.endDate).format('YYYY-MM-DD')}`;
-            setSelectedJCDateRange(formattedDateRange);
-            fetchJCDataBetweenTwoDates(formattedDateRange);
-        } else {
-            console.log('Invalid date range format');
-        }
+        alert('ok')
+        setSelectedJCDateRange(selectedJCDateRange)
+        console.log('selectedJCDateRange is', selectedJCDateRange)
     }
 
-    // To clear the selected dates or date ranges.
     const handleJCDateRangeClear = () => {
+        alert('cleared')
         setSelectedJCDateRange(null)
-        setJcTableData(originalJcTableData)
     }
 
-    // function with api address to fetch the JC details between the two date ranges:
-    const fetchJCDataBetweenTwoDates = async (dateRange) => {
-        try {
-            const response = await axios.get(`${serverBaseAddress}/api/getPrimaryJCDataBwTwoDates`, {
-                params: { selectedJCDateRange: dateRange }
-            });
-            setJcTableData(response.data);
-        } catch (error) {
-            console.error('Error fetching JC data:', error);
-        }
-    };
-
-
-    //Start the search filter using the searchbar
     const onChangeOfSearchInputOfJC = (e) => {
-        const searchText = e.target.value;
+        const searchText = e.target.value.toLowerCase(); // Convert search text to lowercase
         setSearchInputTextOfJC(searchText);
-        filterDataGridTable(searchText);
+        console.log('searchInputTextOfJC', searchInputTextOfJC)
+
     }
 
-    //Function to filter the table
-    const filterDataGridTable = (searchValue) => {
-        const filtered = jcTableData.filter((row) => {
-            return Object.values(row).some((value) =>
-                value.toString().toLowerCase().includes(searchValue.toLowerCase())
-            )
-        })
-        setFilteredJcData(filtered);
-    }
-
-    //Clear the search filter
     const onClearSearchInputOfJC = () => {
         setSearchInputTextOfJC("");
-        setFilteredJcData(jcTableData);
     }
+
+
 
 
     return (
@@ -259,7 +232,6 @@ export default function JCHome() {
                             onClickDateRangeSelectDoneButton={handleJCDateRangeChange}
                             onClickDateRangeSelectClearButton={handleJCDateRangeClear}
                         />
-
                     </Grid>
                 </Grid>
 
@@ -277,29 +249,130 @@ export default function JCHome() {
 
 
 
+            <br />
+            <br />
+
+
+
+            {/* <div style={{ height: 500, width: '100%', pt: 2 }}>
+                <DataGrid
+                    rows={jcTableData}
+                    columns={columns}
+                    sx={{ '&:hover': { cursor: 'pointer' } }}
+                    // onRowClick={(params) => editSelectedRowData(params.row)}
+                    pageSize={5}
+                    rowsPerPageOptions={[5, 10, 20]}
+                    headerStyle={tableHeaderStyle}
+                />
+            </div> */}
+
+
+
             <Box
                 sx={{
                     height: 500,
-                    width: '63%',
+                    width: '80%',
                     '& .custom-header-color': {
                         backgroundColor: '#0f6675',
                         color: 'whitesmoke',
                         fontWeight: 'bold',
                         fontSize: '15px',
                     },
-                    mt: 2,
                 }}
             >
                 <DataGrid
-                    rows={filteredJcData}
+                    rows={jcTableData}
                     columns={columns}
-                    sx={{ '&:hover': { cursor: 'pointer' } }}
-                    onRowClick={(params) => editSelectedRowData(params.row)}
                     pageSize={5}
                     rowsPerPageOptions={[5, 10, 20]}
                 />
             </Box>
-
         </>
     )
+
+
+
+    // Helper function to render each table row
+    function renderTableRow(row, index) {
+        return (
+            <TableRow key={index} align="center">
+                <TableCell align="center">{index + 1}</TableCell>
+                <TableCell align="center">{row.jc_number}</TableCell>
+                <TableCell align="center">{row.jc_category}</TableCell>
+                <TableCell align="center">{row.company_name}</TableCell>
+                <TableCell align="center">{row.customer_name}</TableCell>
+                <TableCell align="center">{row.customer_number}</TableCell>
+                <TableCell align="center">{row.jc_status}</TableCell>
+                <TableCell align="center">
+                    <Tooltip title='View JC' arrow>
+                        <IconButton variant='outlined' size='small'>
+                            {/* <VisibilityIcon onClick={viewJcData} /> */}
+                            <Link to={`/jobcard/${row.id}`}>
+                                <VisibilityIcon />
+                            </Link>
+                        </IconButton>
+                    </Tooltip>
+                </TableCell>
+            </TableRow>
+        );
+    }
 }
+
+{/* {jcTableData.length ? (
+                <div>
+
+                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', paddingTop: 1, marginBottom: 1 }}>
+                        <FormControl sx={{ width: 350 }} align='left'>
+                            <Autocomplete
+                                disablePortal
+                                onChange={(event, value) => { setFilterRow(value ? [value] : []); }}
+                                getOptionLabel={(option) => option.jc_number || option.company_name}
+                                options={jcTableData}
+                                filterOptions={(options, { inputValue }) =>
+                                    options.filter((option) =>
+                                        option.jc_number.toLowerCase().includes(inputValue.toLowerCase()) ||
+                                        option.company_name.toLowerCase().includes(inputValue.toLowerCase())
+                                    )
+                                }
+                                renderInput={(params) => (
+                                    <TextField {...params} label="Search Job-Card" variant="outlined" />
+                                )}
+                            />
+                        </FormControl>
+                    </Box>
+
+                   
+                    <TableContainer component={Paper}>
+                        <Table sx={{ minWidth: 650 }} aria-label="simple table" size='small'>
+                            <TableHead sx={tableHeaderStyle}>
+                                <TableRow>
+                                    {JcTableHeadersText.map((header, index) => (
+                                        <TableCell key={index} align="center" style={{ color: 'white' }}>
+                                            {header}
+                                        </TableCell>
+                                    ))}
+                                </TableRow>
+                            </TableHead>
+
+                            <TableBody>
+                                {filterRow.length > 0
+                                    ? filterRow.map((row, index) => renderTableRow(row, index))
+                                    : jcTableData.slice(page * rowsPerPage, (page + 1) * rowsPerPage).map(renderTableRow)}
+                            </TableBody>
+                        </Table>
+                    </TableContainer>
+
+                    <TablePagination
+                        rowsPerPageOptions={[10, 25, 50]}
+                        component="div"
+                        count={jcTableData.length}
+                        rowsPerPage={rowsPerPage}
+                        page={page}
+                        onPageChange={handleChangePage}
+                        onRowsPerPageChange={handleRowsPerPage}
+                    />
+
+                </div>
+            ) : (
+                <>{msg}</>
+            )} */}

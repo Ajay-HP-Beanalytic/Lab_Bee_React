@@ -34,8 +34,8 @@ import SearchBar from './SearchBar';
 import DateRangeFilter from './DateRangeFilter';
 import { CreatePieChart, CreateBarChart } from '../functions/DashboardFunctions';
 
-import { DataGrid, GridColumns } from '@mui/x-data-grid';
-import HomeCharts from '../Pages/HomeCharts';
+import { DataGrid } from '@mui/x-data-grid';
+import dayjs from 'dayjs';
 
 
 
@@ -44,8 +44,12 @@ export default function PoInvoiceStatusTable({ newJcAdded, openDialog, setOpenDi
 
   const [poDataList, setPoDataList] = useState([])
   const [originalPoDataList, setOriginalPoDataList] = useState([]);
-  const [page, setPage] = useState(0);                          //To setup pages of the table
-  const [rowsPerPage, setRowsPerPage] = useState(10);            //To show the number of rows per page
+
+
+  const [searchInputTextOfPO, setSearchInputTextOfPO] = useState("")
+  const [filteredPOData, setFilteredPOData] = useState(poDataList);
+
+
 
   const [filterRow, setFilterRow] = useState([]);               //To filter out the table based on search
   const [refresh, setRefresh] = useState(false)
@@ -53,11 +57,9 @@ export default function PoInvoiceStatusTable({ newJcAdded, openDialog, setOpenDi
   const [poMonthYear, setPoMonthYear] = useState(getCurrentMonthYear())
   const [monthYearList, setMonthYearList] = useState([])
 
-  const [financialYear, setFinancialYear] = useState(getFinancialYear())
-  const [financialYearList, setFinancialYearList] = useState([])
+
 
   const [poDataForChart, setPoDataForChart] = useState('')
-
 
   const [openDeleteDataDialog, setOpenDeleteDataDialog] = useState(false);
   const [selectedItemForDeletion, setSelectedItemForDeletion] = useState(null);
@@ -74,7 +76,7 @@ export default function PoInvoiceStatusTable({ newJcAdded, openDialog, setOpenDi
   const currentMonthName = new Intl.DateTimeFormat('en-US', { month: 'long' }).format(currentDate);
   const currentYearAndMonth = `${currentMonthName}-${currentYear}`;
 
-
+  // Use Effect to fetch the details:
   useEffect(() => {
 
     let requiredAPIdata = {
@@ -124,25 +126,13 @@ export default function PoInvoiceStatusTable({ newJcAdded, openDialog, setOpenDi
     }
     getMonthYearListOfPO()
 
-
-
-    const getFinancialYearListOfPO = async () => {
-      try {
-        const response = await axios.get(`${serverBaseAddress}/api/getPoDataFinancialYear`);
-        if (response.status === 200) {
-          setFinancialYearList(response.data)
-        } else {
-          console.error('Failed to fetch PO Month list. Status:', response.status);
-        }
-      } catch (error) {
-        console.error('Failed to fetch the data', error);
-      }
-    }
-    getFinancialYearListOfPO()
-
-
-
   }, [poMonthYear, monthYearList])
+
+
+  //useEffect to filter the table based on the search input
+  useEffect(() => {
+    setFilteredPOData(poDataList);
+  }, [poDataList]);
 
 
   //////////////////////////////////////////////////////////////////////////////
@@ -378,14 +368,6 @@ export default function PoInvoiceStatusTable({ newJcAdded, openDialog, setOpenDi
     setPoMonthYear(event.target.value)
   }
 
-
-  const handleFinancialYearChange = (event) => {
-    setFinancialYear(event.target.value)
-  }
-
-
-
-
   const editSelectedRowData = (item) => {
     setOpenDialog(true)
     onRowClick(item);
@@ -430,110 +412,83 @@ export default function PoInvoiceStatusTable({ newJcAdded, openDialog, setOpenDi
   }
 
 
-  // Function to change the page of a table using Tablepagination
-  const handleChangePage = (event, newPage) => {
-    setPage(newPage)
-  };
-
-  // Function to handle or show the rows per page of a table using Tablepagination
-  const handleRowsPerPage = (event) => {
-    setRowsPerPage(+event.target.value)
-    setPage(0)
-  };
-
-
-  // const tableHeadersList = [
-  //   { id: 'Sl No', label: 'Sl No' },
-  //   { id: 'jcNumber', label: 'JC Number' },
-  //   { id: 'jcDate', label: 'JC Date' },
-  //   { id: 'jcCategory', label: 'JC Category' },
-  //   { id: 'rfqNumber', label: 'RFQ' },
-  //   { id: 'rfqValue', label: 'RFQ Value' },
-  //   { id: 'poNumber', label: 'PO' },
-  //   { id: 'poValue', label: 'PO Value' },
-  //   { id: 'poStatus', label: 'PO Status' },
-  //   { id: 'invoiceNumber', label: 'Invoice' },
-  //   { id: 'invoiceValue', label: 'Invoice Value' },
-  //   { id: 'invoiceStatus', label: 'Invoice Status' },
-  //   { id: 'status', label: 'Status' },
-  //   { id: 'remarks', label: 'Remarks' },
-  //   { id: 'actions', label: 'Action' }
-  // ]
-
-
   //Function for the search bar and to filter the table based on the user search input
-  const [searchInputText, setSearchInputText] = useState("")
 
-
-  const onChangeOfSearchInput = (e) => {
-    const searchText = e.target.value.toLowerCase(); // Convert search text to lowercase
-    setSearchInputText(searchText);
-
-
-    const filteredData = originalPoDataList.filter(item => (
-      item.jc_number.toLowerCase().includes(searchText) ||
-      item.jc_month.toLowerCase().includes(searchText) ||
-      item.jc_category.toLowerCase().includes(searchText) ||
-      item.rfq_number.toLowerCase().includes(searchText) ||
-      item.rfq_value.toLowerCase().includes(searchText) ||
-      item.po_number.toLowerCase().includes(searchText) ||
-      item.po_value.toLowerCase().includes(searchText) ||
-      item.po_status.toLowerCase().includes(searchText) ||
-      item.invoice_number.toLowerCase().includes(searchText) ||
-      item.invoice_value.toLowerCase().includes(searchText) ||
-      item.invoice_status.toLowerCase().includes(searchText) ||
-      item.status.toLowerCase().includes(searchText) ||
-      item.remarks.toLowerCase().includes(searchText)
-    ));
-
-    // Update the poDataList with the filtered data
-    setPoDataList(filteredData);
+  //Start the search filter using the searchbar
+  const onChangeOfSearchInputOfPO = (e) => {
+    const searchText = e.target.value;
+    setSearchInputTextOfPO(searchText);
+    filterDataGridTable(searchText);
   };
 
+  //Function to filter the table
+  const filterDataGridTable = (searchValue) => {
+    const filtered = poDataList.filter((row) => {
+      return Object.values(row).some((value) =>
+        value.toString().toLowerCase().includes(searchValue.toLowerCase())
+      )
+    })
+    setFilteredPOData(filtered);
+  }
 
-  const onClearSearchInput = () => {
-    setSearchInputText("")
-    setPoDataList(originalPoDataList);
+  //Clear the search filter
+  const onClearSearchInputOfPO = () => {
+    setSearchInputTextOfPO("")
+    setFilteredPOData(poDataList);
   }
 
 
-
-
-
-
-  // const rows = [
-  //   { id: 1, col1: 'Hello', col2: 'World' },
-  //   { id: 2, col1: 'DataGridPro', col2: 'is Awesome' },
-  //   { id: 3, col1: 'MUI', col2: 'is Amazing' },
-  // ];
-
   const columns = [
-    { field: 'id', headerName: 'ID', width: 20 },
-    { field: 'jc_number', headerName: 'JC Number', width: 150 },
-    { field: 'jc_month', headerName: 'JC Month', width: 150 },
-    { field: 'jc_category', headerName: 'JC Category', width: 100 },
-    { field: 'rfq_number', headerName: 'RFQ Number', width: 100 },
-    { field: 'rfq_value', headerName: 'RFQ Value', width: 100 },
-    { field: 'po_number', headerName: 'PO Number', width: 100 },
-    { field: 'po_value', headerName: 'PO Value', width: 100 },
-    { field: 'po_status', headerName: 'PO Status', width: 150 },
-    { field: 'invoice_number', headerName: 'Invoice Number', width: 150 },
-    { field: 'invoice_value', headerName: 'Invoice Value', width: 100 },
-    { field: 'invoice_status', headerName: 'Invoice Status', width: 150 },
-    { field: 'payment_status', headerName: 'Payment Status', width: 150 },
-    { field: 'remarks', headerName: 'Remarks', width: 100 },
+    { field: 'id', headerName: 'SL No', width: 60, align: 'center', headerAlign: 'center', headerClassName: 'custom-header-color' },
+    { field: 'jc_number', headerName: 'JC Number', width: 150, align: 'center', headerAlign: 'center', headerClassName: 'custom-header-color' },
+    { field: 'jc_month', headerName: 'JC Month', width: 150, align: 'center', headerAlign: 'center', headerClassName: 'custom-header-color' },
+    { field: 'jc_category', headerName: 'JC Category', width: 100, align: 'center', headerAlign: 'center', headerClassName: 'custom-header-color' },
+    { field: 'rfq_number', headerName: 'RFQ Number', width: 130, align: 'center', headerAlign: 'center', headerClassName: 'custom-header-color' },
+    { field: 'rfq_value', headerName: 'RFQ Value', width: 100, align: 'center', headerAlign: 'center', headerClassName: 'custom-header-color' },
+    { field: 'po_number', headerName: 'PO Number', width: 100, align: 'center', headerAlign: 'center', headerClassName: 'custom-header-color' },
+    { field: 'po_value', headerName: 'PO Value', width: 100, align: 'center', headerAlign: 'center', headerClassName: 'custom-header-color' },
+    { field: 'po_status', headerName: 'PO Status', width: 150, align: 'center', headerAlign: 'center', headerClassName: 'custom-header-color' },
+    { field: 'invoice_number', headerName: 'Invoice Number', width: 150, align: 'center', headerAlign: 'center', headerClassName: 'custom-header-color' },
+    { field: 'invoice_value', headerName: 'Invoice Value', width: 130, align: 'center', headerAlign: 'center', headerClassName: 'custom-header-color' },
+    { field: 'invoice_status', headerName: 'Invoice Status', width: 150, align: 'center', headerAlign: 'center', headerClassName: 'custom-header-color' },
+    { field: 'payment_status', headerName: 'Payment Status', width: 150, align: 'center', headerAlign: 'center', headerClassName: 'custom-header-color' },
+    { field: 'remarks', headerName: 'Remarks', width: 160, align: 'center', headerAlign: 'center', headerClassName: 'custom-header-color' },
   ];
 
 
-  const [selectedDateRange, setSelectedDateRange] = useState(null);
+  const [selectedPODateRange, setSelectedPODateRange] = useState(null);
 
-  const handleDateRangeChange = (selectedDateRange) => {
-    setSelectedDateRange(selectedDateRange);
-  };
 
-  const handleDateRangeClear = () => {
-    setSelectedDateRange(null);
+
+  // on selecting the two different dates or date ranges.
+  const handlePODateRangeChange = (selectedPODateRange) => {
+
+    if (selectedPODateRange && selectedPODateRange.startDate && selectedPODateRange.endDate) {
+      const formattedDateRange = `${dayjs(selectedPODateRange.startDate).format('YYYY-MM-DD')} - ${dayjs(selectedPODateRange.endDate).format('YYYY-MM-DD')}`;
+      setSelectedPODateRange(formattedDateRange);
+      fetchPODataBetweenTwoDates(formattedDateRange);
+    } else {
+      console.log('Invalid date range format');
+    }
   }
+
+  // To clear the selected dates or date ranges.
+  const handlePODateRangeClear = () => {
+    setSelectedPODateRange(null)
+    setPoDataList(originalPoDataList)
+  }
+
+  // function with api address to fetch the JC details between the two date ranges:
+  const fetchPODataBetweenTwoDates = async (dateRange) => {
+    try {
+      const response = await axios.get(`${serverBaseAddress}/api/getPoInvoiceDataBwTwoDates`, {
+        params: { selectedPODateRange: dateRange }
+      });
+      setPoDataList(response.data);
+    } catch (error) {
+      console.error('Error fetching PO data:', error);
+    }
+  };
 
 
   return (
@@ -560,8 +515,8 @@ export default function PoInvoiceStatusTable({ newJcAdded, openDialog, setOpenDi
 
           <Grid item >
             <DateRangeFilter
-              onClickDateRangeSelectDoneButton={handleDateRangeChange}
-              onClickDateRangeSelectClearButton={handleDateRangeClear}
+              onClickDateRangeSelectDoneButton={handlePODateRangeChange}
+              onClickDateRangeSelectClearButton={handlePODateRangeClear}
             />
           </Grid>
 
@@ -571,96 +526,15 @@ export default function PoInvoiceStatusTable({ newJcAdded, openDialog, setOpenDi
         <Grid item xs={4} container justifyContent="flex-end">
           <SearchBar
             placeholder='Search'
-            searchInputText={searchInputText}
-            onChangeOfSearchInput={onChangeOfSearchInput}
-            onClearSearchInput={onClearSearchInput}
+            searchInputText={searchInputTextOfPO}
+            onChangeOfSearchInput={onChangeOfSearchInputOfPO}
+            onClearSearchInput={onClearSearchInputOfPO}
           />
         </Grid>
       </Grid>
 
-      {/* </Box> */}
 
-
-
-      {/* {
-        poDataList.length === 0 ? 'No Data Found' :
-          <Box>
-            <TableContainer component={Paper} >
-              <Table sx={{ minWidth: 650 }} aria-label="simple table">
-                <TableHead sx={tableHeaderStyle}>
-                  <TableRow>
-                    {tableHeadersList?.map((header) => (
-                      <TableCell
-                        key={header.id}
-                        align="center"
-                      >
-                        {header.label}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                </TableHead>
-
-                <TableBody>
-                  {poDataList.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((item, index) => (
-                    <TableRow
-                      key={index}
-                      align='center'
-                      sx={{ '&:hover': { cursor: 'pointer' } }}
-                      onClick={() => editSelectedRowData(item)}
-                    >
-                      <TableCell component="th" scope="row">{index + 1}</TableCell>
-                      {Object.entries(item).map(([key, value], index) => {
-
-                        if (key === 'id') return null;
-                        return (
-                          <TableCell key={index} align="center">
-                            {key === 'jc_month' ? moment(value).format('DD/MM/YYYY') : value}
-                          </TableCell>
-                        );
-                      })}
-
-                      <TableCell align="center">
-                        <IconButton variant='outlined' size='small' onClick={(e) => handleOpenDeleteDataDialog(e, item)}>
-                          <Tooltip title='Remove' arrow>
-                            <DeleteIcon fontSize="inherit" />
-                          </Tooltip>
-                        </IconButton>
-                      </TableCell>
-
-                    </TableRow>
-                  ))}
-                </TableBody>
-
-              </Table>
-
-            </TableContainer>
-
-            <TablePagination
-              rowsPerPageOptions={[10, 25, 50]}
-              component="div"
-              count={poDataList.length}
-              rowsPerPage={rowsPerPage}
-              page={page}
-              onPageChange={handleChangePage}
-              onRowsPerPageChange={handleRowsPerPage}
-            />
-
-
-            <ConfirmationDialog
-              open={openDeleteDataDialog}
-              onClose={handleCloseDeleteDataDialog}
-              onConfirm={handleDeleteData}
-              title='Delete Confirmation'
-              contentText='Are you sure you want to delete this data?'
-              confirmButtonText="Delete"
-              cancelButtonText="Cancel"
-            />
-
-          </Box >
-
-      } */}
-
-
+      {/* Pie Chart Box */}
       <Box sx={{ mt: 1, mb: 1, border: '1px solid black' }}>
 
         <Grid container spacing={2} >
@@ -680,8 +554,6 @@ export default function PoInvoiceStatusTable({ newJcAdded, openDialog, setOpenDi
               data={invoiceStatusPieChart}
               options={optionsForInvoiceStatusPieChart}
             />
-
-
           </Grid>
 
           <Grid item xs={12} md={4}>
@@ -698,44 +570,38 @@ export default function PoInvoiceStatusTable({ newJcAdded, openDialog, setOpenDi
 
       </Box>
 
-      <Box>
-
-        <Grid item xs={4}>
-          <FormControl sx={{ display: 'flex', justifyItems: 'flex-start', mt: 2, width: '50%', pb: 2 }}>
-            <InputLabel>Select Financial Year</InputLabel>
-            <Select
-              label="Year"
-              type="text"
-              value={financialYear}
-              onChange={handleFinancialYearChange}
-            >
-              {financialYearList.map((item, index) => (
-                <MenuItem key={index} value={item}>{item}</MenuItem>
-              ))}
-
-            </Select>
-          </FormControl>
-        </Grid>
-
+      {/* <Box>
         <CreateBarChart
           data={monthWisePoCount}
           options={optionsForMonthWisePoCount}
         />
-      </Box>
+      </Box> */}
 
-      {/* <HomeCharts /> */}
-
-      <div style={{ height: 300, width: '100%', pt: 2 }}>
+      <Box
+        sx={{
+          height: 500,
+          width: '100%',
+          '& .custom-header-color': {
+            backgroundColor: '#0f6675',
+            color: 'whitesmoke',
+            fontWeight: 'bold',
+            fontSize: '15px',
+          },
+          mt: 2,
+        }}
+      >
         <DataGrid
-          rows={poDataList}
+          rows={filteredPOData}
           columns={columns}
           sx={{ '&:hover': { cursor: 'pointer' } }}
           onRowClick={(params) => editSelectedRowData(params.row)}
           pageSize={5}
           rowsPerPageOptions={[5, 10, 20]}
-          headerStyle={tableHeaderStyle}
         />
-      </div>
+
+      </Box>
+
+
     </>
   )
 }
