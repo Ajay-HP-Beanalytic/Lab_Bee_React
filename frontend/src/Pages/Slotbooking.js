@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { Controller, useForm, } from "react-hook-form";
-import { Button, ClickAwayListener, Dialog, DialogActions, DialogContent, DialogTitle, Divider, FormControl, Grid, InputLabel, Menu, MenuItem, Select, TextField, Typography } from '@mui/material'
+import { Box, Button, ClickAwayListener, Dialog, DialogActions, DialogContent, DialogTitle, Divider, FormControl, Grid, InputLabel, Menu, MenuItem, Select, TextField, Typography } from '@mui/material'
 import { momentLocalizer } from 'react-big-calendar'
 import moment from 'moment'
 import Calendar from '../components/Calendar_Comp'
@@ -477,6 +477,23 @@ export default function Slotbooking() {
 
     return (
         <>
+
+            <Box
+                sx={{
+                    display: 'flex',
+                    justifyContent: 'flex-end',
+                    alignItems: 'center',
+                }}>
+                <Button
+                    sx={{ borderRadius: 1, bgcolor: "orange", color: "white", borderColor: "black" }}
+                    variant="contained"
+                    color="primary"
+                    onClick={handleOpenDialog}
+                >
+                    New Booking
+                </Button>
+            </Box>
+
             <Divider>
                 <Typography variant='h4' sx={{ color: '#003366' }}>Slot Booking</Typography>
             </Divider>

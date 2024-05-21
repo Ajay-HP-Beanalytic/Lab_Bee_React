@@ -13,7 +13,6 @@ function jobcardsAPIs(app) {
 
         const formattedOpenDate = convertDateTime(jcOpenDate)
 
-        console.log(jcNumber, dcNumber, jcOpenDate, poNumber, jcCategory, typeOfRequest, testInchargeName, companyName, customerName, customerEmail, customerNumber, projectName, sampleCondition, referanceDocs, jcStatus, formattedCloseDate, observations)
 
         // const { jcNumber, dcNumber, formattedJcOpenDate, poNumber, jcCategory, testInchargeName, companyName, customerName, customerNumber, projectName, sampleCondition, referanceDocs, jcStatus, formattedCloseDate, jcText, observations } = req.body
 
@@ -29,25 +28,35 @@ function jobcardsAPIs(app) {
         });
     });
 
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
     // API to fetch the primary data of JC's & to create JC Table: 
     app.get('/api/getPrimaryJCData', (req, res) => {
 
-        const { monthYear } = req.query;
-        const [month, year] = monthYear.split('-');
+
+        const { year, month } = req.query;
+
+        // Convert month name to month number
+        const monthNumber = monthNames.indexOf(month) + 1;
+
+        if (monthNumber === 0 || !year) {
+            return res.status(400).json({ error: "Invalid year or month format" });
+        }
 
         const getJCColumns = `
-        SELECT id, jc_number, jc_category, DATE_FORMAT(jc_open_date, '%Y-%m-%d') as jc_open_date, company_name,  jc_status
-        FROM bea_jobcards
-        WHERE DATE_FORMAT(jc_open_date, '%b-%Y') = ?
-        `;
+                            SELECT 
+                                id, jc_number, jc_category, DATE_FORMAT(jc_open_date, '%Y-%m-%d') as jc_open_date, company_name,  jc_status
+                            FROM 
+                                bea_jobcards
+                            WHERE 
+                                MONTH(jc_open_date) = ? AND YEAR(jc_open_date) = ?
+                            `;
 
-        db.query(getJCColumns, [month + '-' + year], (error, result) => {
+        db.query(getJCColumns, [monthNumber, year], (error, result) => {
             if (error) {
                 return res.status(500).json({ error: "An error occurred while fetching JC table data" })
             }
             res.send(result)
-            // console.log('result', result)
         });
     })
 
@@ -780,15 +789,22 @@ function jobcardsAPIs(app) {
 
     // To get the month-year of the Job-card
     app.get('/api/getJCYearMonth', (req, res) => {
-        const sqlQuery = `SELECT DISTINCT DATE_FORMAT(jc_open_date, '%b-%Y') AS monthYear FROM bea_jobcards`;
+
+        const sqlQuery = `
+        SELECT 
+            DISTINCT DATE_FORMAT(jc_open_date, '%b') AS month,
+            DATE_FORMAT(jc_open_date, '%Y') AS year
+        FROM bea_jobcards`;
 
         db.query(sqlQuery, (error, result) => {
             if (error) {
                 return res.status(500).json({ error: "An error occurred while fetching JC Month Year data" })
             }
 
-            const formattedData = result.map(row => row.monthYear);
-
+            const formattedData = result.map(row => ({
+                month: row.month,
+                year: row.year
+            }));
             res.json(formattedData);
         });
     });

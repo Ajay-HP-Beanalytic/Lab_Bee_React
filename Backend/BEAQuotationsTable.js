@@ -102,16 +102,34 @@ function mainQuotationsTableAPIs(app) {
 
 
 
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
     // Fetch the all quotation data from the 'bea_quotations_table' table :
-    app.get("/api/getQuotationdata", (req, res) => {
+    app.get("/api/getQuotationData", (req, res) => {
 
-        const quotesList = "SELECT id,quotation_ids, company_name, DATE_FORMAT(quote_given_date, '%Y-%m-%d') AS formatted_quote_given_date, quote_category, quote_created_by FROM bea_quotations_table";
-        // const quotesList = "SELECT id,quotation_ids, company_name, quote_given_date, quote_category, quote_created_by FROM bea_quotations_table";
+        const { year, month } = req.query;
+        // Convert month name to month number
+        const monthNumber = monthNames.indexOf(month) + 1;
 
-        //const quotesList = "SELECT * FROM bea_quotations_table";
-        db.query(quotesList, (error, result) => {
-            res.send(result);
+        if (monthNumber === 0 || !year) {
+            return res.status(400).json({ error: "Invalid year or month format" });
+        }
+
+        const quotesList = `SELECT 
+                                id, quotation_ids, company_name, DATE_FORMAT(quote_given_date, '%Y-%m-%d') AS formatted_quote_given_date, quote_category, quote_created_by 
+                            FROM 
+                                bea_quotations_table
+                            WHERE 
+                                MONTH(quote_given_date) = ? AND YEAR(quote_given_date) = ?
+                                `;
+
+        db.query(quotesList, [monthNumber, year], (error, result) => {
+            if (error) {
+                console.error("Error fetching Quotes data:", error);
+                res.status(500).json({ error: "Failed to retrieve Quotes data" });
+            } else {
+                res.status(200).json(result);
+            }
         });
     });
 
@@ -152,6 +170,63 @@ function mainQuotationsTableAPIs(app) {
             if (error) return res.status(500).json(error)
             return res.status(200).json(result)
         })
+    })
+
+
+
+    // //API to fetch the year-month list po and invoice data:
+    app.get('/api/getQuoteYearMonth', (req, res) => {
+
+        const sqlQuery = `
+        SELECT 
+            DISTINCT DATE_FORMAT(quote_given_date, '%b') AS month,
+            DATE_FORMAT(quote_given_date, '%Y') AS year
+        FROM bea_quotations_table`;
+
+        db.query(sqlQuery, (error, result) => {
+            if (error) {
+                return res.status(500).json({ error: "An error occurred while fetching data" });
+            }
+
+            const formattedData = result.map(row => ({
+                month: row.month,
+                year: row.year
+            }));
+            res.json(formattedData);
+        });
+    });
+
+
+    // Get the Quotations between two date ranges:
+    app.get('/api/getQuotesDataBwTwoDates', (req, res) => {
+
+        const { selectedQuoteDateRange } = req.query;
+
+        if (!selectedQuoteDateRange || typeof selectedQuoteDateRange !== 'string') {
+            return res.status(400).json({ error: "Invalid date range format" });
+        }
+
+        const [fromDate, toDate] = selectedQuoteDateRange.split(' - ');
+
+        if (!fromDate || !toDate) {
+            return res.status(400).json({ error: "Invalid date range format" });
+        }
+
+        const getQTColumns = `
+                            SELECT
+                                id, quotation_ids, company_name, DATE_FORMAT(quote_given_date, '%Y-%m-%d') AS formatted_quote_given_date, quote_category, quote_created_by
+                            FROM
+                                bea_quotations_table
+                            WHERE
+                                quote_given_date BETWEEN ? AND ?
+                        `;
+
+        db.query(getQTColumns, [fromDate, toDate], (error, result) => {
+            if (error) {
+                return res.status(500).json({ error: "An error occurred while fetching Quotations between the selected date" });
+            }
+            res.send(result);
+        });
     })
 
 }
