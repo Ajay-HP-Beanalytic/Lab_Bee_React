@@ -45,44 +45,34 @@ function poInvoiceBackendAPIs(app) {
 
 
 
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
   // Get all po and invoice data to display that in a table:
-
-  // app.get("/api/getPoInvoiceDataList", (req, res) => {
-
-  //   const { monthYear } = req.query;
-  //   const [month, year] = monthYear.split('-');
-
-  //   const getPoAndInvoiceList = `SELECT id, jc_number, jc_month, jc_category, rfq_number, rfq_value, po_number, po_value, invoice_number, invoice_value, status, remarks FROM po_invoice_table WHERE deleted_at IS NULL`;
-
-
-  //   db.query(getPoAndInvoiceList, (error, results) => {
-  //     if (error) {
-  //       console.error("Error fetching PO and invoice data:", error);
-  //       res.status(500).json({ error: "Failed to retrieve PO and invoice data" });
-  //     } else {
-  //       res.status(200).json(result);
-  //     }
-  //   });
-  // })
-
   app.get("/api/getPoInvoiceDataList", (req, res) => {
 
-    const { monthYear } = req.query;
-    const [month, year] = monthYear.split('-');
+    const { year, month } = req.query;
+
+    // Convert month name to month number
+    const monthNumber = monthNames.indexOf(month) + 1;
+
+    if (monthNumber === 0 || !year) {
+      return res.status(400).json({ error: "Invalid year or month format" });
+    }
 
     const getPoAndInvoiceList = `SELECT 
                                 id, jc_number, DATE_FORMAT(jc_month, '%Y-%m-%d') as jc_month, jc_category, rfq_number, rfq_value, po_number, po_value, po_status, invoice_number, invoice_value, invoice_status, payment_status, remarks
                                 FROM po_invoice_table 
-                                WHERE DATE_FORMAT(jc_month, '%b-%Y') = ? `;
+                                WHERE MONTH(jc_month) = ? AND YEAR(jc_month) = ? 
+                                `;
 
 
-    db.query(getPoAndInvoiceList, [month + '-' + year], (error, result) => {
+    db.query(getPoAndInvoiceList, [monthNumber, year], (error, result) => {
       if (error) {
         console.error("Error fetching PO and invoice data:", error);
         res.status(500).json({ error: "Failed to retrieve PO and invoice data" });
       } else {
         res.status(200).json(result);
-        // res.send(result)
+
       }
     });
   })
@@ -162,7 +152,6 @@ function poInvoiceBackendAPIs(app) {
   app.post("/api/addPoInvoice/:id", (req, res) => {
 
     const { formData } = req.body;
-    // console.log('formData is', formData)
 
     const sqlQuery = `
         UPDATE po_invoice_table
@@ -215,62 +204,29 @@ function poInvoiceBackendAPIs(app) {
 
 
   // //API to fetch the year-month list po and invoice data:
-  // app.get('/api/getPoDataYearMonth', (req, res) => {
-
-  //   const sqlQuery = `SELECT jc_month FROM po_invoice_table WHERE deleted_at IS NULL`;
-
-  //   const date = new Date(jc_month);
-
-  //   const monthYear = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-
-  //   console.log(monthYear); // Output: Apr 2024
-
-  //   db.query(sqlQuery, (error, result) => {
-  //     if (error) {
-  //       return res.status(500).json({ error: "An error occurred while fetching data" })
-  //     }
-  //     res.send(result)
-  //   })
-  // });
-
   app.get('/api/getPoDataYearMonth', (req, res) => {
-    const sqlQuery = `SELECT DISTINCT DATE_FORMAT(jc_month, '%b-%Y') AS monthYear FROM po_invoice_table`;
+
+    const sqlQuery = `
+        SELECT 
+            DISTINCT DATE_FORMAT(jc_month, '%b') AS month, 
+            DATE_FORMAT(jc_month, '%Y') AS year 
+        FROM po_invoice_table`;
 
     db.query(sqlQuery, (error, result) => {
       if (error) {
-        return res.status(500).json({ error: "An error occurred while fetching data" })
+        return res.status(500).json({ error: "An error occurred while fetching data" });
       }
 
-      const formattedData = result.map(row => row.monthYear);
+      const formattedData = result.map(row => ({
+        month: row.month,
+        year: row.year
+      }));
       res.json(formattedData);
     });
   });
 
 
   // Backend code to fetch the financial years:
-  // app.get('/api/getPoDataFinancialYear', (req, res) => {
-  //   const sqlQuery = `
-  //   SELECT DISTINCT 
-  //     jc_month
-  //   FROM po_invoice_table
-  // `;
-
-  //   db.query(sqlQuery, (error, result) => {
-  //     if (error) {
-  //       return res.status(500).json({ error: "An error occurred while fetching data" });
-  //     }
-
-  //     // Process the fetched data to calculate financial years
-  //     const financialYears = result.map(row => {
-  //       const jc_month = new Date(row.jc_month);
-  //       return getFinancialYear(jc_month);
-  //     });
-
-  //     res.json(financialYears);
-  //   });
-  // });
-
-
   app.get('/api/getPoDataFinancialYear', (req, res) => {
     const sqlQuery = `
       SELECT DISTINCT 

@@ -8,10 +8,10 @@ export default function JobcardRequirements() {
         <>
             <Typography variant='h4' sx={{ textDecoration: 'underline' }}> Job Card Requirements</Typography>
             <br />
-            <AddTestsList />
+            {/* <AddTestsList /> */}
 
-            <br />
-            <br />
+            {/* <br />
+            <br /> */}
 
             <AddReliabilityTasks />
 

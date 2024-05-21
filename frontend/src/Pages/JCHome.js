@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
     Box,
+    Button,
     Divider,
     FormControl,
     Grid,
@@ -52,15 +53,23 @@ export default function JCHome() {
     const [refresh, setRefresh] = useState(false)
 
     const [jcMonthYear, setJCMonthYear] = useState(getCurrentMonthYear())
+
     const [jcMonthYearList, setJcMonthYearList] = useState([])
+
+
+    const { month, year } = getCurrentMonthYear();
+
+    const [jcYear, setJCYear] = useState(year)
+    const [jcMonth, setJCMonth] = useState(month)
+
+    const [years, setYears] = useState([]);
+    const [months, setMonths] = useState([]);
 
     const [selectedJCDateRange, setSelectedJCDateRange] = useState(null);
 
     const [searchInputTextOfJC, setSearchInputTextOfJC] = useState("")
 
     const [filteredJcData, setFilteredJcData] = useState(jcTableData);
-
-
 
 
     // Simulate fetching jc data from the database
@@ -70,7 +79,8 @@ export default function JCHome() {
 
         let requiredAPIdata = {
             _fields: 'jc_number, jc_category, jc_open_date, company_name,  jc_status',
-            monthYear: jcMonthYear,
+            year: jcYear,
+            month: jcMonth,
         }
 
         const urlParameters = new URLSearchParams(requiredAPIdata).toString()
@@ -95,25 +105,39 @@ export default function JCHome() {
             fetchJCDataFromDatabase();
         }
 
-    }, [jcMonthYear, filterRow, refresh, location.state]);
+    }, [jcMonthYear, jcYear, jcMonth, filterRow, refresh, location.state]);
 
 
-
+    // Function to fetch the months and years list:
     useEffect(() => {
         const getMonthYearListOfJC = async () => {
+
             try {
                 const response = await axios.get(`${serverBaseAddress}/api/getJCYearMonth`);
                 if (response.status === 200) {
-                    setJcMonthYearList(response.data);
+                    const yearSet = new Set();
+                    const monthSet = new Set();
+
+                    response.data.forEach(item => {
+                        yearSet.add(item.year);
+                        monthSet.add(item.month);
+                    });
+
+                    setYears([...yearSet]);
+                    setMonths([...monthSet]);
+
+                    console.log('11', years)
+                    console.log('22', months)
                 } else {
-                    console.error('Failed to fetch JC months list. Status:', response.status);
+                    console.error('Failed to fetch JC Month-Year list. Status:', response.status);
                 }
             } catch (error) {
                 console.error('Failed to fetch the data', error);
             }
+
         }
         getMonthYearListOfJC()
-    }, [jcMonthYear, jcMonthYearList, refresh, location.state])
+    }, [jcMonthYear, jcYear, jcMonth, jcMonthYearList, refresh, location.state])
 
 
 
@@ -150,8 +174,12 @@ export default function JCHome() {
     ];
 
     // on changing the month-year selection:
-    const handleMonthYearOfJC = (event) => {
-        setJCMonthYear(event.target.value)
+    const handleYearOfJC = (event) => {
+        setJCYear(event.target.value)
+    }
+
+    const handleMonthOfJC = (event) => {
+        setJCMonth(event.target.value)
     }
 
 
@@ -173,12 +201,6 @@ export default function JCHome() {
         }
     }
 
-    // To clear the selected dates or date ranges.
-    const handleJCDateRangeClear = () => {
-        setSelectedJCDateRange(null)
-        setJcTableData(originalJcTableData)
-    }
-
     // function with api address to fetch the JC details between the two date ranges:
     const fetchJCDataBetweenTwoDates = async (dateRange) => {
         try {
@@ -190,6 +212,14 @@ export default function JCHome() {
             console.error('Error fetching JC data:', error);
         }
     };
+
+    // To clear the selected dates or date ranges.
+    const handleJCDateRangeClear = () => {
+        setSelectedJCDateRange(null)
+        setJcTableData(originalJcTableData)
+    }
+
+
 
 
     //Start the search filter using the searchbar
@@ -215,39 +245,68 @@ export default function JCHome() {
         setFilteredJcData(jcTableData);
     }
 
+    //Functiopn to redirect to new jc create page:
+    const onClickNewJCButton = () => {
+        navigate(`/jobcard`)
+    }
+
 
     return (
 
         <>
+
+            <Box
+                sx={{
+                    display: 'flex',
+                    justifyContent: 'flex-end',
+                    alignItems: 'center',
+                }}>
+                <Button
+                    sx={{ borderRadius: 1, bgcolor: "orange", color: "white", borderColor: "black" }}
+                    variant="contained"
+                    color="primary"
+                    onClick={onClickNewJCButton}
+                >
+                    Create new Job-Card
+                </Button>
+            </Box>
+
             <Divider>
                 <Typography variant='h4' sx={{ color: '#003366' }}> Job-Card Dashboard </Typography>
             </Divider>
 
-            <br />
 
-            {/* Create a button with a link using 'CreateButtonWithLink' function */}
-            <CreateButtonWithLink
-                title='Create a new JC'
-                to={`/jobcard`} >
-                Create new Job-Card
-            </CreateButtonWithLink>
-
-            <br />
 
             <Grid container spacing={2} alignItems="center">
 
                 <Grid item xs={8} container alignItems="center">
                     <Grid item sx={{ mr: 2 }}>
-                        <FormControl sx={{ width: '200px' }}>
-                            <InputLabel>Select Month-Year</InputLabel>
+
+                        <FormControl sx={{ width: '200px', mx: '2px' }}>
+                            <InputLabel>Select Year</InputLabel>
                             <Select
-                                label="Month-Year"
+                                label="Year"
                                 type="text"
-                                onChange={handleMonthYearOfJC}
-                                value={jcMonthYear}
+                                value={jcYear}
+                                onChange={handleYearOfJC}
                             >
-                                {jcMonthYearList.map((item, index) => (
-                                    <MenuItem key={index} value={item}>{item}</MenuItem>
+                                {years.map((year, index) => (
+                                    <MenuItem key={index} value={year}>{year}</MenuItem>
+                                ))}
+
+                            </Select>
+                        </FormControl>
+
+                        <FormControl sx={{ width: '200px', mx: '2px' }}>
+                            <InputLabel>Select Month</InputLabel>
+                            <Select
+                                label="Month"
+                                type="text"
+                                value={jcMonth}
+                                onChange={handleMonthOfJC}
+                            >
+                                {months.map((month, index) => (
+                                    <MenuItem key={index} value={month}>{month}</MenuItem>
                                 ))}
 
                             </Select>

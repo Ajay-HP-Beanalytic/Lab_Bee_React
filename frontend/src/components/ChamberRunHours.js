@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Box, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Typography } from '@mui/material'
+import { Box, Typography } from '@mui/material'
 import axios from 'axios'
 import { serverBaseAddress } from '../Pages/APIPage'
 import { DataGrid } from '@mui/x-data-grid';
@@ -15,7 +15,6 @@ export default function ChamberRunHours() {
       const response = await axios.get(`${serverBaseAddress}/api/getChamberUtilization`);
       if (response.status === 200) {
         setChamberRunHoursList(response.data)
-        console.log(response.data)
       } else {
         console.error('Failed to fetch chamber utilization list. Status:', response.status);
       }
@@ -33,12 +32,12 @@ export default function ChamberRunHours() {
 
 
   const columns = [
-    { field: 'id', headerName: 'SL No', width: 100, align: 'center', headerAlign: 'center', headerClassName: 'custom-header-color' },
-    { field: 'chamberName', headerName: 'Chamber / Equipment Name', width: 250, align: 'center', headerAlign: 'center', headerClassName: 'custom-header-color' },
-    { field: 'prevMonthRunHours', headerName: 'Previous Month Run Hours', width: 250, align: 'center', headerAlign: 'center', headerClassName: 'custom-header-color' },
-    { field: 'currentMonthRunHours', headerName: 'Current Month Run Hours', width: 250, align: 'center', headerAlign: 'center', headerClassName: 'custom-header-color' },
-    { field: 'chamberUtilization', headerName: 'Chamber Utilization', width: 250, align: 'center', headerAlign: 'center', headerClassName: 'custom-header-color' },
-    { field: 'totalRunHours', headerName: 'Total Run Hours', width: 250, align: 'center', headerAlign: 'center', headerClassName: 'custom-header-color' },
+    { field: 'id', headerName: 'SL No', width: 200, align: 'center', headerAlign: 'center', headerClassName: 'custom-header-color' },
+    { field: 'chamberName', headerName: 'Chamber / Equipment Name', width: 300, align: 'center', headerAlign: 'center', headerClassName: 'custom-header-color' },
+    { field: 'prevMonthRunHours', headerName: 'Previous Month Run Hours', width: 300, align: 'center', headerAlign: 'center', headerClassName: 'custom-header-color' },
+    { field: 'currentMonthRunHours', headerName: 'Current Month Run Hours', width: 300, align: 'center', headerAlign: 'center', headerClassName: 'custom-header-color' },
+    { field: 'chamberUtilization', headerName: 'Chamber Utilization', width: 300, align: 'center', headerAlign: 'center', headerClassName: 'custom-header-color' },
+    { field: 'totalRunHours', headerName: 'Total Run Hours', width: 300, align: 'center', headerAlign: 'center', headerClassName: 'custom-header-color' },
 
   ]
 
@@ -59,6 +58,7 @@ export default function ChamberRunHours() {
               fontSize: '15px',
             },
             mt: 2,
+            justifyContent: 'right'
           }}
         >
           <DataGrid

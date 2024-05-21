@@ -7,31 +7,13 @@ export const getCurrentMonthYear = () => {
   const month = months_list[currentDate.getMonth()];
   const year = currentDate.getFullYear();
 
-  return `${month}-${year}`
+  // return `${month}-${year}`
+  return { month, year };
 }
 
 
-const fin_months_list = ['Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar'];
-
-// export const getFinancialYear = () => {
-//   const currentDate = new Date();
-//   const month = fin_months_list[currentDate.getMonth()];
-//   const year = currentDate.getFullYear();
-
-//   const isBeforeApril = currentDate.getMonth() < fin_months_list.indexOf('Apr');
-
-//   const startYear = isBeforeApril ? year - 1 : year;
-//   const endYear = isBeforeApril ? year : year + 1;
 
 
-//   console.log('isBeforeApril', isBeforeApril)
-//   console.log('startYear', startYear)
-//   console.log('endYear', endYear)
-//   console.log(`${month}-${startYear} to ${month}-${endYear}`)
-
-
-//   return `${month}-${startYear} to ${month}-${endYear}`;
-// }
 
 
 export const getFinancialYear = () => {

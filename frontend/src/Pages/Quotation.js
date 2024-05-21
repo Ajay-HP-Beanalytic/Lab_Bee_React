@@ -15,7 +15,7 @@ import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
-import { Link, Navigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 
 import { serverBaseAddress } from './APIPage'
 import DocToPdf from '../components/DocToPdf';
@@ -33,6 +33,9 @@ const StyledTableRow = styled(TableRow)(({ theme }) => ({
 }));
 
 export default function Quotation() {
+
+
+  const navigate = useNavigate()
 
   let initialCompanyName = ''
   let initialToCompanyAddress = ''
@@ -375,31 +378,12 @@ export default function Quotation() {
       if (res.status === 500) toast.error("Failed to create the quotation")
     })
 
-    // //To add discount data of the quotations to the 'quotations_discount' table if there is discount given:
-    // axios.post(apiToAddDiscountDataOfQuotations, {
-    //   quotationIdString,
-    //   companyName,
-    //   taxableAmount,
-    //   discountAmount,
-    //   selectedDate: moment(selectedDate, "DD-MM-YYYY").toDate(), // Format the date before sending
-    // }).then(res => {
-    //   // if (res.status === 200) toast.success('Done')
-    //   // if (res.status === 500) toast.error("Not Done")
-    //   if (res.status === 200) {
-    //     console.log('Discount data saved')
-    //   }
-    //   if (res.status === 500) {
-    //     console.log('Discount data not saved')
-    //   }
-    // })
 
     if (!editId) {
       handleCancelBtnIsClicked();
     }
 
-
-
-
+    navigate('/quotation_dashboard')
   }
 
 
@@ -524,33 +508,57 @@ export default function Quotation() {
       <form onSubmit={handleSubmitETQuotation}>
         <Box >
 
-          <Box sx={{ paddingTop: '5', paddingBottom: '5', marginTop: '5', marginBottom: '5', border: 1, borderColor: 'primary.main' }}>
+          <Box sx={{ mb: 1 }}>
+            <Grid container spacing={3} alignItems="center" >
+              <Grid item sx={{ display: 'flex', alignItems: 'center', flexGrow: 1 }}>
+                <FormControl sx={{ width: "100%" }} >
+                  <Autocomplete
+                    disablePortal
+                    value={selectedCompanyId}
+                    onChange={(event, newValue) => {
+                      setSelectedCompanyId(newValue);
+                      prefillTextFields(newValue);
+                    }}
+                    options={companyIdList}
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        label="Select Company Data"
+                        variant="outlined"
+                      />
+                    )}
+                  />
+                </FormControl>
+              </Grid>
 
-            <div sx={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between' }}>
+              <Grid item>
+                <Tooltip title='Add New Company Data'>
+                  <IconButton
+                    size='large' sx={{ mr: 120 }}
+                    onClick={() => navigate('/quotation_essentials')}>
+                    <AddIcon />
+                  </IconButton>
+                </Tooltip>
+              </Grid>
 
-              <FormControl align='left' sx={{ width: "25%", marginTop: '20px', }}>
-                <Autocomplete
-                  disablePortal
-                  value={selectedCompanyId}
-                  onChange={(event, newValue) => {
-                    setSelectedCompanyId(newValue);
-                    prefillTextFields(newValue);
-                  }}
-                  options={companyIdList}
-                  renderInput={(params) => (
-                    <TextField
-                      {...params}
-                      label="Select Company Data"
-                      variant="outlined"
-                    />
-                  )}
-                />
-              </FormControl>
+              <Grid item >
+                <Typography variant="h6" sx={{ fontWeight: 'bold', fontStyle: 'italic', color: 'blue', textDecoration: 'underline', textAlign: 'right' }}>
+                  Quotation ID: {quotationIdString}
+                </Typography>
+
+              </Grid>
+            </Grid>
+
+            {/* <div sx={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between' }}>
 
               <Typography variant="h6" align='right' sx={{ marginBottom: '16px', marginRight: '20px', marginLeft: '20px', fontWeight: 'bold', fontStyle: 'italic', color: 'blue', textDecoration: 'underline' }}>
                 Quotation ID: {quotationIdString}
               </Typography>
-            </div>
+            </div> */}
+
+          </Box>
+
+          <Box sx={{ paddingTop: '5', paddingBottom: '5', marginTop: '5', marginBottom: '5', border: 1, borderColor: 'primary.main' }}>
 
             <Grid container justifyContent="center" spacing={2} >
               <Grid item xs={6} elevation={4} sx={{ borderRadius: 3 }} >
@@ -914,31 +922,32 @@ export default function Quotation() {
 
             <Box sx={{ marginTop: 3, marginBottom: 0.5, alignContent: 'center' }}>
 
+
+
+
               <Button
-                sx={{ borderRadius: 3, margin: 0.5 }}
+                sx={{ borderRadius: 3, mx: 0.5, mb: 1, bgcolor: "orange", color: "white", borderColor: "black" }}
+                variant="contained"
+                color="primary"
+                onClick={() => navigate('/quotation_dashboard')}
+              >
+                Close
+              </Button>
+
+              <Button
+                sx={{ borderRadius: 3, mx: 0.5, mb: 1, bgcolor: "orange", color: "white", borderColor: "black" }}
                 variant="contained"
                 color="primary"
                 type="submit"
               >
-                {editId ? 'Save changes' : 'Add'}
-              </Button>
-
-
-              <Button
-                sx={{ borderRadius: 3, margin: 0.5 }}
-                variant="contained"
-                color="primary"
-                // onClick={() => window.history.back()}
-                onClick={handleCancelBtnIsClicked}
-              >
-                Close
+                {editId ? 'Update' : 'Submit'}
               </Button>
 
 
               {editId &&
                 <Tooltip title='Download quotation' arrow>
                   <Button variant="contained" startIcon={<FileDownloadIcon />}
-                    sx={{ borderRadius: 3, margin: 0.5 }}
+                    sx={{ borderRadius: 3, mx: 0.5, mb: 1, bgcolor: "orange", color: "white", borderColor: "black" }}
                     onClick={handleDownloadQuote}
                   >
                     Download

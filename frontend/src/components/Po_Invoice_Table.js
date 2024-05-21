@@ -1,35 +1,18 @@
 import React, { useEffect, useState } from 'react'
 
 import {
-  Autocomplete,
   Box,
-  Card,
   FormControl,
   Grid,
-  IconButton,
   InputLabel,
   MenuItem,
-  Paper,
   Select,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TablePagination,
-  TableRow,
-  TextField,
-  Tooltip,
   Typography
 } from '@mui/material'
 import { serverBaseAddress } from '../Pages/APIPage';
 import axios from 'axios';
 import { toast } from 'react-toastify';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
-import moment from 'moment';
 import { getCurrentMonthYear, getFinancialYear } from '../functions/UtilityFunctions';
-import ConfirmationDialog from './ConfirmationDialog';
 import SearchBar from './SearchBar';
 import DateRangeFilter from './DateRangeFilter';
 import { CreatePieChart, CreateBarChart } from '../functions/DashboardFunctions';
@@ -54,8 +37,18 @@ export default function PoInvoiceStatusTable({ newJcAdded, openDialog, setOpenDi
   const [filterRow, setFilterRow] = useState([]);               //To filter out the table based on search
   const [refresh, setRefresh] = useState(false)
 
-  const [poMonthYear, setPoMonthYear] = useState(getCurrentMonthYear())
+  // const [poMonthYear, setPoMonthYear] = useState(getCurrentMonthYear())
   const [monthYearList, setMonthYearList] = useState([])
+
+  const { month, year } = getCurrentMonthYear();
+
+  const [poYear, setPoYear] = useState(year)
+  const [poMonth, setPoMonth] = useState(month)
+
+  const [years, setYears] = useState([]);
+  const [months, setMonths] = useState([]);
+
+  const [poMonthYear, setPoMonthYear] = useState()
 
 
 
@@ -65,8 +58,6 @@ export default function PoInvoiceStatusTable({ newJcAdded, openDialog, setOpenDi
   const [selectedItemForDeletion, setSelectedItemForDeletion] = useState(null);
 
 
-  // Custom style for the table header
-  const tableHeaderStyle = { backgroundColor: '#668799', fontWeight: 'extra-bold' }
 
   const currentDate = new Date();
   const currentYear = currentDate.getFullYear();
@@ -76,12 +67,13 @@ export default function PoInvoiceStatusTable({ newJcAdded, openDialog, setOpenDi
   const currentMonthName = new Intl.DateTimeFormat('en-US', { month: 'long' }).format(currentDate);
   const currentYearAndMonth = `${currentMonthName}-${currentYear}`;
 
-  // Use Effect to fetch the details:
+  // Function to fetch the data for table
   useEffect(() => {
 
     let requiredAPIdata = {
       _fields: 'jc_number, jc_month, jc_category, rfq_number, rfq_value, po_number, po_value, po_status, invoice_number, invoice_value, invoice_status, status, remarks',
-      monthYear: poMonthYear,
+      year: poYear,
+      month: poMonth
     }
 
     const urlParameters = new URLSearchParams(requiredAPIdata).toString()
@@ -106,27 +98,38 @@ export default function PoInvoiceStatusTable({ newJcAdded, openDialog, setOpenDi
       }
       getPoAndInvoiceList()
     }
-  }, [newJcAdded, poMonthYear, filterRow, refresh])
+  }, [newJcAdded, poYear, poMonth, filterRow, refresh])
 
-
+  // Function to fetch the month and year list data
   useEffect(() => {
     const getMonthYearListOfPO = async () => {
+
       try {
         const response = await axios.get(`${serverBaseAddress}/api/getPoDataYearMonth`);
         if (response.status === 200) {
-          setMonthYearList(response.data);
-          // setFinancialYearList(response.data)
-          // console.log('fin is', financialYear)
+          const yearSet = new Set();
+          const monthSet = new Set();
+
+          response.data.forEach(item => {
+            yearSet.add(item.year);
+            monthSet.add(item.month);
+          });
+
+          setYears([...yearSet]);
+          setMonths([...monthSet]);
+
         } else {
-          console.error('Failed to fetch PO Month list. Status:', response.status);
+          console.error('Failed to fetch PO Month-Year list. Status:', response.status);
         }
       } catch (error) {
         console.error('Failed to fetch the data', error);
       }
+
     }
     getMonthYearListOfPO()
 
   }, [poMonthYear, monthYearList])
+
 
 
   //useEffect to filter the table based on the search input
@@ -368,6 +371,14 @@ export default function PoInvoiceStatusTable({ newJcAdded, openDialog, setOpenDi
     setPoMonthYear(event.target.value)
   }
 
+  const handleYearOfPo = (event) => {
+    setPoYear(event.target.value)
+  }
+
+  const handleMonthOfPo = (event) => {
+    setPoMonth(event.target.value)
+  }
+
   const editSelectedRowData = (item) => {
     setOpenDialog(true)
     onRowClick(item);
@@ -498,19 +509,35 @@ export default function PoInvoiceStatusTable({ newJcAdded, openDialog, setOpenDi
         {/* Container for FormControl and DateRangeFilter aligned to the left */}
         <Grid item xs={8} container alignItems="center">
           <Grid item sx={{ mr: 2 }}>
-            <FormControl sx={{ width: '200px' }}>
-              <InputLabel>Select Month-Year</InputLabel>
+
+            <FormControl sx={{ width: '200px', mx: '2px' }}>
+              <InputLabel>Select Year</InputLabel>
               <Select
-                label="Month-Year"
+                label="Year"
                 type="text"
-                value={poMonthYear}
-                onChange={handleMonthYearOfPo}
+                value={poYear}
+                onChange={handleYearOfPo}
               >
-                {monthYearList.map((item, index) => (
-                  <MenuItem key={index} value={item}>{item}</MenuItem>
+                {years.map((year, index) => (
+                  <MenuItem key={index} value={year}>{year}</MenuItem>
                 ))}
               </Select>
             </FormControl>
+
+            <FormControl sx={{ width: '200px', mx: '2px' }}>
+              <InputLabel>Select Month</InputLabel>
+              <Select
+                label="Month"
+                type="text"
+                value={poMonth}
+                onChange={handleMonthOfPo}
+              >
+                {months.map((month, index) => (
+                  <MenuItem key={index} value={month}>{month}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
           </Grid>
 
           <Grid item >
@@ -598,11 +625,41 @@ export default function PoInvoiceStatusTable({ newJcAdded, openDialog, setOpenDi
           pageSize={5}
           rowsPerPageOptions={[5, 10, 20]}
         />
-
       </Box>
-
-
     </>
   )
 }
+
+
+// Use Effect to fetch the details:
+// useEffect(() => {
+
+//   let requiredAPIdata = {
+//     _fields: 'jc_number, jc_month, jc_category, rfq_number, rfq_value, po_number, po_value, po_status, invoice_number, invoice_value, invoice_status, status, remarks',
+//     monthYear: poMonthYear,
+//   }
+
+//   const urlParameters = new URLSearchParams(requiredAPIdata).toString()
+
+
+//   if (filterRow.length > 0) {
+//     setFilterRow(filterRow)
+//   } else {
+
+//     const getPoAndInvoiceList = async () => {
+//       try {
+//         const response = await axios.get(`${serverBaseAddress}/api/getPoInvoiceDataList?` + urlParameters);
+//         if (response.status === 200) {
+//           setPoDataList(response.data);
+//           setOriginalPoDataList(response.data)
+//         } else {
+//           console.error('Failed to fetch PO Month list. Status:', response.status);
+//         }
+//       } catch (error) {
+//         console.error('Failed to fetch the data', error);
+//       }
+//     }
+//     getPoAndInvoiceList()
+//   }
+// }, [newJcAdded, poYear, poMonth, filterRow, refresh])
 

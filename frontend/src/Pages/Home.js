@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react'
-import { Button, Dialog, DialogActions, DialogContent, DialogTitle, Divider, FormControl, Grid, InputLabel, MenuItem, Select, TextField, Typography } from '@mui/material'
+import { Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Divider, FormControl, Grid, InputLabel, MenuItem, Select, TextField, Typography } from '@mui/material'
 
 import PoInvoiceStatusTable from '../components/Po_Invoice_Table'
 import { Controller, useForm } from 'react-hook-form'
@@ -15,9 +15,7 @@ import ChamberRunHours from '../components/ChamberRunHours';
 
 
 
-// const PoInvoiceStatusContext = createContext();
 
-// export const usePoInvoiceContextData = () => useContext(PoInvoiceStatusContext)
 
 export default function Home() {
 
@@ -36,15 +34,6 @@ export default function Home() {
         { id: 5, label: 'Others' }
     ]
 
-    // let paymentStatusNames = [
-    //     { id: 1, label: 'Open / Test or Work not started' },
-    //     { id: 2, label: 'Test or Work in Progress' },
-    //     { id: 3, label: 'Closed / Test or Work Completed' },
-    //     { id: 4, label: 'Report in progress' },
-    //     { id: 5, label: 'Report Completed' },
-    //     { id: 6, label: 'Invoice Sent' },
-    //     { id: 7, label: 'Payment Received' },
-    // ];
 
     let poStatusOptions = [
         { id: 1, label: 'PO Received' },
@@ -76,14 +65,11 @@ export default function Home() {
     const [editId, setEditId] = useState(null)
 
 
-
-
     const [selectedRowData, setSelectedRowData] = useState(null);
 
 
     const [poMonthYear, setPoMonthYear] = useState(getCurrentMonthYear())
     const [monthYearList, setMonthYearList] = useState([])
-
 
 
     // Code to fetch the data from the selected row of the PO_Invoice data table:
@@ -196,15 +182,29 @@ export default function Home() {
 
     return (
         <>
+            <Box
+                sx={{
+                    display: 'flex',
+                    justifyContent: 'flex-end',
+                    alignItems: 'center',
+                }}>
+                <Button
+                    sx={{ borderRadius: 1, bgcolor: "orange", color: "white", borderColor: "black" }}
+                    variant="contained"
+                    color="primary"
+                    onClick={handleOpenDialog}
+                >
+                    Add PO & Invoice
+                </Button>
+            </Box>
+
             <Divider>
                 <Typography variant='h4' sx={{ color: '#003366' }}> Home </Typography>
             </Divider>
 
-            <br />
 
 
-
-            <Button variant='contained' onClick={handleOpenDialog} sx={{ justifyItems: 'flex-end' }}>Add</Button>
+            {/* <Button variant='contained' onClick={handleOpenDialog} sx={{ justifyItems: 'flex-end' }}>Add</Button> */}
 
             <Grid container sx={{ display: 'flex' }}>
                 <Dialog open={openDialog} onClose={handleCloseDialog} fullWidth maxWidth="sm" >
