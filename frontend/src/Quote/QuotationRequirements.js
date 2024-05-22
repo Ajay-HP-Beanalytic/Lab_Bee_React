@@ -2,8 +2,8 @@
 
 
 import React from 'react'
-import AddCustomerDetails from '../components/AddCustomerDetails'
-import AddModulesAndTests from '../components/AddModulesAndTests'
+import AddCustomerDetails from './AddCustomerDetails'
+import AddModulesAndTests from './AddModulesAndTests'
 import { Box, Divider, Grid, Typography } from '@mui/material'
 
 

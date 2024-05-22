@@ -4,27 +4,27 @@ import {
   TableRow, Paper, Grid, InputLabel, MenuItem, FormControl, Select, FormControlLabel, Radio, RadioGroup, FormLabel, IconButton, Tooltip, Divider, Accordion, AccordionSummary, AccordionDetails
 } from '@mui/material';
 
-import moment from 'moment';
+
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import dayjs from 'dayjs';
-import utc from 'dayjs/plugin/utc';  // Import the UTC plugin
-// dayjs.extend(utc);  // Use the UTC plugin
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { toast } from 'react-toastify';
 import axios from 'axios';
 
-import { serverBaseAddress } from './APIPage'
+// import { serverBaseAddress } from './APIPage'
+import { serverBaseAddress } from '../Pages/APIPage';
 import { useParams } from 'react-router-dom';
 import { useNavigate } from "react-router-dom";
-import JCDocument from '../components/JCDocument';
-import { generateJcDocument } from '../components/JCDocument';
-import JobCardComponent from '../components/JobCardComponent';
+import JCDocument from './JCDocument';
+import JobCardComponent from './JobCardComponent';
 import FileUploadComponent from '../components/FileUploadComponent';
+import ReliabilityTaskManagement from './ReliabilityTaskManagement';
+import CustomModal from '../common/CustomModalWithTable';
 
 
 
@@ -66,31 +66,22 @@ const Jobcard = ({ jobCardData }) => {
   const [referanceDocs, setReferanceDocs] = useState('')
   const [jcStatus, setJcStatus] = useState('Open');
   const [jcCloseDate, setJcCloseDate] = useState(null);
-  const [jcText, setJcText] = useState('');
+
+  const [chambersList, setChambersList] = useState([])
+  // const [jcText, setJcText] = useState('');
   const [observations, setObservations] = useState('');
 
-
-  const fileInputRef = useRef(null);
-
-  // Function to handle the uploaded image:
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        // setCompanyLogoImage(reader.result);
-        alert('Reading')
-      };
-      reader.readAsDataURL(file);
-    }
-  };
+  const [reliabilityReportStatus, setReliabilityReportStatus] = useState('')
+  const [reliabilityTaskRow, setReliabilityTaskRow] = useState([{ id: 0 }])
 
 
   const [editJc, setEditJc] = useState(false)
+
   let { id } = useParams('id')
   if (!id) {
     id = ''
   }
+
   useEffect(() => {
     if (id) {
       axios.get(`${serverBaseAddress}/api/jobcard/${id}`)
@@ -101,7 +92,7 @@ const Jobcard = ({ jobCardData }) => {
           setJcOpenDate(parsedJcStartDate.isValid() ? parsedJcStartDate : null);
           setPonumber(res.data.jobcard.po_number)
           setTestCategory(res.data.jobcard.test_category)
-          // setJcCategory(res.data.jobcard.test_category)
+          setJcCategory(res.data.jobcard.jc_category)
           setTypeOfRequest(res.data.jobcard.type_of_request)
           setTestInchargeName(res.data.jobcard.test_incharge)
           setCompanyName(res.data.jobcard.company_name)
@@ -112,14 +103,16 @@ const Jobcard = ({ jobCardData }) => {
           setSampleCondition(res.data.jobcard.sample_condition)
           setReferanceDocs(res.data.jobcard.referance_document)
           setJcStatus(res.data.jobcard.jc_status)
+          setReliabilityReportStatus(res.data.jobcard.reliability_report_status)
           setJcCloseDate(res.data.jobcard.jc_closed_date)
-          setJcText(res.data.jobcard.jc_text)
+          // setJcText(res.data.jobcard.jc_text)
           setObservations(res.data.jobcard.observations)
 
 
           setEutRows(res.data.eut_details)
           setTestRows(res.data.tests)
           setTestDetailsRows(res.data.tests_details)
+
 
           setEditJc(true)
         })
@@ -234,6 +227,7 @@ const Jobcard = ({ jobCardData }) => {
   const [jcNumberString, setJcumberString] = useState("");
   const [jcCount, setJcCount] = useState()
 
+  const [openModal, setOpenModal] = useState(false);
 
   // Function to get the current year and month:
   const getCurrentYearAndMonth = () => {
@@ -253,10 +247,8 @@ const Jobcard = ({ jobCardData }) => {
 
       if (currentMonth > 2) {
         finYear = `${currentYear}-${currentYear + 1}/${currentMonth}`;
-        //console.log('2', finYear)
       } else {
         finYear = `${currentYear - 1}-${currentYear}/${currentMonth}`;
-        //console.log('3', finYear)
       }
 
 
@@ -283,13 +275,26 @@ const Jobcard = ({ jobCardData }) => {
   }, [jcCount]);
 
 
-  // UseEffect to set the quotation data during update of the quotation:
+  // UseEffect to set the users and chambers list:
   useEffect(() => {
     axios.get(`${serverBaseAddress}/api/getTestingUsers/`)
       .then(result => {
         setUsers(result.data)
       })
+
+    axios.get(`${serverBaseAddress}/api/getChambersList/`)
+      .then(chamberResult => {
+        setChambersList(chamberResult.data)
+      })
   }, [])
+
+
+
+  // Define a function to receive updated table data from ReliabilityTaskManagement
+  const handleReliabilityTaskRowChange = (updatedRows) => {
+    setReliabilityTaskRow(updatedRows);
+  };
+
 
 
   // To submit the Job-card data and store it in a database:
@@ -308,6 +313,7 @@ const Jobcard = ({ jobCardData }) => {
         testCategory,
         typeOfRequest,
         testInchargeName,
+        jcCategory,
         companyName,
         customerName,
         customerEmail,
@@ -316,144 +322,170 @@ const Jobcard = ({ jobCardData }) => {
         sampleCondition,
         referanceDocs,
         jcStatus,
+        reliabilityReportStatus,
         jcCloseDate,
-        jcText,
         observations,
 
       }).then(res => {
-        // console.log(res.data)
         { editJc ? toast.success('JobCard Updated Successfully') : toast.success('JobCard Created Successfully') }
+
       })
     } catch (error) {
       console.error('Error submitting Job-Card:', error);
     }
 
+    if (jcCategory === 'TS1') {
 
-    // Function to extract EUT details based on the index
-    const eutdetailsdata = (i) => {
+      // Function to extract EUT details based on the index
+      const eutdetailsdata = (i) => {
 
-      return {
+        return {
 
-        nomenclature: eutRows[i].nomenclature,
-        eutDescription: eutRows[i].eutDescription,
-        qty: eutRows[i].qty,
-        partNo: eutRows[i].partNo,
-        modelNo: eutRows[i].modelNo,
-        serialNo: eutRows[i].serialNo,
-        jcNumber: jcNumberString,
-      }
-    }
-
-    // First we should send all the serial numbers. (so that they can be inserted or deleted)
-    const serialNos = eutRows.map(item => item.serialNo)
-    axios.post(`${serverBaseAddress}/api/eutdetails/serialNos/`, { jcNumberString, serialNos })
-      .then(res => {
-        // console.log(res.data);
-        // Iterating over eutRows using map to submit data to the server
-        eutRows.map((row, index) => {
-          //console.log('tata', index);
-          axios.post(`${serverBaseAddress}/api/eutdetails/`, eutdetailsdata(index))
-            .then(
-              res => {
-                if (res.status === 200) {
-                  // toast.success('eutdetails  Submitted Succesfully')
-                  // this generates multiple toasts for multiple euts
-                }
-              }
-            )
-            .catch((error) => console.log(error))
-        })
-
-      })
-      .catch(error => console.error(error))
-
-
-    // Function to extract tests data based on the index
-    const testsdata = (i) => {
-      return {
-        test: testRows[i].test,
-        nabl: testRows[i].nabl,
-        testStandard: testRows[i].testStandard,
-        referenceDocument: testRows[i].referenceDocument,
-        jcNumber: jcNumberString,
-      }
-    }
-
-    // first sync tests (add or delete) based on test name
-    const tests = testRows.map(item => item.test)
-    axios.post(`${serverBaseAddress}/api/tests_sync/names/`, { jcNumberString, tests })
-      .then(() => {
-
-        // Iterating over testRows using map to submit data to the server
-        testRows.map((row, index) => {
-          axios.post(`${serverBaseAddress}/api/tests/`, testsdata(index))
-            .then(
-              res => {
-                if (res.status === 200) {
-                  // toast.success('Tests Submitted Succesfully')
-                  // this generates multiple toasts for multiple tests
-                }
-              }
-            )
-            .catch(error => console.log(error))
-        })
-      })
-      .catch(error => console.log(error))
-
-
-    // Function to extract test details based on the index
-    const testdetailsdata = (i) => {
-
-
-      return {
-
-        testName: testdetailsRows[i].testName,
-        testChamber: testdetailsRows[i].testChamber,
-        eutSerialNo: testdetailsRows[i].eutSerialNo,
-        standard: testdetailsRows[i].standard,
-        testStartedBy: testdetailsRows[i].testStartedBy,
-
-        startTemp: testdetailsRows[i].startTemp,
-        startRh: testdetailsRows[i].startRh,
-
-        startDate: testdetailsRows[i].startDate,
-        endDate: testdetailsRows[i].endDate,
-        duration: testdetailsRows[i].duration,
-
-        endTemp: testdetailsRows[i].endTemp,
-        endRh: testdetailsRows[i].endRh,
-
-        testEndedBy: testdetailsRows[i].testEndedBy,
-        remarks: testdetailsRows[i].remarks,
-        reportNumber: testdetailsRows[i].reportNumber,
-        preparedBy: testdetailsRows[i].preparedBy,
-        nablUploaded: testdetailsRows[i].nablUploaded,
-        reportStatus: testdetailsRows[i].reportStatus,
-        jcNumber: jcNumberString,
+          nomenclature: eutRows[i].nomenclature,
+          eutDescription: eutRows[i].eutDescription,
+          qty: eutRows[i].qty,
+          partNo: eutRows[i].partNo,
+          modelNo: eutRows[i].modelNo,
+          serialNo: eutRows[i].serialNo,
+          jcNumber: jcNumberString,
+        }
       }
 
+      // First we should send all the serial numbers. (so that they can be inserted or deleted)
+      const serialNos = eutRows.map(item => item.serialNo)
+      axios.post(`${serverBaseAddress}/api/eutdetails/serialNos/`, { jcNumberString, serialNos })
+        .then(res => {
+          eutRows.map((row, index) => {
+            axios.post(`${serverBaseAddress}/api/eutdetails/`, eutdetailsdata(index))
+              .then(
+                res => {
+                  if (res.status === 200) {
+                  }
+                }
+              )
+              .catch((error) => console.log(error))
+          })
+
+        })
+        .catch(error => console.error(error))
+
+
+      // Function to extract tests data based on the index
+      const testsdata = (i) => {
+        return {
+          test: testRows[i].test,
+          nabl: testRows[i].nabl,
+          testStandard: testRows[i].testStandard,
+          referenceDocument: testRows[i].referenceDocument,
+          jcNumber: jcNumberString,
+        }
+      }
+
+      // first sync tests (add or delete) based on test name
+      const tests = testRows.map(item => item.test)
+      axios.post(`${serverBaseAddress}/api/tests_sync/names/`, { jcNumberString, tests })
+        .then(() => {
+
+          // Iterating over testRows using map to submit data to the server
+          testRows.map((row, index) => {
+            axios.post(`${serverBaseAddress}/api/tests/`, testsdata(index))
+              .then(
+                res => {
+                  if (res.status === 200) {
+                  }
+                }
+              )
+              .catch(error => console.log(error))
+          })
+        })
+        .catch(error => console.log(error))
+
+
+      // Function to extract test details based on the index
+      const testdetailsdata = (i) => {
+        return {
+          testName: testdetailsRows[i].testName,
+          testChamber: testdetailsRows[i].testChamber,
+          eutSerialNo: testdetailsRows[i].eutSerialNo,
+          standard: testdetailsRows[i].standard,
+          testStartedBy: testdetailsRows[i].testStartedBy,
+
+          startTemp: testdetailsRows[i].startTemp,
+          startRh: testdetailsRows[i].startRh,
+
+          startDate: testdetailsRows[i].startDate,
+          endDate: testdetailsRows[i].endDate,
+          duration: testdetailsRows[i].duration,
+
+          endTemp: testdetailsRows[i].endTemp,
+          endRh: testdetailsRows[i].endRh,
+
+          testEndedBy: testdetailsRows[i].testEndedBy,
+          remarks: testdetailsRows[i].remarks,
+          reportNumber: testdetailsRows[i].reportNumber,
+          preparedBy: testdetailsRows[i].preparedBy,
+          nablUploaded: testdetailsRows[i].nablUploaded,
+          reportStatus: testdetailsRows[i].reportStatus,
+          jcNumber: jcNumberString,
+        }
+
+      }
+
+      // first sync tests (add or delete) based on test name
+      const testNames = testdetailsRows.map(item => item.testName)
+      axios.post(`${serverBaseAddress}/api/testdetails_sync/names/`, { jcNumberString, testNames })
+        .then((res) => {
+          testdetailsRows.map((row, index) => {
+            axios.post(`${serverBaseAddress}/api/testdetails/`, testdetailsdata(index))
+              .then(
+                res => {
+                  if (res.status === 200) {
+                  }
+                }
+              )
+              .catch(error => console.log(error))
+          })
+        })
+
     }
 
-    // first sync tests (add or delete) based on test name
-    const testNames = testdetailsRows.map(item => item.testName)
-    axios.post(`${serverBaseAddress}/api/testdetails_sync/names/`, { jcNumberString, testNames })
-      .then((res) => {
-        // Iterating over testdetailsRows using map to submit data to the server
-        testdetailsRows.map((row, index) => {
-          axios.post(`${serverBaseAddress}/api/testdetails/`, testdetailsdata(index))
-            .then(
-              res => {
-                if (res.status === 200) {
-                  // console.log(res.data);
-                }
-              }
-            )
-            .catch(error => console.log(error))
-        })
-        // toast.success('testdetails  Submitted Succesfully')
+    // Handle RE specific data
+    if (jcCategory === 'Reliability') {
 
-      })
-    navigate('/jobcard_dashboard')
+      // Function to extract test details based on the index
+      const relTaskData = (i) => {
+        return {
+          task_description: reliabilityTaskRow[i].task_description,
+          task_assigned_by: reliabilityTaskRow[i].task_assigned_by,
+          task_start_date: reliabilityTaskRow[i].task_start_date,
+          task_end_date: reliabilityTaskRow[i].task_end_date,
+          task_assigned_to: reliabilityTaskRow[i].task_assigned_to,
+          task_status: reliabilityTaskRow[i].task_status,
+          task_completed_date: reliabilityTaskRow[i].task_completed_date,
+          note_remarks: reliabilityTaskRow[i].note_remarks,
+          jcNumberString: jcNumberString
+        }
+      }
+
+
+      const taskDescriptions = reliabilityTaskRow.map(item => item.task_description);
+
+      axios.post(`${serverBaseAddress}/api/relTasks/taskName/`, { task_description: taskDescriptions, jcNumberString })
+        .then(res => {
+          reliabilityTaskRow.forEach((row, index) => {
+            axios.post(`${serverBaseAddress}/api/relTasks/`, relTaskData(index))
+              .then(res => {
+                if (res.status === 200) {
+                }
+              })
+              .catch((error) => console.log('Error in relTasks API for index', index, ':', error));
+          });
+        })
+        .catch(error => console.error('Error in taskName API:', error));
+    }
+
+    // navigate('/jobcard_dashboard')
+    navigate('/jobcard_dashboard', { state: { updated: true } });
   }
 
 
@@ -497,6 +529,37 @@ const Jobcard = ({ jobCardData }) => {
   };
 
 
+  // const eutData = eutdetailsdata(i);
+
+  const staticOptions = [
+    { label: `Jc Number: ${jcNumberString}` },
+    { label: `Dc Number: ${dcNumber}` },
+    { label: `Po Number: ${poNumber}` },
+    { label: `Jc Open : ${jcOpenDate}` },
+    { label: `Test Incharge: ${testInchargeName}` },
+    { label: `Test Category: ${jcCategory}` },
+    { label: `Type of Requst: ${typeOfRequest}` },
+    { label: `Company Name: ${companyName}` },
+    { label: `Customer Name: ${customerName}` },
+    { label: `Customer Email: ${customerEmail}` },
+    { label: `Contact Number: ${customerNumber}` },
+    { label: `Project Name: ${projectName}` },
+    { label: `Reference Document(ifany): ${referanceDocs}` },
+    { label: `Sample Condition: ${sampleCondition}` },
+    { label: `Jc Status: ${jcStatus}` },
+    { label: `Jc Close State: ${jcCloseDate}` },
+    // { label: `Jc Text: ${jcText}` },
+    { label: `Observations: ${observations}` },
+
+  ];
+
+  // Combine static options with dynamically generated EUT details
+  const options = [
+    ...staticOptions,
+    // ...generateEutTableRows(),
+  ];
+
+
 
   // To clear the fields of job card:
   const handleClearJobcard = () => {
@@ -513,11 +576,37 @@ const Jobcard = ({ jobCardData }) => {
     setSampleCondition('');
     setReferanceDocs('');
     setJcStatus('');
-    setJcText('');
+    // setJcText('');
     setJcCloseDate('');
     setObservations('');
 
   }
+
+
+  // const handleOpenDialog = () => {
+  //   setOpenDialog(true);
+  // };
+
+  // // Function to close the dialog
+  // const handleCloseDialog = () => {
+  //   setOpenDialog(false);
+  // };
+
+  const handleOpenModal = () => {
+    setOpenModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setOpenModal(false);
+  };
+
+  // To Preview the fields of job card:
+  const handlePreviewJobcard = () => {
+    // handleOpenDialog();
+    handleOpenModal();
+
+  }
+
 
 
   const handleCloseJobcard = () => {
@@ -643,7 +732,7 @@ const Jobcard = ({ jobCardData }) => {
                         onChange={(e) => setJcCategory(e.target.value)}
                       >
                         <MenuItem value="TS1">TS1</MenuItem>
-                        <MenuItem value="TS2">TS2</MenuItem>
+                        {/* <MenuItem value="TS2">TS2</MenuItem> */}
                         <MenuItem value="Reliability">Reliability</MenuItem>
 
                       </Select>
@@ -1048,14 +1137,26 @@ const Jobcard = ({ jobCardData }) => {
                           <TableCell>{index + 1}</TableCell>
 
 
-                          <TableCell> <TextField style={{ align: "center" }} variant="outlined"
-                            value={row.testName}
-                            onChange={(e) => handleTestDetailsRowChange(index, 'testName', e.target.value)} />
+                          <TableCell>
+                            <TextField style={{ align: "center" }} variant="outlined"
+                              value={row.testName}
+                              onChange={(e) => handleTestDetailsRowChange(index, 'testName', e.target.value)} />
                           </TableCell>
 
-                          <TableCell> <TextField style={{ align: "center" }} variant="outlined"
-                            value={row.testChamber}
-                            onChange={(e) => handleTestDetailsRowChange(index, 'testChamber', e.target.value)} />
+                          <TableCell>
+
+                            <FormControl sx={{ width: '100%', borderRadius: 3 }} >
+                              <InputLabel >Chamber</InputLabel>
+                              <Select
+                                label="test-started-by"
+                                value={row.testChamber}
+                                onChange={(e) => handleTestDetailsRowChange(index, 'testChamber', e.target.value)}
+                              >
+                                {chambersList.map((item) => (<MenuItem key={item.id} value={item.chamber_name}>{item.chamber_name}</MenuItem>))}
+                              </Select>
+                            </FormControl>
+
+
                           </TableCell>
 
                           <TableCell> <TextField style={{ align: "center" }} variant="outlined"
@@ -1231,73 +1332,17 @@ const Jobcard = ({ jobCardData }) => {
 
               </AccordionDetails>
             </Accordion>
-
-            <br />
-
-
-            {/* <Box sx={{ paddingTop: '5', paddingBottom: '5px', marginTop: '5px', marginBottom: '5px', border: 1, borderColor: 'primary.main' }}>
-
-            <Container >
-              <Grid container spacing={2}>
-                <Grid item xs={12} md={6}>
-                  <FormControl fullWidth sx={{ marginBottom: '20px', marginRight: '15px', marginTop: '20px', borderRadius: 3 }} >
-                    <InputLabel >JC Status</InputLabel>
-                    <Select
-                      label="JcStatus"
-                      value={jcStatus}
-                      onChange={(e) => setJcStatus(e.target.value)}
-                    >
-                      <MenuItem value="Open">Open</MenuItem>
-                      <MenuItem value="Running">Running</MenuItem>
-                      <MenuItem value="Close">Close</MenuItem>
-
-                    </Select>
-                  </FormControl>
-                </Grid>
-
-                <Grid item xs={12} md={6}  >
-                  {jcStatus === 'Close' && (
-                    <LocalizationProvider dateAdapter={AdapterDayjs}>
-                      <DateTimePicker
-                        fullWidth
-                        sx={{ mb: '20px', mt: '20px', borderRadius: 3 }}
-                        label="JC Close Date"
-                        variant="outlined"
-                        margin="normal"
-                        value={jcCloseDate ? dayjs(jcCloseDate) : null}
-                        onChange={handleJcCloseDateChange}
-                        renderInput={(props) => <TextField {...props} />}
-                        format="DD/MM/YYYY HH:mm"
-                      />
-                    </LocalizationProvider>
-
-                  )}
-
-                  <TextField
-                    fullWidth
-                    sx={{ mb: '20px', mt: '20px', borderRadius: 3 }}
-                    label="Observations(If any)"
-                    variant="outlined"
-                    multiline={true}
-                    rows={4}
-                    autoComplete="on"
-                    value={observations}
-                    onChange={(e) => setObservations(e.target.value)}
-                  />
-                </Grid>
-              </Grid>
-
-            </Container>
-
-          </Box> */}
           </Box>
 
         )}
 
-
-
+        {/* Fetch the table component for the task management */}
         {jcCategory === 'Reliability' && (
-          <Typography> Reliability </Typography>
+          <ReliabilityTaskManagement
+            reliabilityTaskRow={reliabilityTaskRow}
+            setReliabilityTaskRow={setReliabilityTaskRow}
+            onReliabilityTaskRowChange={handleReliabilityTaskRowChange}
+          />
         )}
 
         <Box sx={{ paddingTop: '5', paddingBottom: '5px', marginTop: '5px', marginBottom: '5px', border: 1, borderColor: 'primary.main' }}>
@@ -1319,6 +1364,24 @@ const Jobcard = ({ jobCardData }) => {
                   </Select>
                 </FormControl>
               </Grid>
+
+              {jcCategory === 'Reliability' && (
+                <Grid item xs={12} md={6}>
+                  <FormControl fullWidth sx={{ marginBottom: '20px', marginRight: '15px', marginTop: '20px', borderRadius: 3 }} >
+                    <InputLabel >Report Status</InputLabel>
+                    <Select
+                      label="JcStatus"
+                      value={reliabilityReportStatus}
+                      onChange={(e) => setReliabilityReportStatus(e.target.value)}
+                    >
+                      <MenuItem value="Sent">Sent</MenuItem>
+                      <MenuItem value="Not Sent">Not Sent</MenuItem>
+                      <MenuItem value="On-Hold">On-Hold</MenuItem>
+
+                    </Select>
+                  </FormControl>
+                </Grid>
+              )}
 
               <Grid item xs={12} md={6}  >
                 {jcStatus === 'Close' && (
@@ -1387,14 +1450,35 @@ const Jobcard = ({ jobCardData }) => {
             {editJc ? 'Update' : 'Submit'}
           </Button>
 
+          {/* <Button
+            sx={{ borderRadius: 3, mx: 0.5, mb: 1, bgcolor: "orange", color: "white", borderColor: "black" }}
+            variant="contained"
+            color="primary"
+            onClick={handlePreviewJobcard}
+          >
+            Preview
+          </Button> */}
 
-          {editJc ?
-            <JobCardComponent id={id} />
-            :
-            null
+          {/* <CustomModal
+            open={openModal}
+            onClose={handleCloseModal}
+            title="Preview Jobcard Details"
+            options={options}
+            containTable={true}
+            tableData={[eutRows, testRows, testdetailsRows]}
+          /> */}
+
+
+
+
+          {
+            editJc ?
+              <JobCardComponent id={id} />
+              :
+              null
           }
 
-        </Box>
+        </Box >
 
 
       </form >

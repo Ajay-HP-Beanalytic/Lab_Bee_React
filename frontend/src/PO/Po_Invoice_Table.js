@@ -13,12 +13,14 @@ import { serverBaseAddress } from '../Pages/APIPage';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import { getCurrentMonthYear, getFinancialYear } from '../functions/UtilityFunctions';
-import SearchBar from './SearchBar';
-import DateRangeFilter from './DateRangeFilter';
+import SearchBar from '../common/SearchBar';
+import DateRangeFilter from '../common/DateRangeFilter';
 import { CreatePieChart, CreateBarChart } from '../functions/DashboardFunctions';
 
 import { DataGrid } from '@mui/x-data-grid';
 import dayjs from 'dayjs';
+import EmptyCard from '../common/EmptyCard';
+import { EVENT_CONSTANTS, publish } from '../common/CustomEvents';
 
 
 
@@ -84,6 +86,8 @@ export default function PoInvoiceStatusTable({ newJcAdded, openDialog, setOpenDi
     } else {
 
       const getPoAndInvoiceList = async () => {
+        publish(EVENT_CONSTANTS.openLoader, true);
+
         try {
           const response = await axios.get(`${serverBaseAddress}/api/getPoInvoiceDataList?` + urlParameters);
           if (response.status === 200) {
@@ -94,6 +98,8 @@ export default function PoInvoiceStatusTable({ newJcAdded, openDialog, setOpenDi
           }
         } catch (error) {
           console.error('Failed to fetch the data', error);
+        } finally {
+          publish(EVENT_CONSTANTS.openLoader, false);
         }
       }
       getPoAndInvoiceList()
@@ -103,6 +109,8 @@ export default function PoInvoiceStatusTable({ newJcAdded, openDialog, setOpenDi
   // Function to fetch the month and year list data
   useEffect(() => {
     const getMonthYearListOfPO = async () => {
+
+      publish(EVENT_CONSTANTS.openLoader, true);
 
       try {
         const response = await axios.get(`${serverBaseAddress}/api/getPoDataYearMonth`);
@@ -123,6 +131,8 @@ export default function PoInvoiceStatusTable({ newJcAdded, openDialog, setOpenDi
         }
       } catch (error) {
         console.error('Failed to fetch the data', error);
+      } finally {
+        publish(EVENT_CONSTANTS.openLoader, false);
       }
 
     }
@@ -142,12 +152,15 @@ export default function PoInvoiceStatusTable({ newJcAdded, openDialog, setOpenDi
   // Data fetching to plot the charts:
 
   const getDataForPOPieChart = async () => {
+
+    publish(EVENT_CONSTANTS.openLoader, true);
+
     try {
       const poStatusResponse = await axios.get(`${serverBaseAddress}/api/getPoStatusData/${poMonthYear}`);
       if (poStatusResponse.status === 200) {
 
         const poData = poStatusResponse.data[0]; // Access the first element of the response array
-        // console.log('Response data:', poData);
+        console.log('Response data:', poData);
         setPoDataForChart({
           receivedPoCount: poData.receivedPoCount,
           notReceivedPoCount: poData.notReceivedPoCount,
@@ -164,8 +177,6 @@ export default function PoInvoiceStatusTable({ newJcAdded, openDialog, setOpenDi
           paymentOnHoldCount: poData.paymentOnHoldCount,
           paymentOnHoldSum: poData.paymentOnHoldSum
 
-
-
         });
 
       } else {
@@ -173,6 +184,8 @@ export default function PoInvoiceStatusTable({ newJcAdded, openDialog, setOpenDi
       }
     } catch (error) {
       console.error('Failed to fetch the PO data', error);
+    } finally {
+      publish(EVENT_CONSTANTS.openLoader, false);
     }
   };
 
@@ -604,62 +617,39 @@ export default function PoInvoiceStatusTable({ newJcAdded, openDialog, setOpenDi
         />
       </Box> */}
 
-      <Box
-        sx={{
-          height: 500,
-          width: '100%',
-          '& .custom-header-color': {
-            backgroundColor: '#0f6675',
-            color: 'whitesmoke',
-            fontWeight: 'bold',
-            fontSize: '15px',
-          },
-          mt: 2,
-        }}
-      >
-        <DataGrid
-          rows={filteredPOData}
-          columns={columns}
-          sx={{ '&:hover': { cursor: 'pointer' } }}
-          onRowClick={(params) => editSelectedRowData(params.row)}
-          pageSize={5}
-          rowsPerPageOptions={[5, 10, 20]}
-        />
-      </Box>
+      {filteredPOData && filteredPOData.length === 0 ? (
+
+        <EmptyCard message='PO and Invoice Data not found' />
+
+      ) : (
+        <Box
+          sx={{
+            height: 500,
+            width: '100%',
+            '& .custom-header-color': {
+              backgroundColor: '#0f6675',
+              color: 'whitesmoke',
+              fontWeight: 'bold',
+              fontSize: '15px',
+            },
+            mt: 2,
+          }}
+        >
+          <DataGrid
+            rows={filteredPOData}
+            columns={columns}
+            sx={{ '&:hover': { cursor: 'pointer' } }}
+            onRowClick={(params) => editSelectedRowData(params.row)}
+            pageSize={5}
+            rowsPerPageOptions={[5, 10, 20]}
+          />
+        </Box>
+      )
+      }
+
+
     </>
   )
 }
 
-
-// Use Effect to fetch the details:
-// useEffect(() => {
-
-//   let requiredAPIdata = {
-//     _fields: 'jc_number, jc_month, jc_category, rfq_number, rfq_value, po_number, po_value, po_status, invoice_number, invoice_value, invoice_status, status, remarks',
-//     monthYear: poMonthYear,
-//   }
-
-//   const urlParameters = new URLSearchParams(requiredAPIdata).toString()
-
-
-//   if (filterRow.length > 0) {
-//     setFilterRow(filterRow)
-//   } else {
-
-//     const getPoAndInvoiceList = async () => {
-//       try {
-//         const response = await axios.get(`${serverBaseAddress}/api/getPoInvoiceDataList?` + urlParameters);
-//         if (response.status === 200) {
-//           setPoDataList(response.data);
-//           setOriginalPoDataList(response.data)
-//         } else {
-//           console.error('Failed to fetch PO Month list. Status:', response.status);
-//         }
-//       } catch (error) {
-//         console.error('Failed to fetch the data', error);
-//       }
-//     }
-//     getPoAndInvoiceList()
-//   }
-// }, [newJcAdded, poYear, poMonth, filterRow, refresh])
 

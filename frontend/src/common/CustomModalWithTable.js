@@ -2,10 +2,10 @@ import React from 'react'
 import { Button, Dialog, DialogActions, DialogTitle, Divider, IconButton, List, ListItem, ListItemText, Typography, } from '@mui/material'
 import CloseIcon from '@mui/icons-material/Close';
 
-import TableData from './TableData';
+import TableData from '../components/TableData';
 
 
-export default function CustomModal({ open, onClose, title, options, onDelete, onUpdate, containTable = false, tableData = [] }) {
+export default function CustomModalWithTable({ open, onClose, title, options, onDelete, onUpdate, containTable = false, tableData = [] }) {
   return (
     <>
       <Dialog open={open} onClose={onClose}>

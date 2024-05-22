@@ -12,7 +12,7 @@ import {
     Typography,
 } from '@mui/material'
 
-import { serverBaseAddress } from './APIPage'
+import { serverBaseAddress } from '../Pages/APIPage';
 import axios from 'axios';
 
 import PendingIcon from '@mui/icons-material/Pending';
@@ -22,9 +22,11 @@ import { toast } from 'react-toastify';
 import { CreateButtonWithLink } from '../functions/ComponentsFunctions';
 import { getCurrentMonthYear } from '../functions/UtilityFunctions';
 import { DataGrid } from '@mui/x-data-grid';
-import DateRangeFilter from '../components/DateRangeFilter';
-import SearchBar from '../components/SearchBar';
+import DateRangeFilter from '../common/DateRangeFilter';
+import SearchBar from '../common/SearchBar';
 import dayjs from 'dayjs';
+import EmptyCard from '../common/EmptyCard';
+import Loader from '../common/Loader';
 
 
 
@@ -149,8 +151,7 @@ export default function JCHome() {
 
     //If data is loading then show Loading text
     if (loading) {
-        // return <div>Loading... <PendingIcon /> </div>
-        return <div>No Job-cards Found <PendingIcon /> </div>
+        return <Loader />
     }
 
 
@@ -335,29 +336,32 @@ export default function JCHome() {
             </Grid>
 
 
-
-            <Box
-                sx={{
-                    height: 500,
-                    width: '63%',
-                    '& .custom-header-color': {
-                        backgroundColor: '#0f6675',
-                        color: 'whitesmoke',
-                        fontWeight: 'bold',
-                        fontSize: '15px',
-                    },
-                    mt: 2,
-                }}
-            >
-                <DataGrid
-                    rows={filteredJcData}
-                    columns={columns}
-                    sx={{ '&:hover': { cursor: 'pointer' } }}
-                    onRowClick={(params) => editSelectedRowData(params.row)}
-                    pageSize={5}
-                    rowsPerPageOptions={[5, 10, 20]}
-                />
-            </Box>
+            {filteredJcData && filteredJcData.length === 0 ? (
+                <EmptyCard message='No JC Found' />
+            ) : (
+                <Box
+                    sx={{
+                        height: 500,
+                        width: '100%',
+                        '& .custom-header-color': {
+                            backgroundColor: '#0f6675',
+                            color: 'whitesmoke',
+                            fontWeight: 'bold',
+                            fontSize: '15px',
+                        },
+                        mt: 2,
+                    }}
+                >
+                    <DataGrid
+                        rows={filteredJcData}
+                        columns={columns}
+                        sx={{ '&:hover': { cursor: 'pointer' } }}
+                        onRowClick={(params) => editSelectedRowData(params.row)}
+                        pageSize={5}
+                        rowsPerPageOptions={[5, 10, 20]}
+                    />
+                </Box>
+            )}
 
         </>
     )

@@ -11,7 +11,7 @@ import {
 } from '@mui/material';
 
 
-import { serverBaseAddress } from './APIPage'
+import { serverBaseAddress } from '../Pages/APIPage';
 
 import PendingIcon from '@mui/icons-material/Pending';
 import { FcDocument } from "react-icons/fc";
@@ -23,15 +23,17 @@ import CountUp from 'react-countup'
 
 import { CreateBarChart, CreateKpiCard, CreatePieChart } from '../functions/DashboardFunctions';
 import { toast } from 'react-toastify';
-import SearchBar from '../components/SearchBar';
-import DateRangeFilter from '../components/DateRangeFilter';
+import SearchBar from '../common/SearchBar';
+import DateRangeFilter from '../common/DateRangeFilter';
 import { getCurrentMonthYear } from '../functions/UtilityFunctions';
 import { DataGrid } from '@mui/x-data-grid';
 import dayjs from 'dayjs';
+import Loader from '../common/Loader';
+import EmptyCard from '../common/EmptyCard';
 
 
 
-export default function QuoteTable() {
+export default function QuotationsDashboard() {
 
   // Define the table headers:
   const quotationTableHeadersText = ['Sl No', 'Quotation ID', 'Company', 'Quote Given Date', 'Category', 'Quote Given By', 'Action'];
@@ -42,7 +44,7 @@ export default function QuoteTable() {
 
   const [originalQuoteTableData, setOriginalQuoteTableData] = useState([]);
 
-  const [loading, setLoading] = useState(true);                 //To show loading label
+  const [loading, setLoading] = useState(false);                 //To show loading label
 
   const [msg, setMsg] = useState(<Typography variant='h4'> Loading...</Typography>);
 
@@ -50,9 +52,7 @@ export default function QuoteTable() {
 
   const [filterRow, setFilterRow] = useState([]);               //To filter out the table based on search
 
-  const [page, setPage] = useState(0);                          //To setup pages of the table
 
-  const [rowsPerPage, setRowsPerPage] = useState(10);            //To show the number of rows per page
 
   const [refresh, setRefresh] = useState(false)
 
@@ -89,16 +89,17 @@ export default function QuoteTable() {
       setFilterRow(filterRow)
     } else {
       const fetchQuotesDataFromDatabase = async () => {
+        setLoading(true);
         try {
           const response = await axios.get(`${serverBaseAddress}/api/getQuotationData?` + urlParameters);
           setQuotesTableData(response.data);
           setOriginalQuoteTableData(response.data)
-          setLoading(false);
           console.log(response.data)
         } catch (error) {
           console.error('Failed to fetch the data', error);
           setError(error);
-          setLoading(false);
+        } finally {
+          setLoading(false); // Hide loader
         }
       };
 
@@ -146,12 +147,13 @@ export default function QuoteTable() {
 
   //If data is loading then show Loading text
   if (loading) {
-    return <div>Loading... <PendingIcon /> </div>;
+    return <Loader />
   }
 
   //If any error found then show the error
   if (error) {
     return <div>Error: {error.message}</div>;
+
   }
 
 
@@ -483,6 +485,7 @@ export default function QuoteTable() {
   return (
 
     <>
+      {/* <Loader /> */}
 
       <Box
         sx={{
@@ -560,28 +563,34 @@ export default function QuoteTable() {
         </Grid>
       </Grid>
 
-      <Box
-        sx={{
-          height: 500,
-          width: '100%',
-          '& .custom-header-color': {
-            backgroundColor: '#0f6675',
-            color: 'whitesmoke',
-            fontWeight: 'bold',
-            fontSize: '15px',
-          },
-          mt: 2,
-        }}
-      >
-        <DataGrid
-          rows={filteredQuoteData}
-          columns={columns}
-          sx={{ '&:hover': { cursor: 'pointer' } }}
-          onRowClick={(params) => editSelectedRowData(params.row)}
-          pageSize={5}
-          rowsPerPageOptions={[5, 10, 20]}
-        />
-      </Box>
+
+
+      {filteredQuoteData && filteredQuoteData.length === 0 ? (
+        <EmptyCard message='No Quote Found' />
+      ) : (
+        <Box
+          sx={{
+            height: 500,
+            width: '100%',
+            '& .custom-header-color': {
+              backgroundColor: '#0f6675',
+              color: 'whitesmoke',
+              fontWeight: 'bold',
+              fontSize: '15px',
+            },
+            mt: 2,
+          }}
+        >
+          <DataGrid
+            rows={filteredQuoteData}
+            columns={columns}
+            sx={{ '&:hover': { cursor: 'pointer' } }}
+            onRowClick={(params) => editSelectedRowData(params.row)}
+            pageSize={5}
+            rowsPerPageOptions={[5, 10, 20]}
+          />
+        </Box>
+      )}
 
       <br />
 

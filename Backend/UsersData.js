@@ -15,9 +15,12 @@ const jwtSecret = "RANDOM-TOKEN";                   // To create a random token
 function usersDataAPIs(app) {
 
     //api to add or register the new user: 
-    app.post("/api/adduser", (req, res) => {
+    app.post("/api/addUser", (req, res) => {
         //const { name, email, password } = req.body;
         const { name, email, password, role, allowedComponents } = req.body;
+
+        console.log('1', name, email, password, role, allowedComponents)
+
         const sqlCheckEmail = "SELECT * FROM labbee_users WHERE email=?";
         const sqlInsertUser = "INSERT INTO labbee_users (name, email, password, role, allowed_components) VALUES (?,?,?,?,?)";
 
@@ -40,6 +43,8 @@ function usersDataAPIs(app) {
                 })
                 .then(hash => {
                     //db.query(sqlInsertUser, [name, email, hash], (error) => {
+                    console.log('2', name, email, hash, role, allowedComponents)
+
                     db.query(sqlInsertUser, [name, email, hash, role, allowedComponents], (error) => {
                         if (error) {
                             console.error("Error inserting user:", error);
@@ -58,12 +63,36 @@ function usersDataAPIs(app) {
 
 
 
-    //api to update the data of a registered user: 
-    app.post("/api/adduser/:id", (req, res) => {
+    //api to update the data of a registered user:
+    // app.post("/api/addUser/:id", (req, res) => {
+    //     //const { name, email, password } = req.body;
+    //     const { name, email, password, role, allowedComponents } = req.body;
+    //     const id = req.params.id;
+    //     const sqlUpdateUser = `UPDATE labbee_users SET name='${name}', email='${email}', password='${password}', role='${role}', allowed_components='${allowedComponents}' WHERE id=${id}`;
+
+    //     db.query(sqlUpdateUser, (error, result) => {
+    //         if (error) {
+    //             console.error(error);
+    //             return res.status(500).json({ message: "Internal server error" });
+    //         } else {
+    //             res.status(200).json({ message: "User data updated successfully" });
+    //         }
+
+    //     });
+    // });
+
+
+    app.post("/api/addUser/:id", (req, res) => {
         //const { name, email, password } = req.body;
-        const { name, email, password, role, allowedComponents } = req.body;
+        const { name, email, role, allowedComponents } = req.body;
+
+        console.log('update values', name, email, role, allowedComponents)
+
         const id = req.params.id;
-        const sqlUpdateUser = `UPDATE labbee_users SET name='${name}', email='${email}', password='${password}', role='${role}', allowed_components='${allowedComponents}' WHERE id=${id}`;
+
+        console.log('updating id', id)
+
+        const sqlUpdateUser = `UPDATE labbee_users SET name='${name}', email='${email}', role='${role}', allowed_components='${allowedComponents}' WHERE id=${id}`;
 
         db.query(sqlUpdateUser, (error, result) => {
             if (error) {
@@ -73,28 +102,6 @@ function usersDataAPIs(app) {
                 res.status(200).json({ message: "User data updated successfully" });
             }
 
-
-
-            //If email is not exists then continue and encrypt the password:
-            // bcrypt
-            //     .genSalt(saltRounds)
-            //     .then(salt => {
-            //         return bcrypt.hash(password, salt)
-            //     })
-            //     .then(hash => {
-            //         //db.query(sqlInsertUser, [name, email, hash], (error) => {
-            //         db.query(sqlInsertUser, [name, email, hash, role], (error) => {
-            //             if (error) {
-            //                 console.error("Error inserting user:", error);
-            //                 return res.status(500).json({ message: "Internal server error" });
-            //             }
-            //             return res.status(200).json({ message: "Registration Success" });
-            //         })
-            //     })
-            //     .catch(err => {
-            //         console.error("Error hashing password:", err);
-            //         return res.status(500).json({ message: "Internal server error" });
-            //     })
         });
     });
 

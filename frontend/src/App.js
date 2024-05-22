@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import 'react-toastify/dist/ReactToastify.css';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
@@ -13,67 +13,85 @@ import Register from "./LoginRegister/Register";
 import ForgotPassword from "./LoginRegister/ForgotPassword";
 import TrailPage from "./TrailPage";
 import SidenavigationBar from "./components/sidenavbar";
-import Jobcard from "./Pages/Jobcard";
-import JobcardBMRCL from "./Pages/Jobcard_BMRCL";
-import QuoteTable from "./Pages/QuoteTable";
+
+
+
 import NotFoundPage from "./Pages/NotFoundPage";
-import Quotation from "./Pages/Quotation";
-import QuotationPdf from "./Pages/QuotationPdf";
-import DocToPdf from "./components/DocToPdf";
 import UserLogoutDialog from "./components/UserLogoutDialog";
-import QuotationRequirements from "./Pages/QuotationRequirements";
-import JobcardRequirements from "./Pages/JobcardRequirements";
-import ChamberAndCalibration from "./components/ChamberCalibration";
-import Home from "./Pages/Home";
-import JCHome from "./Pages/JCHome";
-import Slotbooking from "./Pages/Slotbooking";
 
 
+import ChamberAndCalibration from "./Pages/ChamberCalibration";
+import Home from "./PO/Home";
 
+import JCHome from "./JC/JCHome";
+import JobcardRequirements from "./JC/JobcardRequirements";
+import Jobcard from "./JC/Jobcard"
+
+import Slotbooking from "./Slotbook/Slotbooking";
+
+import Quotation from "./Quote/Quotation";
+import QuotationRequirements from "./Quote/QuotationRequirements";
+import QuotationsDashboard from "./Quote/QuotationsDashboard";
+import { publish, EVENT_CONSTANTS } from "./common/CustomEvents";
+import UserManagement from "./LoginRegister/UserManagement";
 
 
 function App() {
+
+
+  const location = useLocation();
+
+  useEffect(() => {
+    const handleRouteChange = () => {
+      publish(EVENT_CONSTANTS.openLoader, true);
+      setTimeout(() => {
+        publish(EVENT_CONSTANTS.openLoader, false);
+      }, 500); // Adjust the timeout based on your loading needs
+    };
+
+    handleRouteChange();
+  }, [location]);
+
   return (
 
-    <BrowserRouter>
-      <div className="App">
-        <ToastContainer position="top-center" />
-        <Routes>
-          {/* <Route path="/" element={<Login />} /> */}
-          <Route path="/" exact element={<Login />}></Route>
-          <Route path="/register" exact element={<Register />}></Route>
-          <Route path="/reset-password" exact element={<ForgotPassword />}></Route>
+    <div className="App">
+      <ToastContainer position="top-center" />
+      <Routes>
+        {/* <Route path="/" element={<Login />} /> */}
+        <Route path="/" exact element={<Login />}></Route>
+        <Route path="/register" exact element={<Register />}></Route>
+        <Route path="/reset-password" exact element={<ForgotPassword />}></Route>
 
 
-          <Route path="" element={<SidenavigationBar />} >
+        <Route path="" element={<SidenavigationBar />} >
 
-            <Route path='home' element={<Home />} />
-            <Route path='/quotation_dashboard' element={<QuoteTable />} />
-            <Route path='/quotation' element={<Quotation />} />
-            <Route path="/quotation/:id" element={<Quotation />} />
-            <Route path="/quotation_essentials" element={<QuotationRequirements />} />
+          <Route path='home' element={<Home />} />
+          <Route path='/quotation_dashboard' element={<QuotationsDashboard />} />
+          <Route path='/quotation' element={<Quotation />} />
+          <Route path="/quotation/:id" element={<Quotation />} />
+          <Route path="/quotation_essentials" element={<QuotationRequirements />} />
 
-            <Route path='/jobcard_dashboard' element={<JCHome />} />
-            <Route path='/jobcard' element={<Jobcard />} />
-            <Route path='/jobcard/:id' element={<Jobcard />} />
+          <Route path='/jobcard_dashboard' element={<JCHome />} />
+          <Route path='/jobcard' element={<Jobcard />} />
+          <Route path='/jobcard/:id' element={<Jobcard />} />
 
-            <Route path='/jobcard_essentials' element={<JobcardRequirements />} />
-            {/* <Route path='/jobcard' element={<JobcardBMRCL />} /> // BMRCL Job-Card */}
+          <Route path='/jobcard_essentials' element={<JobcardRequirements />} />
 
-            <Route path='/chamber-calibration' element={<ChamberAndCalibration />} />
+          <Route path='/chamber-calibration' element={<ChamberAndCalibration />} />
 
-            <Route path='/slot_booking' element={<Slotbooking />} />
-            {/* <Route path='/update_booking/:id' element={<Slotbooking />} /> */}
+          <Route path='/slot_booking' element={<Slotbooking />} />
 
-            <Route path="/userlogout" element={<UserLogoutDialog />} />
-            <Route path='/trailpage' element={<TrailPage />} />
-            <Route path='*' element={<NotFoundPage />} />
+          <Route path='/user_management' element={<UserManagement />} />
+          <Route path="/userlogout" element={<UserLogoutDialog />} />
 
-          </Route>
+          <Route path='/trailpage' element={<TrailPage />} />
+          <Route path='*' element={<NotFoundPage />} />
 
-        </Routes>
-      </div>
-    </BrowserRouter >
+        </Route>
+
+      </Routes>
+    </div>
+
 
   );
 };

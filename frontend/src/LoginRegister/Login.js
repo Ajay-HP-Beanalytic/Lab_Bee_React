@@ -156,9 +156,6 @@ export default function Login() {
         });
 
         if (response.status === 200) {
-          // setTimeout(() => {
-          //   navigate("/home")
-          // }, 500)
 
           navigate("/home");                      // Redirect to the home page or perform other actions
           toast.success("You have logged in succesfully.")
