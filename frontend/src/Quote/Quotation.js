@@ -17,8 +17,9 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import { useNavigate, useParams } from 'react-router-dom';
 
-import { serverBaseAddress } from './APIPage'
-import DocToPdf from '../components/DocToPdf';
+
+import { serverBaseAddress } from '../Pages/APIPage';
+import DocToPdf from './DocToPdf';
 
 
 

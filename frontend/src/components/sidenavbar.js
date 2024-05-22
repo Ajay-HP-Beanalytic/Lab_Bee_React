@@ -28,6 +28,7 @@ import ArticleIcon from '@mui/icons-material/Article';
 import SettingsIcon from '@mui/icons-material/Settings';
 import NoteAddIcon from '@mui/icons-material/NoteAdd';
 import KitchenIcon from '@mui/icons-material/Kitchen';
+import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
 import { Link, Outlet, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
@@ -174,11 +175,12 @@ export default function SidenavigationBar() {
     { i: 7, label: 'Jobcard Essentials', icon: <NoteAddIcon />, path: '/jobcard_essentials' },
     { i: 8, label: 'Slot Booking', icon: <CalendarMonthSharpIcon />, path: '/slot_booking' },
     { i: 9, label: 'Chamber & Calibration', icon: <KitchenIcon />, path: '/chamber-calibration' },
+    { i: 10, label: 'User Management', icon: <ManageAccountsIcon />, path: '/user_management' },
   ]
 
   const items2 = [
-    { i: 10, label: 'Settings', icon: <SettingsIcon />, path: '/settings' },
-    { i: 11, label: loggedInUser, icon: <Avatar sx={{ backgroundColor: '#ff3333' }}> {userAvatar} </Avatar>, path: '/userlogout' },
+    { i: 11, label: 'Settings', icon: <SettingsIcon />, path: '/settings' },
+    { i: 12, label: loggedInUser, icon: <Avatar sx={{ backgroundColor: '#ff3333' }}> {userAvatar} </Avatar>, path: '/userlogout' },
   ]
 
 
@@ -188,10 +190,10 @@ export default function SidenavigationBar() {
       return true; // Show all items for Admin
 
     } else if (loggedInUserRole === 'Marketing') {
-      return [2, 3, 4, 10, 11].includes(item.i); // Show items 1, 2, 3, and 9 for Marketing
+      return [2, 3, 4, 10, 11, 12].includes(item.i); // Show items 1, 2, 3, and 9 for Marketing
 
     } else if (loggedInUserRole === 'Lab Manager' || loggedInUserRole === 'Lab Engineer' || loggedInUserRole === 'Lab Tech') {
-      return [5, 6, 7, 8, 9, 10, 11, 12].includes(item.i); // Show items 4, 5, and 9 for Lab Manager 
+      return [5, 6, 7, 8, 9, 11, 12].includes(item.i); // Show items 4, 5, and 9 for Lab Manager 
 
     }
     return false; // Default: Hide the item

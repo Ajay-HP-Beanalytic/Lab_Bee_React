@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import {
   Box, Typography, Container, TextField, Button, Table, TableBody, TableCell, TableContainer, TableHead,
-  TableRow, Paper, Grid, InputLabel, MenuItem, FormControl, Select, FormControlLabel, Radio, RadioGroup, Checkbox, FormLabel, IconButton, Tooltip, Divider
+  TableRow, Paper, Grid, InputLabel, MenuItem, FormControl, Select, FormControlLabel, Radio, RadioGroup, Checkbox, FormLabel, IconButton, Tooltip
 } from '@mui/material';
 
 import AddIcon from '@mui/icons-material/Add';
@@ -12,21 +12,23 @@ import dayjs from 'dayjs';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { toast } from 'react-toastify';
-import axios from 'axios';
+import JCDialogs from '../Pages/JCDialogs'
 
 
 
+function handleSubmitJobcard() {
+  console.log('This is Jobcard')
+}
 
-
-const Jobcard = () => {
-
-  // State variable to fetch the users list
-  const [users, setUsers] = useState([])
+const JobcardBMRCL = () => {
 
   const [dateTimeValue, setDateTimeValue] = useState(dayjs());
   const [eutRows, setEutRows] = useState([]);
   const [testRows, setTestRows] = useState([]);
   const [testdetailsRows, setTestDetailsRows] = useState([]);
+
+  const [uploadImages, setUploadImages] = useState(null);
+  const fileInputRef = useRef(null);
 
 
   const [jcStatus, setJcStatus] = useState('Open');
@@ -99,9 +101,6 @@ const Jobcard = () => {
     setTestDetailsRows(updatedRows);
   };
 
-  const handleSubmitJobcard = async () => {
-    toast.success('Success')
-  }
 
   // To clear the fields of job card:
   const handleClearJobcard = () => {
@@ -109,36 +108,32 @@ const Jobcard = () => {
   }
 
 
-  // UseEffect to set the quotation data during update of the quotation:
-  useEffect(() => {
-    axios.get(`http://localhost:4000/api/getTestingUsers/`)
-      .then(result => {
-        setUsers(result.data)
-      })
-
-  }, [])
 
 
+  // Add tests Dialog:
+  const addTestsDialog = () => {
+    <JCDialogs />
+    //toast.success('Cleared')
+  }
 
-  //Font for thetable headers:
-  const tableHeaderFont = { fontSize: 16, fontWeight: 'bold' }
 
-  const HeaderCell = ({ children }) => (
-    <TableCell>
-      <Typography sx={tableHeaderFont}>
-        {children}
-      </Typography>
-    </TableCell>
-  );
 
+  // Function to handle the uploaded image:
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        setUploadImages(reader.result);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
 
   return (
 
     <>
-      <Divider>
-        <Typography variant='h4' sx={{ color: '#003366' }}> Job-Card </Typography>
-      </Divider>
-      <br />
+      <Typography variant='h5' align='center'> Job Card </Typography>
 
       <form onSubmit={handleSubmitJobcard}>
 
@@ -163,7 +158,7 @@ const Jobcard = () => {
                   //fullwidth
                   />
 
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                  {/* <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <TextField
                       sx={{ width: '50%', borderRadius: 3 }}
                       label="DC Form Number"
@@ -179,9 +174,14 @@ const Jobcard = () => {
                       variant="outlined"
                       autoComplete="on"
                     />
+                  </div> */}
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <br sx={{ marginTop: '3px' }} />
                   </div>
 
-                  <br />
+
+                  {/* <br sx={{ marginTop: '1px' }} /> */}
 
                   <div style={{ display: 'flex', justifyContent: 'space-between' }} >
                     <LocalizationProvider dateAdapter={AdapterDayjs}>
@@ -198,13 +198,14 @@ const Jobcard = () => {
 
 
                     <FormControl sx={{ width: '45%', borderRadius: 3 }} >
-                      <InputLabel >Test Incharge</InputLabel>
+                      <InputLabel >JC Started By</InputLabel>
                       <Select
-                        label="test-incharge"
-                        value={users}
-                      //onChange={(e) => handleInputChange(row.slno, 'user_id', e.target.value)}
+                        label="JC Filed By"
                       >
-                        {users.map((item) => (<MenuItem key={item.id} value={item.id}>{item.name}</MenuItem>))}
+                        <MenuItem value="Chandra">Chandra</MenuItem>
+                        <MenuItem value="Kumarvasaya">Kumarvasaya</MenuItem>
+                        <MenuItem value="Kumarvasaya">Mahaboob</MenuItem>
+                        <MenuItem value="Kumarvasaya">Uday</MenuItem>
                       </Select>
                     </FormControl>
 
@@ -213,14 +214,14 @@ const Jobcard = () => {
                   <br />
 
                   <FormControl sx={{ width: '50%', }}>
-                    <FormLabel id="test-category-buttons-group-label">Test Category:</FormLabel>
+                    <FormLabel id="test-category-buttons-group-label"> JC Category:</FormLabel>
                     <RadioGroup
-                      row
+                      //row
                       aria-label="Category"
                       name="category"  >
-                      <FormControlLabel value="Environmental" control={<Radio />} label="Environmental" />
-                      <FormControlLabel value="Screening" control={<Radio />} label="Screening" />
-                      <FormControlLabel value="Other" control={<Radio />} label="Other" />
+                      <FormControlLabel value="SC" control={<Radio />} label="SC" />
+                      <FormControlLabel value="OPM" control={<Radio />} label="OPM" />
+                      <FormControlLabel value="CM" control={<Radio />} label="CM" />
                     </RadioGroup>
                   </FormControl>
 
@@ -232,14 +233,14 @@ const Jobcard = () => {
             {/* Second Grid box */}
             <Grid item xs={6} elevation={4} sx={{ borderRadius: 3 }}>
 
-              <Typography variant='h5' align='center'> Customer Details </Typography>
+              <Typography variant='h5' align='center'> Equipment Details </Typography>
               <br />
 
               <Container component="span" margin={1} paddingright={1} elevation={11}>
                 <Box >
                   <TextField
                     sx={{ borderRadius: 3, marginRight: '10px' }}
-                    label="Company Name"
+                    label="Equipment Name"
                     margin="normal"
                     variant="outlined"
                     autoComplete="on"
@@ -249,13 +250,13 @@ const Jobcard = () => {
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <TextField
                       sx={{ width: '50%', borderRadius: 3 }}
-                      label="Contact Number"
+                      label="Train Number"
                       margin="normal"
                       variant="outlined"
                     />
                     <TextField
                       sx={{ width: '45%', borderRadius: 3 }}
-                      label="Customer Name/Signature"
+                      label="Car Number"
                       margin="normal"
                       variant="outlined"
                     />
@@ -264,9 +265,11 @@ const Jobcard = () => {
                   <div style={{ display: 'flex', justifyContent: 'space-between' }} >
                     <TextField
                       sx={{ borderRadius: 3 }}
-                      label="Project Name"
+                      label="Issue Description"
                       margin="normal"
                       variant="outlined"
+                      multiline={true}
+                      rows={3}
                       fullWidth
                     />
                   </div>
@@ -275,13 +278,14 @@ const Jobcard = () => {
                   <br />
 
                   <FormControl sx={{ width: '50%', }}>
-                    <FormLabel id="sample-condition-buttons-group-label">Sample Condition:</FormLabel>
+                    <FormLabel id="sample-condition-buttons-group-label">Equipment Condition:</FormLabel>
                     <RadioGroup
-                      row
+                      //row
                       aria-label="sample-condition"
                       name="sample-condition"  >
-                      <FormControlLabel value="Good" control={<Radio />} label="Good " />
-                      <FormControlLabel value="Other" control={<Radio />} label="Other " />
+                      <FormControlLabel value="Healthy" control={<Radio />} label="Healthy" />
+                      <FormControlLabel value="Require Service" control={<Radio />} label="Require Service" />
+                      <FormControlLabel value="Not In Operation" control={<Radio />} label="Not In Operation" />
                     </RadioGroup>
                   </FormControl>
 
@@ -293,6 +297,10 @@ const Jobcard = () => {
                     variant="outlined"
                     fullWidth
                   />
+
+
+
+
                 </Box>
               </Container>
 
@@ -304,30 +312,63 @@ const Jobcard = () => {
         <br />
 
         <Box >
+
+          <Typography sx={{ marginTop: '5', paddingBottom: '3', paddingTop: '5' }} variant="h5"> Action Taken</Typography>
+
+          <TextField
+            sx={{ borderRadius: 3 }}
+            label="Job Details"
+            margin="normal"
+            variant="outlined"
+            multiline={true}
+            rows={10}
+            fullWidth
+          />
+
+          <>
+            <Typography sx={{ marginTop: '5', paddingBottom: '3', paddingTop: '5' }} variant="h5"> Add Images </Typography>
+            <FormControl ref={fileInputRef}>
+              <TextField
+                type="file"
+                accept="image/jpg, image/jpeg, image/png"
+                onChange={handleFileChange}
+              />
+            </FormControl>
+
+            {uploadImages && (
+              <img
+                src={uploadImages}
+                alt="Upload Images"
+                style={{ maxWidth: '70%', marginTop: '10px', borderRadius: '5px' }}
+              />
+            )}
+          </>
+
+
           {/* Table Container */}
-          <Typography sx={{ marginTop: '5', paddingBottom: '3', paddingTop: '5' }} variant="h5"> EUT Details </Typography>
+          {/* <Typography sx={{ marginTop: '5', paddingBottom: '3', paddingTop: '5' }} variant="h5"> EUT Details </Typography>
 
           <TableContainer component={Paper} >
             <Table size='small' aria-label="simple table">
-              <TableHead sx={{ backgroundColor: '#227DD4' }}>
+              <TableHead sx={{ backgroundColor: '#227DD4', fontWeight: 'bold' }}>
                 <TableRow >
-                  <HeaderCell >Sl No</HeaderCell>
-                  <HeaderCell align='center'>JC Number</HeaderCell>
-                  <HeaderCell align='center'>Nomenculature</HeaderCell>
-                  <HeaderCell align='center'>Eut Description</HeaderCell>
-                  <HeaderCell align='center'>Qty</HeaderCell>
-                  <HeaderCell align='center'>Part No</HeaderCell>
-                  <HeaderCell align='center'>Model No</HeaderCell>
-                  <HeaderCell align='center'>Serial No</HeaderCell>
-                  <HeaderCell>
+                  <TableCell >Sl No</TableCell>
+                  <TableCell align='center'>JC Number</TableCell>
+                  <TableCell align='center'>Nomenculature</TableCell>
+                  <TableCell align='center'>Eut Description</TableCell>
+                  <TableCell align='center'>Qty</TableCell>
+                  <TableCell align='center'>Part No</TableCell>
+                  <TableCell align='center'>Model No</TableCell>
+                  <TableCell align='center'>Serial No</TableCell>
+                  <TableCell>
 
-                    <IconButton size='small'>
+                    <IconButton>
                       <Tooltip title='Add Row' arrow>
                         <AddIcon onClick={handleAddEutRow} />
                       </Tooltip>
                     </IconButton>
 
-                  </HeaderCell>
+                  </TableCell>
                 </TableRow>
               </TableHead>
 
@@ -359,7 +400,7 @@ const Jobcard = () => {
                       </TableCell>
 
                       <TableCell>
-                        <IconButton size='small'>
+                        <IconButton>
                           <Tooltip title='Remove Row' arrow>
                             <RemoveIcon onClick={() => handleRemoveEutRow(row.id)} />
                           </Tooltip>
@@ -372,31 +413,31 @@ const Jobcard = () => {
                 )}
               </TableBody>
             </Table>
-          </TableContainer>
+          </TableContainer> */}
 
 
 
           <br />
 
 
-          <Typography sx={{ marginTop: '5', paddingBottom: '3', paddingTop: '5' }} variant="h5"> Tests </Typography>
+          {/* <Typography sx={{ marginTop: '5', paddingBottom: '3', paddingTop: '5' }} variant="h5"> Tests </Typography>
 
           <TableContainer component={Paper} >
             <Table size='small' aria-label="simple table">
-              <TableHead sx={{ backgroundColor: '#227DD4' }}>
+              <TableHead sx={{ backgroundColor: '#227DD4', fontWeight: 'bold' }}>
                 <TableRow>
-                  <HeaderCell >Sl No</HeaderCell>
-                  <HeaderCell align="center">Test</HeaderCell>
-                  <HeaderCell align="center">NABL</HeaderCell>
-                  <HeaderCell align="center">Test Standard</HeaderCell>
-                  <HeaderCell align="center">Reference Document</HeaderCell>
-                  <HeaderCell>
-                    <IconButton size='small'>
+                  <TableCell >Sl No</TableCell>
+                  <TableCell align="center">Test</TableCell>
+                  <TableCell align="center">NABL</TableCell>
+                  <TableCell align="center">Test Standard</TableCell>
+                  <TableCell align="center">Reference Document</TableCell>
+                  <TableCell>
+                    <IconButton>
                       <Tooltip title='Add Row' arrow>
                         <AddIcon onClick={handleAddTestRow} />
                       </Tooltip>
                     </IconButton>
-                  </HeaderCell>
+                  </TableCell>
 
                 </TableRow>
               </TableHead>
@@ -432,7 +473,7 @@ const Jobcard = () => {
                     </TableCell>
 
                     <TableCell >
-                      <IconButton size='small'>
+                      <IconButton>
                         <Tooltip title='Remove Row' arrow>
                           <RemoveIcon onClick={() => handleRemoveTestRow(row.id)} />
                         </Tooltip>
@@ -443,27 +484,28 @@ const Jobcard = () => {
                 ))}
               </TableBody>
             </Table>
-          </TableContainer>
+          </TableContainer> */}
 
 
 
-          <br />
+          {/* <br />
 
           <Typography sx={{ marginTop: '5', paddingBottom: '3', paddingTop: '5' }} variant="h5">Test Details</Typography>
 
           <TableContainer component={Paper}  >
             <Table size='small' aria-label="simple table" >
-              <TableHead sx={{ backgroundColor: '#227DD4' }}>
+              <TableHead sx={{ backgroundColor: '#227DD4', fontWeight: 'bold' }}>
                 <TableRow>
-                  <TableCell >Sl No</TableCell>
+                  <TableCell>Sl No</TableCell>
+                  <TableCell sx={{ minWidth: '150px' }} align="center">JC Number</TableCell>
                   <TableCell sx={{ minWidth: '300px' }} align="center">Test</TableCell>
                   <TableCell sx={{ minWidth: '150px' }} align="center">Chamber</TableCell>
                   <TableCell sx={{ minWidth: '150px' }} align="center">EUT Serial No</TableCell>
                   <TableCell sx={{ minWidth: '150px' }} align="center">Standard</TableCell>
                   <TableCell sx={{ minWidth: '150px' }} align="center">Started By</TableCell>
                   <TableCell sx={{ minWidth: '250px' }} align="center">Start Date & Time </TableCell>
-                  <TableCell sx={{ minWidth: '250px' }} align="center">End Date & Time</TableCell>
                   <TableCell sx={{ minWidth: '150px' }} align="center">Duration(Hrs)</TableCell>
+                  <TableCell sx={{ minWidth: '250px' }} align="center">End Date & Time</TableCell>
                   <TableCell sx={{ minWidth: '150px' }} align="center">Ended By</TableCell>
                   <TableCell sx={{ minWidth: '150px' }} align="center">Remarks</TableCell>
                   <TableCell sx={{ minWidth: '150px' }} align="center">Report No</TableCell>
@@ -472,7 +514,7 @@ const Jobcard = () => {
                   <TableCell sx={{ minWidth: '150px' }} align="center">Report Status</TableCell>
 
                   <TableCell>
-                    <IconButton size='small'>
+                    <IconButton>
                       <Tooltip title='Add Row' arrow>
                         <AddIcon onClick={handleAddTestDetailsRow} />
                       </Tooltip>
@@ -488,6 +530,11 @@ const Jobcard = () => {
                     <TableCell>{index + 1}</TableCell>
 
                     <TableCell>
+                      {jcNumber}
+                    </TableCell>
+
+
+                    <TableCell>
                       <TextField style={{ align: "center" }} variant="outlined" />
                     </TableCell>
 
@@ -497,39 +544,12 @@ const Jobcard = () => {
 
                     <TableCell> <TextField style={{ align: "center" }} variant="outlined" /> </TableCell>
 
-                    <TableCell>
-                      <FormControl sx={{ width: '100%', borderRadius: 3 }} >
-                        <InputLabel >Started By</InputLabel>
-                        <Select
-                          label="test-started-by"
-                          value={row.user_name}
-                        //onChange={(e) => handleInputChange(row.slno, 'user_id', e.target.value)}
-                        >
-                          {users.map((item) => (<MenuItem key={item.id} value={item.id}>{item.name}</MenuItem>))}
-                        </Select>
-                      </FormControl>
-                    </TableCell>
-
+                    <TableCell> <TextField style={{ align: "center" }} variant="outlined" /> </TableCell>
 
                     <TableCell>
                       <LocalizationProvider dateAdapter={AdapterDayjs}>
                         <DateTimePicker sx={{ width: '100%', borderRadius: 3 }}
-                          label="Test start date"
-                          variant="outlined"
-                          margin="normal"
-                          value={dateTimeValue}
-                          onChange={handleDateChange}
-                          renderInput={(props) => <TextField {...props} />}
-                          format="DD/MM/YYYY HH:mm A"
-                        />
-                      </LocalizationProvider>
-                    </TableCell>
-
-
-                    <TableCell>
-                      <LocalizationProvider dateAdapter={AdapterDayjs}>
-                        <DateTimePicker sx={{ width: '100%', borderRadius: 3 }}
-                          label="Test end date"
+                          label="JC Open Date"
                           variant="outlined"
                           margin="normal"
                           value={dateTimeValue}
@@ -543,34 +563,26 @@ const Jobcard = () => {
                     <TableCell> <TextField style={{ align: "center" }} variant="outlined" /> </TableCell>
 
                     <TableCell>
-                      <FormControl sx={{ width: '100%', borderRadius: 3 }} >
-                        <InputLabel >Ended By</InputLabel>
-                        <Select
-                          label="test-ended-by"
-                          value={row.user_name}
-                        //onChange={(e) => handleInputChange(row.slno, 'user_id', e.target.value)}
-                        >
-                          {users.map((item) => (<MenuItem key={item.id} value={item.id}>{item.name}</MenuItem>))}
-                        </Select>
-                      </FormControl>
+                      <LocalizationProvider dateAdapter={AdapterDayjs}>
+                        <DateTimePicker sx={{ width: '100%', borderRadius: 3 }}
+                          label="JC Open Date"
+                          variant="outlined"
+                          margin="normal"
+                          value={dateTimeValue}
+                          onChange={handleDateChange}
+                          renderInput={(props) => <TextField {...props} />}
+                          format="DD/MM/YYYY HH:mm A"
+                        />
+                      </LocalizationProvider>
                     </TableCell>
 
                     <TableCell> <TextField style={{ align: "center" }} variant="outlined" /> </TableCell>
 
                     <TableCell> <TextField style={{ align: "center" }} variant="outlined" /> </TableCell>
 
-                    <TableCell>
-                      <FormControl sx={{ width: '100%', borderRadius: 3 }} >
-                        <InputLabel >Report Prepared By</InputLabel>
-                        <Select
-                          label="report-prepared-by"
-                          value={row.user_name}
-                        //onChange={(e) => handleInputChange(row.slno, 'user_id', e.target.value)}
-                        >
-                          {users.map((item) => (<MenuItem key={item.id} value={item.id}>{item.name}</MenuItem>))}
-                        </Select>
-                      </FormControl>
-                    </TableCell>
+                    <TableCell> <TextField style={{ align: "center" }} variant="outlined" /> </TableCell>
+
+                    <TableCell> <TextField style={{ align: "center" }} variant="outlined" /> </TableCell>
 
                     <TableCell>
                       <FormControl sx={{ width: '100%', borderRadius: 3 }} >
@@ -595,7 +607,7 @@ const Jobcard = () => {
                     </TableCell>
 
                     <TableCell>
-                      <IconButton size='small'>
+                      <IconButton>
                         <Tooltip title='Remove Row' arrow>
                           <RemoveIcon onClick={() => handleRemoveTestDetailsRow(row.id)} />
                         </Tooltip>
@@ -608,7 +620,7 @@ const Jobcard = () => {
             </Table>
           </TableContainer>
 
-          <br />
+          <br /> */}
 
 
           <Box sx={{ paddingTop: '5', paddingBottom: '5px', marginTop: '5px', marginBottom: '5px', border: 1, borderColor: 'primary.main' }}>
@@ -674,9 +686,7 @@ const Jobcard = () => {
 
           <Button sx={{ borderRadius: 3, margin: 0.5 }}
             variant="contained"
-            color="primary"
-            onClick={handleSubmitJobcard}
-          >
+            color="primary">
             Submit
           </Button>
 
@@ -688,4 +698,4 @@ const Jobcard = () => {
   )
 }
 
-export default Jobcard;
+export default JobcardBMRCL;

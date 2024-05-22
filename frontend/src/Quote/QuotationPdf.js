@@ -4,6 +4,7 @@ import { useParams } from 'react-router-dom';
 import axios from 'axios';
 import { StyleSheet } from '@react-pdf/renderer';
 import DocToPdf from '../components/DocToPdf';
+import { serverBaseAddress } from '../Pages/APIPage';
 
 export default function QuotationPdf() {
 
@@ -15,7 +16,7 @@ export default function QuotationPdf() {
 
     useEffect(() => {
         if (id) {
-            axios.get(`http://localhost:4000/api/quotation/` + id)
+            axios.get(`${serverBaseAddress}/api/quotation/` + id)
                 .then(result => {
                     setQuotationIDString(result.data[0].quotation_ids);
                 })

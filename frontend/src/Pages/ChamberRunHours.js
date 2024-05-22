@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Box, Typography } from '@mui/material'
 import axios from 'axios'
-import { serverBaseAddress } from '../Pages/APIPage'
+import { serverBaseAddress } from './APIPage'
 import { DataGrid } from '@mui/x-data-grid';
 
 
