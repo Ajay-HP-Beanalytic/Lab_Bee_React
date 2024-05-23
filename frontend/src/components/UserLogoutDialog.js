@@ -40,10 +40,8 @@ const UserLogoutDialog = () => {
     // State variable to handle the logout dialog:
     const [isUserDialogOpen, setUserDialogOpen] = useState(false)
 
-
     // Navigation hook to navigate upon successfull logout
     const navigate = useNavigate()
-
 
     //Logout from the application:
     const handleLogout = () => {
@@ -56,10 +54,8 @@ const UserLogoutDialog = () => {
         toast.success('You have successfully logged out.')
     }
 
-
     return (
         <>
-
             <Button onClick={() => setUserDialogOpen(true)} variant='outlined'>Logout</Button>
             <Dialog hideBackdrop open={isUserDialogOpen} onClose={() => setUserDialogOpen(false)}>
                 <DialogTitle> Logout Confirmation</DialogTitle>
@@ -89,9 +85,7 @@ const UserLogoutDialog = () => {
                 </DialogActions>
 
             </Dialog>
-
         </>
-
     );
 }
 

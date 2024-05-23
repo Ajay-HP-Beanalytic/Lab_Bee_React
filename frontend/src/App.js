@@ -82,7 +82,7 @@ function App() {
           <Route path='/slot_booking' element={<Slotbooking />} />
 
           <Route path='/user_management' element={<UserManagement />} />
-          <Route path="/userlogout" element={<UserLogoutDialog />} />
+          {/* <Route path="/userlogout" element={<UserLogoutDialog />} /> */}
 
           <Route path='/trailpage' element={<TrailPage />} />
           <Route path='*' element={<NotFoundPage />} />

@@ -10,8 +10,9 @@ function createUsersTable() {
             name VARCHAR(255),
             email VARCHAR(255),
             password VARCHAR(255),
+            department VARCHAR(255),
             role VARCHAR(255),
-            allowed_components VARCHAR(255),
+            user_status VARCHAR(255) NOT NULL,
             PRIMARY KEY(id) 
         )`;
 
