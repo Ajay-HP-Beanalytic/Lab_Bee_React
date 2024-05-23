@@ -21,30 +21,17 @@ export default function UserManagement() {
   // Navigation hook to navigate upon successfull logout
   const navigate = useNavigate()
 
-  // To validate the user credential its very much important
-  axios.defaults.withCredentials = true;
-
-  // To get the logged in user name:
-  useEffect(() => {
-    axios.get(`${serverBaseAddress}/api/getLoggedInUser`)
-      .then(res => {
-        if (res.data.valid) {
-          setLoggedInUser(res.data.username)
-        } else {
-          navigate("/")
-        }
-      })
-      .catch(err => console.log(err))
-  }, [])
-
-
   // State variables to add the user data
   const [userName, setUserName] = useState('')
   const [userEmail, setUserEmail] = useState('')
   const [initialUserPassword, setInitialUserPassword] = useState('')
+  const [userDepartment, setUserDepartment] = useState('')
   const [userRole, setUserRole] = useState('')
+  const [userStatus, setUserStatus] = useState('')
 
-  const userRoleOptions = ['Admin', 'Lab Engineer', 'Lab Tech'];
+  const userDepartmentOptions = ['Accounts', 'Marketing', 'Testing', 'Reliability', 'Software']
+  const userRoleOptions = ['Managing Director', 'Operations Manager', 'Admin', 'Lab Manager', 'Lab Engineer', 'Lab Technician', 'Reliability Manager', 'Reliability Engineer',];
+  const userStatusOptions = ['Enable', 'Disable']
 
 
   const [allowedComponents, setAllowedComponents] = useState([])
@@ -54,7 +41,7 @@ export default function UserManagement() {
 
 
   // Define the table headers:
-  const tableHeadersText = ['Sl No', 'Name', 'Email', 'Role', 'Allowed Pages', 'Action'];
+  const tableHeadersText = ['Sl No', 'Name', 'Email', 'Department', 'Role', 'User Status', 'Action'];
 
   // State varaiable to store users list
   const [usersList, setUsersList] = useState([])
@@ -95,13 +82,13 @@ export default function UserManagement() {
     }
 
     if (editId) {
-      if (!userName || !userEmail || !userRole || !allowedComponents) {
+      if (!userName || !userEmail || !userRole || !userDepartment || !userStatus) {
         toast.error("Please enter all the fields to update the user data..!");
         return;
       }
 
     } else {
-      if (!userName || !userEmail || !initialUserPassword || !userRole || !allowedComponents) {
+      if (!userName || !userEmail || !initialUserPassword || !userRole || !userDepartment || !userStatus) {
         toast.error("Please enter all the fields to add the user..!");
         return;
       }
@@ -112,8 +99,9 @@ export default function UserManagement() {
         name: userName,
         email: userEmail,
         password: initialUserPassword,
+        department: userDepartment,
         role: userRole,
-        allowedComponents: allowedComponents
+        user_status: userStatus,
       });
 
       if (addNewUserRequest.status === 200) {
@@ -144,12 +132,33 @@ export default function UserManagement() {
       try {
         const usersURL = await axios.get(`${serverBaseAddress}/api/getAllUsers`);
         setUsersList(usersURL.data)
+        console.log('usersURL.data is', usersURL.data)
       } catch (error) {
         console.error('Failed to fetch the data', error);
       }
     }
     fetchUsersList()
   }, [refresh])
+
+
+
+  // To validate the user credential its very much important
+  axios.defaults.withCredentials = true;
+
+  // To get the logged in user name:
+  useEffect(() => {
+    axios.get(`${serverBaseAddress}/api/getLoggedInUser`)
+      .then(res => {
+        if (res.data.valid) {
+          console.log('isss', res.data)
+          setLoggedInUser(res.data.user_name)
+        } else {
+          navigate("/")
+        }
+      })
+      .catch(err => console.log(err))
+  }, [refresh])
+
 
 
   // Function to clear the fields and close the dialog
@@ -159,7 +168,8 @@ export default function UserManagement() {
     setUserEmail('')
     setInitialUserPassword('')
     setUserRole('')
-    setAllowedComponents('')
+    setUserDepartment('')
+    setUserStatus('')
     setEditId('')
   }
 
@@ -176,8 +186,9 @@ export default function UserManagement() {
     setUserName(rowData.name)
     setUserEmail(rowData.email)
     // setInitialUserPassword(rowData.password)
+    setUserDepartment(rowData.department)
     setUserRole(rowData.role)
-    setAllowedComponents(rowData.allowed_components)
+    setUserStatus(rowData.user_status)
   }
 
   // State variable to handle the delete user confirmation dialog:
@@ -236,8 +247,17 @@ export default function UserManagement() {
   useEffect(() => {
   }, [deleteUserId]);
 
+
+  const handleUserDepartment = (e) => {
+    setUserDepartment(e.target.value)
+  }
+
   const handleChangeRole = (e) => {
     setUserRole(e.target.value)
+  }
+
+  const handleUserStatus = (e) => {
+    setUserStatus(e.target.value)
   }
 
   return (
@@ -261,6 +281,7 @@ export default function UserManagement() {
       <Divider>
         <Typography variant='h4' sx={{ color: '#003366', mb: 2 }}> User Management</Typography>
       </Divider>
+
 
 
       {loggedInUser === 'Admin' && (
@@ -344,17 +365,21 @@ export default function UserManagement() {
                   />
                 ) : null}
 
-
-                {/* <TextField
-                  sx={{ marginBottom: "16px", marginLeft: "10px", borderRadius: 3 }}
-                  value={userRole}
-                  onChange={(e) => setUserRole(e.target.value)}
-                  label="User Role/Designation "
-                  margin="normal"
+                <FormControl
                   fullWidth
-                  variant="outlined"
-                  autoComplete="on"
-                /> */}
+                  sx={{ marginBottom: "16px", marginLeft: "10px", borderRadius: 3 }}>
+                  <InputLabel> Department </InputLabel>
+                  <Select
+                    label="Department"
+                    value={userDepartment}
+                    onChange={handleUserDepartment}
+                  >
+                    {userDepartmentOptions.map((userDep, index) => (
+                      <MenuItem key={index} value={userDep}> {userDep}</MenuItem>
+                    ))}
+
+                  </Select>
+                </FormControl>
 
                 <FormControl
                   fullWidth
@@ -372,16 +397,23 @@ export default function UserManagement() {
                   </Select>
                 </FormControl>
 
-                <TextField
-                  sx={{ marginBottom: "16px", marginLeft: "10px", borderRadius: 3 }}
-                  value={allowedComponents}
-                  onChange={(e) => setAllowedComponents(e.target.value)}
-                  label="Access allowed to"
-                  margin="normal"
+
+                <FormControl
                   fullWidth
-                  variant="outlined"
-                  autoComplete="on"
-                />
+                  sx={{ marginBottom: "16px", marginLeft: "10px", borderRadius: 3 }}>
+                  <InputLabel> User Status </InputLabel>
+                  <Select
+                    label="Status"
+                    value={userStatus}
+                    onChange={handleUserStatus}
+                  >
+                    {userStatusOptions.map((userStatus, index) => (
+                      <MenuItem key={index} value={userStatus}> {userStatus}</MenuItem>
+                    ))}
+
+                  </Select>
+                </FormControl>
+
               </DialogContent>
 
               <DialogActions>
@@ -432,8 +464,9 @@ export default function UserManagement() {
 
                       <TableCell align="center">{item.name}</TableCell>
                       <TableCell align="center">{item.email}</TableCell>
+                      <TableCell align="center">{item.department}</TableCell>
                       <TableCell align="center">{item.role}</TableCell>
-                      <TableCell align="center"> {item.allowed_components}</TableCell>
+                      <TableCell align="center">{item.user_status}</TableCell>
 
                       <TableCell align="center">
                         <IconButton variant='outlined' size='small'
@@ -475,13 +508,13 @@ export default function UserManagement() {
           </Paper>
 
 
-          <Grid display='column' alignItems='right'>
+          {/* <Grid display='column' alignItems='right'>
             <Typography variant='h5'> Note: </Typography>
             <Typography variant='h6'>ALL - Can access all pages</Typography>
             <Typography variant='h6'>Quotation - Slot-Booking and its components</Typography>
             <Typography variant='h6'>JC - Job-Card and its components</Typography>
             <Typography variant='h6'>SB - Slot-Booking and its components</Typography>
-          </Grid>
+          </Grid> */}
 
 
         </Box>

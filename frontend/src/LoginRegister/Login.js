@@ -25,6 +25,7 @@ import IconButton from '@mui/material/IconButton';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import { FormControl, InputLabel, OutlinedInput } from "@mui/material";
+import { serverBaseAddress } from "../Pages/APIPage";
 
 
 
@@ -108,7 +109,8 @@ export default function Login() {
 
   //To get the logged in user name:
   useEffect(() => {
-    axios.get('http://localhost:4000/api/getLoggedInUser')
+    // axios.get('http://localhost:4000/api/getLoggedInUser')
+    axios.get(`${serverBaseAddress}/api/getLoggedInUser`)
       .then(res => {
         if (res.data.valid) {
           navigate("/home")
@@ -148,38 +150,49 @@ export default function Login() {
 
     if (!email || !password) {
       toast.error("Please enter all the fields..!");
-    } else {
-      try {
-        const response = await axios.post("http://localhost:4000/api/login", {
-          email,
-          password,
-        });
+      return;
+    }
 
-        if (response.status === 200) {
+    try {
 
-          navigate("/home");                      // Redirect to the home page or perform other actions
-          toast.success("You have logged in succesfully.")
+      // Fetch user status
+      // First, check the user status
+      const statusResponse = await axios.post(`${serverBaseAddress}/api/getUserStatus`, { email });
+      const userStatus = statusResponse.data.status;
 
-          //localStorage.setItem('token', response.data.token)  // Store token in the local storage
-          //console.log(response.data)
-
-        } else {
-          toast.warning("Login Error");
-        }
-
-      } catch (error) {
-        // Check for specific error messages to differentiate between server error and login error
-        if (error.response && error.response.status === 401) {
-          // Unauthorized - Incorrect email or password
-          toast.warning("Incorrect Email or Password");
-        } else {
-          // Other errors
-          toast.error("Login Error");
-        }
-        console.log(error)
+      // if (userStatus !== 'Enable' && userStatus === '') {
+      if (userStatus !== 'Enable') {
+        toast.warning("Your account is disabled. Please contact Admin.");
+        return;
       }
-    };
+
+      // Proceed with login if user status is 'Enable'
+      const response = await axios.post(`${serverBaseAddress}/api/login`, {
+        email,
+        password,
+      });
+
+      if (response.status === 200) {
+        navigate("/home");                      // Redirect to the home page or perform other actions
+        toast.success("You have logged in successfully.")
+
+      } else {
+        toast.warning("Login Error");
+      }
+
+    } catch (error) {
+      // Check for specific error messages to differentiate between server error and login error
+      if (error.response && error.response.status === 401) {
+        // Unauthorized - Incorrect email or password
+        toast.warning("Incorrect Email or Password");
+      } else {
+        // Other errors
+        toast.error("Login Error");
+      }
+      console.log(error)
+    }
   };
+
 
 
   return (
@@ -356,7 +369,6 @@ export default function Login() {
 
 
 
-// // To allow an user to log-In:
 // const handleLogin = async (e) => {
 //   e.preventDefault();
 
@@ -364,20 +376,29 @@ export default function Login() {
 //     toast.error("Please enter all the fields..!");
 //   } else {
 //     try {
-//       const response = await axios.post("http://localhost:4000/api/login", {
+//       const response = await axios.post(`${serverBaseAddress}/api/login`, {
 //         email,
 //         password,
 //       });
 
 //       if (response.status === 200) {
-//         toast.success("Logged In succesfully")
 //         navigate("/home");                      // Redirect to the home page or perform other actions
-//         console.log(response)
+//         toast.success("You have logged in successfully.")
+//         //localStorage.setItem('token', response.data.token)  // Store token in the local storage
+//         //console.log(response.data)
 //       } else {
-//         toast.warning("Incorrect Email or Password")
+//         toast.warning("Login Error");
 //       }
+
 //     } catch (error) {
-//       toast.error("Login Error")
+//       // Check for specific error messages to differentiate between server error and login error
+//       if (error.response && error.response.status === 401) {
+//         // Unauthorized - Incorrect email or password
+//         toast.warning("Incorrect Email or Password");
+//       } else {
+//         // Other errors
+//         toast.error("Login Error");
+//       }
 //       console.log(error)
 //     }
 //   };

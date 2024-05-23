@@ -17,12 +17,13 @@ function usersDataAPIs(app) {
     //api to add or register the new user: 
     app.post("/api/addUser", (req, res) => {
         //const { name, email, password } = req.body;
-        const { name, email, password, role, allowedComponents } = req.body;
+        const { name, email, password, department, role, user_status } = req.body;
 
-        console.log('1', name, email, password, role, allowedComponents)
+
+        console.log('1', name, email, password, department, role, user_status)
 
         const sqlCheckEmail = "SELECT * FROM labbee_users WHERE email=?";
-        const sqlInsertUser = "INSERT INTO labbee_users (name, email, password, role, allowed_components) VALUES (?,?,?,?,?)";
+        const sqlInsertUser = "INSERT INTO labbee_users (name, email, password, department, role, user_status) VALUES (?,?,?,?,?,?)";
 
         db.query(sqlCheckEmail, [email], (error, result) => {
             if (error) {
@@ -43,9 +44,9 @@ function usersDataAPIs(app) {
                 })
                 .then(hash => {
                     //db.query(sqlInsertUser, [name, email, hash], (error) => {
-                    console.log('2', name, email, hash, role, allowedComponents)
+                    console.log('2', name, email, hash, department, role, user_status)
 
-                    db.query(sqlInsertUser, [name, email, hash, role, allowedComponents], (error) => {
+                    db.query(sqlInsertUser, [name, email, hash, department, role, user_status], (error) => {
                         if (error) {
                             console.error("Error inserting user:", error);
                             return res.status(500).json({ message: "Internal server error" });
@@ -84,15 +85,19 @@ function usersDataAPIs(app) {
 
     app.post("/api/addUser/:id", (req, res) => {
         //const { name, email, password } = req.body;
-        const { name, email, role, allowedComponents } = req.body;
+        const { name, email, department, role, user_status } = req.body;
 
-        console.log('update values', name, email, role, allowedComponents)
+        console.log('update values', name, email, department, role, user_status)
 
         const id = req.params.id;
 
         console.log('updating id', id)
 
-        const sqlUpdateUser = `UPDATE labbee_users SET name='${name}', email='${email}', role='${role}', allowed_components='${allowedComponents}' WHERE id=${id}`;
+        const sqlUpdateUser = `
+                UPDATE labbee_users 
+                SET name='${name}', email='${email}', department='${department}', role='${role}', user_status='${user_status}'
+                WHERE id=${id}
+                `;
 
         db.query(sqlUpdateUser, (error, result) => {
             if (error) {
@@ -101,7 +106,6 @@ function usersDataAPIs(app) {
             } else {
                 res.status(200).json({ message: "User data updated successfully" });
             }
-
         });
     });
 
@@ -178,11 +182,36 @@ function usersDataAPIs(app) {
     // api to fetch the logged in user name:
     app.get("/api/getLoggedInUser", (req, res) => {
         if (req.session.username) {
-            return res.json({ valid: true, username: req.session.username, user_role: req.session.role })
+            return res.json({ valid: true, user_name: req.session.username, user_role: req.session.role })
         } else {
             return res.json({ valid: false })
         }
     });
+
+    // API to fetch the user status:
+    app.post("/api/getUserStatus", (req, res) => {
+        const { email } = req.body;
+
+        // Fetch user status from the database
+        const user = 'SELECT user_status FROM labbee_users WHERE email=? '
+
+        db.query(user, [email], (error, results) => {
+            if (error) {
+                // Handle database error
+                return res.status(500).json({ error: 'Database query error' });
+            }
+
+            if (results.length > 0) {
+                // User found, send the user_status
+                const userStatus = results[0].user_status;
+                return res.status(200).json({ status: userStatus });
+            } else {
+                // User not found
+                return res.status(404).json({ error: 'User not found' });
+            }
+        });
+
+    })
 
 
 
@@ -213,7 +242,7 @@ function usersDataAPIs(app) {
 
     // Fetch the users who will operate the testings 
     app.get("/api/getTestingUsers", (req, res) => {
-        const usersList = "SELECT name FROM labbee_users WHERE allowed_components LIKE '%JC%' ";
+        const usersList = "SELECT name FROM labbee_users WHERE department LIKE '%Testing%' ";
         db.query(usersList, (error, result) => {
             res.send(result);
         });
