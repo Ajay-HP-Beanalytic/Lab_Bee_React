@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 
 import {
   Box,
+  Card,
   FormControl,
   Grid,
   InputLabel,
@@ -15,12 +16,13 @@ import { toast } from 'react-toastify';
 import { getCurrentMonthYear, getFinancialYear } from '../functions/UtilityFunctions';
 import SearchBar from '../common/SearchBar';
 import DateRangeFilter from '../common/DateRangeFilter';
-import { CreatePieChart, CreateBarChart } from '../functions/DashboardFunctions';
+import { CreatePieChart, CreateBarChart, CreateKpiCard } from '../functions/DashboardFunctions';
 
 import { DataGrid } from '@mui/x-data-grid';
 import dayjs from 'dayjs';
 import EmptyCard from '../common/EmptyCard';
 import { EVENT_CONSTANTS, publish } from '../common/CustomEvents';
+import CountUp from 'react-countup'
 
 
 
@@ -149,18 +151,140 @@ export default function PoInvoiceStatusTable({ newJcAdded, openDialog, setOpenDi
 
 
   //////////////////////////////////////////////////////////////////////////////
+  console.log('podata', poDataList)
+
+  const accordianTitleString = 'Click here to see the list'
+
+  //Function for the pie chart
+  const getPoInvoiceDataForPieChart = (data) => {
+    // Initialize counters for each status category
+
+    let poReceivedCount = 0;
+    let poNotReceivedCount = 0;
+    let invoiceSentCount = 0;
+    let invoiceNotSentCount = 0;
+    let paymentReceivedCount = 0;
+    let paymentNotReceivedCount = 0;
+    let paymentOnHoldCount = 0;
+
+    // Loop through the data to count each status category
+    data.forEach((item) => {
+
+      //PO Status counts
+      switch (item.po_status) {
+        case 'PO Received':
+          poReceivedCount++;
+          break;
+
+        case 'PO Not Received':
+          poNotReceivedCount++;
+          break;
+      }
+
+      //Invoice Status counts
+      switch (item.invoice_status) {
+        case 'Invoice Sent':
+          invoiceSentCount++;
+          break;
+
+        case 'Invoice Not Sent':
+          invoiceNotSentCount++;
+          break;
+      }
+
+
+      //Payment Status counts
+      switch (item.payment_status) {
+        case 'Payment Received':
+          paymentReceivedCount++;
+          break;
+
+        case 'Payment Not Received':
+          paymentNotReceivedCount++;
+          break;
+
+        case 'Payment on Hold':
+          paymentOnHoldCount++;
+          break;
+      }
+    });
+
+    // Create datasets for each pie chart
+    const poStatusData = [poReceivedCount, poNotReceivedCount];
+    const invoiceStatusData = [invoiceSentCount, invoiceNotSentCount];
+    const paymentStatusData = [paymentReceivedCount, paymentNotReceivedCount, paymentOnHoldCount];
+
+
+    return { poStatusData, invoiceStatusData, paymentStatusData };
+  }
+
+
+  //Function for the KPI Cards: (Check Again This)
+  const getPoInvoiceDataForKPI = (data) => {
+
+    let totalPaymentReceived = 0;
+    let totalReceivedInvoiceValue = 0;
+    let totalPendingInvoiceValue = 0;
+    let totalOnHoldInvoiceValue = 0;
+
+    data.forEach((item) => {
+
+      // Parse the values to ensure they are numbers
+      const paymentValue = parseFloat(item.invoice_value) || 0;
+      const invoiceValue = parseFloat(item.invoice_value) || 0;
+
+      if (item.invoice_status === 'Invoice Sent' && item.payment_status === 'Payment Received') {
+        totalPaymentReceived += paymentValue;
+      }
+
+      if (item.invoice_status === 'Invoice Sent') {
+        totalReceivedInvoiceValue += invoiceValue;
+      }
+
+      if (item.payment_status === 'Payment Not Received') {
+        totalPendingInvoiceValue += invoiceValue;
+      }
+
+      if (item.payment_status === 'Payment On Hold') {
+        totalOnHoldInvoiceValue += invoiceValue;
+      }
+
+    })
+
+    return { totalPaymentReceived, totalReceivedInvoiceValue, totalPendingInvoiceValue, totalOnHoldInvoiceValue }
+  }
+
+  const { totalPaymentReceived, totalReceivedInvoiceValue, totalPendingInvoiceValue, totalOnHoldInvoiceValue } = getPoInvoiceDataForKPI(poDataList);
+
+  console.log('Total Payment Received:', totalPaymentReceived);
+  console.log('Total Received Invoice Value:', totalReceivedInvoiceValue);
+  console.log('Total Pending Invoice Value:', totalPendingInvoiceValue);
+  console.log('Total On-Hold Invoice Value:', totalOnHoldInvoiceValue);
+
+
+  // In your component
+  const { poStatusData, invoiceStatusData, paymentStatusData } = getPoInvoiceDataForPieChart(poDataList);
+
+  //////////////////////////////////////////////////////////////////////////////
   // Data fetching to plot the charts:
+
 
   const getDataForPOPieChart = async () => {
 
     publish(EVENT_CONSTANTS.openLoader, true);
 
     try {
-      const poStatusResponse = await axios.get(`${serverBaseAddress}/api/getPoStatusData/${poMonthYear}`);
+      // const poStatusResponse = await axios.get(`${serverBaseAddress}/api/getPoStatusData/${poMonthYear}`);
+      const poStatusResponse = await axios.get(`${serverBaseAddress}/api/getPoStatusData`, {
+        params: {
+          year: poYear,
+          month: poMonth
+        }
+      });
+
       if (poStatusResponse.status === 200) {
 
         const poData = poStatusResponse.data[0]; // Access the first element of the response array
-        console.log('Response data:', poData);
         setPoDataForChart({
           receivedPoCount: poData.receivedPoCount,
           notReceivedPoCount: poData.notReceivedPoCount,
@@ -195,7 +319,7 @@ export default function PoInvoiceStatusTable({ newJcAdded, openDialog, setOpenDi
   const poStatusPieChart = {
     labels: ['PO Received', 'PO Not Received'],
     datasets: [{
-      data: [poDataForChart.receivedPoCount, poDataForChart.notReceivedPoCount],
+      data: poStatusData,
       backgroundColor: ['#8cd9b3', '#ff6666'],
     }],
   }
@@ -243,7 +367,7 @@ export default function PoInvoiceStatusTable({ newJcAdded, openDialog, setOpenDi
   const invoiceStatusPieChart = {
     labels: ['Invoice Sent', 'Invoice Not Sent'],
     datasets: [{
-      data: [poDataForChart.invoiceSentCount, poDataForChart.invoiceNotSentCount],
+      data: invoiceStatusData,
       backgroundColor: ['#8cd9b3', '#ff6666'],
     }],
   }
@@ -292,7 +416,7 @@ export default function PoInvoiceStatusTable({ newJcAdded, openDialog, setOpenDi
   const paymentStatusPieChart = {
     labels: ['Payment Received', 'Payment Not Received', 'Payment on Hold'],
     datasets: [{
-      data: [poDataForChart.paymentReceivedCount, poDataForChart.paymentNotReceivedCount, poDataForChart.paymentOnHoldCount],
+      data: paymentStatusData,
       backgroundColor: ['#8cd9b3', '#ff6666', '#668799'],
     }],
   }
@@ -379,7 +503,6 @@ export default function PoInvoiceStatusTable({ newJcAdded, openDialog, setOpenDi
 
 
 
-
   const handleMonthYearOfPo = (event) => {
     setPoMonthYear(event.target.value)
   }
@@ -411,6 +534,7 @@ export default function PoInvoiceStatusTable({ newJcAdded, openDialog, setOpenDi
     setOpenDeleteDataDialog(false)
   }
 
+  //Function to delete the data:
   const handleDeleteData = async () => {
 
     if (!selectedItemForDeletion) {
@@ -434,7 +558,6 @@ export default function PoInvoiceStatusTable({ newJcAdded, openDialog, setOpenDi
     }
 
   }
-
 
   //Function for the search bar and to filter the table based on the user search input
 
@@ -482,8 +605,6 @@ export default function PoInvoiceStatusTable({ newJcAdded, openDialog, setOpenDi
 
   const [selectedPODateRange, setSelectedPODateRange] = useState(null);
 
-
-
   // on selecting the two different dates or date ranges.
   const handlePODateRangeChange = (selectedPODateRange) => {
 
@@ -514,6 +635,13 @@ export default function PoInvoiceStatusTable({ newJcAdded, openDialog, setOpenDi
     }
   };
 
+
+  const divStyle = {
+    // backgroundColor: '#0f6675',
+    padding: '20px',
+    borderRadius: '5px',
+    textAlign: 'left',
+  };
 
   return (
     <>
@@ -573,56 +701,15 @@ export default function PoInvoiceStatusTable({ newJcAdded, openDialog, setOpenDi
         </Grid>
       </Grid>
 
-
-      {/* Pie Chart Box */}
-      <Box sx={{ mt: 1, mb: 1, border: '1px solid black' }}>
-
-        <Grid container spacing={2} >
-          <Grid item xs={12} md={4} >
-            <CreatePieChart
-              data={poStatusPieChart}
-              options={optionsForPoStatusPieChart}
-            />
-
-            <Typography variant='h6'> Total PO Received Value: {poDataForChart.receivedPoSum} </Typography>
-            <Typography variant='h6'> Total PO Pending Value: {poDataForChart.notReceivedPoSum} </Typography>
-
-          </Grid>
-
-          <Grid item xs={12} md={4} >
-            <CreatePieChart
-              data={invoiceStatusPieChart}
-              options={optionsForInvoiceStatusPieChart}
-            />
-          </Grid>
-
-          <Grid item xs={12} md={4}>
-            <CreatePieChart
-              data={paymentStatusPieChart}
-              options={optionsForPaymentStatusPieChart}
-            />
-
-            <Typography variant='h6'> Total Payment Received: {poDataForChart.receivedPoSum} </Typography>
-            <Typography variant='h6'> Total Payment Pending: {poDataForChart.notReceivedPoSum} </Typography>
-            <Typography variant='h6'> Total Payment On Hold: {poDataForChart.paymentOnHoldSum} </Typography>
-          </Grid>
-        </Grid>
-
-      </Box>
-
-      {/* <Box>
-        <CreateBarChart
-          data={monthWisePoCount}
-          options={optionsForMonthWisePoCount}
-        />
-      </Box> */}
-
       {filteredPOData && filteredPOData.length === 0 ? (
 
         <EmptyCard message='PO and Invoice Data not found' />
 
       ) : (
         <Box
+          // style={divStyle}
+          // className='data_grid_header_div'
+
           sx={{
             height: 500,
             width: '100%',
@@ -633,6 +720,8 @@ export default function PoInvoiceStatusTable({ newJcAdded, openDialog, setOpenDi
               fontSize: '15px',
             },
             mt: 2,
+            mb: 2
+
           }}
         >
           <DataGrid
@@ -644,8 +733,100 @@ export default function PoInvoiceStatusTable({ newJcAdded, openDialog, setOpenDi
             rowsPerPageOptions={[5, 10, 20]}
           />
         </Box>
-      )
-      }
+      )}
+
+
+
+      {/* Pie Chart Box */}
+      <Box sx={{ mt: 1, mb: 1, padding: 3 }}>
+
+        <Grid container spacing={3} >
+
+          <Grid item xs={12}>
+
+            <Box display='flex' justifyContent='space-between' sx={{ mb: 2 }}>
+              <Card elevation={3} sx={{ p: 2, backgroundColor: '#66cc99', flex: 1, mx: 2 }}>
+                <CreateKpiCard
+                  kpiTitle="Total Payment Received"
+                  kpiValue={<CountUp start={0} end={totalPaymentReceived} delay={1} />}
+                  kpiColor="#3f51b5"
+                  accordianTitleString={accordianTitleString}
+                />
+              </Card>
+
+              <Card elevation={3} sx={{ p: 2, backgroundColor: '#d6d6c2', flex: 1, mx: 2 }}>
+                <CreateKpiCard
+                  kpiTitle="Total Received Invoice Value"
+                  kpiValue={<CountUp start={0} end={totalReceivedInvoiceValue} delay={1} />}
+                  kpiColor="#3f51b5"
+                  accordianTitleString={accordianTitleString}
+                />
+              </Card>
+
+              <Card elevation={3} sx={{ p: 2, backgroundColor: '#e6e6ff', flex: 1, mx: 2 }}>
+                <CreateKpiCard
+                  kpiTitle="Total Pending Invoice Value"
+                  kpiValue={<CountUp start={0} end={totalPendingInvoiceValue} delay={1} />}
+                  kpiColor="#3f51b5"
+                  accordianTitleString={accordianTitleString}
+                />
+              </Card>
+
+              <Card elevation={3} sx={{ p: 2, backgroundColor: '#ffe6cc', flex: 1, mx: 2 }}>
+                <CreateKpiCard
+                  kpiTitle="Total On-Hold Invoice Value"
+                  kpiValue={<CountUp start={0} end={totalOnHoldInvoiceValue} delay={1} />}
+                  kpiColor="#3f51b5"
+                  accordianTitleString={accordianTitleString}
+                />
+              </Card>
+            </Box>
+          </Grid>
+
+          <Grid item xs={12} md={6} >
+            <Card elevation={5} sx={{ p: 2, backgroundColor: 'transparent' }}>
+              <CreatePieChart
+                data={poStatusPieChart}
+                options={optionsForPoStatusPieChart}
+              />
+
+              {/* <Typography variant='h6'> Total PO Received Value: {poDataForChart.receivedPoSum} </Typography>
+            <Typography variant='h6'> Total PO Pending Value: {poDataForChart.notReceivedPoSum} </Typography> */}
+            </Card>
+          </Grid>
+
+          <Grid item xs={12} md={6} >
+            <Card elevation={5} sx={{ p: 2, backgroundColor: 'transparent' }}>
+              <CreatePieChart
+                data={invoiceStatusPieChart}
+                options={optionsForInvoiceStatusPieChart}
+              />
+            </Card>
+          </Grid>
+
+          <Grid item xs={12} md={6}>
+            <Card elevation={5} sx={{ p: 2, backgroundColor: 'transparent' }}>
+              <CreatePieChart
+                data={paymentStatusPieChart}
+                options={optionsForPaymentStatusPieChart}
+              />
+            </Card>
+
+            {/* <Typography variant='h6'> Total Payment Received: {poDataForChart.receivedPoSum} </Typography>
+            <Typography variant='h6'> Total Payment Pending: {poDataForChart.notReceivedPoSum} </Typography>
+            <Typography variant='h6'> Total Payment On Hold: {poDataForChart.paymentOnHoldSum} </Typography> */}
+          </Grid>
+
+        </Grid>
+
+      </Box>
+
+      {/* <Box>
+        <CreateBarChart
+          data={monthWisePoCount}
+          options={optionsForMonthWisePoCount}
+        />
+      </Box> */}
 
 
     </>

@@ -94,6 +94,7 @@ export default function QuotationsDashboard() {
           const response = await axios.get(`${serverBaseAddress}/api/getQuotationData?` + urlParameters);
           setQuotesTableData(response.data);
           setOriginalQuoteTableData(response.data)
+          console.log(response.data)
         } catch (error) {
           console.error('Failed to fetch the data', error);
           setError(error);
@@ -197,48 +198,48 @@ export default function QuotationsDashboard() {
   const currentMonthName = new Intl.DateTimeFormat('en-US', { month: 'long' }).format(currentDate);
   const currentYearAndMonth = `${currentMonthName}-${currentYear}`;
 
-
-  /////////////////////////////////////////////////////////////////////////
-  //Function for the pie chart
-  const getQuotesDataForPieChart = (data) => {
-    const monthWiseQuoteCategoryLabels = new Set();
-    // const monthWiseQuoteCategoryLabels = [];
-    const monthWiseQuoteCategoryCount = {};
-    let monthWiseTotalQuotesCount = 0;
+  // Function to get counts for the current month and category-wise counts
+  const getCurrentMonthQuotesCount = (data) => {
+    const quoteCategoryLabels = [];
+    const quoteCategoryCountsInCurrentMonth = [];
+    let totalQuotesInCurrentMonth = 0;
 
     data.forEach((item) => {
-      const category = item.quote_category;
-      monthWiseTotalQuotesCount++;
+      const date = new Date(item.formatted_quote_given_date);
+      const month = date.getMonth() + 1;
+      const year = date.getFullYear();
 
-      if (monthWiseQuoteCategoryCount[category]) {
-        monthWiseQuoteCategoryCount[category]++;
-      } else {
-        monthWiseQuoteCategoryCount[category] = 1;
+      if (month === currentMonth + 1 && year === currentYear) {
+        totalQuotesInCurrentMonth++;
+
+        const category = item.quote_category;
+
+        if (!quoteCategoryLabels.includes(category)) {
+          quoteCategoryLabels.push(category);
+          quoteCategoryCountsInCurrentMonth.push(1);
+        } else {
+          const index = quoteCategoryLabels.indexOf(category);
+          quoteCategoryCountsInCurrentMonth[index]++;
+        }
       }
+    });
 
-      monthWiseQuoteCategoryLabels.add(category);
-    })
+    return { totalQuotesInCurrentMonth, quoteCategoryLabels, quoteCategoryCountsInCurrentMonth };
+  };
 
-    return { monthWiseQuoteCategoryLabels, monthWiseQuoteCategoryCount, monthWiseTotalQuotesCount };
-  }
+  // Example usage
+  const { totalQuotesInCurrentMonth, quoteCategoryLabels, quoteCategoryCountsInCurrentMonth } = getCurrentMonthQuotesCount(quotesTableData);
 
-  // Get the required output to plot the charts using the function
-  const { monthWiseQuoteCategoryLabels, monthWiseQuoteCategoryCount, monthWiseTotalQuotesCount } = getQuotesDataForPieChart(quotesTableData)
+  //console.log('totalQuotesInCurrentMonth', totalQuotesInCurrentMonth);
+  //console.log('quoteCategoryLabels', quoteCategoryLabels);
+  //console.log('quoteCategoryCountsInCurrentMonth', quoteCategoryCountsInCurrentMonth);
 
-
-  //convert fetched data in to array:
-  // Convert Set to Array for labels
-  const labelsForQuotePieChart = Array.from(monthWiseQuoteCategoryLabels)
-
-  // Convert counts object to array for data points
-  const quoteCategoryCountsForQuotePieChart = labelsForQuotePieChart.map(categoryLabel => monthWiseQuoteCategoryCount[categoryLabel])
 
   // Creating a pie chart for calibration status for chambers and equipments:
   const categorywiseQuotesPieChart = {
-
-    labels: labelsForQuotePieChart,
+    labels: quoteCategoryLabels,
     datasets: [{
-      data: quoteCategoryCountsForQuotePieChart,
+      data: quoteCategoryCountsInCurrentMonth,
       backgroundColor: ['#8cd9b3', '#ffad99', '#C7B040', '#929292'],
     }],
   }
@@ -255,7 +256,7 @@ export default function QuotationsDashboard() {
       },
       title: {
         display: true,
-        text: `Quotation Category`,
+        text: `Quotations In ${month}- ${year}`,
         font: {
           family: 'Helvetica Neue',
           size: 30,
@@ -284,9 +285,10 @@ export default function QuotationsDashboard() {
     }
   }
 
-  /////////////////////////////////////////////////////////////////////////
 
-  //Function for the bar chart
+
+  //console.log('quotesTableData', quotesTableData)
+
   const getMonthlyCountsLists = (data) => {
     const currentDate = new Date();
     const currentMonth = currentDate.getMonth() + 1;
@@ -319,6 +321,9 @@ export default function QuotationsDashboard() {
   // Example usage
   const { monthNames, quotesCountPerMonth } = getMonthlyCountsLists(quotesTableData);
 
+  // Output: Lists of month names and quotesCountPerMonth
+  //console.log('monthNames', monthNames);
+  //console.log('quotesCountPerMonth', quotesCountPerMonth);
 
 
   // Dataset for creating a quotations per month bar chart:
@@ -326,16 +331,16 @@ export default function QuotationsDashboard() {
     labels: monthNames,
     datasets: [
       {
-        label: 'Month wise Quotes Count',
+        label: 'Quotes per month',
         backgroundColor: [
-          '#FF6384', '#FF9F40', '#FFCD56', '#669966', '#fbd0d0', '#b8b8e0', '#ccb0e8', '#F8C471', '#AED581', '#9B59B6', '#F9F3E1', '#FABEBD'
+          '#FF6384', '#FF9F40', '#FFCD56', '#C0C0', '#A2EB', '#66FF', '#CBCF', '#F8C471', '#AED581', '#9B59B6', '#F9F3E1', '#FABEBD'
         ],
         borderColor: [
           '#E5506F', '#D38433', '#C7B040', '#929292', '#83C1C1', '#4D66FF', '#B1B3B5', '#D6AA59', '#96B768', '#85469D', '#E4E0D9', '#E3A4A7'
         ],
         borderWidth: 1,
-        // hoverBackgroundColor: 'rgba(75,192,192,0.8)',
-        // hoverBorderColor: 'rgba(75,192,192,1)',
+        hoverBackgroundColor: 'rgba(75,192,192,0.8)',
+        hoverBorderColor: 'rgba(75,192,192,1)',
         data: quotesCountPerMonth
       },
     ],
@@ -410,6 +415,8 @@ export default function QuotationsDashboard() {
     },
   };
 
+  // Custom style for the table header
+
 
   const handleYearOfQuote = (event) => {
     setQuoteYear(event.target.value)
@@ -419,11 +426,10 @@ export default function QuotationsDashboard() {
     setQuoteMonth(event.target.value)
   }
 
-  //Function to get the selected date range
   const handleQuoteDateRangeChange = (selectedQuoteDateRange) => {
     if (selectedQuoteDateRange && selectedQuoteDateRange.startDate && selectedQuoteDateRange.endDate) {
       const formattedDateRange = `${dayjs(selectedQuoteDateRange.startDate).format('YYYY-MM-DD')} - ${dayjs(selectedQuoteDateRange.endDate).format('YYYY-MM-DD')}`;
-
+      console.log('1', formattedDateRange)
       setSelectedQuoteDateRange(formattedDateRange);
       fetchQuoteDataBetweenTwoDates(formattedDateRange);
     } else {
@@ -437,6 +443,7 @@ export default function QuotationsDashboard() {
       const response = await axios.get(`${serverBaseAddress}/api/getQuotesDataBwTwoDates`, {
         params: { selectedQuoteDateRange: dateRange }
       });
+      console.log('2', response.data)
       setQuotesTableData(response.data);
     } catch (error) {
       console.error('Error fetching Quotes data:', error);
@@ -448,12 +455,11 @@ export default function QuotationsDashboard() {
     setQuotesTableData(originalQuoteTableData)
   }
 
-  //Function to navigate to the page, in order to edit the quote
+
   const editSelectedRowData = (item) => {
     navigate(`/quotation/${item.id}`)
   }
 
-  //Function to use the searchbar filter
   const onChangeOfSearchInputOfQuote = (e) => {
     const searchText = e.target.value;
     setSearchInputTextOfQuote(searchText)
@@ -470,18 +476,17 @@ export default function QuotationsDashboard() {
     setFilteredQuoteData(filtered);
   }
 
-  //Function to clear the searchbar filter
   const onClearSearchInputOfQuote = () => {
     setSearchInputTextOfQuote("")
     setFilteredQuoteData(quotesTableData);
   }
 
 
-  const kpiColors = ['#66cc99', '#d6d6c2', '#e6e6ff', '#e6ffcc', '#ffe6cc'];
-
   return (
 
     <>
+      {/* <Loader /> */}
+
       <Box
         sx={{
           display: 'flex',
@@ -558,6 +563,8 @@ export default function QuotationsDashboard() {
         </Grid>
       </Grid>
 
+
+
       {filteredQuoteData && filteredQuoteData.length === 0 ? (
         <EmptyCard message='No Quote Found' />
       ) : (
@@ -585,37 +592,47 @@ export default function QuotationsDashboard() {
         </Box>
       )}
 
+      <br />
 
-      <Box sx={{ padding: 3 }}>
-        <Grid container spacing={3}>
-          <Grid item xs={12} >
+      <Box>
+        <Grid container spacing={4} >
 
-            <Box display='flex' justifyContent='space-between' sx={{ mb: 2 }}>
-              <Card elevation={3} sx={{ p: 2, backgroundColor: '#66cc99', flex: 1, mx: 2 }}>
-                <CreateKpiCard
-                  kpiTitle="Total Number Of Quotes"
-                  kpiValue={<CountUp start={0} end={monthWiseTotalQuotesCount} delay={1} />}
-                  kpiColor="#3f51b5"
-                  accordianTitleString={accordianTitleString}
-                />
-              </Card>
+          <Grid item xs={12} md={6} >
 
-              {labelsForQuotePieChart.map((label, index) => (
-                <Card key={label} elevation={3} sx={{ p: 2, backgroundColor: kpiColors[index + 1], flex: 1, mx: 2 }}>
-                  <CreateKpiCard
-                    kpiTitle={label}
-                    kpiValue={<CountUp start={0} end={quoteCategoryCountsForQuotePieChart[index]} delay={1} />}
-                    kpiColor="#3f51b5"
-                    accordianTitleString={accordianTitleString}
-                  />
-                </Card>
-              ))}
+            <Card elevation={5} sx={{ backgroundColor: '#e6e6ff' }}>
+              <CreateKpiCard
+                kpiTitle={`Quotes Created In ${month}- ${year}:`}
+                kpiValue={<CountUp start={0} end={totalQuotesInCurrentMonth} delay={1} />}
+                kpiColor="#3f51b5"
+                accordianTitleString={accordianTitleString}
+                kpiIcon={<FcDocument size='130px' />}
+              />
+            </Card>
 
-            </Box>
           </Grid>
 
+
+          {/* <Grid item xs={12} md={6} >
+            <Card elevation={5} sx={{ backgroundColor: '#e6e6ff' }}>
+              <CreateKpiCard
+                kpiTitle={`Quotes Created In ${currentYearAndMonth}:`}
+                kpiValue={<CountUp start={0} end={totalQuotesInCurrentMonth} delay={1} />}
+                kpiColor="#3f51b5"
+                accordianTitleString={accordianTitleString}
+                kpiIcon={<FcDocument size='130px' />}
+              />
+            </Card>
+          </Grid> */}
+
+        </Grid>
+      </Box>
+
+
+
+      <Box>
+        <Grid container spacing={2} >
           <Grid item xs={12} md={6}>
-            <Card elevation={5} sx={{ p: 2, backgroundColor: 'transparent' }}>
+            <Card elevation={5} sx={{ backgroundColor: 'transparent' }}>
               <CreatePieChart
                 data={categorywiseQuotesPieChart}
                 options={optionsForQuotesPieChart}
@@ -623,8 +640,9 @@ export default function QuotationsDashboard() {
             </Card>
           </Grid>
 
+
           <Grid item xs={12} md={6}>
-            <Card elevation={5} sx={{ p: 2, backgroundColor: 'transparent' }}>
+            <Card elevation={5} sx={{ backgroundColor: 'transparent' }}>
               <CreateBarChart
                 data={barChartData}
                 options={optionsForBarChart}
@@ -632,7 +650,7 @@ export default function QuotationsDashboard() {
             </Card>
           </Grid>
         </Grid>
-      </Box >
+      </Box>
     </>
   );
 };
