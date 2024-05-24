@@ -100,12 +100,6 @@ export { CreateBarChart };
 
 
 
-
-
-
-
-
-
 export default function DashboardFunctions() {
 
     return (
@@ -133,79 +127,7 @@ export default function DashboardFunctions() {
 
         </>
     )
-
 }
-
-
-
-
-
-
-
-
-
-//Function to create the kpi dashboard:
-// const CreateKpiCard = ({ kpiTitle, kpiValue, kpiNames, kpiColor, accordianTitleString }) => (
-// <div style={{ padding: '10px', border: '1px solid #ccc' }}>
-//     <Typography variant="h5" sx={{ fontSize: 'bold' }} align='center'>{kpiTitle}</Typography>
-//     <Typography variant="h1" style={{ color: kpiColor }} align='center'>{kpiValue}</Typography>
-
-
-//     {/* {kpiNames && kpiNames.length > 0 && (
-//         <ul style={{ margin: 0, padding: '10px' }}>
-//             {kpiNames.map((name, index) => (
-//                 // <li key={index}>{name}</li>
-//                 <Typography variant='subtitle1' sx={{ fontSize: 'bold' }} key={index}>{name}</Typography>
-//             ))}
-//         </ul>
-//     )} */}
-
-//     {kpiNames && kpiNames.length > 0 && (
-//         <List sx={{ padding: '2px' }}>
-//             {kpiNames.map((name, index) => (
-//                 <ListItem key={index} sx={{ fontSize: 'bold', align: 'center' }}>
-//                     <Typography variant="subtitle1" >
-//                         {name}
-//                     </Typography>
-//                 </ListItem>
-//             ))}
-//         </List>
-//     )}
-// </div>
-
-
-
-// <div style={{ padding: '10px' }}>
-//     <Typography variant="h5" sx={{ fontSize: 'bold' }} align='center'>{kpiTitle}</Typography>
-//     <Typography variant="h1" style={{ color: kpiColor }} align='center'>{kpiValue}</Typography>
-
-//     {kpiNames && kpiNames.length > 0 && (
-//         <Accordion>
-//             <AccordionSummary
-//                 expandIcon={<ExpandMoreIcon />}
-//                 aria-controls="panel1a-content"
-//                 id="panel1a-header"
-//             >
-//                 <Typography sx={{ fontSize: 'bold', align: 'center' }}>
-//                     {accordianTitleString}
-//                 </Typography>
-//             </AccordionSummary>
-//             <AccordionDetails >
-//                 <List sx={{ padding: '2px' }}>
-//                     {kpiNames.map((name, index) => (
-//                         <ListItem key={index} sx={{ fontSize: 'bold', align: 'center' }}>
-//                             <Typography variant="subtitle1">
-//                                 {name}
-//                             </Typography>
-//                         </ListItem>
-//                     ))}
-//                 </List>
-//             </AccordionDetails>
-//         </Accordion>
-//     )}
-// </div>
-//);
-
 
 
 

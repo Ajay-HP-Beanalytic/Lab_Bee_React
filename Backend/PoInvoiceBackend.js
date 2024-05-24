@@ -45,13 +45,14 @@ function poInvoiceBackendAPIs(app) {
 
 
 
-  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
 
   // Get all po and invoice data to display that in a table:
   app.get("/api/getPoInvoiceDataList", (req, res) => {
 
     const { year, month } = req.query;
 
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
     // Convert month name to month number
     const monthNumber = monthNames.indexOf(month) + 1;
 
@@ -110,7 +111,6 @@ function poInvoiceBackendAPIs(app) {
   })
 
   ////////////////////////////////////////////////////////////////////
-
 
 
   //API to delete the selected po and invoice data:
@@ -226,65 +226,21 @@ function poInvoiceBackendAPIs(app) {
   });
 
 
-  // Backend code to fetch the financial years:
-  app.get('/api/getPoDataFinancialYear', (req, res) => {
-    const sqlQuery = `
-      SELECT DISTINCT 
-        jc_month
-      FROM po_invoice_table
-    `;
-
-
-    // const sqlQuery = `
-    //                 SELECT DISTINCT
-    //                 CONCAT(
-    //                   DATE_FORMAT(jc_month, '%b-%Y'),
-    //                   ' (',
-    //                   CONCAT(
-    //                     DATE_FORMAT(jc_month, '%b'),
-    //                     '-',
-    //                     IF(MONTH(jc_month) < 4, YEAR(jc_month) - 1, YEAR(jc_month)),
-    //                     ' to ',
-    //                     CONCAT(DATE_FORMAT(jc_month, '%b'), '-'),
-    //                     IF(MONTH(jc_month) < 4, YEAR(jc_month), YEAR(jc_month) + 1)
-    //                   ),
-    //                   ')'
-    //                 ) AS financialYear
-    //               FROM po_invoice_table;`
-
-    db.query(sqlQuery, (error, result) => {
-      if (error) {
-        return res.status(500).json({ error: "An error occurred while fetching data" });
-      }
-
-      // Process the fetched data to calculate financial years
-      const financialYears = result.map(row => {
-        const jc_month = new Date(row.jc_month);
-        const currentMonthIndex = jc_month.getMonth();
-        const currentYear = jc_month.getFullYear();
-
-        const startYear = currentMonthIndex < 3 ? currentYear - 1 : currentYear;
-        const endYear = currentMonthIndex < 3 ? currentYear : currentYear + 1;
-
-        const startMonth = currentMonthIndex < 3 ? 'Apr' : 'Apr';
-        const endMonth = currentMonthIndex < 3 ? 'Mar' : 'Mar';
-
-        return `${startMonth}-${startYear} to ${endMonth}-${endYear}`;
-      });
-
-      res.json(financialYears);
-    });
-  });
 
 
 
 
+  app.get('/api/getPoStatusData', (req, res) => {
 
+    const { year, month } = req.query;
 
-  app.get('/api/getPoStatusData/:monthYear', (req, res) => {
-    const { monthYear } = req.params;
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    // Convert month name to month number
+    const monthNumber = monthNames.indexOf(month) + 1;
 
-    const [month, year] = monthYear.split('-');
+    if (monthNumber === 0 || !year) {
+      return res.status(400).json({ error: "Invalid year or month format" });
+    }
 
     const getPoStatusDataQuery = `
                       SELECT
@@ -292,7 +248,6 @@ function poInvoiceBackendAPIs(app) {
                         SUM(CASE WHEN po_status = 'PO Not Received' THEN 1 ELSE 0 END) AS notReceivedPoCount,
                         SUM(CASE WHEN po_status = 'PO Received' THEN po_value ELSE 0 END) AS receivedPoSum,
                         SUM(CASE WHEN po_status = 'PO Not Received' THEN po_value ELSE 0 END) AS notReceivedPoSum,
-
 
                         SUM(CASE WHEN invoice_status = 'Invoice Sent' THEN 1 ELSE 0 END) AS invoiceSentCount,
                         SUM(CASE WHEN invoice_status = 'Invoice Not Sent' THEN 1 ELSE 0 END) AS invoiceNotSentCount,
@@ -304,15 +259,14 @@ function poInvoiceBackendAPIs(app) {
                         SUM(CASE WHEN payment_status = 'Payment on Hold' THEN 1 ELSE 0 END) AS paymentOnHoldCount,
                         SUM(CASE WHEN payment_status = 'Payment on Hold' THEN invoice_value ELSE 0 END) AS paymentOnHoldSum
 
-
                       FROM 
                         po_invoice_table 
                       WHERE 
-                        DATE_FORMAT(jc_month, '%b-%Y') = ?
+                        MONTH(jc_month) = ? AND YEAR(jc_month) = ?
                       `;
 
 
-    db.query(getPoStatusDataQuery, [`${month}-${year}`], (error, result) => {
+    db.query(getPoStatusDataQuery, [monthNumber, year], (error, result) => {
       if (error) {
         console.error("Error fetching PO Status data:", error);
         res.status(500).json({ error: "Failed to retrieve PO Status data" });

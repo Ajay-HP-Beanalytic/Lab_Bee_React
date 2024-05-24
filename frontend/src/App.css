@@ -76,3 +76,11 @@ button {
   color: white;
   text-decoration: underline;
 }
+
+
+.data_grid_header_div .MuiDataGrid-columnHeaders {
+  background-color: #5064d4;
+  /* Change to your desired color */
+  color: black;
+  /* Optional: change text color to make it more readable */
+}

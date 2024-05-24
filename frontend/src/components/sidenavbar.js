@@ -200,7 +200,7 @@ export default function SidenavigationBar() {
     } else if (loggedInUserRole === 'Marketing') {
       return [2, 3, 4, 10, 11, 12].includes(item.i); // Show items 1, 2, 3, and 9 for Marketing
 
-    } else if (loggedInUserRole === 'Lab Manager' || loggedInUserRole === 'Lab Engineer' || loggedInUserRole === 'Lab Tech') {
+    } else if (loggedInUserRole === 'Lab Manager' || loggedInUserRole === 'Lab Engineer' || loggedInUserRole === 'Lab Technician') {
       return [5, 6, 7, 8, 9, 11, 12].includes(item.i); // Show items 4, 5, and 9 for Lab Manager 
 
     }
