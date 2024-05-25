@@ -150,6 +150,7 @@ function usersDataAPIs(app) {
 
                 req.session.username = user.name
                 req.session.role = user.role
+                req.session.department = user.department
 
                 res.status(200).json({ username: req.session.username, token: token });
 
@@ -182,7 +183,8 @@ function usersDataAPIs(app) {
     // api to fetch the logged in user name:
     app.get("/api/getLoggedInUser", (req, res) => {
         if (req.session.username) {
-            return res.json({ valid: true, user_name: req.session.username, user_role: req.session.role })
+            // return res.json({ valid: true, user_name: req.session.username, user_role: req.session.role })
+            return res.json({ valid: true, user_name: req.session.username, user_role: req.session.role, user_department: req.session.department })
         } else {
             return res.json({ valid: false })
         }

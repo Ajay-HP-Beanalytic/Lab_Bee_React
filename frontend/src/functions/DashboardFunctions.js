@@ -1,8 +1,8 @@
 
 import React from 'react'
-import { Accordion, AccordionDetails, AccordionSummary, List, ListItem, Typography } from '@mui/material';
+import { Accordion, AccordionDetails, AccordionSummary, Box, Card, CardContent, Divider, List, ListItem, Typography } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-
+import CountUp from 'react-countup'
 
 import ChartDataLabels from 'chartjs-plugin-datalabels';
 
@@ -41,7 +41,7 @@ const CreateKpiCard = ({ kpiTitle, kpiValue, kpiNames, kpiColor, accordianTitleS
         </div>
 
         <div style={{ padding: '10px', display: 'flex', justifyContent: 'space-between' }}>
-            <Typography variant="h1" style={{ color: kpiColor }} align='left'>{kpiValue}</Typography>
+            <Typography variant="h3" style={{ color: kpiColor }} align='left'>{kpiValue}</Typography>
             {kpiIcon && React.cloneElement(kpiIcon)}
         </div>
         {kpiNames && kpiNames.length > 0 && (
@@ -100,6 +100,87 @@ export { CreateBarChart };
 
 
 
+const CreateKpiCardWithAccordion = ({ totalValue, categoryWiseValue }) => {
+    return (
+        <Card
+            elevation={3}
+            sx={{
+                backgroundColor: '#ffffff',
+                borderRadius: '15px',
+                overflow: 'hidden',
+                boxShadow: '0 6px 20px rgba(0,0,0,0.1)',
+                margin: '20px'
+            }}
+        >
+            <CardContent sx={{ padding: '30px', backgroundColor: '#d6d6c2' }}>
+                <Typography
+                    variant="h4"
+                    component="div"
+                    sx={{
+                        textAlign: 'center',
+                        marginBottom: '10px',
+                        fontWeight: 'bold',
+                        // color: '#3f51b5'
+                    }}
+                >
+                    Total Revenue
+                </Typography>
+                <Typography
+                    variant="h3"
+                    component="div"
+                    sx={{
+                        textAlign: 'center',
+                        color: '#3f51b5',
+                        marginBottom: '20px'
+                    }}
+                >
+                    <CountUp start={0} end={totalValue} delay={1} duration={2} />
+                </Typography>
+                <Divider sx={{ marginBottom: '15px' }} />
+                <Accordion elevation={0}>
+                    <AccordionSummary
+                        expandIcon={<ExpandMoreIcon sx={{ color: '#3f51b5' }} />}
+                        aria-controls="panel1a-content"
+                        id="panel1a-header"
+                        sx={{
+                            backgroundColor: '#f5f5f5',
+                            borderRadius: '10px',
+                            padding: '10px 20px'
+                        }}
+                    >
+                        <Typography variant="h5" >Category Wise Details</Typography>
+                    </AccordionSummary>
+                    <AccordionDetails sx={{ padding: '20px', backgroundColor: '#d1cec1' }}>
+                        {Object.keys(categoryWiseValue).map((category, index) => (
+                            <Box
+                                key={index}
+                                sx={{
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    marginBottom: '10px'
+                                }}
+                            >
+                                <Typography variant="h6" component="div">
+                                    {category}
+                                </Typography>
+                                <Typography variant="h6" component="div" sx={{ color: '#99004d' }}>
+                                    <CountUp start={0} end={categoryWiseValue[category]} delay={1} duration={2} />
+                                </Typography>
+                            </Box>
+                        ))}
+                    </AccordionDetails>
+                </Accordion>
+            </CardContent >
+        </Card >
+    );
+};
+
+export { CreateKpiCardWithAccordion };
+
+
+
+
 export default function DashboardFunctions() {
 
     return (
@@ -123,6 +204,11 @@ export default function DashboardFunctions() {
             <CreateBarChart
                 data=''
                 options=''
+            />
+
+            <CreateKpiCardWithAccordion
+                totalValue=''
+                categoryWiseValue=''
             />
 
         </>

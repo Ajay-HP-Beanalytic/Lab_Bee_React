@@ -5,6 +5,7 @@ import App from './App';
 import reportWebVitals from './reportWebVitals';
 import Loader from './common/Loader';
 import { BrowserRouter } from 'react-router-dom';
+import { UserProvider } from './Pages/UserContext';
 
 
 {/*Original code was this*/ }
@@ -21,13 +22,28 @@ import { BrowserRouter } from 'react-router-dom';
 
 
 {/*updated code with the loader*/ }
+// const AppWithLoader = () => {
+//   return (
+//     <>
+//       <BrowserRouter>
+//         <React.StrictMode>
+//           <Loader />
+//           <App />
+//         </React.StrictMode>
+//       </BrowserRouter>
+//     </>
+//   )
+// }
+
 const AppWithLoader = () => {
   return (
     <>
       <BrowserRouter>
         <React.StrictMode>
-          <Loader />
-          <App />
+          <UserProvider>
+            <Loader />
+            <App />
+          </UserProvider>
         </React.StrictMode>
       </BrowserRouter>
     </>

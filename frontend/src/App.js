@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import React, { useContext, useEffect, useState } from "react";
+import { BrowserRouter, Routes, Route, useLocation, Router } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import 'react-toastify/dist/ReactToastify.css';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
@@ -35,11 +35,13 @@ import QuotationsDashboard from "./Quote/QuotationsDashboard";
 import { publish, EVENT_CONSTANTS } from "./common/CustomEvents";
 import UserManagement from "./LoginRegister/UserManagement";
 
+import { UserContext } from "./Pages/UserContext"
+
 
 function App() {
 
-
   const location = useLocation();
+  const { loggedInUserDepartment } = useContext(UserContext)
 
   useEffect(() => {
     const handleRouteChange = () => {
@@ -66,6 +68,8 @@ function App() {
         <Route path="" element={<SidenavigationBar />} >
 
           <Route path='home' element={<Home />} />
+          {/* {loggedInUserDepartment === 'All' && <Route path="home" element={<Home />} />} */}
+
           <Route path='/quotation_dashboard' element={<QuotationsDashboard />} />
           <Route path='/quotation' element={<Quotation />} />
           <Route path="/quotation/:id" element={<Quotation />} />
@@ -88,10 +92,8 @@ function App() {
           <Route path='*' element={<NotFoundPage />} />
 
         </Route>
-
       </Routes>
     </div>
-
 
   );
 };

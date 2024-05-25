@@ -152,6 +152,9 @@ export default function SidenavigationBar() {
   // State variable to get the logged in user role
   const [loggedInUserRole, setLoggedInUserRole] = useState('')
 
+  // State variable to get the logged in user department
+  const [loggedInUserDepartment, setLoggedInUserDepartment] = useState('')
+
   // To validate the user credential its very much important
   axios.defaults.withCredentials = true;
 
@@ -163,6 +166,7 @@ export default function SidenavigationBar() {
           //console.log(res.data.user_role)
           setLoggedInUserRole(res.data.user_role)
           setLoggedInUser(res.data.user_name)
+          setLoggedInUserDepartment(res.data.user_department)
         } else {
           navigate("/")
         }
@@ -188,26 +192,26 @@ export default function SidenavigationBar() {
     { i: 8, label: 'Slot Booking', icon: <CalendarMonthSharpIcon />, path: '/slot_booking' },
     { i: 9, label: 'Chamber & Calibration', icon: <KitchenIcon />, path: '/chamber-calibration' },
     { i: 10, label: 'User Management', icon: <ManageAccountsIcon />, path: '/user_management' },
-
-    { i: 11, label: 'Settings', icon: <SettingsIcon />, path: '/settings' },
   ]
+
+ 
 
   // Filter items based on the user's role
   const filteredItems = items.filter(item => {
-    if (loggedInUserRole === 'Admin') {
+    if (loggedInUserDepartment === 'All') {
       return true; // Show all items for Admin
 
-    } else if (loggedInUserRole === 'Marketing') {
-      return [2, 3, 4, 10, 11, 12].includes(item.i); // Show items 1, 2, 3, and 9 for Marketing
+    } else if (loggedInUserDepartment === 'Marketing') {
+      return [2, 3, 4, 10].includes(item.i); // Show items 1, 2, 3, and 9 for Marketing
 
-    } else if (loggedInUserRole === 'Lab Manager' || loggedInUserRole === 'Lab Engineer' || loggedInUserRole === 'Lab Technician') {
-      return [5, 6, 7, 8, 9, 11, 12].includes(item.i); // Show items 4, 5, and 9 for Lab Manager 
+    } else if (loggedInUserDepartment === 'Testing') {
+      return [5, 6, 7, 8, 9].includes(item.i);
 
+    } else if (loggedInUserDepartment === 'Reliability') {
+      return [5, 6, 7].includes(item.i);
     }
     return false; // Default: Hide the item
   });
-
-
 
 
 
@@ -329,3 +333,20 @@ export default function SidenavigationBar() {
     </>
   );
 };
+
+
+
+ // // Filter items based on the user's role
+  // const filteredItems = items.filter(item => {
+  //   if (loggedInUserRole === 'Admin') {
+  //     return true; // Show all items for Admin
+
+  //   } else if (loggedInUserRole === 'Marketing') {
+  //     return [2, 3, 4, 10, 11, 12].includes(item.i); // Show items 1, 2, 3, and 9 for Marketing
+
+  //   } else if (loggedInUserRole === 'Lab Manager' || loggedInUserRole === 'Lab Engineer' || loggedInUserRole === 'Lab Technician') {
+  //     return [5, 6, 7, 8, 9, 11, 12].includes(item.i); // Show items 4, 5, and 9 for Lab Manager 
+
+  //   }
+  //   return false; // Default: Hide the item
+  // });

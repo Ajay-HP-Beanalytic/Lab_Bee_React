@@ -11,7 +11,7 @@ import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
 import Checkbox from "@mui/material/Checkbox";
 import FormControlLabel from "@mui/material/FormControlLabel";
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import Stack from "@mui/material/Stack";
 import { useNavigate } from "react-router-dom";
 
@@ -26,6 +26,8 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import { FormControl, InputLabel, OutlinedInput } from "@mui/material";
 import { serverBaseAddress } from "../Pages/APIPage";
+
+import { UserContext } from "../Pages/UserContext"
 
 
 
@@ -53,6 +55,10 @@ const signInLogoAndText = {
 };
 
 export default function Login() {
+
+  const { loggedInUser, loggedInUserDepartment } = useContext(UserContext);
+
+  console.log('User details', loggedInUser, loggedInUserDepartment)
 
 
   const [remember, setRemember] = useState(false);
@@ -108,18 +114,17 @@ export default function Login() {
   axios.defaults.withCredentials = true;
 
   //To get the logged in user name:
-  useEffect(() => {
-    // axios.get('http://localhost:4000/api/getLoggedInUser')
-    axios.get(`${serverBaseAddress}/api/getLoggedInUser`)
-      .then(res => {
-        if (res.data.valid) {
-          navigate("/home")
-        } else {
-          navigate("/")
-        }
-      })
-      .catch(err => console.log(err))
-  }, [])
+  // useEffect(() => {
+  //   axios.get(`${serverBaseAddress}/api/getLoggedInUser`)
+  //     .then(res => {
+  //       if (res.data.valid) {
+  //         navigate("/home")
+  //       } else {
+  //         navigate("/")
+  //       }
+  //     })
+  //     .catch(err => console.log(err))
+  // }, [])
 
 
   /* //To show the login again toast notification after session ends:
@@ -366,40 +371,3 @@ export default function Login() {
     </>
   );
 }
-
-
-
-// const handleLogin = async (e) => {
-//   e.preventDefault();
-
-//   if (!email || !password) {
-//     toast.error("Please enter all the fields..!");
-//   } else {
-//     try {
-//       const response = await axios.post(`${serverBaseAddress}/api/login`, {
-//         email,
-//         password,
-//       });
-
-//       if (response.status === 200) {
-//         navigate("/home");                      // Redirect to the home page or perform other actions
-//         toast.success("You have logged in successfully.")
-//         //localStorage.setItem('token', response.data.token)  // Store token in the local storage
-//         //console.log(response.data)
-//       } else {
-//         toast.warning("Login Error");
-//       }
-
-//     } catch (error) {
-//       // Check for specific error messages to differentiate between server error and login error
-//       if (error.response && error.response.status === 401) {
-//         // Unauthorized - Incorrect email or password
-//         toast.warning("Incorrect Email or Password");
-//       } else {
-//         // Other errors
-//         toast.error("Login Error");
-//       }
-//       console.log(error)
-//     }
-//   };
-// };
