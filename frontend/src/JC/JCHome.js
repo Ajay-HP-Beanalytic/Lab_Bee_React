@@ -73,6 +73,8 @@ export default function JCHome() {
 
     const [filteredJcData, setFilteredJcData] = useState(jcTableData);
 
+    const [loggedInUserDepartment, setLoggedInUserDepartment] = useState('')
+
 
     // Simulate fetching jc data from the database
     useEffect(() => {
@@ -148,6 +150,23 @@ export default function JCHome() {
         setFilteredJcData(jcTableData);
     }, [jcTableData]);
 
+    // To validate the user credential its very much important
+    axios.defaults.withCredentials = true;
+
+    // To get the logged in user name:
+    useEffect(() => {
+        axios.get(`${serverBaseAddress}/api/getLoggedInUser`)
+            .then(res => {
+                if (res.data.valid) {
+                    //console.log(res.data.user_role)
+                    setLoggedInUserDepartment(res.data.user_department)
+                } else {
+                    navigate("/")
+                }
+            })
+            .catch(err => console.log(err))
+    }, [])
+
 
     //If data is loading then show Loading text
     if (loading) {
@@ -161,8 +180,10 @@ export default function JCHome() {
     }
 
 
-    // Custom style for the table header
-    const tableHeaderStyle = { backgroundColor: '#0f6675', fontWeight: 'bold' }
+    console.log('loggedInUserDepartment', loggedInUserDepartment)
+
+
+
 
     //Table columns
     const columns = [
@@ -361,6 +382,17 @@ export default function JCHome() {
                         rowsPerPageOptions={[5, 10, 20]}
                     />
                 </Box>
+            )}
+
+
+            {loggedInUserDepartment === 'Reliability' || loggedInUserDepartment === 'All' && (
+                <>
+                    <Divider>
+                        <Typography variant='h4' sx={{ color: '#003366' }}> Reliability Task Management</Typography>
+                    </Divider>
+
+                    <Typography variant='h4' sx={{ color: '#003366' }}> Its Reliability: {loggedInUserDepartment}</Typography>
+                </>
             )}
 
         </>

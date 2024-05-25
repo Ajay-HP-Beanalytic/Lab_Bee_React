@@ -1,13 +1,19 @@
 import React, { useEffect, useState } from 'react'
-import { Box, Typography } from '@mui/material'
+import { Box, Divider, Grid, Typography } from '@mui/material'
 import axios from 'axios'
 import { serverBaseAddress } from './APIPage'
 import { DataGrid } from '@mui/x-data-grid';
+import SearchBar from '../common/SearchBar';
 
 
 export default function ChamberRunHours() {
 
   const [chamberRunHoursList, setChamberRunHoursList] = useState([])
+
+
+  const [searchInputTextOfCRH, setSearchInputTextOfCRH] = useState("")
+  const [filteredCROData, setFilteredCROData] = useState(chamberRunHoursList);
+
 
   // Get the chamber utilization data:
   const getChamberUtilizationData = async () => {
@@ -31,6 +37,36 @@ export default function ChamberRunHours() {
 
 
 
+  //Start the search filter using the searchbar
+  const onChangeOfSearchInputOfCRH = (e) => {
+    const searchText = e.target.value;
+    setSearchInputTextOfCRH(searchText);
+    filterDataGridTable(searchText);
+  };
+
+  //Function to filter the table
+  const filterDataGridTable = (searchValue) => {
+    const filtered = chamberRunHoursList.filter((row) => {
+      return Object.values(row).some((value) =>
+        value.toString().toLowerCase().includes(searchValue.toLowerCase())
+      )
+    })
+    setFilteredCROData(filtered);
+  }
+
+  //Clear the search filter
+  const onClearSearchInputOfCRH = () => {
+    setSearchInputTextOfCRH("")
+    setFilteredCROData(chamberRunHoursList);
+  }
+
+  //useEffect to filter the table based on the search input
+  useEffect(() => {
+    setFilteredCROData(chamberRunHoursList);
+  }, [chamberRunHoursList]);
+
+
+
   const columns = [
     { field: 'id', headerName: 'SL No', width: 200, align: 'center', headerAlign: 'center', headerClassName: 'custom-header-color' },
     { field: 'chamberName', headerName: 'Chamber / Equipment Name', width: 300, align: 'center', headerAlign: 'center', headerClassName: 'custom-header-color' },
@@ -43,9 +79,24 @@ export default function ChamberRunHours() {
 
   return (
     <>
-      <Typography variant='h5'>Chamber Run Hours Table</Typography>
+      <Divider>
+        <Typography variant='h4' sx={{ color: '#003366' }}>Chamber Run Hours Table</Typography>
+      </Divider>
 
-      {chamberRunHoursList.length === 0 ? 'No Data Found' :
+      <Grid container spacing={2} justifyContent="flex-end">
+
+        <Grid item xs={4} container justifyContent="flex-end">
+          <SearchBar
+            placeholder='Search Chamber'
+            searchInputText={searchInputTextOfCRH}
+            onChangeOfSearchInput={onChangeOfSearchInputOfCRH}
+            onClearSearchInput={onClearSearchInputOfCRH}
+          />
+        </Grid>
+
+      </Grid>
+
+      {filteredCROData.length === 0 ? 'No Data Found' :
 
         <Box
           sx={{
@@ -62,7 +113,7 @@ export default function ChamberRunHours() {
           }}
         >
           <DataGrid
-            rows={chamberRunHoursList}
+            rows={filteredCROData}
             columns={columns}
             pageSize={5}
             rowsPerPageOptions={[5, 10, 20]}

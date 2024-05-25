@@ -224,8 +224,10 @@ export default function PoInvoiceStatusTable({ newJcAdded, openDialog, setOpenDi
     return { poStatusData, invoiceStatusData, paymentStatusData };
   }
 
+
   //Function for the KPI Cards: (Check Again This)
   const getPoInvoiceDataForKPI = (data) => {
+
 
     let totalPaymentReceived = 0; //Which is nothig but, Total Received InvoiceValue;
     let totalPendingInvoiceValue = 0;
@@ -278,42 +280,67 @@ export default function PoInvoiceStatusTable({ newJcAdded, openDialog, setOpenDi
     }
   }
 
-  //Function to get the month wise revenue for bar chart:
-  const getMonthwiseRevenueDataForBarChart = (data) => {
-
-    const monthWiseRevenue = {};
-
-    data.forEach((item) => {
-
-      const monthName = new Date(item.jc_month).toLocaleString('default', { month: 'long' });
-
-      if (item.invoice_status === 'Invoice Sent' && item.payment_status === 'Payment Received') {
-        const revenue = parseFloat(item.invoice_value) || 0;
-
-        if (monthName in monthWiseRevenue) {
-          monthWiseRevenue[monthName] += revenue;
-        } else {
-          monthWiseRevenue[monthName] = revenue;
-        }
-      }
-    })
-
-    const monthLabels = Object.keys(monthWiseRevenue);
-    const monthWiseRevenueData = Object.values(monthWiseRevenue);
-
-    return { monthLabels, monthWiseRevenueData };
-  }
-
   const { totalPaymentReceived, totalPendingInvoiceValue, totalOnHoldInvoiceValue, categoryWiseRevenue, totalRevenueGenerated } = getPoInvoiceDataForKPI(poDataList);
 
+  // console.log('Total Payment Received:', totalPaymentReceived);
+  // console.log('Total Pending Invoice Value:', totalPendingInvoiceValue);
+  // console.log('Total On-Hold Invoice Value:', totalOnHoldInvoiceValue);
+  // console.log('Category Wise Revenue:', categoryWiseRevenue);
+  // console.log('Total Revenue Generated:', totalRevenueGenerated);
+
+
+  // In your component
   const { poStatusData, invoiceStatusData, paymentStatusData } = getPoInvoiceDataForPieChart(poDataList);
 
-  const { monthLabels, monthWiseRevenueData } = getMonthwiseRevenueDataForBarChart(poDataList);
-
-  console.log('monthLabels is', monthLabels)
-  console.log('monthWiseRevenueData is', monthWiseRevenueData)
-
   //////////////////////////////////////////////////////////////////////////////
+  // Data fetching to plot the charts:
+
+
+  const getDataForPOPieChart = async () => {
+
+    publish(EVENT_CONSTANTS.openLoader, true);
+
+    try {
+      // const poStatusResponse = await axios.get(`${serverBaseAddress}/api/getPoStatusData/${poMonthYear}`);
+      const poStatusResponse = await axios.get(`${serverBaseAddress}/api/getPoStatusData`, {
+        params: {
+          year: poYear,
+          month: poMonth
+        }
+      });
+
+      if (poStatusResponse.status === 200) {
+
+        const poData = poStatusResponse.data[0]; // Access the first element of the response array
+        setPoDataForChart({
+          receivedPoCount: poData.receivedPoCount,
+          notReceivedPoCount: poData.notReceivedPoCount,
+          receivedPoSum: poData.receivedPoSum,
+          notReceivedPoSum: poData.notReceivedPoSum,
+
+          invoiceSentCount: poData.invoiceSentCount,
+          invoiceNotSentCount: poData.invoiceNotSentCount,
+          invoiceSentSum: poData.invoiceSentSum,
+          invoiceNotSentSum: poData.invoiceNotSentSum,
+
+          paymentReceivedCount: poData.paymentReceivedCount,
+          paymentNotReceivedCount: poData.paymentNotReceivedCount,
+          paymentOnHoldCount: poData.paymentOnHoldCount,
+          paymentOnHoldSum: poData.paymentOnHoldSum
+
+        });
+
+      } else {
+        console.error('Failed to fetch PO data for chart. Status:', poStatusResponse.status);
+      }
+    } catch (error) {
+      console.error('Failed to fetch the PO data', error);
+    } finally {
+      publish(EVENT_CONSTANTS.openLoader, false);
+    }
+  };
+
+  getDataForPOPieChart();
 
   // Creating a pie chart for calibration status for chambers and equipments:
   const poStatusPieChart = {
@@ -462,95 +489,44 @@ export default function PoInvoiceStatusTable({ newJcAdded, openDialog, setOpenDi
   }
 
 
-  // Data for month wise revenue generated bar chart:
-  const dataForMonthWiseRevenueBarChart = {
-    labels: monthLabels,
+
+  const labels = ['January', 'February', 'March', 'April', 'May', 'June', 'July'];
+
+
+
+  const monthWisePoCount = {
+    labels,
     datasets: [
       {
-        label: 'Month wise Revenue',
-        backgroundColor: [
-          '#FF6384', '#FF9F40', '#FFCD56', '#669966', '#fbd0d0', '#b8b8e0', '#ccb0e8', '#F8C471', '#AED581', '#9B59B6', '#F9F3E1', '#FABEBD'
-        ],
-        borderColor: [
-          '#E5506F', '#D38433', '#C7B040', '#929292', '#83C1C1', '#4D66FF', '#B1B3B5', '#D6AA59', '#96B768', '#85469D', '#E4E0D9', '#E3A4A7'
-        ],
-        borderWidth: 1,
-        // hoverBackgroundColor: 'rgba(75,192,192,0.8)',
-        // hoverBorderColor: 'rgba(75,192,192,1)',
-        data: monthWiseRevenueData
+        label: 'Dataset 1',
+        // data: labels.map(() => faker.datatype.number({ min: 0, max: 1000 })),
+        data: [10, 25, 15, 14, 75, 45, 60],
+        backgroundColor: 'rgba(255, 99, 132, 0.5)',
       },
+      // {
+      //   label: 'Dataset 2',
+      //   // data: labels.map(() => faker.datatype.number({ min: 0, max: 1000 })),
+      //   data: [20, 35, 18, 27, 60, 90, 30],
+      //   backgroundColor: 'rgba(53, 162, 235, 0.5)',
+      // },
     ],
-  };
+  }
 
-  const optionsForMonthWiseRevenueBarChart = {
+  const optionsForMonthWisePoCount = {
     responsive: true,
-    // maintainAspectRatio: false,   // False will keep the size small. If it's true then we can define the size using aspectRatio
-    aspectRatio: 2,
     plugins: {
+      legend: {
+        position: 'top'
+      },
       title: {
         display: true,
-        text: 'Month wise Revenue',
-        font: {
-          family: 'Helvetica Neue',
-          size: 30,
-          weight: 'bold'
-        }
-      },
-      subtitle: {
-        display: true,
-        text: 'Total revenue generated in each month',
-        font: {
-          family: 'Arial',
-          size: 15,
-          weight: 'bold'
-        }
-      },
-      datalabels: {
-        display: true,
-        color: 'black',
-        fontWeight: 'bold',
-        align: 'end',
-        anchor: 'end',
-        font: {
-          family: 'Arial',
-          size: 15,
-          weight: 'bold'
-        }
-      }
-    },
-    scales: {
-      x: {
-        title: {
-          display: true,
-          text: 'Months',
-          font: {
-            family: 'Arial',
-            size: 15,
-            weight: 'bold'
-          }
-        },
-        ticks: {
-          beginAtZero: true, // Optional: start ticks at 0
-        },
-      },
-      y: {
-        title: {
-          display: true,
-          text: 'Number of Quotes',
-          font: {
-            family: 'Arial',
-            size: 15,
-            weight: 'bold'
-          }
-        },
-        ticks: {
-          beginAtZero: true, // Optional: start ticks at 0
-        },
-        grace: 1
+        text: 'Chart.js Bar Chart',
       },
     },
-  };
+  }
 
+
+  // // Pie Chart Options for 
 
 
 
@@ -694,7 +670,31 @@ export default function PoInvoiceStatusTable({ newJcAdded, openDialog, setOpenDi
     textAlign: 'left',
   };
 
+  const departmentWiseRevenueData = {
+    labels: Object.keys(categoryWiseRevenue),
+    datasets: [
+      {
+        label: 'Revenue',
+        data: Object.values(categoryWiseRevenue),
+        backgroundColor: ['#5064d4', '#ffad99', '#8cd9b3', '#C7B040', '#929292']
+      }
+    ]
+  };
 
+  const departmentWiseRevenueDataOptions = {
+    responsive: true,
+    plugins: {
+      legend: {
+        position: 'top'
+      },
+      title: {
+        display: true,
+        text: 'Category Wise Revenue'
+      }
+    }
+  };
+
+  // const totalRevenue = Object.values(categoryWiseRevenue).reduce((acc, curr) => acc + curr, 0);
 
   return (
     <>
@@ -788,12 +788,72 @@ export default function PoInvoiceStatusTable({ newJcAdded, openDialog, setOpenDi
         </Box>
       )}
 
+      {/* <Box sx={{ padding: 3 }}>
+        <Grid container spacing={3} >
+          <Grid item xs={12} sm={6} md={3}>
+            <Card elevation={3} sx={{ p: 2, backgroundColor: '#66cc99' }}>
+              <CreateKpiCardWithAccordion
+                totalValue={totalRevenueGenerated}
+                categoryWiseValue={categoryWiseRevenue}
+              />
+            </Card>
+          </Grid>
 
-      {/* KPI Cards*/}
+          <Grid item xs={12} sm={6} md={3}>
+            <Card elevation={3} sx={{ p: 2, backgroundColor: '#66cc99' }}>
+              <CreateKpiCard
+                kpiTitle="Total Payment Received"
+                kpiValue={<CountUp start={0} end={totalPaymentReceived} delay={1} />}
+                kpiColor="#3f51b5"
+                accordianTitleString={accordianTitleString}
+              />
+            </Card>
+
+          </Grid>
+
+          <Grid item xs={12} sm={6} md={3}>
+            <Card elevation={3} sx={{ p: 2, backgroundColor: '#e6e6ff' }}>
+              <CreateKpiCard
+                kpiTitle="Total Pending Invoice Value"
+                kpiValue={<CountUp start={0} end={totalPendingInvoiceValue} delay={1} />}
+                kpiColor="#3f51b5"
+                accordianTitleString={accordianTitleString}
+              />
+            </Card>
+
+          </Grid>
+
+          <Grid item xs={12} sm={6} md={3}>
+            <Card elevation={3} sx={{ p: 2, backgroundColor: '#ffe6cc' }}>
+              <CreateKpiCard
+                kpiTitle="Total On-Hold Invoice Value"
+                kpiValue={<CountUp start={0} end={totalOnHoldInvoiceValue} delay={1} />}
+                kpiColor="#3f51b5"
+                accordianTitleString={accordianTitleString}
+              />
+            </Card>
+          </Grid>
+        </Grid>
+      </Box> */}
+
+
+      {/* Pie Chart Box */}
       <Box sx={{ mt: 1, mb: 1, padding: 3 }}>
 
         <Grid container spacing={3} >
           <Grid item xs={12} sm={6} md={3}>
+            {/* <Box display='flex' justifyContent='space-between' sx={{ mb: 2 }}> */}
+
+            {/* <Card elevation={3} sx={{ p: 2, backgroundColor: '#d6d6c2', flex: 1, mx: 2 }}>
+                <CreateKpiCard
+                  kpiTitle="Total Revenue Generated"
+                  kpiValue={<CountUp start={0} end={totalRevenueGenerated} delay={1} />}
+                  kpiColor="#3f51b5"
+                  accordianTitleString={accordianTitleString}
+                />
+              </Card> */}
+
+
             <Card elevation={3} sx={{ p: 2, backgroundColor: '#66cc99', flex: 1, mx: 2 }}>
               <CreateKpiCard
                 kpiTitle="Total Payment Received"
@@ -824,86 +884,51 @@ export default function PoInvoiceStatusTable({ newJcAdded, openDialog, setOpenDi
               />
             </Card>
           </Grid>
-
-          <Grid item xs={12} sm={6} md={3}>
-            <Card elevation={3} sx={{ p: 2, backgroundColor: '#ccddff', flex: 1, mx: 2 }}>
-              <CreateKpiCard
-                kpiTitle="Total Revenue Generated"
-                kpiValue={<CountUp start={0} end={totalRevenueGenerated} delay={1} />}
-                kpiColor="#3f51b5"
-                accordianTitleString={accordianTitleString}
-              />
-            </Card>
-          </Grid>
-
         </Grid>
+
+        <Grid item xs={12} md={6} >
+          {/* <Card elevation={5} sx={{ p: 2, backgroundColor: 'transparent' }}> */}
+          <CreatePieChart
+            data={poStatusPieChart}
+            options={optionsForPoStatusPieChart}
+          />
+          {/* </Card> */}
+        </Grid>
+
+        <Grid item xs={12} md={6} >
+          {/* <Card elevation={5} sx={{ p: 2, backgroundColor: 'transparent' }}> */}
+          <CreatePieChart
+            data={invoiceStatusPieChart}
+            options={optionsForInvoiceStatusPieChart}
+          />
+          {/* </Card> */}
+        </Grid>
+
+        <Grid item xs={12} md={6}>
+          {/* <Card elevation={5} sx={{ p: 2, backgroundColor: 'transparent' }}> */}
+          <CreatePieChart
+            data={paymentStatusPieChart}
+            options={optionsForPaymentStatusPieChart}
+          />
+          {/* </Card> */}
+        </Grid>
+
+        {/* <Grid item xs={12} md={6}>
+            <CreateKpiCardWithAccordion
+              totalValue={totalRevenueGenerated}
+              categoryWiseValue={categoryWiseRevenue}
+            />
+          </Grid> */}
+
+
       </Box >
 
-
-      {/* PO, Invoice, Payment status pi charts */}
-      <Box sx={{ padding: 3, backgroundColor: '#fff2e6' }}>
-        <Grid container spacing={3}>
-
-          <Grid item xs={12} sm={6}>
-            {/* <Card elevation={3} sx={{ p: 2, backgroundColor: 'transparent' }}> */}
-            <CreatePieChart
-              data={poStatusPieChart}
-              options={optionsForPoStatusPieChart}
-            />
-            {/* </Card> */}
-          </Grid>
-
-          <Grid item xs={12} sm={6}>
-            {/* <Card elevation={3} sx={{ p: 2, backgroundColor: 'transparent' }}> */}
-            <CreatePieChart
-              data={invoiceStatusPieChart}
-              options={optionsForInvoiceStatusPieChart}
-            />
-            {/* </Card> */}
-          </Grid>
-
-          <Grid item xs={12} sm={6}>
-            {/* <Card elevation={3} sx={{ p: 2, backgroundColor: 'transparent' }}> */}
-            <CreatePieChart
-              data={paymentStatusPieChart}
-              options={optionsForPaymentStatusPieChart}
-            />
-            {/* </Card> */}
-          </Grid>
-
-          <Grid item xs={12} sm={6}>
-            {/* <Card elevation={3} sx={{ p: 2, backgroundColor: 'transparent' }}> */}
-            <CreateBarChart
-              data={dataForMonthWiseRevenueBarChart}
-              options={optionsForMonthWiseRevenueBarChart}
-            />
-            {/* </Card> */}
-          </Grid>
-
-        </Grid>
+      <Box>
+        <CreateBarChart
+          data={departmentWiseRevenueData}
+          options={departmentWiseRevenueDataOptions}
+        />
       </Box>
-
-      {/* Departmentwise revenue accordion card */}
-      <Box sx={{ padding: 3 }} >
-        <Grid item xs={12}>
-          <CreateKpiCardWithAccordion
-            totalValue={totalRevenueGenerated}
-            categoryWiseValue={categoryWiseRevenue}
-          />
-        </Grid>
-      </Box>
-
-      {/* Monthwise revenue bar chart */}
-      {/* <Box sx={{ padding: 3 }}>
-        <Grid>
-          <CreateBarChart
-            data={dataForMonthWiseRevenueBarChart}
-            options={optionsForMonthWiseRevenueBarChart}
-          />
-        </Grid>
-
-      </Box> */}
-
 
 
     </>
