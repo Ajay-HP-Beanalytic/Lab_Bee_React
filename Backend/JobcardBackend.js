@@ -30,9 +30,8 @@ function jobcardsAPIs(app) {
 
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-    // API to fetch the primary data of JC's & to create JC Table: 
-    app.get('/api/getPrimaryJCData', (req, res) => {
-
+    // API to fetch the primary data of Testing JC's: 
+    app.get('/api/getPrimaryJCDataOfTS1', (req, res) => {
 
         const { year, month } = req.query;
 
@@ -45,16 +44,48 @@ function jobcardsAPIs(app) {
 
         const getJCColumns = `
                             SELECT 
-                                id, jc_number, jc_category, DATE_FORMAT(jc_open_date, '%Y-%m-%d') as jc_open_date, company_name,  jc_status
+                                id, jc_number, DATE_FORMAT(jc_open_date, '%Y-%m-%d') as jc_open_date, company_name,  jc_status
                             FROM 
                                 bea_jobcards
                             WHERE 
+                                jc_category = 'TS1' AND
                                 MONTH(jc_open_date) = ? AND YEAR(jc_open_date) = ?
                             `;
 
         db.query(getJCColumns, [monthNumber, year], (error, result) => {
             if (error) {
-                return res.status(500).json({ error: "An error occurred while fetching JC table data" })
+                return res.status(500).json({ error: "An error occurred while fetching Testing JC table data" })
+            }
+            res.send(result)
+        });
+    })
+
+
+    // API to fetch the primary data of Testing JC's: 
+    app.get('/api/getPrimaryJCDataOfReliability', (req, res) => {
+
+        const { year, month } = req.query;
+
+        // Convert month name to month number
+        const monthNumber = monthNames.indexOf(month) + 1;
+
+        if (monthNumber === 0 || !year) {
+            return res.status(400).json({ error: "Invalid year or month format" });
+        }
+
+        const getReliabilityJCColumns = `
+                            SELECT 
+                                id, jc_number, DATE_FORMAT(jc_open_date, '%Y-%m-%d') as jc_open_date, company_name, project_name, reliability_report_status, jc_status
+                            FROM 
+                                bea_jobcards
+                            WHERE 
+                                jc_category = 'Reliability' AND
+                                MONTH(jc_open_date) = ? AND YEAR(jc_open_date) = ?
+                            `;
+
+        db.query(getReliabilityJCColumns, [monthNumber, year], (error, result) => {
+            if (error) {
+                return res.status(500).json({ error: "An error occurred while fetching Reliability JC table data" })
             }
             res.send(result)
         });
@@ -62,7 +93,7 @@ function jobcardsAPIs(app) {
 
 
     // Get the JC's between two date ranges:
-    app.get('/api/getPrimaryJCDataBwTwoDates', (req, res) => {
+    app.get('/api/getPrimaryTestingJCDataBwTwoDates', (req, res) => {
 
         const { selectedJCDateRange } = req.query;
 
@@ -77,7 +108,7 @@ function jobcardsAPIs(app) {
         }
 
         const getJCColumns = `
-        SELECT id, jc_number, jc_category, DATE_FORMAT(jc_open_date, '%Y-%m-%d') as jc_open_date, company_name, jc_status
+        SELECT id, jc_number, DATE_FORMAT(jc_open_date, '%Y-%m-%d') as jc_open_date, company_name, jc_status 
         FROM bea_jobcards
         WHERE jc_open_date BETWEEN ? AND ?
     `;
@@ -90,6 +121,37 @@ function jobcardsAPIs(app) {
             // console.log('Result:', result);
         });
     })
+
+
+    app.get('/api/getPrimaryReliabilityJCDataBwTwoDates', (req, res) => {
+
+        const { selectedJCDateRange } = req.query;
+
+        if (!selectedJCDateRange || typeof selectedJCDateRange !== 'string') {
+            return res.status(400).json({ error: "Invalid date range format" });
+        }
+
+        const [fromDate, toDate] = selectedJCDateRange.split(' - ');
+
+        if (!fromDate || !toDate) {
+            return res.status(400).json({ error: "Invalid date range format" });
+        }
+
+        const getJCColumns = `
+        SELECT id, jc_number, DATE_FORMAT(jc_open_date, '%Y-%m-%d') as jc_open_date, company_name, project_name, reliability_report_status, jc_status 
+        FROM bea_jobcards
+        WHERE jc_open_date BETWEEN ? AND ?
+    `;
+
+        db.query(getJCColumns, [fromDate, toDate], (error, result) => {
+            if (error) {
+                return res.status(500).json({ error: "An error occurred while fetching JC table data" });
+            }
+            res.send(result);
+            // console.log('Result:', result);
+        });
+    })
+
 
 
 

@@ -242,10 +242,25 @@ function usersDataAPIs(app) {
     });
 
 
-    // Fetch the users who will operate the testings 
+    // Fetch testing department users:
     app.get("/api/getTestingUsers", (req, res) => {
-        const usersList = "SELECT name FROM labbee_users WHERE department LIKE '%Testing%' ";
-        db.query(usersList, (error, result) => {
+        const testingUsersList = "SELECT name FROM labbee_users WHERE department LIKE '%Testing%' ";
+        db.query(testingUsersList, (error, result) => {
+            res.send(result);
+        });
+    });
+
+    // Fetch the Reliability department users:
+    app.get("/api/getReliabilityUsers", (req, res) => {
+        const reliabilityUsersList = "SELECT name FROM labbee_users WHERE department LIKE '%Reliability%' ";
+        db.query(reliabilityUsersList, (error, result) => {
+            res.send(result);
+        });
+    });
+
+    app.get("/api/getMarketingUsers", (req, res) => {
+        const marketingUsersList = "SELECT name FROM labbee_users WHERE department LIKE '%Marketing%' ";
+        db.query(marketingUsersList, (error, result) => {
             res.send(result);
         });
     });
