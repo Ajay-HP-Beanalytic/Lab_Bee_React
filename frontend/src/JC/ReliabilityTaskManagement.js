@@ -1,13 +1,10 @@
 import React, { useEffect, useState } from 'react'
-import { Box, Button, Chip, FormControl, IconButton, InputLabel, MenuItem, Paper, Select, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Tooltip, Typography } from '@mui/material'
+import { Box, FormControl, IconButton, InputLabel, MenuItem, Paper, Select, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Tooltip, Typography } from '@mui/material'
 
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
 import dayjs from 'dayjs';
-// import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
-import { toast } from 'react-toastify';
 import axios from 'axios';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { serverBaseAddress } from '../Pages/APIPage';
@@ -18,7 +15,9 @@ const ReliabilityTaskManagement = ({ reliabilityTaskRow, setReliabilityTaskRow, 
 
 
   const [reliabilityTasks, setReliabilityTasks] = useState([])
-  const [users, setUsers] = useState([])
+  // const [users, setUsers] = useState([])
+  const [reliabilityUsers, setReliabilityUsers] = useState([])
+  const [rowAdded, setRowAdded] = useState(false)
 
   const [dateTimeValue, setDateTimeValue] = useState(null);
 
@@ -45,7 +44,7 @@ const ReliabilityTaskManagement = ({ reliabilityTaskRow, setReliabilityTaskRow, 
         })
         .catch(error => console.error(error))
     }
-  }, [])
+  }, [rowAdded])
 
   // Function to add the row:
   const handleAddNewRow = () => {
@@ -58,13 +57,29 @@ const ReliabilityTaskManagement = ({ reliabilityTaskRow, setReliabilityTaskRow, 
       newRow = { id: 0, startDate: null, endDate: null, completedDate: null };
     }
     setReliabilityTaskRow([...reliabilityTaskRow, newRow]);
+
+    setRowAdded(true)
   }
 
   // Function to remove the row:
   const handleRemoveRow = (id) => {
     const updatedRows = reliabilityTaskRow.filter((row) => row.id !== id);
     setReliabilityTaskRow(updatedRows);
+    setRowAdded(false)
+
+    console.log('Removed')
+    console.log('updatedRows', updatedRows)
   }
+
+  // Function to handle the cell inputs of the rows:
+  const handleTaskRowChange = (index, field, value) => {
+    const updatedRows = [...reliabilityTaskRow];
+    updatedRows[index] = { ...updatedRows[index], [field]: value };
+
+    onReliabilityTaskRowChange(updatedRows)
+    setReliabilityTaskRow(updatedRows);
+  };
+
 
   // Component function to add button
   let addButtonWithIcon = (
@@ -89,22 +104,11 @@ const ReliabilityTaskManagement = ({ reliabilityTaskRow, setReliabilityTaskRow, 
 
 
 
-  // Function to handle the cell inputs of the rows:
-  const handleTaskRowChange = (index, field, value) => {
-    const updatedRows = [...reliabilityTaskRow];
-    updatedRows[index] = { ...updatedRows[index], [field]: value };
-
-    setReliabilityTaskRow(updatedRows);
-
-    onReliabilityTaskRowChange(updatedRows)
-  };
-
-
   // UseEffect to fetch the users data:
   useEffect(() => {
-    axios.get(`${serverBaseAddress}/api/getTestingUsers/`)
+    axios.get(`${serverBaseAddress}/api/getReliabilityUsers/`)
       .then(result => {
-        setUsers(result.data)
+        setReliabilityUsers(result.data)
       })
 
     //Fetch reliability tasks list from the table :
@@ -199,7 +203,7 @@ const ReliabilityTaskManagement = ({ reliabilityTaskRow, setReliabilityTaskRow, 
                         value={row.task_assigned_by || ''}
                         onChange={(e) => handleTaskRowChange(index, 'task_assigned_by', e.target.value)}
                       >
-                        {users.map((item) => (<MenuItem key={item.id} value={item.name}>{item.name}</MenuItem>))}
+                        {reliabilityUsers.map((item) => (<MenuItem key={item.id} value={item.name}>{item.name}</MenuItem>))}
                       </Select>
                     </FormControl>
                   </TableCell>
@@ -246,7 +250,7 @@ const ReliabilityTaskManagement = ({ reliabilityTaskRow, setReliabilityTaskRow, 
                         value={row.task_assigned_to || ''}
                         onChange={(e) => handleTaskRowChange(index, 'task_assigned_to', e.target.value)}
                       >
-                        {users.map((item) => (<MenuItem key={item.id} value={item.name}>{item.name}</MenuItem>))}
+                        {reliabilityUsers.map((item) => (<MenuItem key={item.id} value={item.name}>{item.name}</MenuItem>))}
                       </Select>
                     </FormControl>
                   </TableCell>

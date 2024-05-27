@@ -75,6 +75,12 @@ export default function JCHome() {
 
     const [loggedInUserDepartment, setLoggedInUserDepartment] = useState('')
 
+    const [reliabilityJCTableData, setReliabilityJCTableData] = useState([])
+
+    const [originalReliabilityTableData, setOriginalReliabilityTableData] = useState([]);
+
+    const [filteredReliabilityJcData, setFilteredReliabilityJcData] = useState(reliabilityJCTableData);
+
 
     // Simulate fetching jc data from the database
     useEffect(() => {
@@ -82,23 +88,43 @@ export default function JCHome() {
         const jcTableDataRefresh = location.state?.updated;
 
         let requiredAPIdata = {
-            _fields: 'jc_number, jc_category, jc_open_date, company_name,  jc_status',
+            _fields: 'jc_number,  jc_open_date, company_name,  jc_status',
             year: jcYear,
             month: jcMonth,
         }
 
         const urlParameters = new URLSearchParams(requiredAPIdata).toString()
 
-        const quotesURL = `${serverBaseAddress}/api/getPrimaryJCData?` + urlParameters
+        const getTestingJcURL = `${serverBaseAddress}/api/getPrimaryJCDataOfTS1?` + urlParameters
+
+
+        /////////////////////////////////////////////////////
+        let requiredAPIdataForReliability = {
+            _fields: 'jc_number,  jc_open_date, company_name, project_name, reliability_report_status,  jc_status',
+            year: jcYear,
+            month: jcMonth,
+        }
+
+        const urlParametersForReliability = new URLSearchParams(requiredAPIdataForReliability).toString()
+
+
+        const getReliabilityJcURL = `${serverBaseAddress}/api/getPrimaryJCDataOfReliability?` + urlParametersForReliability
 
         if (filterRow.length > 0) {
             setFilterRow(filterRow)
         } else {
             const fetchJCDataFromDatabase = async () => {
                 try {
-                    const response = await axios.get(quotesURL);
-                    setJcTableData(response.data);
-                    setOriginalJcTableData(response.data)
+                    // Fetch the Testing JC's
+                    const testingJcResponse = await axios.get(getTestingJcURL);
+                    setJcTableData(testingJcResponse.data);
+                    setOriginalJcTableData(testingJcResponse.data)
+
+                    // Fetch the reliability JC's
+                    const reliabilityJcResponse = await axios.get(getReliabilityJcURL);
+                    setReliabilityJCTableData(reliabilityJcResponse.data)
+                    setOriginalReliabilityTableData(reliabilityJcResponse.data)
+
                     setLoading(false);
                 } catch (error) {
                     console.error('Failed to fetch the data', error);
@@ -148,7 +174,8 @@ export default function JCHome() {
     //useEffect to filter the table based on the search input
     useEffect(() => {
         setFilteredJcData(jcTableData);
-    }, [jcTableData]);
+        setFilteredReliabilityJcData(reliabilityJCTableData);
+    }, [jcTableData, reliabilityJCTableData]);
 
     // To validate the user credential its very much important
     axios.defaults.withCredentials = true;
@@ -190,8 +217,21 @@ export default function JCHome() {
         { field: 'id', headerName: 'SL No', width: 100, align: 'center', headerAlign: 'center', headerClassName: 'custom-header-color' },
         { field: 'jc_number', headerName: 'JC Number', width: 200, align: 'center', headerAlign: 'center', headerClassName: 'custom-header-color' },
         { field: 'jc_open_date', headerName: 'JC Open Date', width: 200, align: 'center', headerAlign: 'center', headerClassName: 'custom-header-color' },
-        { field: 'jc_category', headerName: 'JC Category', width: 200, align: 'center', headerAlign: 'center', headerClassName: 'custom-header-color' },
+        // { field: 'jc_category', headerName: 'JC Category', width: 200, align: 'center', headerAlign: 'center', headerClassName: 'custom-header-color' },
         { field: 'company_name', headerName: 'Company', width: 200, align: 'center', headerAlign: 'center', headerClassName: 'custom-header-color' },
+        { field: 'jc_status', headerName: 'JC Status', width: 200, align: 'center', headerAlign: 'center', headerClassName: 'custom-header-color' },
+    ];
+
+
+
+    const reliabilityTableColumns = [
+        { field: 'id', headerName: 'SL No', width: 100, align: 'center', headerAlign: 'center', headerClassName: 'custom-header-color' },
+        { field: 'jc_number', headerName: 'JC Number', width: 200, align: 'center', headerAlign: 'center', headerClassName: 'custom-header-color' },
+        { field: 'jc_open_date', headerName: 'JC Open Date', width: 200, align: 'center', headerAlign: 'center', headerClassName: 'custom-header-color' },
+        // { field: 'jc_category', headerName: 'JC Category', width: 200, align: 'center', headerAlign: 'center', headerClassName: 'custom-header-color' },
+        { field: 'company_name', headerName: 'Company', width: 200, align: 'center', headerAlign: 'center', headerClassName: 'custom-header-color' },
+        { field: 'project_name', headerName: 'Project Name', width: 200, align: 'center', headerAlign: 'center', headerClassName: 'custom-header-color' },
+        { field: 'reliability_report_status', headerName: 'Report Status', width: 200, align: 'center', headerAlign: 'center', headerClassName: 'custom-header-color' },
         { field: 'jc_status', headerName: 'JC Status', width: 200, align: 'center', headerAlign: 'center', headerClassName: 'custom-header-color' },
     ];
 
@@ -226,10 +266,17 @@ export default function JCHome() {
     // function with api address to fetch the JC details between the two date ranges:
     const fetchJCDataBetweenTwoDates = async (dateRange) => {
         try {
-            const response = await axios.get(`${serverBaseAddress}/api/getPrimaryJCDataBwTwoDates`, {
+            const testingJCResponse = await axios.get(`${serverBaseAddress}/api/getPrimaryTestingJCDataBwTwoDates`, {
                 params: { selectedJCDateRange: dateRange }
             });
-            setJcTableData(response.data);
+
+            const reliabilityJCResponse = await axios.get(`${serverBaseAddress}/api/getPrimaryReliabilityJCDataBwTwoDates`, {
+                params: { selectedJCDateRange: dateRange }
+            });
+
+            setJcTableData(testingJCResponse.data);
+            setReliabilityJCTableData(reliabilityJCResponse.data)
+
         } catch (error) {
             console.error('Error fetching JC data:', error);
         }
@@ -239,6 +286,7 @@ export default function JCHome() {
     const handleJCDateRangeClear = () => {
         setSelectedJCDateRange(null)
         setJcTableData(originalJcTableData)
+        setReliabilityJCTableData(originalReliabilityTableData)
     }
 
 
@@ -255,16 +303,25 @@ export default function JCHome() {
     const filterDataGridTable = (searchValue) => {
         const filtered = jcTableData.filter((row) => {
             return Object.values(row).some((value) =>
-                value.toString().toLowerCase().includes(searchValue.toLowerCase())
+                value != null && value.toString().toLowerCase().includes(searchValue.toLowerCase())
             )
         })
         setFilteredJcData(filtered);
+
+        const relFiltered = reliabilityJCTableData.filter((row) => {
+            return Object.values(row).some((value) =>
+                value != null && value.toString().toLowerCase().includes(searchValue.toLowerCase())
+            )
+        })
+        setFilteredReliabilityJcData(relFiltered);
+
     }
 
     //Clear the search filter
     const onClearSearchInputOfJC = () => {
         setSearchInputTextOfJC("");
         setFilteredJcData(jcTableData);
+        setFilteredReliabilityJcData(reliabilityJCTableData);
     }
 
     //Functiopn to redirect to new jc create page:
@@ -356,42 +413,77 @@ export default function JCHome() {
 
             </Grid>
 
+            {(loggedInUserDepartment === 'Testing' || loggedInUserDepartment === 'All') && (
+                <>
 
-            {filteredJcData && filteredJcData.length === 0 ? (
-                <EmptyCard message='No JC Found' />
-            ) : (
-                <Box
-                    sx={{
-                        height: 500,
-                        width: '100%',
-                        '& .custom-header-color': {
-                            backgroundColor: '#0f6675',
-                            color: 'whitesmoke',
-                            fontWeight: 'bold',
-                            fontSize: '15px',
-                        },
-                        mt: 2,
-                    }}
-                >
-                    <DataGrid
-                        rows={filteredJcData}
-                        columns={columns}
-                        sx={{ '&:hover': { cursor: 'pointer' } }}
-                        onRowClick={(params) => editSelectedRowData(params.row)}
-                        pageSize={5}
-                        rowsPerPageOptions={[5, 10, 20]}
-                    />
-                </Box>
+                    {filteredJcData && filteredJcData.length === 0 ? (
+                        <EmptyCard message='No JC Found' />
+                    ) : (
+                        <Box
+                            sx={{
+                                height: 500,
+                                width: '100%',
+                                '& .custom-header-color': {
+                                    backgroundColor: '#0f6675',
+                                    color: 'whitesmoke',
+                                    fontWeight: 'bold',
+                                    fontSize: '15px',
+                                },
+                                mt: 2,
+                            }}
+                        >
+                            <DataGrid
+                                rows={filteredJcData}
+                                columns={columns}
+                                sx={{ '&:hover': { cursor: 'pointer' } }}
+                                onRowClick={(params) => editSelectedRowData(params.row)}
+                                pageSize={5}
+                                rowsPerPageOptions={[5, 10, 20]}
+                            />
+                        </Box>
+                    )}
+                </>
             )}
 
 
-            {loggedInUserDepartment === 'Reliability' || loggedInUserDepartment === 'All' && (
+            {(loggedInUserDepartment === 'Reliability' || loggedInUserDepartment === 'All') && (
                 <>
-                    <Divider>
+                    <Divider sx={{ mt: 5 }}>
                         <Typography variant='h4' sx={{ color: '#003366' }}> Reliability Task Management</Typography>
                     </Divider>
 
-                    <Typography variant='h4' sx={{ color: '#003366' }}> Its Reliability: {loggedInUserDepartment}</Typography>
+                    {/* <Typography variant='h4' sx={{ color: '#003366' }}> Its Reliability: {loggedInUserDepartment}</Typography> */}
+
+
+                    {filteredReliabilityJcData && filteredReliabilityJcData.length === 0 ? (
+                        <EmptyCard message='No JC Found' />
+                    ) : (
+
+                        <Box
+                            sx={{
+                                height: 500,
+                                width: '100%',
+                                '& .custom-header-color': {
+                                    backgroundColor: '#0f6675',
+                                    color: 'whitesmoke',
+                                    fontWeight: 'bold',
+                                    fontSize: '15px',
+                                },
+                                mt: 2,
+                            }}
+                        >
+                            <DataGrid
+                                rows={filteredReliabilityJcData}
+                                columns={reliabilityTableColumns}
+                                sx={{ '&:hover': { cursor: 'pointer' } }}
+                                onRowClick={(params) => editSelectedRowData(params.row)}
+                                pageSize={5}
+                                rowsPerPageOptions={[5, 10, 20]}
+                            />
+                        </Box>
+
+                    )}
+
                 </>
             )}
 
