@@ -18,6 +18,7 @@ const app = express();
 // Get all the connections from the db
 const {
   createUsersTable,
+  createOtpStorageTable,
   createBEAQuotationsTable,
   createQuotesDiscountTable,
   createChamberCalibrationTable,
@@ -48,6 +49,7 @@ db.getConnection(function (err, connection) {
 
   // call the table creating functions here:
   createUsersTable();
+  createOtpStorageTable();
   createBEAQuotationsTable();
   createQuotesDiscountTable();
   createChamberCalibrationTable();

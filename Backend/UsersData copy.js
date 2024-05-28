@@ -272,126 +272,58 @@ function usersDataAPIs(app) {
     //Password reset api links:
 
     // Function to generate a 6-digit OTP
-    const generateOtp = () => {
+    const generateOTP = () => {
         return Math.floor(100000 + Math.random() * 900000).toString();
     };
 
     // Nodemailer transporter configuration:
-    // Function to send OTP email
-    const sendOtpEmail = (email, otp) => {
-        const transporter = nodemailer.createTransport({
-            service: 'Gmail',
-            auth: {
-                user: process.env.EMAIL_ID,
-                pass: process.env.EMAIL_PASSWORD,
-            },
-        });
-
-        const mailOptions = {
-            from: process.env.EMAIL,
-            to: email,
-            subject: 'Your OTP Code to reset the password',
-            text: `Your OTP code is ${otp}. It is valid for 5 minutes.`,
-        };
-
-        return transporter.sendMail(mailOptions);
-    };
+    const transporter = nodemailer.createTransport({
+        service: 'Gmail',
+        auth: {
+            user: process.env.EMAIL_ID,
+            pass: process.env.EMAIL_PASSWORD
+        }
+    })
 
     // API to check if the entered email exists and send OTP
-    app.post('/api/checkResetPasswordEmail', async (req, res) => {
+    app.post('/api/checkResetPasswordEmail', (req, res) => {
         const { email } = req.body;
 
-        try {
-            const sqlCheckEmail = "SELECT * FROM labbee_users WHERE email=?";
-            const [result] = await db.promise().query(sqlCheckEmail, [email]);
+        const sqlCheckEmail = 'SELECT * FROM labbee_users WHERE email = ?';
+
+        db.query(sqlCheckEmail, [email], (error, result) => {
+            if (error) {
+                console.error('Error checking email:', error);
+                return res.status(500).json({ message: 'Internal server error' });
+            }
 
             if (result.length > 0) {
-                const otp = generateOtp();
-                const otpExpiry = new Date(Date.now() + 5 * 60 * 1000); // OTP valid for 5 minutes
+                // Email exists, generate OTP and send email
+                const otp = generateOTP();
 
-                // Save OTP and expiry to the OTP table
-                const sqlSaveOtp = "INSERT INTO otp_codes (email, otp_code, otp_expiry) VALUES (?, ?, ?)";
-                await db.promise().query(sqlSaveOtp, [email, otp, otpExpiry]);
+                const mailOptions = {
+                    from: process.env.EMAIL_ID,
+                    to: email,
+                    subject: 'Your OTP for Password Reset',
+                    text: `Your OTP for password reset is ${otp}. It is valid for 1 minute.`,
+                };
 
-                await sendOtpEmail(email, otp);
-
-                return res.status(200).json({ message: 'OTP Sent Successfully' });
+                transporter.sendMail(mailOptions, (error, info) => {
+                    if (error) {
+                        console.error('Error sending email:', error);
+                        return res.status(500).json({ message: 'Error sending email' });
+                    } else {
+                        console.log('Email sent: ' + info.response);
+                        // Save the OTP to the database or in-memory store with an expiration time
+                        // Here you should implement logic to save the OTP and associate it with the user
+                        return res.status(200).json({ message: 'OTP sent successfully', otp }); // Include OTP for now for testing, remove in production
+                    }
+                });
             } else {
-                return res.status(404).json({ message: 'Email not found' });
+                return res.status(404).json({ message: 'Email not found in the database' });
             }
-        } catch (error) {
-            console.error('Error sending OTP:', error);
-            return res.status(500).json({ message: 'Internal server error' });
-        }
+        });
     });
-
-
-    //API to verify the OTP:
-    app.post('/api/verifyOtp', async (req, res) => {
-        const { email, otp } = req.body;
-
-        // try {
-        //     const sqlCheckOtp = "SELECT otp_code, otp_expiry FROM otp_codes WHERE email=? ORDER BY id DESC LIMIT 1";
-        //     const [result] = await db.promise().query(sqlCheckOtp, [email]);
-
-        //     if (result.length > 0) {
-        //         const { otp_code: storedOtp, otp_expiry: otpExpiry } = result[0];
-
-        //         if (storedOtp === otp && new Date() < new Date(otpExpiry)) {
-        //             return res.status(200).json({ message: 'OTP Verified Successfully' });
-        //         } else {
-        //             return res.status(400).json({ message: 'Invalid or Expired OTP' });
-        //         }
-        //     } else {
-        //         return res.status(404).json({ message: 'Email not found' });
-        //     }
-        // } catch (error) {
-        //     console.error('Error verifying OTP:', error);
-        //     return res.status(500).json({ message: 'Internal server error' });
-        // }
-
-        try {
-            const sqlCheckOtp = "SELECT * FROM otp_codes WHERE email=? AND otp_code=? AND otp_expiry > NOW()";
-            const [otpResult] = await db.promise().query(sqlCheckOtp, [email, otp]);
-
-            if (otpResult.length === 0) {
-                return res.status(400).json({ message: 'Invalid or expired OTP' });
-            }
-
-            return res.status(200).json({ message: 'OTP verified successfully' });
-        } catch (error) {
-            console.error('Error verifying OTP:', error);
-            return res.status(500).json({ message: 'Internal server error' });
-        }
-    });
-
-
-    // API to reset the password
-    app.post('/api/resetPassword', async (req, res) => {
-
-        const { email, newPassword } = req.body;
-        console.log(email, newPassword)
-
-        try {
-            // Hash the new password
-            const salt = await bcrypt.genSalt(saltRounds);
-            const hash = await bcrypt.hash(newPassword, salt);
-
-            // Update the user's password in the database
-            const sqlUpdatePassword = "UPDATE labbee_users SET password=? WHERE email=?";
-            await db.promise().query(sqlUpdatePassword, [hash, email]);
-
-            // Optionally, delete the OTP entry after successful password reset
-            const sqlDeleteOtp = "DELETE FROM otp_codes WHERE email=?";
-            await db.promise().query(sqlDeleteOtp, [email]);
-
-            return res.status(200).json({ message: 'Password reset successful' });
-        } catch (error) {
-            console.error('Error resetting password:', error);
-            return res.status(500).json({ message: 'Internal server error' });
-        }
-    });
-
 
 
 }
