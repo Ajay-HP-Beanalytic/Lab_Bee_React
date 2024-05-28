@@ -30,7 +30,7 @@ export default function UserManagement() {
   const [userStatus, setUserStatus] = useState('')
 
   const userDepartmentOptions = ['Accounts', 'Marketing', 'Testing', 'Reliability', 'Software']
-  const userRoleOptions = ['Managing Director', 'Operations Manager', 'Admin', 'Lab Manager', 'Lab Engineer', 'Lab Technician', 'Reliability Manager', 'Reliability Engineer',];
+  const userRoleOptions = ['Managing Director', 'Operations Manager', 'Admin', 'Lab Manager', 'Lab Engineer', 'Lab Technician', 'Reliability Manager', 'Reliability Engineer', 'Software Engineer'];
   const userStatusOptions = ['Enable', 'Disable']
 
 

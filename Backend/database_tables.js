@@ -25,6 +25,25 @@ function createUsersTable() {
     });
 }
 
+// Function to create the otp_table
+function createOtpStorageTable() {
+    const createOtpStorageTableQuery = `
+        CREATE TABLE IF NOT EXISTS otp_codes (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        email VARCHAR(255) NOT NULL,
+        otp_code VARCHAR(6) NOT NULL,
+        otp_expiry DATETIME NOT NULL
+        )`;
+
+    db.query(createOtpStorageTableQuery, function (err, result) {
+        if (err) {
+            console.log("Error occurred while otp_codes table", err)
+        } else {
+            //console.log("environmental_tests_quotes table created successfully.")
+        }
+    })
+}
+
 ////////////////////////////////////////////////////////////////////////////
 //Function to create a quotations table:
 function createBEAQuotationsTable() {
@@ -535,6 +554,7 @@ process.on('exit', function () {
 // Export the database connection and table creation functions
 module.exports = {
     createUsersTable,
+    createOtpStorageTable,
     createBEAQuotationsTable,
     createQuotesDiscountTable,
     createChamberCalibrationTable,

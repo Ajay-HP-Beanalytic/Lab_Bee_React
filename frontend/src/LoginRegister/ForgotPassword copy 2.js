@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import Box from "@mui/material/Box";
 import Grid from "@mui/material/Grid";
 import bg from "../images/signin.svg";
@@ -10,7 +9,7 @@ import Container from "@mui/material/Container";
 import Avatar from "@mui/material/Avatar";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
-
+import { useState } from "react";
 import Stack from "@mui/material/Stack";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -42,9 +41,10 @@ const forgotPassLogoAndText = {
   left: "30%",
 };
 
-export default function ResetPassword() {
-  const [email, setEmail] = useState('');
-  const [otpSent, setOtpSent] = useState(false);
+export default function ForgotPassword() {
+
+  const [remember, setRemember] = useState(false);
+  const [otpSent, setOtpSent] = useState(false)
   const [otp, setOtp] = useState('');
   const [otpVerified, setOtpVerified] = useState(false);
   const [otpCountdown, setOtpCountdown] = useState(60);
@@ -52,26 +52,19 @@ export default function ResetPassword() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [otpError, setOtpError] = useState('');
   const [passwordError, setPasswordError] = useState('');
+
   const navigate = useNavigate();
 
-  useEffect(() => {
-    let timer;
-    if (otpSent && otpCountdown > 0) {
-      timer = setInterval(() => {
-        setOtpCountdown((prev) => prev - 1);
-      }, 1000);
-    }
-    return () => clearInterval(timer);
-  }, [otpSent, otpCountdown]);
-
-
   const handleSubmit = async (event) => {
+
     event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const userEnteredEmailToResetPassword = formData.get('email');
 
     try {
-      const response = await axios.post(`${serverBaseAddress}/api/checkResetPasswordEmail`, { email });
+      const response = await axios.post(`${serverBaseAddress}/api/checkResetPasswordEmail`, { userEnteredEmailToResetPassword });
       if (response.status === 200) {
-        setOtpSent(true);
+        setOtpSent(true)
         setOtpCountdown(60);
         toast.success('Email found. OTP sent successfully.');
       }
@@ -84,66 +77,51 @@ export default function ResetPassword() {
     }
   };
 
+  //Function for submitting the entered OTP
   const handleOtpSubmit = async (event) => {
     event.preventDefault();
 
-    const formData = new FormData(event.currentTarget);
-    const email = formData.get('email');
-    const otp = formData.get('otp');
-
-    try {
-      const response = await axios.post(`${serverBaseAddress}/api/verifyOtp`, { email, otp });
-
-      if (response.status === 200) {
-        setOtpVerified(true);
-        toast.success('OTP verified successfully.');
-        // Display toast message for successful OTP verification
-      } else {
-        // Handle invalid or expired OTP
-        setOtpError('Invalid or Expired OTP');
-        toast.success('Entered OTP is Invalid or Expired.');
-      }
-    } catch (error) {
-      console.error('Error verifying OTP:', error);
-      // Display toast message for error
-    }
+    // Add OTP verification logic here
+    // For now, assuming OTP is verified successfully:
+    setOtpVerified(true);
   };
 
-  //Function to reset the forgotten password with new password
+
   const handlePasswordReset = async (event) => {
     event.preventDefault();
 
     const formData = new FormData(event.currentTarget);
+    const userEnteredEmailToResetPassword = formData.get('email');
 
-    const email = formData.get('email');
-    const newPassword = formData.get('newPassword');
-    const confirmPassword = formData.get('confirmPassword');
 
     if (newPassword !== confirmPassword) {
       setPasswordError('Passwords do not match');
-      toast.error('Passwords do not match');
       return;
     }
 
-    try {
-      const response = await axios.post(`${serverBaseAddress}/api/resetPassword`, { email, newPassword });
-      if (response.status === 200) {
-        // Display toast message for successful password reset
-        toast.success('Password reset successful');
-        navigate('/'); // Redirect to login
-      }
-    } catch (error) {
-      toast.error(error.response.data.message || 'Error resetting password');
-      console.error('Error resetting password:', error);
-      // Display toast message for error
-    }
+    toast.info('Password Reset Done')
+
+    // try {
+    //   const response = await axios.post('/api/resetPassword', { email, newPassword });
+    //   if (response.status === 200) {
+    //     // Display toast message for successful password reset
+    //     navigate('/'); // Redirect to login
+    //   }
+    // } catch (error) {
+    //   console.error('Error resetting password:', error);
+    //   // Display toast message for error
+    // }
   };
 
+
+  // Function to resend the OTP
   const resendOtp = async () => {
+
     if (otpCountdown > 0) return;
 
+
     try {
-      const response = await axios.post(`${serverBaseAddress}/api/checkResetPasswordEmail`, { email });
+      const response = await axios.post('/api/checkResetPasswordEmail', { userEnteredEmailToResetPassword });
       if (response.status === 200) {
         setOtpSent(true);
         setOtpCountdown(60);
@@ -155,10 +133,13 @@ export default function ResetPassword() {
     }
   };
 
+
   return (
     <>
+
       <div
         style={{
+          //backgroundImage: `url(${bgimg})`,
           backgroundImage: "linear-gradient(135deg, #009FFD 10%, #2A2A72 100%)",
           backgroundSize: "cover",
           height: "100vh",
@@ -193,15 +174,22 @@ export default function ResetPassword() {
                   <ThemeProvider theme={darkTheme}>
                     <Container>
                       <Box height={35} />
-                      <Box sx={forgotPassLogoAndText}>
-                        <Avatar sx={{ ml: "100px", mb: "4px", bgcolor: "#ffffff" }}>
+                      <Box sx={forgotPassLogoAndText} >
+                        <Avatar
+                          sx={{ ml: "100px", mb: "4px", bgcolor: "#ffffff" }}
+                        >
                           <LockOutlinedIcon />
                         </Avatar>
                         <Typography variant="h4" sx={{ mt: 1, mr: '390px' }}>
                           Reset Password
                         </Typography>
                       </Box>
-                      <Box component="form" noValidate onSubmit={handleSubmit} sx={{ mt: 2 }}>
+                      <Box
+                        component="form"
+                        noValidate
+                        onSubmit={handleSubmit}
+                        sx={{ mt: 2 }}
+                      >
                         <Grid container spacing={1}>
                           <Grid item xs={12} sx={{ ml: "3em", mr: "3em" }}>
                             <TextField
@@ -211,15 +199,13 @@ export default function ResetPassword() {
                               label="Email"
                               name="email"
                               autoComplete="email"
-                              value={email}
-                              onChange={(e) => setEmail(e.target.value)}
                             />
                           </Grid>
                           <Grid item xs={12} sx={{ ml: "5em", mr: "5em" }}>
                             <Button
                               type="submit"
                               variant="contained"
-                              fullWidth
+                              fullWidth={Boolean("true")}
                               size="large"
                               sx={{
                                 mt: "15px",
@@ -230,14 +216,23 @@ export default function ResetPassword() {
                                 backgroundColor: "#FF9A01",
                               }}
                             >
-                              Send Reset OTP
+                              Send Reset Link
                             </Button>
                           </Grid>
                           <Grid item xs={12} sx={{ ml: "3em", mr: "3em" }}>
                             <Stack direction="row" spacing={2}>
-                              <Typography variant="body1" component="span" style={{ marginTop: "10px" }}>
+                              <Typography
+                                variant="body1"
+                                component="span"
+                                style={{ marginTop: "10px" }}
+                              >
                                 Login to your Account.
-                                <span style={{ color: "#beb4fb", cursor: "pointer" }} onClick={() => { navigate("/"); }}>
+                                <span
+                                  style={{ color: "#beb4fb", cursor: "pointer" }}
+                                  onClick={() => {
+                                    navigate("/");
+                                  }}
+                                >
                                   {" "}Sign In
                                 </span>
                               </Typography>
@@ -248,7 +243,9 @@ export default function ResetPassword() {
                     </Container>
                   </ThemeProvider>
                 </Box>
+
               ) : (
+
                 <Box
                   style={{
                     backgroundSize: "cover",
@@ -317,7 +314,6 @@ export default function ResetPassword() {
                           </Box>
                         </Box>
                       ) : (
-
                         <Box sx={forgotPassLogoAndText}>
                           <Avatar sx={{ ml: "100px", mb: "4px", bgcolor: "#ffffff" }}>
                             <LockOutlinedIcon />
@@ -394,6 +390,7 @@ export default function ResetPassword() {
                   </ThemeProvider>
                 </Box>
               )}
+
             </Grid>
           </Grid>
         </Box>
