@@ -11,8 +11,6 @@ import {
   DialogTitle,
   DialogContent,
   DialogContentText,
-  IconButton,
-  Tooltip,
   Stack,
 } from '@mui/material'
 
@@ -42,6 +40,9 @@ export default function UserProfile({ userAvatar, userName }) {
   };
 
   // Function to reset the user password
+  const handleRedirectToPasswordReset = () => {
+    navigate('/reset_password')
+  }
 
   return (
     <>
@@ -59,7 +60,7 @@ export default function UserProfile({ userAvatar, userName }) {
             <Button
               variant="contained" color="primary"
               startIcon={<PasswordIcon />}
-            // onClick={() => setUserDialogOpen(true)}
+              onClick={handleRedirectToPasswordReset}
             >
               Reset Password
             </Button>

@@ -9,17 +9,16 @@ function jobcardsAPIs(app) {
 
     // Add primary details of the jobcard to the 'bea_jobcards' table:
     app.post('/api/jobcard', (req, res) => {
-        const { jcNumber, dcNumber, jcOpenDate, poNumber, testCategory, typeOfRequest, testInchargeName, jcCategory, companyName, customerName, customerEmail, customerNumber, projectName, sampleCondition, referanceDocs, jcStatus, reliabilityReportStatus, formattedCloseDate, observations } = req.body
+        const { jcNumber, dcNumber, jcOpenDate, itemReceivedDate, poNumber, testCategory, typeOfRequest, testInchargeName, jcCategory, companyName, customerName, customerEmail, customerNumber, projectName, sampleCondition, referanceDocs, jcStatus, reliabilityReportStatus, formattedCloseDate, observations } = req.body
 
-        const formattedOpenDate = covertDateTime(jcOpenDate)
+        const formattedOpenDate = convertDateTime(jcOpenDate)
 
-        console.log(jcNumber, dcNumber, jcOpenDate, poNumber, jcCategory, typeOfRequest, testInchargeName, companyName, customerName, customerEmail, customerNumber, projectName, sampleCondition, referanceDocs, jcStatus, formattedCloseDate, observations)
 
         // const { jcNumber, dcNumber, formattedJcOpenDate, poNumber, jcCategory, testInchargeName, companyName, customerName, customerNumber, projectName, sampleCondition, referanceDocs, jcStatus, formattedCloseDate, jcText, observations } = req.body
 
-        const sql = `INSERT INTO bea_jobcards(jc_number, dcform_number, jc_open_date, po_number, test_category, type_of_request, test_incharge, jc_category, company_name, customer_name, customer_email, customer_number, project_name, sample_condition, referance_document, jc_status, reliability_report_status, jc_closed_date,  observations ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
+        const sql = `INSERT INTO bea_jobcards(jc_number, dcform_number, jc_open_date, item_received_date, po_number, test_category, type_of_request, test_incharge, jc_category, company_name, customer_name, customer_email, customer_number, project_name, sample_condition, referance_document, jc_status, reliability_report_status, jc_closed_date,  observations ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
 
-        db.query(sql, [jcNumber, dcNumber, formattedOpenDate, poNumber, testCategory, typeOfRequest, testInchargeName, jcCategory, companyName, customerName, customerEmail, customerNumber, projectName, sampleCondition, referanceDocs, jcStatus, reliabilityReportStatus, formattedCloseDate, observations], (error, result) => {
+        db.query(sql, [jcNumber, dcNumber, formattedOpenDate, itemReceivedDate, poNumber, testCategory, typeOfRequest, testInchargeName, jcCategory, companyName, customerName, customerEmail, customerNumber, projectName, sampleCondition, referanceDocs, jcStatus, reliabilityReportStatus, formattedCloseDate, observations], (error, result) => {
             if (error) {
                 console.log(error);
                 return res.status(500).json({ message: 'Internal server error' });
@@ -29,27 +28,130 @@ function jobcardsAPIs(app) {
         });
     });
 
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
-    // API to fetch the primary data of JC's & to create JC Table: 
-    app.get('/api/getPrimaryJCData', (req, res) => {
+    // API to fetch the primary data of Testing JC's: 
+    app.get('/api/getPrimaryJCDataOfTS1', (req, res) => {
 
-        const { monthYear } = req.query;
-        const [month, year] = monthYear.split('-');
+        const { year, month } = req.query;
+
+        // Convert month name to month number
+        const monthNumber = monthNames.indexOf(month) + 1;
+
+        if (monthNumber === 0 || !year) {
+            return res.status(400).json({ error: "Invalid year or month format" });
+        }
 
         const getJCColumns = `
-        SELECT id, jc_number, jc_category, company_name, customer_name, customer_number, jc_status
-        FROM bea_jobcards
-        WHERE DATE_FORMAT(jc_open_date, '%b-%Y') = ?
-        `;
+                            SELECT 
+                                id, jc_number, DATE_FORMAT(jc_open_date, '%Y-%m-%d') as jc_open_date, company_name,  jc_status
+                            FROM 
+                                bea_jobcards
+                            WHERE 
+                                jc_category = 'TS1' AND
+                                MONTH(jc_open_date) = ? AND YEAR(jc_open_date) = ?
+                            `;
 
-        db.query(getJCColumns, [month + '-' + year], (error, result) => {
+        db.query(getJCColumns, [monthNumber, year], (error, result) => {
             if (error) {
-                return res.status(500).json({ error: "An error occurred while fetching JC table data" })
+                return res.status(500).json({ error: "An error occurred while fetching Testing JC table data" })
             }
             res.send(result)
-            // console.log('result', result)
         });
     })
+
+
+    // API to fetch the primary data of Testing JC's: 
+    app.get('/api/getPrimaryJCDataOfReliability', (req, res) => {
+
+        const { year, month } = req.query;
+
+        // Convert month name to month number
+        const monthNumber = monthNames.indexOf(month) + 1;
+
+        if (monthNumber === 0 || !year) {
+            return res.status(400).json({ error: "Invalid year or month format" });
+        }
+
+        const getReliabilityJCColumns = `
+                            SELECT 
+                                id, jc_number, DATE_FORMAT(jc_open_date, '%Y-%m-%d') as jc_open_date, company_name, project_name, reliability_report_status, jc_status
+                            FROM 
+                                bea_jobcards
+                            WHERE 
+                                jc_category = 'Reliability' AND
+                                MONTH(jc_open_date) = ? AND YEAR(jc_open_date) = ?
+                            `;
+
+        db.query(getReliabilityJCColumns, [monthNumber, year], (error, result) => {
+            if (error) {
+                return res.status(500).json({ error: "An error occurred while fetching Reliability JC table data" })
+            }
+            res.send(result)
+        });
+    })
+
+
+    // Get the JC's between two date ranges:
+    app.get('/api/getPrimaryTestingJCDataBwTwoDates', (req, res) => {
+
+        const { selectedJCDateRange } = req.query;
+
+        if (!selectedJCDateRange || typeof selectedJCDateRange !== 'string') {
+            return res.status(400).json({ error: "Invalid date range format" });
+        }
+
+        const [fromDate, toDate] = selectedJCDateRange.split(' - ');
+
+        if (!fromDate || !toDate) {
+            return res.status(400).json({ error: "Invalid date range format" });
+        }
+
+        const getJCColumns = `
+        SELECT id, jc_number, DATE_FORMAT(jc_open_date, '%Y-%m-%d') as jc_open_date, company_name, jc_status 
+        FROM bea_jobcards
+        WHERE jc_open_date BETWEEN ? AND ?
+    `;
+
+        db.query(getJCColumns, [fromDate, toDate], (error, result) => {
+            if (error) {
+                return res.status(500).json({ error: "An error occurred while fetching JC table data" });
+            }
+            res.send(result);
+            // console.log('Result:', result);
+        });
+    })
+
+
+    app.get('/api/getPrimaryReliabilityJCDataBwTwoDates', (req, res) => {
+
+        const { selectedJCDateRange } = req.query;
+
+        if (!selectedJCDateRange || typeof selectedJCDateRange !== 'string') {
+            return res.status(400).json({ error: "Invalid date range format" });
+        }
+
+        const [fromDate, toDate] = selectedJCDateRange.split(' - ');
+
+        if (!fromDate || !toDate) {
+            return res.status(400).json({ error: "Invalid date range format" });
+        }
+
+        const getJCColumns = `
+        SELECT id, jc_number, DATE_FORMAT(jc_open_date, '%Y-%m-%d') as jc_open_date, company_name, project_name, reliability_report_status, jc_status 
+        FROM bea_jobcards
+        WHERE jc_open_date BETWEEN ? AND ?
+    `;
+
+        db.query(getJCColumns, [fromDate, toDate], (error, result) => {
+            if (error) {
+                return res.status(500).json({ error: "An error occurred while fetching JC table data" });
+            }
+            res.send(result);
+            // console.log('Result:', result);
+        });
+    })
+
 
 
 
@@ -69,55 +171,63 @@ function jobcardsAPIs(app) {
 
     // To Edit the selected jobcards:
     app.post('/api/jobcard/:id', (req, res) => {
-        const { jcNumber, dcNumber, jcOpenDate, poNumber, testCategory, typeOfRequest, testInchargeName, jcCategory, companyName, customerName, customerEmail, customerNumber, projectName, sampleCondition, referanceDocs, jcStatus, reliabilityReportStatus, jcCloseDate, observations } = req.body;
+        const {
+            jcNumber, dcNumber, jcOpenDate, itemReceivedDate, poNumber, testCategory, typeOfRequest,
+            testInchargeName, jcCategory, companyName, customerName, customerEmail,
+            customerNumber, projectName, sampleCondition, referanceDocs, jcStatus,
+            reliabilityReportStatus, jcCloseDate, observations
+        } = req.body;
 
-        const formattedOpenDate = covertDateTime(jcOpenDate)
-        const formattedCloseDate = covertDateTime(jcCloseDate)
+
+        const formattedOpenDate = jcOpenDate ? convertDateTime(jcOpenDate) : null;
+        const formattedCloseDate = jcCloseDate ? convertDateTime(jcCloseDate) : null;
 
         const sqlQuery = `
         UPDATE bea_jobcards SET
-         
-        dcform_number=?, 
-        jc_open_date=?, 
-        po_number=?, 
-        test_category=?, 
-        type_of_request = ?,
-        test_incharge=?,
-        jc_category = ?,
-        company_name=?, 
-        customer_name=?, 
-        customer_email =?,
-        customer_number=?, 
-        project_name=?, 
-        sample_condition=?, 
-        referance_document=?, 
-        jc_status=?, 
-        reliability_report_status=?,
-        jc_closed_date=?, 
-        observations=?
+            dcform_number = ?, 
+            jc_open_date = ?, 
+            item_received_date = ?,
+            po_number = ?, 
+            test_category = ?, 
+            type_of_request = ?, 
+            test_incharge = ?, 
+            jc_category = ?, 
+            company_name = ?, 
+            customer_name = ?, 
+            customer_email = ?, 
+            customer_number = ?, 
+            project_name = ?, 
+            sample_condition = ?, 
+            referance_document = ?, 
+            jc_status = ?, 
+            reliability_report_status = ?, 
+            jc_closed_date = ?, 
+            observations = ?
+        WHERE jc_number = ?
+    `;
 
-        WHERE jc_number = ?`;
-
-        // Use an array to provide values for placeholders in the query
         const values = [
-            // dcNumber, formattedOpenDate, poNumber, jcCategory, testInchargeName, companyName, customerName, customerNumber, projectName, sampleCondition, referanceDocs, jcStatus, formattedCloseDate, jcText, observations,
-            // jcNumber // jc_number should be included in the values array
-
-            dcNumber, formattedOpenDate, poNumber, testCategory, typeOfRequest, testInchargeName, jcCategory, companyName, customerName, customerEmail, customerNumber, projectName, sampleCondition, referanceDocs, jcStatus, reliabilityReportStatus, formattedCloseDate, observations,
-            jcNumber
-
-
+            dcNumber, formattedOpenDate, itemReceivedDate, poNumber, testCategory, typeOfRequest,
+            testInchargeName, jcCategory, companyName, customerName, customerEmail,
+            customerNumber, projectName, sampleCondition, referanceDocs, jcStatus,
+            reliabilityReportStatus, formattedCloseDate, observations, jcNumber
         ];
+
+
 
         db.query(sqlQuery, values, (error, result) => {
             if (error) {
-                console.log(error.message);
-                return res.status(200).json({ message: "Internal server error", error: error.message });
-            } else {
-                res.status(200).json({ message: "Jobcard updated successfully" });
+                console.error('Error executing query:', error.message);
+                return res.status(500).json({ message: "Internal server error", error: error.message });
             }
+            if (result.affectedRows === 0) {
+                console.warn('No rows updated. Check if the jc_number exists.');
+                return res.status(404).json({ message: "Jobcard not found" });
+            }
+            res.status(200).json({ message: "Jobcard updated successfully" });
         });
     });
+
 
 
     // To fetch the jcnumber from the table 'jobcards'
@@ -512,7 +622,7 @@ function jobcardsAPIs(app) {
         })
     })
 
-    function covertDateTime(originalTimestamp) {
+    function convertDateTime(originalTimestamp) {
         if (!originalTimestamp) {
             return ''
         }
@@ -529,8 +639,8 @@ function jobcardsAPIs(app) {
     //To Edit the selected testdetails:
     app.post('/api/testdetails/', (req, res) => {
         const { testName, testChamber, eutSerialNo, standard, testStartedBy, startTemp, startRh, startDate, endDate, duration, endTemp, endRh, testEndedBy, remarks, reportNumber, preparedBy, nablUploaded, reportStatus, jcNumber } = req.body;
-        const formattedStartDate = covertDateTime(startDate)
-        const formattedEndDate = covertDateTime(endDate)
+        const formattedStartDate = convertDateTime(startDate)
+        const formattedEndDate = convertDateTime(endDate)
         const sqlQuery = `
         UPDATE tests_details
         SET 
@@ -594,80 +704,35 @@ function jobcardsAPIs(app) {
 
 
 
-
-
-
     ////////////////////////////////////////////////////////////////////////////////////////////////////
     // To Insert or delete Reliability Tasks Detail:
-    // app.post('/api/relTasks/taskName/', (req, res) => {
-    //     let { task_description, jcNumberString } = req.body;
-
-    //     console.log('backend 1st')
-    //     console.log('task_description, jcNumberString', task_description, jcNumberString)
-
-
-    //     let sqlQuery = "SELECT task_description FROM reliability_tasks_details WHERE jc_number=?"
-    //     db.query(sqlQuery, [jcNumberString], (error, result) => {
-    //         if (error) return res.status(500).json(error.message)
-    //         let newResult = result.map(item => item.task_description)
-    //         let toDelete = newResult.filter(function (el) {
-    //             return !task_description.includes(el);
-    //         });
-    //         let toAdd = task_description.filter(function (el) {
-    //             return !newResult.includes(el);
-    //         });
-    //         toDelete.forEach(task_description => {
-    //             sqlQuery = "DELETE FROM reliability_tasks_details WHERE task_description=? AND jc_number=?"
-    //             db.query(sqlQuery, [task_description, jcNumberString], (error, result) => {
-    //                 if (error) return res.status(500).json(error.message)
-    //             })
-    //         });
-    //         toAdd.forEach(serialNo => {
-    //             sqlQuery = "INSERT INTO reliability_tasks_details (jc_number, task_description) VALUES (?,?)"
-    //             if (task_description) {
-    //                 db.query(sqlQuery, [jcNumberString, task_description], (error, result) => {
-    //                     if (error) return res.status(500).json(error.message)
-    //                 })
-    //             }
-    //         });
-    //         res.status(200).json({ message: `Reliability Task Details synced successfully`, toDelete, toAdd });
-    //     })
-    // })
-
-
     app.post('/api/relTasks/taskName/', (req, res) => {
-        let { task_description, jcNumberString } = req.body;
-
-        console.log('backend 1st');
-        console.log('Received task_description:', task_description);
-        console.log('Received jcNumberString:', jcNumberString);
+        const { task_description, jcNumberString } = req.body;
 
         // Check if task_description is defined and is an array
         if (!Array.isArray(task_description)) {
-            console.error('task_description is not an array or is undefined');
             return res.status(400).json({ error: 'Invalid task_description' });
         }
 
         let sqlQuery = "SELECT task_description FROM reliability_tasks_details WHERE jc_number=?";
         db.query(sqlQuery, [jcNumberString], (error, result) => {
             if (error) return res.status(500).json(error.message);
+
             let newResult = result.map(item => item.task_description);
             let toDelete = newResult.filter(el => !task_description.includes(el));
             let toAdd = task_description.filter(el => !newResult.includes(el));
 
-            console.log('toDelete:', toDelete);
-            console.log('toAdd:', toAdd);
 
-            toDelete.forEach(task_description => {
+            toDelete.forEach(desc => {
                 sqlQuery = "DELETE FROM reliability_tasks_details WHERE task_description=? AND jc_number=?";
-                db.query(sqlQuery, [task_description, jcNumberString], (error, result) => {
+                db.query(sqlQuery, [desc, jcNumberString], (error, result) => {
                     if (error) return res.status(500).json(error.message);
                 });
             });
 
-            toAdd.forEach(task_description => {
+            toAdd.forEach(desc => {
                 sqlQuery = "INSERT INTO reliability_tasks_details (jc_number, task_description) VALUES (?,?)";
-                db.query(sqlQuery, [jcNumberString, task_description], (error, result) => {
+                db.query(sqlQuery, [jcNumberString, desc], (error, result) => {
                     if (error) return res.status(500).json(error.message);
                 });
             });
@@ -677,170 +742,66 @@ function jobcardsAPIs(app) {
     });
 
 
+
     // To Edit the selected reliability_taasks:
     app.post('/api/relTasks/', (req, res) => {
         const {
-            task_assigned_by,
-            task_start_date,
-            task_end_date,
-            task_assigned_to,
-            task_status,
-            task_completed_date,
-            note_remarks } = req.body;
-
-        let sqlQuery = ``;
-
-        if (task_description) {
-            sqlQuery = `UPDATE reliability_tasks_details SET 
-                task_assigned_by = ?,
-                task_start_date = ?,
-                task_end_date = ?,
-                task_assigned_to = ?,
-                task_status = ?,
-                task_completed_date = ?,
-                note_remarks = ?,
-
-                WHERE jc_number = ? AND task_description = ?`;
-
-
-            const formattedTaskStartDate = moment(task_start_date).format('YYYY-MM-DD')
-            const formattedTaskEndDate = moment(task_end_date).format('YYYY-MM-DD')
-            const formattedTaskCompletedDate = moment(task_completed_date).format('YYYY-MM-DD')
-
-            // Use an array to provide values for placeholders in the query
-            const values = [
-                task_assigned_by,
-                formattedTaskStartDate,
-                formattedTaskEndDate,
-                task_assigned_to,
-                task_status,
-                formattedTaskCompletedDate,
-                note_remarks,
-                jcNumberString,
-                task_description,
-            ];
-
-            db.query(sqlQuery, values, (error, result) => {
-                if (error) {
-                    return res.status(500).json({ message: "Internal server error", error });
-                } else {
-                    res.status(200).json({ message: "Reliability Task Details updated successfully", result });
-                }
-            });
-        }
-    });
-
-
-
-
-
-    ///////////////////////////////////////////////////////////////////////////////////////////
-    // Reliability tasks data base backend API endpoints:
-    app.post('/api/reliabilityTaskDetails/', (req, res) => {
-        let { reliabilityTaskData, jcNumberString } = req.body;
-
-        // Loop through each object in the reliabilityTaskData array
-        reliabilityTaskData.forEach(taskData => {
-            const {
-                task_description,
-                task_assigned_by,
-                task_start_date,
-                task_end_date,
-                task_assigned_to,
-                task_status,
-                task_completed_date,
-                note_remarks
-            } = taskData;
-
-            const formattedTaskStartDate = moment(task_start_date).format('YYYY-MM-DD')
-            const formattedTaskEndDate = moment(task_end_date).format('YYYY-MM-DD')
-            const formattedTaskCompletedDate = moment(task_completed_date).format('YYYY-MM-DD')
-
-            const sqlQuery = "INSERT INTO reliability_tasks_details(jc_number, task_description, task_assigned_by, task_start_date, task_end_date, task_assigned_to, task_status, task_completed_date, note_remarks) VALUES (?,?,?,?,?,?,?,?,?)";
-
-            const values = [
-                jcNumberString,
-                task_description,
-                task_assigned_by,
-                formattedTaskStartDate,
-                formattedTaskEndDate,
-                task_assigned_to,
-                task_status,
-                formattedTaskCompletedDate,
-                note_remarks
-            ];
-
-            db.query(sqlQuery, values, (error, result) => {
-                if (error) {
-                    console.log("Error inserting reliability task details:", error)
-                    return res.status(500).json({ message: "Internal server error" });
-                } else {
-                    res.status(200).json({ message: "Reliability Task Data Added Successfully" });
-                }
-            });
-        })
-
-        res.status(200).json({ message: "Reliability Task Data Added Successfully" });
-    });
-
-
-
-    app.post('/api/reliabilityTaskDetails/:jc_number', (req, res) => {
-        const { id } = req.params;
-
-        const {
+            task_description,
             jcNumberString,
-            task_description,
             task_assigned_by,
             task_start_date,
             task_end_date,
             task_assigned_to,
             task_status,
             task_completed_date,
-            note_remarks,
-
+            note_remarks
         } = req.body;
-        // const formattedStartDate = covertDateTime(startDate)
-        // const formattedEndDate = covertDateTime(endDate)
 
-        console.log('id', id)
-        console.log(task_description, task_assigned_by, task_start_date, task_end_date, task_assigned_to, task_status, task_completed_date, note_remarks, jcNumberString)
 
-        const sqlQuery = `
-        UPDATE reliability_tasks_details
-        SET 
-          task_description = ?,
-          task_assigned_by = ?,
-          task_start_date = ? ,
-          task_end_date = ? ,
-          task_assigned_to = ? ,
-          task_status = ? ,
-          task_completed_date = ? ,
-          note_remarks = ?
-        WHERE id = ? AND jc_number = ? `;
+        if (!task_description || !jcNumberString) {
+            return res.status(400).json({ message: "task_description and jcNumberString are required" });
+        }
 
+        const sqlQuery = `UPDATE reliability_tasks_details SET 
+        task_assigned_by = ?,
+        task_start_date = ?,
+        task_end_date = ?,
+        task_assigned_to = ?,
+        task_status = ?,
+        task_completed_date = ?,
+        note_remarks = ?
+        WHERE jc_number = ? AND task_description = ?`;
+
+
+
+        const formattedTaskStartDate = moment(task_start_date).format('YYYY-MM-DD')
+        const formattedTaskEndDate = moment(task_end_date).format('YYYY-MM-DD')
+        const formattedTaskCompletedDate = moment(task_completed_date).format('YYYY-MM-DD')
+
+        // Use an array to provide values for placeholders in the query
         const values = [
-            task_description,
             task_assigned_by,
-            task_start_date,
-            task_end_date,
+            formattedTaskStartDate,
+            formattedTaskEndDate,
             task_assigned_to,
             task_status,
-            task_completed_date,
+            formattedTaskCompletedDate,
             note_remarks,
-            id,
-            jcNumberString
+            jcNumberString,
+            task_description
         ];
 
         db.query(sqlQuery, values, (error, result) => {
             if (error) {
-                console.log("Error updating reliability task details:", error)
                 return res.status(500).json({ message: "Internal server error", error });
             } else {
-                res.status(200).json({ message: "Reliability Task Details Updated Successfully" });
+                res.status(200).json({ message: "Reliability Task Details updated successfully", result });
             }
         });
     });
+
+    ///////////////////////////////////////////////////////////////////////////////////////////
+
 
     ///////////////////////////////////////////////////////////////////////////////////////////
 
@@ -878,8 +839,6 @@ function jobcardsAPIs(app) {
                             if (error) return res.status(500).json({ error });
                             output['reliability_tasks_details'] = result;
 
-                            console.log('jc result', result)
-
                             // Send the combined output
                             res.send(output)
                         })
@@ -893,134 +852,67 @@ function jobcardsAPIs(app) {
 
     // To get the month-year of the Job-card
     app.get('/api/getJCYearMonth', (req, res) => {
-        const sqlQuery = `SELECT DISTINCT DATE_FORMAT(jc_open_date, '%b-%Y') AS monthYear FROM bea_jobcards`;
+
+        const sqlQuery = `
+        SELECT 
+            DISTINCT DATE_FORMAT(jc_open_date, '%b') AS month,
+            DATE_FORMAT(jc_open_date, '%Y') AS year
+        FROM bea_jobcards`;
 
         db.query(sqlQuery, (error, result) => {
             if (error) {
                 return res.status(500).json({ error: "An error occurred while fetching JC Month Year data" })
             }
 
-            const formattedData = result.map(row => row.monthYear);
-
+            const formattedData = result.map(row => ({
+                month: row.month,
+                year: row.year
+            }));
             res.json(formattedData);
         });
     });
+
+
+    //Fetch chambers utilization hours list:
+    app.get('/api/getChamberUtilization', (req, res) => {
+        const chamberUtilizationQuery = `
+                    SELECT 
+                        testChamber,
+                        SUM(CASE WHEN MONTH(startDate) = MONTH(CURDATE()) - 1 THEN duration ELSE 0 END) AS prevMonthRunHours,
+                        SUM(CASE WHEN MONTH(startDate) = MONTH(CURDATE()) THEN duration ELSE 0 END) AS currentMonthRunHours,
+                        SUM(duration) AS totalRunHours
+                    FROM 
+                        tests_details
+                    GROUP BY
+                        testChamber
+                    `
+        db.query(chamberUtilizationQuery, (error, results) => {
+            if (error) {
+                console.log('An error occurred while fetching the chamber utilization data', error)
+            }
+
+            const formattedChamberUtilizationResult = results.map((row, index) => {
+                const prevMonthRunHours = parseFloat(row.prevMonthRunHours) || 0;
+                const currentMonthRunHours = parseFloat(row.currentMonthRunHours) || 0;
+                const totalRunHours = parseFloat(row.totalRunHours) || 0;
+                const chamberUtilization = currentMonthRunHours > prevMonthRunHours ? 'More' : 'Less';
+
+                return {
+                    id: index + 1,
+                    chamberName: row.testChamber,
+                    prevMonthRunHours: prevMonthRunHours.toString(),
+                    currentMonthRunHours: currentMonthRunHours.toString(),
+                    chamberUtilization,
+                    totalRunHours: totalRunHours.toString()
+                }
+            })
+
+            res.json(formattedChamberUtilizationResult);
+        })
+    })
 
 
 }
 
 
 module.exports = { jobcardsAPIs }
-
-
-
-
-
-
-
-
-///////////////////////////////////////////////////////////////////////////////////////////
-// Reliability tasks data base backend API endpoints:
-// app.post('/api/reliabilityTaskDetails/', (req, res) => {
-//     let { reliabilityTaskData, jcNumberString } = req.body;
-
-//     // Loop through each object in the reliabilityTaskData array
-//     reliabilityTaskData.forEach(taskData => {
-//         const {
-//             taskDescription,
-//             taskAssignedBy,
-//             startDate,
-//             endDate,
-//             taskAssignedTo,
-//             taskStatus,
-//             completedDate,
-//             noteRemarks
-//         } = taskData;
-
-//         const formattedTaskStartDate = moment(startDate).format('YYYY-MM-DD')
-//         const formattedTaskEndDate = moment(endDate).format('YYYY-MM-DD')
-//         const formattedTaskCompletedDate = moment(completedDate).format('YYYY-MM-DD')
-
-//         // console.log('reliabilityTaskTableData is', taskData)
-//         // console.log('jcNumberString is', jcNumberString)
-
-//         const sqlQuery = "INSERT INTO reliability_tasks_details(jc_number, task_description, task_assigned_by, task_start_date, task_end_date, task_assigned_to, task_status, task_completed_date, note_remarks) VALUES (?,?,?,?,?,?,?,?,?)";
-
-//         const values = [
-//             jcNumberString,
-//             taskDescription,
-//             taskAssignedBy,
-//             formattedTaskStartDate,
-//             formattedTaskEndDate,
-//             taskAssignedTo,
-//             taskStatus,
-//             formattedTaskCompletedDate,
-//             noteRemarks
-//         ];
-
-//         db.query(sqlQuery, values, (error, result) => {
-//             if (error) {
-//                 console.log("Error inserting reliability task details:", error)
-//                 return res.status(500).json({ message: "Internal server error" });
-//             } else {
-//                 res.status(200).json({ message: "Reliability Task Data Added Successfully" });
-//             }
-//         });
-//     })
-
-//     res.status(200).json({ message: "Reliability Task Data Added Successfully" });
-// });
-
-
-
-// app.post('/api/reliabilityTaskDetails/:id', (req, res) => {
-//     const { id } = req.params;
-
-//     const {
-//         taskDescription,
-//         taskAssignedBy,
-//         startDate,
-//         endDate,
-//         taskAssignedTo,
-//         taskStatus,
-//         completedDate,
-//         noteRemarks
-//     } = req.body;
-//     // const formattedStartDate = covertDateTime(startDate)
-//     // const formattedEndDate = covertDateTime(endDate)
-//     const sqlQuery = `
-//         UPDATE reliability_tasks_details
-//         SET
-//           task_description = ?,
-//           task_assigned_by = ?,
-//           task_start_date = ? ,
-//           task_end_date = ? ,
-//           task_assigned_to = ? ,
-//           task_status = ? ,
-//           task_completed_date = ? ,
-//           note_remarks = ?
-//         WHERE jc_number = ? `;
-
-//     const values = [
-//         taskDescription,
-//         taskAssignedBy,
-//         startDate,
-//         endDate,
-//         taskAssignedTo,
-//         taskStatus,
-//         completedDate,
-//         noteRemarks,
-//         id
-//     ];
-
-//     db.query(sqlQuery, values, (error, result) => {
-//         if (error) {
-//             console.log("Error updating reliability task details:", error)
-//             return res.status(500).json({ message: "Internal server error", error });
-//         } else {
-//             res.status(200).json({ message: "Reliability Task Details Updated Successfully" });
-//         }
-//     });
-// });
-
-///////////////////////////////////////////////////////////////////////////////////////////

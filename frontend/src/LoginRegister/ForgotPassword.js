@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import Box from "@mui/material/Box";
 import Grid from "@mui/material/Grid";
 import bg from "../images/signin.svg";
-import bgimg from "../images/backimg.jpg";
+// import bgimg from "../images/backimg.jpg";
 import Button from "@mui/material/Button";
 import TextField from "@mui/material/TextField";
 import Typography from "@mui/material/Typography";
@@ -16,6 +16,10 @@ import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { serverBaseAddress } from "../Pages/APIPage";
 import { toast } from "react-toastify";
+import { FormControl, IconButton, InputLabel, OutlinedInput } from "@mui/material";
+import InputAdornment from '@mui/material/InputAdornment';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 
 
 const darkTheme = createTheme({
@@ -65,25 +69,53 @@ export default function ResetPassword() {
   }, [otpSent, otpCountdown]);
 
 
+  //To Handle password text fields
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showNewConfirmPassword, setShowNewConfirmPassword] = useState(false);
+
+  //To show or hide the password on clicking the visibility icon
+  const handleClickShowNewPassword = () => setShowNewPassword((show) => !show);
+  const handleClickShowNewConfirmPassword = () => setShowNewConfirmPassword((show) => !show);
+
+  // To avoid any false behaviour on clicking the mouse btn
+  const handleMouseDownPassword1 = (event) => {
+    event.preventDefault();
+  };
+
+
+  //Function to submit the email, to get the OTP
   const handleSubmit = async (event) => {
     event.preventDefault();
 
+    const formData = new FormData(event.currentTarget);
+    const email = formData.get('email');
+
     try {
       const response = await axios.post(`${serverBaseAddress}/api/checkResetPasswordEmail`, { email });
+
       if (response.status === 200) {
         setOtpSent(true);
         setOtpCountdown(60);
         toast.success('Email found. OTP sent successfully.');
       }
     } catch (error) {
-      if (error.response && error.response.status === 404) {
-        toast.error('Email not found in the database.');
+      if (error.response) {
+        if (error.response.status === 429) {
+          toast.warning(`You have reached the limit of 3 attempts per day.\nYou can reset your password after 24 hours.`);
+        } else if (error.response.status === 404) {
+          toast.error('Email not found in the database.');
+        } else {
+          toast.error('Error sending OTP.');
+        }
+
       } else {
         toast.error('An error occurred while checking the email.');
       }
     }
   };
 
+
+  //Function to submit the OTP
   const handleOtpSubmit = async (event) => {
     event.preventDefault();
 
@@ -92,7 +124,7 @@ export default function ResetPassword() {
     const otp = formData.get('otp');
 
     try {
-      const response = await axios.post(`${serverBaseAddress}/api/verifyOtp`, { email, otp });
+      const response = await axios.post(`${serverBaseAddress}/api/verifyOTP`, { email, otp });
 
       if (response.status === 200) {
         setOtpVerified(true);
@@ -101,20 +133,18 @@ export default function ResetPassword() {
       } else {
         // Handle invalid or expired OTP
         setOtpError('Invalid or Expired OTP');
-        toast.success('Entered OTP is Invalid or Expired.');
+        toast.warning('Entered OTP is Invalid or Expired.');
       }
     } catch (error) {
       console.error('Error verifying OTP:', error);
-      // Display toast message for error
+      toast.warning(`Error while submitting the OTP`);
     }
   };
 
   //Function to reset the forgotten password with new password
   const handlePasswordReset = async (event) => {
     event.preventDefault();
-
     const formData = new FormData(event.currentTarget);
-
     const email = formData.get('email');
     const newPassword = formData.get('newPassword');
     const confirmPassword = formData.get('confirmPassword');
@@ -128,17 +158,16 @@ export default function ResetPassword() {
     try {
       const response = await axios.post(`${serverBaseAddress}/api/resetPassword`, { email, newPassword });
       if (response.status === 200) {
-        // Display toast message for successful password reset
-        toast.success('Password reset successful');
+        toast.success('Password reset successfully');
         navigate('/'); // Redirect to login
       }
     } catch (error) {
       toast.error(error.response.data.message || 'Error resetting password');
       console.error('Error resetting password:', error);
-      // Display toast message for error
     }
   };
 
+  //Function to resend the OTP.
   const resendOtp = async () => {
     if (otpCountdown > 0) return;
 
@@ -146,14 +175,17 @@ export default function ResetPassword() {
       const response = await axios.post(`${serverBaseAddress}/api/checkResetPasswordEmail`, { email });
       if (response.status === 200) {
         setOtpSent(true);
+        toast.success('OTP re-sent successfully');
         setOtpCountdown(60);
-        // Display toast message for OTP resent
       }
     } catch (error) {
       console.error('Error resending OTP:', error);
-      // Display toast message for error
+      toast.success(`Error while resending the OTP. ${error}`);
     }
   };
+
+
+
 
   return (
     <>
@@ -261,14 +293,30 @@ export default function ResetPassword() {
                     <Container>
                       <Box height={35} />
                       {!otpVerified ? (
-                        <Box sx={forgotPassLogoAndText}>
-                          <Avatar sx={{ ml: "100px", mb: "4px", bgcolor: "#ffffff" }}>
-                            <LockOutlinedIcon />
-                          </Avatar>
-                          <Typography variant="h4" sx={{ mt: 1, mr: '390px' }}>
-                            Enter OTP
-                          </Typography>
+                        <div>
+                          <Box sx={forgotPassLogoAndText}>
+                            <Avatar sx={{ ml: "100px", mb: "4px", bgcolor: "#ffffff" }}>
+                              <LockOutlinedIcon />
+                            </Avatar>
+                            <Typography variant="h4" sx={{ mt: 1, mr: '390px' }}>
+                              Enter OTP
+                            </Typography>
+                          </Box>
+
                           <Box component="form" noValidate onSubmit={handleOtpSubmit} sx={{ mt: 2 }}>
+                            <Grid item xs={12} sx={{ ml: "3em", mr: "3em", mb: "10px", }}>
+                              <TextField
+                                required
+                                fullWidth
+                                id="email"
+                                label="Email"
+                                name="email"
+                                autoComplete="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                              />
+                            </Grid>
+
                             <Grid container spacing={1}>
                               <Grid item xs={12} sx={{ ml: "3em", mr: "3em" }}>
                                 <TextField
@@ -315,43 +363,88 @@ export default function ResetPassword() {
                               </Grid>
                             </Grid>
                           </Box>
-                        </Box>
+                        </div>
                       ) : (
 
-                        <Box sx={forgotPassLogoAndText}>
-                          <Avatar sx={{ ml: "100px", mb: "4px", bgcolor: "#ffffff" }}>
-                            <LockOutlinedIcon />
-                          </Avatar>
-                          <Typography variant="h4" sx={{ mt: 1, mr: '390px' }}>
-                            Reset Password
-                          </Typography>
+                        <>
+                          <Box sx={forgotPassLogoAndText}>
+                            <Avatar sx={{ ml: "100px", mb: "4px", bgcolor: "#ffffff" }}>
+                              <LockOutlinedIcon />
+                            </Avatar>
+                            <Typography variant="h4" sx={{ mt: 1, mr: '390px' }}>
+                              Reset Password
+                            </Typography>
+                          </Box>
+
                           <Box component="form" noValidate onSubmit={handlePasswordReset} sx={{ mt: 2 }}>
                             <Grid container spacing={1}>
-                              <Grid item xs={12} sx={{ ml: "3em", mr: "3em" }}>
+
+                              <Grid item xs={12} sx={{ ml: "3em", mr: "3em", mb: "10px", }}>
                                 <TextField
                                   required
                                   fullWidth
-                                  id="newPassword"
-                                  label="New Password"
-                                  name="newPassword"
-                                  type="password"
-                                  autoComplete="new-password"
-                                  value={newPassword}
-                                  onChange={(e) => setNewPassword(e.target.value)}
+                                  id="email"
+                                  label="Email"
+                                  name="email"
+                                  autoComplete="email"
+                                  value={email}
+                                  onChange={(e) => setEmail(e.target.value)}
                                 />
                               </Grid>
+
                               <Grid item xs={12} sx={{ ml: "3em", mr: "3em" }}>
-                                <TextField
-                                  required
-                                  fullWidth
-                                  id="confirmPassword"
-                                  label="Confirm Password"
-                                  name="confirmPassword"
-                                  type="password"
-                                  autoComplete="new-password"
-                                  value={confirmPassword}
-                                  onChange={(e) => setConfirmPassword(e.target.value)}
-                                />
+
+                                <FormControl sx={{ width: '100%' }} variant="outlined" required>
+                                  <InputLabel htmlFor="outlined-adornment-password">New Password</InputLabel>
+                                  <OutlinedInput
+                                    id="newPassword"
+                                    name="newPassword"
+                                    value={newPassword}
+                                    onChange={(e) => setNewPassword(e.target.value)}
+
+                                    type={showNewPassword ? 'text' : 'password'}
+                                    endAdornment={
+                                      <InputAdornment position="end">
+                                        <IconButton
+                                          aria-label="toggle password visibility"
+                                          onClick={handleClickShowNewPassword}
+                                          onMouseDown={handleMouseDownPassword1}
+                                          edge="end"
+                                        >
+                                          {showNewPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                                        </IconButton>
+                                      </InputAdornment>
+                                    }
+                                    label="New Password"
+                                  />
+                                </FormControl>
+                              </Grid>
+
+                              <Grid item xs={12} sx={{ ml: "3em", mr: "3em" }}>
+                                <FormControl sx={{ width: '100%' }} variant="outlined" required>
+                                  <InputLabel htmlFor="outlined-adornment-confirm-password">Confirm Password</InputLabel>
+                                  <OutlinedInput
+                                    id="confirmPassword"
+                                    name="confirmPassword"
+                                    value={confirmPassword}
+                                    onChange={(e) => setConfirmPassword(e.target.value)}
+                                    type={showNewConfirmPassword ? 'text' : 'password'}
+                                    endAdornment={
+                                      <InputAdornment position="end">
+                                        <IconButton
+                                          aria-label="toggle password visibility"
+                                          onClick={handleClickShowNewConfirmPassword}
+                                          onMouseDown={handleMouseDownPassword1}
+                                          edge="end"
+                                        >
+                                          {showNewConfirmPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                                        </IconButton>
+                                      </InputAdornment>
+                                    }
+                                    label="Confirm Password"
+                                  />
+                                </FormControl>
+
                               </Grid>
                               {passwordError && (
                                 <Grid item xs={12} sx={{ ml: "3em", mr: "3em" }}>
@@ -388,7 +481,7 @@ export default function ResetPassword() {
                               </Grid>
                             </Grid>
                           </Box>
-                        </Box>
+                        </>
                       )}
                     </Container>
                   </ThemeProvider>
@@ -397,7 +490,7 @@ export default function ResetPassword() {
             </Grid>
           </Grid>
         </Box>
-      </div>
+      </div >
     </>
   );
 }

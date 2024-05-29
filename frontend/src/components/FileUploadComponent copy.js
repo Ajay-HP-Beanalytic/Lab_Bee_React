@@ -1,79 +1,64 @@
 
 import React, { useState, useRef } from 'react'
-import { Button, FormControl, IconButton, List, ListItem, ListItemText, TextField, Typography } from '@mui/material'
+import { FormControl, IconButton, List, ListItem, ListItemText, TextField, Typography } from '@mui/material'
 import ClearIcon from '@mui/icons-material/Clear';
-import DeleteIcon from '@mui/icons-material/Delete';
 
 
 export default function FileUploadComponent({ fieldName = 'Attach files or Documents' }) {
 
-  const fileInputRef = useRef(null);
-  const [attachedFiles, setAttachedFiles] = useState([]);
+  const fileInputRef = useRef(null)
+  const [attachedFiles, setAttachedFiles] = useState([])
 
-  const handleAttachedFileChange = async (e) => {
-    const files = Array.from(e.target.files);
-    setAttachedFiles(files);
-
-    const formData = new FormData();
-    files.forEach((file, index) => {
-      formData.append(`file${index}`, file);
-    });
-
-    console.log('formData', formData)
-
-    // try {
-    //   const response = await axios.post('/api/upload', formData, {
-    //     headers: {
-    //       'Content-Type': 'multipart/form-data'
-    //     }
-    //   });
-    //   console.log('Files uploaded successfully:', response.data);
-    // } catch (error) {
-    //   console.error('Error uploading files:', error);
-    // }
-  };
+  const handleAttachedFileChange = (e) => {
+    const files = e.target.files;
+    const fileNames = Array.from(files).map(file => file.name);
+    setAttachedFiles(fileNames);
+  }
 
   const handleRemoveAttachedFile = (index) => {
     const updatedFiles = [...attachedFiles];
-    updatedFiles.splice(index, 1);
-    setAttachedFiles(updatedFiles);
-  };
+    updatedFiles.splice(index, 1)
+    setAttachedFiles(updatedFiles)
+  }
+
 
   const handleFileClick = (file) => {
-    console.log('clicked', file);
-    const fileURL = URL.createObjectURL(file);
-    window.open(fileURL, '_blank');
+
+    console.log('clicked', file)
+    if (file && file.type) {
+      if (file.type.startsWith('image/') || file.type === 'application/pdf') {
+        const fileURL = URL.createObjectURL(file);
+        window.open(fileURL, '_blank');
+      } else {
+        const fileReader = new FileReader();
+        fileReader.onload = () => {
+          const fileContents = fileReader.result;
+          const blob = new Blob([fileContents], { type: file.type });
+          const objectURL = URL.createObjectURL(blob);
+          window.open(objectURL, '_blank');
+        };
+        fileReader.readAsArrayBuffer(file);
+      }
+    }
   };
+
 
 
   return (
 
     <div style={{ width: '50%' }}>
       <Typography variant='h6'>{fieldName}</Typography>
+
       <input
         type="file"
         multiple
         accept="image/jpeg, image/png, application/pdf, application/msword, application/vnd.openxmlformats-officedocument.wordprocessingml.document, application/vnd.ms-powerpoint"
         onChange={handleAttachedFileChange}
         ref={fileInputRef}
-        style={{ display: 'none' }}
       />
-      <Button variant="contained" onClick={() => fileInputRef.current.click()}>
-        Select Files
-      </Button>
-      <List>
-        {attachedFiles.map((file, index) => (
-          <ListItem key={index} ButtonBase onClick={() => handleFileClick(file)}>
-            <ListItemText primary={file.name} />
-            <IconButton edge="end" aria-label="delete" onClick={() => handleRemoveAttachedFile(index)}>
-              <DeleteIcon />
-            </IconButton>
-          </ListItem>
-        ))}
-      </List>
-    </div>
-  );
 
+    </div>
+  )
 }
 
 
