@@ -37,9 +37,29 @@ function createOtpStorageTable() {
 
     db.query(createOtpStorageTableQuery, function (err, result) {
         if (err) {
-            console.log("Error occurred while otp_codes table", err)
+            console.log("Error occurred while creating otp_codes table", err)
         } else {
             //console.log("environmental_tests_quotes table created successfully.")
+        }
+    })
+}
+
+
+// Function to create the otp_table
+function createPasswordResetAttemptsTable() {
+    const createPasswordResetAttemptsQuery = `
+        CREATE TABLE IF NOT EXISTS password_reset_attempts (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        email VARCHAR(255) NOT NULL,
+        attempts INT DEFAULT 0,
+        last_attempt TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )`;
+
+    db.query(createPasswordResetAttemptsQuery, function (err, result) {
+        if (err) {
+            console.log("Error occurred while creating password_reset_attempts table", err)
+        } else {
+            //console.log("password_reset_attempts table created successfully.")
         }
     })
 }
@@ -326,6 +346,7 @@ function createJobcardsTable() {
         jc_number VARCHAR(255) ,
         dcform_number VARCHAR(255) ,
         jc_open_date DATETIME,
+        item_received_date DATE,
         po_number  VARCHAR(255),
         test_category VARCHAR(1000),
         type_of_request VARCHAR(1000),
@@ -356,6 +377,29 @@ function createJobcardsTable() {
         }
     })
 }
+
+//Function to create a 'attachments' table:
+function createAttachmentsTable() {
+    const createAttachmentsQuery = `
+    CREATE TABLE IF NOT EXISTS attachments (
+        id INT NOT NULL AUTO_INCREMENT,
+        jc_number VARCHAR(1000),
+        file_name VARCHAR(1000),
+        file_path VARCHAR(100),
+        file_type VARCHAR(50),
+        uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY(id)
+    )`;
+
+    db.query(createAttachmentsQuery, function (err, result) {
+        if (err) {
+            console.log("Error occurred while creating attachments table", err)
+        } else {
+            //console.log("attachments table created successfully.")
+        }
+    })
+}
+
 
 
 //Function to create a 'EutDetails' table:
@@ -555,6 +599,7 @@ process.on('exit', function () {
 module.exports = {
     createUsersTable,
     createOtpStorageTable,
+    createPasswordResetAttemptsTable,
     createBEAQuotationsTable,
     createQuotesDiscountTable,
     createChamberCalibrationTable,
@@ -566,6 +611,7 @@ module.exports = {
 
 
     createJobcardsTable,
+    createAttachmentsTable,
     createEutDetailsTable,
     createJobcardTestsTable,
     createTestDetailsTable,

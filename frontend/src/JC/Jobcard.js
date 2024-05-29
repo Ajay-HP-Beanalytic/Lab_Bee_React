@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Box, Typography, Container, TextField, Button, Table, TableBody, TableCell, TableContainer, TableHead,
   TableRow, Paper, Grid, InputLabel, MenuItem, FormControl, Select, FormControlLabel, Radio, RadioGroup, FormLabel, IconButton, Tooltip, Divider, Accordion, AccordionSummary, AccordionDetails
@@ -20,11 +20,11 @@ import axios from 'axios';
 import { serverBaseAddress } from '../Pages/APIPage';
 import { useParams } from 'react-router-dom';
 import { useNavigate } from "react-router-dom";
-import JCDocument from './JCDocument';
 import JobCardComponent from './JobCardComponent';
 import FileUploadComponent from '../components/FileUploadComponent';
 import ReliabilityTaskManagement from './ReliabilityTaskManagement';
 import CustomModal from '../common/CustomModalWithTable';
+import { DatePicker } from '@mui/x-date-pickers';
 
 
 
@@ -53,6 +53,7 @@ const Jobcard = ({ jobCardData }) => {
   const [dcNumber, setDcnumber] = useState('')
   // const [jcOpenDate, setJcOpenDate] = useState(dayjs())
   const [jcOpenDate, setJcOpenDate] = useState(null)
+  const [itemReceivedDate, setItemReceivedDate] = useState(null)
   const [poNumber, setPonumber] = useState('')
   const [jcCategory, setJcCategory] = useState("")
   const [testCategory, setTestCategory] = useState("");
@@ -92,6 +93,7 @@ const Jobcard = ({ jobCardData }) => {
           setDcnumber(res.data.jobcard.dcform_number || '')
           const parsedJcStartDate = dayjs(res.data.jobcard.jc_open_date);
           setJcOpenDate(parsedJcStartDate.isValid() ? parsedJcStartDate : null);
+          setItemReceivedDate(res.data.jobcard.item_received_date)
           setPonumber(res.data.jobcard.po_number)
           setTestCategory(res.data.jobcard.test_category)
           setJcCategory(res.data.jobcard.jc_category)
@@ -152,6 +154,17 @@ const Jobcard = ({ jobCardData }) => {
       console.error('Error formatting JC open date:', error);
     }
   };
+
+  const handleItemReceivedDateChange = (newDate) => {
+
+    try {
+      // Format the selected date into DATETIME format
+      const formattedItemReceivedDate = newDate ? dayjs(newDate).format('YYYY-MM-DD') : null;
+      setItemReceivedDate(formattedItemReceivedDate)
+    } catch (error) {
+      console.error('Error formatting JC open date:', error);
+    }
+  }
 
   // To get the selected date and Time
   const handleJcCloseDateChange = (newDate) => {
@@ -311,6 +324,7 @@ const Jobcard = ({ jobCardData }) => {
         jcNumber: jcNumberString,
         dcNumber,
         jcOpenDate,
+        itemReceivedDate,
         poNumber,
         testCategory,
         typeOfRequest,
@@ -568,6 +582,7 @@ const Jobcard = ({ jobCardData }) => {
 
     setDcnumber('');
     setJcOpenDate('');
+    setItemReceivedDate('')
     setPonumber('');
     setTestCategory('');
     setTestInchargeName('');
@@ -633,13 +648,6 @@ const Jobcard = ({ jobCardData }) => {
   //Font for thetable headers:
   const tableHeaderFont = { fontSize: 16, fontWeight: 'bold' }
 
-  const HeaderCell = ({ children }) => (
-    <TableCell>
-      <Typography sx={tableHeaderFont}>
-        {children}
-      </Typography>
-    </TableCell>
-  );
 
 
   return (
@@ -719,14 +727,25 @@ const Jobcard = ({ jobCardData }) => {
                         {users.map((item) => (<MenuItem key={item.id} value={item.name}>{item.name}</MenuItem>))}
                       </Select>
                     </FormControl>
-
-
                   </div>
                   <br />
 
                   <div style={{ display: 'flex', justifyContent: 'space-between' }} >
 
-                    <FormControl sx={{ width: "40%", marginBottom: '20px', marginRight: '15px', marginTop: '20px', borderRadius: 3 }} >
+
+                    <LocalizationProvider dateAdapter={AdapterDayjs}>
+                      <DatePicker sx={{ width: '50%', borderRadius: 3 }}
+                        label="Item Received Date"
+                        variant="outlined"
+                        margin="normal"
+                        value={itemReceivedDate ? dayjs(itemReceivedDate) : null} // Pass null if jcOpenDate is null
+                        onChange={handleItemReceivedDateChange}
+                        renderInput={(props) => <TextField {...props} />}
+                        format="YYYY-MM-DD"
+                      />
+                    </LocalizationProvider>
+
+                    <FormControl sx={{ width: "45%", marginBottom: '20px', borderRadius: 3 }} >
                       <InputLabel >JC Category</InputLabel>
                       <Select
                         label="JC Category"
@@ -740,6 +759,9 @@ const Jobcard = ({ jobCardData }) => {
                       </Select>
                     </FormControl>
 
+                  </div>
+
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }} >
                     {jcCategory != 'Reliability' && (
                       <>
                         <FormControl sx={{ width: '20%', }}>
@@ -874,16 +896,11 @@ const Jobcard = ({ jobCardData }) => {
                       value={projectName}
                       onChange={(e) => setProjectName(e.target.value)}
                     />
-
-
                   </div>
 
                   <div>
-
                     <FileUploadComponent fieldName="Attach Files" />
-
                   </div>
-
 
                   <br />
                 </Box>

@@ -3,22 +3,26 @@ const { db } = require("./db");
 const dayjs = require('dayjs');
 const moment = require('moment');
 
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+
 
 // function of jobcard api's:
 function jobcardsAPIs(app) {
 
     // Add primary details of the jobcard to the 'bea_jobcards' table:
     app.post('/api/jobcard', (req, res) => {
-        const { jcNumber, dcNumber, jcOpenDate, poNumber, testCategory, typeOfRequest, testInchargeName, jcCategory, companyName, customerName, customerEmail, customerNumber, projectName, sampleCondition, referanceDocs, jcStatus, reliabilityReportStatus, formattedCloseDate, observations } = req.body
+        const { jcNumber, dcNumber, jcOpenDate, itemReceivedDate, poNumber, testCategory, typeOfRequest, testInchargeName, jcCategory, companyName, customerName, customerEmail, customerNumber, projectName, sampleCondition, referanceDocs, jcStatus, reliabilityReportStatus, formattedCloseDate, observations } = req.body
 
         const formattedOpenDate = convertDateTime(jcOpenDate)
 
 
         // const { jcNumber, dcNumber, formattedJcOpenDate, poNumber, jcCategory, testInchargeName, companyName, customerName, customerNumber, projectName, sampleCondition, referanceDocs, jcStatus, formattedCloseDate, jcText, observations } = req.body
 
-        const sql = `INSERT INTO bea_jobcards(jc_number, dcform_number, jc_open_date, po_number, test_category, type_of_request, test_incharge, jc_category, company_name, customer_name, customer_email, customer_number, project_name, sample_condition, referance_document, jc_status, reliability_report_status, jc_closed_date,  observations ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
+        const sql = `INSERT INTO bea_jobcards(jc_number, dcform_number, jc_open_date, item_received_date, po_number, test_category, type_of_request, test_incharge, jc_category, company_name, customer_name, customer_email, customer_number, project_name, sample_condition, referance_document, jc_status, reliability_report_status, jc_closed_date,  observations ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
 
-        db.query(sql, [jcNumber, dcNumber, formattedOpenDate, poNumber, testCategory, typeOfRequest, testInchargeName, jcCategory, companyName, customerName, customerEmail, customerNumber, projectName, sampleCondition, referanceDocs, jcStatus, reliabilityReportStatus, formattedCloseDate, observations], (error, result) => {
+        db.query(sql, [jcNumber, dcNumber, formattedOpenDate, itemReceivedDate, poNumber, testCategory, typeOfRequest, testInchargeName, jcCategory, companyName, customerName, customerEmail, customerNumber, projectName, sampleCondition, referanceDocs, jcStatus, reliabilityReportStatus, formattedCloseDate, observations], (error, result) => {
             if (error) {
                 console.log(error);
                 return res.status(500).json({ message: 'Internal server error' });
@@ -172,7 +176,7 @@ function jobcardsAPIs(app) {
     // To Edit the selected jobcards:
     app.post('/api/jobcard/:id', (req, res) => {
         const {
-            jcNumber, dcNumber, jcOpenDate, poNumber, testCategory, typeOfRequest,
+            jcNumber, dcNumber, jcOpenDate, itemReceivedDate, poNumber, testCategory, typeOfRequest,
             testInchargeName, jcCategory, companyName, customerName, customerEmail,
             customerNumber, projectName, sampleCondition, referanceDocs, jcStatus,
             reliabilityReportStatus, jcCloseDate, observations
@@ -186,6 +190,7 @@ function jobcardsAPIs(app) {
         UPDATE bea_jobcards SET
             dcform_number = ?, 
             jc_open_date = ?, 
+            item_received_date = ?,
             po_number = ?, 
             test_category = ?, 
             type_of_request = ?, 
@@ -206,7 +211,7 @@ function jobcardsAPIs(app) {
     `;
 
         const values = [
-            dcNumber, formattedOpenDate, poNumber, testCategory, typeOfRequest,
+            dcNumber, formattedOpenDate, itemReceivedDate, poNumber, testCategory, typeOfRequest,
             testInchargeName, jcCategory, companyName, customerName, customerEmail,
             customerNumber, projectName, sampleCondition, referanceDocs, jcStatus,
             reliabilityReportStatus, formattedCloseDate, observations, jcNumber

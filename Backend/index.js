@@ -19,6 +19,7 @@ const app = express();
 const {
   createUsersTable,
   createOtpStorageTable,
+  createPasswordResetAttemptsTable,
   createBEAQuotationsTable,
   createQuotesDiscountTable,
   createChamberCalibrationTable,
@@ -29,6 +30,7 @@ const {
   createReliabilityTasksDetailsTable,
 
   createJobcardsTable,
+  createAttachmentsTable,
   createEutDetailsTable,
   createJobcardTestsTable,
   createTestDetailsTable,
@@ -50,6 +52,7 @@ db.getConnection(function (err, connection) {
   // call the table creating functions here:
   createUsersTable();
   createOtpStorageTable();
+  createPasswordResetAttemptsTable();
   createBEAQuotationsTable();
   createQuotesDiscountTable();
   createChamberCalibrationTable();
@@ -61,6 +64,7 @@ db.getConnection(function (err, connection) {
   createReliabilityTasksDetailsTable();
 
   createJobcardsTable();
+  createAttachmentsTable();
   createEutDetailsTable();
   createJobcardTestsTable();
   createTestDetailsTable();

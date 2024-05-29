@@ -314,7 +314,7 @@ export default function Login() {
                               variant="body1"
                               component="span"
                               onClick={() => {
-                                navigate("/reset-password");
+                                navigate("/reset_password");
                               }}
                               style={{ marginTop: "10px", cursor: "pointer" }}
                             >

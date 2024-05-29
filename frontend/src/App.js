@@ -1,5 +1,5 @@
-import React, { useContext, useEffect, useState } from "react";
-import { BrowserRouter, Routes, Route, useLocation, Router } from "react-router-dom";
+import React, { useContext, useEffect } from "react";
+import { Routes, Route, useLocation } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import 'react-toastify/dist/ReactToastify.css';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
@@ -17,7 +17,6 @@ import SidenavigationBar from "./components/sidenavbar";
 
 
 import NotFoundPage from "./Pages/NotFoundPage";
-import UserLogoutDialog from "./components/UserLogoutDialog";
 
 
 import ChamberAndCalibration from "./Pages/ChamberCalibration";
@@ -62,7 +61,7 @@ function App() {
         {/* <Route path="/" element={<Login />} /> */}
         <Route path="/" exact element={<Login />}></Route>
         <Route path="/register" exact element={<Register />}></Route>
-        <Route path="/reset-password" exact element={<ForgotPassword />}></Route>
+        <Route path="/reset_password" exact element={<ForgotPassword />}></Route>
 
 
         <Route path="" element={<SidenavigationBar />} >
@@ -86,7 +85,6 @@ function App() {
           <Route path='/slot_booking' element={<Slotbooking />} />
 
           <Route path='/user_management' element={<UserManagement />} />
-          {/* <Route path="/userlogout" element={<UserLogoutDialog />} /> */}
 
           <Route path='/trailpage' element={<TrailPage />} />
           <Route path='*' element={<NotFoundPage />} />

@@ -15,6 +15,8 @@ const dotenv = require('dotenv').config()
 
 const jwtSecret = "RANDOM-TOKEN";                   // To create a random token
 
+const { format, isSameDay, parseISO } = require('date-fns');
+
 // Function to handle the operations of the User Registraion and Login process:
 
 function usersDataAPIs(app) {
@@ -64,36 +66,11 @@ function usersDataAPIs(app) {
     });
 
 
-
-
     //api to update the data of a registered user:
-    // app.post("/api/addUser/:id", (req, res) => {
-    //     //const { name, email, password } = req.body;
-    //     const { name, email, password, role, allowedComponents } = req.body;
-    //     const id = req.params.id;
-    //     const sqlUpdateUser = `UPDATE labbee_users SET name='${name}', email='${email}', password='${password}', role='${role}', allowed_components='${allowedComponents}' WHERE id=${id}`;
-
-    //     db.query(sqlUpdateUser, (error, result) => {
-    //         if (error) {
-    //             console.error(error);
-    //             return res.status(500).json({ message: "Internal server error" });
-    //         } else {
-    //             res.status(200).json({ message: "User data updated successfully" });
-    //         }
-
-    //     });
-    // });
-
-
     app.post("/api/addUser/:id", (req, res) => {
         //const { name, email, password } = req.body;
         const { name, email, department, role, user_status } = req.body;
-
-        console.log('update values', name, email, department, role, user_status)
-
         const id = req.params.id;
-
-        console.log('updating id', id)
 
         const sqlUpdateUser = `
                 UPDATE labbee_users 
@@ -291,7 +268,7 @@ function usersDataAPIs(app) {
             from: process.env.EMAIL,
             to: email,
             subject: 'Your OTP Code to reset the password',
-            text: `Your OTP code is ${otp}. It is valid for 5 minutes.`,
+            text: `Your OTP code is ${otp}. It is valid for only 2 minutes.`,
         };
 
         return transporter.sendMail(mailOptions);
@@ -305,50 +282,57 @@ function usersDataAPIs(app) {
             const sqlCheckEmail = "SELECT * FROM labbee_users WHERE email=?";
             const [result] = await db.promise().query(sqlCheckEmail, [email]);
 
-            if (result.length > 0) {
-                const otp = generateOtp();
-                const otpExpiry = new Date(Date.now() + 5 * 60 * 1000); // OTP valid for 5 minutes
-
-                // Save OTP and expiry to the OTP table
-                const sqlSaveOtp = "INSERT INTO otp_codes (email, otp_code, otp_expiry) VALUES (?, ?, ?)";
-                await db.promise().query(sqlSaveOtp, [email, otp, otpExpiry]);
-
-                await sendOtpEmail(email, otp);
-
-                return res.status(200).json({ message: 'OTP Sent Successfully' });
-            } else {
+            if (result.length === 0) {
                 return res.status(404).json({ message: 'Email not found' });
             }
+
+            const sqlCheckAttempts = "SELECT * FROM password_reset_attempts WHERE email=?";
+            const [attemptsResult] = await db.promise().query(sqlCheckAttempts, [email]);
+
+            const currentDate = new Date()
+
+            if (attemptsResult.length > 0) {
+                const lastAttemptDate = new Date(attemptsResult[0].last_attempt)
+
+                if (isSameDay(currentDate, lastAttemptDate)) {
+                    if (attemptsResult[0].attempts >= 3) {
+                        return res.status(429).json({ message: 'You have reached the limit of 3 attempts per day.' })
+                    }
+
+                    const sqlUpdateAttempts = "UPDATE password_reset_attempts SET attempts = attempts + 1 WHERE email = ?";
+                    await db.promise().query(sqlUpdateAttempts, [email]);
+
+                } else {
+                    const sqlResetAttempts = "UPDATE password_reset_attempts SET attempts = 1, last_attempt = CURRENT_TIMESTAMP WHERE email = ?";
+                    await db.promise().query(sqlResetAttempts, [email]);
+                }
+
+            } else {
+                const sqlInsertAttempts = "INSERT INTO password_reset_attempts (email, attempts, last_attempt) VALUES (?, 1, CURRENT_TIMESTAMP)";
+                await db.promise().query(sqlInsertAttempts, [email]);
+            }
+
+            const otp = generateOtp();
+            const otpExpiry = new Date(Date.now() + 2 * 60 * 1000); // OTP valid for 2 minutes
+
+            const sqlSaveOtp = "INSERT INTO otp_codes (email, otp_code, otp_expiry) VALUES (?, ?, ?)";
+            await db.promise().query(sqlSaveOtp, [email, otp, otpExpiry]);
+
+            await sendOtpEmail(email, otp);
+
+            return res.status(200).json({ message: 'OTP Sent Successfully' });
+
         } catch (error) {
             console.error('Error sending OTP:', error);
             return res.status(500).json({ message: 'Internal server error' });
         }
+
     });
 
 
     //API to verify the OTP:
-    app.post('/api/verifyOtp', async (req, res) => {
+    app.post('/api/verifyOTP', async (req, res) => {
         const { email, otp } = req.body;
-
-        // try {
-        //     const sqlCheckOtp = "SELECT otp_code, otp_expiry FROM otp_codes WHERE email=? ORDER BY id DESC LIMIT 1";
-        //     const [result] = await db.promise().query(sqlCheckOtp, [email]);
-
-        //     if (result.length > 0) {
-        //         const { otp_code: storedOtp, otp_expiry: otpExpiry } = result[0];
-
-        //         if (storedOtp === otp && new Date() < new Date(otpExpiry)) {
-        //             return res.status(200).json({ message: 'OTP Verified Successfully' });
-        //         } else {
-        //             return res.status(400).json({ message: 'Invalid or Expired OTP' });
-        //         }
-        //     } else {
-        //         return res.status(404).json({ message: 'Email not found' });
-        //     }
-        // } catch (error) {
-        //     console.error('Error verifying OTP:', error);
-        //     return res.status(500).json({ message: 'Internal server error' });
-        // }
 
         try {
             const sqlCheckOtp = "SELECT * FROM otp_codes WHERE email=? AND otp_code=? AND otp_expiry > NOW()";
@@ -359,6 +343,7 @@ function usersDataAPIs(app) {
             }
 
             return res.status(200).json({ message: 'OTP verified successfully' });
+
         } catch (error) {
             console.error('Error verifying OTP:', error);
             return res.status(500).json({ message: 'Internal server error' });
@@ -370,7 +355,6 @@ function usersDataAPIs(app) {
     app.post('/api/resetPassword', async (req, res) => {
 
         const { email, newPassword } = req.body;
-        console.log(email, newPassword)
 
         try {
             // Hash the new password
@@ -401,68 +385,29 @@ module.exports = { usersDataAPIs }
 
 
 
-// //api to add or register the new user:
-// app.post("/api/adduser", (req, res) => {
-//     const { name, email, password, jobrole } = req.body;
-//     const sqlCheckEmail = "SELECT * FROM labbee_users WHERE email=?";
-//     const sqlInsertUser = "INSERT INTO labbee_users (name, email, password, role) VALUES (?,?,?,?)";
+// app.post('/api/checkResetPasswordEmail', async (req, res) => {
+//     const { email } = req.body;
 
-//     db.query(sqlCheckEmail, [email], (error, result) => {
-//         if (error) {
-//             console.log(error);
-//             return res.status(500).json({ message: "Internal server error" });
-//         }
+//     try {
+//         const sqlCheckEmail = "SELECT * FROM labbee_users WHERE email=?";
+//         const [result] = await db.promise().query(sqlCheckEmail, [email]);
 
 //         if (result.length > 0) {
-//             //Email already exists:
-//             return res.status(400).json({ message: "Email already exists" });
+//             const otp = generateOtp();
+//             const otpExpiry = new Date(Date.now() + 2 * 60 * 1000); // OTP valid for 2 minutes
+
+//             // Save OTP and expiry to the OTP table
+//             const sqlSaveOtp = "INSERT INTO otp_codes (email, otp_code, otp_expiry) VALUES (?, ?, ?)";
+//             await db.promise().query(sqlSaveOtp, [email, otp, otpExpiry]);
+
+//             await sendOtpEmail(email, otp);
+
+//             return res.status(200).json({ message: 'OTP Sent Successfully' });
+//         } else {
+//             return res.status(404).json({ message: 'Email not found' });
 //         }
-
-//         //If email is not exists then continue:
-//         db.query(sqlInsertUser, [name, email, password, jobrole], (error, result) => {
-//             if (error) {
-//                 console.log(error);
-//                 return res.status(500).json({ message: "Internal server error" });
-//             }
-//             res.status(200).json({ message: "User added successfully" });
-//         });
-//     });
-// });
-
-
-
-
-
-
-
-
-/// To allow an user to access the application on succesfull login:
-// app.post("/api/login", (req, res) => {
-//     const { email, password } = req.body;
-
-//     // Perform a database query to find the user with the provided email
-//     const usersList = "SELECT * FROM labbee_users WHERE email = ?";
-
-//     // Execute the query, passing in the email as a parameter
-//     db.query(usersList, [email], (error, results) => {
-//         if (error) {
-//             console.error(error);
-//             return res.status(500).json({ message: "Internal server error" });
-//         }
-
-//         if (results.length === 0) {
-//             // User not found
-//             return res.status(401).json({ message: "User not found" });
-//         }
-
-//         const user = results[0];
-
-//         if (user.password !== password) {
-//             // Incorrect password
-//             return res.status(401).json({ message: "Incorrect password" });
-//         }
-
-//         // Authentication successful
-//         res.status(200).json({ message: "Login successful", user });
-//     });
+//     } catch (error) {
+//         console.error('Error sending OTP:', error);
+//         return res.status(500).json({ message: 'Internal server error' });
+//     }
 // });

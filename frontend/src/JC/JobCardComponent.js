@@ -12,8 +12,8 @@ const JobCardComponent = () => {
 
   const [jobCard, setJobCard] = useState({
     jcNumber: '',
-    itemReceivedDate: '',
     jcOpenDate: '',
+    itemReceivedDate: '',
     jcCloseDate: '',
     companyName: '',
     typeOfRequest: '',
@@ -93,11 +93,13 @@ const JobCardComponent = () => {
           };
         });
 
+        // console.log(jobcard)
+
 
         setJobCard({
           jcNumber: jobcard.jc_number,
-          itemReceivedDate: dayjs(jobcard.item_received_date).isValid() ? dayjs(jobcard.item_received_date).format('YYYY-MM-DD') : '',
           jcOpenDate: dayjs(jobcard.jc_open_date).isValid() ? dayjs(jobcard.jc_open_date).format('YYYY-MM-DD') : '',
+          itemReceivedDate: dayjs(jobcard.item_received_date).isValid() ? dayjs(jobcard.item_received_date).format('YYYY-MM-DD') : '',
           jcCloseDate: dayjs(jobcard.jc_closed_date).isValid() ? dayjs(jobcard.jc_closed_date).format('YYYY-MM-DD') : '',
           companyName: jobcard.company_name,
           typeOfRequest: jobcard.type_of_request,
@@ -128,6 +130,8 @@ const JobCardComponent = () => {
       .catch(error => {
         console.error("Error fetching job card data:", error);
       });
+
+
   }, [id]);
 
 
