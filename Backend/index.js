@@ -10,9 +10,15 @@ const cors = require("cors");                       // cors is used to access ou
 const session = require("express-session")          // Import 'express-session' module to create user session
 const cookieParser = require("cookie-parser")       // Import 'cookie-parser' module to create cookies for a logge in user 
 
+
+// const multer = require('multer');
+const path = require('path');
+// const fs = require('fs');
+
 // create an express application:
 const app = express();
-
+// app.use("./FilesUploaded", express.static("FilesUploaded"))
+app.use("/FilesUploaded", express.static(path.join(__dirname, "FilesUploaded")));
 
 
 // Get all the connections from the db
@@ -87,7 +93,16 @@ app.use(cors({
 
 app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+
+// app.use(express.urlencoded({ extended: false })); // To handle the form data
+// app.use(express.urlencoded({ extended: true })); // To handle the form data (working fine)
+
+app.use(express.urlencoded({ extended: false })); // To handle the form data
+
+
+
 app.use(cookieParser());
+
 
 app.use(session({
   secret: 'secret',  // A secret key used to encrypt the session cookie
@@ -154,6 +169,8 @@ slotBookingAPIs(app)
 // backend connection of po_invoice data API's from 'PoInvoiceBackend' page
 const { poInvoiceBackendAPIs } = require('./PoInvoiceBackend')
 poInvoiceBackendAPIs(app)
+
+
 
 
 // Check wheteher connection is established between 
