@@ -8,21 +8,35 @@ const path = require('path');
 const fs = require('fs');
 
 
+
+
+
+
 // function of jobcard api's:
 function jobcardsAPIs(app) {
+
+    // const filesUploadedFolderPath = path.join(process.cwd(), 'FilesUploaded');
+    // console.log('Path to FilesUploaded folder:', filesUploadedFolderPath);
+
+    // Endpoint to fetch individual attachment
+    // app.get('/api/attachments/:filename', (req, res) => {
+    //     const { filename } = req.params;
+    //     const filePath = path.join(__dirname, 'FilesUploaded', filename);
+
+    //     // Send the file as a response
+    //     res.sendFile(filePath);
+    // });
 
     // Add primary details of the jobcard to the 'bea_jobcards' table:
     app.post('/api/jobcard', (req, res) => {
         const { jcNumber, dcNumber, jcOpenDate, itemReceivedDate, poNumber, testCategory, typeOfRequest, testInchargeName, jcCategory, companyName, customerName, customerEmail, customerNumber, projectName, sampleCondition, referanceDocs, jcStatus, reliabilityReportStatus, formattedCloseDate, observations } = req.body
 
+        const formattedItemReceivedDate = dayjs(itemReceivedDate).format('YYYY-MM-DD')
         const formattedOpenDate = convertDateTime(jcOpenDate)
-
-
-        // const { jcNumber, dcNumber, formattedJcOpenDate, poNumber, jcCategory, testInchargeName, companyName, customerName, customerNumber, projectName, sampleCondition, referanceDocs, jcStatus, formattedCloseDate, jcText, observations } = req.body
 
         const sql = `INSERT INTO bea_jobcards(jc_number, dcform_number, jc_open_date, item_received_date, po_number, test_category, type_of_request, test_incharge, jc_category, company_name, customer_name, customer_email, customer_number, project_name, sample_condition, referance_document, jc_status, reliability_report_status, jc_closed_date,  observations ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
 
-        db.query(sql, [jcNumber, dcNumber, formattedOpenDate, itemReceivedDate, poNumber, testCategory, typeOfRequest, testInchargeName, jcCategory, companyName, customerName, customerEmail, customerNumber, projectName, sampleCondition, referanceDocs, jcStatus, reliabilityReportStatus, formattedCloseDate, observations], (error, result) => {
+        db.query(sql, [jcNumber, dcNumber, formattedOpenDate, formattedItemReceivedDate, poNumber, testCategory, typeOfRequest, testInchargeName, jcCategory, companyName, customerName, customerEmail, customerNumber, projectName, sampleCondition, referanceDocs, jcStatus, reliabilityReportStatus, formattedCloseDate, observations], (error, result) => {
             if (error) {
                 console.log(error);
                 return res.status(500).json({ message: 'Internal server error' });
@@ -31,6 +45,8 @@ function jobcardsAPIs(app) {
             }
         });
     });
+
+
 
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -182,7 +198,8 @@ function jobcardsAPIs(app) {
             reliabilityReportStatus, jcCloseDate, observations
         } = req.body;
 
-
+        const formattedItemReceivedDate = dayjs(itemReceivedDate).format('YYYY-MM-DD')
+        const referanceDocsSerialized = JSON.stringify(referanceDocs);
         const formattedOpenDate = jcOpenDate ? convertDateTime(jcOpenDate) : null;
         const formattedCloseDate = jcCloseDate ? convertDateTime(jcCloseDate) : null;
 
@@ -211,9 +228,9 @@ function jobcardsAPIs(app) {
     `;
 
         const values = [
-            dcNumber, formattedOpenDate, itemReceivedDate, poNumber, testCategory, typeOfRequest,
+            dcNumber, formattedOpenDate, formattedItemReceivedDate, poNumber, testCategory, typeOfRequest,
             testInchargeName, jcCategory, companyName, customerName, customerEmail,
-            customerNumber, projectName, sampleCondition, referanceDocs, jcStatus,
+            customerNumber, projectName, sampleCondition, referanceDocsSerialized, jcStatus,
             reliabilityReportStatus, formattedCloseDate, observations, jcNumber
         ];
 
@@ -843,14 +860,20 @@ function jobcardsAPIs(app) {
                             if (error) return res.status(500).json({ error });
                             output['reliability_tasks_details'] = result;
 
-                            // Send the combined output
-                            res.send(output)
+                            // Fetch data from attachments table
+                            sqlQuery = "SELECT * FROM attachments WHERE jc_number = ?";
+                            db.query(sqlQuery, [jc_number], (error, result) => {
+                                if (error) return res.status(500).json({ error });
+                                output['attachments'] = result;
+
+                                // Send the combined output
+                                res.send(output)
+                            })
                         })
                     })
                 })
-            })
+            });
         });
-
     });
 
 
@@ -914,6 +937,167 @@ function jobcardsAPIs(app) {
             res.json(formattedChamberUtilizationResult);
         })
     })
+
+
+
+    //////////////////////////////////////////////////////////////////////////////
+
+
+
+    // const storage = multer.diskStorage({
+    //     destination: (req, file, cb) => {
+    //         const uploadPath = path.join(__dirname, 'FilesUploaded');
+    //         if (!fs.existsSync(uploadPath)) {
+    //             fs.mkdirSync(uploadPath, { recursive: true });
+    //         }
+    //         cb(null, uploadPath);
+    //     },
+    //     filename: (req, file, cb) => {
+    //         cb(null, Date.now() + "_" + file.originalname);
+    //     }
+    // });
+
+
+    const storage = multer.diskStorage({
+        destination: (req, file, cb) => {
+            cb(null, path.join(__dirname, 'FilesUploaded'));
+        },
+        filename: (req, file, cb) => {
+            cb(null, `${Date.now()}_${file.originalname}`);
+        }
+    });
+
+    // Set up Multer for file uploads
+    // const storage = multer.diskStorage({
+    //     destination: (req, file, cb) => {
+    //         cb(null, "./FilesUploaded");
+    //     },
+    //     filename: (req, file, cb) => {
+    //         cb(null, Date.now() + "_" + file.originalname);
+    //     }
+    // });
+
+    // Initialize upload
+    const filesUploadUsingMulter = multer({ storage })
+
+    // Endpoint to handle file uploads old method
+    // app.post('/api/uploadFiles', filesUploadUsingMulter.array('attachedFiles'), (req, res) => {
+
+    //     if (!req.files) {
+    //         return res.status(400).send('No files were uploaded.');
+    //     }
+
+    //     const { jcNumber } = req.body;
+    //     const files = req.files;
+
+    //     const filePromises = files.map((file) => {
+    //         const sqlInsertFile = "INSERT INTO attachments (jc_number, file_name, file_path, file_type) VALUES (?, ?, ?, ?)";
+    //         return new Promise((resolve, reject) => {
+    //             db.query(sqlInsertFile, [jcNumber, file.originalname, file.path, file.mimetype], (err, results) => {
+    //                 if (err) {
+    //                     return reject(err);
+    //                 }
+    //                 resolve(results);
+    //             });
+    //         });
+    //     });
+
+    //     Promise.all(filePromises)
+    //         .then(() => {
+    //             res.status(200).send('Files uploaded and saved to database successfully.');
+    //         })
+    //         .catch((error) => {
+    //             console.error('Error uploading files:', error);
+    //             res.status(500).send('Internal server error.');
+    //         });
+    // });
+
+
+
+
+
+    /////////////////////// new method
+
+    // Endpoint to handle file uploads new method
+    app.post('/api/uploadFiles', filesUploadUsingMulter.array('attachedFiles'), (req, res) => {
+
+        if (!req.files || req.files.length === 0) {
+            return res.status(400).send('No files were uploaded.');
+        }
+
+        const { jcNumber } = req.body;
+        if (!jcNumber) {
+            return res.status(400).send('jcNumber is required.');
+        }
+
+        const files = req.files;
+
+        const filePromises = files.map((file) => {
+            const relativeFilePath = path.relative(__dirname, file.path);
+            const sqlInsertFile = "INSERT INTO attachments (jc_number, file_name, file_path, file_type) VALUES (?, ?, ?, ?)";
+            return new Promise((resolve, reject) => {
+                db.query(sqlInsertFile, [jcNumber, file.originalname, relativeFilePath, file.mimetype], (err, results) => {
+                    if (err) {
+                        return reject(err);
+                    }
+                    resolve(results);
+                });
+            });
+        });
+
+        Promise.all(filePromises)
+            .then(() => {
+                res.status(200).send('Files uploaded and saved to database successfully.');
+            })
+            .catch((error) => {
+                console.error('Error uploading files:', error);
+                res.status(500).send('Internal server error.');
+            });
+    });
+
+
+    // Endpoint to remove or delete file uploads
+    app.delete('/api/deleteFile/:id', (req, res) => {
+        const fileId = req.params.id;
+
+        // Fetch the file record from the database to get the file path
+        const sqlSelectFile = "SELECT * FROM attachments WHERE id = ?";
+        db.query(sqlSelectFile, [fileId], (error, result) => {
+            if (error) {
+                console.error('Error selecting file:', error);
+                return res.status(500).json({ error });
+            }
+
+            if (result.length === 0) {
+                console.warn('File not found for fileId:', fileId);
+                return res.status(404).json({ message: 'File not found' });
+            }
+
+            const file = result[0];
+            const filePath = path.join(__dirname, file.file_path);
+
+            // Delete the file record from the database
+            const sqlDeleteFile = "DELETE FROM attachments WHERE id = ?";
+            db.query(sqlDeleteFile, [fileId], (error) => {
+                if (error) {
+                    console.error('Error deleting file record from database:', error);
+                    return res.status(500).json({ error });
+                }
+
+                // Delete the file from the filesystem
+                fs.unlink(filePath, (err) => {
+                    if (err) {
+                        console.error('Error deleting file from filesystem:', err);
+                        return res.status(500).json({ error: 'Error deleting file from filesystem' });
+                    }
+                    // console.log('File deleted successfully from filesystem:', filePath);
+                    res.status(200).json({ message: 'File deleted successfully' });
+                });
+            });
+        });
+    });
+
+
 
 
 }

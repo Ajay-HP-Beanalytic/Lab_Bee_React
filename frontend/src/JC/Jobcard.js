@@ -66,7 +66,7 @@ const Jobcard = ({ jobCardData }) => {
   const [customerName, setCustomerName] = useState('')
   const [projectName, setProjectName] = useState('')
   const [sampleCondition, setSampleCondition] = useState('')
-  const [referanceDocs, setReferanceDocs] = useState('')
+  const [referanceDocs, setReferanceDocs] = useState([])
   const [jcStatus, setJcStatus] = useState('Open');
   const [jcCloseDate, setJcCloseDate] = useState(null);
 
@@ -116,6 +116,11 @@ const Jobcard = ({ jobCardData }) => {
           setEutRows(res.data.eut_details)
           setTestRows(res.data.tests)
           setTestDetailsRows(res.data.tests_details)
+
+          // const attachmentsData = res.data.attachments;
+          setReferanceDocs(res.data.attachments);
+
+          console.log(res.data.attachments)
 
 
           setEditJc(true)
@@ -176,6 +181,19 @@ const Jobcard = ({ jobCardData }) => {
       console.error('Error formatting JC close date:', error);
     }
   }
+
+
+  //Function to handle the attachments
+  const handleFilesChange = (newFiles) => {
+    // const updatedAttachments = [...referanceDocs, ...newFiles];
+    // setReferanceDocs(updatedAttachments);
+
+    setReferanceDocs((prevDocs) => {
+      const updatedAttachments = [...newFiles];
+      return updatedAttachments;
+    });
+  };
+
 
   /////////////////////////////////////////
 
@@ -544,9 +562,6 @@ const Jobcard = ({ jobCardData }) => {
     setTestDetailsRows(updatedRows);
   };
 
-
-  // const eutData = eutdetailsdata(i);
-
   const staticOptions = [
     { label: `Jc Number: ${jcNumberString}` },
     { label: `Dc Number: ${dcNumber}` },
@@ -625,15 +640,11 @@ const Jobcard = ({ jobCardData }) => {
   }
 
 
-
   const handleCloseJobcard = () => {
     navigate('/jobcard_dashboard')
   }
 
 
-  const handleDownloadJobcard = () => {
-    alert('Download')
-  }
 
   //////////////////////////////////////////////////////////
 
@@ -642,13 +653,8 @@ const Jobcard = ({ jobCardData }) => {
 
   const tableCellStyle = { color: 'white' }
 
-
-
-
-  //Font for thetable headers:
+  //Font for the table headers:
   const tableHeaderFont = { fontSize: 16, fontWeight: 'bold' }
-
-
 
   return (
 
@@ -899,7 +905,12 @@ const Jobcard = ({ jobCardData }) => {
                   </div>
 
                   <div>
-                    <FileUploadComponent fieldName="Attach Files" />
+                    <FileUploadComponent
+                      fieldName="Attach Files"
+                      onFilesChange={handleFilesChange}
+                      jcNumber={jcNumberString}
+                      existingAttachments={referanceDocs}
+                    />
                   </div>
 
                   <br />

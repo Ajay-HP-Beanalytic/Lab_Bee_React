@@ -1,49 +1,152 @@
-
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import { Button, FormControl, IconButton, List, ListItem, ListItemText, TextField, Typography } from '@mui/material'
 import ClearIcon from '@mui/icons-material/Clear';
 import DeleteIcon from '@mui/icons-material/Delete';
+import { serverBaseAddress } from '../Pages/APIPage';
+import axios from 'axios';
 
 
-export default function FileUploadComponent({ fieldName = 'Attach files or Documents' }) {
+export default function FileUploadComponent({ fieldName = 'Attach files or Documents', onFilesChange, jcNumber, existingAttachments = [] }) {
 
   const fileInputRef = useRef(null);
   const [attachedFiles, setAttachedFiles] = useState([]);
+  const [fetchedAttachments, setFetchedAttachments] = useState(existingAttachments);
+
+  useEffect(() => {
+    // Initialize the fetched attachments when the component mounts
+    setFetchedAttachments(existingAttachments);
+  }, [existingAttachments]);
 
   const handleAttachedFileChange = async (e) => {
-    const files = Array.from(e.target.files);
-    setAttachedFiles(files);
+    // const files = Array.from(e.target.files);
+    // setAttachedFiles(prevFiles => {
+    //   const updatedFiles = [...prevFiles, ...files];
+    //   onFilesChange(updatedFiles); // Notify parent component of the change
+    //   return updatedFiles;
+    // })
 
-    const formData = new FormData();
-    files.forEach((file, index) => {
-      formData.append(`file${index}`, file);
+    const files = Array.from(e.target.files);
+    setAttachedFiles(prevFiles => {
+      const updatedFiles = [...prevFiles, ...files];
+      onFilesChange([...fetchedAttachments, ...updatedFiles]); // Notify parent component of the change
+      return updatedFiles;
     });
 
-    console.log('formData', formData)
+    try {
+      const formData = new FormData();
+      formData.append('jcNumber', jcNumber);
+      files.forEach((file, index) => {
+        formData.append('attachedFiles', file);
+      });
 
-    // try {
-    //   const response = await axios.post('/api/upload', formData, {
-    //     headers: {
-    //       'Content-Type': 'multipart/form-data'
-    //     }
-    //   });
-    //   console.log('Files uploaded successfully:', response.data);
-    // } catch (error) {
-    //   console.error('Error uploading files:', error);
-    // }
+      const response = await axios.post(`${serverBaseAddress}/api/uploadFiles`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      console.log('Files uploaded successfully:', response.data);
+    } catch (error) {
+      console.error('Error uploading files:', error);
+    }
   };
+
+
+  // const handleRemoveAttachedFile = (index) => {
+  //   setAttachedFiles(prevFiles => prevFiles.filter((_, i) => i !== index));
+  //   onFilesChange(attachedFiles.filter((_, i) => i !== index));
+  // };
+
+  // const handleRemoveAttachedFile = (index) => {
+  //   setAttachedFiles(prevFiles => {
+  //     const updatedFiles = prevFiles.filter((_, i) => i !== index);
+  //     onFilesChange([...fetchedAttachments, ...updatedFiles]);
+  //     return updatedFiles;
+  //   });
+  // };
 
   const handleRemoveAttachedFile = (index) => {
-    const updatedFiles = [...attachedFiles];
-    updatedFiles.splice(index, 1);
-    setAttachedFiles(updatedFiles);
+    setAttachedFiles(prevFiles => {
+      const updatedFiles = prevFiles.filter((_, i) => i !== index);
+      onFilesChange([...fetchedAttachments, ...updatedFiles]);
+      return updatedFiles;
+    });
   };
 
-  const handleFileClick = (file) => {
-    console.log('clicked', file);
-    const fileURL = URL.createObjectURL(file);
-    window.open(fileURL, '_blank');
+
+  // const handleFileDelete = async (index, attachmentId) => {
+  //   try {
+  //     await axios.delete(`${serverBaseAddress}/api/deleteFile/${attachmentId}`);
+  //     // Remove the attachment from the local state
+  //     setFetchedAttachments(prev => {
+  //       const updatedAttachments = prev.filter((_, i) => i !== index);
+  //       onFilesChange([...updatedAttachments, ...attachedFiles]);
+  //       return updatedAttachments;
+  //     });
+  //   } catch (error) {
+  //     console.error('Error deleting file:', error);
+  //   }
+  // };
+
+  const handleFileDelete = async (index, attachmentId) => {
+    try {
+      await axios.delete(`${serverBaseAddress}/api/deleteFile/${attachmentId}`);
+      setFetchedAttachments(prev => {
+        const updatedAttachments = prev.filter((_, i) => i !== index);
+        onFilesChange([...updatedAttachments, ...attachedFiles]);
+        return updatedAttachments;
+      });
+    } catch (error) {
+      console.error('Error deleting file:', error);
+    }
   };
+
+
+  // const handleFileClick = (file) => {
+  //   const fileURL = URL.createObjectURL(file);
+  //   window.open(fileURL, '_blank');
+  // };
+
+  const handleFileClick = (file) => {
+    if (file instanceof File) {
+      const fileURL = URL.createObjectURL(file);
+      window.open(fileURL, '_blank');
+    } else {
+      window.open(file.file_url, '_blank'); // Assuming the fetched attachments have a file_url property
+    }
+  };
+
+  // const handleFileClick = (file) => {
+  //   if (file instanceof File) {
+  //     const fileURL = URL.createObjectURL(file);
+  //     window.open(fileURL, '_blank');
+  //   } else {
+  //     if (file && file.file_url) {
+  //       window.open(file.file_url, '_blank');
+  //     } else {
+  //       console.error('Invalid file:', file);
+  //     }
+  //   }
+  // };
+
+
+  // const handleFileClick = async (attachment) => {
+  //   try {
+  //     const fileName = attachment.file_name; // Extract the filename
+  //     // Fetch the attachment from the server using the filename
+  //     const response = await axios.get(`${serverBaseAddress}/api/attachments/${fileName}`, {
+  //       responseType: 'blob',
+  //     });
+  //     // Create a blob URL for the attachment and open it in a new tab
+  //     const blob = new Blob([response.data]);
+  //     const fileURL = URL.createObjectURL(blob);
+  //     window.open(fileURL, '_blank');
+  //   } catch (error) {
+  //     console.error('Error fetching attachment:', error);
+  //   }
+  // };
+
+
+
 
 
   return (
@@ -52,20 +155,39 @@ export default function FileUploadComponent({ fieldName = 'Attach files or Docum
       <Typography variant='h6'>{fieldName}</Typography>
       <input
         type="file"
+        name='attachedFiles'
         multiple
         accept="image/jpeg, image/png, application/pdf, application/msword, application/vnd.openxmlformats-officedocument.wordprocessingml.document, application/vnd.ms-powerpoint"
         onChange={handleAttachedFileChange}
         ref={fileInputRef}
         style={{ display: 'none' }}
       />
+
       <Button variant="contained" onClick={() => fileInputRef.current.click()}>
         Select Files
       </Button>
       <List>
         {attachedFiles.map((file, index) => (
-          <ListItem key={index} ButtonBase onClick={() => handleFileClick(file)}>
-            <ListItemText primary={file.name} />
+          <ListItem key={index} style={{ padding: '4px 16px' }}>
+            <ListItemText
+              primary={file.name}
+              onClick={() => handleFileClick(file)}
+              style={{ cursor: 'pointer' }}
+            />
             <IconButton edge="end" aria-label="delete" onClick={() => handleRemoveAttachedFile(index)}>
+              <DeleteIcon />
+            </IconButton>
+          </ListItem>
+        ))}
+
+        {fetchedAttachments.map((file, index) => (
+          <ListItem key={index} style={{ padding: '4px 16px' }}>
+            <ListItemText
+              primary={file.file_name}
+              onClick={() => handleFileClick(file)}
+              style={{ cursor: 'pointer' }}
+            />
+            <IconButton edge="end" aria-label="delete" onClick={() => handleFileDelete(index, file.id)}>
               <DeleteIcon />
             </IconButton>
           </ListItem>
@@ -73,68 +195,4 @@ export default function FileUploadComponent({ fieldName = 'Attach files or Docum
       </List>
     </div>
   );
-
 }
-
-
-{/* <div style={{ width: '50%' }}>
-  <Typography variant='h6'>{fieldName}</Typography>
-  <input
-    type="file"
-    multiple
-    accept="image/jpeg, image/png, application/pdf, application/msword, application/vnd.openxmlformats-officedocument.wordprocessingml.document, application/vnd.ms-powerpoint"
-    onChange={handleAttachedFileChange}
-    ref={fileInputRef}
-  />
-
-  <List>
-    {attachedFiles.map((fileName, index) => (
-      <ListItem key={index}>
-        <ListItemText primary={<a href="#" onClick={(e) => { e.preventDefault(); handleFileClick(fileName); }}>{fileName}</a>} />
-        <IconButton onClick={() => handleRemoveAttachedFile(index)}> <ClearIcon /> </IconButton>
-      </ListItem>
-    ))}
-  </List>
-
-</div> */}
-
-
-
-
-
-// <div style={{ width: '50%' }}>
-//   <Typography variant='h6'> {fieldName}</Typography>
-//   <FormControl>
-//     <input
-//       type='file'
-//       multiple
-//       accept="image/jpeg, image/png, application/pdf, application/msword, application/vnd.openxmlformats-officedocument.wordprocessingml.document, application/vnd.ms-powerpoint"
-//       onChange={handleAttachedFileChange}
-//       ref={fileInputRef}
-//     />
-
-//     <TextField
-//       fullWidth
-//       value={attachedFiles.join(', ')}
-//       // readOnly
-//       onClick={() => fileInputRef.current.click()}  // Trigger file input click when TextField is clicked
-//       variant="outlined"
-//       InputProps={{
-//         readOnly: true,  // Prevent editing
-//       }}
-//     />
-//   </FormControl>
-
-//   <div>
-//     {attachedFiles.length > 0 && (
-//       <List>
-//         {attachedFiles.map((fileName, index) => (
-//           <ListItem key={index}>
-//             <ListItemText primary={<a href="#" onClick={(e) => { e.preventDefault(); window.open(fileName); }}>{fileName}</a>} />
-//             <IconButton onClick={() => handleRemoveAttachedFile(index)}> <ClearIcon /> </IconButton>
-//           </ListItem>
-//         ))}
-//       </List>
-//     )}
-//   </div>
-// </div>

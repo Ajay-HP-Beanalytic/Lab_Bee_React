@@ -385,8 +385,8 @@ function createAttachmentsTable() {
         id INT NOT NULL AUTO_INCREMENT,
         jc_number VARCHAR(1000),
         file_name VARCHAR(1000),
-        file_path VARCHAR(100),
-        file_type VARCHAR(50),
+        file_path VARCHAR(1000),
+        file_type VARCHAR(100),
         uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         PRIMARY KEY(id)
     )`;

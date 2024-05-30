@@ -44,7 +44,7 @@ const ReliabilityTaskManagement = ({ reliabilityTaskRow, setReliabilityTaskRow, 
         })
         .catch(error => console.error(error))
     }
-  }, [rowAdded])
+  }, [id, setReliabilityTaskRow])
 
   // Function to add the row:
   const handleAddNewRow = () => {
@@ -52,7 +52,7 @@ const ReliabilityTaskManagement = ({ reliabilityTaskRow, setReliabilityTaskRow, 
     if (reliabilityTaskRow.length > 0) {
       const lastId = reliabilityTaskRow[reliabilityTaskRow.length - 1].id
       newRow = { id: lastId + 1, startDate: null, endDate: null, completedDate: null };
-      setReliabilityTaskRow([...reliabilityTaskRow, newRow]);
+
     } else {
       newRow = { id: 0, startDate: null, endDate: null, completedDate: null };
     }
@@ -63,20 +63,28 @@ const ReliabilityTaskManagement = ({ reliabilityTaskRow, setReliabilityTaskRow, 
 
   // Function to remove the row:
   const handleRemoveRow = (id) => {
+    setRowAdded(false)
     const updatedRows = reliabilityTaskRow.filter((row) => row.id !== id);
     setReliabilityTaskRow(updatedRows);
-    setRowAdded(false)
 
-    console.log('Removed')
-    console.log('updatedRows', updatedRows)
   }
 
+
+
   // Function to handle the cell inputs of the rows:
+  // const handleTaskRowChange = (index, field, value) => {
+  //   const updatedRows = [...reliabilityTaskRow];
+  //   updatedRows[index] = { ...updatedRows[index], [field]: value };
+
+  //   onReliabilityTaskRowChange(updatedRows)
+  //   setReliabilityTaskRow(updatedRows);
+  // };
+
   const handleTaskRowChange = (index, field, value) => {
     const updatedRows = [...reliabilityTaskRow];
     updatedRows[index] = { ...updatedRows[index], [field]: value };
 
-    onReliabilityTaskRowChange(updatedRows)
+    onReliabilityTaskRowChange(updatedRows);
     setReliabilityTaskRow(updatedRows);
   };
 
@@ -165,33 +173,6 @@ const ReliabilityTaskManagement = ({ reliabilityTaskRow, setReliabilityTaskRow, 
                         {reliabilityTasks.map((item) => (<MenuItem key={item.id} value={item.task_description}>{item.task_description}</MenuItem>))}
                       </Select>
                     </FormControl>
-
-                    {/* <FormControl sx={{ width: '100%', borderRadius: 3 }}>
-                      <InputLabel>Task Description</InputLabel>
-                      <Select
-                        label="task-description"
-                        multiple 
-                        // value={row.taskDescription}
-                        value={row.taskDescription || []} // Ensure value is an array
-                        onChange={(e) => handleTaskRowChange(index, 'taskDescription', e.target.value)}
-
-                        renderValue={(selected) => (
-                          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                            {selected.map((value) => (
-                              <Chip key={value} label={value} />
-                            ))}
-                          </Box>
-                        )}
-                        MenuProps={MenuProps}
-                      >
-                        {reliabilityTasks.map((item) => (
-                          <MenuItem key={item.id} value={item.task_description}>
-                            {item.task_description}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl> */}
-
                   </TableCell>
 
                   <TableCell >
@@ -272,7 +253,7 @@ const ReliabilityTaskManagement = ({ reliabilityTaskRow, setReliabilityTaskRow, 
                   </TableCell>
 
                   <TableCell >
-                    <LocalizationProvider dateAdapter={AdapterDayjs}>
+                    {/* <LocalizationProvider dateAdapter={AdapterDayjs}>
                       <DatePicker
                         sx={{ width: '100%', borderRadius: 3 }}
                         label="Completed Date"
@@ -284,17 +265,27 @@ const ReliabilityTaskManagement = ({ reliabilityTaskRow, setReliabilityTaskRow, 
                         renderInput={(props) => <TextField {...props} />}
                         format="DD/MM/YYYY"
                       />
+                    </LocalizationProvider> */}
+
+                    <LocalizationProvider dateAdapter={AdapterDayjs}>
+                      <DatePicker
+                        sx={{ width: '100%', borderRadius: 3 }}
+                        label="Completed Date"
+                        variant="outlined"
+                        margin="normal"
+                        value={row.task_completed_date ? dayjs(row.task_completed_date) : null}
+                        onChange={(date) => handleTaskRowChange(index, 'task_completed_date', date ? date.toISOString() : null)}
+                        renderInput={(props) => <TextField {...props} />}
+                        format="DD/MM/YYYY"
+                      />
                     </LocalizationProvider>
                   </TableCell>
 
                   <TableCell >
                     <TextField style={{ align: "center" }} variant="outlined"
-                      // value={row.noteRemarks}
                       value={row.note_remarks || ''}
                       onChange={(e) => handleTaskRowChange(index, 'note_remarks', e.target.value)} />
                   </TableCell>
-
-
 
                   <TableCell>
                     <IconButton size='small'>
@@ -303,7 +294,6 @@ const ReliabilityTaskManagement = ({ reliabilityTaskRow, setReliabilityTaskRow, 
                       </Tooltip>
                     </IconButton>
                   </TableCell>
-
 
                 </TableRow>
               ))}
