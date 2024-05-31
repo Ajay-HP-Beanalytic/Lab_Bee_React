@@ -32,21 +32,24 @@ const darkTheme = createTheme({
   },
 });
 
-const boxstyle = {
+
+const boxStyle = {
   position: "absolute",
   top: "50%",
   left: "50%",
   transform: "translate(-50%, -50%)",
-  width: "75%",
-  height: "70%",
+  width: { xs: "90%", sm: "80%", md: "75%" },
+  height: { xs: "80%", sm: "70%", md: "70%" },
   bgcolor: "background.paper",
-  boxShadow: 24,
+  boxShadow: 10,
+  padding: { xs: 2, sm: 3, md: 4 },
+  overflowY: "auto",
 };
 
 const RegisterLogoAndText = {
-  position: "relative",
-  top: "50%",
-  left: "30%",
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
 };
 
 
@@ -149,215 +152,377 @@ export default function Register() {
 
 
   return (
+    // <div
+    //   style={{
+    //     backgroundImage: "linear-gradient(135deg, #009FFD 10%, #2A2A72 100%)",
+    //     backgroundSize: "cover",
+    //     height: "100vh",
+    //     color: "#f5f5f5",
+    //   }}
+    // >
+    //   <Box sx={boxStyle}>
+    //     <Grid container>
+    //       <Grid item xs={12} sm={12} md={6}>
+    //         <Box
+    //           sx={{
+    //             backgroundImage: `url(${bg})`,
+    //             backgroundSize: "cover",
+    //             marginTop: { xs: "20px", sm: "40px" },
+    //             marginX: { xs: "10px", sm: "15px" },
+    //             height: { xs: "30vh", sm: "63vh" },
+    //             color: "#f5f5f5",
+    //           }}
+    //         ></Box>
+    //       </Grid>
+    //       <Grid item xs={12} sm={12} md={6}>
+    //         <Box
+    //           sx={{
+    //             backgroundSize: "cover",
+    //             height: { xs: "60vh", sm: "70vh" },
+    //             minHeight: "500px",
+    //             backgroundColor: "#3b33d5",
+    //           }}
+    //         >
+    //           <ThemeProvider theme={darkTheme}>
+    //             <Container>
+    //               <Box height={35} />
+    //               <Box sx={RegisterLogoAndText}>
+    //                 <Avatar
+    //                   sx={{ mb: 2, bgcolor: "#ffffff" }}
+    //                 >
+    //                   <LockOutlinedIcon />
+    //                 </Avatar>
+    //                 <Typography variant="h4" sx={{ textAlign: 'center' }}>
+    //                   Create Account
+    //                 </Typography>
+    //               </Box>
+    //               <Box
+    //                 component="form"
+    //                 noValidate
+    //                 onSubmit={handleRegisterUser}
+    //                 sx={{ mt: 2 }}
+    //               >
 
-    <>
+    //                 <Grid container spacing={1}>
 
-      <div
-        style={{
-          //backgroundImage: `url(${bgimg})`,
-          backgroundImage: "linear-gradient(135deg, #009FFD 10%, #2A2A72 100%)",
-          backgroundSize: "cover",
-          height: "100vh",
-          color: "#f5f5f5",
-        }}
-      >
-        <Box sx={boxstyle}>
-          <Grid container>
-            <Grid item xs={12} sm={12} lg={6}>
-              <Box
-                style={{
-                  backgroundImage: `url(${bg})`,
-                  backgroundSize: "cover",
-                  marginTop: "40px",
-                  marginLeft: "15px",
-                  marginRight: "15px",
-                  height: "63vh",
-                  color: "#f5f5f5",
-                }}
-              ></Box>
-            </Grid>
-            <Grid item xs={12} sm={12} lg={6}>
-              <Box
-                style={{
-                  backgroundSize: "cover",
-                  height: "70vh",
-                  minHeight: "500px",
-                  backgroundColor: "#3b33d5",
-                }}
-              >
-                <ThemeProvider theme={darkTheme}>
-                  <Container>
-                    <Box height={35} />
-                    <Box sx={RegisterLogoAndText}>
-                      <Avatar
-                        sx={{ ml: "100px", mb: "4px", bgcolor: "#ffffff" }}
-                      >
-                        <LockOutlinedIcon />
-                      </Avatar>
-                      <Typography variant="h4" sx={{ mt: 1, mr: '390px' }}>
-                        Create Account
-                      </Typography>
-                    </Box>
-                    <Box
-                      component="form"
-                      noValidate
-                      onSubmit={handleRegisterUser}
-                      sx={{ mt: 2 }}
-                    >
+    //                   <Grid item xs={12} sx={{ mx: { xs: "1em", sm: "3em" } }}>
+    //                     <TextField
+    //                       name="name"
+    //                       value={name} onChange={(e) => setNameString(e.target.value)}
+    //                       required
+    //                       fullWidth
+    //                       type="name"
+    //                       variant="outlined"
+    //                       label='Name'
+    //                       placeholder="Enter your name">
+    //                       Name
+    //                     </TextField>
+    //                   </Grid>
 
-                      <Grid item xs={12} md={6} container spacing={1}>
-
-                        <Grid item xs={12} sx={{ ml: "3em", mr: "3em" }}>
-                          <TextField
-                            name="name"
-                            value={name} onChange={(e) => setNameString(e.target.value)}
-                            required
-                            fullWidth
-                            type="name"
-                            variant="outlined"
-                            label='Name'
-                            placeholder="Enter your name">
-                            Name
-                          </TextField>
-                        </Grid>
-
-                        <Grid item xs={12} sx={{ ml: "3em", mr: "3em" }}>
-                          <TextField
-                            name="email"
-                            value={email} onChange={(e) => setEmailString(e.target.value)}
-                            required
-                            fullWidth
-                            autoComplete="email"
-                            type="email"
-                            variant="outlined"
-                            label='Email'
-                            placeholder="Enter your email">
-                            Email
-                          </TextField>
-                        </Grid>
+    //                   <Grid item xs={12} sx={{ mx: { xs: "1em", sm: "3em" } }}>
+    //                     <TextField
+    //                       name="email"
+    //                       value={email} onChange={(e) => setEmailString(e.target.value)}
+    //                       required
+    //                       fullWidth
+    //                       autoComplete="email"
+    //                       type="email"
+    //                       variant="outlined"
+    //                       label='Email'
+    //                       placeholder="Enter your email">
+    //                       Email
+    //                     </TextField>
+    //                   </Grid>
 
 
-                        <Grid item xs={12} sx={{ ml: "3em", mr: "3em" }}>
+    //                   <Grid item xs={12} sx={{ mx: { xs: "1em", sm: "3em" } }}>
 
-                          <FormControl sx={{ width: '100%' }} variant="outlined" required>
-                            <InputLabel htmlFor="initial-password-id">Password</InputLabel>
-                            <OutlinedInput
-                              id="initial-password-id"
-                              value={password} onChange={(e) => setPasswordString(e.target.value)}
+    //                     <FormControl sx={{ width: '100%' }} variant="outlined" required>
+    //                       <InputLabel htmlFor="initial-password-id">Password</InputLabel>
+    //                       <OutlinedInput
+    //                         id="initial-password-id"
+    //                         value={password} onChange={(e) => setPasswordString(e.target.value)}
 
-                              type={showPassword ? 'text' : 'password'}
-                              endAdornment={
-                                <InputAdornment position="end">
-                                  <IconButton
-                                    aria-label="toggle password1 visibility"
-                                    onClick={handleClickShowPassword}
-                                    onMouseDown={handleMouseDownPassword1}
-                                    edge="end"
-                                  >
-                                    {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
-                                  </IconButton>
-                                </InputAdornment>
-                              }
-                              label="Password"
-                            />
-                          </FormControl>
-                        </Grid>
+    //                         type={showPassword ? 'text' : 'password'}
+    //                         endAdornment={
+    //                           <InputAdornment position="end">
+    //                             <IconButton
+    //                               aria-label="toggle password1 visibility"
+    //                               onClick={handleClickShowPassword}
+    //                               onMouseDown={handleMouseDownPassword1}
+    //                               edge="end"
+    //                             >
+    //                               {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+    //                             </IconButton>
+    //                           </InputAdornment>
+    //                         }
+    //                         label="Password"
+    //                       />
+    //                     </FormControl>
+    //                   </Grid>
 
-                        <Grid item xs={12} sx={{ ml: "3em", mr: "3em" }}>
+    //                   <Grid item xs={12} sx={{ mx: { xs: "1em", sm: "3em" } }}>
 
-                          <FormControl sx={{ width: '100%' }} variant="outlined" required>
-                            <InputLabel htmlFor="confirm-password-id">Confirm Password</InputLabel>
-                            <OutlinedInput
-                              id="confirm-password-id"
-                              value={confirmPassword} onChange={(e) => setConfirmPasswordString(e.target.value)}
-                              type={showConfirmPassword ? 'text' : 'password'}
-                              endAdornment={
-                                <InputAdornment position="end">
-                                  <IconButton
-                                    aria-label="toggle password2 visibility"
-                                    onClick={handleClickShowConfirmPassword}
-                                    onMouseDown={handleMouseDownPassword2}
-                                    edge="end"
-                                  >
-                                    {showConfirmPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
-                                  </IconButton>
-                                </InputAdornment>
-                              }
-                              label="Confirm Password"
-                            />
-                          </FormControl>
+    //                     <FormControl sx={{ width: '100%' }} variant="outlined" required>
+    //                       <InputLabel htmlFor="confirm-password-id">Confirm Password</InputLabel>
+    //                       <OutlinedInput
+    //                         id="confirm-password-id"
+    //                         value={confirmPassword} onChange={(e) => setConfirmPasswordString(e.target.value)}
+    //                         type={showConfirmPassword ? 'text' : 'password'}
+    //                         endAdornment={
+    //                           <InputAdornment position="end">
+    //                             <IconButton
+    //                               aria-label="toggle password2 visibility"
+    //                               onClick={handleClickShowConfirmPassword}
+    //                               onMouseDown={handleMouseDownPassword2}
+    //                               edge="end"
+    //                             >
+    //                               {showConfirmPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+    //                             </IconButton>
+    //                           </InputAdornment>
+    //                         }
+    //                         label="Confirm Password"
+    //                       />
+    //                     </FormControl>
+    //                   </Grid>
 
-                        </Grid>
+    //                   <Grid item xs={12} sm={6} sx={{ mx: { xs: "1em", sm: "5em" } }}>
+    //                     <Button
+    //                       type="submit"
+    //                       variant="contained"
+    //                       fullWidth
+    //                       size="large"
+    //                       sx={{
+    //                         mt: "15px",
+    //                         borderRadius: 28,
+    //                         color: "#ffffff",
+    //                         backgroundColor: "#ffa31a",
+    //                       }}
+    //                     >
+    //                       Register
+    //                     </Button>
+    //                   </Grid>
 
+    //                   <Grid item xs={12} sm={6} sx={{ mx: { xs: "1em", sm: "5em" } }}>
+    //                     <Button
+    //                       variant="contained"
+    //                       fullWidth
+    //                       size="large"
+    //                       sx={{
+    //                         mt: "15px",
+    //                         borderRadius: 28,
+    //                         color: "#ffffff",
+    //                         backgroundColor: "#ffa31a",
+    //                       }}
+    //                       onClick={handleCancelUserRegistration}
+    //                     >
+    //                       Clear
+    //                     </Button>
+    //                   </Grid>
 
-                        <Grid item xs={6} sx={{ ml: "5em", mr: "5em" }}>
-                          <Button
-                            type="submit"
-                            variant="contained"
-                            fullWidth={Boolean("true")}
-                            size="large"
-                            sx={{
-                              mt: "15px",
-                              mr: "20px",
-                              borderRadius: 28,
-                              color: "#ffffff",
-                              minWidth: "170px",
-                              backgroundColor: "#ffa31a",
-                            }}
-                          >
-                            Register
-                          </Button>
-                        </Grid>
+    //                   <Grid item xs={12} sx={{ mx: { xs: "1em", sm: "3em" } }}>
+    //                     <Stack direction="row" spacing={2}>
+    //                       <Typography variant="h6" component="span" sx={{ mt: "10px", textAlign: 'center' }}>
+    //                         Already have an Account?{" "}
+    //                         <span
+    //                           style={{ color: "#beb4fb", cursor: "pointer" }}
+    //                           onClick={() => {
+    //                             navigate("/");
+    //                           }}
+    //                         >
+    //                           Sign In
+    //                         </span>
+    //                       </Typography>
+    //                     </Stack>
+    //                   </Grid>
+    //                 </Grid>
+    //               </Box>
+    //             </Container>
+    //           </ThemeProvider>
+    //         </Box>
+    //       </Grid>
+    //     </Grid>
+    //   </Box>
+    // </div >
 
-
-                        <Grid item xs={6} sx={{ ml: "5em", mr: "5em" }}>
-                          <Button
-                            variant="contained"
-                            fullWidth={Boolean("true")}
-                            size="large"
-                            sx={{
-                              mt: "15px",
-                              mr: "20px",
-                              borderRadius: 28,
-                              color: "#ffffff",
-                              minWidth: "170px",
-                              backgroundColor: "#ffa31a",
-                            }}
-                            onClick={handleCancelUserRegistration}
-                          >
-                            Clear
-                          </Button>
-                        </Grid>
-
-
-                        <Grid item xs={6} sx={{ ml: "3em", mr: "3em" }}>
-                          <Stack direction="row" spacing={2}>
-                            <Typography
-                              variant="h6"
-                              component="span"
-                              style={{ marginTop: "10px" }}
-                            >
-                              Already have an Account?{" "}
-                              <span
-                                style={{ color: "#beb4fb", cursor: "pointer" }}
-                                onClick={() => {
-                                  navigate("/");
-                                }}
-                              >
-                                Sign In
-                              </span>
-                            </Typography>
-                          </Stack>
-                        </Grid>
-                      </Grid>
-                    </Box>
-                  </Container>
-                </ThemeProvider>
-              </Box>
-            </Grid>
+    <div
+      style={{
+        backgroundImage: "linear-gradient(135deg, #009FFD 10%, #2A2A72 100%)",
+        backgroundSize: "cover",
+        height: "100vh",
+        color: "#f5f5f5",
+      }}
+    >
+      <Box sx={boxStyle}>
+        <Grid container>
+          <Grid item xs={12} sm={12} md={6}>
+            <Box
+              sx={{
+                backgroundImage: `url(${bg})`,
+                backgroundSize: "cover",
+                marginTop: { xs: "20px", sm: "40px" },
+                marginX: { xs: "10px", sm: "15px" },
+                height: { xs: "30vh", sm: "63vh" },
+                color: "#f5f5f5",
+              }}
+            ></Box>
           </Grid>
-        </Box>
-      </div >
-    </>
+          <Grid item xs={12} sm={12} md={6}>
+            <Box
+              sx={{
+                backgroundSize: "cover",
+                height: { xs: "60vh", sm: "70vh" },
+                minHeight: "500px",
+                backgroundColor: "#3b33d5",
+              }}
+            >
+              <ThemeProvider theme={darkTheme}>
+                <Container>
+                  <Box height={35} />
+                  <Box sx={RegisterLogoAndText}>
+                    <Avatar sx={{ mb: 2, bgcolor: "#ffffff" }}>
+                      <LockOutlinedIcon />
+                    </Avatar>
+                    <Typography variant="h4" sx={{ textAlign: 'center' }}>
+                      Create Account
+                    </Typography>
+                  </Box>
+                  <Box
+                    component="form"
+                    noValidate
+                    onSubmit={handleRegisterUser}
+                    sx={{ mt: 2 }}
+                  >
+                    <Grid container spacing={1}>
+                      <Grid item xs={12} sx={{ mx: { xs: "1em", sm: "3em" } }}>
+                        <TextField
+                          name="name"
+                          value={name}
+                          onChange={(e) => setNameString(e.target.value)}
+                          required
+                          fullWidth
+                          type="name"
+                          variant="outlined"
+                          label="Name"
+                          placeholder="Enter your name"
+                        />
+                      </Grid>
+                      <Grid item xs={12} sx={{ mx: { xs: "1em", sm: "3em" } }}>
+                        <TextField
+                          name="email"
+                          value={email}
+                          onChange={(e) => setEmailString(e.target.value)}
+                          required
+                          fullWidth
+                          autoComplete="email"
+                          type="email"
+                          variant="outlined"
+                          label="Email"
+                          placeholder="Enter your email"
+                        />
+                      </Grid>
+                      <Grid item xs={12} sx={{ mx: { xs: "1em", sm: "3em" } }}>
+                        <FormControl sx={{ width: '100%' }} variant="outlined" required>
+                          <InputLabel htmlFor="initial-password-id">Password</InputLabel>
+                          <OutlinedInput
+                            id="initial-password-id"
+                            value={password}
+                            onChange={(e) => setPasswordString(e.target.value)}
+                            type={showPassword ? 'text' : 'password'}
+                            endAdornment={
+                              <InputAdornment position="end">
+                                <IconButton
+                                  aria-label="toggle password visibility"
+                                  onClick={handleClickShowPassword}
+                                  onMouseDown={handleMouseDownPassword1}
+                                  edge="end"
+                                >
+                                  {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                                </IconButton>
+                              </InputAdornment>
+                            }
+                            label="Password"
+                          />
+                        </FormControl>
+                      </Grid>
+                      <Grid item xs={12} sx={{ mx: { xs: "1em", sm: "3em" } }}>
+                        <FormControl sx={{ width: '100%' }} variant="outlined" required>
+                          <InputLabel htmlFor="confirm-password-id">Confirm Password</InputLabel>
+                          <OutlinedInput
+                            id="confirm-password-id"
+                            value={confirmPassword}
+                            onChange={(e) => setConfirmPasswordString(e.target.value)}
+                            type={showConfirmPassword ? 'text' : 'password'}
+                            endAdornment={
+                              <InputAdornment position="end">
+                                <IconButton
+                                  aria-label="toggle password visibility"
+                                  onClick={handleClickShowConfirmPassword}
+                                  onMouseDown={handleMouseDownPassword2}
+                                  edge="end"
+                                >
+                                  {showConfirmPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                                </IconButton>
+                              </InputAdornment>
+                            }
+                            label="Confirm Password"
+                          />
+                        </FormControl>
+                      </Grid>
+                      <Grid item xs={12} sm={6} sx={{ mx: { xs: "1em", sm: "5em" } }}>
+                        <Button
+                          type="submit"
+                          variant="contained"
+                          fullWidth
+                          size="large"
+                          sx={{
+                            mt: "15px",
+                            borderRadius: 28,
+                            color: "#ffffff",
+                            backgroundColor: "#ffa31a",
+                          }}
+                        >
+                          Register
+                        </Button>
+                      </Grid>
+                      <Grid item xs={12} sm={6} sx={{ mx: { xs: "1em", sm: "5em" } }}>
+                        <Button
+                          variant="contained"
+                          fullWidth
+                          size="large"
+                          sx={{
+                            mt: "15px",
+                            borderRadius: 28,
+                            color: "#ffffff",
+                            backgroundColor: "#ffa31a",
+                          }}
+                          onClick={handleCancelUserRegistration}
+                        >
+                          Clear
+                        </Button>
+                      </Grid>
+                      <Grid item xs={12} sx={{ mx: { xs: "1em", sm: "3em" } }}>
+                        <Stack direction="row" spacing={2} justifyContent="center">
+                          <Typography variant="h6" component="span" sx={{ mt: "10px", textAlign: 'center' }}>
+                            Already have an Account?{" "}
+                            <span
+                              style={{ color: "#beb4fb", cursor: "pointer" }}
+                              onClick={() => navigate("/")}
+                            >
+                              Sign In
+                            </span>
+                          </Typography>
+                        </Stack>
+                      </Grid>
+                    </Grid>
+                  </Box>
+                </Container>
+              </ThemeProvider>
+            </Box>
+          </Grid>
+        </Grid>
+      </Box>
+    </div>
+
   );
 }

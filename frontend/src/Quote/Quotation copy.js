@@ -1,7 +1,7 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box, Typography, Container, TextField, Button, Table, TableBody, TableCell, TableContainer, TableHead,
-  TableRow, Paper, IconButton, Tooltip, Grid, InputLabel, MenuItem, FormControl, Select, Autocomplete, Divider,
+  TableRow, Paper, IconButton, Tooltip, Grid, InputLabel, MenuItem, FormControl, Select, Checkbox, Autocomplete, FormControlLabel, Stack, Divider,
 } from '@mui/material';
 import axios from "axios";
 import moment from "moment";                     // To convert the date into desired format
@@ -13,16 +13,13 @@ import { styled } from '@mui/material/styles';
 
 import AddIcon from '@mui/icons-material/Add';
 import RemoveIcon from '@mui/icons-material/Remove';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import FileDownloadIcon from '@mui/icons-material/FileDownload';
 import { useNavigate, useParams } from 'react-router-dom';
 
 
 import { serverBaseAddress } from '../Pages/APIPage';
 import DocToPdf from './DocToPdf';
-import { UserContext } from '../Pages/UserContext';
-import { DatePicker, LocalizationProvider } from '@mui/x-date-pickers';
-import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
-import dayjs from 'dayjs';
 
 
 
@@ -102,6 +99,8 @@ export default function Quotation() {
   const [selectedDate, setSelectedDate] = useState(formattedDate);
 
   // State variable to set the user name:
+  const [quotationCreatedBy, setQuotationCreatedBy] = useState('')
+
 
   const [isTotalDiscountVisible, setIsTotalDiscountVisible] = useState(false);
 
@@ -117,9 +116,6 @@ export default function Quotation() {
   const [selectedCompanyId, setSelectedCompanyId] = useState('');
 
 
-  const { loggedInUser, loggedInUserDepartment } = useContext(UserContext);
-  const [quotationCreatedBy, setQuotationCreatedBy] = useState(loggedInUser)
-
   // UseEffect to set the quotation data during update of the quotation:
   useEffect(() => {
     if (id) {
@@ -130,13 +126,12 @@ export default function Quotation() {
           setToCompanyAddress(result.data[0].company_address)
           setCustomerId(result.data[0].customer_id)
           setCustomerreferance(result.data[0].customer_referance)
-          setSelectedDate(moment(result.data[0].quote_given_date).format("YYYY-MM-DD"))
+          setSelectedDate(moment(result.data[0].quote_given_date).format("DD-MM-YYYY"))
           setKindAttention(result.data[0].kind_attention)
           setProjectName(result.data[0].project_name)
           setTotalAmountWords(result.data[0].total_taxable_amount_in_words)
           setEditId(result.data[0].id)
           setQuoteCategory(result.data[0].quote_category)
-          setQuoteVersion(result.data[0].quote_version)
           setTableData(JSON.parse(result.data[0].tests))
 
         })
@@ -161,6 +156,23 @@ export default function Quotation() {
 
     // Fetch the last Booking ID when the component mounts
     fetchLatestQuotationId();
+
+
+    // To validate the user credential its very much important
+    axios.defaults.withCredentials = true;
+
+    // Fetch the logged in user name
+    axios.get(`${serverBaseAddress}/api/getLoggedInUser`)
+      .then(res => {
+        if (res.data.valid) {
+          setQuotationCreatedBy(res.data.username)
+          console.log('username: ', res.data.username);
+        } else {
+          console.log('An error is occured while setting up quote created by')
+        }
+      })
+      .catch(err => console.log(err))
+
 
   }, [])
 
@@ -223,17 +235,6 @@ export default function Quotation() {
     setCustomerId(newCompanyName);
     generateDynamicQuotationIdString(newCompanyName);
   };
-
-
-  // To get the selected date and Time
-  const handleQuoteGivenDateChange = (newDate) => {
-    try {
-      const formattedQuoteGivenDate = newDate ? dayjs(newDate).format('YYYY-MM-DD') : null;
-      setSelectedDate(formattedQuoteGivenDate);
-    } catch (error) {
-      console.error('Error formatting JC close date:', error);
-    }
-  }
 
   // Set initial quotation ID based on the company name
   const setInitialQuotationId = (newCompanyName) => {
@@ -333,6 +334,7 @@ export default function Quotation() {
   const handleSubmitETQuotation = async (e) => {
     e.preventDefault();
 
+
     if (!quotationIdString || !customerId || !toCompanyAddress || !selectedDate || !customerId || !customerReferance ||
       !kindAttention || !projectName || !quoteCategory || !quotationCreatedBy || !tableData) {
       toast.error("Please enter all the fields..!");
@@ -359,14 +361,17 @@ export default function Quotation() {
       quotationIdString,
       companyName,
       toCompanyAddress,
-      selectedDate,
+      selectedDate: moment(selectedDate, "DD-MM-YYYY").toDate(), // Format the date before sending
       customerId,
       customerReferance,
       kindAttention,
       projectName,
       quoteCategory,
-      quoteVersion,
       taxableAmount,
+      discountAmount,
+
+      totalAmountAfterDiscount,
+
       totalAmountWords,
       quotationCreatedBy,
       tableData
@@ -475,7 +480,7 @@ export default function Quotation() {
     setTotalAmountWords(numberToWords.toWords(subTotalAfterDiscount).toUpperCase());
     setTotalAmountAfterDiscount(subTotalAfterDiscount);
 
-  }, [tableData, originalTaxableAmount]);
+  }, [tableData, isTotalDiscountVisible, discountAmount, originalTaxableAmount]);
 
 
   // Custom style for the table header
@@ -651,19 +656,15 @@ export default function Quotation() {
                       alignItems: 'flex-end',
                       marginBottom: '16px',
                     }}>
-
-                      <LocalizationProvider dateAdapter={AdapterDayjs}>
-                        <DatePicker
-                          sx={{ width: '50%', mb: '16px', mr: '10px', mt: '20px', borderRadius: 3 }}
-                          label="Quote Given Date"
-                          variant="outlined"
-                          margin="normal"
-                          value={selectedDate ? dayjs(selectedDate) : null}
-                          onChange={handleQuoteGivenDateChange}
-                          renderInput={(props) => <TextField {...props} />}
-                          format="YYYY-MM-DD"
-                        />
-                      </LocalizationProvider>
+                      <TextField
+                        sx={{ width: '50%', marginBottom: '16px', marginRight: '10px', borderRadius: 3 }}
+                        label="Date"
+                        margin="normal"
+                        variant="outlined"
+                        value={selectedDate}
+                        onChange={(e) => { setSelectedDate(e.target.value) }}
+                        fullWidth
+                      />
 
                       {!editId &&
                         <FormControl sx={{ width: '50%', marginBottom: '16px', marginRight: '10px', borderRadius: 3 }}>
@@ -684,7 +685,7 @@ export default function Quotation() {
                           </Select>
                         </FormControl>}
 
-                      {/* {editId &&
+                      {editId &&
                         <TextField
                           sx={{ width: '50%', marginBottom: '16px', marginRight: '10px', borderRadius: 3 }}
                           label="Quotation Version"
@@ -693,18 +694,7 @@ export default function Quotation() {
                           value={quoteVersion}
                           onChange={(e) => { setQuoteVersion(e.target.value) }}
                           fullWidth
-                        />} */}
-
-
-                      <TextField
-                        sx={{ width: '50%', marginBottom: '16px', marginRight: '10px', borderRadius: 3 }}
-                        label="Quotation Version"
-                        margin="normal"
-                        variant="outlined"
-                        value={quoteVersion}
-                        onChange={(e) => { setQuoteVersion(e.target.value) }}
-                        fullWidth
-                      />
+                        />}
 
                     </Box>
 
@@ -860,8 +850,15 @@ export default function Quotation() {
 
 
                   <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                    {/* <TableRow>
+                    <TableRow>
                       <TableCell >
+                        {/* <Typography variant="body1">Check to add Discount</Typography>
+                        <Tooltip label='Show Discount Field' arrow>
+                          <Checkbox
+                            checked={isTotalDiscountVisible}
+                            onChange={(event) => setIsTotalDiscountVisible(event.target.checked)}
+                          />
+                        </Tooltip> */}
 
                         {editId && (<Stack direction='row'>
                           <FormControlLabel
@@ -873,7 +870,7 @@ export default function Quotation() {
 
 
                       </TableCell>
-                    </TableRow> */}
+                    </TableRow>
 
                     <TableRow>
                       <TableCell rowSpan={3} />
@@ -885,7 +882,7 @@ export default function Quotation() {
                       </TableCell>
                     </TableRow>
 
-                    {/* {isTotalDiscountVisible && (
+                    {isTotalDiscountVisible && (
 
                       <>
                         < TableRow >
@@ -913,7 +910,7 @@ export default function Quotation() {
 
                       </>
 
-                    )} */}
+                    )}
 
                     <TableRow>
                       <TableCell colSpan={3}>

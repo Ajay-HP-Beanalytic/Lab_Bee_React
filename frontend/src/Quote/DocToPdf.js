@@ -60,6 +60,7 @@ export default function DocToPdf({ id }) {
     const presentDate = new Date();
     const todaysDate = moment(presentDate).format("DD-MM-YYYY");
     const [quoteCategory, setQuoteCategory] = useState('')
+    const [quoteVersion, setQuoteVersion] = useState('')
     const [tableData, setTableData] = useState(initialTableData);
     const [counter, setCounter] = useState(tableData.length + 1);
     const [taxableAmount, setTaxableAmount] = useState(0);
@@ -137,6 +138,7 @@ export default function DocToPdf({ id }) {
                 QUOTATIONTITLE: quotationTitle,
 
                 selectedQuotationId: selectedQuotationId,
+                quoteVersion: quoteVersion,
                 toCompanyName: toCompanyName,
                 toCompanyAddress: toCompanyAddress,
                 kindAttention: kindAttention,
@@ -215,6 +217,7 @@ export default function DocToPdf({ id }) {
                 setCustomerReferance(result.data[0].customer_referance)
                 setTableData(JSON.parse(result.data[0].tests))
                 setQuoteCategory(result.data[0].quote_category)
+                setQuoteVersion(result.data[0].quote_version ? result.data[0].quote_version : '')
                 setTaxableAmount(result.data[0].total_amount)
                 setTotalAmountInWords(result.data[0].total_taxable_amount_in_words)
                 // console.log('Aj', result.data[0].tests)

@@ -1,25 +1,18 @@
 import React, { useEffect, useState } from 'react'
 
 import {
-  Accordion,
-  AccordionSummary,
-  AccordionDetails,
   Box,
   Card,
-  CardContent,
   FormControl,
   Grid,
   InputLabel,
-  Menu,
   MenuItem,
   Select,
-  Typography
 } from '@mui/material'
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { serverBaseAddress } from '../Pages/APIPage';
 import axios from 'axios';
 import { toast } from 'react-toastify';
-import { getCurrentMonthYear, getFinancialYear } from '../functions/UtilityFunctions';
+import { getCurrentMonthYear } from '../functions/UtilityFunctions';
 import SearchBar from '../common/SearchBar';
 import DateRangeFilter from '../common/DateRangeFilter';
 import { CreatePieChart, CreateBarChart, CreateKpiCard, CreateKpiCardWithAccordion } from '../functions/DashboardFunctions';
@@ -157,8 +150,6 @@ export default function PoInvoiceStatusTable({ newJcAdded, openDialog, setOpenDi
 
 
   //////////////////////////////////////////////////////////////////////////////
-  // console.log('podata', poDataList)
-
   const accordianTitleString = 'Click here to see the list'
 
   //Function for the pie chart
@@ -309,9 +300,6 @@ export default function PoInvoiceStatusTable({ newJcAdded, openDialog, setOpenDi
   const { poStatusData, invoiceStatusData, paymentStatusData } = getPoInvoiceDataForPieChart(poDataList);
 
   const { monthLabels, monthWiseRevenueData } = getMonthwiseRevenueDataForBarChart(poDataList);
-
-  console.log('monthLabels is', monthLabels)
-  console.log('monthWiseRevenueData is', monthWiseRevenueData)
 
   //////////////////////////////////////////////////////////////////////////////
 

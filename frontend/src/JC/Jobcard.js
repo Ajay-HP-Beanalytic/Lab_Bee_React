@@ -35,7 +35,7 @@ const Jobcard = ({ jobCardData }) => {
 
   // State variable to fetch the users list
   const [users, setUsers] = useState([])
-
+  const [reliabilityUsers, setReliabilityUsers] = useState([])
 
 
   const [dateTimeValue, setDateTimeValue] = useState(null);
@@ -85,6 +85,7 @@ const Jobcard = ({ jobCardData }) => {
     id = ''
   }
 
+  // Fetch and update the JC using useEffect
   useEffect(() => {
     if (id) {
       axios.get(`${serverBaseAddress}/api/jobcard/${id}`)
@@ -150,10 +151,8 @@ const Jobcard = ({ jobCardData }) => {
 
   // To get the selected date and Time
   const handleJcStartDateChange = (newDate) => {
-
     try {
-      // Format the selected date into DATETIME format
-      const formattedJcOpenDate = newDate ? dayjs(newDate).format('YYYY-MM-DD HH:mm') : null;
+      const formattedJcOpenDate = newDate ? dayjs(newDate).format('YYYY-MM-DD') : null;
       setJcOpenDate(formattedJcOpenDate);
     } catch (error) {
       console.error('Error formatting JC open date:', error);
@@ -161,9 +160,7 @@ const Jobcard = ({ jobCardData }) => {
   };
 
   const handleItemReceivedDateChange = (newDate) => {
-
     try {
-      // Format the selected date into DATETIME format
       const formattedItemReceivedDate = newDate ? dayjs(newDate).format('YYYY-MM-DD') : null;
       setItemReceivedDate(formattedItemReceivedDate)
     } catch (error) {
@@ -173,9 +170,8 @@ const Jobcard = ({ jobCardData }) => {
 
   // To get the selected date and Time
   const handleJcCloseDateChange = (newDate) => {
-
     try {
-      const formattedCloseDate = newDate ? dayjs(newDate).format('YYYY-MM-DD HH:mm') : null;
+      const formattedCloseDate = newDate ? dayjs(newDate).format('YYYY-MM-DD') : null;
       setJcCloseDate(formattedCloseDate);
     } catch (error) {
       console.error('Error formatting JC close date:', error);
@@ -185,8 +181,6 @@ const Jobcard = ({ jobCardData }) => {
 
   //Function to handle the attachments
   const handleFilesChange = (newFiles) => {
-    // const updatedAttachments = [...referanceDocs, ...newFiles];
-    // setReferanceDocs(updatedAttachments);
 
     setReferanceDocs((prevDocs) => {
       const updatedAttachments = [...newFiles];
@@ -315,6 +309,12 @@ const Jobcard = ({ jobCardData }) => {
         setUsers(result.data)
       })
 
+
+    axios.get(`${serverBaseAddress}/api/getReliabilityUsers/`)
+      .then(result => {
+        setReliabilityUsers(result.data)
+      })
+
     axios.get(`${serverBaseAddress}/api/getChambersList/`)
       .then(chamberResult => {
         setChambersList(chamberResult.data)
@@ -354,7 +354,6 @@ const Jobcard = ({ jobCardData }) => {
         customerNumber,
         projectName,
         sampleCondition,
-        referanceDocs,
         jcStatus,
         reliabilityReportStatus,
         jcCloseDate,
@@ -562,6 +561,7 @@ const Jobcard = ({ jobCardData }) => {
     setTestDetailsRows(updatedRows);
   };
 
+
   const staticOptions = [
     { label: `Jc Number: ${jcNumberString}` },
     { label: `Dc Number: ${dcNumber}` },
@@ -591,7 +591,6 @@ const Jobcard = ({ jobCardData }) => {
   ];
 
 
-
   // To clear the fields of job card:
   const handleClearJobcard = () => {
 
@@ -608,21 +607,11 @@ const Jobcard = ({ jobCardData }) => {
     setSampleCondition('');
     setReferanceDocs('');
     setJcStatus('');
-    // setJcText('');
     setJcCloseDate('');
     setObservations('');
 
   }
 
-
-  // const handleOpenDialog = () => {
-  //   setOpenDialog(true);
-  // };
-
-  // // Function to close the dialog
-  // const handleCloseDialog = () => {
-  //   setOpenDialog(false);
-  // };
 
   const handleOpenModal = () => {
     setOpenModal(true);
@@ -666,21 +655,44 @@ const Jobcard = ({ jobCardData }) => {
 
       <form onSubmit={handleSubmitJobcard}>
 
+
+        <Box sx={{ mb: 1 }}>
+          <Grid container spacing={2} alignItems="center">
+            <Grid item xs={6} sx={{ display: 'flex', justifyContent: 'flex-start' }}>
+              <FormControl sx={{ width: "50%" }}>
+                <InputLabel>JC Category</InputLabel>
+                <Select
+                  label="JC Category"
+                  value={jcCategory}
+                  onChange={(e) => setJcCategory(e.target.value)}
+                >
+                  <MenuItem value="TS1">TS1</MenuItem>
+                  <MenuItem value="Reliability">Reliability</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={6} sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <Typography variant="h5" sx={{ marginBottom: '16px', fontWeight: 'bold', fontStyle: 'italic', color: 'blue', textDecoration: 'underline' }}>
+                JC Number : {jcNumberString}
+              </Typography>
+            </Grid>
+          </Grid>
+        </Box>
+
+
+
+
         <Box sx={{ paddingTop: '5', paddingBottom: '5px', marginTop: '5px', marginBottom: '5px', border: 1, borderColor: 'primary.main' }}>
 
           {/* First Grid box */}
           <Grid container justifyContent="center" spacing={2} >
             <Grid item xs={12} md={6} elevation={4} sx={{ borderRadius: 3 }} >
 
-              <Typography variant='h5' align='center'> Primary JC Details </Typography>
-              <br />
+              <Typography variant='h5' align='center' sx={{ mb: 2 }}> Primary JC Details </Typography>
 
-              <Container component="span" margin={1} paddingright={1} elevation={11}>
+              <Container component="span" margin={1} paddingRight={1} elevation={11}>
 
                 <Box >
-                  <Typography variant="h6" align='center' sx={{ marginBottom: '16px', marginRight: '20px', marginLeft: '20px', fontWeight: 'bold', fontStyle: 'italic', color: 'blue', textDecoration: 'underline' }}>
-                    JC Number : {jcNumberString}
-                  </Typography>
 
                   {/* <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <TextField
@@ -704,70 +716,56 @@ const Jobcard = ({ jobCardData }) => {
                     />
                   </div> */}
 
-                  <br />
-
                   <div style={{ display: 'flex', justifyContent: 'space-between' }} >
+
                     <LocalizationProvider dateAdapter={AdapterDayjs}>
-                      <DateTimePicker sx={{ width: '50%', borderRadius: 3 }}
+                      <DatePicker sx={{ width: '50%', borderRadius: 3, mb: 2 }}
                         label="JC Open Date"
                         variant="outlined"
                         margin="normal"
-                        // value={jcOpenDate}
                         value={jcOpenDate ? dayjs(jcOpenDate) : null} // Pass null if jcOpenDate is null
                         onChange={handleJcStartDateChange}
-                        renderInput={(props) => <TextField {...props} />}
-                        format="YYYY-MM-DD HH:mm"
-                      />
-                    </LocalizationProvider>
-
-
-                    <FormControl sx={{ width: '45%', borderRadius: 3 }} >
-                      <InputLabel >JC created by</InputLabel>
-                      <Select
-                        label="test-incharge"
-                        value={testInchargeName}
-                        onChange={(e) => setTestInchargeName(e.target.value)}
-
-                      //onChange={(e) => handleInputChange(row.slno, 'user_id', e.target.value)}
-                      >
-                        {users.map((item) => (<MenuItem key={item.id} value={item.name}>{item.name}</MenuItem>))}
-                      </Select>
-                    </FormControl>
-                  </div>
-                  <br />
-
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }} >
-
-
-                    <LocalizationProvider dateAdapter={AdapterDayjs}>
-                      <DatePicker sx={{ width: '50%', borderRadius: 3 }}
-                        label="Item Received Date"
-                        variant="outlined"
-                        margin="normal"
-                        value={itemReceivedDate ? dayjs(itemReceivedDate) : null} // Pass null if jcOpenDate is null
-                        onChange={handleItemReceivedDateChange}
                         renderInput={(props) => <TextField {...props} />}
                         format="YYYY-MM-DD"
                       />
                     </LocalizationProvider>
 
-                    <FormControl sx={{ width: "45%", marginBottom: '20px', borderRadius: 3 }} >
-                      <InputLabel >JC Category</InputLabel>
+
+                    <FormControl sx={{ width: '45%', borderRadius: 3, mb: 2 }} >
+                      <InputLabel >JC created by</InputLabel>
                       <Select
-                        label="JC Category"
-                        value={jcCategory}
-                        onChange={(e) => setJcCategory(e.target.value)}
+                        label="test-incharge"
+                        value={testInchargeName}
+                        onChange={(e) => setTestInchargeName(e.target.value)}
                       >
-                        <MenuItem value="TS1">TS1</MenuItem>
-                        {/* <MenuItem value="TS2">TS2</MenuItem> */}
-                        <MenuItem value="Reliability">Reliability</MenuItem>
+                        {jcCategory === 'TS1' && users.length > 0 ?
+                          (users.map((item) => (<MenuItem key={item.id} value={item.name}>{item.name}</MenuItem>))) : jcCategory === 'Reliability' && reliabilityUsers.length > 0 ?
+                            (reliabilityUsers.map((item) => (<MenuItem key={item.id} value={item.name}>{item.name}</MenuItem>)))
+                            : (<MenuItem disabled value=""> No Users Available </MenuItem>)}
 
                       </Select>
                     </FormControl>
-
                   </div>
 
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }} >
+                  {jcCategory !== 'Reliability' && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <LocalizationProvider dateAdapter={AdapterDayjs}>
+                        <DatePicker
+                          sx={{ width: '50%', borderRadius: 3, mb: 2 }}
+                          label="Item Received Date"
+                          variant="outlined"
+                          margin="normal"
+                          value={itemReceivedDate ? dayjs(itemReceivedDate) : null} // Pass null if itemReceivedDate is null
+                          onChange={handleItemReceivedDateChange}
+                          renderInput={(props) => <TextField {...props} />}
+                          format="YYYY-MM-DD"
+                        />
+                      </LocalizationProvider>
+                    </div>
+                  )}
+
+
+                  <div div style={{ display: 'flex', justifyContent: 'space-between' }} >
                     {jcCategory != 'Reliability' && (
                       <>
                         <FormControl sx={{ width: '20%', }}>
@@ -811,10 +809,7 @@ const Jobcard = ({ jobCardData }) => {
                         </FormControl>
                       </>
                     )}
-
-
                   </div>
-
 
                 </Box>
               </Container>
@@ -825,13 +820,11 @@ const Jobcard = ({ jobCardData }) => {
             <Grid item xs={12} md={6} elevation={4} sx={{ borderRadius: 3 }}>
 
               <Typography variant='h5' align='center'> Customer Details </Typography>
-              <br />
 
-              <Container component="span" margin={1} paddingright={1} elevation={11}>
+              <Container component="span" margin={1} paddingRight={1} elevation={11}>
                 <Box >
                   <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <TextField
-                      // sx={{ borderRadius: 3, marginRight: '10px' }}
                       sx={{ width: '45%', borderRadius: 3 }}
                       label="Company Name"
                       margin="normal"
@@ -913,7 +906,7 @@ const Jobcard = ({ jobCardData }) => {
                     />
                   </div>
 
-                  <br />
+
                 </Box>
               </Container>
 
@@ -921,8 +914,6 @@ const Jobcard = ({ jobCardData }) => {
           </Grid>
 
         </Box>
-
-        <br />
 
         {jcCategory !== 'Reliability' && (
           <Box sx={{ overflowX: 'auto' }} >
@@ -1414,9 +1405,10 @@ const Jobcard = ({ jobCardData }) => {
               )}
 
               <Grid item xs={12} md={6}  >
+
                 {jcStatus === 'Close' && (
                   <LocalizationProvider dateAdapter={AdapterDayjs}>
-                    <DateTimePicker
+                    <DatePicker
                       fullWidth
                       sx={{ mb: '20px', mt: '20px', borderRadius: 3 }}
                       label="JC Close Date"
@@ -1425,10 +1417,9 @@ const Jobcard = ({ jobCardData }) => {
                       value={jcCloseDate ? dayjs(jcCloseDate) : null}
                       onChange={handleJcCloseDateChange}
                       renderInput={(props) => <TextField {...props} />}
-                      format="DD/MM/YYYY HH:mm"
+                      format="YYYY-MM-DD"
                     />
                   </LocalizationProvider>
-
                 )}
 
                 <TextField

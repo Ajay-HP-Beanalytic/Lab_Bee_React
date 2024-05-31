@@ -29,14 +29,35 @@ function jobcardsAPIs(app) {
 
     // Add primary details of the jobcard to the 'bea_jobcards' table:
     app.post('/api/jobcard', (req, res) => {
-        const { jcNumber, dcNumber, jcOpenDate, itemReceivedDate, poNumber, testCategory, typeOfRequest, testInchargeName, jcCategory, companyName, customerName, customerEmail, customerNumber, projectName, sampleCondition, referanceDocs, jcStatus, reliabilityReportStatus, formattedCloseDate, observations } = req.body
+        const {
+            jcNumber, dcNumber, jcOpenDate, itemReceivedDate, poNumber, testCategory, typeOfRequest,
+            testInchargeName, jcCategory, companyName, customerName, customerEmail, customerNumber,
+            projectName, sampleCondition, jcStatus, reliabilityReportStatus,
+            jcCloseDate, observations
+        } = req.body;
 
-        const formattedItemReceivedDate = dayjs(itemReceivedDate).format('YYYY-MM-DD')
-        const formattedOpenDate = convertDateTime(jcOpenDate)
+        const formattedItemReceivedDate = dayjs(itemReceivedDate).format('YYYY-MM-DD');
+        const formattedOpenDate = dayjs(jcOpenDate).format('YYYY-MM-DD');
+        const formattedCloseDate = jcCloseDate ? dayjs(jcCloseDate).format('YYYY-MM-DD') : null;
 
-        const sql = `INSERT INTO bea_jobcards(jc_number, dcform_number, jc_open_date, item_received_date, po_number, test_category, type_of_request, test_incharge, jc_category, company_name, customer_name, customer_email, customer_number, project_name, sample_condition, referance_document, jc_status, reliability_report_status, jc_closed_date,  observations ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
 
-        db.query(sql, [jcNumber, dcNumber, formattedOpenDate, formattedItemReceivedDate, poNumber, testCategory, typeOfRequest, testInchargeName, jcCategory, companyName, customerName, customerEmail, customerNumber, projectName, sampleCondition, referanceDocs, jcStatus, reliabilityReportStatus, formattedCloseDate, observations], (error, result) => {
+        const sql = `INSERT INTO bea_jobcards(
+        jc_number, dcform_number, jc_open_date, item_received_date, po_number, 
+        test_category, type_of_request, test_incharge, jc_category, company_name, 
+        customer_name, customer_email, customer_number, project_name, 
+        sample_condition, jc_status, reliability_report_status, 
+        jc_closed_date, observations
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+
+        const values = [
+            jcNumber, dcNumber, formattedOpenDate, formattedItemReceivedDate, poNumber || '',
+            testCategory || '', typeOfRequest || '', testInchargeName || '', jcCategory || '',
+            companyName || '', customerName || '', customerEmail || '', customerNumber || '',
+            projectName || '', sampleCondition || '', jcStatus || '',
+            reliabilityReportStatus || '', formattedCloseDate, observations || ''
+        ];
+
+        db.query(sql, values, (error, result) => {
             if (error) {
                 console.log(error);
                 return res.status(500).json({ message: 'Internal server error' });
@@ -45,7 +66,6 @@ function jobcardsAPIs(app) {
             }
         });
     });
-
 
 
     const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -194,12 +214,12 @@ function jobcardsAPIs(app) {
         const {
             jcNumber, dcNumber, jcOpenDate, itemReceivedDate, poNumber, testCategory, typeOfRequest,
             testInchargeName, jcCategory, companyName, customerName, customerEmail,
-            customerNumber, projectName, sampleCondition, referanceDocs, jcStatus,
+            customerNumber, projectName, sampleCondition, jcStatus,
             reliabilityReportStatus, jcCloseDate, observations
         } = req.body;
 
         const formattedItemReceivedDate = dayjs(itemReceivedDate).format('YYYY-MM-DD')
-        const referanceDocsSerialized = JSON.stringify(referanceDocs);
+        // const referanceDocsSerialized = JSON.stringify(referanceDocs);
         const formattedOpenDate = jcOpenDate ? convertDateTime(jcOpenDate) : null;
         const formattedCloseDate = jcCloseDate ? convertDateTime(jcCloseDate) : null;
 
@@ -219,7 +239,6 @@ function jobcardsAPIs(app) {
             customer_number = ?, 
             project_name = ?, 
             sample_condition = ?, 
-            referance_document = ?, 
             jc_status = ?, 
             reliability_report_status = ?, 
             jc_closed_date = ?, 
@@ -230,7 +249,7 @@ function jobcardsAPIs(app) {
         const values = [
             dcNumber, formattedOpenDate, formattedItemReceivedDate, poNumber, testCategory, typeOfRequest,
             testInchargeName, jcCategory, companyName, customerName, customerEmail,
-            customerNumber, projectName, sampleCondition, referanceDocsSerialized, jcStatus,
+            customerNumber, projectName, sampleCondition, jcStatus,
             reliabilityReportStatus, formattedCloseDate, observations, jcNumber
         ];
 
@@ -778,6 +797,16 @@ function jobcardsAPIs(app) {
             note_remarks
         } = req.body;
 
+        console.log(task_description,
+            jcNumberString,
+            task_assigned_by,
+            task_start_date,
+            task_end_date,
+            task_assigned_to,
+            task_status,
+            task_completed_date,
+            note_remarks)
+
 
         if (!task_description || !jcNumberString) {
             return res.status(400).json({ message: "task_description and jcNumberString are required" });
@@ -795,9 +824,13 @@ function jobcardsAPIs(app) {
 
 
 
-        const formattedTaskStartDate = moment(task_start_date).format('YYYY-MM-DD')
-        const formattedTaskEndDate = moment(task_end_date).format('YYYY-MM-DD')
-        const formattedTaskCompletedDate = moment(task_completed_date).format('YYYY-MM-DD')
+        // const formattedTaskStartDate = dayjs(task_start_date).format('YYYY-MM-DD')
+        // const formattedTaskEndDate = dayjs(task_end_date).format('YYYY-MM-DD')
+        // const formattedTaskCompletedDate = dayjs(task_completed_date).format('YYYY-MM-DD')
+
+        const formattedTaskStartDate = task_start_date ? dayjs(task_start_date).format('YYYY-MM-DD') : null
+        const formattedTaskEndDate = task_end_date ? dayjs(task_end_date).format('YYYY-MM-DD') : null
+        const formattedTaskCompletedDate = task_completed_date ? dayjs(task_completed_date).format('YYYY-MM-DD') : null;
 
         // Use an array to provide values for placeholders in the query
         const values = [

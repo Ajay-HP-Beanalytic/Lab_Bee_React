@@ -4,6 +4,7 @@ import axios from 'axios'
 import { serverBaseAddress } from './APIPage'
 import { DataGrid } from '@mui/x-data-grid';
 import SearchBar from '../common/SearchBar';
+import EmptyCard from '../common/EmptyCard';
 
 
 export default function ChamberRunHours() {
@@ -96,8 +97,11 @@ export default function ChamberRunHours() {
 
       </Grid>
 
-      {filteredCROData.length === 0 ? 'No Data Found' :
+      {filteredCROData && filteredCROData.length === 0 ? (
 
+        <EmptyCard message='Chamber Run Hours Data not found' />
+
+      ) : (
         <Box
           sx={{
             height: 500,
@@ -119,8 +123,7 @@ export default function ChamberRunHours() {
             rowsPerPageOptions={[5, 10, 20]}
           />
         </Box>
-
-      }
+      )}
     </>
   )
 }

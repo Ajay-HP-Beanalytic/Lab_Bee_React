@@ -28,22 +28,23 @@ const darkTheme = createTheme({
   },
 });
 
-const boxstyle = {
+const boxStyle = {
   position: "absolute",
   top: "50%",
   left: "50%",
   transform: "translate(-50%, -50%)",
-  width: "75%",
-  height: "70%",
+  width: { xs: "90%", sm: "80%", md: "75%" },
+  height: { xs: "80%", sm: "70%", md: "70%" },
   bgcolor: "background.paper",
-  boxShadow: 24,
+  boxShadow: 10,
+  padding: { xs: 2, sm: 3, md: 4 },
+  overflowY: "auto",
 };
 
-
 const forgotPassLogoAndText = {
-  position: "relative",
-  top: "50%",
-  left: "30%",
+  display: "flex",
+  flexDirection: "column",
+  alignItems: "center",
 };
 
 export default function ResetPassword() {
@@ -184,58 +185,444 @@ export default function ResetPassword() {
     }
   };
 
-
-
-
   return (
-    <>
-      <div
-        style={{
-          backgroundImage: "linear-gradient(135deg, #009FFD 10%, #2A2A72 100%)",
-          backgroundSize: "cover",
-          height: "100vh",
-          color: "#f5f5f5",
-        }}
-      >
-        <Box sx={boxstyle}>
-          <Grid container>
-            <Grid item xs={12} sm={12} lg={6}>
+
+    // <div
+    //   style={{
+    //     backgroundImage: "linear-gradient(135deg, #009FFD 10%, #2A2A72 100%)",
+    //     backgroundSize: "cover",
+    //     height: "100vh",
+    //     color: "#f5f5f5",
+    //   }}
+    // >
+    //   <Box sx={boxStyle}>
+    //     <Grid container>
+    //       <Grid item xs={12} sm={12} md={6}>
+    //         <Box
+    //           style={{
+    //             backgroundImage: `url(${bg})`,
+    //             backgroundSize: "cover",
+    //             marginTop: "40px",
+    //             marginLeft: "15px",
+    //             marginRight: "15px",
+    //             height: "63vh",
+    //             color: "#f5f5f5",
+    //           }}
+    //         ></Box>
+    //       </Grid>
+    //       <Grid item xs={12} sm={12} lg={6}>
+    //         {!otpSent ? (
+    //           <Box
+    //             style={{
+    //               backgroundSize: "cover",
+    //               height: "70vh",
+    //               minHeight: "500px",
+    //               backgroundColor: "#3b33d5",
+    //             }}
+    //           >
+    //             <ThemeProvider theme={darkTheme}>
+    //               <Container>
+    //                 <Box height={35} />
+    //                 <Box sx={forgotPassLogoAndText}>
+    //                   <Avatar sx={{ ml: "100px", mb: "4px", bgcolor: "#ffffff" }}>
+    //                     <LockOutlinedIcon />
+    //                   </Avatar>
+    //                   <Typography variant="h4" sx={{ mt: 1, mr: '390px' }}>
+    //                     Reset Password
+    //                   </Typography>
+    //                 </Box>
+    //                 <Box component="form" noValidate onSubmit={handleSubmit} sx={{ mt: 2 }}>
+    //                   <Grid container spacing={1}>
+    //                     <Grid item xs={12} sx={{ ml: "3em", mr: "3em" }}>
+    //                       <TextField
+    //                         required
+    //                         fullWidth
+    //                         id="email"
+    //                         label="Email"
+    //                         name="email"
+    //                         autoComplete="email"
+    //                         value={email}
+    //                         onChange={(e) => setEmail(e.target.value)}
+    //                       />
+    //                     </Grid>
+    //                     <Grid item xs={12} sx={{ ml: "5em", mr: "5em" }}>
+    //                       <Button
+    //                         type="submit"
+    //                         variant="contained"
+    //                         fullWidth
+    //                         size="large"
+    //                         sx={{
+    //                           mt: "15px",
+    //                           mr: "20px",
+    //                           borderRadius: 28,
+    //                           color: "#ffffff",
+    //                           minWidth: "170px",
+    //                           backgroundColor: "#FF9A01",
+    //                         }}
+    //                       >
+    //                         Send Reset OTP
+    //                       </Button>
+    //                     </Grid>
+    //                     <Grid item xs={12} sx={{ ml: "3em", mr: "3em" }}>
+    //                       <Stack direction="row" spacing={2}>
+    //                         <Typography variant="body1" component="span" style={{ marginTop: "10px" }}>
+    //                           Login to your Account.
+    //                           <span style={{ color: "#beb4fb", cursor: "pointer" }} onClick={() => { navigate("/"); }}>
+    //                             {" "}Sign In
+    //                           </span>
+    //                         </Typography>
+    //                       </Stack>
+    //                     </Grid>
+    //                   </Grid>
+    //                 </Box>
+    //               </Container>
+    //             </ThemeProvider>
+    //           </Box>
+    //         ) : (
+    //           <Box
+    //             style={{
+    //               backgroundSize: "cover",
+    //               height: "70vh",
+    //               minHeight: "500px",
+    //               backgroundColor: "#3b33d5",
+    //             }}
+    //           >
+    //             <ThemeProvider theme={darkTheme}>
+    //               <Container>
+    //                 <Box height={35} />
+    //                 {!otpVerified ? (
+    //                   <div>
+    //                     <Box sx={forgotPassLogoAndText}>
+    //                       <Avatar sx={{ ml: "100px", mb: "4px", bgcolor: "#ffffff" }}>
+    //                         <LockOutlinedIcon />
+    //                       </Avatar>
+    //                       <Typography variant="h4" sx={{ mt: 1, mr: '390px' }}>
+    //                         Enter OTP
+    //                       </Typography>
+    //                     </Box>
+
+    //                     <Box component="form" noValidate onSubmit={handleOtpSubmit} sx={{ mt: 2 }}>
+    //                       <Grid item xs={12} sx={{ ml: "3em", mr: "3em", mb: "10px", }}>
+    //                         <TextField
+    //                           required
+    //                           fullWidth
+    //                           id="email"
+    //                           label="Email"
+    //                           name="email"
+    //                           autoComplete="email"
+    //                           value={email}
+    //                           onChange={(e) => setEmail(e.target.value)}
+    //                         />
+    //                       </Grid>
+
+    //                       <Grid container spacing={1}>
+    //                         <Grid item xs={12} sx={{ ml: "3em", mr: "3em" }}>
+    //                           <TextField
+    //                             required
+    //                             fullWidth
+    //                             id="otp"
+    //                             label="Enter the OTP"
+    //                             name="otp"
+    //                             autoComplete="otp"
+    //                             value={otp}
+    //                             onChange={(e) => setOtp(e.target.value)}
+    //                           />
+    //                         </Grid>
+    //                         <Grid item xs={12} sx={{ ml: "5em", mr: "5em" }}>
+    //                           <Button
+    //                             type="submit"
+    //                             variant="contained"
+    //                             fullWidth
+    //                             size="large"
+    //                             sx={{
+    //                               mt: "15px",
+    //                               mr: "20px",
+    //                               borderRadius: 28,
+    //                               color: "#ffffff",
+    //                               minWidth: "170px",
+    //                               backgroundColor: "#FF9A01",
+    //                             }}
+    //                           >
+    //                             Submit OTP
+    //                           </Button>
+    //                         </Grid>
+    //                         <Grid item xs={12} sx={{ ml: "3em", mr: "3em" }}>
+    //                           <Stack direction="row" spacing={2}>
+    //                             <Typography variant="body1" component="span" style={{ marginTop: "10px" }}>
+    //                               {otpCountdown > 0 ? (
+    //                                 <>Resend OTP in {otpCountdown}s</>
+    //                               ) : (
+    //                                 <span style={{ color: "#beb4fb", cursor: "pointer" }} onClick={resendOtp}>
+    //                                   Resend OTP
+    //                                 </span>
+    //                               )}
+    //                             </Typography>
+    //                           </Stack>
+    //                         </Grid>
+    //                       </Grid>
+    //                     </Box>
+    //                   </div>
+    //                 ) : (
+
+    //                   <>
+    //                     <Box sx={forgotPassLogoAndText}>
+    //                       <Avatar sx={{ ml: "100px", mb: "4px", bgcolor: "#ffffff" }}>
+    //                         <LockOutlinedIcon />
+    //                       </Avatar>
+    //                       <Typography variant="h4" sx={{ mt: 1, mr: '390px' }}>
+    //                         Reset Password
+    //                       </Typography>
+    //                     </Box>
+
+    //                     <Box component="form" noValidate onSubmit={handlePasswordReset} sx={{ mt: 2 }}>
+    //                       <Grid container spacing={1}>
+
+    //                         <Grid item xs={12} sx={{ ml: "3em", mr: "3em", mb: "10px", }}>
+    //                           <TextField
+    //                             required
+    //                             fullWidth
+    //                             id="email"
+    //                             label="Email"
+    //                             name="email"
+    //                             autoComplete="email"
+    //                             value={email}
+    //                             onChange={(e) => setEmail(e.target.value)}
+    //                           />
+    //                         </Grid>
+
+    //                         <Grid item xs={12} sx={{ ml: "3em", mr: "3em" }}>
+
+    //                           <FormControl sx={{ width: '100%' }} variant="outlined" required>
+    //                             <InputLabel htmlFor="outlined-adornment-password">New Password</InputLabel>
+    //                             <OutlinedInput
+    //                               id="newPassword"
+    //                               name="newPassword"
+    //                               value={newPassword}
+    //                               onChange={(e) => setNewPassword(e.target.value)}
+
+    //                               type={showNewPassword ? 'text' : 'password'}
+    //                               endAdornment={
+    //                                 <InputAdornment position="end">
+    //                                   <IconButton
+    //                                     aria-label="toggle password visibility"
+    //                                     onClick={handleClickShowNewPassword}
+    //                                     onMouseDown={handleMouseDownPassword1}
+    //                                     edge="end"
+    //                                   >
+    //                                     {showNewPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+    //                                   </IconButton>
+    //                                 </InputAdornment>
+    //                               }
+    //                               label="New Password"
+    //                             />
+    //                           </FormControl>
+    //                         </Grid>
+
+    //                         <Grid item xs={12} sx={{ ml: "3em", mr: "3em" }}>
+    //                           <FormControl sx={{ width: '100%' }} variant="outlined" required>
+    //                             <InputLabel htmlFor="outlined-adornment-confirm-password">Confirm Password</InputLabel>
+    //                             <OutlinedInput
+    //                               id="confirmPassword"
+    //                               name="confirmPassword"
+    //                               value={confirmPassword}
+    //                               onChange={(e) => setConfirmPassword(e.target.value)}
+    //                               type={showNewConfirmPassword ? 'text' : 'password'}
+    //                               endAdornment={
+    //                                 <InputAdornment position="end">
+    //                                   <IconButton
+    //                                     aria-label="toggle password visibility"
+    //                                     onClick={handleClickShowNewConfirmPassword}
+    //                                     onMouseDown={handleMouseDownPassword1}
+    //                                     edge="end"
+    //                                   >
+    //                                     {showNewConfirmPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+    //                                   </IconButton>
+    //                                 </InputAdornment>
+    //                               }
+    //                               label="Confirm Password"
+    //                             />
+    //                           </FormControl>
+
+    //                         </Grid>
+    //                         {passwordError && (
+    //                           <Grid item xs={12} sx={{ ml: "3em", mr: "3em" }}>
+    //                             <Typography color="error">{passwordError}</Typography>
+    //                           </Grid>
+    //                         )}
+    //                         <Grid item xs={12} sx={{ ml: "5em", mr: "5em" }}>
+    //                           <Button
+    //                             type="submit"
+    //                             variant="contained"
+    //                             fullWidth
+    //                             size="large"
+    //                             sx={{
+    //                               mt: "15px",
+    //                               mr: "20px",
+    //                               borderRadius: 28,
+    //                               color: "#ffffff",
+    //                               minWidth: "170px",
+    //                               backgroundColor: "#FF9A01",
+    //                             }}
+    //                           >
+    //                             Reset Password
+    //                           </Button>
+    //                         </Grid>
+    //                         <Grid item xs={12} sx={{ ml: "3em", mr: "3em" }}>
+    //                           <Stack direction="row" spacing={2}>
+    //                             <Typography variant="body1" component="span" style={{ marginTop: "10px" }}>
+    //                               Login to your Account.
+    //                               <span style={{ color: "#beb4fb", cursor: "pointer" }} onClick={() => { navigate("/"); }}>
+    //                                 {" "}Sign In
+    //                               </span>
+    //                             </Typography>
+    //                           </Stack>
+    //                         </Grid>
+    //                       </Grid>
+    //                     </Box>
+    //                   </>
+    //                 )}
+    //               </Container>
+    //             </ThemeProvider>
+    //           </Box>
+    //         )}
+    //       </Grid>
+    //     </Grid>
+    //   </Box>
+    // </div >
+
+    <div
+      style={{
+        backgroundImage: "linear-gradient(135deg, #009FFD 10%, #2A2A72 100%)",
+        backgroundSize: "cover",
+        height: "100vh",
+        color: "#f5f5f5",
+      }}
+    >
+      <Box sx={boxStyle}>
+        <Grid container>
+          <Grid item xs={12} sm={12} md={6}>
+            <Box
+              sx={{
+                backgroundImage: `url(${bg})`,
+                backgroundSize: "cover",
+                marginTop: { xs: "20px", sm: "40px" },
+                marginX: { xs: "10px", sm: "15px" },
+                height: { xs: "30vh", sm: "63vh" },
+                color: "#f5f5f5",
+              }}
+            ></Box>
+          </Grid>
+          <Grid item xs={12} sm={12} md={6}>
+            {!otpSent ? (
               <Box
-                style={{
-                  backgroundImage: `url(${bg})`,
+                sx={{
                   backgroundSize: "cover",
-                  marginTop: "40px",
-                  marginLeft: "15px",
-                  marginRight: "15px",
-                  height: "63vh",
-                  color: "#f5f5f5",
+                  height: { xs: "60vh", sm: "70vh" },
+                  minHeight: "500px",
+                  backgroundColor: "#3b33d5",
                 }}
-              ></Box>
-            </Grid>
-            <Grid item xs={12} sm={12} lg={6}>
-              {!otpSent ? (
-                <Box
-                  style={{
-                    backgroundSize: "cover",
-                    height: "70vh",
-                    minHeight: "500px",
-                    backgroundColor: "#3b33d5",
-                  }}
-                >
-                  <ThemeProvider theme={darkTheme}>
-                    <Container>
-                      <Box height={35} />
-                      <Box sx={forgotPassLogoAndText}>
-                        <Avatar sx={{ ml: "100px", mb: "4px", bgcolor: "#ffffff" }}>
-                          <LockOutlinedIcon />
-                        </Avatar>
-                        <Typography variant="h4" sx={{ mt: 1, mr: '390px' }}>
-                          Reset Password
-                        </Typography>
-                      </Box>
-                      <Box component="form" noValidate onSubmit={handleSubmit} sx={{ mt: 2 }}>
-                        <Grid container spacing={1}>
-                          <Grid item xs={12} sx={{ ml: "3em", mr: "3em" }}>
+              >
+                <ThemeProvider theme={darkTheme}>
+                  <Container>
+                    <Box height={35} />
+                    <Box sx={forgotPassLogoAndText}>
+                      <Avatar sx={{ mb: 2, bgcolor: "#ffffff" }}>
+                        <LockOutlinedIcon />
+                      </Avatar>
+                      <Typography variant="h4" sx={{ textAlign: 'center' }} >
+                        Reset Password
+                      </Typography>
+                    </Box>
+                    <Box
+                      component="form"
+                      noValidate
+                      onSubmit={handleSubmit}
+                      sx={{ mt: 2 }}
+                    >
+                      <Grid container spacing={1}>
+                        <Grid item xs={12} sx={{ mx: { xs: "1em", sm: "3em" } }}>
+                          <TextField
+                            required
+                            fullWidth
+                            id="email"
+                            label="Email"
+                            name="email"
+                            autoComplete="email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                          />
+                        </Grid>
+                        <Grid item xs={12} sx={{ mx: { xs: "1em", sm: "3em" } }}>
+                          <Button
+                            type="submit"
+                            variant="contained"
+                            fullWidth
+                            size="large"
+                            sx={{
+                              mt: "10px",
+                              borderRadius: 28,
+                              color: "#ffffff",
+                              minWidth: "170px",
+                              backgroundColor: "#FF9A01",
+                            }}
+                          >
+                            Send Reset OTP
+                          </Button>
+                        </Grid>
+                        <Grid item xs={12} sx={{ mx: { xs: "1em", sm: "3em" } }}>
+                          <Stack direction="row" spacing={2}>
+                            <Typography
+                              variant="body1"
+                              component="span"
+                              style={{ marginTop: "10px" }}
+                            >
+                              Login to your Account.
+                              <span
+                                style={{ color: "#beb4fb", cursor: "pointer" }}
+                                onClick={() => {
+                                  navigate("/");
+                                }}
+                              >
+                                {" "}
+                                Sign In
+                              </span>
+                            </Typography>
+                          </Stack>
+                        </Grid>
+                      </Grid>
+                    </Box>
+                  </Container>
+                </ThemeProvider>
+              </Box>
+            ) : (
+              <Box
+                sx={{
+                  backgroundSize: "cover",
+                  height: { xs: "60vh", sm: "70vh" },
+                  minHeight: "500px",
+                  backgroundColor: "#3b33d5",
+                }}
+              >
+                <ThemeProvider theme={darkTheme}>
+                  <Container>
+                    <Box height={35} />
+                    {!otpVerified ? (
+                      <div>
+                        <Box sx={forgotPassLogoAndText}>
+                          <Avatar sx={{ mb: 2, bgcolor: "#ffffff" }}>
+                            <LockOutlinedIcon />
+                          </Avatar>
+                          <Typography variant="h4" sx={{ textAlign: 'center' }}>
+                            Enter OTP
+                          </Typography>
+                        </Box>
+                        <Box
+                          component="form"
+                          noValidate
+                          onSubmit={handleOtpSubmit}
+                          sx={{ mt: 2 }}
+                        >
+                          <Grid item xs={12} sx={{ mx: { xs: "1em", sm: "3em" } }}>
                             <TextField
                               required
                               fullWidth
@@ -247,64 +634,78 @@ export default function ResetPassword() {
                               onChange={(e) => setEmail(e.target.value)}
                             />
                           </Grid>
-                          <Grid item xs={12} sx={{ ml: "5em", mr: "5em" }}>
-                            <Button
-                              type="submit"
-                              variant="contained"
-                              fullWidth
-                              size="large"
-                              sx={{
-                                mt: "15px",
-                                mr: "20px",
-                                borderRadius: 28,
-                                color: "#ffffff",
-                                minWidth: "170px",
-                                backgroundColor: "#FF9A01",
-                              }}
-                            >
-                              Send Reset OTP
-                            </Button>
+                          <Grid container spacing={1}>
+                            <Grid item xs={12} sx={{ mx: { xs: "1em", sm: "3em" } }}>
+                              <TextField
+                                required
+                                fullWidth
+                                id="otp"
+                                label="Enter the OTP"
+                                name="otp"
+                                autoComplete="otp"
+                                value={otp}
+                                onChange={(e) => setOtp(e.target.value)}
+                              />
+                            </Grid>
+                            <Grid item xs={12} sx={{ mx: { xs: "1em", sm: "3em" } }}>
+                              <Button
+                                type="submit"
+                                variant="contained"
+                                fullWidth
+                                size="large"
+                                sx={{
+                                  mt: "10px",
+                                  borderRadius: 28,
+                                  color: "#ffffff",
+                                  minWidth: "170px",
+                                  backgroundColor: "#FF9A01",
+                                }}
+                              >
+                                Submit OTP
+                              </Button>
+                            </Grid>
+                            <Grid item xs={12} sx={{ mx: { xs: "1em", sm: "3em" } }}>
+                              <Stack direction="row" spacing={2}>
+                                <Typography
+                                  variant="body1"
+                                  component="span"
+                                  style={{ marginTop: "10px" }}
+                                >
+                                  {otpCountdown > 0 ? (
+                                    <>Resend OTP in {otpCountdown}s</>
+                                  ) : (
+                                    <span
+                                      style={{ color: "#beb4fb", cursor: "pointer" }}
+                                      onClick={resendOtp}
+                                    >
+                                      Resend OTP
+                                    </span>
+                                  )}
+                                </Typography>
+                              </Stack>
+                            </Grid>
                           </Grid>
-                          <Grid item xs={12} sx={{ ml: "3em", mr: "3em" }}>
-                            <Stack direction="row" spacing={2}>
-                              <Typography variant="body1" component="span" style={{ marginTop: "10px" }}>
-                                Login to your Account.
-                                <span style={{ color: "#beb4fb", cursor: "pointer" }} onClick={() => { navigate("/"); }}>
-                                  {" "}Sign In
-                                </span>
-                              </Typography>
-                            </Stack>
-                          </Grid>
-                        </Grid>
-                      </Box>
-                    </Container>
-                  </ThemeProvider>
-                </Box>
-              ) : (
-                <Box
-                  style={{
-                    backgroundSize: "cover",
-                    height: "70vh",
-                    minHeight: "500px",
-                    backgroundColor: "#3b33d5",
-                  }}
-                >
-                  <ThemeProvider theme={darkTheme}>
-                    <Container>
-                      <Box height={35} />
-                      {!otpVerified ? (
-                        <div>
-                          <Box sx={forgotPassLogoAndText}>
-                            <Avatar sx={{ ml: "100px", mb: "4px", bgcolor: "#ffffff" }}>
-                              <LockOutlinedIcon />
-                            </Avatar>
-                            <Typography variant="h4" sx={{ mt: 1, mr: '390px' }}>
-                              Enter OTP
-                            </Typography>
-                          </Box>
-
-                          <Box component="form" noValidate onSubmit={handleOtpSubmit} sx={{ mt: 2 }}>
-                            <Grid item xs={12} sx={{ ml: "3em", mr: "3em", mb: "10px", }}>
+                        </Box>
+                      </div>
+                    ) : (
+                      <>
+                        <Box sx={forgotPassLogoAndText}>
+                          <Avatar sx={{ mb: 2, bgcolor: "#ffffff" }}>
+                            <LockOutlinedIcon />
+                          </Avatar>
+                          <Typography variant="h4" sx={{ textAlign: 'center' }}
+                          >
+                            Reset Password
+                          </Typography>
+                        </Box>
+                        <Box
+                          component="form"
+                          noValidate
+                          onSubmit={handlePasswordReset}
+                          sx={{ mt: 2 }}
+                        >
+                          <Grid container spacing={1}>
+                            <Grid item xs={12} sx={{ mx: { xs: "1em", sm: "3em" } }}>
                               <TextField
                                 required
                                 fullWidth
@@ -316,181 +717,120 @@ export default function ResetPassword() {
                                 onChange={(e) => setEmail(e.target.value)}
                               />
                             </Grid>
-
-                            <Grid container spacing={1}>
-                              <Grid item xs={12} sx={{ ml: "3em", mr: "3em" }}>
-                                <TextField
-                                  required
-                                  fullWidth
-                                  id="otp"
-                                  label="Enter the OTP"
-                                  name="otp"
-                                  autoComplete="otp"
-                                  value={otp}
-                                  onChange={(e) => setOtp(e.target.value)}
+                            <Grid item xs={12} sx={{ mx: { xs: "1em", sm: "3em" } }}>
+                              <FormControl sx={{ width: "100%" }} variant="outlined" required>
+                                <InputLabel htmlFor="newPassword">New Password</InputLabel>
+                                <OutlinedInput
+                                  id="newPassword"
+                                  name="newPassword"
+                                  value={newPassword}
+                                  onChange={(e) => setNewPassword(e.target.value)}
+                                  type={showNewPassword ? "text" : "password"}
+                                  endAdornment={
+                                    <InputAdornment position="end">
+                                      <IconButton
+                                        aria-label="toggle password visibility"
+                                        onClick={handleClickShowNewPassword}
+                                        onMouseDown={handleMouseDownPassword1}
+                                        edge="end"
+                                      >
+                                        {showNewPassword ? (
+                                          <VisibilityOffIcon />
+                                        ) : (
+                                          <VisibilityIcon />
+                                        )}
+                                      </IconButton>
+                                    </InputAdornment>
+                                  }
+                                  label="New Password"
                                 />
-                              </Grid>
-                              <Grid item xs={12} sx={{ ml: "5em", mr: "5em" }}>
-                                <Button
-                                  type="submit"
-                                  variant="contained"
-                                  fullWidth
-                                  size="large"
-                                  sx={{
-                                    mt: "15px",
-                                    mr: "20px",
-                                    borderRadius: 28,
-                                    color: "#ffffff",
-                                    minWidth: "170px",
-                                    backgroundColor: "#FF9A01",
-                                  }}
-                                >
-                                  Submit OTP
-                                </Button>
-                              </Grid>
-                              <Grid item xs={12} sx={{ ml: "3em", mr: "3em" }}>
-                                <Stack direction="row" spacing={2}>
-                                  <Typography variant="body1" component="span" style={{ marginTop: "10px" }}>
-                                    {otpCountdown > 0 ? (
-                                      <>Resend OTP in {otpCountdown}s</>
-                                    ) : (
-                                      <span style={{ color: "#beb4fb", cursor: "pointer" }} onClick={resendOtp}>
-                                        Resend OTP
-                                      </span>
-                                    )}
-                                  </Typography>
-                                </Stack>
-                              </Grid>
+                              </FormControl>
                             </Grid>
-                          </Box>
-                        </div>
-                      ) : (
-
-                        <>
-                          <Box sx={forgotPassLogoAndText}>
-                            <Avatar sx={{ ml: "100px", mb: "4px", bgcolor: "#ffffff" }}>
-                              <LockOutlinedIcon />
-                            </Avatar>
-                            <Typography variant="h4" sx={{ mt: 1, mr: '390px' }}>
-                              Reset Password
-                            </Typography>
-                          </Box>
-
-                          <Box component="form" noValidate onSubmit={handlePasswordReset} sx={{ mt: 2 }}>
-                            <Grid container spacing={1}>
-
-                              <Grid item xs={12} sx={{ ml: "3em", mr: "3em", mb: "10px", }}>
-                                <TextField
-                                  required
-                                  fullWidth
-                                  id="email"
-                                  label="Email"
-                                  name="email"
-                                  autoComplete="email"
-                                  value={email}
-                                  onChange={(e) => setEmail(e.target.value)}
+                            <Grid item xs={12} sx={{ mx: { xs: "1em", sm: "3em" } }}>
+                              <FormControl sx={{ width: "100%" }} variant="outlined" required>
+                                <InputLabel htmlFor="confirmPassword">
+                                  Confirm Password
+                                </InputLabel>
+                                <OutlinedInput
+                                  id="confirmPassword"
+                                  name="confirmPassword"
+                                  value={confirmPassword}
+                                  onChange={(e) => setConfirmPassword(e.target.value)}
+                                  type={showNewConfirmPassword ? "text" : "password"}
+                                  endAdornment={
+                                    <InputAdornment position="end">
+                                      <IconButton
+                                        aria-label="toggle password visibility"
+                                        onClick={handleClickShowNewConfirmPassword}
+                                        onMouseDown={handleMouseDownPassword1}
+                                        edge="end"
+                                      >
+                                        {showNewConfirmPassword ? (
+                                          <VisibilityOffIcon />
+                                        ) : (
+                                          <VisibilityIcon />
+                                        )}
+                                      </IconButton>
+                                    </InputAdornment>
+                                  }
+                                  label="Confirm Password"
                                 />
-                              </Grid>
-
-                              <Grid item xs={12} sx={{ ml: "3em", mr: "3em" }}>
-
-                                <FormControl sx={{ width: '100%' }} variant="outlined" required>
-                                  <InputLabel htmlFor="outlined-adornment-password">New Password</InputLabel>
-                                  <OutlinedInput
-                                    id="newPassword"
-                                    name="newPassword"
-                                    value={newPassword}
-                                    onChange={(e) => setNewPassword(e.target.value)}
-
-                                    type={showNewPassword ? 'text' : 'password'}
-                                    endAdornment={
-                                      <InputAdornment position="end">
-                                        <IconButton
-                                          aria-label="toggle password visibility"
-                                          onClick={handleClickShowNewPassword}
-                                          onMouseDown={handleMouseDownPassword1}
-                                          edge="end"
-                                        >
-                                          {showNewPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
-                                        </IconButton>
-                                      </InputAdornment>
-                                    }
-                                    label="New Password"
-                                  />
-                                </FormControl>
-                              </Grid>
-
-                              <Grid item xs={12} sx={{ ml: "3em", mr: "3em" }}>
-                                <FormControl sx={{ width: '100%' }} variant="outlined" required>
-                                  <InputLabel htmlFor="outlined-adornment-confirm-password">Confirm Password</InputLabel>
-                                  <OutlinedInput
-                                    id="confirmPassword"
-                                    name="confirmPassword"
-                                    value={confirmPassword}
-                                    onChange={(e) => setConfirmPassword(e.target.value)}
-                                    type={showNewConfirmPassword ? 'text' : 'password'}
-                                    endAdornment={
-                                      <InputAdornment position="end">
-                                        <IconButton
-                                          aria-label="toggle password visibility"
-                                          onClick={handleClickShowNewConfirmPassword}
-                                          onMouseDown={handleMouseDownPassword1}
-                                          edge="end"
-                                        >
-                                          {showNewConfirmPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
-                                        </IconButton>
-                                      </InputAdornment>
-                                    }
-                                    label="Confirm Password"
-                                  />
-                                </FormControl>
-
-                              </Grid>
-                              {passwordError && (
-                                <Grid item xs={12} sx={{ ml: "3em", mr: "3em" }}>
-                                  <Typography color="error">{passwordError}</Typography>
-                                </Grid>
-                              )}
-                              <Grid item xs={12} sx={{ ml: "5em", mr: "5em" }}>
-                                <Button
-                                  type="submit"
-                                  variant="contained"
-                                  fullWidth
-                                  size="large"
-                                  sx={{
-                                    mt: "15px",
-                                    mr: "20px",
-                                    borderRadius: 28,
-                                    color: "#ffffff",
-                                    minWidth: "170px",
-                                    backgroundColor: "#FF9A01",
-                                  }}
-                                >
-                                  Reset Password
-                                </Button>
-                              </Grid>
-                              <Grid item xs={12} sx={{ ml: "3em", mr: "3em" }}>
-                                <Stack direction="row" spacing={2}>
-                                  <Typography variant="body1" component="span" style={{ marginTop: "10px" }}>
-                                    Login to your Account.
-                                    <span style={{ color: "#beb4fb", cursor: "pointer" }} onClick={() => { navigate("/"); }}>
-                                      {" "}Sign In
-                                    </span>
-                                  </Typography>
-                                </Stack>
-                              </Grid>
+                              </FormControl>
                             </Grid>
-                          </Box>
-                        </>
-                      )}
-                    </Container>
-                  </ThemeProvider>
-                </Box>
-              )}
-            </Grid>
+                            {passwordError && (
+                              <Grid item xs={12} sx={{ mx: { xs: "1em", sm: "3em" } }}>
+                                <Typography color="error">{passwordError}</Typography>
+                              </Grid>
+                            )}
+                            <Grid item xs={12} sx={{ mx: { xs: "1em", sm: "3em" } }}>
+                              <Button
+                                type="submit"
+                                variant="contained"
+                                fullWidth
+                                size="large"
+                                sx={{
+                                  mt: "10px",
+                                  borderRadius: 28,
+                                  color: "#ffffff",
+                                  minWidth: "170px",
+                                  backgroundColor: "#FF9A01",
+                                }}
+                              >
+                                Reset Password
+                              </Button>
+                            </Grid>
+                            <Grid item xs={12} sx={{ mx: { xs: "1em", sm: "3em" } }}>
+                              <Stack direction="row" spacing={2}>
+                                <Typography
+                                  variant="body1"
+                                  component="span"
+                                  style={{ marginTop: "10px" }}
+                                >
+                                  Login to your Account.
+                                  <span
+                                    style={{ color: "#beb4fb", cursor: "pointer" }}
+                                    onClick={() => {
+                                      navigate("/");
+                                    }}
+                                  >
+                                    {" "}
+                                    Sign In
+                                  </span>
+                                </Typography>
+                              </Stack>
+                            </Grid>
+                          </Grid>
+                        </Box>
+                      </>
+                    )}
+                  </Container>
+                </ThemeProvider>
+              </Box>
+            )}
           </Grid>
-        </Box>
-      </div >
-    </>
+        </Grid>
+      </Box>
+    </div>
+
   );
 }
