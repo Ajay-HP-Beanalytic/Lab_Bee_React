@@ -132,7 +132,6 @@ export default function UserManagement() {
       try {
         const usersURL = await axios.get(`${serverBaseAddress}/api/getAllUsers`);
         setUsersList(usersURL.data)
-        console.log('usersURL.data is', usersURL.data)
       } catch (error) {
         console.error('Failed to fetch the data', error);
       }
@@ -150,7 +149,6 @@ export default function UserManagement() {
     axios.get(`${serverBaseAddress}/api/getLoggedInUser`)
       .then(res => {
         if (res.data.valid) {
-          console.log('isss', res.data)
           setLoggedInUser(res.data.user_name)
         } else {
           navigate("/")

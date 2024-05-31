@@ -27,7 +27,6 @@ const {
   createOtpStorageTable,
   createPasswordResetAttemptsTable,
   createBEAQuotationsTable,
-  createQuotesDiscountTable,
   createChamberCalibrationTable,
   createCustomerDetailsTable,
   createItemSoftModulestable,
@@ -60,7 +59,6 @@ db.getConnection(function (err, connection) {
   createOtpStorageTable();
   createPasswordResetAttemptsTable();
   createBEAQuotationsTable();
-  createQuotesDiscountTable();
   createChamberCalibrationTable();
   createCustomerDetailsTable();
   createItemSoftModulestable();

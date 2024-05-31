@@ -37,48 +37,13 @@ const ReliabilityTaskManagement = ({ reliabilityTaskRow, setReliabilityTaskRow, 
     if (id) {
       axios.get(`${serverBaseAddress}/api/jobcard/${id}`)
         .then((res) => {
-
           setReliabilityTaskRow(res.data.reliability_tasks_details)
-
           setEditJc(true)
         })
         .catch(error => console.error(error))
     }
-  }, [id, setReliabilityTaskRow])
+  }, [rowAdded, id, setReliabilityTaskRow])
 
-  // Function to add the row:
-  const handleAddNewRow = () => {
-    let newRow = {}
-    if (reliabilityTaskRow.length > 0) {
-      const lastId = reliabilityTaskRow[reliabilityTaskRow.length - 1].id
-      newRow = { id: lastId + 1, startDate: null, endDate: null, completedDate: null };
-
-    } else {
-      newRow = { id: 0, startDate: null, endDate: null, completedDate: null };
-    }
-    setReliabilityTaskRow([...reliabilityTaskRow, newRow]);
-
-    setRowAdded(true)
-  }
-
-  // Function to remove the row:
-  const handleRemoveRow = (id) => {
-    setRowAdded(false)
-    const updatedRows = reliabilityTaskRow.filter((row) => row.id !== id);
-    setReliabilityTaskRow(updatedRows);
-
-  }
-
-
-
-  // Function to handle the cell inputs of the rows:
-  // const handleTaskRowChange = (index, field, value) => {
-  //   const updatedRows = [...reliabilityTaskRow];
-  //   updatedRows[index] = { ...updatedRows[index], [field]: value };
-
-  //   onReliabilityTaskRowChange(updatedRows)
-  //   setReliabilityTaskRow(updatedRows);
-  // };
 
   const handleTaskRowChange = (index, field, value) => {
     const updatedRows = [...reliabilityTaskRow];
@@ -89,11 +54,36 @@ const ReliabilityTaskManagement = ({ reliabilityTaskRow, setReliabilityTaskRow, 
   };
 
 
+  // Function to add the row:
+  const handleAddNewRow = () => {
+    let newRow = {}
+    if (reliabilityTaskRow.length > 0) {
+      const lastId = reliabilityTaskRow[reliabilityTaskRow.length - 1].id
+      // newRow = { id: lastId + 1, startDate: null, endDate: null, completedDate: null };
+      newRow = { id: lastId + 1 };
+
+    } else {
+      // newRow = { id: 0, startDate: null, endDate: null, completedDate: null };
+      newRow = { id: 0 };
+    }
+    setReliabilityTaskRow([...reliabilityTaskRow, newRow]);
+    setRowAdded(true)
+  }
+
+  const handleRemoveRow = (index) => {
+    const updatedRows = reliabilityTaskRow.filter((_, i) => i !== index);
+    setReliabilityTaskRow(updatedRows);
+    setRowAdded(false)
+  };
+
+
+
+
   // Component function to add button
   let addButtonWithIcon = (
-    <IconButton size='small'>
+    <IconButton size='small' onClick={handleAddNewRow}>
       <Tooltip title='Add Row' arrow>
-        <AddIcon onClick={handleAddNewRow} />
+        <AddIcon />
       </Tooltip>
     </IconButton>
   )
@@ -141,7 +131,6 @@ const ReliabilityTaskManagement = ({ reliabilityTaskRow, setReliabilityTaskRow, 
 
   return (
     <>
-
       <Box>
         <TableContainer component={Paper} >
           <Table>
@@ -152,7 +141,6 @@ const ReliabilityTaskManagement = ({ reliabilityTaskRow, setReliabilityTaskRow, 
                     {header.name}
                   </TableCell>
                 ))}
-
               </TableRow>
             </TableHead>
 
@@ -166,7 +154,6 @@ const ReliabilityTaskManagement = ({ reliabilityTaskRow, setReliabilityTaskRow, 
                       <InputLabel >Task Description</InputLabel>
                       <Select
                         label="task-description"
-                        // value={row.taskDescription}
                         value={row.task_description || ''}
                         onChange={(e) => handleTaskRowChange(index, 'task_description', e.target.value)}
                       >
@@ -180,7 +167,6 @@ const ReliabilityTaskManagement = ({ reliabilityTaskRow, setReliabilityTaskRow, 
                       <InputLabel >Assigned By</InputLabel>
                       <Select
                         label="task-assigned-by"
-                        // value={row.taskAssignedBy}
                         value={row.task_assigned_by || ''}
                         onChange={(e) => handleTaskRowChange(index, 'task_assigned_by', e.target.value)}
                       >
@@ -197,7 +183,6 @@ const ReliabilityTaskManagement = ({ reliabilityTaskRow, setReliabilityTaskRow, 
                         variant="outlined"
                         margin="normal"
                         value={reliabilityTaskRow[index].task_start_date ? dayjs(reliabilityTaskRow[index].task_start_date) : null}
-                        // value={reliabilityTaskRow[index].startDate ? dayjs(reliabilityTaskRow[index].startDate) : dateTimeValue}
                         onChange={(date) => handleTaskRowChange(index, 'task_start_date', date ? date.toISOString() : null)}
                         renderInput={(props) => <TextField {...props} />}
                         format="DD/MM/YYYY "
@@ -213,7 +198,6 @@ const ReliabilityTaskManagement = ({ reliabilityTaskRow, setReliabilityTaskRow, 
                         variant="outlined"
                         margin="normal"
                         value={reliabilityTaskRow[index].task_end_date ? dayjs(reliabilityTaskRow[index].task_end_date) : null}
-                        // value={reliabilityTaskRow[index].endDate ? dayjs(reliabilityTaskRow[index].endDate) : dateTimeValue}
                         onChange={(date) => handleTaskRowChange(index, 'task_end_date', date ? date.toISOString() : null)}
                         renderInput={(props) => <TextField {...props} />}
                         format="DD/MM/YYYY "
@@ -227,7 +211,6 @@ const ReliabilityTaskManagement = ({ reliabilityTaskRow, setReliabilityTaskRow, 
                       <InputLabel >Assigned To</InputLabel>
                       <Select
                         label="task-assigned-to"
-                        // value={row.taskAssignedTo}
                         value={row.task_assigned_to || ''}
                         onChange={(e) => handleTaskRowChange(index, 'task_assigned_to', e.target.value)}
                       >
@@ -241,7 +224,6 @@ const ReliabilityTaskManagement = ({ reliabilityTaskRow, setReliabilityTaskRow, 
                     <FormControl sx={{ width: '100%', borderRadius: 3 }} >
                       <InputLabel > Task Status</InputLabel>
                       <Select label="task-status"
-                        // value={row.taskStatus}
                         value={row.task_status || ''}
                         onChange={(e) => handleTaskRowChange(index, 'task_status', e.target.value)}>
 
@@ -279,6 +261,8 @@ const ReliabilityTaskManagement = ({ reliabilityTaskRow, setReliabilityTaskRow, 
                         format="DD/MM/YYYY"
                       />
                     </LocalizationProvider>
+
+
                   </TableCell>
 
                   <TableCell >
@@ -288,9 +272,10 @@ const ReliabilityTaskManagement = ({ reliabilityTaskRow, setReliabilityTaskRow, 
                   </TableCell>
 
                   <TableCell>
-                    <IconButton size='small'>
+                    {/* <IconButton size='small' onClick={() => handleRemoveRow(row.id)}> */}
+                    <IconButton size='small' onClick={() => handleRemoveRow(index)}>
                       <Tooltip title='Remove Row' arrow>
-                        <RemoveIcon onClick={() => handleRemoveRow(row.id)} />
+                        <RemoveIcon />
                       </Tooltip>
                     </IconButton>
                   </TableCell>
@@ -299,7 +284,6 @@ const ReliabilityTaskManagement = ({ reliabilityTaskRow, setReliabilityTaskRow, 
               ))}
             </TableBody>
           </Table>
-
         </TableContainer>
       </Box>
     </>

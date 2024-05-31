@@ -155,9 +155,6 @@ export default function JCHome() {
 
                     setYears([...yearSet]);
                     setMonths([...monthSet]);
-
-                    console.log('11', years)
-                    console.log('22', months)
                 } else {
                     console.error('Failed to fetch JC Month-Year list. Status:', response.status);
                 }
@@ -185,7 +182,6 @@ export default function JCHome() {
         axios.get(`${serverBaseAddress}/api/getLoggedInUser`)
             .then(res => {
                 if (res.data.valid) {
-                    //console.log(res.data.user_role)
                     setLoggedInUserDepartment(res.data.user_department)
                 } else {
                     navigate("/")
@@ -205,11 +201,6 @@ export default function JCHome() {
     if (error) {
         return <div>Error: {error.message}</div>;
     }
-
-
-    console.log('loggedInUserDepartment', loggedInUserDepartment)
-
-
 
 
     //Table columns

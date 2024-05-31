@@ -80,9 +80,8 @@ function createBEAQuotationsTable() {
             kind_attention VARCHAR(255),
             project_name VARCHAR(1000),
             quote_category VARCHAR(255),
+            quote_version VARCHAR(255),
             total_amount VARCHAR(255),
-            total_discount_amount VARCHAR(255),
-            total_amount_after_discount VARCHAR(255),
             total_taxable_amount_in_words VARCHAR(1000),
             quote_created_by VARCHAR(255),
             PRIMARY KEY (id)
@@ -99,107 +98,6 @@ function createBEAQuotationsTable() {
 
 
 ////////////////////////////////////////////////////////////////////////////
-// Function to create a 'quotations_discount' table:
-function createQuotesDiscountTable() {
-    const createQuotesDiscountTableQuery = `
-            CREATE TABLE IF NOT EXISTS quotations_discount (
-                id INT NOT NULL AUTO_INCREMENT,
-                quotation_ids VARCHAR(255),
-                company_name VARCHAR(255),
-                total_amount VARCHAR(255),
-                total_discount_amount VARCHAR(255),
-                discount_given_date DATE,
-                PRIMARY KEY (id)
-            )` ;
-
-    db.query(createQuotesDiscountTableQuery, function (err, result) {
-        if (err) {
-            console.log("Error occurred while creating quotations_discount table", err)
-        } else {
-            //console.log("quotations_discount table created successfully.")
-        }
-    })
-}
-
-
-
-////////////////////////////////////////////////////////////////////////////
-//Function to create a envi_tests_quotes_data table:
-/* function createEnvitestsQuotesDetailsTable() {
-    const createEnvitestsQuotesDetailsQuery = `
-    CREATE TABLE IF NOT EXISTS envi_tests_quotes_data (
-        id INT NOT NULL AUTO_INCREMENT,
-        quotation_ids VARCHAR(255),
-        company_name VARCHAR(255),
-        test_description VARCHAR(1000),
-        sac_no VARCHAR(255),
-        duration VARCHAR(255),
-        unit VARCHAR(255),
-        per_hour_charge VARCHAR(255),
-        amount VARCHAR(255),
-        PRIMARY KEY(id)
-    )`;
-
-    db.query(createEnvitestsQuotesDetailsQuery, function (err, result) {
-        if (err) {
-            console.log("Error occurred while creating environmental_tests_quotes table", err)
-        } else {
-            //console.log("envi_tests_quotes_data table created successfully.")
-        }
-    })
-}; */
-
-
-
-////////////////////////////////////////////////////////////////////////////
-//Function to create a reliability_quotes_data table:
-/* function createReliabilityQuotesDetailsTable() {
-    const createReliabilityQuotesDetailsQuery = `
-    CREATE TABLE IF NOT EXISTS reliability_quotes_data (
-        id INT NOT NULL AUTO_INCREMENT,
-        quotation_ids VARCHAR(255),
-        company_name VARCHAR(255),
-        service_description VARCHAR(1000),
-        amount VARCHAR(255),
-        PRIMARY KEY(id)
-    )`;
-
-    db.query(createReliabilityQuotesDetailsQuery, function (err, result) {
-        if (err) {
-            console.log("Error occurred while creating reliability_quotes_data table", err)
-        } else {
-            //console.log("envi_tests_quotes_data table created successfully.")
-        }
-    })
-}; */
-
-
-
-////////////////////////////////////////////////////////////////////////////
-//Function to create a itemsoft_quotes_data table:
-/* function createItemsoftQuotesDetailsTable() {
-    const createItemsoftQuotesDetailsQuery = `
-    CREATE TABLE IF NOT EXISTS itemsoft_quotes_data (
-        id INT NOT NULL AUTO_INCREMENT,
-        quotation_ids VARCHAR(255),
-        company_name VARCHAR(255),
-        module_name VARCHAR(1000),
-        module_description VARCHAR(2000),
-        amount VARCHAR(255),
-        PRIMARY KEY(id)
-    )`;
-
-    db.query(createItemsoftQuotesDetailsQuery, function (err, result) {
-        if (err) {
-            console.log("Error occurred while creating itemsoft_quotes_data table", err)
-        } else {
-            //console.log("envi_tests_quotes_data table created successfully.")
-        }
-    })
-}; */
-
-
-
 //Function to create a 'chamber_calibration' table:
 function createChamberCalibrationTable() {
     const sqlQuery = `
@@ -345,7 +243,7 @@ function createJobcardsTable() {
         id INT NOT NULL AUTO_INCREMENT,
         jc_number VARCHAR(255) ,
         dcform_number VARCHAR(255) ,
-        jc_open_date DATETIME,
+        jc_open_date DATE,
         item_received_date DATE,
         po_number  VARCHAR(255),
         test_category VARCHAR(1000),
@@ -358,10 +256,9 @@ function createJobcardsTable() {
         customer_number VARCHAR(255),
         project_name VARCHAR(1000),
         sample_condition VARCHAR(500),
-        referance_document VARCHAR(500),
         jc_status  VARCHAR(500),
         reliability_report_status VARCHAR(500),
-        jc_closed_date DATETIME,
+        jc_closed_date DATE,
         observations VARCHAR(500),
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -601,7 +498,6 @@ module.exports = {
     createOtpStorageTable,
     createPasswordResetAttemptsTable,
     createBEAQuotationsTable,
-    createQuotesDiscountTable,
     createChamberCalibrationTable,
     createCustomerDetailsTable,
     createItemSoftModulestable,
