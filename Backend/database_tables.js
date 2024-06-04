@@ -1,9 +1,13 @@
 // Import the necessary cdependancies:
 const mysql = require("mysql2");
 const { db } = require("./db");
+const dotenv = require('dotenv').config()
+
+const bcrypt = require("bcrypt")                    // Import bcrypt package in order to encrypt the password
+const saltRounds = 10    
 
 //Function to create a users table:
-function createUsersTable() {
+async function createUsersTable() {
     const createTableQuery = `
         CREATE TABLE IF NOT EXISTS labbee_users (
             id INT NOT NULL AUTO_INCREMENT,
@@ -16,13 +20,84 @@ function createUsersTable() {
             PRIMARY KEY(id) 
         )`;
 
-    db.query(createTableQuery, function (err, result) {
+    db.query(createTableQuery, async function (err, result) {
         if (err) {
             console.error("Error while creating labbee_users", err);
         } else {
             //console.log("Users_table created successfully.")
+            await addDefaultUser()
         }
     });
+}
+
+// Function to add the default admin user:
+// async function addDefaultUser() {
+
+//     const defaultUserName = 'Admin';
+//     const defaultUserEmail = 'admin@gmail.com';
+//     const defaultUserPassword = `12345@Admin`;
+//     const defaultUserDepartment = 'All';
+//     const defaultUserRole = 'Admin';
+//     const defaultUserStatus = 'Enable';
+    
+// const checkUserQuery = `SELECT * FROM labbee_users WHERE email = ?`;
+// const insertQuery = `INSERT INTO labbee_users(name, email, password, department, role, user_status) VALUES (?, ?, ?, ?, ?, ?)`;
+
+// try {
+//     // Check if the default user already exists
+//     const [rows] = await db.promise().query(checkUserQuery, [defaultUserEmail]);
+//     if (rows.length > 0) {
+//         console.log("Default user already exists.");
+//         return;
+//     }
+
+//     // Hash the default password
+//     const hashedDefaultPassword = await bcrypt.hash(defaultUserPassword, saltRounds);
+
+//     // Insert the default user
+//     await db.promise().query(insertQuery, [defaultUserName, defaultUserEmail, hashedDefaultPassword, defaultUserDepartment, defaultUserRole, defaultUserStatus]);
+
+//     console.log("Default user inserted successfully.");
+
+// } catch (error) {
+//      console.error("Error while inserting default user", error);
+// }
+
+// }
+
+
+async function addDefaultUser() {
+
+    const defaultUserName = process.env.ADMIN_NAME
+    const defaultUserEmail = process.env.ADMIN_EMAIL
+    const defaultUserPassword = process.env.ADMIN_PASSWORD
+    const defaultUserDepartment = process.env.ADMIN_DEPARTMENT
+    const defaultUserRole = process.env.ADMIN_ROLE
+    const defaultUserStatus = process.env.ADMIN_STATUS
+    
+const checkUserQuery = `SELECT * FROM labbee_users WHERE email = ?`;
+const insertQuery = `INSERT INTO labbee_users(name, email, password, department, role, user_status) VALUES (?, ?, ?, ?, ?, ?)`;
+
+try {
+    // Check if the default user already exists
+    const [rows] = await db.promise().query(checkUserQuery, [defaultUserEmail]);
+    if (rows.length > 0) {
+        console.log("Default user already exists.");
+        return;
+    }
+
+    // Hash the default password
+    const hashedDefaultPassword = await bcrypt.hash(defaultUserPassword, saltRounds);
+
+    // Insert the default user
+    await db.promise().query(insertQuery, [defaultUserName, defaultUserEmail, hashedDefaultPassword, defaultUserDepartment, defaultUserRole, defaultUserStatus]);
+
+    console.log("Default user inserted successfully.");
+
+} catch (error) {
+     console.error("Error while inserting default user", error);
+}
+
 }
 
 // Function to create the otp_table

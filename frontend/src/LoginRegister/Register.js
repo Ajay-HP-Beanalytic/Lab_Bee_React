@@ -23,6 +23,7 @@ import IconButton from '@mui/material/IconButton';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import { FormControl, InputLabel, OutlinedInput } from "@mui/material";
+import { serverBaseAddress } from "../Pages/APIPage";
 
 
 
@@ -115,7 +116,7 @@ export default function Register() {
     }
 
     try {
-      const response = await axios.post("http://localhost:4000/api/adduser", {
+        const response = await axios.post(`${serverBaseAddress}/api/adduser`, {
         name,
         email,
         password,
@@ -152,198 +153,7 @@ export default function Register() {
 
 
   return (
-    // <div
-    //   style={{
-    //     backgroundImage: "linear-gradient(135deg, #009FFD 10%, #2A2A72 100%)",
-    //     backgroundSize: "cover",
-    //     height: "100vh",
-    //     color: "#f5f5f5",
-    //   }}
-    // >
-    //   <Box sx={boxStyle}>
-    //     <Grid container>
-    //       <Grid item xs={12} sm={12} md={6}>
-    //         <Box
-    //           sx={{
-    //             backgroundImage: `url(${bg})`,
-    //             backgroundSize: "cover",
-    //             marginTop: { xs: "20px", sm: "40px" },
-    //             marginX: { xs: "10px", sm: "15px" },
-    //             height: { xs: "30vh", sm: "63vh" },
-    //             color: "#f5f5f5",
-    //           }}
-    //         ></Box>
-    //       </Grid>
-    //       <Grid item xs={12} sm={12} md={6}>
-    //         <Box
-    //           sx={{
-    //             backgroundSize: "cover",
-    //             height: { xs: "60vh", sm: "70vh" },
-    //             minHeight: "500px",
-    //             backgroundColor: "#3b33d5",
-    //           }}
-    //         >
-    //           <ThemeProvider theme={darkTheme}>
-    //             <Container>
-    //               <Box height={35} />
-    //               <Box sx={RegisterLogoAndText}>
-    //                 <Avatar
-    //                   sx={{ mb: 2, bgcolor: "#ffffff" }}
-    //                 >
-    //                   <LockOutlinedIcon />
-    //                 </Avatar>
-    //                 <Typography variant="h4" sx={{ textAlign: 'center' }}>
-    //                   Create Account
-    //                 </Typography>
-    //               </Box>
-    //               <Box
-    //                 component="form"
-    //                 noValidate
-    //                 onSubmit={handleRegisterUser}
-    //                 sx={{ mt: 2 }}
-    //               >
-
-    //                 <Grid container spacing={1}>
-
-    //                   <Grid item xs={12} sx={{ mx: { xs: "1em", sm: "3em" } }}>
-    //                     <TextField
-    //                       name="name"
-    //                       value={name} onChange={(e) => setNameString(e.target.value)}
-    //                       required
-    //                       fullWidth
-    //                       type="name"
-    //                       variant="outlined"
-    //                       label='Name'
-    //                       placeholder="Enter your name">
-    //                       Name
-    //                     </TextField>
-    //                   </Grid>
-
-    //                   <Grid item xs={12} sx={{ mx: { xs: "1em", sm: "3em" } }}>
-    //                     <TextField
-    //                       name="email"
-    //                       value={email} onChange={(e) => setEmailString(e.target.value)}
-    //                       required
-    //                       fullWidth
-    //                       autoComplete="email"
-    //                       type="email"
-    //                       variant="outlined"
-    //                       label='Email'
-    //                       placeholder="Enter your email">
-    //                       Email
-    //                     </TextField>
-    //                   </Grid>
-
-
-    //                   <Grid item xs={12} sx={{ mx: { xs: "1em", sm: "3em" } }}>
-
-    //                     <FormControl sx={{ width: '100%' }} variant="outlined" required>
-    //                       <InputLabel htmlFor="initial-password-id">Password</InputLabel>
-    //                       <OutlinedInput
-    //                         id="initial-password-id"
-    //                         value={password} onChange={(e) => setPasswordString(e.target.value)}
-
-    //                         type={showPassword ? 'text' : 'password'}
-    //                         endAdornment={
-    //                           <InputAdornment position="end">
-    //                             <IconButton
-    //                               aria-label="toggle password1 visibility"
-    //                               onClick={handleClickShowPassword}
-    //                               onMouseDown={handleMouseDownPassword1}
-    //                               edge="end"
-    //                             >
-    //                               {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
-    //                             </IconButton>
-    //                           </InputAdornment>
-    //                         }
-    //                         label="Password"
-    //                       />
-    //                     </FormControl>
-    //                   </Grid>
-
-    //                   <Grid item xs={12} sx={{ mx: { xs: "1em", sm: "3em" } }}>
-
-    //                     <FormControl sx={{ width: '100%' }} variant="outlined" required>
-    //                       <InputLabel htmlFor="confirm-password-id">Confirm Password</InputLabel>
-    //                       <OutlinedInput
-    //                         id="confirm-password-id"
-    //                         value={confirmPassword} onChange={(e) => setConfirmPasswordString(e.target.value)}
-    //                         type={showConfirmPassword ? 'text' : 'password'}
-    //                         endAdornment={
-    //                           <InputAdornment position="end">
-    //                             <IconButton
-    //                               aria-label="toggle password2 visibility"
-    //                               onClick={handleClickShowConfirmPassword}
-    //                               onMouseDown={handleMouseDownPassword2}
-    //                               edge="end"
-    //                             >
-    //                               {showConfirmPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
-    //                             </IconButton>
-    //                           </InputAdornment>
-    //                         }
-    //                         label="Confirm Password"
-    //                       />
-    //                     </FormControl>
-    //                   </Grid>
-
-    //                   <Grid item xs={12} sm={6} sx={{ mx: { xs: "1em", sm: "5em" } }}>
-    //                     <Button
-    //                       type="submit"
-    //                       variant="contained"
-    //                       fullWidth
-    //                       size="large"
-    //                       sx={{
-    //                         mt: "15px",
-    //                         borderRadius: 28,
-    //                         color: "#ffffff",
-    //                         backgroundColor: "#ffa31a",
-    //                       }}
-    //                     >
-    //                       Register
-    //                     </Button>
-    //                   </Grid>
-
-    //                   <Grid item xs={12} sm={6} sx={{ mx: { xs: "1em", sm: "5em" } }}>
-    //                     <Button
-    //                       variant="contained"
-    //                       fullWidth
-    //                       size="large"
-    //                       sx={{
-    //                         mt: "15px",
-    //                         borderRadius: 28,
-    //                         color: "#ffffff",
-    //                         backgroundColor: "#ffa31a",
-    //                       }}
-    //                       onClick={handleCancelUserRegistration}
-    //                     >
-    //                       Clear
-    //                     </Button>
-    //                   </Grid>
-
-    //                   <Grid item xs={12} sx={{ mx: { xs: "1em", sm: "3em" } }}>
-    //                     <Stack direction="row" spacing={2}>
-    //                       <Typography variant="h6" component="span" sx={{ mt: "10px", textAlign: 'center' }}>
-    //                         Already have an Account?{" "}
-    //                         <span
-    //                           style={{ color: "#beb4fb", cursor: "pointer" }}
-    //                           onClick={() => {
-    //                             navigate("/");
-    //                           }}
-    //                         >
-    //                           Sign In
-    //                         </span>
-    //                       </Typography>
-    //                     </Stack>
-    //                   </Grid>
-    //                 </Grid>
-    //               </Box>
-    //             </Container>
-    //           </ThemeProvider>
-    //         </Box>
-    //       </Grid>
-    //     </Grid>
-    //   </Box>
-    // </div >
+    
 
     <div
       style={{
