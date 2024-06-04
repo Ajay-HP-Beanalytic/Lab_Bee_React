@@ -8,36 +8,39 @@ export const UserContext = createContext();
 
 //Create the provider component:
 export const UserProvider = ({ children }) => {
+  const navigate = useNavigate();
 
-  const navigate = useNavigate()
-
-  const [loggedInUser, setLoggedInUser] = useState("")
-  const [loggedInUserDepartment, setLoggedInUserDepartment] = useState("")
-
+  const [loggedInUser, setLoggedInUser] = useState("");
+  const [loggedInUserDepartment, setLoggedInUserDepartment] = useState("");
 
   // axios.defaults.withCredentials = true;
 
   // To get the logged in user name:
   useEffect(() => {
-    axios.get(`${serverBaseAddress}/api/getLoggedInUser`)
-      .then(res => {
+    axios
+      .get(`${serverBaseAddress}/api/getLoggedInUser`)
+      .then((res) => {
         if (res.data.valid) {
           // setLoggedInUserRole(res.data.user_role)
-          setLoggedInUser(res.data.user_name)
-          setLoggedInUserDepartment(res.data.user_department)
+          setLoggedInUser(res.data.user_name);
+          setLoggedInUserDepartment(res.data.user_department);
         } else {
-          navigate("/")
+          navigate("/");
         }
       })
-      .catch(err => console.log(err))
-  }, [])
-
-
+      .catch((err) => console.log(err));
+  }, []);
 
   return (
-
-    <UserContext.Provider value={{ loggedInUser, setLoggedInUser, loggedInUserDepartment, setLoggedInUserDepartment }}>
+    <UserContext.Provider
+      value={{
+        loggedInUser,
+        setLoggedInUser,
+        loggedInUserDepartment,
+        setLoggedInUserDepartment,
+      }}
+    >
       {children}
     </UserContext.Provider>
-  )
-}
+  );
+};

@@ -1,101 +1,131 @@
-import React, { useEffect, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom';
-import axios from 'axios';
+import React, { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import axios from "axios";
 import {
-  Box, Card, Table, TableBody, Button, TableCell, TableRow, TableContainer, TableHead, Paper,
-  TablePagination, Typography, CardContent, TextField, Autocomplete, IconButton, Tooltip, FormControl,
-  SpeedDial, SpeedDialIcon, SpeedDialAction, Grid, Container, CssBaseline, Divider,
+  Box,
+  Card,
+  Table,
+  TableBody,
+  Button,
+  TableCell,
+  TableRow,
+  TableContainer,
+  TableHead,
+  Paper,
+  TablePagination,
+  Typography,
+  CardContent,
+  TextField,
+  Autocomplete,
+  IconButton,
+  Tooltip,
+  FormControl,
+  SpeedDial,
+  SpeedDialIcon,
+  SpeedDialAction,
+  Grid,
+  Container,
+  CssBaseline,
+  Divider,
   MenuItem,
   InputLabel,
-  Select
-} from '@mui/material';
+  Select,
+} from "@mui/material";
 
+import { serverBaseAddress } from "../Pages/APIPage";
 
-import { serverBaseAddress } from '../Pages/APIPage';
-
-import PendingIcon from '@mui/icons-material/Pending';
+import PendingIcon from "@mui/icons-material/Pending";
 import { FcDocument } from "react-icons/fc";
-import moment from 'moment';
-import VisibilityIcon from '@mui/icons-material/Visibility';
-import AddIcon from '@mui/icons-material/Add';
+import moment from "moment";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import AddIcon from "@mui/icons-material/Add";
 
-import CountUp from 'react-countup'
+import CountUp from "react-countup";
 
-import { CreateBarChart, CreateKpiCard, CreatePieChart } from '../functions/DashboardFunctions';
-import { toast } from 'react-toastify';
-import SearchBar from '../common/SearchBar';
-import DateRangeFilter from '../common/DateRangeFilter';
-import { getCurrentMonthYear } from '../functions/UtilityFunctions';
-import { DataGrid } from '@mui/x-data-grid';
-import dayjs from 'dayjs';
-import Loader from '../common/Loader';
-import EmptyCard from '../common/EmptyCard';
-
-
+import {
+  CreateBarChart,
+  CreateKpiCard,
+  CreatePieChart,
+} from "../functions/DashboardFunctions";
+import { toast } from "react-toastify";
+import SearchBar from "../common/SearchBar";
+import DateRangeFilter from "../common/DateRangeFilter";
+import { getCurrentMonthYear } from "../functions/UtilityFunctions";
+import { DataGrid } from "@mui/x-data-grid";
+import dayjs from "dayjs";
+import Loader from "../common/Loader";
+import EmptyCard from "../common/EmptyCard";
 
 export default function QuotationsDashboard() {
-
   // Define the table headers:
-  const quotationTableHeadersText = ['Sl No', 'Quotation ID', 'Company', 'Quote Given Date', 'Category', 'Quote Given By', 'Action'];
+  const quotationTableHeadersText = [
+    "Sl No",
+    "Quotation ID",
+    "Company",
+    "Quote Given Date",
+    "Category",
+    "Quote Given By",
+    "Action",
+  ];
 
   // State variables to hold the data fetched from the database:
 
-  const [quotesTableData, setQuotesTableData] = useState([]);   //fetch data from the database & to show inside a table
+  const [quotesTableData, setQuotesTableData] = useState([]); //fetch data from the database & to show inside a table
 
   const [originalQuoteTableData, setOriginalQuoteTableData] = useState([]);
 
-  const [loading, setLoading] = useState(false);                 //To show loading label
+  const [loading, setLoading] = useState(false); //To show loading label
 
-  const [msg, setMsg] = useState(<Typography variant='h4'> Loading...</Typography>);
+  const [msg, setMsg] = useState(
+    <Typography variant="h4"> Loading...</Typography>
+  );
 
-  const [error, setError] = useState(null);                     //To show error label
+  const [error, setError] = useState(null); //To show error label
 
-  const [filterRow, setFilterRow] = useState([]);               //To filter out the table based on search
+  const [filterRow, setFilterRow] = useState([]); //To filter out the table based on search
 
-
-
-  const [refresh, setRefresh] = useState(false)
+  const [refresh, setRefresh] = useState(false);
 
   const { month, year } = getCurrentMonthYear();
 
-  const [quoteYear, setQuoteYear] = useState(year)
-  const [quoteMonth, setQuoteMonth] = useState(month)
+  const [quoteYear, setQuoteYear] = useState(year);
+  const [quoteMonth, setQuoteMonth] = useState(month);
 
   const [years, setYears] = useState([]);
   const [months, setMonths] = useState([]);
 
   const [selectedQuoteDateRange, setSelectedQuoteDateRange] = useState(null);
 
-  const [searchInputTextOfQuote, setSearchInputTextOfQuote] = useState("")
+  const [searchInputTextOfQuote, setSearchInputTextOfQuote] = useState("");
 
   const [filteredQuoteData, setFilteredQuoteData] = useState(quotesTableData);
 
-
-  const navigate = useNavigate()
-
+  const navigate = useNavigate();
 
   // Simulate fetching data from the database
   useEffect(() => {
-
     let requiredAPIdata = {
-      _fields: 'quotation_ids, company_name, formatted_quote_given_date, quote_category, quote_created_by',
+      _fields:
+        "quotation_ids, company_name, formatted_quote_given_date, quote_category, quote_created_by",
       year: quoteYear,
-      month: quoteMonth
-    }
+      month: quoteMonth,
+    };
 
-    const urlParameters = new URLSearchParams(requiredAPIdata).toString()
+    const urlParameters = new URLSearchParams(requiredAPIdata).toString();
 
     if (filterRow.length > 0) {
-      setFilterRow(filterRow)
+      setFilterRow(filterRow);
     } else {
       const fetchQuotesDataFromDatabase = async () => {
         setLoading(true);
         try {
-          const response = await axios.get(`${serverBaseAddress}/api/getQuotationData?` + urlParameters);
+          const response = await axios.get(
+            `${serverBaseAddress}/api/getQuotationData?` + urlParameters
+          );
           setQuotesTableData(response.data);
-          setOriginalQuoteTableData(response.data)
+          setOriginalQuoteTableData(response.data);
         } catch (error) {
-          console.error('Failed to fetch the data', error);
+          console.error("Failed to fetch the data", error);
           setError(error);
         } finally {
           setLoading(false); // Hide loader
@@ -103,59 +133,53 @@ export default function QuotationsDashboard() {
       };
 
       fetchQuotesDataFromDatabase();
-
     }
-
   }, [filterRow, refresh, quoteYear, quoteMonth]);
-
 
   useEffect(() => {
     const getMonthYearListOfQuote = async () => {
-
       try {
-        const response = await axios.get(`${serverBaseAddress}/api/getQuoteYearMonth`);
+        const response = await axios.get(
+          `${serverBaseAddress}/api/getQuoteYearMonth`
+        );
         if (response.status === 200) {
           const yearSet = new Set();
           const monthSet = new Set();
 
-          response.data.forEach(item => {
+          response.data.forEach((item) => {
             yearSet.add(item.year);
             monthSet.add(item.month);
           });
 
           setYears([...yearSet]);
           setMonths([...monthSet]);
-
         } else {
-          console.error('Failed to fetch PO Month-Year list. Status:', response.status);
+          console.error(
+            "Failed to fetch PO Month-Year list. Status:",
+            response.status
+          );
         }
       } catch (error) {
-        console.error('Failed to fetch the data', error);
+        console.error("Failed to fetch the data", error);
       }
-
-    }
-    getMonthYearListOfQuote()
-  }, [])
-
+    };
+    getMonthYearListOfQuote();
+  }, []);
 
   //useEffect to filter the table based on the search input
   useEffect(() => {
     setFilteredQuoteData(quotesTableData);
   }, [quotesTableData]);
 
-
   //If data is loading then show Loading text
   if (loading) {
-    return <Loader />
+    return <Loader />;
   }
 
   //If any error found then show the error
   if (error) {
     return <div>Error: {error.message}</div>;
-
   }
-
-
 
   // function deleteQuote(id) {
   //   axios.delete(`${serverBaseAddress}/api/quotation/` + id)
@@ -166,26 +190,65 @@ export default function QuotationsDashboard() {
   //     })
   // }
 
-
   const handleNewQuoteButton = () => {
-    navigate(`/quotation`)
-  }
-
+    navigate(`/quotation`);
+  };
 
   const columns = [
-    { field: 'id', headerName: 'SL No', width: 100, align: 'center', headerAlign: 'center', headerClassName: 'custom-header-color' },
-    { field: 'quotation_ids', headerName: 'Quotation ID', width: 280, align: 'center', headerAlign: 'center', headerClassName: 'custom-header-color' },
-    { field: 'company_name', headerName: 'Company', width: 280, align: 'center', headerAlign: 'center', headerClassName: 'custom-header-color' },
-    { field: 'formatted_quote_given_date', headerName: 'Quote Given Date', width: 280, align: 'center', headerAlign: 'center', headerClassName: 'custom-header-color' },
-    { field: 'quote_category', headerName: 'Category', width: 280, align: 'center', headerAlign: 'center', headerClassName: 'custom-header-color' },
-    { field: 'quote_created_by', headerName: 'Quote Given By', width: 280, align: 'center', headerAlign: 'center', headerClassName: 'custom-header-color' }
+    {
+      field: "id",
+      headerName: "SL No",
+      width: 100,
+      align: "center",
+      headerAlign: "center",
+      headerClassName: "custom-header-color",
+    },
+    {
+      field: "quotation_ids",
+      headerName: "Quotation ID",
+      width: 280,
+      align: "center",
+      headerAlign: "center",
+      headerClassName: "custom-header-color",
+    },
+    {
+      field: "company_name",
+      headerName: "Company",
+      width: 280,
+      align: "center",
+      headerAlign: "center",
+      headerClassName: "custom-header-color",
+    },
+    {
+      field: "formatted_quote_given_date",
+      headerName: "Quote Given Date",
+      width: 280,
+      align: "center",
+      headerAlign: "center",
+      headerClassName: "custom-header-color",
+    },
+    {
+      field: "quote_category",
+      headerName: "Category",
+      width: 280,
+      align: "center",
+      headerAlign: "center",
+      headerClassName: "custom-header-color",
+    },
+    {
+      field: "quote_created_by",
+      headerName: "Quote Given By",
+      width: 280,
+      align: "center",
+      headerAlign: "center",
+      headerClassName: "custom-header-color",
+    },
   ];
-
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   // Title for the KPI Card dropdown  list:
-  const accordianTitleString = 'Click here to see the list'
+  const accordianTitleString = "Click here to see the list";
 
   //Fetching data from the dataset to create the charts and KPI's:
 
@@ -194,9 +257,10 @@ export default function QuotationsDashboard() {
   const currentMonth = currentDate.getMonth();
 
   // Calibration due label for the KPI
-  const currentMonthName = new Intl.DateTimeFormat('en-US', { month: 'long' }).format(currentDate);
+  const currentMonthName = new Intl.DateTimeFormat("en-US", {
+    month: "long",
+  }).format(currentDate);
   const currentYearAndMonth = `${currentMonthName}-${currentYear}`;
-
 
   /////////////////////////////////////////////////////////////////////////
   //Function for the pie chart
@@ -217,72 +281,82 @@ export default function QuotationsDashboard() {
       }
 
       monthWiseQuoteCategoryLabels.add(category);
-    })
+    });
 
-    return { monthWiseQuoteCategoryLabels, monthWiseQuoteCategoryCount, monthWiseTotalQuotesCount };
-  }
+    return {
+      monthWiseQuoteCategoryLabels,
+      monthWiseQuoteCategoryCount,
+      monthWiseTotalQuotesCount,
+    };
+  };
 
   // Get the required output to plot the charts using the function
-  const { monthWiseQuoteCategoryLabels, monthWiseQuoteCategoryCount, monthWiseTotalQuotesCount } = getQuotesDataForPieChart(quotesTableData)
-
+  const {
+    monthWiseQuoteCategoryLabels,
+    monthWiseQuoteCategoryCount,
+    monthWiseTotalQuotesCount,
+  } = getQuotesDataForPieChart(quotesTableData);
 
   //convert fetched data in to array:
   // Convert Set to Array for labels
-  const labelsForQuotePieChart = Array.from(monthWiseQuoteCategoryLabels)
+  const labelsForQuotePieChart = Array.from(monthWiseQuoteCategoryLabels);
 
   // Convert counts object to array for data points
-  const quoteCategoryCountsForQuotePieChart = labelsForQuotePieChart.map(categoryLabel => monthWiseQuoteCategoryCount[categoryLabel])
+  const quoteCategoryCountsForQuotePieChart = labelsForQuotePieChart.map(
+    (categoryLabel) => monthWiseQuoteCategoryCount[categoryLabel]
+  );
 
   // Creating a pie chart for calibration status for chambers and equipments:
   const categorywiseQuotesPieChart = {
-
     labels: labelsForQuotePieChart,
-    datasets: [{
-      data: quoteCategoryCountsForQuotePieChart,
-      backgroundColor: ['#8cd9b3', '#ffad99', '#C7B040', '#929292'],
-    }],
-  }
+    datasets: [
+      {
+        data: quoteCategoryCountsForQuotePieChart,
+        backgroundColor: ["#8cd9b3", "#ffad99", "#C7B040", "#929292"],
+      },
+    ],
+  };
 
   const optionsForQuotesPieChart = {
-    backgroundColor: '#e6ffe6',
+    backgroundColor: "#e6ffe6",
     responsive: true,
     //maintainAspectRatio: false,   // False will keep the size small. If it's true then we can define the size using aspectRatio
     aspectRatio: 2,
     plugins: {
       legend: {
-        position: 'top',
+        position: "top",
         display: true,
       },
       title: {
         display: true,
         text: `Quotation Category`,
         font: {
-          family: 'Helvetica Neue',
+          family: "Helvetica Neue",
           size: 30,
-          weight: 'bold'
-        }
+          weight: "bold",
+        },
       },
       subtitle: {
         display: true,
-        text: 'Categorywise quotations count',
+        text: "Categorywise quotations count",
         font: {
-          family: 'Arial',
+          family: "Arial",
           size: 15,
-          weight: 'bold'
-        }
+          weight: "bold",
+        },
       },
       datalabels: {
         display: true,
-        color: 'black',
-        fontWeight: 'bold',
+        color: "black",
+        fontWeight: "bold",
         font: {
-          family: 'Arial',
+          family: "Arial",
           size: 15,
-          weight: 'bold'
-        }
+          weight: "bold",
+        },
       },
-    }
-  }
+    },
+  };
 
   /////////////////////////////////////////////////////////////////////////
 
@@ -296,8 +370,18 @@ export default function QuotationsDashboard() {
     const quotesCountPerMonth = [];
 
     const monthNameMap = {
-      1: 'Jan', 2: 'Feb', 3: 'Mar', 4: 'Apr', 5: 'May', 6: 'Jun',
-      7: 'Jul', 8: 'Aug', 9: 'Sep', 10: 'Oct', 11: 'Nov', 12: 'Dec'
+      1: "Jan",
+      2: "Feb",
+      3: "Mar",
+      4: "Apr",
+      5: "May",
+      6: "Jun",
+      7: "Jul",
+      8: "Aug",
+      9: "Sep",
+      10: "Oct",
+      11: "Nov",
+      12: "Dec",
     };
 
     data.forEach((item) => {
@@ -317,26 +401,47 @@ export default function QuotationsDashboard() {
   };
 
   // Example usage
-  const { monthNames, quotesCountPerMonth } = getMonthlyCountsLists(quotesTableData);
-
-
+  const { monthNames, quotesCountPerMonth } =
+    getMonthlyCountsLists(quotesTableData);
 
   // Dataset for creating a quotations per month bar chart:
   const barChartData = {
     labels: monthNames,
     datasets: [
       {
-        label: 'Month wise Quotes Count',
+        label: "Month wise Quotes Count",
         backgroundColor: [
-          '#FF6384', '#FF9F40', '#FFCD56', '#669966', '#fbd0d0', '#b8b8e0', '#ccb0e8', '#F8C471', '#AED581', '#9B59B6', '#F9F3E1', '#FABEBD'
+          "#FF6384",
+          "#FF9F40",
+          "#FFCD56",
+          "#669966",
+          "#fbd0d0",
+          "#b8b8e0",
+          "#ccb0e8",
+          "#F8C471",
+          "#AED581",
+          "#9B59B6",
+          "#F9F3E1",
+          "#FABEBD",
         ],
         borderColor: [
-          '#E5506F', '#D38433', '#C7B040', '#929292', '#83C1C1', '#4D66FF', '#B1B3B5', '#D6AA59', '#96B768', '#85469D', '#E4E0D9', '#E3A4A7'
+          "#E5506F",
+          "#D38433",
+          "#C7B040",
+          "#929292",
+          "#83C1C1",
+          "#4D66FF",
+          "#B1B3B5",
+          "#D6AA59",
+          "#96B768",
+          "#85469D",
+          "#E4E0D9",
+          "#E3A4A7",
         ],
         borderWidth: 1,
         // hoverBackgroundColor: 'rgba(75,192,192,0.8)',
         // hoverBorderColor: 'rgba(75,192,192,1)',
-        data: quotesCountPerMonth
+        data: quotesCountPerMonth,
       },
     ],
   };
@@ -348,45 +453,45 @@ export default function QuotationsDashboard() {
     plugins: {
       title: {
         display: true,
-        text: 'Monthwise Total Quotations',
+        text: "Monthwise Total Quotations",
         font: {
-          family: 'Helvetica Neue',
+          family: "Helvetica Neue",
           size: 30,
-          weight: 'bold'
-        }
+          weight: "bold",
+        },
       },
       subtitle: {
         display: true,
-        text: 'Total quotations created in each month',
+        text: "Total quotations created in each month",
         font: {
-          family: 'Arial',
+          family: "Arial",
           size: 15,
-          weight: 'bold'
-        }
+          weight: "bold",
+        },
       },
       datalabels: {
         display: true,
-        color: 'black',
-        fontWeight: 'bold',
-        align: 'end',
-        anchor: 'end',
+        color: "black",
+        fontWeight: "bold",
+        align: "end",
+        anchor: "end",
         font: {
-          family: 'Arial',
+          family: "Arial",
           size: 15,
-          weight: 'bold'
-        }
-      }
+          weight: "bold",
+        },
+      },
     },
     scales: {
       x: {
         title: {
           display: true,
-          text: 'Months',
+          text: "Months",
           font: {
-            family: 'Arial',
+            family: "Arial",
             size: 15,
-            weight: 'bold'
-          }
+            weight: "bold",
+          },
         },
         ticks: {
           beginAtZero: true, // Optional: start ticks at 0
@@ -395,101 +500,115 @@ export default function QuotationsDashboard() {
       y: {
         title: {
           display: true,
-          text: 'Number of Quotes',
+          text: "Number of Quotes",
           font: {
-            family: 'Arial',
+            family: "Arial",
             size: 15,
-            weight: 'bold'
-          }
+            weight: "bold",
+          },
         },
         ticks: {
           beginAtZero: true, // Optional: start ticks at 0
         },
-        grace: 1
+        grace: 1,
       },
     },
   };
 
-
   const handleYearOfQuote = (event) => {
-    setQuoteYear(event.target.value)
-  }
+    setQuoteYear(event.target.value);
+  };
 
   const handleMonthOfQuote = (event) => {
-    setQuoteMonth(event.target.value)
-  }
+    setQuoteMonth(event.target.value);
+  };
 
   //Function to get the selected date range
   const handleQuoteDateRangeChange = (selectedQuoteDateRange) => {
-    if (selectedQuoteDateRange && selectedQuoteDateRange.startDate && selectedQuoteDateRange.endDate) {
-      const formattedDateRange = `${dayjs(selectedQuoteDateRange.startDate).format('YYYY-MM-DD')} - ${dayjs(selectedQuoteDateRange.endDate).format('YYYY-MM-DD')}`;
+    if (
+      selectedQuoteDateRange &&
+      selectedQuoteDateRange.startDate &&
+      selectedQuoteDateRange.endDate
+    ) {
+      const formattedDateRange = `${dayjs(
+        selectedQuoteDateRange.startDate
+      ).format("YYYY-MM-DD")} - ${dayjs(selectedQuoteDateRange.endDate).format(
+        "YYYY-MM-DD"
+      )}`;
 
       setSelectedQuoteDateRange(formattedDateRange);
       fetchQuoteDataBetweenTwoDates(formattedDateRange);
     } else {
-      console.log('Invalid date range format');
+      console.log("Invalid date range format");
     }
-  }
+  };
 
   // function with api address to fetch the JC details between the two date ranges:
   const fetchQuoteDataBetweenTwoDates = async (dateRange) => {
     try {
-      const response = await axios.get(`${serverBaseAddress}/api/getQuotesDataBwTwoDates`, {
-        params: { selectedQuoteDateRange: dateRange }
-      });
+      const response = await axios.get(
+        `${serverBaseAddress}/api/getQuotesDataBwTwoDates`,
+        {
+          params: { selectedQuoteDateRange: dateRange },
+        }
+      );
       setQuotesTableData(response.data);
     } catch (error) {
-      console.error('Error fetching Quotes data:', error);
+      console.error("Error fetching Quotes data:", error);
     }
   };
 
   const handleQuoteDateRangeClear = () => {
-    setSelectedQuoteDateRange(null)
-    setQuotesTableData(originalQuoteTableData)
-  }
+    setSelectedQuoteDateRange(null);
+    setQuotesTableData(originalQuoteTableData);
+  };
 
   //Function to navigate to the page, in order to edit the quote
   const editSelectedRowData = (item) => {
-    navigate(`/quotation/${item.id}`)
-  }
+    navigate(`/quotation/${item.id}`);
+  };
 
   //Function to use the searchbar filter
   const onChangeOfSearchInputOfQuote = (e) => {
     const searchText = e.target.value;
-    setSearchInputTextOfQuote(searchText)
-    filterDataGridTable(searchText)
-  }
+    setSearchInputTextOfQuote(searchText);
+    filterDataGridTable(searchText);
+  };
 
   //Function to filter the table
   const filterDataGridTable = (searchValue) => {
     const filtered = quotesTableData.filter((row) => {
       return Object.values(row).some((value) =>
         value.toString().toLowerCase().includes(searchValue.toLowerCase())
-      )
-    })
+      );
+    });
     setFilteredQuoteData(filtered);
-  }
+  };
 
   //Function to clear the searchbar filter
   const onClearSearchInputOfQuote = () => {
-    setSearchInputTextOfQuote("")
+    setSearchInputTextOfQuote("");
     setFilteredQuoteData(quotesTableData);
-  }
+  };
 
-
-  const kpiColors = ['#66cc99', '#d6d6c2', '#e6e6ff', '#e6ffcc', '#ffe6cc'];
+  const kpiColors = ["#66cc99", "#d6d6c2", "#e6e6ff", "#e6ffcc", "#ffe6cc"];
 
   return (
-
     <>
       <Box
         sx={{
-          display: 'flex',
-          justifyContent: 'flex-end',
-          alignItems: 'center',
-        }}>
+          display: "flex",
+          justifyContent: "flex-end",
+          alignItems: "center",
+        }}
+      >
         <Button
-          sx={{ borderRadius: 1, bgcolor: "orange", color: "white", borderColor: "black" }}
+          sx={{
+            borderRadius: 1,
+            bgcolor: "orange",
+            color: "white",
+            borderColor: "black",
+          }}
           variant="contained"
           color="primary"
           onClick={handleNewQuoteButton}
@@ -499,16 +618,16 @@ export default function QuotationsDashboard() {
       </Box>
 
       <Divider>
-        <Typography variant='h4' sx={{ color: '#003366' }}> Quotations Dashboard </Typography>
+        <Typography variant="h4" sx={{ color: "#003366" }}>
+          {" "}
+          Quotations Dashboard{" "}
+        </Typography>
       </Divider>
 
-
-      <Grid container spacing={2} alignItems="center">
-        {/* Container for FormControl and DateRangeFilter aligned to the left */}
-        <Grid item xs={8} container alignItems="center">
+      {/* <Grid container spacing={2} alignItems="center">
+        <Grid item xs={12} md={8} container alignItems="center" spacing={2}>
           <Grid item sx={{ mr: 2 }}>
-
-            <FormControl sx={{ width: '200px', mx: '2px' }}>
+            <FormControl sx={{ width: "200px", mx: "2px" }}>
               <InputLabel>Select Year</InputLabel>
               <Select
                 label="Year"
@@ -517,12 +636,14 @@ export default function QuotationsDashboard() {
                 onChange={handleYearOfQuote}
               >
                 {years.map((year, index) => (
-                  <MenuItem key={index} value={year}>{year}</MenuItem>
+                  <MenuItem key={index} value={year}>
+                    {year}
+                  </MenuItem>
                 ))}
               </Select>
             </FormControl>
 
-            <FormControl sx={{ width: '200px', mx: '2px' }}>
+            <FormControl sx={{ width: "200px", mx: "2px" }}>
               <InputLabel>Select Month</InputLabel>
               <Select
                 label="Month"
@@ -531,26 +652,79 @@ export default function QuotationsDashboard() {
                 onChange={handleMonthOfQuote}
               >
                 {months.map((month, index) => (
-                  <MenuItem key={index} value={month}>{month}</MenuItem>
+                  <MenuItem key={index} value={month}>
+                    {month}
+                  </MenuItem>
                 ))}
               </Select>
             </FormControl>
-
           </Grid>
 
-          <Grid item >
+          <Grid item>
             <DateRangeFilter
               onClickDateRangeSelectDoneButton={handleQuoteDateRangeChange}
               onClickDateRangeSelectClearButton={handleQuoteDateRangeClear}
             />
           </Grid>
-
         </Grid>
 
-        {/* Container for search bar aligned to the right */}
         <Grid item xs={4} container justifyContent="flex-end">
           <SearchBar
-            placeholder='Search Quote'
+            placeholder="Search Quote"
+            searchInputText={searchInputTextOfQuote}
+            onChangeOfSearchInput={onChangeOfSearchInputOfQuote}
+            onClearSearchInput={onClearSearchInputOfQuote}
+          />
+        </Grid>
+      </Grid> */}
+
+      <Grid container spacing={2} alignItems="center">
+        <Grid item xs={12} md={8} container alignItems="center" spacing={2}>
+          <Grid item xs={12} sm={6} md={4}>
+            <FormControl fullWidth>
+              <InputLabel>Select Year</InputLabel>
+              <Select
+                label="Year"
+                value={quoteYear}
+                onChange={handleYearOfQuote}
+              >
+                {years.map((year, index) => (
+                  <MenuItem key={index} value={year}>
+                    {year}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+
+          <Grid item xs={12} sm={6} md={4}>
+            <FormControl fullWidth>
+              <InputLabel>Select Month</InputLabel>
+              <Select
+                label="Month"
+                value={quoteMonth}
+                onChange={handleMonthOfQuote}
+              >
+                {months.map((month, index) => (
+                  <MenuItem key={index} value={month}>
+                    {month}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
+
+          <Grid item xs={12} md={4}>
+            <DateRangeFilter
+              onClickDateRangeSelectDoneButton={handleQuoteDateRangeChange}
+              onClickDateRangeSelectClearButton={handleQuoteDateRangeClear}
+            />
+          </Grid>
+        </Grid>
+
+        <Grid item xs={12} md={4} container justifyContent="flex-end">
+          <SearchBar
+            placeholder="Search Quote"
             searchInputText={searchInputTextOfQuote}
             onChangeOfSearchInput={onChangeOfSearchInputOfQuote}
             onClearSearchInput={onClearSearchInputOfQuote}
@@ -559,17 +733,17 @@ export default function QuotationsDashboard() {
       </Grid>
 
       {filteredQuoteData && filteredQuoteData.length === 0 ? (
-        <EmptyCard message='No Quote Found' />
+        <EmptyCard message="No Quote Found" />
       ) : (
         <Box
           sx={{
             height: 500,
-            width: '100%',
-            '& .custom-header-color': {
-              backgroundColor: '#0f6675',
-              color: 'whitesmoke',
-              fontWeight: 'bold',
-              fontSize: '15px',
+            width: "100%",
+            "& .custom-header-color": {
+              backgroundColor: "#0f6675",
+              color: "whitesmoke",
+              fontWeight: "bold",
+              fontSize: "15px",
             },
             mt: 2,
           }}
@@ -577,7 +751,7 @@ export default function QuotationsDashboard() {
           <DataGrid
             rows={filteredQuoteData}
             columns={columns}
-            sx={{ '&:hover': { cursor: 'pointer' } }}
+            sx={{ "&:hover": { cursor: "pointer" } }}
             onRowClick={(params) => editSelectedRowData(params.row)}
             pageSize={5}
             rowsPerPageOptions={[5, 10, 20]}
@@ -585,37 +759,58 @@ export default function QuotationsDashboard() {
         </Box>
       )}
 
-
       <Box sx={{ padding: 3 }}>
         <Grid container spacing={3}>
-          <Grid item xs={12} >
-
-            <Box display='flex' justifyContent='space-between' sx={{ mb: 2 }}>
-              <Card elevation={3} sx={{ p: 2, backgroundColor: '#66cc99', flex: 1, mx: 2 }}>
+          <Grid item xs={12}>
+            <Box display="flex" justifyContent="space-between" sx={{ mb: 2 }}>
+              <Card
+                elevation={3}
+                sx={{ p: 2, backgroundColor: "#66cc99", flex: 1, mx: 2 }}
+              >
                 <CreateKpiCard
                   kpiTitle="Total Number Of Quotes"
-                  kpiValue={<CountUp start={0} end={monthWiseTotalQuotesCount} delay={1} />}
+                  kpiValue={
+                    <CountUp
+                      start={0}
+                      end={monthWiseTotalQuotesCount}
+                      delay={1}
+                    />
+                  }
                   kpiColor="#3f51b5"
                   accordianTitleString={accordianTitleString}
                 />
               </Card>
 
               {labelsForQuotePieChart.map((label, index) => (
-                <Card key={label} elevation={3} sx={{ p: 2, backgroundColor: kpiColors[index + 1], flex: 1, mx: 2 }}>
+                <Card
+                  key={label}
+                  elevation={3}
+                  sx={{
+                    p: 2,
+                    backgroundColor: kpiColors[index + 1],
+                    flex: 1,
+                    mx: 2,
+                  }}
+                >
                   <CreateKpiCard
                     kpiTitle={label}
-                    kpiValue={<CountUp start={0} end={quoteCategoryCountsForQuotePieChart[index]} delay={1} />}
+                    kpiValue={
+                      <CountUp
+                        start={0}
+                        end={quoteCategoryCountsForQuotePieChart[index]}
+                        delay={1}
+                      />
+                    }
                     kpiColor="#3f51b5"
                     accordianTitleString={accordianTitleString}
                   />
                 </Card>
               ))}
-
             </Box>
           </Grid>
 
           <Grid item xs={12} md={6}>
-            <Card elevation={5} sx={{ p: 2, backgroundColor: 'transparent' }}>
+            <Card elevation={5} sx={{ p: 2, backgroundColor: "transparent" }}>
               <CreatePieChart
                 data={categorywiseQuotesPieChart}
                 options={optionsForQuotesPieChart}
@@ -624,7 +819,7 @@ export default function QuotationsDashboard() {
           </Grid>
 
           <Grid item xs={12} md={6}>
-            <Card elevation={5} sx={{ p: 2, backgroundColor: 'transparent' }}>
+            <Card elevation={5} sx={{ p: 2, backgroundColor: "transparent" }}>
               <CreateBarChart
                 data={barChartData}
                 options={optionsForBarChart}
@@ -632,22 +827,7 @@ export default function QuotationsDashboard() {
             </Card>
           </Grid>
         </Grid>
-      </Box >
+      </Box>
     </>
   );
-};
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+}

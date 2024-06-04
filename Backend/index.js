@@ -83,11 +83,19 @@ db.getConnection(function (err, connection) {
 
 // Install the middlewares:
 //app.use(cors());
+
 app.use(cors({
   origin: ["http://localhost:3000"],   // mention the host address of the frontend
   methods: ["POST", "GET", "DELETE"],
   credentials: true
 }));
+
+// const corsOption = {
+//   origin: ['http://192.168.68.145:3000'],
+//   credentials: true,
+//   methods: ['GET', 'POST', 'PUT', 'DELETE']
+// }
+// app.use(cors(corsOption))
 
 app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: true }));

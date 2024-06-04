@@ -651,15 +651,13 @@ const Jobcard = ({ jobCardData }) => {
       <Divider>
         {editJc ? <Typography variant='h4' sx={{ color: '#003366' }}> Update Job-Card </Typography> : <Typography variant='h4' sx={{ color: '#003366' }}> Job-Card </Typography>}
       </Divider>
-      <br />
 
       <form onSubmit={handleSubmitJobcard}>
 
-
         <Box sx={{ mb: 1 }}>
           <Grid container spacing={2} alignItems="center">
-            <Grid item xs={6} sx={{ display: 'flex', justifyContent: 'flex-start' }}>
-              <FormControl sx={{ width: "50%" }}>
+            <Grid item xs={12} md={6} sx={{ display: 'flex', justifyContent: 'flex-start' }}>
+              <FormControl sx={{ width: { xs: '70%', md: '50%' } }}>
                 <InputLabel>JC Category</InputLabel>
                 <Select
                   label="JC Category"
@@ -671,7 +669,8 @@ const Jobcard = ({ jobCardData }) => {
                 </Select>
               </FormControl>
             </Grid>
-            <Grid item xs={6} sx={{ display: 'flex', justifyContent: 'flex-end' }}>
+
+            <Grid item xs={12} md={6} sx={{ display: 'flex', justifyContent: 'flex-end' }}>
               <Typography variant="h5" sx={{ marginBottom: '16px', fontWeight: 'bold', fontStyle: 'italic', color: 'blue', textDecoration: 'underline' }}>
                 JC Number : {jcNumberString}
               </Typography>

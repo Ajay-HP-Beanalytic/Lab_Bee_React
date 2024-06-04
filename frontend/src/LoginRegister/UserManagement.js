@@ -1,5 +1,5 @@
 
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useContext, useEffect, useRef, useState } from 'react'
 import { Box, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Divider, FormControl, Grid, IconButton, InputLabel, MenuItem, Paper, Select, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Tooltip, Typography } from '@mui/material'
 import axios from 'axios';
 import { toast } from "react-toastify";
@@ -12,11 +12,12 @@ import PasswordIcon from '@mui/icons-material/Password';
 
 import { serverBaseAddress } from '../Pages/APIPage';
 import { useNavigate } from 'react-router-dom';
+import { UserContext } from '../Pages/UserContext';
 
 export default function UserManagement() {
 
   // State variable to set the user name:
-  const [loggedInUser, setLoggedInUser] = useState('')
+  // const [loggedInUser, setLoggedInUser] = useState('')
 
   // Navigation hook to navigate upon successfull logout
   const navigate = useNavigate()
@@ -54,24 +55,16 @@ export default function UserManagement() {
   const [editId, setEditId] = useState('')
 
 
+  
+  const { loggedInUser, loggedInUserDepartment } = useContext(UserContext);
+
+  console.log('use mngt', loggedInUser, loggedInUserDepartment)
 
   // Function to submit the data from the dialog
   const onSubmitAddUserButton = async (e) => {
     e.preventDefault()
 
-    // if (!initialUserPassword.match(passwordRegex)) {
-    //   toast.error(
-    //     "Password must be between 8 to 15 characters, contain at least one uppercase letter, one lowercase letter, one digit, and one special character."
-    //   );
-    //   return;
-    // }
-
-
-    // if (!userName || !userEmail || !initialUserPassword || !userRole || !allowedComponents) {
-    //   toast.error("Please enter all the fields..!");
-    //   return;
-    // }
-
+  
     if (!editId) {
       if (!initialUserPassword.match(passwordRegex)) {
         toast.error(
@@ -140,22 +133,6 @@ export default function UserManagement() {
   }, [refresh])
 
 
-
-  // To validate the user credential its very much important
-  axios.defaults.withCredentials = true;
-
-  // To get the logged in user name:
-  useEffect(() => {
-    axios.get(`${serverBaseAddress}/api/getLoggedInUser`)
-      .then(res => {
-        if (res.data.valid) {
-          setLoggedInUser(res.data.user_name)
-        } else {
-          navigate("/")
-        }
-      })
-      .catch(err => console.log(err))
-  }, [refresh])
 
 
 
@@ -238,7 +215,7 @@ export default function UserManagement() {
 
   // Function to reset the user password:
   const resetUserPasswordButton = (id) => {
-    alert('reset')
+    navigate('/reset_password')
   }
 
   // UseEffect to handle deletion when deleteUserId changes
@@ -282,7 +259,7 @@ export default function UserManagement() {
 
 
 
-      {loggedInUser === 'Admin' && (
+      {(loggedInUser === 'Admin' || loggedInUserDepartment === 'All') && (
 
         <Box sx={{ width: '100%' }}>
 
@@ -475,7 +452,6 @@ export default function UserManagement() {
                           </Tooltip>
                         </IconButton>
 
-
                         <IconButton variant='outlined' size='small'
                           onClick={() => deleteUserButton(item.id)}
                         >
@@ -484,19 +460,15 @@ export default function UserManagement() {
                           </Tooltip>
                         </IconButton>
 
-
-                        <IconButton variant='outlined' size='small'
+                        {/* <IconButton variant='outlined' size='small'
                           onClick={() => resetUserPasswordButton(item.id)}
                         >
                           <Tooltip title='Reset Password' arrow>
                             <PasswordIcon fontSize="inherit" />
                           </Tooltip>
-                        </IconButton>
-
-
+                        </IconButton> */}
 
                       </TableCell>
-
                     </TableRow>
                   ))}
 
@@ -504,17 +476,6 @@ export default function UserManagement() {
               </Table>
             </TableContainer>
           </Paper>
-
-
-          {/* <Grid display='column' alignItems='right'>
-            <Typography variant='h5'> Note: </Typography>
-            <Typography variant='h6'>ALL - Can access all pages</Typography>
-            <Typography variant='h6'>Quotation - Slot-Booking and its components</Typography>
-            <Typography variant='h6'>JC - Job-Card and its components</Typography>
-            <Typography variant='h6'>SB - Slot-Booking and its components</Typography>
-          </Grid> */}
-
-
         </Box>
       )}
     </>

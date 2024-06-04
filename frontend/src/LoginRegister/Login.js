@@ -63,9 +63,6 @@ export default function Login() {
 
   const { loggedInUser, loggedInUserDepartment } = useContext(UserContext);
 
-  console.log('User details', loggedInUser, loggedInUserDepartment)
-
-
   const [remember, setRemember] = useState(false);
 
   // Set initial state with the last logged email

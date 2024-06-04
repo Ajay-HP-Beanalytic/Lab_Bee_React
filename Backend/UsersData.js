@@ -26,6 +26,8 @@ function usersDataAPIs(app) {
         //const { name, email, password } = req.body;
         const { name, email, password, department, role, user_status } = req.body;
 
+        const default_user_status = 'Disable'
+
         const sqlCheckEmail = "SELECT * FROM labbee_users WHERE email=?";
         const sqlInsertUser = "INSERT INTO labbee_users (name, email, password, department, role, user_status) VALUES (?,?,?,?,?,?)";
 
@@ -48,9 +50,8 @@ function usersDataAPIs(app) {
                 })
                 .then(hash => {
                     //db.query(sqlInsertUser, [name, email, hash], (error) => {
-                    console.log('2', name, email, hash, department, role, user_status)
 
-                    db.query(sqlInsertUser, [name, email, hash, department, role, user_status], (error) => {
+                    db.query(sqlInsertUser, [name, email, hash, department, role, default_user_status], (error) => {
                         if (error) {
                             console.error("Error inserting user:", error);
                             return res.status(500).json({ message: "Internal server error" });
