@@ -30,6 +30,7 @@ import {
   MenuItem,
   InputLabel,
   Select,
+  useMediaQuery,
 } from "@mui/material";
 
 import { serverBaseAddress } from "../Pages/APIPage";
@@ -99,6 +100,8 @@ export default function QuotationsDashboard() {
   const [searchInputTextOfQuote, setSearchInputTextOfQuote] = useState("");
 
   const [filteredQuoteData, setFilteredQuoteData] = useState(quotesTableData);
+
+  const isSmallScreen = useMediaQuery((theme) => theme.breakpoints.down("sm"));
 
   const navigate = useNavigate();
 
@@ -598,8 +601,9 @@ export default function QuotationsDashboard() {
       <Box
         sx={{
           display: "flex",
-          justifyContent: "flex-end",
+          justifyContent: { xs: "center", md: "flex-end" },
           alignItems: "center",
+          mt: { xs: 2, md: 0 }, // Add some margin top on small screens
         }}
       >
         <Button
@@ -608,6 +612,8 @@ export default function QuotationsDashboard() {
             bgcolor: "orange",
             color: "white",
             borderColor: "black",
+            padding: { xs: "8px 16px", md: "6px 12px" }, // Adjust padding for different screen sizes
+            fontSize: { xs: "0.875rem", md: "1rem" }, // Adjust font size for different screen sizes
           }}
           variant="contained"
           color="primary"
@@ -617,66 +623,26 @@ export default function QuotationsDashboard() {
         </Button>
       </Box>
 
-      <Divider>
-        <Typography variant="h4" sx={{ color: "#003366" }}>
-          {" "}
-          Quotations Dashboard{" "}
-        </Typography>
-      </Divider>
-
-      {/* <Grid container spacing={2} alignItems="center">
-        <Grid item xs={12} md={8} container alignItems="center" spacing={2}>
-          <Grid item sx={{ mr: 2 }}>
-            <FormControl sx={{ width: "200px", mx: "2px" }}>
-              <InputLabel>Select Year</InputLabel>
-              <Select
-                label="Year"
-                type="text"
-                value={quoteYear}
-                onChange={handleYearOfQuote}
-              >
-                {years.map((year, index) => (
-                  <MenuItem key={index} value={year}>
-                    {year}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-
-            <FormControl sx={{ width: "200px", mx: "2px" }}>
-              <InputLabel>Select Month</InputLabel>
-              <Select
-                label="Month"
-                type="text"
-                value={quoteMonth}
-                onChange={handleMonthOfQuote}
-              >
-                {months.map((month, index) => (
-                  <MenuItem key={index} value={month}>
-                    {month}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Grid>
-
-          <Grid item>
-            <DateRangeFilter
-              onClickDateRangeSelectDoneButton={handleQuoteDateRangeChange}
-              onClickDateRangeSelectClearButton={handleQuoteDateRangeClear}
-            />
-          </Grid>
-        </Grid>
-
-        <Grid item xs={4} container justifyContent="flex-end">
-          <SearchBar
-            placeholder="Search Quote"
-            searchInputText={searchInputTextOfQuote}
-            onChangeOfSearchInput={onChangeOfSearchInputOfQuote}
-            onClearSearchInput={onClearSearchInputOfQuote}
-          />
-        </Grid>
-      </Grid> */}
+      <Grid
+        item
+        xs={12}
+        md={6}
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: { xs: "center", md: "center" },
+          mb: 2,
+        }}
+      >
+        <Box sx={{ width: "100%" }}>
+          <Divider>
+            <Typography variant="h4" sx={{ color: "#003366" }}>
+              {" "}
+              Quotations Dashboard{" "}
+            </Typography>
+          </Divider>
+        </Box>
+      </Grid>
 
       <Grid container spacing={2} alignItems="center">
         <Grid item xs={12} md={8} container alignItems="center" spacing={2}>
@@ -732,7 +698,7 @@ export default function QuotationsDashboard() {
         </Grid>
       </Grid>
 
-      {filteredQuoteData && filteredQuoteData.length === 0 ? (
+      {/* {filteredQuoteData && filteredQuoteData.length === 0 ? (
         <EmptyCard message="No Quote Found" />
       ) : (
         <Box
@@ -757,7 +723,45 @@ export default function QuotationsDashboard() {
             rowsPerPageOptions={[5, 10, 20]}
           />
         </Box>
-      )}
+      )} */}
+
+      <Box
+        sx={{
+          height: 500,
+          width: "100%",
+          minWidth: isSmallScreen ? "100%" : "auto",
+          "& .custom-header-color": {
+            backgroundColor: "#0f6675",
+            color: "whitesmoke",
+            fontWeight: "bold",
+            fontSize: "15px",
+          },
+          mt: 2,
+        }}
+      >
+        {filteredQuoteData && filteredQuoteData.length === 0 ? (
+          <EmptyCard message="No Quote Found" />
+        ) : (
+          <DataGrid
+            rows={filteredQuoteData}
+            columns={columns}
+            sx={{
+              "&:hover": { cursor: "pointer" },
+              "& .MuiDataGrid-columnHeader": {
+                whiteSpace: "normal",
+                wordWrap: "break-word",
+              },
+              "& .MuiDataGrid-cell": {
+                whiteSpace: "normal",
+                wordWrap: "break-word",
+              },
+            }}
+            onRowClick={(params) => editSelectedRowData(params.row)}
+            pageSize={5}
+            rowsPerPageOptions={[5, 10, 20]}
+          />
+        )}
+      </Box>
 
       <Box sx={{ padding: 3 }}>
         <Grid container spacing={3}>

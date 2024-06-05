@@ -101,7 +101,7 @@ export default function Quotation() {
   const [quoteVersion, setQuoteVersion] = useState("");
   const [quotationIdString, setQuotationIDString] = useState("");
   const [editId, setEditId] = useState("");
-  const formattedDate = moment(new Date()).format("DD-MM-YYYY");
+  const formattedDate = moment(new Date()).format("YYYY-MM-DD");
   const [selectedDate, setSelectedDate] = useState(formattedDate);
 
   // State variable to set the user name:
@@ -120,9 +120,14 @@ export default function Quotation() {
   const [selectedCompanyId, setSelectedCompanyId] = useState("");
 
   const { loggedInUser, loggedInUserDepartment } = useContext(UserContext);
-  const [quotationCreatedBy, setQuotationCreatedBy] = useState(loggedInUser);
+  const [quotationCreatedBy, setQuotationCreatedBy] = useState("");
 
-  console.log("loggedInUser", loggedInUser, loggedInUserDepartment);
+  //Use effect to set the quote created by:
+  useEffect(() => {
+    if (loggedInUser) {
+      setQuotationCreatedBy(loggedInUser);
+    }
+  }, [loggedInUser]);
 
   // UseEffect to set the quotation data during update of the quotation:
   useEffect(() => {
@@ -349,23 +354,14 @@ export default function Quotation() {
   const handleSubmitETQuotation = async (e) => {
     e.preventDefault();
 
-    console.log("1", quotationIdString);
-    console.log("2", customerId);
-    console.log("3", toCompanyAddress);
     console.log("4", selectedDate);
-    console.log("5", customerReferance);
-    console.log("6", kindAttention);
-    console.log("7", projectName);
-    console.log("8", quoteCategory);
-    console.log("9", quotationCreatedBy);
-    console.log("10", tableData);
 
     if (
       !quotationIdString ||
       !customerId ||
       !toCompanyAddress ||
       !selectedDate ||
-      // !customerId ||
+      !customerId ||
       !customerReferance ||
       !kindAttention ||
       !projectName ||
@@ -491,20 +487,6 @@ export default function Quotation() {
     setQuoteVersion("");
   };
 
-  // // Useeffect to calculate the total amount, to display that in word.
-  // useEffect(() => {
-  //   const subtotal = tableData.map(({ amount }) => parseFloat(amount || 0)).reduce((sum, value) => sum + value, 0);
-
-  //   // Apply the discount if it is visible
-  //   const subTotalAfterDiscount = isTotalDiscountVisible ? subtotal - parseFloat(discountAmount || 0) : subtotal;
-
-  //   setTaxableAmount(subTotalAfterDiscount);
-  //   setTotalAmountWords(numberToWords.toWords(subTotalAfterDiscount).toUpperCase());
-
-  //   setTotalAmountAfterDiscount(subTotalAfterDiscount)
-
-  // }, [tableData, isTotalDiscountVisible, discountAmount]);
-
   // Useeffect to calculate the total amount, to display that in word.
   useEffect(() => {
     const subtotal = tableData
@@ -540,12 +522,26 @@ export default function Quotation() {
 
   return (
     <div>
-      <Divider>
-        <Typography variant="h4" sx={{ color: "#003366" }}>
-          {" "}
-          {editId ? "Update Quotation" : "Add New Quotation"}
-        </Typography>
-      </Divider>
+      <Grid
+        item
+        xs={12}
+        md={6}
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: { xs: "center", md: "center" },
+          mb: 2,
+        }}
+      >
+        <Box sx={{ width: "100%" }}>
+          <Divider>
+            <Typography variant="h4" sx={{ color: "#003366" }}>
+              {" "}
+              {editId ? "Update Quotation" : "Add New Quotation"}
+            </Typography>
+          </Divider>
+        </Box>
+      </Grid>
 
       <form onSubmit={handleSubmitETQuotation}>
         <Box sx={{ mb: 1 }}>

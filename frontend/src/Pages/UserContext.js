@@ -13,7 +13,7 @@ export const UserProvider = ({ children }) => {
   const [loggedInUser, setLoggedInUser] = useState("");
   const [loggedInUserDepartment, setLoggedInUserDepartment] = useState("");
 
-  // axios.defaults.withCredentials = true;
+  axios.defaults.withCredentials = true;
 
   // To get the logged in user name:
   useEffect(() => {

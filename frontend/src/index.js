@@ -1,14 +1,16 @@
-import React from 'react';
-import ReactDOM from 'react-dom/client';
-import './index.css';
-import App from './App';
-import reportWebVitals from './reportWebVitals';
-import Loader from './common/Loader';
-import { BrowserRouter } from 'react-router-dom';
-import { UserProvider } from './Pages/UserContext';
+import React from "react";
+import ReactDOM from "react-dom/client";
+import "./index.css";
+import App from "./App";
+import reportWebVitals from "./reportWebVitals";
+import Loader from "./common/Loader";
+import { BrowserRouter } from "react-router-dom";
+import { UserProvider } from "./Pages/UserContext";
+import { ThemeProvider, createTheme } from "@mui/material";
 
-
-{/*Original code was this*/ }
+{
+  /*Original code was this*/
+}
 
 // const root = ReactDOM.createRoot(document.getElementById('root'));
 // root.render(
@@ -17,11 +19,9 @@ import { UserProvider } from './Pages/UserContext';
 //   </React.StrictMode>
 // );
 
-
-
-
-
-{/*updated code with the loader*/ }
+{
+  /*updated code with the loader*/
+}
 // const AppWithLoader = () => {
 //   return (
 //     <>
@@ -35,6 +35,10 @@ import { UserProvider } from './Pages/UserContext';
 //   )
 // }
 
+const theme = createTheme({
+  // Define your theme properties here
+});
+
 const AppWithLoader = () => {
   return (
     <>
@@ -42,20 +46,23 @@ const AppWithLoader = () => {
         <React.StrictMode>
           <UserProvider>
             <Loader />
-            <App />
+            <ThemeProvider theme={theme}>
+              <App />
+            </ThemeProvider>
           </UserProvider>
         </React.StrictMode>
       </BrowserRouter>
     </>
-  )
-}
+  );
+};
 
 // Render the AppWithLoader component
-const root = ReactDOM.createRoot(document.getElementById("root"))
-root.render(<AppWithLoader />)
+const root = ReactDOM.createRoot(document.getElementById("root"));
+root.render(<AppWithLoader />);
 
-
-{/* This part is common*/ }
+{
+  /* This part is common*/
+}
 // If you want to start measuring performance in your app, pass a function
 // to log results (for example: reportWebVitals(console.log))
 // or send to an analytics endpoint. Learn more: https://bit.ly/CRA-vitals
