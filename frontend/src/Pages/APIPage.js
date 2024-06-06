@@ -1,7 +1,7 @@
 // Api's used in quotations and Quotations Dashboard page:
 
-// const serverBaseAddress = `http://localhost:4000`;
-const serverBaseAddress = "http://192.168.68.162:4000";
+const serverBaseAddress = `http://localhost:4000`;
+// const serverBaseAddress = "http://192.168.68.162:4000";
 
 // // API To add new quotation and fetch the data and edit/update the data associated with the quotation id :
 // const apiToAddAndUpdateQuotation = `http://localhost:4000/api/quotation/`

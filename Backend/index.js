@@ -16,12 +16,20 @@ const path = require("path");
 // create an express application:
 const app = express();
 
-const corsOption = {
-  origin: [`http://192.168.68.162:3000`],
-  credentials: true,
-  methods: ["GET", "POST", "PUT", "DELETE"],
-};
-app.use(cors(corsOption));
+app.use(
+  cors({
+    origin: ["http://localhost:3000"], // mention the host address of the frontend
+    methods: ["POST", "GET", "DELETE"],
+    credentials: true,
+  })
+);
+
+// const corsOption = {
+//   origin: [`http://192.168.68.162:3000`],
+//   credentials: true,
+//   methods: ["GET", "POST", "PUT", "DELETE"],
+// };
+// app.use(cors(corsOption));
 
 app.use(express.json());
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -114,15 +122,6 @@ db.getConnection(function (err, connection) {
 
   connection.release(); // Release the connection back to the pool when done
 });
-
-// Install the middlewares:
-// app.use(cors());
-
-// app.use(cors({
-//   origin: ["http://localhost:3000"],   // mention the host address of the frontend
-//   methods: ["POST", "GET", "DELETE"],
-//   credentials: true
-// }));
 
 // backend connection of users API's from 'UsersData' page:
 const { usersDataAPIs } = require("./UsersData");

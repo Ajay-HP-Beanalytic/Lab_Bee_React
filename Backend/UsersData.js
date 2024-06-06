@@ -298,11 +298,9 @@ function usersDataAPIs(app) {
 
         if (isSameDay(currentDate, lastAttemptDate)) {
           if (attemptsResult[0].attempts >= 3) {
-            return res
-              .status(429)
-              .json({
-                message: "You have reached the limit of 3 attempts per day.",
-              });
+            return res.status(429).json({
+              message: "You have reached the limit of 3 attempts per day.",
+            });
           }
 
           const sqlUpdateAttempts =
