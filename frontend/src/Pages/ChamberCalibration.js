@@ -4,6 +4,7 @@ import * as XLSX from "xlsx";
 import { toast } from "react-toastify";
 import moment from "moment";
 import CountUp from "react-countup";
+import { parse, format } from "date-fns";
 
 import { FcOvertime } from "react-icons/fc";
 import { FcApproval } from "react-icons/fc";
@@ -21,7 +22,6 @@ import {
   Box,
   Button,
   Card,
-  Container,
   Dialog,
   DialogActions,
   DialogContent,
@@ -31,8 +31,6 @@ import {
   Grid,
   IconButton,
   InputLabel,
-  List,
-  ListItem,
   MenuItem,
   Paper,
   Select,
@@ -48,6 +46,8 @@ import {
   Typography,
 } from "@mui/material";
 import { serverBaseAddress } from "./APIPage";
+import ConfirmationDialog from "../common/ConfirmationDialog";
+import SearchBar from "../common/SearchBar";
 
 export default function ChamberAndCalibration() {
   //State variables.
@@ -88,16 +88,19 @@ export default function ChamberAndCalibration() {
   const [ref, setRef] = useState(false);
   const [editId, setEditId] = useState("");
 
+  const [excelDataAdded, setExcelDataAdded] = useState(false);
+
+  const [openDeleteChamberDialog, setOpenDeleteChamberDialog] = useState(false);
+  const [deleteItemId, setDeleteItemId] = useState(null);
+
   // Function to handle the submit process.
   const onSubmitChambersButton = async (e) => {
-    const formattedCalibrationDoneDate =
-      moment(calibrationDoneDate).format("YYYY-MM-DD");
-    const formattedCalibrationDueDate =
-      moment(calibrationDueDate).format("YYYY-MM-DD");
-
-    // Format the dates in "YYYY-MM-DD" format
-    //const formattedCalibrationDoneDate = calibrationDoneDate.format('YYYY-MM-DD');
-    //const formattedCalibrationDueDate = calibrationDueDate.format('YYYY-MM-DD');
+    const formattedCalibrationDoneDate = calibrationDoneDate
+      ? moment(calibrationDoneDate).format("YYYY-MM-DD")
+      : null;
+    const formattedCalibrationDueDate = calibrationDueDate
+      ? moment(calibrationDueDate).format("YYYY-MM-DD")
+      : null;
 
     if (
       !chamberName ||
@@ -178,7 +181,7 @@ export default function ChamberAndCalibration() {
       }
     };
     fetchChambersList();
-  }, [ref]);
+  }, [ref, excelDataAdded]);
 
   // To read the data of the uploaded excel file  (Keep )
   const handleFileChange = async (e) => {
@@ -207,26 +210,43 @@ export default function ChamberAndCalibration() {
         if (dataArr.length > 1 && dataArr[0].length === 8) {
           if (dataArr.length > 0) {
             dataArr.forEach(async (row) => {
-              //const [chamberName, chamberID, calibrationDoneDate, calibrationDueDate, calibratedBy, calibrationStatus, chamberStatus, remarks] = row;
-
               const [
                 chamberName,
                 chamberID,
-                formattedCalibrationDoneDate,
-                formattedCalibrationDueDate,
+                calibrationDoneDate,
+                calibrationDueDate,
                 calibratedBy,
                 calibrationStatus,
                 chamberStatus,
                 remarks,
               ] = row;
 
-              // Convert formattedCalibrationDoneDate and formattedCalibrationDueDate to JavaScript Date objects
-              //const formattedCalibrationDoneDate = moment(calibrationDoneDate).format('YYYY-MM-DD');
-              //const formattedCalibrationDueDate = moment(calibrationDueDate).format('YYYY-MM-DD');
+              // Convert Excel date values to JavaScript Date objects
+              const excelDateToJSDate = (serial) => {
+                const utc_days = Math.floor(serial - 25569);
+                const date_info = new Date(utc_days * 86400 * 1000);
+                const fractional_day = serial - Math.floor(serial) + 0.0000001;
+                const total_seconds = Math.floor(86400 * fractional_day);
+                const seconds = total_seconds % 60;
+                const hours = Math.floor(total_seconds / 3600);
+                const minutes = Math.floor(total_seconds / 60) % 60;
 
-              // // Parse dates using moment
-              // const formattedCalibrationDoneDate = moment(calibrationDoneDate, 'YYYY-MM-DD').format('YYYY-MM-DD');
-              // const formattedCalibrationDueDate = moment(calibrationDueDate, 'YYYY-MM-DD').format('YYYY-MM-DD');
+                return new Date(
+                  date_info.getFullYear(),
+                  date_info.getMonth(),
+                  date_info.getDate(),
+                  hours,
+                  minutes,
+                  seconds
+                );
+              };
+
+              const formattedCalibrationDoneDate = calibrationDoneDate
+                ? format(excelDateToJSDate(calibrationDoneDate), "yyyy-MM-dd")
+                : null;
+              const formattedCalibrationDueDate = calibrationDueDate
+                ? format(excelDateToJSDate(calibrationDueDate), "yyyy-MM-dd")
+                : null;
 
               try {
                 const addChamberRequest = await axios.post(
@@ -258,6 +278,7 @@ export default function ChamberAndCalibration() {
             });
 
             setRef(!ref);
+            setExcelDataAdded(true);
             toast.success("Chamber Calibration Data Added Successfully");
           } else {
             toast.error("All rows are empty or invalid.");
@@ -300,31 +321,24 @@ export default function ChamberAndCalibration() {
 
   // Function to delete the particular chamber data from the table:
   function deleteSelectedChamber(id) {
-    const confirmDelete = window.confirm(
-      "Are you sure you want to delete this chamber data?"
-    );
-
-    if (confirmDelete) {
-      fetch(`${serverBaseAddress}/api/getChamberData/${id}`, {
-        method: "DELETE",
-      })
-        .then((res) => {
-          if (res.status === 200) {
-            const updatedChambersList = chambersList.filter(
-              (item) => item.id !== id
-            );
-            setChambersList(updatedChambersList);
-            toast.success("Chamber Deleted Successfully");
-          } else {
-            toast.error("An error occurred while deleting the Chamber.");
-          }
-        })
-        .catch((error) => {
+    fetch(`${serverBaseAddress}/api/getChamberData/${id}`, {
+      method: "DELETE",
+    })
+      .then((res) => {
+        if (res.status === 200) {
+          const updatedChambersList = chambersList.filter(
+            (item) => item.id !== id
+          );
+          setChambersList(updatedChambersList);
+          toast.success("Chamber Deleted Successfully");
+          handleCloseDeleteChamberDialog();
+        } else {
           toast.error("An error occurred while deleting the Chamber.");
-        });
-    } else {
-      handleCancelBtnIsClicked();
-    }
+        }
+      })
+      .catch((error) => {
+        toast.error("An error occurred while deleting the Chamber.");
+      });
   }
 
   // Function to open the dialog:
@@ -355,52 +369,6 @@ export default function ChamberAndCalibration() {
   // Custom style for the table header
   const tableHeaderStyle = { backgroundColor: "#668799", fontWeight: "bold" };
 
-  // To filter out entire table based on the input
-  // const filteredChambersList = chambersList.filter((item) => {
-  //     const values = Object.values(item).join(' ').toLowerCase();
-  //     return values.includes(filterText.toLowerCase());
-  // });
-
-  // Function to compare dates of calibration with current date
-
-  // //State variables for the kpi values:
-  // let calibration_due_counts = 0;
-
-  // const currentDate = new Date();
-  // const currentYear = currentDate.getFullYear();
-  // const currentMonth = currentDate.getMonth();
-
-  // // Convert month index to month name
-  // //const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-  // //const currentMonthName = monthNames[currentMonth]
-
-  // const currentMonthName = new Intl.DateTimeFormat('en-US', { month: 'long' }).format(currentDate);
-
-  // // CAlibration due label for the KPI
-  // const currentYearAndMonth = `${currentMonthName}-${currentYear}`
-
-  // const oneMonthBefore = new Date();
-  // oneMonthBefore.setMonth(oneMonthBefore.getMonth() + 1); // Date one month from now
-
-  // // List to store the calibration dues in the current month
-  // const calibrationsPendingThisMonth = [];
-
-  // // Iterate through the chambersList and filter based on the condition
-  // chambersList.forEach((item) => {
-  //     const dueDate = new Date(item.calibration_due_date);
-
-  //     // Check if the due date is within one month
-  //     if (dueDate > currentDate && dueDate <= oneMonthBefore) {
-  //         calibration_due_counts++
-  //         calibrationsPendingThisMonth.push(`${item.chamber_name} is due on ${item.calibration_due_date}`);
-  //     }
-  // });
-
-  // console.log('Chambers to be calibrated this month:', calibration_due_counts);
-  // console.log('Chambers due in this month:', calibrationsPendingThisMonth);
-
-  //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
   // Function to compare calibration due month with current month
 
   // State variables for the kpi values:
@@ -415,24 +383,6 @@ export default function ChamberAndCalibration() {
     month: "long",
   }).format(currentDate);
   const currentYearAndMonth = `${currentMonthName}-${currentYear}`;
-
-  // // Calculate the next month
-  // const nextMonth = (currentMonth + 1) % 12;
-  // const nextYear = currentMonth === 11 ? currentYear + 1 : currentYear;
-
-  // // List to store the calibration dues in the next month
-  // const calibrationsPendingThisMonth = [];
-
-  // // Iterate through the chambersList and filter based on the condition
-  // chambersList.forEach((item) => {
-  //     const dueDate = new Date(item.calibration_due_date);
-
-  //     // Check if the due date is in the next month
-  //     if (dueDate.getFullYear() === nextYear && dueDate.getMonth() === nextMonth) {
-  //         calibration_due_counts++;
-  //         calibrationsPendingThisMonth.push(`${item.chamber_name} is due on ${item.calibration_due_date}`);
-  //     }
-  // });
 
   // Calculate 45 days ahead
   const nextDate = new Date(currentDate);
@@ -453,9 +403,6 @@ export default function ChamberAndCalibration() {
       );
     }
   });
-
-  //console.log('Chambers to be calibrated next month:', calibration_due_counts);
-  //console.log('Chambers due in this month:', calibrationsPendingThisMonth);
 
   // Calibration status count/KPI:
   let upToDate_CalibrationCount = 0;
@@ -479,10 +426,6 @@ export default function ChamberAndCalibration() {
     }
   });
 
-  //console.log('Up to Date Count:', upToDate_CalibrationCount);
-  //console.log('Expired Count:', expired_CalibrationCount);
-  //console.log('Expired List:', calibration_expiredChamberNames);
-
   // Chamber status KPI or Count:
   let good_ChamberCount = 0;
   let underMaintenance_ChamberCount = 0;
@@ -503,10 +446,6 @@ export default function ChamberAndCalibration() {
       );
     }
   });
-
-  //console.log('Good Count:', good_ChamberCount);
-  //console.log('Under Maintenance Count:', underMaintenance_ChamberCount);
-  //console.log('UMC List:', chamber_underMaintenanceNames);
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -544,7 +483,7 @@ export default function ChamberAndCalibration() {
       },
       subtitle: {
         display: true,
-        text: "Up to Date & Expired chamber & equipments calibrations count",
+        // text: "Up to Date & Expired chamber & equipments calibrations count",
         font: {
           family: "Arial",
           size: 15,
@@ -595,7 +534,7 @@ export default function ChamberAndCalibration() {
       },
       subtitle: {
         display: true,
-        text: "Good & Under Maintenance chamber & equipments count",
+        // text: "Good & Under Maintenance chamber & equipments count",
         font: {
           family: "Arial",
           size: 15,
@@ -615,24 +554,46 @@ export default function ChamberAndCalibration() {
     },
   };
 
+  // Open delete chamber confirmation dialog
+  const handleOpenDeleteChamberDialog = (id) => {
+    setDeleteItemId(id);
+    setOpenDeleteChamberDialog(true);
+  };
+
+  // Close delete chamber confirmation dialog
+  const handleCloseDeleteChamberDialog = () => {
+    setDeleteItemId(null);
+    setOpenDeleteChamberDialog(false);
+  };
   ////////////////////////////////////////////////////////////////////////////////////////////////
 
   return (
     <>
       <Box>
-        <Divider>
-          <Typography variant="h4" sx={{ color: "#003366" }}>
-            {" "}
-            Chamber and Calibration Data{" "}
-          </Typography>
-        </Divider>
-
-        <br />
-        <br />
+        <Grid
+          item
+          xs={12}
+          md={6}
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: { xs: "center", md: "center" },
+            mb: 2,
+          }}
+        >
+          <Box sx={{ width: "100%" }}>
+            <Divider>
+              <Typography variant="h4" sx={{ color: "#003366" }}>
+                {" "}
+                Chamber and Calibration Data{" "}
+              </Typography>
+            </Divider>
+          </Box>
+        </Grid>
 
         <Box>
           <Grid container spacing={4}>
-            <Grid item xs={12} md={3}>
+            <Grid item xs={12} md={3} sx={{ mt: 2 }}>
               <Card elevation={5} sx={{ backgroundColor: "#e6e6ff" }}>
                 <CreateKpiCard
                   kpiTitle={`Calibrations pending in ${currentYearAndMonth}:`}
@@ -706,8 +667,6 @@ export default function ChamberAndCalibration() {
             </Grid>
           </Grid>
         </Box>
-
-        <br />
 
         <Box sx={{ padding: "20px" }}>
           <Grid container spacing={2} justifyContent="center">
@@ -824,21 +783,6 @@ export default function ChamberAndCalibration() {
                 autoComplete="on"
               />
 
-              {/* <TextField
-                sx={{
-                  marginBottom: "16px",
-                  marginLeft: "10px",
-                  borderRadius: 3,
-                }}
-                value={calibrationStatus}
-                onChange={(e) => setCalibrationStatus(e.target.value)}
-                label="Calibration Status"
-                margin="normal"
-                fullWidth
-                variant="outlined"
-                autoComplete="on"
-              /> */}
-
               <FormControl fullWidth sx={{ mt: 2, pl: 1 }}>
                 <InputLabel>Calibration Status</InputLabel>
                 <Select
@@ -854,21 +798,6 @@ export default function ChamberAndCalibration() {
                   ))}
                 </Select>
               </FormControl>
-
-              {/* <TextField
-                sx={{
-                  marginBottom: "16px",
-                  marginLeft: "10px",
-                  borderRadius: 3,
-                }}
-                value={chamberStatus}
-                onChange={(e) => setChamberStatus(e.target.value)}
-                label="Chamber Status"
-                margin="normal"
-                fullWidth
-                variant="outlined"
-                autoComplete="on"
-              /> */}
 
               <FormControl fullWidth sx={{ mt: 2, pl: 1 }}>
                 <InputLabel>Chamber Status</InputLabel>
@@ -936,82 +865,68 @@ export default function ChamberAndCalibration() {
           </Dialog>
         )}
 
-        {/* <Typography variant='h5' color={'#e65100'}>Available Chambers and Calibration Details</Typography> */}
-
-        <br />
+        <ConfirmationDialog
+          open={openDeleteChamberDialog}
+          onClose={handleCloseDeleteChamberDialog}
+          onConfirm={() => deleteSelectedChamber(deleteItemId)}
+          title="Delete Confirmation"
+          contentText="Are you sure you want to delete this chamber data?"
+          confirmButtonText="Delete"
+          cancelButtonText="Cancel"
+        />
 
         {/* Box to keep the searchbar and the action buttons in a single row */}
-        <Box Box align="right">
-          {!editChamberCalibrationFields && (
-            <IconButton variant="contained" size="large">
-              <Tooltip title="Add Chamber" arrow type="submit">
-                <AddIcon fontSize="inherit" onClick={addNewChamberButton} />
-              </Tooltip>
-            </IconButton>
-          )}
 
-          {!editChamberCalibrationFields && (
-            <>
-              <input
-                type="file"
-                accept=".xls, .xlsx" // Limit file selection to Excel files
-                onChange={handleFileChange}
-                style={{ display: "none" }} // Hide the input element
-                ref={fileInputRef}
-              />
+        <Box sx={{ mx: 2, mb: 2 }}>
+          <Grid
+            container
+            spacing={2}
+            alignItems="center"
+            justifyContent="flex-end"
+          >
+            {!editChamberCalibrationFields && (
+              <>
+                <Grid item>
+                  <IconButton variant="contained" size="large">
+                    <Tooltip title="Add Chamber" arrow type="submit">
+                      <AddIcon
+                        fontSize="inherit"
+                        onClick={addNewChamberButton}
+                      />
+                    </Tooltip>
+                  </IconButton>
+                </Grid>
 
-              <IconButton variant="contained" size="large">
-                <Tooltip title="Upload Excel" arrow>
-                  <UploadFileIcon
-                    fontSize="inherit"
-                    onClick={() => fileInputRef.current.click()}
+                <Grid item>
+                  <input
+                    type="file"
+                    accept=".xls, .xlsx" // Limit file selection to Excel files
+                    onChange={handleFileChange}
+                    style={{ display: "none" }} // Hide the input element
+                    ref={fileInputRef}
                   />
-                </Tooltip>
-              </IconButton>
-            </>
-          )}
+                  <IconButton variant="contained" size="large">
+                    <Tooltip title="Upload Excel" arrow>
+                      <UploadFileIcon
+                        fontSize="inherit"
+                        onClick={() => fileInputRef.current.click()}
+                      />
+                    </Tooltip>
+                  </IconButton>
+                </Grid>
+              </>
+            )}
 
-          {uploadedFileName && (
-            <Typography
-              variant="h6"
-              align="center"
-              sx={{
-                marginBottom: "16px",
-                marginRight: "20px",
-                marginLeft: "20px",
-                fontWeight: "bold",
-                textDecoration: "underline",
-              }}
-            >
-              Uploaded File: {uploadedFileName}
-            </Typography>
-          )}
-
-          <FormControl sx={{ width: "25%" }}>
-            <Autocomplete
-              disablePortal
-              onChange={(event, value) => {
-                setFilterRow(value ? [value] : []);
-              }}
-              getOptionLabel={(option) =>
-                option.chamber_name ||
-                option.chamber_name ||
-                option.calibration_status ||
-                option.chamber_status
-              }
-              options={chambersList}
-              renderInput={(params) => (
-                <TextField
-                  {...params}
-                  label="Filter the table"
-                  variant="outlined"
-                />
-              )}
-            />
-          </FormControl>
+            <Grid item xs={12} md={4} container justifyContent="flex-end">
+              <SearchBar
+                placeholder="Search"
+                // searchInputText={searchInputTextOfCal}
+                // onChangeOfSearchInput={onChangeOfSearchInputOfCal}
+                // onClearSearchInput={onClearSearchInputOfCal}
+              />
+            </Grid>
+          </Grid>
         </Box>
-
-        <br />
 
         <TableContainer component={Paper}>
           <Table sx={{ minWidth: 650 }} aria-label="simple table" size="small">
@@ -1081,7 +996,7 @@ export default function ChamberAndCalibration() {
                       <IconButton
                         variant="outlined"
                         size="small"
-                        onClick={() => deleteSelectedChamber(item.id)}
+                        onClick={() => handleOpenDeleteChamberDialog(item.id)}
                       >
                         <Tooltip title="Delete Test" arrow>
                           <DeleteIcon fontSize="inherit" />
