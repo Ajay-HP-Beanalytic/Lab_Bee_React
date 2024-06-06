@@ -1,15 +1,12 @@
 import React, { useState, useRef, useEffect } from "react";
 import {
   Button,
-  FormControl,
   IconButton,
   List,
   ListItem,
   ListItemText,
-  TextField,
   Typography,
 } from "@mui/material";
-import ClearIcon from "@mui/icons-material/Clear";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { serverBaseAddress } from "../Pages/APIPage";
 import axios from "axios";
