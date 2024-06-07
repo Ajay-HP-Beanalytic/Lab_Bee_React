@@ -14,25 +14,22 @@ import { useState } from "react";
 import Stack from "@mui/material/Stack";
 import { useNavigate } from "react-router-dom";
 
-import 'react-toastify/dist/ReactToastify.css';
+import "react-toastify/dist/ReactToastify.css";
 import { toast } from "react-toastify";
 import axios from "axios";
 
-import InputAdornment from '@mui/material/InputAdornment';
-import IconButton from '@mui/material/IconButton';
-import VisibilityIcon from '@mui/icons-material/Visibility';
-import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
+import InputAdornment from "@mui/material/InputAdornment";
+import IconButton from "@mui/material/IconButton";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import { FormControl, InputLabel, OutlinedInput } from "@mui/material";
 import { serverBaseAddress } from "../Pages/APIPage";
-
-
 
 const darkTheme = createTheme({
   palette: {
     mode: "dark",
   },
 });
-
 
 const boxStyle = {
   position: "absolute",
@@ -53,27 +50,26 @@ const RegisterLogoAndText = {
   alignItems: "center",
 };
 
-
 export default function Register() {
-
-
   const navigate = useNavigate();
 
   const initialState = {
     name: "",
     email: "",
     password: "",
-    confirmPassword: ""
+    confirmPassword: "",
   };
-
 
   const [name, setNameString] = useState(initialState.name || "");
   const [email, setEmailString] = useState(initialState.email || "");
   const [password, setPasswordString] = useState(initialState.password || "");
-  const [confirmPassword, setConfirmPasswordString] = useState(initialState.confirmPassword || "");
+  const [confirmPassword, setConfirmPasswordString] = useState(
+    initialState.confirmPassword || ""
+  );
 
   // "Password must be between 8 to 15 characters, contain at least one uppercase letter, one lowercase letter, one digit, and one special character."
-  const passwordRegex = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[^a-zA-Z0-9])(?!.*\s).{8,15}$/;
+  const passwordRegex =
+    /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[^a-zA-Z0-9])(?!.*\s).{8,15}$/;
 
   //To Handle password textfields
   const [showPassword, setShowPassword] = useState(false);
@@ -81,7 +77,8 @@ export default function Register() {
 
   //To show or hide the password on clicking the visibility icon
   const handleClickShowPassword = () => setShowPassword((show) => !show);
-  const handleClickShowConfirmPassword = () => setShowConfirmPassword((show) => !show);
+  const handleClickShowConfirmPassword = () =>
+    setShowConfirmPassword((show) => !show);
 
   // To avoide any false behaviour on clicking the mouse btn
   const handleMouseDownPassword1 = (event) => {
@@ -91,8 +88,6 @@ export default function Register() {
   const handleMouseDownPassword2 = (event) => {
     event.preventDefault();
   };
-
-
 
   //// To add the new users:
   const handleRegisterUser = async (e) => {
@@ -116,7 +111,7 @@ export default function Register() {
     }
 
     try {
-        const response = await axios.post(`${serverBaseAddress}/api/adduser`, {
+      const response = await axios.post(`${serverBaseAddress}/api/adduser`, {
         name,
         email,
         password,
@@ -140,21 +135,15 @@ export default function Register() {
     }
   };
 
-
-
   // Clear input fields when the "Cancel" button is clicked
   const handleCancelUserRegistration = () => {
-    setNameString(" ")
-    setEmailString(" ")
-    setPasswordString(" ")
-    setConfirmPasswordString(" ")
+    setNameString(" ");
+    setEmailString(" ");
+    setPasswordString(" ");
+    setConfirmPasswordString(" ");
   };
 
-
-
   return (
-    
-
     <div
       style={{
         backgroundImage: "linear-gradient(135deg, #009FFD 10%, #2A2A72 100%)",
@@ -193,7 +182,7 @@ export default function Register() {
                     <Avatar sx={{ mb: 2, bgcolor: "#ffffff" }}>
                       <LockOutlinedIcon />
                     </Avatar>
-                    <Typography variant="h4" sx={{ textAlign: 'center' }}>
+                    <Typography variant="h4" sx={{ textAlign: "center" }}>
                       Create Account
                     </Typography>
                   </Box>
@@ -232,13 +221,19 @@ export default function Register() {
                         />
                       </Grid>
                       <Grid item xs={12} sx={{ mx: { xs: "1em", sm: "3em" } }}>
-                        <FormControl sx={{ width: '100%' }} variant="outlined" required>
-                          <InputLabel htmlFor="initial-password-id">Password</InputLabel>
+                        <FormControl
+                          sx={{ width: "100%" }}
+                          variant="outlined"
+                          required
+                        >
+                          <InputLabel htmlFor="initial-password-id">
+                            Password
+                          </InputLabel>
                           <OutlinedInput
                             id="initial-password-id"
                             value={password}
                             onChange={(e) => setPasswordString(e.target.value)}
-                            type={showPassword ? 'text' : 'password'}
+                            type={showPassword ? "text" : "password"}
                             endAdornment={
                               <InputAdornment position="end">
                                 <IconButton
@@ -247,7 +242,11 @@ export default function Register() {
                                   onMouseDown={handleMouseDownPassword1}
                                   edge="end"
                                 >
-                                  {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                                  {showPassword ? (
+                                    <VisibilityOffIcon />
+                                  ) : (
+                                    <VisibilityIcon />
+                                  )}
                                 </IconButton>
                               </InputAdornment>
                             }
@@ -256,13 +255,21 @@ export default function Register() {
                         </FormControl>
                       </Grid>
                       <Grid item xs={12} sx={{ mx: { xs: "1em", sm: "3em" } }}>
-                        <FormControl sx={{ width: '100%' }} variant="outlined" required>
-                          <InputLabel htmlFor="confirm-password-id">Confirm Password</InputLabel>
+                        <FormControl
+                          sx={{ width: "100%" }}
+                          variant="outlined"
+                          required
+                        >
+                          <InputLabel htmlFor="confirm-password-id">
+                            Confirm Password
+                          </InputLabel>
                           <OutlinedInput
                             id="confirm-password-id"
                             value={confirmPassword}
-                            onChange={(e) => setConfirmPasswordString(e.target.value)}
-                            type={showConfirmPassword ? 'text' : 'password'}
+                            onChange={(e) =>
+                              setConfirmPasswordString(e.target.value)
+                            }
+                            type={showConfirmPassword ? "text" : "password"}
                             endAdornment={
                               <InputAdornment position="end">
                                 <IconButton
@@ -271,7 +278,11 @@ export default function Register() {
                                   onMouseDown={handleMouseDownPassword2}
                                   edge="end"
                                 >
-                                  {showConfirmPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                                  {showConfirmPassword ? (
+                                    <VisibilityOffIcon />
+                                  ) : (
+                                    <VisibilityIcon />
+                                  )}
                                 </IconButton>
                               </InputAdornment>
                             }
@@ -279,7 +290,12 @@ export default function Register() {
                           />
                         </FormControl>
                       </Grid>
-                      <Grid item xs={12} sm={6} sx={{ mx: { xs: "1em", sm: "5em" } }}>
+                      <Grid
+                        item
+                        xs={12}
+                        sm={6}
+                        sx={{ mx: { xs: "1em", sm: "5em" } }}
+                      >
                         <Button
                           type="submit"
                           variant="contained"
@@ -295,7 +311,12 @@ export default function Register() {
                           Register
                         </Button>
                       </Grid>
-                      <Grid item xs={12} sm={6} sx={{ mx: { xs: "1em", sm: "5em" } }}>
+                      <Grid
+                        item
+                        xs={12}
+                        sm={6}
+                        sx={{ mx: { xs: "1em", sm: "5em" } }}
+                      >
                         <Button
                           variant="contained"
                           fullWidth
@@ -312,8 +333,16 @@ export default function Register() {
                         </Button>
                       </Grid>
                       <Grid item xs={12} sx={{ mx: { xs: "1em", sm: "3em" } }}>
-                        <Stack direction="row" spacing={2} justifyContent="center">
-                          <Typography variant="h6" component="span" sx={{ mt: "10px", textAlign: 'center' }}>
+                        <Stack
+                          direction="row"
+                          spacing={2}
+                          justifyContent="center"
+                        >
+                          <Typography
+                            variant="h6"
+                            component="span"
+                            sx={{ mt: "10px", textAlign: "center" }}
+                          >
                             Already have an Account?{" "}
                             <span
                               style={{ color: "#beb4fb", cursor: "pointer" }}
@@ -333,6 +362,5 @@ export default function Register() {
         </Grid>
       </Box>
     </div>
-
   );
 }

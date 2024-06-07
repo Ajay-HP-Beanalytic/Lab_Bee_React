@@ -984,6 +984,12 @@ function jobcardsAPIs(app) {
     let sqlQuery = `SELECT * FROM bea_jobcards WHERE id = ?`;
     db.query(sqlQuery, [id], (error, result) => {
       if (error) return res.status(500).json({ error });
+
+      // Check if the jobcard exists
+      if (result.length === 0) {
+        return res.status(404).json({ error: "Jobcard not found" });
+      }
+
       output["jobcard"] = result[0];
       const jc_number = result[0].jc_number;
 

@@ -7,6 +7,7 @@ import Loader from "./common/Loader";
 import { BrowserRouter } from "react-router-dom";
 import { UserProvider } from "./Pages/UserContext";
 import { ThemeProvider, createTheme } from "@mui/material";
+import axios from "axios";
 
 {
   /*Original code was this*/
@@ -38,6 +39,8 @@ import { ThemeProvider, createTheme } from "@mui/material";
 const theme = createTheme({
   // Define your theme properties here
 });
+
+axios.defaults.withCredentials = true; // Set this once globally
 
 const AppWithLoader = () => {
   return (

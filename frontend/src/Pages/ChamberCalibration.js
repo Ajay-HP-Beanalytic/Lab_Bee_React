@@ -4,7 +4,7 @@ import * as XLSX from "xlsx";
 import { toast } from "react-toastify";
 import moment from "moment";
 import CountUp from "react-countup";
-import { parse, format } from "date-fns";
+import { format } from "date-fns";
 
 import { FcOvertime } from "react-icons/fc";
 import { FcApproval } from "react-icons/fc";
@@ -18,7 +18,6 @@ import UploadFileIcon from "@mui/icons-material/UploadFile";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import {
-  Autocomplete,
   Box,
   Button,
   Card,
@@ -32,15 +31,7 @@ import {
   IconButton,
   InputLabel,
   MenuItem,
-  Paper,
   Select,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TablePagination,
-  TableRow,
   TextField,
   Tooltip,
   Typography,
@@ -48,6 +39,8 @@ import {
 import { serverBaseAddress } from "./APIPage";
 import ConfirmationDialog from "../common/ConfirmationDialog";
 import SearchBar from "../common/SearchBar";
+import EmptyCard from "../common/EmptyCard";
+import { DataGrid } from "@mui/x-data-grid";
 
 export default function ChamberAndCalibration() {
   //State variables.
@@ -70,19 +63,14 @@ export default function ChamberAndCalibration() {
   ];
 
   const [chambersList, setChambersList] = useState([]);
+  const [filteredChamberList, setFilteredChamberList] = useState(chambersList);
+  const [searchInputTextOfCal, setSearchInputTextOfCal] = useState("");
 
   const [uploadedFileName, setUploadedFileName] = useState(null); // Define the uploadedFileName state variable
 
   const [editChamberCalibrationFields, setEditChamberCalibrationFields] =
     useState(false);
 
-  const [loading, setLoading] = useState(true); //To show loading label
-
-  const [msg, setMsg] = useState(
-    <Typography variant="h4">Loading...</Typography>
-  );
-
-  const [selectedFile, setSelectedFile] = useState(null);
   const fileInputRef = useRef(null); // Declare fileInputRef
 
   const [ref, setRef] = useState(false);
@@ -92,6 +80,7 @@ export default function ChamberAndCalibration() {
 
   const [openDeleteChamberDialog, setOpenDeleteChamberDialog] = useState(false);
   const [deleteItemId, setDeleteItemId] = useState(null);
+  const [editFields, setEditFields] = useState(false);
 
   // Function to handle the submit process.
   const onSubmitChambersButton = async (e) => {
@@ -153,21 +142,6 @@ export default function ChamberAndCalibration() {
     handleCancelBtnIsClicked();
   };
 
-  // Function to operate cancel btn
-  function handleCancelBtnIsClicked() {
-    setChamberName("");
-    setChamberID("");
-    setCalibrationDoneDate("");
-    setCalibrationDueDate("");
-    setCalibratedBy("");
-    setCalibrationStatus("");
-    setChamberStatus("");
-    setRemarks("");
-
-    setEditId("");
-    setEditChamberCalibrationFields(false);
-  }
-
   // Fetch the data from the table using the useEffect hook:
   useEffect(() => {
     const fetchChambersList = async () => {
@@ -176,12 +150,13 @@ export default function ChamberAndCalibration() {
           `${serverBaseAddress}/api/getChamberData`
         );
         setChambersList(chambersURL.data);
+        setFilteredChamberList(chambersURL.data);
       } catch (error) {
         console.error("Failed to fetch the data", error);
       }
     };
     fetchChambersList();
-  }, [ref, excelDataAdded]);
+  }, [ref, excelDataAdded, deleteItemId]);
 
   // To read the data of the uploaded excel file  (Keep )
   const handleFileChange = async (e) => {
@@ -292,82 +267,6 @@ export default function ChamberAndCalibration() {
       reader.readAsArrayBuffer(file);
     }
   };
-
-  // Function to edit the chamber data:
-  const editSelectedChamber = (index, id) => {
-    // setEditId(id)
-    // const rowData = chambersList[index];
-
-    // Calculate the actual index in the dataset based on the current page and rows per page
-    const actualIndex = index + page * rowsPerPage;
-    const rowData = filteredChambersList[actualIndex];
-
-    setEditId(id);
-    setEditChamberCalibrationFields(true);
-
-    setChamberName(rowData.chamber_name);
-    setChamberID(rowData.chamber_id);
-    setCalibrationDoneDate(
-      moment(rowData.calibration_done_date).format("YYYY-MM-DD")
-    );
-    setCalibrationDueDate(
-      moment(rowData.calibration_due_date).format("YYYY-MM-DD")
-    );
-    setCalibratedBy(rowData.calibration_done_by);
-    setCalibrationStatus(rowData.calibration_status);
-    setChamberStatus(rowData.chamber_status);
-    setRemarks(rowData.remarks);
-  };
-
-  // Function to delete the particular chamber data from the table:
-  function deleteSelectedChamber(id) {
-    fetch(`${serverBaseAddress}/api/getChamberData/${id}`, {
-      method: "DELETE",
-    })
-      .then((res) => {
-        if (res.status === 200) {
-          const updatedChambersList = chambersList.filter(
-            (item) => item.id !== id
-          );
-          setChambersList(updatedChambersList);
-          toast.success("Chamber Deleted Successfully");
-          handleCloseDeleteChamberDialog();
-        } else {
-          toast.error("An error occurred while deleting the Chamber.");
-        }
-      })
-      .catch((error) => {
-        toast.error("An error occurred while deleting the Chamber.");
-      });
-  }
-
-  // Function to open the dialog:
-  const addNewChamberButton = () => {
-    setEditChamberCalibrationFields(true);
-  };
-
-  const [page, setPage] = useState(0); //To setup pages of the table
-
-  const [rowsPerPage, setRowsPerPage] = useState(10); //To show the number of rows per page
-
-  const [filterRow, setFilterRow] = useState([]); //To filter out the table based on search
-
-  const [filterText, setFilterText] = useState("");
-
-  const handleChangePage = (event, newPage) => {
-    setPage(newPage);
-  };
-
-  const handleRowsPerPage = (event) => {
-    setRowsPerPage(parseInt(event.target.value, 10));
-    setPage(0);
-  };
-
-  // To filter out the row:
-  const filteredChambersList = filterRow.length > 0 ? filterRow : chambersList;
-
-  // Custom style for the table header
-  const tableHeaderStyle = { backgroundColor: "#668799", fontWeight: "bold" };
 
   // Function to compare calibration due month with current month
 
@@ -554,6 +453,47 @@ export default function ChamberAndCalibration() {
     },
   };
 
+  // Function to open the dialog:
+  const addNewChamberButton = () => {
+    setEditFields(false);
+    setEditChamberCalibrationFields(true);
+  };
+
+  // Function to edit the chamber data:
+  const editSelectedChamber = (row) => {
+    setEditFields(true);
+    setEditId(row.id);
+    setEditChamberCalibrationFields(true);
+    setChamberName(row.chamber_name);
+    setChamberID(row.chamber_id);
+    setCalibrationDoneDate(
+      moment(row.calibration_done_date).format("YYYY-MM-DD")
+    );
+    setCalibrationDueDate(
+      moment(row.calibration_due_date).format("YYYY-MM-DD")
+    );
+    setCalibratedBy(row.calibration_done_by);
+    setCalibrationStatus(row.calibration_status);
+    setChamberStatus(row.chamber_status);
+    setRemarks(row.remarks);
+  };
+
+  // Function to operate cancel btn
+  function handleCancelBtnIsClicked() {
+    setChamberName("");
+    setChamberID("");
+    setCalibrationDoneDate("");
+    setCalibrationDueDate("");
+    setCalibratedBy("");
+    setCalibrationStatus("");
+    setChamberStatus("");
+    setRemarks("");
+
+    setEditId("");
+    setEditFields(false);
+    setEditChamberCalibrationFields(false);
+  }
+
   // Open delete chamber confirmation dialog
   const handleOpenDeleteChamberDialog = (id) => {
     setDeleteItemId(id);
@@ -565,6 +505,146 @@ export default function ChamberAndCalibration() {
     setDeleteItemId(null);
     setOpenDeleteChamberDialog(false);
   };
+
+  //Function to use the searchbar filter
+  const onChangeOfSearchInputOfCal = (e) => {
+    const searchText = e.target.value;
+    setSearchInputTextOfCal(searchText);
+    filterDataGridTable(searchText);
+  };
+
+  //Function to filter the table
+  const filterDataGridTable = (searchValue) => {
+    const filtered = chambersList.filter((row) => {
+      return Object.values(row).some((value) =>
+        value.toString().toLowerCase().includes(searchValue.toLowerCase())
+      );
+    });
+    setFilteredChamberList(filtered);
+  };
+
+  //Function to clear the searchbar filter
+  const onClearSearchInputOfCal = () => {
+    setSearchInputTextOfCal("");
+    setFilteredChamberList(chambersList);
+  };
+
+  // Function to delete the particular chamber data from the table:
+  const deleteSelectedChamber = () => {
+    fetch(`${serverBaseAddress}/api/getChamberData/${deleteItemId}`, {
+      method: "DELETE",
+    })
+      .then((res) => {
+        if (res.status === 200) {
+          const updatedChambersList = chambersList.filter(
+            (item) => item.id !== deleteItemId
+          );
+          setChambersList(updatedChambersList);
+          toast.success("Chamber Deleted Successfully");
+          handleCloseDeleteChamberDialog();
+        } else {
+          toast.error("An error occurred while deleting the Chamber.");
+        }
+      })
+      .catch((error) => {
+        toast.error("An error occurred while deleting the Chamber.");
+      });
+  };
+
+  const columns = [
+    {
+      field: "id",
+      headerName: "SL No",
+      width: 60,
+      align: "center",
+      headerAlign: "center",
+      headerClassName: "custom-header-color",
+    },
+    {
+      field: "chamber_name",
+      headerName: "Chamber/Equipment",
+      width: 200,
+      align: "center",
+      headerAlign: "center",
+      headerClassName: "custom-header-color",
+    },
+    {
+      field: "chamber_id",
+      headerName: "Chamber/Equipment ID",
+      width: 200,
+      align: "center",
+      headerAlign: "center",
+      headerClassName: "custom-header-color",
+    },
+    {
+      field: "calibration_done_date",
+      headerName: "Calibration Done Date",
+      width: 150,
+      align: "center",
+      headerAlign: "center",
+      headerClassName: "custom-header-color",
+    },
+    {
+      field: "calibration_due_date",
+      headerName: "Calibration Due Date",
+      width: 150,
+      align: "center",
+      headerAlign: "center",
+      headerClassName: "custom-header-color",
+    },
+    {
+      field: "calibration_done_by",
+      headerName: "Calibration Done By",
+      width: 150,
+      align: "center",
+      headerAlign: "center",
+      headerClassName: "custom-header-color",
+    },
+    {
+      field: "calibration_status",
+      headerName: "Calibration Status",
+      width: 150,
+      align: "center",
+      headerAlign: "center",
+      headerClassName: "custom-header-color",
+    },
+    {
+      field: "chamber_status",
+      headerName: "Chamber Status",
+      width: 150,
+      align: "center",
+      headerAlign: "center",
+      headerClassName: "custom-header-color",
+    },
+    {
+      field: "remarks",
+      headerName: "Remarks/Observation",
+      width: 150,
+      align: "center",
+      headerAlign: "center",
+      headerClassName: "custom-header-color",
+    },
+    {
+      field: "actions",
+      headerName: "Actions",
+      width: 100,
+      align: "center",
+      headerAlign: "center",
+      headerClassName: "custom-header-color",
+      renderCell: (params) => (
+        <div>
+          <IconButton onClick={() => editSelectedChamber(params.row)}>
+            <EditIcon />
+          </IconButton>
+          <IconButton
+            onClick={() => handleOpenDeleteChamberDialog(params.row.id)}
+          >
+            <DeleteIcon />
+          </IconButton>
+        </div>
+      ),
+    },
+  ];
   ////////////////////////////////////////////////////////////////////////////////////////////////
 
   return (
@@ -593,7 +673,7 @@ export default function ChamberAndCalibration() {
 
         <Box>
           <Grid container spacing={4}>
-            <Grid item xs={12} md={3} sx={{ mt: 2 }}>
+            <Grid item xs={12} md={3}>
               <Card elevation={5} sx={{ backgroundColor: "#e6e6ff" }}>
                 <CreateKpiCard
                   kpiTitle={`Calibrations pending in ${currentYearAndMonth}:`}
@@ -628,7 +708,6 @@ export default function ChamberAndCalibration() {
             </Grid>
 
             <Grid item xs={12} md={3}>
-              {/* #ebf1fe */}
               <Card elevation={5} sx={{ backgroundColor: "#b3b3cc" }}>
                 <CreateKpiCard
                   kpiTitle="Calibration Expired:"
@@ -668,10 +747,10 @@ export default function ChamberAndCalibration() {
           </Grid>
         </Box>
 
-        <Box sx={{ padding: "20px" }}>
-          <Grid container spacing={2} justifyContent="center">
+        <Box>
+          <Grid container spacing={2} justifyContent="center" sx={{ mt: 2 }}>
             <Grid item xs={12} md={6}>
-              <Card elevation={5} sx={{ backgroundColor: "transparent" }}>
+              <Card elevation={3} sx={{ backgroundColor: "#fff2e6" }}>
                 <CreatePieChart
                   data={calibrationStatusPieChart}
                   options={optionsForCalibrationStatusPieChart}
@@ -680,7 +759,7 @@ export default function ChamberAndCalibration() {
             </Grid>
 
             <Grid item xs={12} md={6}>
-              <Card elevation={5} sx={{ backgroundColor: "transparent" }}>
+              <Card elevation={3} sx={{ backgroundColor: "#fff2e6" }}>
                 <CreatePieChart
                   data={chamberStatusPieChart}
                   options={optionsForChamberStatusPieChart}
@@ -690,9 +769,6 @@ export default function ChamberAndCalibration() {
           </Grid>
         </Box>
 
-        <br />
-        <br />
-
         {editChamberCalibrationFields && (
           <Dialog
             open={editChamberCalibrationFields}
@@ -700,9 +776,7 @@ export default function ChamberAndCalibration() {
             aria-labelledby="chamber-calibration-add-edit-dialog"
           >
             <DialogTitle id="chamber-tests-add-edit-dialog">
-              {editChamberCalibrationFields
-                ? "Add New Chamber Data"
-                : "Edit Chamber Data"}
+              {editFields ? "Edit Chamber Data" : "Add New Chamber Data"}
             </DialogTitle>
 
             <DialogContent>
@@ -868,7 +942,7 @@ export default function ChamberAndCalibration() {
         <ConfirmationDialog
           open={openDeleteChamberDialog}
           onClose={handleCloseDeleteChamberDialog}
-          onConfirm={() => deleteSelectedChamber(deleteItemId)}
+          onConfirm={deleteSelectedChamber}
           title="Delete Confirmation"
           contentText="Are you sure you want to delete this chamber data?"
           confirmButtonText="Delete"
@@ -877,7 +951,7 @@ export default function ChamberAndCalibration() {
 
         {/* Box to keep the searchbar and the action buttons in a single row */}
 
-        <Box sx={{ mx: 2, mb: 2 }}>
+        <Box sx={{ mx: 2, mb: 2, mt: 4 }}>
           <Grid
             container
             spacing={2}
@@ -920,104 +994,39 @@ export default function ChamberAndCalibration() {
             <Grid item xs={12} md={4} container justifyContent="flex-end">
               <SearchBar
                 placeholder="Search"
-                // searchInputText={searchInputTextOfCal}
-                // onChangeOfSearchInput={onChangeOfSearchInputOfCal}
-                // onClearSearchInput={onClearSearchInputOfCal}
+                searchInputText={searchInputTextOfCal}
+                onChangeOfSearchInput={onChangeOfSearchInputOfCal}
+                onClearSearchInput={onClearSearchInputOfCal}
               />
             </Grid>
           </Grid>
         </Box>
 
-        <TableContainer component={Paper}>
-          <Table sx={{ minWidth: 650 }} aria-label="simple table" size="small">
-            <TableHead sx={tableHeaderStyle}>
-              <TableRow>
-                <TableCell>Sl No</TableCell>
-                <TableCell align="center">Chamber Name</TableCell>
-                <TableCell align="center">Chamber ID</TableCell>
-                <TableCell align="center">Calibration Done Date</TableCell>
-                <TableCell align="center">Calibration Due Date</TableCell>
-                <TableCell align="center">Calibration Done By</TableCell>
-                <TableCell align="center">Calibration Status</TableCell>
-                <TableCell align="center">Chamber Status</TableCell>
-                <TableCell align="center">Remarks</TableCell>
-                <TableCell align="center">Action</TableCell>
-              </TableRow>
-            </TableHead>
-
-            <TableBody>
-              {/* //{chambersList.map((item, index) => ( */}
-              {filteredChambersList
-                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                .map((item, index) => (
-                  <TableRow
-                    key={index}
-                    align="center"
-                    style={{
-                      backgroundColor:
-                        item.calibration_status === "Up to Date"
-                          ? "#99ff99"
-                          : item.calibration_status === "Expired"
-                          ? "#ff5c33"
-                          : "white",
-                    }}
-                  >
-                    <TableCell component="th" scope="row">
-                      {index + 1}
-                    </TableCell>
-                    <TableCell align="center">{item.chamber_name}</TableCell>
-                    <TableCell align="center">{item.chamber_id}</TableCell>
-                    <TableCell align="center">
-                      {item.calibration_done_date}
-                    </TableCell>
-                    <TableCell align="center">
-                      {item.calibration_due_date}
-                    </TableCell>
-                    <TableCell align="center">
-                      {item.calibration_done_by}
-                    </TableCell>
-                    <TableCell align="center">
-                      {item.calibration_status}
-                    </TableCell>
-                    <TableCell align="center">{item.chamber_status}</TableCell>
-                    <TableCell align="center">{item.remarks}</TableCell>
-
-                    <TableCell align="center">
-                      <IconButton
-                        variant="outlined"
-                        size="small"
-                        onClick={() => editSelectedChamber(index, item.id)}
-                      >
-                        <Tooltip title="Edit Test" arrow>
-                          <EditIcon fontSize="inherit" />
-                        </Tooltip>
-                      </IconButton>
-
-                      <IconButton
-                        variant="outlined"
-                        size="small"
-                        onClick={() => handleOpenDeleteChamberDialog(item.id)}
-                      >
-                        <Tooltip title="Delete Test" arrow>
-                          <DeleteIcon fontSize="inherit" />
-                        </Tooltip>
-                      </IconButton>
-                    </TableCell>
-                  </TableRow>
-                ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-
-        <TablePagination
-          rowsPerPageOptions={[10, 25, 50]}
-          component="div"
-          count={filteredChambersList.length}
-          rowsPerPage={rowsPerPage}
-          page={page}
-          onPageChange={handleChangePage}
-          onRowsPerPageChange={handleRowsPerPage}
-        />
+        {filteredChamberList && filteredChamberList.length === 0 ? (
+          <EmptyCard message="Chamber Calibration Data not found" />
+        ) : (
+          <Box
+            sx={{
+              height: 500,
+              width: "100%",
+              "& .custom-header-color": {
+                backgroundColor: "#0f6675",
+                color: "whitesmoke",
+                fontWeight: "bold",
+                fontSize: "15px",
+              },
+              mt: 2,
+              mb: 2,
+            }}
+          >
+            <DataGrid
+              rows={filteredChamberList}
+              columns={columns}
+              pageSize={5}
+              rowsPerPageOptions={[5, 10, 20]}
+            />
+          </Box>
+        )}
       </Box>
     </>
   );

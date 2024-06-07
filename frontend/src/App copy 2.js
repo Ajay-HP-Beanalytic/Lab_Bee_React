@@ -79,40 +79,6 @@ function App() {
     }
   }, [loggedInUserDepartment, location.pathname, navigate]);
 
-  // useEffect(() => {
-  //   if (loggedInUserDepartment) {
-  //     if (
-  //       location.pathname === "/login" ||
-  //       location.pathname === "/register" ||
-  //       location.pathname === "/reset_password"
-  //     ) {
-  //       // Allow access to these pages without redirection
-  //       return;
-  //     }
-
-  //     if (location.pathname === "/" || location.pathname === "/home") {
-  //       if (
-  //         loggedInUserDepartment === "Administrator" ||
-  //         loggedInUserDepartment === "Accounts"
-  //       ) {
-  //         navigate("/home");
-  //       } else if (loggedInUserDepartment === "Marketing") {
-  //         navigate("/quotation_dashboard");
-  //       } else if (
-  //         loggedInUserDepartment === "TS1 Testing" ||
-  //         loggedInUserDepartment === "TS2 Testing"
-  //       ) {
-  //         navigate("/jobcard_dashboard");
-  //       } else if (
-  //         loggedInUserDepartment === "Reliability" ||
-  //         loggedInUserDepartment === "Software"
-  //       ) {
-  //         navigate("/jobcard_dashboard");
-  //       }
-  //     }
-  //   }
-  // }, [loggedInUserDepartment, location.pathname, navigate]);
-
   return (
     <div className="App">
       <ToastContainer position="top-center" />
@@ -121,6 +87,7 @@ function App() {
         <Route path="/" exact element={<Login />} />
         <Route path="/register" exact element={<Register />} />
         <Route path="/reset_password" exact element={<ResetPassword />} />
+        <Route path="*" element={<NotFoundPage />} />
 
         {/* Protected Routes */}
         <Route path="" element={<SidenavigationBar />}>
@@ -270,3 +237,169 @@ function App() {
 }
 
 export default App;
+
+// <div className="App">
+//   <ToastContainer position="top-center" />
+//   <Routes>
+//     <Route path="/" exact element={<Login />} />
+//     <Route path="/register" exact element={<Register />} />
+//     <Route path="/reset_password" exact element={<ResetPassword />} />
+
+//     <Route path="" element={<SidenavigationBar />}>
+//       <Route path="home" element={<Home />} />
+
+//       <Route
+//         path="quotation_dashboard"
+//         element={
+//           <ProtectedRoute
+//             allowedDepartments={["Administrator", "Accounts", "Marketing"]}
+//           >
+//             <QuotationsDashboard />
+//           </ProtectedRoute>
+//         }
+//       />
+
+//       <Route
+//         path="quotation"
+//         element={
+//           <ProtectedRoute
+//             allowedDepartments={["Administrator", "Accounts", "Marketing"]}
+//           >
+//             <Quotation />
+//           </ProtectedRoute>
+//         }
+//       />
+
+//       <Route
+//         path="quotation/:id"
+//         element={
+//           <ProtectedRoute
+//             allowedDepartments={["Administrator", "Accounts", "Marketing"]}
+//           >
+//             <Quotation />
+//           </ProtectedRoute>
+//         }
+//       />
+
+//       <Route
+//         path="quotation_essentials"
+//         element={
+//           <ProtectedRoute
+//             allowedDepartments={["Administrator", "Accounts", "Marketing"]}
+//           >
+//             <QuotationRequirements />
+//           </ProtectedRoute>
+//         }
+//       />
+
+//       <Route
+//         path="jobcard_dashboard"
+//         element={
+//           <ProtectedRoute
+//             allowedDepartments={[
+//               "Administrator",
+//               "Accounts",
+//               "TS1 Testing",
+//               "TS2 Testing",
+//               "Reliability",
+//               "Software",
+//             ]}
+//           >
+//             <JCHome />
+//           </ProtectedRoute>
+//         }
+//       />
+
+//       <Route
+//         path="jobcard"
+//         element={
+//           <ProtectedRoute
+//             allowedDepartments={[
+//               "Administrator",
+//               "Accounts",
+//               "TS1 Testing",
+//               "TS2 Testing",
+//               "Reliability",
+//               "Software",
+//             ]}
+//           >
+//             <Jobcard />
+//           </ProtectedRoute>
+//         }
+//       />
+
+//       <Route
+//         path="jobcard/:id"
+//         element={
+//           <ProtectedRoute
+//             allowedDepartments={[
+//               "Administrator",
+//               "Accounts",
+//               "TS1 Testing",
+//               "TS2 Testing",
+//               "Reliability",
+//               "Software",
+//             ]}
+//           >
+//             <Jobcard />
+//           </ProtectedRoute>
+//         }
+//       />
+
+//       <Route
+//         path="jobcard_essentials"
+//         element={
+//           <ProtectedRoute
+//             allowedDepartments={[
+//               "Administrator",
+//               "Accounts",
+//               "TS1 Testing",
+//               "TS2 Testing",
+//               "Reliability",
+//               "Software",
+//             ]}
+//           >
+//             <JobcardRequirements />
+//           </ProtectedRoute>
+//         }
+//       />
+
+//       <Route
+//         path="chamber-calibration"
+//         element={
+//           <ProtectedRoute
+//             allowedDepartments={["Administrator", "TS1 Testing"]}
+//           >
+//             <ChamberAndCalibration />
+//           </ProtectedRoute>
+//         }
+//       />
+
+//       <Route
+//         path="slot_booking"
+//         element={
+//           <ProtectedRoute
+//             allowedDepartments={["Administrator", "TS1 Testing"]}
+//           >
+//             <Slotbooking />
+//           </ProtectedRoute>
+//         }
+//       />
+
+//       <Route
+//         path="user_management"
+//         element={
+//           <ProtectedRoute allowedDepartments={["Administrator"]}>
+//             <UserManagement />
+//           </ProtectedRoute>
+//         }
+//       />
+
+//       <Route path="trailpage" element={<TrailPage />} />
+//       <Route path="*" element={<NotFoundPage />} />
+//     </Route>
+
+//     {/* Default route to handle redirection based on department */}
+//     <Route path="*" element={<Navigate to="/" replace />} />
+//   </Routes>
+// </div>

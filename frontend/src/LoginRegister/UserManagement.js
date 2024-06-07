@@ -1,70 +1,114 @@
-
-import React, { useContext, useEffect, useRef, useState } from 'react'
-import { Box, Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Divider, FormControl, Grid, IconButton, InputLabel, MenuItem, Paper, Select, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, Tooltip, Typography } from '@mui/material'
-import axios from 'axios';
+import React, { useContext, useEffect, useRef, useState } from "react";
+import {
+  Box,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  Divider,
+  FormControl,
+  Grid,
+  IconButton,
+  InputLabel,
+  MenuItem,
+  Paper,
+  Select,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TextField,
+  Tooltip,
+  Typography,
+} from "@mui/material";
+import axios from "axios";
 import { toast } from "react-toastify";
-import 'react-toastify/dist/ReactToastify.css';
+import "react-toastify/dist/ReactToastify.css";
 
+import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
+import PasswordIcon from "@mui/icons-material/Password";
 
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
-import PasswordIcon from '@mui/icons-material/Password';
-
-import { serverBaseAddress } from '../Pages/APIPage';
-import { useNavigate } from 'react-router-dom';
-import { UserContext } from '../Pages/UserContext';
+import { serverBaseAddress } from "../Pages/APIPage";
+import { useNavigate } from "react-router-dom";
+import { UserContext } from "../Pages/UserContext";
 
 export default function UserManagement() {
-
   // State variable to set the user name:
   // const [loggedInUser, setLoggedInUser] = useState('')
 
   // Navigation hook to navigate upon successfull logout
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
   // State variables to add the user data
-  const [userName, setUserName] = useState('')
-  const [userEmail, setUserEmail] = useState('')
-  const [initialUserPassword, setInitialUserPassword] = useState('')
-  const [userDepartment, setUserDepartment] = useState('')
-  const [userRole, setUserRole] = useState('')
-  const [userStatus, setUserStatus] = useState('')
+  const [userName, setUserName] = useState("");
+  const [userEmail, setUserEmail] = useState("");
+  const [initialUserPassword, setInitialUserPassword] = useState("");
+  const [userDepartment, setUserDepartment] = useState("");
+  const [userRole, setUserRole] = useState("");
+  const [userStatus, setUserStatus] = useState("");
 
-  const userDepartmentOptions = ['Accounts', 'Marketing', 'Testing', 'Reliability', 'Software']
-  const userRoleOptions = ['Managing Director', 'Operations Manager', 'Admin', 'Lab Manager', 'Lab Engineer', 'Lab Technician', 'Reliability Manager', 'Reliability Engineer', 'Software Engineer'];
-  const userStatusOptions = ['Enable', 'Disable']
+  const userDepartmentOptions = [
+    "Accounts",
+    "Administrator",
+    "Marketing",
+    "Reliability",
+    "Software",
+    "TS1 Testing",
+    "TS2 Testing",
+  ];
 
+  const userRoleOptions = [
+    "Accounts",
+    "Administrator",
+    "Lab Manager",
+    "Lab Engineer",
+    "Lab Technician",
+    "Managing Director",
+    "Operations Manager",
+    "Reliability Manager",
+    "Reliability Engineer",
+    "Software Engineer",
+  ];
+  const userStatusOptions = ["Enable", "Disable"];
 
-  const [allowedComponents, setAllowedComponents] = useState([])
+  const [allowedComponents, setAllowedComponents] = useState([]);
 
   // "Password must be between 8 to 15 characters, contain at least one uppercase letter, one lowercase letter, one digit, and one special character."
-  const passwordRegex = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[^a-zA-Z0-9])(?!.*\s).{8,15}$/;
-
+  const passwordRegex =
+    /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[^a-zA-Z0-9])(?!.*\s).{8,15}$/;
 
   // Define the table headers:
-  const tableHeadersText = ['Sl No', 'Name', 'Email', 'Department', 'Role', 'User Status', 'Action'];
+  const tableHeadersText = [
+    "Sl No",
+    "Name",
+    "Email",
+    "Department",
+    "Role",
+    "User Status",
+    "Action",
+  ];
 
   // State varaiable to store users list
-  const [usersList, setUsersList] = useState([])
+  const [usersList, setUsersList] = useState([]);
 
   // State varaiable to Edit the users data
   const [editUserDetailsFields, setEditUserDetailsFields] = useState(false);
 
-  const fileInputRef = useRef(null);  // Declare fileInputRef
-  const [refresh, setRefresh] = useState(false)
-  const [editId, setEditId] = useState('')
+  const fileInputRef = useRef(null); // Declare fileInputRef
+  const [refresh, setRefresh] = useState(false);
+  const [editId, setEditId] = useState("");
 
-
-  
   const { loggedInUser, loggedInUserDepartment } = useContext(UserContext);
-
-  console.log('use mngt', loggedInUser, loggedInUserDepartment)
 
   // Function to submit the data from the dialog
   const onSubmitAddUserButton = async (e) => {
-    e.preventDefault()
+    e.preventDefault();
 
-  
     if (!editId) {
       if (!initialUserPassword.match(passwordRegex)) {
         toast.error(
@@ -75,96 +119,105 @@ export default function UserManagement() {
     }
 
     if (editId) {
-      if (!userName || !userEmail || !userRole || !userDepartment || !userStatus) {
+      if (
+        !userName ||
+        !userEmail ||
+        !userRole ||
+        !userDepartment ||
+        !userStatus
+      ) {
         toast.error("Please enter all the fields to update the user data..!");
         return;
       }
-
     } else {
-      if (!userName || !userEmail || !initialUserPassword || !userRole || !userDepartment || !userStatus) {
+      if (
+        !userName ||
+        !userEmail ||
+        !initialUserPassword ||
+        !userRole ||
+        !userDepartment ||
+        !userStatus
+      ) {
         toast.error("Please enter all the fields to add the user..!");
         return;
       }
     }
 
     try {
-      const addNewUserRequest = await axios.post(`${serverBaseAddress}/api/addUser/` + editId, {
-        name: userName,
-        email: userEmail,
-        password: initialUserPassword,
-        department: userDepartment,
-        role: userRole,
-        user_status: userStatus,
-      });
+      const addNewUserRequest = await axios.post(
+        `${serverBaseAddress}/api/addUser/` + editId,
+        {
+          name: userName,
+          email: userEmail,
+          password: initialUserPassword,
+          department: userDepartment,
+          role: userRole,
+          user_status: userStatus,
+        }
+      );
 
       if (addNewUserRequest.status === 200) {
         toast.success(addNewUserRequest.data.message);
         //toast.success('User added succesfully')
-        setRefresh(!refresh)
+        setRefresh(!refresh);
       } else {
         toast.error("An error occurred while adding the data.");
       }
-
-
     } catch (error) {
       console.error("Error details:", error); // Log error details
       if (error.response && error.response.status === 400) {
-        toast.error('Database error')
+        toast.error("Database error");
       } else {
-        toast.error('An error occurred while saving the data')
+        toast.error("An error occurred while saving the data");
       }
     }
-    onCancelAddUserButton()
-  }
-
+    onCancelAddUserButton();
+  };
 
   // Fetch the users data from the table using the useEffect hook:
   useEffect(() => {
-
     const fetchUsersList = async () => {
       try {
-        const usersURL = await axios.get(`${serverBaseAddress}/api/getAllUsers`);
-        setUsersList(usersURL.data)
+        const usersURL = await axios.get(
+          `${serverBaseAddress}/api/getAllUsers`
+        );
+        setUsersList(usersURL.data);
       } catch (error) {
-        console.error('Failed to fetch the data', error);
+        console.error("Failed to fetch the data", error);
       }
-    }
-    fetchUsersList()
-  }, [refresh])
-
-
-
-
+    };
+    fetchUsersList();
+  }, [refresh]);
 
   // Function to clear the fields and close the dialog
   function onCancelAddUserButton() {
-    setEditUserDetailsFields(false)
-    setUserName('')
-    setUserEmail('')
-    setInitialUserPassword('')
-    setUserRole('')
-    setUserDepartment('')
-    setUserStatus('')
-    setEditId('')
+    setEditUserDetailsFields(false);
+    setUserName("");
+    setUserEmail("");
+    setInitialUserPassword("");
+    setUserRole("");
+    setUserDepartment("");
+    setUserStatus("");
+    setEditId("");
   }
 
   // Function to add new user:
   const addNewUserButton = (user) => {
-    setEditUserDetailsFields(true)
+    setEditUserDetailsFields(true);
   };
 
   // Function to edit the user data:
   const editUserButton = (index, id) => {
-    setEditUserDetailsFields(true)
-    setEditId(id)
-    const rowData = usersList[index]
-    setUserName(rowData.name)
-    setUserEmail(rowData.email)
+    setEditUserDetailsFields(true);
+    setEditId(id);
+    const rowData = usersList[index];
+    setUserName(rowData.name);
+    setUserEmail(rowData.email);
     // setInitialUserPassword(rowData.password)
-    setUserDepartment(rowData.department)
-    setUserRole(rowData.role)
-    setUserStatus(rowData.user_status)
-  }
+    setUserDepartment(rowData.department);
+    setUserRole(rowData.role);
+    setUserStatus(rowData.user_status);
+  };
 
   // State variable to handle the delete user confirmation dialog:
   const [openDeleteUserDialog, setOpenDeleteUserDialog] = useState(false);
@@ -184,14 +237,17 @@ export default function UserManagement() {
     setDeleteUserId(null);
   };
 
-
   // Function to delete the user data:
   const handleDeleteConfirmed = () => {
     if (deleteUserId !== null) {
-      fetch(`${serverBaseAddress}/api/deleteUser/${deleteUserId}`, { method: 'DELETE' })
+      fetch(`${serverBaseAddress}/api/deleteUser/${deleteUserId}`, {
+        method: "DELETE",
+      })
         .then((res) => {
           if (res.status === 200) {
-            const updatedUsersList = usersList.filter((item) => item.id !== deleteUserId);
+            const updatedUsersList = usersList.filter(
+              (item) => item.id !== deleteUserId
+            );
             setUsersList(updatedUsersList);
             toast.success("User removed successfully");
           } else {
@@ -211,40 +267,44 @@ export default function UserManagement() {
   // Function to delete the user data:
   const deleteUserButton = (id) => {
     handleOpen(id);
-  }
+  };
 
   // Function to reset the user password:
   const resetUserPasswordButton = (id) => {
-    navigate('/reset_password')
-  }
+    navigate("/reset_password");
+  };
 
   // UseEffect to handle deletion when deleteUserId changes
-  useEffect(() => {
-  }, [deleteUserId]);
-
+  useEffect(() => {}, [deleteUserId]);
 
   const handleUserDepartment = (e) => {
-    setUserDepartment(e.target.value)
-  }
+    setUserDepartment(e.target.value);
+  };
 
   const handleChangeRole = (e) => {
-    setUserRole(e.target.value)
-  }
+    setUserRole(e.target.value);
+  };
 
   const handleUserStatus = (e) => {
-    setUserStatus(e.target.value)
-  }
+    setUserStatus(e.target.value);
+  };
 
   return (
     <>
       <Box
         sx={{
-          display: 'flex',
-          justifyContent: 'flex-end',
-          alignItems: 'center',
-        }}>
+          display: "flex",
+          justifyContent: "flex-end",
+          alignItems: "center",
+        }}
+      >
         <Button
-          sx={{ borderRadius: 1, bgcolor: "orange", color: "white", borderColor: "black" }}
+          sx={{
+            borderRadius: 1,
+            bgcolor: "orange",
+            color: "white",
+            borderColor: "black",
+          }}
           variant="contained"
           color="primary"
           onClick={addNewUserButton}
@@ -254,15 +314,14 @@ export default function UserManagement() {
       </Box>
 
       <Divider>
-        <Typography variant='h4' sx={{ color: '#003366', mb: 2 }}> User Management</Typography>
+        <Typography variant="h4" sx={{ color: "#003366", mb: 2 }}>
+          {" "}
+          User Management
+        </Typography>
       </Divider>
 
-
-
-      {(loggedInUser === 'Admin' || loggedInUserDepartment === 'All') && (
-
-        <Box sx={{ width: '100%' }}>
-
+      {loggedInUserDepartment === "Administrator" && (
+        <Box sx={{ width: "100%" }}>
           <div>
             <Dialog open={openDeleteUserDialog} onClose={handleClose}>
               <DialogTitle>Delete Confirmation</DialogTitle>
@@ -273,17 +332,28 @@ export default function UserManagement() {
               </DialogContent>
               <DialogActions>
                 <Button
-                  sx={{ marginBottom: "16px", marginLeft: "10px", borderRadius: 3 }}
+                  sx={{
+                    marginBottom: "16px",
+                    marginLeft: "10px",
+                    borderRadius: 3,
+                  }}
                   variant="contained"
                   color="secondary"
-                  onClick={handleClose}>
+                  onClick={handleClose}
+                >
                   Cancel
                 </Button>
                 <Button
-                  sx={{ marginBottom: "16px", marginLeft: "10px", borderRadius: 3 }}
+                  sx={{
+                    marginBottom: "16px",
+                    marginLeft: "10px",
+                    borderRadius: 3,
+                  }}
                   variant="contained"
                   color="primary"
-                  onClick={handleDeleteConfirmed} autoFocus>
+                  onClick={handleDeleteConfirmed}
+                  autoFocus
+                >
                   Delete
                 </Button>
               </DialogActions>
@@ -296,15 +366,17 @@ export default function UserManagement() {
               onClose={onCancelAddUserButton}
               aria-labelledby="add-user-dialog"
             >
-
               <DialogTitle id="add-user-dialog">
                 {editId ? "Edit User Details" : "Add New User"}
               </DialogTitle>
 
-
               <DialogContent>
                 <TextField
-                  sx={{ marginBottom: "16px", marginLeft: "10px", borderRadius: 3 }}
+                  sx={{
+                    marginBottom: "16px",
+                    marginLeft: "10px",
+                    borderRadius: 3,
+                  }}
                   value={userName}
                   onChange={(e) => setUserName(e.target.value)}
                   label="User Name"
@@ -315,10 +387,14 @@ export default function UserManagement() {
                 />
 
                 <TextField
-                  sx={{ marginBottom: "16px", marginLeft: "10px", borderRadius: 3 }}
+                  sx={{
+                    marginBottom: "16px",
+                    marginLeft: "10px",
+                    borderRadius: 3,
+                  }}
                   value={userEmail}
                   onChange={(e) => setUserEmail(e.target.value)}
-                  type='email'
+                  type="email"
                   label="User Email"
                   margin="normal"
                   fullWidth
@@ -328,7 +404,11 @@ export default function UserManagement() {
 
                 {!editId ? (
                   <TextField
-                    sx={{ marginBottom: "16px", marginLeft: "10px", borderRadius: 3 }}
+                    sx={{
+                      marginBottom: "16px",
+                      marginLeft: "10px",
+                      borderRadius: 3,
+                    }}
                     value={initialUserPassword}
                     onChange={(e) => setInitialUserPassword(e.target.value)}
                     //type='password'
@@ -342,7 +422,12 @@ export default function UserManagement() {
 
                 <FormControl
                   fullWidth
-                  sx={{ marginBottom: "16px", marginLeft: "10px", borderRadius: 3 }}>
+                  sx={{
+                    marginBottom: "16px",
+                    marginLeft: "10px",
+                    borderRadius: 3,
+                  }}
+                >
                   <InputLabel> Department </InputLabel>
                   <Select
                     label="Department"
@@ -350,15 +435,22 @@ export default function UserManagement() {
                     onChange={handleUserDepartment}
                   >
                     {userDepartmentOptions.map((userDep, index) => (
-                      <MenuItem key={index} value={userDep}> {userDep}</MenuItem>
+                      <MenuItem key={index} value={userDep}>
+                        {" "}
+                        {userDep}
+                      </MenuItem>
                     ))}
-
                   </Select>
                 </FormControl>
 
                 <FormControl
                   fullWidth
-                  sx={{ marginBottom: "16px", marginLeft: "10px", borderRadius: 3 }}>
+                  sx={{
+                    marginBottom: "16px",
+                    marginLeft: "10px",
+                    borderRadius: 3,
+                  }}
+                >
                   <InputLabel> Roles </InputLabel>
                   <Select
                     label="Role"
@@ -366,16 +458,22 @@ export default function UserManagement() {
                     onChange={handleChangeRole}
                   >
                     {userRoleOptions.map((role, index) => (
-                      <MenuItem key={index} value={role}> {role}</MenuItem>
+                      <MenuItem key={index} value={role}>
+                        {" "}
+                        {role}
+                      </MenuItem>
                     ))}
-
                   </Select>
                 </FormControl>
 
-
                 <FormControl
                   fullWidth
-                  sx={{ marginBottom: "16px", marginLeft: "10px", borderRadius: 3 }}>
+                  sx={{
+                    marginBottom: "16px",
+                    marginLeft: "10px",
+                    borderRadius: 3,
+                  }}
+                >
                   <InputLabel> User Status </InputLabel>
                   <Select
                     label="Status"
@@ -383,18 +481,22 @@ export default function UserManagement() {
                     onChange={handleUserStatus}
                   >
                     {userStatusOptions.map((userStatus, index) => (
-                      <MenuItem key={index} value={userStatus}> {userStatus}</MenuItem>
+                      <MenuItem key={index} value={userStatus}>
+                        {" "}
+                        {userStatus}
+                      </MenuItem>
                     ))}
-
                   </Select>
                 </FormControl>
-
               </DialogContent>
 
               <DialogActions>
-
                 <Button
-                  sx={{ marginBottom: "16px", marginLeft: "10px", borderRadius: 3 }}
+                  sx={{
+                    marginBottom: "16px",
+                    marginLeft: "10px",
+                    borderRadius: 3,
+                  }}
                   variant="contained"
                   color="primary"
                   onClick={onCancelAddUserButton}
@@ -403,7 +505,11 @@ export default function UserManagement() {
                 </Button>
 
                 <Button
-                  sx={{ marginBottom: "16px", marginLeft: "10px", borderRadius: 3 }}
+                  sx={{
+                    marginBottom: "16px",
+                    marginLeft: "10px",
+                    borderRadius: 3,
+                  }}
                   variant="contained"
                   color="secondary"
                   type="submit"
@@ -412,19 +518,29 @@ export default function UserManagement() {
                 >
                   Submit
                 </Button>
-
               </DialogActions>
             </Dialog>
           )}
 
-          <Paper sx={{ width: '100%', mb: 2 }}>
-
+          <Paper sx={{ width: "100%", mb: 2 }}>
             <TableContainer>
-              <Table sx={{ minWidth: 750 }} size='small' aria-label="admin-table">
-                <TableHead sx={{ backgroundColor: '#227DD4', fontWeight: 'bold' }}>
+              <Table
+                sx={{ minWidth: 750 }}
+                size="small"
+                aria-label="admin-table"
+              >
+                <TableHead
+                  sx={{ backgroundColor: "#227DD4", fontWeight: "bold" }}
+                >
                   <TableRow>
                     {tableHeadersText.map((header, index) => (
-                      <TableCell key={index} align="center" style={{ color: 'white' }}> {header}
+                      <TableCell
+                        key={index}
+                        align="center"
+                        style={{ color: "white" }}
+                      >
+                        {" "}
+                        {header}
                       </TableCell>
                     ))}
                   </TableRow>
@@ -433,7 +549,7 @@ export default function UserManagement() {
                 <TableBody>
                   {usersList.map((item, index) => (
                     <TableRow key={index} align="center">
-                      <TableCell align="center" component="th" scope="row" >
+                      <TableCell align="center" component="th" scope="row">
                         {index + 1}
                       </TableCell>
 
@@ -444,18 +560,22 @@ export default function UserManagement() {
                       <TableCell align="center">{item.user_status}</TableCell>
 
                       <TableCell align="center">
-                        <IconButton variant='outlined' size='small'
+                        <IconButton
+                          variant="outlined"
+                          size="small"
                           onClick={() => editUserButton(index, item.id)}
                         >
-                          <Tooltip title='Edit' arrow>
+                          <Tooltip title="Edit" arrow>
                             <EditIcon fontSize="inherit" />
                           </Tooltip>
                         </IconButton>
 
-                        <IconButton variant='outlined' size='small'
+                        <IconButton
+                          variant="outlined"
+                          size="small"
                           onClick={() => deleteUserButton(item.id)}
                         >
-                          <Tooltip title='Delete' arrow>
+                          <Tooltip title="Delete" arrow>
                             <DeleteIcon fontSize="inherit" />
                           </Tooltip>
                         </IconButton>
@@ -467,11 +587,9 @@ export default function UserManagement() {
                             <PasswordIcon fontSize="inherit" />
                           </Tooltip>
                         </IconButton> */}
-
                       </TableCell>
                     </TableRow>
                   ))}
-
                 </TableBody>
               </Table>
             </TableContainer>
@@ -479,5 +597,5 @@ export default function UserManagement() {
         </Box>
       )}
     </>
-  )
+  );
 }

@@ -71,8 +71,6 @@ export default function Slotbooking() {
 
   const [selectedEvent, setSelectedEvent] = useState(null);
 
-  const [bookingDetails, setBookingDetails] = useState(null);
-
   const [editId, setEditId] = useState("");
 
   const { id } = useParams("id");
@@ -117,9 +115,7 @@ export default function Slotbooking() {
     control,
     formState: { values, errors },
     setValue,
-    getValues,
     reset,
-    watch,
   } = useForm({
     defaultValues: defaultValues,
     resolver: yupResolver(slotBookingFormSchema),
@@ -271,11 +267,6 @@ export default function Slotbooking() {
     } catch (error) {
       console.error("Failed to book the slot", error);
     }
-
-    // if (!editId) {
-    //     reset()
-    //     handleCloseDialog();
-    // }
   };
 
   //////////////////////////////////////////////////////////////////////////////////////
