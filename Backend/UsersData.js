@@ -221,7 +221,7 @@ function usersDataAPIs(app) {
   // Fetch testing department users:
   app.get("/api/getTestingUsers", (req, res) => {
     const testingUsersList =
-      "SELECT name FROM labbee_users WHERE department LIKE '%Testing%' ";
+      "SELECT name FROM labbee_users WHERE department LIKE '%TS1 Testing%' ";
     db.query(testingUsersList, (error, result) => {
       res.send(result);
     });

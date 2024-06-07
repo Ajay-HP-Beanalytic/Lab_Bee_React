@@ -1,458 +1,593 @@
-import { Autocomplete, Box, Button, Dialog, DialogActions, DialogContent, DialogTitle, Divider, FormControl, IconButton, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TablePagination, TableRow, TextField, Tooltip, Typography } from '@mui/material'
-import React, { useState, useRef, useEffect } from 'react'
-import { toast } from 'react-toastify'
+import {
+  Autocomplete,
+  Box,
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  Divider,
+  FormControl,
+  Grid,
+  IconButton,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TablePagination,
+  TableRow,
+  TextField,
+  Tooltip,
+  Typography,
+} from "@mui/material";
+import React, { useState, useRef, useEffect } from "react";
+import { toast } from "react-toastify";
 
-import axios, { Axios } from 'axios'
-import * as XLSX from 'xlsx';
+import axios, { Axios } from "axios";
+import * as XLSX from "xlsx";
 
-import AddIcon from '@mui/icons-material/Add';
-import UploadFileIcon from '@mui/icons-material/UploadFile';
-import EditIcon from '@mui/icons-material/Edit';
-import DeleteIcon from '@mui/icons-material/Delete';
+import AddIcon from "@mui/icons-material/Add";
+import UploadFileIcon from "@mui/icons-material/UploadFile";
+import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
 
-import { serverBaseAddress } from '../Pages/APIPage'
+import { serverBaseAddress } from "../Pages/APIPage";
+import SearchBar from "../common/SearchBar";
+import ConfirmationDialog from "../common/ConfirmationDialog";
+import EmptyCard from "../common/EmptyCard";
+import { DataGrid } from "@mui/x-data-grid";
 
 export default function AddCustomerDetails() {
+  const [companyName, setCompanyName] = useState("");
+  const [toCompanyAddress, setToCompanyAddress] = useState("");
+  const [kindAttention, setKindAttention] = useState("");
+  const [customerId, setCustomerId] = useState("");
+  const [customerReferance, setCustomerreferance] = useState("Email");
 
-    const [companyName, setCompanyName] = useState('')
-    const [toCompanyAddress, setToCompanyAddress] = useState('')
-    const [kindAttention, setKindAttention] = useState('')
-    const [customerId, setCustomerId] = useState('')
-    const [customerReferance, setCustomerreferance] = useState('Email')
+  const [editCustomerDetailsFields, setEditCustomerDetailsFields] =
+    useState(false);
+  const [companiesList, setCompaniesList] = useState([]);
+  const [uploadedFileName, setUploadedFileName] = useState(null); // Define the uploadedFileName state variable
+  const fileInputRef = useRef(null); // Declare fileInputRef
+  const [refresh, setRefresh] = useState(false);
+  const [editId, setEditId] = useState("");
+  const [excelDataAdded, setExcelDataAdded] = useState(false);
 
+  const [filteredCompaniesList, setFilteredCompaniesList] =
+    useState(companiesList);
+  const [
+    searchInputTextOfCustomerDetails,
+    setSearchInputTextOfCustomerDetails,
+  ] = useState("");
+  const [openDeleteCustomerDetailDialog, setOpenDeleteCustomerDetailDialog] =
+    useState(false);
+  const [deleteItemId, setDeleteItemId] = useState(null);
 
-    const [editCustomerDetailsFields, setEditCustomerDetailsFields] = useState(false);
-    const [companiesList, setCompaniesList] = useState([])
-    const [uploadedFileName, setUploadedFileName] = useState(null); // Define the uploadedFileName state variable
-    const fileInputRef = useRef(null);  // Declare fileInputRef
-    const [refresh, setRefresh] = useState(false)
-    const [editId, setEditId] = useState('')
+  const [editCompanyDetailsFields, setEditCompanyDetailsFields] =
+    useState(false);
 
-    const [operationType, setOperationType] = useState("add");
+  const [editFields, setEditFields] = useState(false);
 
+  // Function to submit the customer details:
+  const onSubmitCustomerDetailsButton = async (e) => {
+    e.preventDefault();
 
-    // Function to submit the customer details:
-    const onSubmitCustomerDetailsButton = async (e) => {
-        e.preventDefault()
-
-        if (!companyName || !toCompanyAddress || !kindAttention || !customerId || !customerReferance) {
-            toast.error("Please enter all the fields..!");
-            return;
-        }
-
-        try {
-            const addCompanyDetilsRequest = await axios.post(`${serverBaseAddress}/api/addNewCompanyDetails/` + editId, {
-                companyName, toCompanyAddress, kindAttention, customerId, customerReferance
-            });
-
-            if (addCompanyDetilsRequest.status === 200) {
-                toast.success('Company data added succesfully')
-                setRefresh(!refresh)
-            } else {
-                toast.error("An error occurred while saving the data.");
-            }
-        } catch (error) {
-            console.error("Error details:", error); // Log error details
-            if (error.response && error.response.status === 400) {
-                toast.error('Database error')
-            } else {
-                toast.error('An error occurred while saving the data')
-            }
-        }
-
-        onCancelCustomerDetailsButton();
+    if (
+      !companyName ||
+      !toCompanyAddress ||
+      !kindAttention ||
+      !customerId ||
+      !customerReferance
+    ) {
+      toast.error("Please enter all the fields..!");
+      return;
     }
 
-
-    // Fetch the data from the table using the useEffect hook:
-    useEffect(() => {
-
-        const fetchCompaniesDataList = async () => {
-            try {
-                const companiesURL = await axios.get(`${serverBaseAddress}/api/getCompanyDetails`);
-                setCompaniesList(companiesURL.data)
-            } catch (error) {
-                console.error('Failed to fetch the data', error);
-            }
+    try {
+      const addCompanyDetilsRequest = await axios.post(
+        `${serverBaseAddress}/api/addNewCompanyDetails/` + editId,
+        {
+          companyName,
+          toCompanyAddress,
+          kindAttention,
+          customerId,
+          customerReferance,
         }
-        fetchCompaniesDataList()
-    }, [refresh])
+      );
 
-
-    function onCancelCustomerDetailsButton() {
-        setEditCustomerDetailsFields(false)
-        setCompanyName('')
-        setToCompanyAddress('')
-        setKindAttention('')
-        setCustomerId('')
-        setCustomerreferance('')
-        setOperationType("add");
+      if (addCompanyDetilsRequest.status === 200) {
+        toast.success("Company data added succesfully");
+        setRefresh(!refresh);
+      } else {
+        toast.error("An error occurred while saving the data.");
+      }
+    } catch (error) {
+      console.error("Error details:", error); // Log error details
+      if (error.response && error.response.status === 400) {
+        toast.error("Database error");
+      } else {
+        toast.error("An error occurred while saving the data");
+      }
     }
 
+    onCancelCustomerDetailsButton();
+  };
 
-    // Function to add new customer details
-    const addNewCustomerDetailsButton = (customer) => {
-        if (customer) {
-            setOperationType("edit");
-        } else {
-            setOperationType("add");
-        }
-
-        setEditCustomerDetailsFields(true);
+  // Fetch the data from the table using the useEffect hook:
+  useEffect(() => {
+    const fetchCompaniesDataList = async () => {
+      try {
+        const companiesURL = await axios.get(
+          `${serverBaseAddress}/api/getCompanyDetails`
+        );
+        setCompaniesList(companiesURL.data);
+        setFilteredCompaniesList(companiesURL.data);
+      } catch (error) {
+        console.error("Failed to fetch the data", error);
+      }
     };
+    fetchCompaniesDataList();
+  }, [refresh, excelDataAdded, deleteItemId]);
 
+  function onCancelCustomerDetailsButton() {
+    setCompanyName("");
+    setToCompanyAddress("");
+    setKindAttention("");
+    setCustomerId("");
+    setCustomerreferance("");
+    setEditId("");
+    setEditFields(true);
+    setEditCustomerDetailsFields(false);
+  }
 
-    // To upload the data from the excel sheet:
-    const handleCustomerFileChange = async (e) => {
-        e.preventDefault();
+  // Function to add new customer details
+  const addNewCustomerDetailsButton = (customer) => {
+    setEditCustomerDetailsFields(true);
+  };
 
-        const file = e.target.files[0];
+  // To upload the data from the excel sheet:
+  const handleCustomerFileChange = async (e) => {
+    e.preventDefault();
 
-        setUploadedFileName(file.name); // Update the uploadedFileName state variable
+    const file = e.target.files[0];
 
-        if (file) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                const data = e.target.result;
-                const workbook = XLSX.read(data, { type: 'binary' });
+    setUploadedFileName(file.name); // Update the uploadedFileName state variable
 
-                const sheetName = workbook.SheetNames[0];
-                const worksheet = workbook.Sheets[sheetName];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const data = e.target.result;
+        const workbook = XLSX.read(data, { type: "binary" });
 
-                // Convert worksheet to an array of arrays & Filter out the first row (headers) from the dataArr
-                const dataArr = XLSX.utils.sheet_to_json(worksheet, { header: 1 }).slice(1);
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
 
-                // Check if the dataArr has at least one row with two columns (excluding headers)
-                if (dataArr.length > 1 && dataArr[0].length === 5) {
+        // Convert worksheet to an array of arrays & Filter out the first row (headers) from the dataArr
+        const dataArr = XLSX.utils
+          .sheet_to_json(worksheet, { header: 1 })
+          .slice(1);
 
-                    if (dataArr.length > 0) {
-                        dataArr.forEach(async (row) => {
-                            const [companyName, toCompanyAddress, kindAttention, customerId, customerReferance] = row;
+        // Check if the dataArr has at least one row with two columns (excluding headers)
+        if (dataArr.length > 1 && dataArr[0].length === 5) {
+          if (dataArr.length > 0) {
+            dataArr.forEach(async (row) => {
+              const [
+                companyName,
+                toCompanyAddress,
+                kindAttention,
+                customerId,
+                customerReferance,
+              ] = row;
 
-                            try {
-                                const addCompanyRequest = await axios.post(`${serverBaseAddress}/api/addNewCompanyDetails`, {
-                                    companyName, toCompanyAddress, kindAttention, customerId, customerReferance
-                                });
+              try {
+                const addCompanyRequest = await axios.post(
+                  `${serverBaseAddress}/api/addNewCompanyDetails`,
+                  {
+                    companyName,
+                    toCompanyAddress,
+                    kindAttention,
+                    customerId,
+                    customerReferance,
+                  }
+                );
 
-                                if (addCompanyRequest.status === 200) {
-                                    setRefresh(!refresh)
-                                    /* setModulesList([
+                if (addCompanyRequest.status === 200) {
+                  setRefresh(!refresh);
+                  /* setModulesList([
                                         ...modulesList,
                                         ...dataArr.map(([moduleName, moduleDescription]) => ({
                                             module_name: moduleName,
                                             module_description: moduleDescription,
                                         })),
                                     ]); */
-                                } else {
-                                    toast.error("An error occurred while saving the data.");
-                                }
-                            } catch (error) {
-                                console.error("Error details:", error);
-                                if (error.response && error.response.status === 400) {
-                                    toast.error("Database Error");
-                                } else {
-                                    toast.error("An error occurred while saving the data.");
-                                }
-                            }
-                        });
-
-                        setRefresh(!refresh)
-                        toast.success("Data Added Successfully");
-                    } else {
-                        toast.error("All rows are empty or invalid.");
-                    }
                 } else {
-                    toast.error("The Excel file must have exactly 5 columns (excluding headers).");
+                  toast.error("An error occurred while saving the data.");
                 }
-            };
-            reader.readAsArrayBuffer(file);
-        }
-    }
+              } catch (error) {
+                console.error("Error details:", error);
+                if (error.response && error.response.status === 400) {
+                  toast.error("Database Error");
+                } else {
+                  toast.error("An error occurred while saving the data.");
+                }
+              }
+            });
 
-
-    // Function to edit the company data:
-    const editCompanyData = (index, id) => {
-
-        // Calculate the actual index in the dataset based on the current page and rows per page
-        const actualIndex = index + page * rowsPerPage;
-        const rowData = filteredCompaniesList[actualIndex];
-
-        //const rowData = companiesList[index]
-
-        setEditId(id)
-        setEditCustomerDetailsFields(true)
-        setCompanyName(rowData.company_name)
-        setToCompanyAddress(rowData.company_address)
-        setKindAttention(rowData.contact_person)
-        setCustomerId(rowData.company_id)
-        setCustomerreferance(rowData.customer_referance)
-    }
-
-
-    //Function to delete the customer data:
-    function deleteCompanyData(id) {
-
-        const confirmDelete = window.confirm('Are you sure you want to delete this company data?');
-
-        if (confirmDelete) {
-            fetch(`${serverBaseAddress}/api/getCompanyDetails/${id}`, { method: 'DELETE', })
-                .then(res => {
-                    if (res.status === 200) {
-                        const updatedCompaniesList = companiesList.filter((item) => item.id !== id);
-                        setCompaniesList(updatedCompaniesList);
-                        toast.success("Customer Data Deleted Successfully");
-                    } else {
-                        toast.error("An error occurred while deleting.");
-                    }
-                })
-                .catch((error) => {
-                    toast.error("An error occurred while deleting.");
-                })
+            setRefresh(!refresh);
+            setExcelDataAdded(true);
+            toast.success("Data Added Successfully");
+          } else {
+            toast.error("All rows are empty or invalid.");
+          }
         } else {
-            onCancelCustomerDetailsButton();
+          toast.error(
+            "The Excel file must have exactly 5 columns (excluding headers)."
+          );
         }
+      };
+      reader.readAsArrayBuffer(file);
     }
+  };
 
+  // Open delete chamber confirmation dialog
+  const handleOpenDeleteCustomerDetailDialog = (id) => {
+    setDeleteItemId(id);
+    setOpenDeleteCustomerDetailDialog(true);
+  };
 
-    // To filter out the table as per the input
-    const [page, setPage] = useState(0);                          //To setup pages of the table
+  // Close delete chamber confirmation dialog
+  const handleCloseCustomerDetailDialog = () => {
+    setDeleteItemId(null);
+    setOpenDeleteCustomerDetailDialog(false);
+  };
 
-    const [rowsPerPage, setRowsPerPage] = useState(10);            //To show the number of rows per page
+  //Function to use the searchbar filter
+  const onChangeOfSearchInputOfCustomerDetails = (e) => {
+    const searchText = e.target.value;
+    setSearchInputTextOfCustomerDetails(searchText);
+    filterDataGridTable(searchText);
+  };
 
-    const [filterRow, setFilterRow] = useState([]);               //To filter out the table based on search
+  //Function to filter the table
+  const filterDataGridTable = (searchValue) => {
+    const filtered = companiesList.filter((row) => {
+      return Object.values(row).some((value) =>
+        value.toString().toLowerCase().includes(searchValue.toLowerCase())
+      );
+    });
+    setFilteredCompaniesList(filtered);
+  };
 
-    const [filterText, setFilterText] = useState('');
+  //Function to clear the searchbar filter
+  const onClearSearchInputOfCustomerDetailsl = () => {
+    setSearchInputTextOfCustomerDetails("");
+    setFilteredCompaniesList(companiesList);
+  };
 
+  //  Function to edit the company data:
+  const editSelectedRow = (row) => {
+    setEditFields(true);
+    setEditId(row.id);
+    setEditCustomerDetailsFields(true);
+    setCompanyName(row.company_name);
+    setToCompanyAddress(row.company_address);
+    setKindAttention(row.contact_person);
+    setCustomerId(row.company_id);
+    setCustomerreferance(row.customer_referance);
+  };
 
-    const handleChangePage = (event, newPage) => {
-        setPage(newPage);
-    };
+  // Function to delete the particular chamber data from the table:
+  const deleteSelectedCustomerDetails = () => {
+    fetch(`${serverBaseAddress}/api/getCompanyDetails/${deleteItemId}`, {
+      method: "DELETE",
+    })
+      .then((res) => {
+        if (res.status === 200) {
+          const updatedCompaniesList = companiesList.filter(
+            (item) => item.id !== deleteItemId
+          );
+          setCompaniesList(updatedCompaniesList);
+          toast.success("Customer Data Deleted Successfully");
+          handleCloseCustomerDetailDialog();
+        } else {
+          toast.error("An error occurred while deleting.");
+        }
+      })
+      .catch((error) => {
+        toast.error("An error occurred while deleting.");
+      });
+  };
 
-    const handleRowsPerPage = (event) => {
-        setRowsPerPage(parseInt(event.target.value, 10));
-        setPage(0);
-    };
-
-    // To filter out the row:
-    const filteredCompaniesList = filterRow.length > 0 ? filterRow : companiesList;
-
-
-    return (
+  const columns = [
+    {
+      field: "id",
+      headerName: "SL No",
+      width: 60,
+      align: "center",
+      headerAlign: "center",
+      headerClassName: "custom-header-color",
+    },
+    {
+      field: "company_name",
+      headerName: "Company Name",
+      width: 200,
+      align: "center",
+      headerAlign: "center",
+      headerClassName: "custom-header-color",
+    },
+    {
+      field: "company_address",
+      headerName: "Company Address",
+      width: 200,
+      align: "center",
+      headerAlign: "center",
+      headerClassName: "custom-header-color",
+    },
+    {
+      field: "contact_person",
+      headerName: "Contact Person",
+      width: 150,
+      align: "center",
+      headerAlign: "center",
+      headerClassName: "custom-header-color",
+    },
+    {
+      field: "company_id",
+      headerName: "Company ID",
+      width: 150,
+      align: "center",
+      headerAlign: "center",
+      headerClassName: "custom-header-color",
+    },
+    {
+      field: "customer_referance",
+      headerName: "Customer Referance",
+      width: 150,
+      align: "center",
+      headerAlign: "center",
+      headerClassName: "custom-header-color",
+    },
+    {
+      field: "actions",
+      headerName: "Actions",
+      width: 100,
+      align: "center",
+      headerAlign: "center",
+      headerClassName: "custom-header-color",
+      renderCell: (params) => (
         <div>
-            <Box>
-
-                <Divider>
-                    <Typography variant='h4' sx={{ color: '#003366' }}> Add Company Detials </Typography>
-                </Divider>
-
-                {editCustomerDetailsFields && (
-                    <Dialog
-                        open={editCustomerDetailsFields}
-                        onClose={onCancelCustomerDetailsButton}
-                        aria-labelledby="customer-details-dialog"
-                    >
-                        {/* Make this as dynamic */}
-                        <DialogTitle id="customer-details-dialog">
-                            {operationType === "edit" ? "Edit Customer Details" : "Add Customer Details"}
-                        </DialogTitle>
-
-
-                        <DialogContent>
-                            <TextField
-                                sx={{ marginBottom: "16px", marginLeft: "10px", borderRadius: 3 }}
-                                value={companyName}
-                                onChange={(e) => setCompanyName(e.target.value)}
-                                label="Company Name"
-                                margin="normal"
-                                fullWidth
-                                variant="outlined"
-                                autoComplete="on"
-                            />
-
-                            <TextField
-                                sx={{ marginBottom: "16px", marginLeft: "10px", borderRadius: 3 }}
-                                value={toCompanyAddress}
-                                onChange={(e) => setToCompanyAddress(e.target.value)}
-                                label="Company Address"
-                                margin="normal"
-                                fullWidth
-                                multiline={true}
-                                rows={4}
-                                variant="outlined"
-                                autoComplete="on"
-                            />
-
-                            <TextField
-                                sx={{ marginBottom: "16px", marginLeft: "10px", borderRadius: 3 }}
-                                value={kindAttention}
-                                onChange={(e) => setKindAttention(e.target.value)}
-                                label="Contact Person"
-                                margin="normal"
-                                fullWidth
-                                variant="outlined"
-                                autoComplete="on"
-                            />
-
-                            <TextField
-                                sx={{ marginBottom: "16px", marginLeft: "10px", borderRadius: 3 }}
-                                value={customerId}
-                                onChange={(e) => setCustomerId(e.target.value)}
-                                label="Company Code"
-                                margin="normal"
-                                fullWidth
-                                variant="outlined"
-                                autoComplete="on"
-                            />
-
-                            <TextField
-                                sx={{ marginBottom: "16px", marginLeft: "10px", borderRadius: 3 }}
-                                value={customerReferance}
-                                onChange={(e) => setCustomerreferance(e.target.value)}
-                                label="Customer Referance"
-                                margin="normal"
-                                fullWidth
-                                variant="outlined"
-                                autoComplete="on"
-                            />
-                        </DialogContent>
-
-                        <DialogActions>
-                            <Button
-                                sx={{ marginBottom: "16px", marginLeft: "10px", borderRadius: 3 }}
-                                variant="contained"
-                                color="secondary"
-                                type="submit"
-                                onClick={onSubmitCustomerDetailsButton}
-                            >
-                                Submit
-                            </Button>
-
-                            <Button
-                                sx={{ marginBottom: "16px", marginLeft: "10px", borderRadius: 3 }}
-                                variant="contained"
-                                color="primary"
-                                onClick={onCancelCustomerDetailsButton}
-                            >
-                                Cancel
-                            </Button>
-                        </DialogActions>
-                    </Dialog>
-                )}
-
-
-                {/* Box to keep the searchbar and the action buttons in a single row */}
-                <Box align='right' >
-
-                    {!editCustomerDetailsFields && (
-                        <IconButton variant="contained" size="large" onClick={addNewCustomerDetailsButton}>
-                            <Tooltip title="Add customer data" arrow type="submit">
-                                <div>
-                                    <AddIcon fontSize="inherit" />
-                                </div>
-                            </Tooltip>
-                        </IconButton>
-                    )}
-
-                    {!editCustomerDetailsFields && (
-                        <>
-                            <input
-                                type="file"
-                                accept=".xls, .xlsx"  // Limit file selection to Excel files
-                                onChange={handleCustomerFileChange}
-                                style={{ display: 'none' }}  // Hide the input element
-                                ref={(fileInputRef)}
-                            />
-
-                            <IconButton variant='contained' size="large" onClick={() => fileInputRef.current.click()}>
-                                <Tooltip title="Upload data using Excel" arrow>
-                                    <div>
-                                        <UploadFileIcon fontSize="inherit" />
-                                    </div>
-                                </Tooltip>
-                            </IconButton>
-                        </>
-                    )}
-
-                    <FormControl sx={{ width: "25%" }}>
-                        <Autocomplete
-                            disablePortal
-                            onChange={(event, value) => { setFilterRow(value ? [value] : []); }}
-                            getOptionLabel={(option) => option.company_name || ''}
-                            options={companiesList}
-                            renderInput={(params) => (
-                                <TextField
-                                    {...params}
-                                    label="Filter the table"
-                                    variant="outlined"
-                                />
-                            )}
-                        />
-                    </FormControl>
-                </Box>
-
-                <br />
-
-                <TableContainer component={Paper}>
-                    <Table sx={{ minWidth: 650 }} aria-label="simple table" size="small">
-                        <TableHead sx={{ backgroundColor: '#227DD4', fontWeight: 'bold' }}>
-                            <TableRow>
-                                <TableCell> Sl No</TableCell>
-                                <TableCell> Company Name</TableCell>
-                                <TableCell> Company Address</TableCell>
-                                <TableCell> Contact Person</TableCell>
-                                <TableCell> Company ID</TableCell>
-                                <TableCell> Customer Referance</TableCell>
-                                <TableCell align="center">Action</TableCell>
-                            </TableRow>
-                        </TableHead>
-
-                        <TableBody>
-                            {/* {companiesList.map((item, index) => ( */}
-                            {filteredCompaniesList.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((item, index) => (
-                                <TableRow key={index} align='center'>
-
-                                    <TableCell component="th" scope="row">
-                                        {index + 1}
-                                    </TableCell>
-
-                                    <TableCell>{item.company_name}</TableCell>
-                                    <TableCell>{item.company_address}</TableCell>
-                                    <TableCell>{item.contact_person}</TableCell>
-                                    <TableCell>{item.company_id}</TableCell>
-                                    <TableCell>{item.customer_referance}</TableCell>
-                                    <TableCell align="center">
-                                        <IconButton variant='outlined' size='small' onClick={() => editCompanyData(index, item.id)}>
-                                            <Tooltip title='Edit' arrow>
-                                                <EditIcon fontSize="inherit" />
-                                            </Tooltip>
-                                        </IconButton>
-
-
-                                        <IconButton variant='outlined' size='small' onClick={() => deleteCompanyData(item.id)}>
-                                            <Tooltip title='Delete' arrow>
-                                                <DeleteIcon fontSize="inherit" />
-                                            </Tooltip>
-                                        </IconButton>
-
-                                    </TableCell>
-
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </TableContainer>
-
-                <TablePagination
-                    rowsPerPageOptions={[10, 25, 50]}
-                    component="div"
-                    count={filteredCompaniesList.length}
-                    rowsPerPage={rowsPerPage}
-                    page={page}
-                    onPageChange={handleChangePage}
-                    onRowsPerPageChange={handleRowsPerPage}
-                />
-
-            </Box>
+          <IconButton onClick={() => editSelectedRow(params.row)}>
+            <EditIcon />
+          </IconButton>
+          <IconButton
+            onClick={() => handleOpenDeleteCustomerDetailDialog(params.row.id)}
+          >
+            <DeleteIcon />
+          </IconButton>
         </div>
-    )
+      ),
+    },
+  ];
+
+  return (
+    <div>
+      <Box>
+        <Divider>
+          <Typography variant="h4" sx={{ color: "#003366" }}>
+            {" "}
+            Add Company Detials{" "}
+          </Typography>
+        </Divider>
+
+        {editCustomerDetailsFields && (
+          <Dialog
+            open={editCustomerDetailsFields}
+            onClose={onCancelCustomerDetailsButton}
+            aria-labelledby="customer-details-dialog"
+          >
+            <DialogTitle id="customer-details-dialog">
+              {editFields ? "Edit Customer Details" : "Add Customer Details"}
+            </DialogTitle>
+
+            <DialogContent>
+              <TextField
+                sx={{
+                  marginBottom: "16px",
+                  marginLeft: "10px",
+                  borderRadius: 3,
+                }}
+                value={companyName}
+                onChange={(e) => setCompanyName(e.target.value)}
+                label="Company Name"
+                margin="normal"
+                fullWidth
+                variant="outlined"
+                autoComplete="on"
+              />
+
+              <TextField
+                sx={{
+                  marginBottom: "16px",
+                  marginLeft: "10px",
+                  borderRadius: 3,
+                }}
+                value={toCompanyAddress}
+                onChange={(e) => setToCompanyAddress(e.target.value)}
+                label="Company Address"
+                margin="normal"
+                fullWidth
+                multiline={true}
+                rows={4}
+                variant="outlined"
+                autoComplete="on"
+              />
+
+              <TextField
+                sx={{
+                  marginBottom: "16px",
+                  marginLeft: "10px",
+                  borderRadius: 3,
+                }}
+                value={kindAttention}
+                onChange={(e) => setKindAttention(e.target.value)}
+                label="Contact Person"
+                margin="normal"
+                fullWidth
+                variant="outlined"
+                autoComplete="on"
+              />
+
+              <TextField
+                sx={{
+                  marginBottom: "16px",
+                  marginLeft: "10px",
+                  borderRadius: 3,
+                }}
+                value={customerId}
+                onChange={(e) => setCustomerId(e.target.value)}
+                label="Company Code"
+                margin="normal"
+                fullWidth
+                variant="outlined"
+                autoComplete="on"
+              />
+
+              <TextField
+                sx={{
+                  marginBottom: "16px",
+                  marginLeft: "10px",
+                  borderRadius: 3,
+                }}
+                value={customerReferance}
+                onChange={(e) => setCustomerreferance(e.target.value)}
+                label="Customer Referance"
+                margin="normal"
+                fullWidth
+                variant="outlined"
+                autoComplete="on"
+              />
+            </DialogContent>
+
+            <DialogActions>
+              <Button
+                sx={{
+                  marginBottom: "16px",
+                  marginLeft: "10px",
+                  borderRadius: 3,
+                }}
+                variant="contained"
+                color="secondary"
+                type="submit"
+                onClick={onSubmitCustomerDetailsButton}
+              >
+                Submit
+              </Button>
+
+              <Button
+                sx={{
+                  marginBottom: "16px",
+                  marginLeft: "10px",
+                  borderRadius: 3,
+                }}
+                variant="contained"
+                color="primary"
+                onClick={onCancelCustomerDetailsButton}
+              >
+                Cancel
+              </Button>
+            </DialogActions>
+          </Dialog>
+        )}
+
+        <Box sx={{ mx: 2, mb: 2, mt: 4 }}>
+          <Grid
+            container
+            spacing={2}
+            alignItems="center"
+            justifyContent="flex-end"
+          >
+            {!editCustomerDetailsFields && (
+              <>
+                <Grid item>
+                  <IconButton variant="contained" size="large">
+                    <Tooltip title="Add Chamber" arrow type="submit">
+                      <AddIcon
+                        fontSize="inherit"
+                        onClick={addNewCustomerDetailsButton}
+                      />
+                    </Tooltip>
+                  </IconButton>
+                </Grid>
+
+                <Grid item>
+                  <input
+                    type="file"
+                    accept=".xls, .xlsx" // Limit file selection to Excel files
+                    onChange={handleCustomerFileChange}
+                    style={{ display: "none" }} // Hide the input element
+                    ref={fileInputRef}
+                  />
+                  <IconButton variant="contained" size="large">
+                    <Tooltip title="Upload Excel" arrow>
+                      <UploadFileIcon
+                        fontSize="inherit"
+                        onClick={() => fileInputRef.current.click()}
+                      />
+                    </Tooltip>
+                  </IconButton>
+                </Grid>
+              </>
+            )}
+
+            <Grid item xs={12} md={4} container justifyContent="flex-end">
+              <SearchBar
+                placeholder="Search"
+                searchInputText={searchInputTextOfCustomerDetails}
+                onChangeOfSearchInput={onChangeOfSearchInputOfCustomerDetails}
+                onClearSearchInput={onClearSearchInputOfCustomerDetailsl}
+              />
+            </Grid>
+          </Grid>
+        </Box>
+
+        <ConfirmationDialog
+          open={openDeleteCustomerDetailDialog}
+          onClose={handleCloseCustomerDetailDialog}
+          onConfirm={deleteSelectedCustomerDetails}
+          title="Delete Confirmation"
+          contentText="Are you sure you want to delete this customer data?"
+          confirmButtonText="Delete"
+          cancelButtonText="Cancel"
+        />
+
+        {filteredCompaniesList && filteredCompaniesList.length === 0 ? (
+          <EmptyCard message="Company Data not found" />
+        ) : (
+          <Box
+            sx={{
+              height: 500,
+              width: "100%",
+              "& .custom-header-color": {
+                backgroundColor: "#0f6675",
+                color: "whitesmoke",
+                fontWeight: "bold",
+                fontSize: "15px",
+              },
+              mt: 2,
+              mb: 2,
+            }}
+          >
+            <DataGrid
+              rows={filteredCompaniesList}
+              columns={columns}
+              pageSize={5}
+              rowsPerPageOptions={[5, 10, 20]}
+            />
+          </Box>
+        )}
+      </Box>
+    </div>
+  );
 }

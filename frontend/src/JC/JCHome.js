@@ -227,7 +227,6 @@ export default function JCHome() {
       headerAlign: "center",
       headerClassName: "custom-header-color",
     },
-    // { field: 'jc_category', headerName: 'JC Category', width: 200, align: 'center', headerAlign: 'center', headerClassName: 'custom-header-color' },
     {
       field: "company_name",
       headerName: "Company",
@@ -271,7 +270,6 @@ export default function JCHome() {
       headerAlign: "center",
       headerClassName: "custom-header-color",
     },
-    // { field: 'jc_category', headerName: 'JC Category', width: 200, align: 'center', headerAlign: 'center', headerClassName: 'custom-header-color' },
     {
       field: "company_name",
       headerName: "Company",
@@ -512,8 +510,9 @@ export default function JCHome() {
         </Grid>
       </Grid>
 
-      {(loggedInUserDepartment === "Testing" ||
-        loggedInUserDepartment === "All") && (
+      {(loggedInUserDepartment === "TS1 Testing" ||
+        loggedInUserDepartment === "Administrator" ||
+        loggedInUserDepartment === "Accounts") && (
         <>
           {filteredJcData && filteredJcData.length === 0 ? (
             <EmptyCard message="No JC Found" />
@@ -545,7 +544,8 @@ export default function JCHome() {
       )}
 
       {(loggedInUserDepartment === "Reliability" ||
-        loggedInUserDepartment === "All") && (
+        loggedInUserDepartment === "Administrator" ||
+        loggedInUserDepartment === "Accounts") && (
         <>
           <Grid
             item
