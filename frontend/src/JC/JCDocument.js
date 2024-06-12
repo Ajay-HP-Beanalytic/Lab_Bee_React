@@ -1,34 +1,28 @@
+import Docxtemplater from "docxtemplater";
+import PizZip from "pizzip";
+import PizZipUtils from "pizzip/utils/index.js";
+import { saveAs } from "file-saver";
+import JCTemplate from "../templates/JobcardTemplate.docx";
 
-import Docxtemplater from 'docxtemplater';
-import PizZip from 'pizzip';
-import PizZipUtils from 'pizzip/utils/index.js';
-import { saveAs } from 'file-saver';
-import JCTemplate from '../templates/JobcardTemplate.docx';
-
-import RelJCTemplate from '../templates/ReliabilityJCTemplate.docx'
+import RelJCTemplate from "../templates/ReliabilityJCTemplate.docx";
 
 function loadFile(url, callback) {
   PizZipUtils.getBinaryContent(url, callback);
 }
 
 export const generateJcDocument = (jobCardData) => {
-
   // console.log('jobCardData', jobCardData)
 
+  let templateDocument = "";
 
-
-  let templateDocument = ''
-
-  if (jobCardData.jcCategory === 'TS1') {
+  if (jobCardData.jcCategory === "TS1") {
     templateDocument = JCTemplate;
-  } else if (jobCardData.jcCategory === 'Reliability') {
+  } else if (jobCardData.jcCategory === "Reliability") {
     templateDocument = RelJCTemplate;
   } else {
-    console.error('Unknown jcCategory:', jobCardData.jcCategory);
+    console.error("Unknown jcCategory:", jobCardData.jcCategory);
     return;
   }
-
-
 
   loadFile(templateDocument, function (error, content) {
     if (error) {
@@ -46,16 +40,17 @@ export const generateJcDocument = (jobCardData) => {
     try {
       doc.render();
     } catch (error) {
-      console.error('Docxtemplater render error:', error);
+      console.error("Docxtemplater render error:", error);
     }
 
-    const blob = doc.getZip().generate({ type: 'blob', mimeType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+    const blob = doc
+      .getZip()
+      .generate({
+        type: "blob",
+        mimeType:
+          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      });
     const fileName = `JC_${jobCardData.jcNumber}.docx`;
     saveAs(blob, fileName);
   });
 };
-
-
-
-
-
