@@ -15,28 +15,24 @@ import { useContext, useEffect, useState } from "react";
 import Stack from "@mui/material/Stack";
 import { useNavigate } from "react-router-dom";
 
-
-import 'react-toastify/dist/ReactToastify.css';
+import "react-toastify/dist/ReactToastify.css";
 import { toast } from "react-toastify";
 import axios from "axios";
 
-import InputAdornment from '@mui/material/InputAdornment';
-import IconButton from '@mui/material/IconButton';
-import VisibilityIcon from '@mui/icons-material/Visibility';
-import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
+import InputAdornment from "@mui/material/InputAdornment";
+import IconButton from "@mui/material/IconButton";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import { FormControl, InputLabel, OutlinedInput } from "@mui/material";
 import { serverBaseAddress } from "../Pages/APIPage";
 
-import { UserContext } from "../Pages/UserContext"
-
-
+import { UserContext } from "../Pages/UserContext";
 
 const darkTheme = createTheme({
   palette: {
     mode: "dark",
   },
 });
-
 
 const boxStyle = {
   position: "absolute",
@@ -57,16 +53,15 @@ const signInLogoAndText = {
   alignItems: "center",
 };
 
-
-
 export default function Login() {
-
   const { loggedInUser, loggedInUserDepartment } = useContext(UserContext);
 
   const [remember, setRemember] = useState(false);
 
   // Set initial state with the last logged email
-  const [userEmail, setUserEmail] = useState(localStorage.getItem('lastLoggedEmail') || '');
+  const [userEmail, setUserEmail] = useState(
+    localStorage.getItem("lastLoggedEmail") || ""
+  );
 
   const navigate = useNavigate();
 
@@ -75,10 +70,8 @@ export default function Login() {
     password: "",
   };
 
-
   const [email, setEmailString] = useState(initialState.email || "");
   const [password, setPasswordString] = useState(initialState.password || "");
-
 
   //To Handle password textfields
   const [showPassword, setShowPassword] = useState(false);
@@ -91,30 +84,20 @@ export default function Login() {
     event.preventDefault();
   };
 
-
-
-
   // Update the local storage with the current email
   const handleEmailChange = (event) => {
     const newEmail = event.target.value;
     setEmailString(newEmail);
-    localStorage.setItem('lastEnteredEmail', newEmail);
+    localStorage.setItem("lastEnteredEmail", newEmail);
   };
-
 
   // Load the last entered email from local storage
   useEffect(() => {
-    const storedEmail = localStorage.getItem('lastEnteredEmail');
+    const storedEmail = localStorage.getItem("lastEnteredEmail");
     if (storedEmail) {
       setEmailString(storedEmail);
     }
   }, []);
-
-
-
-  // To validate the user credential its very much important
-  axios.defaults.withCredentials = true;
-
 
   // To allow an user to log-In:
   const handleLogin = async (e) => {
@@ -126,14 +109,16 @@ export default function Login() {
     }
 
     try {
-
       // Fetch user status
       // First, check the user status
-      const statusResponse = await axios.post(`${serverBaseAddress}/api/getUserStatus`, { email });
+      const statusResponse = await axios.post(
+        `${serverBaseAddress}/api/getUserStatus`,
+        { email }
+      );
       const userStatus = statusResponse.data.status;
 
       // if (userStatus !== 'Enable' && userStatus === '') {
-      if (userStatus !== 'Enable') {
+      if (userStatus !== "Enable") {
         toast.warning("Your account is disabled. Please contact Admin.");
         return;
       }
@@ -145,13 +130,11 @@ export default function Login() {
       });
 
       if (response.status === 200) {
-        navigate("/home");                      // Redirect to the home page or perform other actions
-        toast.success("You have logged in successfully.")
-
+        navigate("/home"); // Redirect to the home page or perform other actions
+        toast.success("You have logged in successfully.");
       } else {
         toast.warning("Login Error");
       }
-
     } catch (error) {
       // Check for specific error messages to differentiate between server error and login error
       if (error.response && error.response.status === 401) {
@@ -161,15 +144,11 @@ export default function Login() {
         // Other errors
         toast.error("Login Error");
       }
-      console.log(error)
+      console.log(error);
     }
   };
 
-
-
   return (
-
-
     <div
       style={{
         backgroundImage: "linear-gradient(135deg, #009FFD 10%, #2A2A72 100%)",
@@ -202,15 +181,13 @@ export default function Login() {
               }}
             >
               <ThemeProvider theme={darkTheme}>
-                <Container >
+                <Container>
                   <Box height={35} />
                   <Box sx={signInLogoAndText}>
-                    <Avatar
-                      sx={{ mb: 2, bgcolor: "#ffffff" }}
-                    >
+                    <Avatar sx={{ mb: 2, bgcolor: "#ffffff" }}>
                       <LockOutlinedIcon />
                     </Avatar>
-                    <Typography variant="h4" sx={{ textAlign: 'center' }}>
+                    <Typography variant="h4" sx={{ textAlign: "center" }}>
                       Sign In
                     </Typography>
                   </Box>
@@ -231,21 +208,26 @@ export default function Login() {
                           autoComplete="email"
                           type="email"
                           variant="outlined"
-                          label='Email'
+                          label="Email"
                         >
                           Email
                         </TextField>
                       </Grid>
 
                       <Grid item xs={12} sx={{ mx: { xs: "1em", sm: "3em" } }}>
-                        <FormControl sx={{ width: '100%' }} variant="outlined" required>
-                          <InputLabel htmlFor="outlined-adornment-password">Password</InputLabel>
+                        <FormControl
+                          sx={{ width: "100%" }}
+                          variant="outlined"
+                          required
+                        >
+                          <InputLabel htmlFor="outlined-adornment-password">
+                            Password
+                          </InputLabel>
                           <OutlinedInput
                             id="outlined-adornment-password"
                             value={password}
                             onChange={(e) => setPasswordString(e.target.value)}
-
-                            type={showPassword ? 'text' : 'password'}
+                            type={showPassword ? "text" : "password"}
                             endAdornment={
                               <InputAdornment position="end">
                                 <IconButton
@@ -254,14 +236,17 @@ export default function Login() {
                                   onMouseDown={handleMouseDownPassword1}
                                   edge="end"
                                 >
-                                  {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                                  {showPassword ? (
+                                    <VisibilityOffIcon />
+                                  ) : (
+                                    <VisibilityIcon />
+                                  )}
                                 </IconButton>
                               </InputAdornment>
                             }
                             label="Password"
                           />
                         </FormControl>
-
                       </Grid>
                       <Grid item xs={12} sx={{ mx: { xs: "1em", sm: "3em" } }}>
                         <Stack direction="row" spacing={2}>
@@ -302,8 +287,11 @@ export default function Login() {
                       </Grid>
                       <Grid item xs={12} sx={{ mx: { xs: "1em", sm: "3em" } }}>
                         <Stack direction="row" spacing={2}>
-
-                          <Typography variant="h6" component="span" sx={{ mt: "10px" }}>
+                          <Typography
+                            variant="h6"
+                            component="span"
+                            sx={{ mt: "10px" }}
+                          >
                             Not registered yet?{" "}
                             <span
                               style={{ color: "#beb4fb", cursor: "pointer" }}

@@ -9,6 +9,8 @@ const cors = require("cors"); // cors is used to access our backend API. In our 
 const session = require("express-session"); // Import 'express-session' module to create user session
 const cookieParser = require("cookie-parser"); // Import 'cookie-parser' module to create cookies for a logge in user
 
+const initializeBackupJob = require("./Backup"); // Import the backup function
+
 // const multer = require('multer');
 const path = require("path");
 // const fs = require('fs');
@@ -162,6 +164,9 @@ slotBookingAPIs(app);
 // backend connection of po_invoice data API's from 'PoInvoiceBackend' page
 const { poInvoiceBackendAPIs } = require("./PoInvoiceBackend");
 poInvoiceBackendAPIs(app);
+
+///Data Backup function:
+initializeBackupJob();
 
 // Check wheteher connection is established between
 app.get("/", (req, res) => {

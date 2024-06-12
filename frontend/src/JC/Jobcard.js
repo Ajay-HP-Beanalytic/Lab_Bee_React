@@ -142,8 +142,6 @@ const Jobcard = ({ jobCardData }) => {
           // const attachmentsData = res.data.attachments;
           setReferanceDocs(res.data.attachments);
 
-          console.log(res.data.attachments);
-
           setEditJc(true);
         })
         .catch((error) => console.error(error));
@@ -347,8 +345,6 @@ const Jobcard = ({ jobCardData }) => {
   // To submit the Job-card data and store it in a database:
   const handleSubmitJobcard = (e) => {
     e.preventDefault();
-
-    console.log("itemReceivedDate iss-->", itemReceivedDate);
 
     let api_url = `${serverBaseAddress}/api/jobcard/${id}`;
 

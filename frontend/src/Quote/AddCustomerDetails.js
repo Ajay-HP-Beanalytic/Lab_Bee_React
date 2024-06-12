@@ -512,7 +512,7 @@ export default function AddCustomerDetails() {
               <>
                 <Grid item>
                   <IconButton variant="contained" size="large">
-                    <Tooltip title="Add Chamber" arrow type="submit">
+                    <Tooltip title="Add Company Details" arrow type="submit">
                       <AddIcon
                         fontSize="inherit"
                         onClick={addNewCustomerDetailsButton}
