@@ -37,6 +37,7 @@ import UserManagement from "./LoginRegister/UserManagement";
 
 import { UserContext } from "./Pages/UserContext";
 import ProtectedRoute from "./Pages/ProtectedRoute";
+import { Helmet } from "react-helmet";
 
 function App() {
   const location = useLocation();
@@ -115,6 +116,13 @@ function App() {
 
   return (
     <div className="App">
+      <Helmet>
+        <meta charSet="utf-8" />
+        <title>Lab Bee</title>
+        <link rel="canonical" href="http://labbee.beanalytic.com/" /> //{" "}
+        {/* for SEO might need to change it */}
+        <meta name="description" content="App of BE Analytic." />
+      </Helmet>
       <ToastContainer position="top-center" />
       <Routes>
         {/* Public Routes */}
