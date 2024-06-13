@@ -21,7 +21,7 @@ const app = express();
 
 app.use(
   cors({
-    origin: ["http://localhost:3000"], // mention the host address of the frontend
+    origin: true, // mention the host address of the frontend
     methods: ["POST", "GET", "DELETE"],
     credentials: true,
   })
@@ -220,6 +220,6 @@ app.get("/", (req, res) => {
 });
 
 // define the port:
-app.listen(4000, () => {
-  console.log("Server is running on port 4000");
+app.listen(4001, () => {
+  console.log("Server is running on port 4001");
 });
