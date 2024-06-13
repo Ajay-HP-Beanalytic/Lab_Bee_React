@@ -36,6 +36,7 @@ import PasswordIcon from "@mui/icons-material/Password";
 import { serverBaseAddress } from "../Pages/APIPage";
 import { useNavigate } from "react-router-dom";
 import { UserContext } from "../Pages/UserContext";
+import DataBackup from "../Pages/DataBackup";
 
 export default function UserManagement() {
   // State variable to set the user name:
@@ -596,6 +597,12 @@ export default function UserManagement() {
           </Paper>
         </Box>
       )}
+
+      <Grid container justifyContent="center">
+        <Grid item>
+          <DataBackup />
+        </Grid>
+      </Grid>
     </>
   );
 }
