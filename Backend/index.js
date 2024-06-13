@@ -9,7 +9,8 @@ const cors = require("cors"); // cors is used to access our backend API. In our 
 const session = require("express-session"); // Import 'express-session' module to create user session
 const cookieParser = require("cookie-parser"); // Import 'cookie-parser' module to create cookies for a logge in user
 
-const initializeBackupJob = require("./Backup"); // Import the backup function
+const createBackup = require("./Backup"); // Import the backup function
+const fs = require("fs");
 
 // const multer = require('multer');
 const path = require("path");
@@ -165,8 +166,53 @@ slotBookingAPIs(app);
 const { poInvoiceBackendAPIs } = require("./PoInvoiceBackend");
 poInvoiceBackendAPIs(app);
 
+/// Code to get backup of only database in .sql format:
 ///Data Backup function:
-initializeBackupJob();
+//Backend API route address to fetch the data backup:
+// app.get("/api/downloadDataBackup", (req, res) => {
+//   createBackup((error, backupFile) => {
+//     if (error) {
+//       console.error("Backup failed:", error);
+//       return res.status(500).send("Error creating backup");
+
+//     }
+
+//     res.download(backupFile, (err) => {
+//       if (err) {
+//         console.error(`Error sending file: ${err.message}`);
+//         res.status(500).send("Error sending file");
+//       }
+//       console.log("Backup successfully created:", backupFile);
+//       // Optionally, delete the file after download
+//       fs.unlinkSync(backupFile);
+//     });
+//   });
+// });
+
+/// Code to get backup of database in .sql format and attachments in .zip format:
+app.get("/api/downloadDataBackup", (req, res) => {
+  createBackup((error, backupFile) => {
+    if (error) {
+      console.error("Backup failed:", error);
+      return res.status(500).send("Error creating backup");
+    }
+
+    res.download(backupFile, (err) => {
+      if (err) {
+        console.error(`Error sending file: ${err.message}`);
+        return res.status(500).send("Error sending file");
+      }
+      console.log("Backup successfully created and sent:", backupFile);
+      fs.unlink(backupFile, (unlinkErr) => {
+        if (unlinkErr) {
+          console.error(`Error deleting file: ${unlinkErr.message}`);
+        } else {
+          console.log("Backup file deleted:", backupFile);
+        }
+      });
+    });
+  });
+});
 
 // Check wheteher connection is established between
 app.get("/", (req, res) => {
