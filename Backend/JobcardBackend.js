@@ -1101,14 +1101,27 @@ function jobcardsAPIs(app) {
 
   //////////////////////////////////////////////////////////////////////////////
 
+  // const storage = multer.diskStorage({
+  //   destination: (req, file, cb) => {
+  //     cb(null, path.join(__dirname, "FilesUploaded"));
+  //   },
+  //   filename: (req, file, cb) => {
+  //     cb(null, `${Date.now()}_${file.originalname}`);
+  //   },
+  // });
   const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-      cb(null, path.join(__dirname, "FilesUploaded"));
+      const uploadDir = path.join(__dirname, "FilesUploaded");
+      // Check if directory exists, if not create it
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+      }
+      cb(null, uploadDir);
     },
     filename: (req, file, cb) => {
       cb(null, `${Date.now()}_${file.originalname}`);
     },
-  });
+  })
 
   const filesUploadUsingMulter = multer({ storage });
 
