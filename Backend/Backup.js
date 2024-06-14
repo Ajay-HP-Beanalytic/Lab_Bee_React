@@ -14,6 +14,8 @@ const DB_NAME = process.env.DB_DATABASE;
 const BACKUP_DIR = path.join(__dirname, "backups");
 const ATTACHMENTS_DIR = path.join(__dirname, "FilesUploaded");
 
+const MYSQLDUMP_PATH = process.env.MYSQL_DUMP_FOLDER_PATH || "/usr/bin/mysqldump"; // Default to Ubuntu path
+
 // Ensure backup directory exists
 if (!fs.existsSync(BACKUP_DIR)) {
   fs.mkdirSync(BACKUP_DIR);
@@ -51,7 +53,9 @@ const createBackup = (callback) => {
   );
 
   // Command to dump the database
-  const command = `"C:\\Program Files\\MySQL\\MySQL Server 8.0\\bin\\mysqldump" -u ${DB_USER} -p${DB_PASSWORD} ${DB_NAME} > ${SQL_BACKUP_FILE}`;
+  // const command = `"C:\\Program Files\\MySQL\\MySQL Server 8.0\\bin\\mysqldump" -u ${DB_USER} -p${DB_PASSWORD} ${DB_NAME} > ${SQL_BACKUP_FILE}`;
+  // const command = `${MYSQLDUMP_PATH} -u ${DB_USER} -p${DB_PASSWORD} ${DB_NAME} > ${SQL_BACKUP_FILE}`;
+  const command = `${MYSQLDUMP_PATH} -u ${DB_USER} -p${DB_PASSWORD} ${DB_NAME} > ${SQL_BACKUP_FILE}`;
 
   exec(command, (error, stdout, stderr) => {
     if (error) {
