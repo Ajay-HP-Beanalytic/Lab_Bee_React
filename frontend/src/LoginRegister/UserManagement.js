@@ -37,6 +37,7 @@ import { serverBaseAddress } from "../Pages/APIPage";
 import { useNavigate } from "react-router-dom";
 import { UserContext } from "../Pages/UserContext";
 import DataBackup from "../Pages/DataBackup";
+import SearchBar from "../common/SearchBar";
 
 export default function UserManagement() {
   // State variable to set the user name:
@@ -52,6 +53,10 @@ export default function UserManagement() {
   const [userDepartment, setUserDepartment] = useState("");
   const [userRole, setUserRole] = useState("");
   const [userStatus, setUserStatus] = useState("");
+  const [userRoleOptions, setUserRoleOptions] = useState([]);
+
+  const [searchInputTextOfUserManagement, setSearchInputTextOfUserManagement] =
+    useState("");
 
   const userDepartmentOptions = [
     "Accounts",
@@ -63,18 +68,28 @@ export default function UserManagement() {
     "TS2 Testing",
   ];
 
-  const userRoleOptions = [
-    "Accounts",
-    "Administrator",
-    "Lab Manager",
-    "Lab Engineer",
-    "Lab Technician",
-    "Managing Director",
-    "Operations Manager",
-    "Reliability Manager",
-    "Reliability Engineer",
-    "Software Engineer",
-  ];
+  const userDepartmentAndRoles = {
+    Accounts: ["Accounts Admin", "Accounts Executive"],
+    Administrator: ["Administrator", "Managing Director", "Operations Manager"],
+    Marketing: ["Marketing Manager", "Marketing Executive"],
+    Reliability: ["Reliability Manager", "Reliability Engineer"],
+    Software: ["Software Engineer"],
+    "TS1 Testing": [
+      "Lab Manager",
+      "Lab Engineer",
+      "Lab Technician",
+      "Lab Assistant",
+      "Quality Manager",
+      "Deputy Quality Manager",
+    ],
+    "TS2 Testing": [
+      "Lab Manager",
+      "Lab Engineer",
+      "Lab Technician",
+      "Lab Assistant",
+    ],
+  };
+
   const userStatusOptions = ["Enable", "Disable"];
 
   const [allowedComponents, setAllowedComponents] = useState([]);
@@ -96,6 +111,7 @@ export default function UserManagement() {
 
   // State varaiable to store users list
   const [usersList, setUsersList] = useState([]);
+  const [filteredUsersList, setFilteredUsersList] = useState(usersList);
 
   // State varaiable to Edit the users data
   const [editUserDetailsFields, setEditUserDetailsFields] = useState(false);
@@ -183,6 +199,7 @@ export default function UserManagement() {
           `${serverBaseAddress}/api/getAllUsers`
         );
         setUsersList(usersURL.data);
+        setFilteredUsersList(usersURL.data);
       } catch (error) {
         console.error("Failed to fetch the data", error);
       }
@@ -214,9 +231,13 @@ export default function UserManagement() {
     const rowData = usersList[index];
     setUserName(rowData.name);
     setUserEmail(rowData.email);
-    // setInitialUserPassword(rowData.password)
     setUserDepartment(rowData.department);
+
+    const roles = userDepartmentAndRoles[rowData.department] || [];
+    setUserRoleOptions(roles);
+
     setUserRole(rowData.role);
+
     setUserStatus(rowData.user_status);
   };
 
@@ -279,7 +300,10 @@ export default function UserManagement() {
   useEffect(() => {}, [deleteUserId]);
 
   const handleUserDepartment = (e) => {
-    setUserDepartment(e.target.value);
+    const selectedDepartment = e.target.value;
+    setUserDepartment(selectedDepartment);
+    setUserRole(" ");
+    setUserRoleOptions(userDepartmentAndRoles[selectedDepartment] || []);
   };
 
   const handleChangeRole = (e) => {
@@ -289,6 +313,34 @@ export default function UserManagement() {
   const handleUserStatus = (e) => {
     setUserStatus(e.target.value);
   };
+
+  //On change of text of user management searchbar:
+  const onChangeOfSearchInputOfUserManagement = (e) => {
+    const searchText = e.target.value;
+    setSearchInputTextOfUserManagement(searchText);
+    filterUserManagementTable(searchText);
+  };
+
+  //Function to filter the table
+  const filterUserManagementTable = (searchValue) => {
+    const filtered = usersList.filter((row) => {
+      return Object.values(row).some((value) =>
+        value.toString().toLowerCase().includes(searchValue.toLowerCase())
+      );
+    });
+    setFilteredUsersList(filtered);
+  };
+
+  //Function to clear the search bar and filter the table
+  const onClearSearchInputOfUserManagement = () => {
+    setSearchInputTextOfUserManagement("");
+    setFilteredUsersList(usersList);
+  };
+
+  //useEffect to filter the table based on the search input
+  useEffect(() => {
+    setFilteredUsersList(usersList);
+  }, [usersList]);
 
   return (
     <>
@@ -435,12 +487,13 @@ export default function UserManagement() {
                     value={userDepartment}
                     onChange={handleUserDepartment}
                   >
-                    {userDepartmentOptions.map((userDep, index) => (
-                      <MenuItem key={index} value={userDep}>
-                        {" "}
-                        {userDep}
-                      </MenuItem>
-                    ))}
+                    {Object.keys(userDepartmentAndRoles).map(
+                      (userDep, index) => (
+                        <MenuItem key={index} value={userDep}>
+                          {userDep}
+                        </MenuItem>
+                      )
+                    )}
                   </Select>
                 </FormControl>
 
@@ -457,6 +510,7 @@ export default function UserManagement() {
                     label="Role"
                     value={userRole}
                     onChange={handleChangeRole}
+                    disabled={!userDepartment}
                   >
                     {userRoleOptions.map((role, index) => (
                       <MenuItem key={index} value={role}>
@@ -523,6 +577,19 @@ export default function UserManagement() {
             </Dialog>
           )}
 
+          <Box sx={{ mt: 2, mb: 2 }}>
+            <Grid container spacing={2} alignItems="center">
+              <Grid item xs={12} md={4} container justifyContent="flex-end">
+                <SearchBar
+                  placeholder="Search User"
+                  searchInputText={searchInputTextOfUserManagement}
+                  onChangeOfSearchInput={onChangeOfSearchInputOfUserManagement}
+                  onClearSearchInput={onClearSearchInputOfUserManagement}
+                />
+              </Grid>
+            </Grid>
+          </Box>
+
           <Paper sx={{ width: "100%", mb: 2 }}>
             <TableContainer>
               <Table
@@ -548,7 +615,7 @@ export default function UserManagement() {
                 </TableHead>
 
                 <TableBody>
-                  {usersList.map((item, index) => (
+                  {filteredUsersList.map((item, index) => (
                     <TableRow key={index} align="center">
                       <TableCell align="center" component="th" scope="row">
                         {index + 1}
