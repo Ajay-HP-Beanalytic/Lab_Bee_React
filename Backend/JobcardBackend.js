@@ -1109,6 +1109,15 @@ function jobcardsAPIs(app) {
   //     cb(null, `${Date.now()}_${file.originalname}`);
   //   },
   // });
+
+  // const storage = multer.diskStorage({
+  //   destination: (req, file, cb) => {
+  //     cb(null, path.join(__dirname, "FilesUploaded"));
+  //   },
+  //   filename: (req, file, cb) => {
+  //     cb(null, `${Date.now()}_${file.originalname}`);
+  //   },
+  // });
   const storage = multer.diskStorage({
     destination: (req, file, cb) => {
       const uploadDir = path.join(__dirname, "FilesUploaded");
@@ -1121,9 +1130,14 @@ function jobcardsAPIs(app) {
     filename: (req, file, cb) => {
       cb(null, `${Date.now()}_${file.originalname}`);
     },
-  })
+  });
 
-  const filesUploadUsingMulter = multer({ storage });
+  const filesUploadUsingMulter = multer({
+    storage,
+    limits: {
+      fileSize: 25 * 1024 * 1024,
+    }, // Maximum is 25 MB.
+  });
 
   app.post(
     "/api/uploadFiles",
@@ -1171,64 +1185,6 @@ function jobcardsAPIs(app) {
         });
     }
   );
-
-  // app.post(
-  //   "/api/uploadFiles",
-  //   filesUploadUsingMulter.array("attachedFiles"),
-  //   (req, res) => {
-  //     if (!req.files || req.files.length === 0) {
-  //       return res.status(400).send("No files were uploaded.");
-  //     }
-
-  //     const { jcNumber } = req.body;
-  //     if (!jcNumber) {
-  //       return res.status(400).send("jcNumber is required.");
-  //     }
-
-  //     const files = req.files;
-
-  //     const filePromises = files.map((file) => {
-  //       // Use forward slashes for the file path
-  //       const relativeFilePath = file.path.replace(/\\/g, "/");
-  //       const sqlInsertFile =
-  //         "INSERT INTO attachments (jc_number, file_name, file_path, file_type) VALUES (?, ?, ?, ?)";
-  //       return new Promise((resolve, reject) => {
-  //         db.query(
-  //           sqlInsertFile,
-  //           [jcNumber, file.originalname, relativeFilePath, file.mimetype],
-  //           (err, results) => {
-  //             if (err) {
-  //               return reject(err);
-  //             }
-  //             // Include the file details in the resolved value
-  //             resolve({
-  //               id: results.insertId,
-  //               jc_number: jcNumber,
-  //               file_name: file.originalname,
-  //               file_path: relativeFilePath,
-  //               file_type: file.mimetype,
-  //               uploaded_at: new Date(),
-  //             });
-  //           }
-  //         );
-  //       });
-  //     });
-
-  //     Promise.all(filePromises)
-  //       .then((uploadedFiles) => {
-  //         res
-  //           .status(200)
-  //           .json({
-  //             message: "Files uploaded and saved to database successfully.",
-  //             uploadedFiles,
-  //           });
-  //       })
-  //       .catch((error) => {
-  //         console.error("Error uploading files:", error);
-  //         res.status(500).send("Internal server error.");
-  //       });
-  //   }
-  // );
 
   // Backend API to delete the attachments:
   app.delete("/api/deleteFile/:id", (req, res) => {
