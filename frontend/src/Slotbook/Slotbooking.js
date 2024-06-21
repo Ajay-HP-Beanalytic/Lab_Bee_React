@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import {
   Box,
@@ -28,10 +28,8 @@ import "react-big-calendar/lib/css/react-big-calendar.css";
 import "react-big-calendar/lib/addons/dragAndDrop/styles.css";
 import axios from "axios";
 // import { serverBaseAddress } from './APIPage';
-// import ChambersListForSlotBookingCalendar from '../components/ChambersList';
 
 import { serverBaseAddress } from "../Pages/APIPage";
-import ChambersListForSlotBookingCalendar from "./ChambersList";
 
 import dayjs from "dayjs";
 
@@ -44,6 +42,7 @@ import { toast } from "react-toastify";
 import CustomModal from "../common/CustomModalWithTable";
 import ConfirmationDialog from "../common/ConfirmationDialog";
 import { useParams } from "react-router-dom";
+import { UserContext } from "../Pages/UserContext";
 
 const localizer = momentLocalizer(moment);
 
@@ -72,6 +71,8 @@ export default function Slotbooking() {
   const [selectedEvent, setSelectedEvent] = useState(null);
 
   const [editId, setEditId] = useState("");
+
+  const { loggedInUser, loggedInUserDepartment } = useContext(UserContext);
 
   const { id } = useParams("id");
 
@@ -188,6 +189,8 @@ export default function Slotbooking() {
   // Function to check if there is an overlap between two date-time ranges
 
   const onSubmitForm = async (data) => {
+    console.log("sb", data);
+
     // Get the selected start and end date-time, along with the selected chamber
     const selectedSlotStartDate = editId
       ? dayjs(slotStartDateTime)
@@ -338,6 +341,8 @@ export default function Slotbooking() {
       setSlotDuration(bookingData.slot_duration);
       setValue("remarks", bookingData.remarks);
 
+      setValue("slotBookedBy", bookingData.slot_booked_by);
+
       setEditId(selectedBookingId);
     } catch (error) {
       console.error("Error fetching booking data:", error);
@@ -378,8 +383,8 @@ export default function Slotbooking() {
         if (response.status === 200) {
           // Transform the fetched data to match the expected resource structure
           const transformedData = response.data.map((chamber) => ({
-            id: chamber.chamber_name,
-            title: chamber.chamber_name,
+            id: chamber.id,
+            title: chamber.chamber_id,
           }));
           setMyResourceList(transformedData);
         } else {
@@ -400,29 +405,14 @@ export default function Slotbooking() {
     setValue("slotDuration", slotDuration);
   }, [setValue, slotDuration]);
 
-  // Use effect to get the logged in user name
   useEffect(() => {
-    axios.defaults.withCredentials = true;
-    const getLoggedInUser = async () => {
-      try {
-        const response = await axios.get(
-          `${serverBaseAddress}/api/getLoggedInUser`
-        );
-        if (response.data.valid) {
-          return response.data.username; // Return the username
-        } else {
-          console.log("An error occurred while setting up slot created by");
-          return null; // Return null or handle the error case appropriately
-        }
-      } catch (error) {
-        console.error("Failed to fetch the logged-in user", error);
-        return null; // Return null or handle the error case appropriately
-      }
-    };
-
-    // Call getLoggedInUser and set slotBookedBy when the component mounts
-    getLoggedInUser().then((username) => setSlotBookedBy(username));
+    setSlotBookedBy(loggedInUser);
   }, []);
+
+  useEffect(() => {
+    // Set the value directly using setValue
+    setValue("slotBookedBy", loggedInUser);
+  }, [loggedInUser, setValue]);
 
   // get all the bookings:
   useEffect(() => {
@@ -440,6 +430,7 @@ export default function Slotbooking() {
           end: new Date(booking.slot_end_datetime),
           duration: booking.slot_duration,
           resourceId: booking.chamber_allotted,
+          slotBookedBy: booking.slot_booked_by,
         }));
         setMyEventsList(events);
       } catch (error) {
@@ -796,6 +787,7 @@ export default function Slotbooking() {
 
           { label: `Slot Duration: ${selectedEvent?.duration}` },
           { label: `Allotted Chamber: ${selectedEvent?.resourceId}` },
+          { label: `Slot Booked By: ${selectedEvent?.slotBookedBy}` },
         ]}
       />
       <ConfirmationDialog
@@ -807,8 +799,6 @@ export default function Slotbooking() {
         confirmButtonText="Delete"
         cancelButtonText="Cancel"
       />
-      <br />
-      <ChambersListForSlotBookingCalendar />
     </>
   );
 }

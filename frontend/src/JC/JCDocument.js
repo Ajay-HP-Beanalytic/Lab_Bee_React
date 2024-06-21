@@ -43,13 +43,11 @@ export const generateJcDocument = (jobCardData) => {
       console.error("Docxtemplater render error:", error);
     }
 
-    const blob = doc
-      .getZip()
-      .generate({
-        type: "blob",
-        mimeType:
-          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      });
+    const blob = doc.getZip().generate({
+      type: "blob",
+      mimeType:
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    });
     const fileName = `JC_${jobCardData.jcNumber}.docx`;
     saveAs(blob, fileName);
   });
