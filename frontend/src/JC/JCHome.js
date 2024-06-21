@@ -204,7 +204,7 @@ export default function JCHome() {
   //Table columns
   const columns = [
     {
-      field: "id",
+      field: "serialNumbers",
       headerName: "SL No",
       width: 100,
       align: "center",
@@ -247,7 +247,7 @@ export default function JCHome() {
 
   const reliabilityTableColumns = [
     {
-      field: "id",
+      field: "serialNumbers",
       headerName: "SL No",
       width: 100,
       align: "center",
@@ -303,6 +303,19 @@ export default function JCHome() {
       headerClassName: "custom-header-color",
     },
   ];
+
+  const addSerialNumbersToRows = (data) => {
+    return data.map((item, index) => ({
+      ...item,
+      serialNumbers: index + 1,
+    }));
+  };
+
+  const ts1JcDataWithSerialNumbers = addSerialNumbersToRows(filteredJcData);
+
+  const reliabilityJcDataWithSerialNumbers = addSerialNumbersToRows(
+    filteredReliabilityJcData
+  );
 
   // on changing the month-year selection:
   const handleYearOfJC = (event) => {
@@ -531,7 +544,7 @@ export default function JCHome() {
               }}
             >
               <DataGrid
-                rows={filteredJcData}
+                rows={ts1JcDataWithSerialNumbers}
                 columns={columns}
                 sx={{ "&:hover": { cursor: "pointer" } }}
                 onRowClick={(params) => editSelectedRowData(params.row)}
@@ -588,7 +601,7 @@ export default function JCHome() {
               }}
             >
               <DataGrid
-                rows={filteredReliabilityJcData}
+                rows={reliabilityJcDataWithSerialNumbers}
                 columns={reliabilityTableColumns}
                 sx={{ "&:hover": { cursor: "pointer" } }}
                 onRowClick={(params) => editSelectedRowData(params.row)}
