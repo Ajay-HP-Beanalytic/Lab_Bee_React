@@ -553,7 +553,7 @@ export default function ChamberAndCalibration() {
 
   const columns = [
     {
-      field: "id",
+      field: "serialNumbers",
       headerName: "SL No",
       width: 60,
       align: "center",
@@ -645,6 +645,17 @@ export default function ChamberAndCalibration() {
       ),
     },
   ];
+
+  const addSerialNumbersToRows = (data) => {
+    return data.map((item, index) => ({
+      ...item,
+      serialNumbers: index + 1,
+    }));
+  };
+
+  const chamberCalibrationDataWithSerialNumbers =
+    addSerialNumbersToRows(filteredChamberList);
+
   ////////////////////////////////////////////////////////////////////////////////////////////////
 
   return (
@@ -1002,7 +1013,8 @@ export default function ChamberAndCalibration() {
           </Grid>
         </Box>
 
-        {filteredChamberList && filteredChamberList.length === 0 ? (
+        {chamberCalibrationDataWithSerialNumbers &&
+        chamberCalibrationDataWithSerialNumbers.length === 0 ? (
           <EmptyCard message="Chamber Calibration Data not found" />
         ) : (
           <Box
@@ -1020,7 +1032,7 @@ export default function ChamberAndCalibration() {
             }}
           >
             <DataGrid
-              rows={filteredChamberList}
+              rows={chamberCalibrationDataWithSerialNumbers}
               columns={columns}
               pageSize={5}
               rowsPerPageOptions={[5, 10, 20]}
