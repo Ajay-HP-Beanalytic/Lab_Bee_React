@@ -25,13 +25,16 @@ function jobcardsAPIs(app) {
   app.post("/api/jobcard", (req, res) => {
     const {
       jcNumber,
+      srfNumber,
       dcNumber,
       jcOpenDate,
       itemReceivedDate,
       poNumber,
       testCategory,
       testDiscipline,
+      sampleCondition,
       typeOfRequest,
+      reportType,
       testInchargeName,
       jcCategory,
       companyName,
@@ -39,11 +42,12 @@ function jobcardsAPIs(app) {
       customerEmail,
       customerNumber,
       projectName,
-      sampleCondition,
+      testInstructions,
       jcStatus,
       reliabilityReportStatus,
       jcCloseDate,
       observations,
+      jcLastModifiedBy,
     } = req.body;
 
     const formattedItemReceivedDate = itemReceivedDate
@@ -57,22 +61,24 @@ function jobcardsAPIs(app) {
       : null;
 
     const sql = `INSERT INTO bea_jobcards(
-        jc_number, dcform_number, jc_open_date, item_received_date, po_number, 
-        test_category, test_discipline, type_of_request, test_incharge, jc_category, company_name, 
-        customer_name, customer_email, customer_number, project_name, 
-        sample_condition, jc_status, reliability_report_status, 
-        jc_closed_date, observations
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)`;
+        jc_number, srf_number, dcform_number, jc_open_date, item_received_date, po_number, 
+        test_category, test_discipline, sample_condition, type_of_request, report_type, test_incharge, jc_category, company_name, 
+        customer_name, customer_email, customer_number, project_name, test_instructions, 
+         jc_status, reliability_report_status, jc_closed_date, observations, last_updated_by
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
     const values = [
       jcNumber,
+      srfNumber,
       dcNumber,
       formattedOpenDate || null,
       formattedItemReceivedDate || null,
       poNumber || "",
       testCategory || "",
       testDiscipline || "",
+      sampleCondition || "",
       typeOfRequest || "",
+      reportType || "",
       testInchargeName || "",
       jcCategory || "",
       companyName || "",
@@ -80,11 +86,12 @@ function jobcardsAPIs(app) {
       customerEmail || "",
       customerNumber || "",
       projectName || "",
-      sampleCondition || "",
+      testInstructions || "",
       jcStatus || "",
       reliabilityReportStatus || "",
       formattedCloseDate || null,
       observations || "",
+      jcLastModifiedBy || "",
     ];
 
     db.query(sql, values, (error, result) => {
@@ -125,7 +132,7 @@ function jobcardsAPIs(app) {
 
     const getJCColumns = `
                             SELECT 
-                                id, jc_number, DATE_FORMAT(jc_open_date, '%Y-%m-%d') as jc_open_date, company_name,  jc_status
+                                id, jc_number, DATE_FORMAT(jc_open_date, '%Y-%m-%d') as jc_open_date, company_name, jc_status, last_updated_by
                             FROM 
                                 bea_jobcards
                             WHERE 
@@ -140,6 +147,7 @@ function jobcardsAPIs(app) {
         });
       }
       res.send(result);
+      console.log(result);
     });
   });
 
@@ -156,7 +164,7 @@ function jobcardsAPIs(app) {
 
     const getReliabilityJCColumns = `
                             SELECT 
-                                id, jc_number, DATE_FORMAT(jc_open_date, '%Y-%m-%d') as jc_open_date, company_name, project_name, reliability_report_status, jc_status
+                                id, jc_number, DATE_FORMAT(jc_open_date, '%Y-%m-%d') as jc_open_date, company_name, project_name, reliability_report_status, jc_status, last_updated_by 
                             FROM 
                                 bea_jobcards
                             WHERE 
@@ -189,7 +197,7 @@ function jobcardsAPIs(app) {
     }
 
     const getJCColumns = `
-        SELECT id, jc_number, DATE_FORMAT(jc_open_date, '%Y-%m-%d') as jc_open_date, company_name, jc_status 
+        SELECT id, jc_number, DATE_FORMAT(jc_open_date, '%Y-%m-%d') as jc_open_date, company_name, jc_status, last_updated_by 
         FROM bea_jobcards
         WHERE jc_open_date BETWEEN ? AND ?
     `;
@@ -219,7 +227,7 @@ function jobcardsAPIs(app) {
     }
 
     const getJCColumns = `
-        SELECT id, jc_number, DATE_FORMAT(jc_open_date, '%Y-%m-%d') as jc_open_date, company_name, project_name, reliability_report_status, jc_status 
+        SELECT id, jc_number, DATE_FORMAT(jc_open_date, '%Y-%m-%d') as jc_open_date, company_name, project_name, reliability_report_status, jc_status, last_updated_by  
         FROM bea_jobcards
         WHERE jc_open_date BETWEEN ? AND ?
     `;
@@ -252,13 +260,16 @@ function jobcardsAPIs(app) {
   app.post("/api/jobcard/:id", (req, res) => {
     const {
       jcNumber,
+      srfNumber,
       dcNumber,
       jcOpenDate,
       itemReceivedDate,
       poNumber,
       testCategory,
       testDiscipline,
+      sampleCondition,
       typeOfRequest,
+      reportType,
       testInchargeName,
       jcCategory,
       companyName,
@@ -266,12 +277,15 @@ function jobcardsAPIs(app) {
       customerEmail,
       customerNumber,
       projectName,
-      sampleCondition,
+      testInstructions,
       jcStatus,
       reliabilityReportStatus,
       jcCloseDate,
       observations,
+      jcLastModifiedBy,
     } = req.body;
+
+    console.log("jcLastModifiedBy is", jcLastModifiedBy);
 
     const formattedItemReceivedDate = itemReceivedDate
       ? dayjs(itemReceivedDate).format("YYYY-MM-DD")
@@ -284,13 +298,16 @@ function jobcardsAPIs(app) {
 
     const sqlQuery = `
         UPDATE bea_jobcards SET
+            srf_number = ?,
             dcform_number = ?, 
             jc_open_date = ?, 
             item_received_date = ?,
             po_number = ?, 
             test_category = ?, 
             test_discipline = ?,
+            sample_condition = ?,
             type_of_request = ?, 
+            report_type = ?,
             test_incharge = ?, 
             jc_category = ?, 
             company_name = ?, 
@@ -298,22 +315,26 @@ function jobcardsAPIs(app) {
             customer_email = ?, 
             customer_number = ?, 
             project_name = ?, 
-            sample_condition = ?, 
+            test_instructions = ?,
             jc_status = ?, 
             reliability_report_status = ?, 
             jc_closed_date = ?, 
-            observations = ?
+            observations = ?,
+            last_updated_by = ?
         WHERE jc_number = ?
     `;
 
     const values = [
+      srfNumber,
       dcNumber,
       formattedOpenDate,
       formattedItemReceivedDate,
       poNumber,
       testCategory,
       testDiscipline,
+      sampleCondition,
       typeOfRequest,
+      reportType,
       testInchargeName,
       jcCategory,
       companyName,
@@ -321,11 +342,12 @@ function jobcardsAPIs(app) {
       customerEmail,
       customerNumber,
       projectName,
-      sampleCondition,
+      testInstructions,
       jcStatus,
       reliabilityReportStatus,
       formattedCloseDate,
       observations,
+      jcLastModifiedBy,
       jcNumber,
     ];
 
@@ -610,17 +632,17 @@ function jobcardsAPIs(app) {
 
   // To Edit the selected tests:
   app.post("/api/tests/", (req, res) => {
-    const { test, nabl, testStandard, referenceDocument, jcNumber } = req.body;
+    const { test, nabl, testStandard, testProfile, jcNumber } = req.body;
 
     const sqlQuery = `
         UPDATE jc_tests
         SET
           nabl = ?, 
           testStandard = ?, 
-          referenceDocument = ? 
+          testProfile = ? 
         WHERE jc_number = ? AND test = ?`;
 
-    const values = [nabl, testStandard, referenceDocument, jcNumber, test];
+    const values = [nabl, testStandard, testProfile, jcNumber, test];
 
     db.query(sqlQuery, values, (error, result) => {
       if (error) {
@@ -650,7 +672,7 @@ function jobcardsAPIs(app) {
   // To fetch the data based on the jcnumber from the table 'tests'
   app.get("/api/gettestslist/:jc_number", (req, res) => {
     const jcNumber = req.params.jc_number;
-    const sqlQuery = `SELECT test, nabl, testStandard, referenceDocument FROM jc_tests WHERE jc_number = ?`;
+    const sqlQuery = `SELECT test, nabl, testStandard, testProfile FROM jc_tests WHERE jc_number = ?`;
 
     db.query(sqlQuery, [jcNumber], (error, result) => {
       if (error) {
@@ -768,11 +790,12 @@ function jobcardsAPIs(app) {
       endDate,
       duration,
       actualTestDuration,
+      unit,
       endTemp,
       endRh,
       testEndedBy,
       remarks,
-      testPhotosPath,
+      testReportInstructions,
       reportNumber,
       preparedBy,
       nablUploaded,
@@ -794,11 +817,12 @@ function jobcardsAPIs(app) {
           endDate = ? ,
           duration = ? ,
           actualTestDuration = ? ,
+          unit =?,
           endTemp = ? ,
           endRh = ? ,
           testEndedBy = ? ,
           remarks = ? ,
-          testPhotosPath = ? ,
+          testReportInstructions = ? ,
           reportNumber = ? ,
           preparedBy = ? ,
           nablUploaded = ? ,
@@ -816,11 +840,12 @@ function jobcardsAPIs(app) {
       formattedEndDate,
       duration,
       actualTestDuration,
+      unit,
       endTemp,
       endRh,
       testEndedBy,
       remarks,
-      testPhotosPath,
+      testReportInstructions,
       reportNumber,
       preparedBy,
       nablUploaded,
@@ -856,7 +881,7 @@ function jobcardsAPIs(app) {
   //To fetch the data based on the jcnumber from the table 'tests_details'
   app.get("/api/gettestdetailslist/:jc_number", (req, res) => {
     const jcnumber = req.params.jc_number;
-    const sqlQuery = `SELECT  testName,testChamber,eutSerialNo,standard,testStartedBy,startDate,endDate,duration, actualTestDuration,testEndedBy,remarks, testPhotosPath,reportNumber,preparedBy,nablUploaded,reportStatus FROM tests_details  WHERE jc_number = ?`;
+    const sqlQuery = `SELECT  testName,testChamber,eutSerialNo,standard,testStartedBy,startDate,endDate,duration, actualTestDuration, unit,testEndedBy,remarks, testReportInstructions, reportNumber,preparedBy,nablUploaded, reportStatus FROM tests_details  WHERE jc_number = ?`;
 
     db.query(sqlQuery, [jcnumber], (error, result) => {
       if (error) {

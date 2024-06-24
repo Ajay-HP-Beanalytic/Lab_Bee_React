@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   Box,
@@ -27,6 +27,7 @@ import SearchBar from "../common/SearchBar";
 import dayjs from "dayjs";
 import EmptyCard from "../common/EmptyCard";
 import Loader from "../common/Loader";
+import { UserContext } from "../Pages/UserContext";
 
 export default function JCHome() {
   const location = useLocation();
@@ -69,7 +70,7 @@ export default function JCHome() {
 
   const [filteredJcData, setFilteredJcData] = useState(jcTableData);
 
-  const [loggedInUserDepartment, setLoggedInUserDepartment] = useState("");
+  // const [loggedInUserDepartment, setLoggedInUserDepartment] = useState("");
 
   const [reliabilityJCTableData, setReliabilityJCTableData] = useState([]);
 
@@ -80,12 +81,15 @@ export default function JCHome() {
     reliabilityJCTableData
   );
 
+  const { loggedInUser, loggedInUserDepartment } = useContext(UserContext);
+
   // Simulate fetching jc data from the database
   useEffect(() => {
     const jcTableDataRefresh = location.state?.updated;
 
     let requiredAPIdata = {
-      _fields: "jc_number,  jc_open_date, company_name,  jc_status",
+      _fields:
+        "jc_number,  jc_open_date, company_name,  jc_status, last_updated_by",
       year: jcYear,
       month: jcMonth,
     };
@@ -98,7 +102,7 @@ export default function JCHome() {
     /////////////////////////////////////////////////////
     let requiredAPIdataForReliability = {
       _fields:
-        "jc_number,  jc_open_date, company_name, project_name, reliability_report_status,  jc_status",
+        "jc_number,  jc_open_date, company_name, project_name, reliability_report_status,  jc_status, last_updated_by",
       year: jcYear,
       month: jcMonth,
     };
@@ -120,6 +124,8 @@ export default function JCHome() {
           const testingJcResponse = await axios.get(getTestingJcURL);
           setJcTableData(testingJcResponse.data);
           setOriginalJcTableData(testingJcResponse.data);
+
+          console.log(testingJcResponse.data);
 
           // Fetch the reliability JC's
           const reliabilityJcResponse = await axios.get(getReliabilityJcURL);
@@ -175,21 +181,21 @@ export default function JCHome() {
   }, [jcTableData, reliabilityJCTableData]);
 
   // To validate the user credential its very much important
-  axios.defaults.withCredentials = true;
+  // axios.defaults.withCredentials = true;
 
-  // To get the logged in user name:
-  useEffect(() => {
-    axios
-      .get(`${serverBaseAddress}/api/getLoggedInUser`)
-      .then((res) => {
-        if (res.data.valid) {
-          setLoggedInUserDepartment(res.data.user_department);
-        } else {
-          navigate("/");
-        }
-      })
-      .catch((err) => console.log(err));
-  }, []);
+  // // To get the logged in user name:
+  // useEffect(() => {
+  //   axios
+  //     .get(`${serverBaseAddress}/api/getLoggedInUser`)
+  //     .then((res) => {
+  //       if (res.data.valid) {
+  //         setLoggedInUserDepartment(res.data.user_department);
+  //       } else {
+  //         navigate("/");
+  //       }
+  //     })
+  //     .catch((err) => console.log(err));
+  // }, []);
 
   //If data is loading then show Loading text
   if (loading) {
@@ -238,6 +244,14 @@ export default function JCHome() {
     {
       field: "jc_status",
       headerName: "JC Status",
+      width: 200,
+      align: "center",
+      headerAlign: "center",
+      headerClassName: "custom-header-color",
+    },
+    {
+      field: "last_updated_by",
+      headerName: "Last Updated By",
       width: 200,
       align: "center",
       headerAlign: "center",
@@ -297,6 +311,14 @@ export default function JCHome() {
     {
       field: "jc_status",
       headerName: "JC Status",
+      width: 200,
+      align: "center",
+      headerAlign: "center",
+      headerClassName: "custom-header-color",
+    },
+    {
+      field: "last_updated_by",
+      headerName: "Last Updated By",
       width: 200,
       align: "center",
       headerAlign: "center",

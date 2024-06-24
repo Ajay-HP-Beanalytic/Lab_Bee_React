@@ -400,7 +400,8 @@ const FileUploadComponent = ({
       />
 
       <Button variant="contained" onClick={() => fileInputRef.current.click()}>
-        Select Files (Test Profiles / Reference Documents only)
+        Select Files
+        {/* Select Files (Test Profiles / Reference Documents only) */}
       </Button>
       <Typography variant="body2" color="red">
         {" "}

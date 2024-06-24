@@ -327,29 +327,31 @@ function createJobcardsTable() {
     CREATE TABLE IF NOT EXISTS bea_jobcards (
         id INT NOT NULL AUTO_INCREMENT,
         jc_number VARCHAR(255) ,
+        srf_number VARCHAR(255) ,
         dcform_number VARCHAR(255) ,
         jc_open_date DATE,
         item_received_date DATE,
         po_number  VARCHAR(255),
-        test_category VARCHAR(1000),
+        test_category VARCHAR(100),
         test_discipline VARCHAR(500),
-        type_of_request VARCHAR(1000),
-        test_incharge VARCHAR(1000),
+        sample_condition VARCHAR(100),
+        type_of_request VARCHAR(100),
+        report_type VARCHAR(100),
+        test_incharge VARCHAR(100),
         jc_category VARCHAR(500),
         company_name VARCHAR(1000),
         customer_name VARCHAR(1000),
         customer_email VARCHAR(1000),
         customer_number VARCHAR(255),
         project_name VARCHAR(1000),
-        sample_condition VARCHAR(500),
+        test_instructions VARCHAR(5000),
         jc_status  VARCHAR(500),
         reliability_report_status VARCHAR(500),
         jc_closed_date DATE,
         observations VARCHAR(500),
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-        deleted_at TIMESTAMP DEFAULT NULL,
+        last_updated_by VARCHAR(100),
         PRIMARY KEY(id)
+        
     )`;
 
   db.query(createJobcardsTableQuery, function (err, result) {
@@ -416,7 +418,7 @@ function createJobcardTestsTable() {
         test VARCHAR(1000), 
         nabl VARCHAR(255),
         testStandard VARCHAR(1000),
-        referenceDocument VARCHAR(1000),
+        testProfile VARCHAR(2000),
         PRIMARY KEY(id)
     )`;
 
@@ -446,11 +448,12 @@ function createTestDetailsTable() {
         endDate DATETIME,
         duration VARCHAR(1000),
         actualTestDuration VARCHAR(1000),
+        unit VARCHAR(100),
         endTemp VARCHAR(500),
         endRh VARCHAR(500),
         testEndedBy VARCHAR(500),
         remarks VARCHAR(2000),
-        testPhotosPath VARCHAR(1000),
+        testReportInstructions VARCHAR(1000),
         reportNumber VARCHAR(500),
         preparedBy VARCHAR(500),
         nablUploaded VARCHAR(500),
