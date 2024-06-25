@@ -52,8 +52,8 @@ export default function Slotbooking() {
   const [xPosition, setXPosition] = useState(0);
   const [yPosition, setYPosition] = useState(0);
   const [openDialog, setOpenDialog] = useState(false);
-  const [slotStartDateTime, setSlotStartDateTime] = useState("");
-  const [slotEndDateTime, setSlotEndDateTime] = useState("");
+  const [slotStartDateTime, setSlotStartDateTime] = useState(null);
+  const [slotEndDateTime, setSlotEndDateTime] = useState(null);
 
   const [slotDuration, setSlotDuration] = useState(0);
 
@@ -103,9 +103,9 @@ export default function Slotbooking() {
     customerPhone: "",
     testName: "",
     selectedChamber: "",
-    slotStartDateTime: "",
-    slotEndDateTime: "",
-    slotDuration: "",
+    slotStartDateTime: null,
+    slotEndDateTime: null,
+    slotDuration: null,
     remarks: "",
   };
 
@@ -189,8 +189,6 @@ export default function Slotbooking() {
   // Function to check if there is an overlap between two date-time ranges
 
   const onSubmitForm = async (data) => {
-    console.log("sb", data);
-
     // Get the selected start and end date-time, along with the selected chamber
     const selectedSlotStartDate = editId
       ? dayjs(slotStartDateTime)
@@ -771,9 +769,6 @@ export default function Slotbooking() {
         options={[
           { label: `Booking ID: ${selectedEvent?.id}` },
           { label: `Booking Info: ${selectedEvent?.title}` },
-          // { label: `Slot Start Date & Time: ${moment(selectedEvent?.start).format('YYYY-MM-DD HH:mm')}` },
-          // { label: `Slot End Date & Time: ${moment(selectedEvent?.end).format('YYYY-MM-DD HH:mm')}` },
-
           {
             label: `Slot Start Date & Time: ${moment(
               selectedEvent?.start

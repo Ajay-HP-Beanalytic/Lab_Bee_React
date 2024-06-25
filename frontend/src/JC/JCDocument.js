@@ -2,8 +2,9 @@ import Docxtemplater from "docxtemplater";
 import PizZip from "pizzip";
 import PizZipUtils from "pizzip/utils/index.js";
 import { saveAs } from "file-saver";
-import JCTemplate from "../templates/JobcardTemplate.docx";
 
+// import JCTemplate from "../templates/JobcardTemplate.docx";
+import JCTemplate from "../templates/TS1_SRF_JC_TEMPLATE.docx";
 import RelJCTemplate from "../templates/ReliabilityJCTemplate.docx";
 
 function loadFile(url, callback) {

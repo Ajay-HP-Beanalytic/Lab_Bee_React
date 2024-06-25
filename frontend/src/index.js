@@ -8,6 +8,7 @@ import { BrowserRouter } from "react-router-dom";
 import { UserProvider } from "./Pages/UserContext";
 import { ThemeProvider, createTheme } from "@mui/material";
 import axios from "axios";
+import { NotificationProvider } from "./Pages/NotificationContext";
 
 {
   /*Original code was this*/
@@ -48,10 +49,12 @@ const AppWithLoader = () => {
       <BrowserRouter>
         <React.StrictMode>
           <UserProvider>
-            <Loader />
-            <ThemeProvider theme={theme}>
-              <App />
-            </ThemeProvider>
+            <NotificationProvider>
+              <Loader />
+              <ThemeProvider theme={theme}>
+                <App />
+              </ThemeProvider>
+            </NotificationProvider>
           </UserProvider>
         </React.StrictMode>
       </BrowserRouter>

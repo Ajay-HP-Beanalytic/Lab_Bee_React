@@ -16,13 +16,35 @@ const fs = require("fs");
 const path = require("path");
 // const fs = require('fs');
 
+const http = require("http");
+const socketIo = require("socket.io");
+
 // create an express application:
 const app = express();
 
+const server = http.createServer(app);
+// const io = socketIo(server);
+
+const io = socketIo(server, {
+  cors: {
+    origin: true, // mention the host address of the frontend
+    // origin: "http://localhost:3000", // Allow requests from this origin
+    methods: ["GET", "POST"],
+    credentials: true,
+  },
+});
+
+io.on("connection", (socket) => {
+  console.log("A user connected");
+  socket.on("disconnect", () => {
+    console.log("A user disconnected");
+  });
+});
+
 app.use(
   cors({
-    // origin: true, // mention the host address of the frontend
-    origin: [`http://localhost:3000`],
+    origin: true, // mention the host address of the frontend
+    // origin: [`http://localhost:3000`],
     methods: ["POST", "GET", "DELETE"],
     credentials: true,
   })
@@ -160,7 +182,7 @@ reliabilityTasksListAPIs(app);
 
 // backend connection of jobcard data API's from 'JobcardBackend' page
 const { jobcardsAPIs } = require("./JobcardBackend");
-jobcardsAPIs(app);
+jobcardsAPIs(app, io);
 
 // backend connection of slotbooking data API's from 'slotbookingBackend' page
 const { slotBookingAPIs } = require("./slotbookingBackend");
@@ -224,6 +246,11 @@ app.get("/", (req, res) => {
 });
 
 // define the port:
-app.listen(4000, () => {
-  console.log("Server is running on port 4000");
+// app.listen(4000, () => {
+//   console.log("Server is running on port 4000");
+// });
+
+const PORT = 4000;
+server.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
 });

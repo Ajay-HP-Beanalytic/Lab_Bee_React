@@ -340,6 +340,7 @@ function createJobcardsTable() {
         test_incharge VARCHAR(100),
         jc_category VARCHAR(500),
         company_name VARCHAR(1000),
+        company_address VARCHAR(2000),
         customer_name VARCHAR(1000),
         customer_email VARCHAR(1000),
         customer_number VARCHAR(255),
