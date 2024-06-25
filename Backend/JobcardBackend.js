@@ -8,7 +8,7 @@ const path = require("path");
 const fs = require("fs");
 
 // function of jobcard api's:
-function jobcardsAPIs(app) {
+function jobcardsAPIs(app, io) {
   // const filesUploadedFolderPath = path.join(process.cwd(), 'FilesUploaded');
   // console.log('Path to FilesUploaded folder:', filesUploadedFolderPath);
 
@@ -38,6 +38,7 @@ function jobcardsAPIs(app) {
       testInchargeName,
       jcCategory,
       companyName,
+      companyAddress,
       customerName,
       customerEmail,
       customerNumber,
@@ -48,6 +49,7 @@ function jobcardsAPIs(app) {
       jcCloseDate,
       observations,
       jcLastModifiedBy,
+      loggedInUser,
     } = req.body;
 
     const formattedItemReceivedDate = itemReceivedDate
@@ -62,10 +64,10 @@ function jobcardsAPIs(app) {
 
     const sql = `INSERT INTO bea_jobcards(
         jc_number, srf_number, dcform_number, jc_open_date, item_received_date, po_number, 
-        test_category, test_discipline, sample_condition, type_of_request, report_type, test_incharge, jc_category, company_name, 
+        test_category, test_discipline, sample_condition, type_of_request, report_type, test_incharge, jc_category, company_name, company_address,
         customer_name, customer_email, customer_number, project_name, test_instructions, 
          jc_status, reliability_report_status, jc_closed_date, observations, last_updated_by
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
     const values = [
       jcNumber,
@@ -82,6 +84,7 @@ function jobcardsAPIs(app) {
       testInchargeName || "",
       jcCategory || "",
       companyName || "",
+      companyAddress || "",
       customerName || "",
       customerEmail || "",
       customerNumber || "",
@@ -99,6 +102,12 @@ function jobcardsAPIs(app) {
         console.log(error);
         return res.status(500).json({ message: "Internal server error" });
       } else {
+        // Emit the event to all connected clients except the one who triggered it
+        io.emit("jobcard_submit_notification", {
+          message: `New job card ${jcNumber} created`,
+          sender: loggedInUser,
+        });
+
         return res.status(200).json({ message: "Jobcards added successfully" });
       }
     });
@@ -273,6 +282,7 @@ function jobcardsAPIs(app) {
       testInchargeName,
       jcCategory,
       companyName,
+      companyAddress,
       customerName,
       customerEmail,
       customerNumber,
@@ -283,9 +293,8 @@ function jobcardsAPIs(app) {
       jcCloseDate,
       observations,
       jcLastModifiedBy,
+      loggedInUser,
     } = req.body;
-
-    console.log("jcLastModifiedBy is", jcLastModifiedBy);
 
     const formattedItemReceivedDate = itemReceivedDate
       ? dayjs(itemReceivedDate).format("YYYY-MM-DD")
@@ -311,6 +320,7 @@ function jobcardsAPIs(app) {
             test_incharge = ?, 
             jc_category = ?, 
             company_name = ?, 
+            company_address = ?,
             customer_name = ?, 
             customer_email = ?, 
             customer_number = ?, 
@@ -338,6 +348,7 @@ function jobcardsAPIs(app) {
       testInchargeName,
       jcCategory,
       companyName,
+      companyAddress,
       customerName,
       customerEmail,
       customerNumber,
@@ -362,7 +373,14 @@ function jobcardsAPIs(app) {
         console.warn("No rows updated. Check if the jc_number exists.");
         return res.status(404).json({ message: "Jobcard not found" });
       }
-      res.status(200).json({ message: "Jobcard updated successfully" });
+
+      io.emit("jobcard_update_notification", {
+        message: `JC ${jcNumber} Updated`,
+        sender: loggedInUser,
+      });
+      res.status(200).json({
+        message: "Jobcard updated successfully",
+      });
     });
   });
 

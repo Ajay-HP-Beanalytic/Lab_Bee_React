@@ -11,6 +11,7 @@ const JobCardComponent = () => {
 
   const [jobCard, setJobCard] = useState({
     jcNumber: "",
+    srfNumber: "",
     jcOpenDate: "",
     itemReceivedDate: "",
     jcCloseDate: "",
@@ -18,12 +19,15 @@ const JobCardComponent = () => {
     typeOfRequest: "",
     testCategory: "",
     testDiscipline: "",
+    reportType: "",
     sampleCondition: "",
     projectName: "",
     customerName: "",
+    companyAddress: "",
     customerEmail: "",
     customerPhone: "",
     testIncharge: "",
+    testInstructions: "",
 
     relReportStatus: "",
     jcCategory: "",
@@ -49,6 +53,14 @@ const JobCardComponent = () => {
           tests_details,
           reliability_tasks_details,
         } = response.data;
+
+        //Parse and seggregate JC Tests table:
+        const parsedJcTests = tests.map((test, index) => {
+          return {
+            ...test,
+            slNoCounter: index + 1,
+          };
+        });
 
         // Parse and segregate date and time for tests_details
         const parsedTestsDetails = tests_details.map((test, index) => {
@@ -112,6 +124,7 @@ const JobCardComponent = () => {
 
         setJobCard({
           jcNumber: jobcard.jc_number,
+          srfNumber: jobcard.srf_number,
           jcOpenDate: dayjs(jobcard.jc_open_date).isValid()
             ? dayjs(jobcard.jc_open_date).format("YYYY-MM-DD")
             : "",
@@ -122,9 +135,11 @@ const JobCardComponent = () => {
             ? dayjs(jobcard.jc_closed_date).format("YYYY-MM-DD")
             : "",
           companyName: jobcard.company_name,
+          companyAddress: jobcard.company_address,
           typeOfRequest: jobcard.type_of_request,
           testCategory: jobcard.test_category,
           testDiscipline: jobcard.test_discipline,
+          reportType: jobcard.report_type,
           sampleCondition: jobcard.sample_condition,
           projectName: jobcard.project_name,
           customerName: jobcard.customer_name,
@@ -136,10 +151,11 @@ const JobCardComponent = () => {
           jcCategory: jobcard.jc_category,
 
           observations: jobcard.observations,
+          testInstructions: jobcard.test_instructions,
           jcStatus: jobcard.jc_status,
 
           eutDetails: parsedEUTDetails,
-          tests: tests,
+          tests: parsedJcTests,
           testDetails: parsedTestsDetails,
 
           reliabiltyTasks: parsedRelTasksDetails,

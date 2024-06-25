@@ -6,7 +6,7 @@ import {
   useNavigate,
   Navigate,
 } from "react-router-dom";
-import { ToastContainer } from "react-toastify";
+import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import "react-big-calendar/lib/addons/dragAndDrop/styles.css";
@@ -38,11 +38,84 @@ import UserManagement from "./LoginRegister/UserManagement";
 import { UserContext } from "./Pages/UserContext";
 import ProtectedRoute from "./Pages/ProtectedRoute";
 import { Helmet } from "react-helmet";
+import { io } from "socket.io-client";
+import { serverBaseAddress } from "./Pages/APIPage";
+import { NotificationContext } from "./Pages/NotificationContext";
 
 function App() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { loggedInUserDepartment } = useContext(UserContext);
+  const { loggedInUser, loggedInUserDepartment } = useContext(UserContext);
+  const { setNotifications } = useContext(NotificationContext);
+
+  const socket = io(serverBaseAddress); // Replace with your server address
+
+  // useEffect(() => {
+  //   console.log(loggedInUser);
+  //   const handleJobcardSubmitNotification = ({ message, sender }) => {
+  //     if (sender !== loggedInUser) {
+  //       toast.info(message);
+  //     }
+  //   };
+
+  //   const handleJobcardUpdateNotification = ({ message, sender }) => {
+  //     if (sender !== loggedInUser) {
+  //       toast.info(message);
+  //     }
+  //   };
+
+  //   // Set up event listeners
+  //   socket.on("jobcard_submit_notification", handleJobcardSubmitNotification);
+  //   socket.on("jobcard_update_notification", handleJobcardUpdateNotification);
+
+  //   // Cleanup function to remove event listeners
+  //   return () => {
+  //     socket.off(
+  //       "jobcard_submit_notification",
+  //       handleJobcardSubmitNotification
+  //     );
+  //     socket.off(
+  //       "jobcard_update_notification",
+  //       handleJobcardUpdateNotification
+  //     );
+  //   };
+  // }, []);
+
+  useEffect(() => {
+    const handleJobcardSubmitNotification = ({ message, sender }) => {
+      if (sender !== loggedInUser) {
+        setNotifications((prevNotifications) => [
+          ...prevNotifications,
+          message,
+        ]);
+      }
+    };
+
+    const handleJobcardUpdateNotification = ({ message, sender }) => {
+      if (sender !== loggedInUser) {
+        setNotifications((prevNotifications) => [
+          ...prevNotifications,
+          message,
+        ]);
+      }
+    };
+
+    // Set up event listeners
+    socket.on("jobcard_submit_notification", handleJobcardSubmitNotification);
+    socket.on("jobcard_update_notification", handleJobcardUpdateNotification);
+
+    // Cleanup function to remove event listeners
+    return () => {
+      socket.off(
+        "jobcard_submit_notification",
+        handleJobcardSubmitNotification
+      );
+      socket.off(
+        "jobcard_update_notification",
+        handleJobcardUpdateNotification
+      );
+    };
+  }, [loggedInUser, setNotifications]);
 
   useEffect(() => {
     const handleRouteChange = () => {

@@ -93,6 +93,7 @@ const Jobcard = ({ jobCardData }) => {
   const [testInchargeName, setTestInchargeName] = useState("");
 
   const [companyName, setCompanyName] = useState("");
+  const [companyAddress, setCompanyAddress] = useState("");
   const [customerNumber, setCustomerNumber] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
   const [customerName, setCustomerName] = useState("");
@@ -173,8 +174,6 @@ const Jobcard = ({ jobCardData }) => {
 
   useEffect(() => {
     setJcLastModifiedBy(loggedInUser);
-    console.log("loggedInUser is", loggedInUser);
-    console.log("lastModifiedBy is", jcLastModifiedBy);
   }, []);
 
   // Fetch and update the JC using useEffect
@@ -206,6 +205,7 @@ const Jobcard = ({ jobCardData }) => {
           setTypeOfRequest(res.data.jobcard.type_of_request);
           setTestInchargeName(res.data.jobcard.test_incharge);
           setCompanyName(res.data.jobcard.company_name);
+          setCompanyAddress(res.data.jobcard.company_address);
           setCustomerNumber(res.data.jobcard.customer_number);
           setCustomerName(res.data.jobcard.customer_name);
           setCustomerEmail(res.data.jobcard.customer_email);
@@ -451,6 +451,11 @@ const Jobcard = ({ jobCardData }) => {
 
     let api_url = `${serverBaseAddress}/api/jobcard/${id}`;
 
+    if (jcOpenDate === "" || jcOpenDate === null) {
+      toast.warning("Please Enter Job-Card Open Date");
+      return;
+    }
+
     try {
       axios
         .post(api_url, {
@@ -468,6 +473,7 @@ const Jobcard = ({ jobCardData }) => {
           testInchargeName,
           jcCategory,
           companyName,
+          companyAddress,
           customerName,
           customerEmail,
           customerNumber,
@@ -478,6 +484,7 @@ const Jobcard = ({ jobCardData }) => {
           jcCloseDate,
           observations,
           jcLastModifiedBy,
+          loggedInUser,
         })
         .then((res) => {
           {
@@ -725,6 +732,7 @@ const Jobcard = ({ jobCardData }) => {
     setReportType("");
     setTestInchargeName("");
     setCompanyName("");
+    setCompanyAddress("");
     setCustomerNumber("");
     setCustomerName("");
     setProjectName("");
@@ -851,7 +859,7 @@ const Jobcard = ({ jobCardData }) => {
                       </Grid>
                     </Grid>
                   </Box>
-                  <Grid container spacing={2}>
+                  <Grid container spacing={3}>
                     <Grid item xs={12} sm={6}>
                       <TextField
                         sx={{ width: "100%", borderRadius: 3 }}
@@ -865,6 +873,24 @@ const Jobcard = ({ jobCardData }) => {
                         name="company_name"
                         value={companyName}
                         onChange={(e) => setCompanyName(e.target.value)}
+                      />
+                    </Grid>
+
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        sx={{ width: "100%", borderRadius: 3 }}
+                        label="Company Address"
+                        margin="normal"
+                        variant="outlined"
+                        autoComplete="on"
+                        multiline
+                        rows={2}
+                        fullWidth
+                        input
+                        type="text"
+                        name="company_address"
+                        value={companyAddress}
+                        onChange={(e) => setCompanyAddress(e.target.value)}
                       />
                     </Grid>
 
@@ -916,7 +942,7 @@ const Jobcard = ({ jobCardData }) => {
                       />
                     </Grid>
 
-                    <Grid item xs={12}>
+                    <Grid item xs={12} sm={6}>
                       <TextField
                         sx={{ borderRadius: 3 }}
                         label="Project Name"
@@ -1113,7 +1139,7 @@ const Jobcard = ({ jobCardData }) => {
                   )}
 
                   {jcCategory !== "Reliability" && (
-                    <>
+                    <div>
                       <Accordion>
                         <AccordionSummary
                           expandIcon={<ExpandMoreIcon />}
@@ -1356,8 +1382,8 @@ const Jobcard = ({ jobCardData }) => {
                                             )
                                           }
                                         >
-                                          <MenuItem value="nabl">NABL</MenuItem>
-                                          <MenuItem value="non-nabl">
+                                          <MenuItem value="NABL">NABL</MenuItem>
+                                          <MenuItem value="NON-NABL">
                                             Non-NABL
                                           </MenuItem>
                                         </Select>
@@ -1412,7 +1438,7 @@ const Jobcard = ({ jobCardData }) => {
                           </TableContainer>
                         </AccordionDetails>
                       </Accordion>
-                    </>
+                    </div>
                   )}
                 </Grid>
               </CardContent>
@@ -1420,6 +1446,89 @@ const Jobcard = ({ jobCardData }) => {
           </AccordionDetails>
         </Accordion>
 
+        <br />
+
+        <Card
+          sx={{ width: "100%", borderRadius: 3, elevation: 2, mt: 2, mb: 2 }}
+        >
+          <CardContent>
+            <Grid container justifyContent="center" spacing={2}>
+              <Grid item xs={12} md={12} sx={{ borderRadius: 3 }}>
+                <Grid container spacing={2}>
+                  <Grid container spacing={2} sx={{ mt: 1, mb: 1 }}>
+                    <Grid item xs={12} md={4}>
+                      <LocalizationProvider dateAdapter={AdapterDayjs}>
+                        <DatePicker
+                          label="JC Open Date"
+                          variant="outlined"
+                          value={jcOpenDate ? dayjs(jcOpenDate) : null}
+                          onChange={handleJcStartDateChange}
+                          renderInput={(props) => (
+                            <TextField
+                              {...props}
+                              fullWidth
+                              sx={{ width: "100%" }}
+                            />
+                          )}
+                          format="YYYY-MM-DD"
+                        />
+                      </LocalizationProvider>
+                    </Grid>
+
+                    <Grid item xs={12} md={4}>
+                      <FormControl fullWidth>
+                        <InputLabel>JC created by</InputLabel>
+                        <Select
+                          label="test-incharge"
+                          value={testInchargeName}
+                          onChange={(e) => setTestInchargeName(e.target.value)}
+                        >
+                          {jcCategory === "TS1" && users.length > 0 ? (
+                            users.map((item) => (
+                              <MenuItem key={item.id} value={item.name}>
+                                {item.name}
+                              </MenuItem>
+                            ))
+                          ) : jcCategory === "Reliability" &&
+                            reliabilityUsers.length > 0 ? (
+                            reliabilityUsers.map((item) => (
+                              <MenuItem key={item.id} value={item.name}>
+                                {item.name}
+                              </MenuItem>
+                            ))
+                          ) : (
+                            <MenuItem disabled value="">
+                              No Users Available
+                            </MenuItem>
+                          )}
+                        </Select>
+                      </FormControl>
+                    </Grid>
+
+                    {jcCategory !== "Reliability" && (
+                      <Grid item xs={12} md={4}>
+                        <LocalizationProvider dateAdapter={AdapterDayjs}>
+                          <DatePicker
+                            label="Item Received Date"
+                            variant="outlined"
+                            value={
+                              itemReceivedDate ? dayjs(itemReceivedDate) : null
+                            }
+                            onChange={handleItemReceivedDateChange}
+                            renderInput={(props) => (
+                              <TextField {...props} sx={{ width: "100%" }} />
+                            )}
+                            format="YYYY-MM-DD"
+                          />
+                        </LocalizationProvider>
+                      </Grid>
+                    )}
+                  </Grid>
+                </Grid>
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
         <br />
 
         <Accordion>
@@ -1434,89 +1543,6 @@ const Jobcard = ({ jobCardData }) => {
           <AccordionDetails>
             <Card sx={{ width: "100%", borderRadius: 3, elevation: 2, mt: 2 }}>
               <CardContent>
-                <Grid container justifyContent="center" spacing={2}>
-                  <Grid item xs={12} md={12} sx={{ borderRadius: 3 }}>
-                    <Grid container spacing={2}>
-                      <Grid container spacing={2} sx={{ mt: 1, mb: 1 }}>
-                        <Grid item xs={12} md={4}>
-                          <LocalizationProvider dateAdapter={AdapterDayjs}>
-                            <DatePicker
-                              label="JC Open Date"
-                              variant="outlined"
-                              value={jcOpenDate ? dayjs(jcOpenDate) : null}
-                              onChange={handleJcStartDateChange}
-                              renderInput={(props) => (
-                                <TextField
-                                  {...props}
-                                  fullWidth
-                                  sx={{ width: "100%" }}
-                                />
-                              )}
-                              format="YYYY-MM-DD"
-                            />
-                          </LocalizationProvider>
-                        </Grid>
-
-                        <Grid item xs={12} md={4}>
-                          <FormControl fullWidth>
-                            <InputLabel>JC created by</InputLabel>
-                            <Select
-                              label="test-incharge"
-                              value={testInchargeName}
-                              onChange={(e) =>
-                                setTestInchargeName(e.target.value)
-                              }
-                            >
-                              {jcCategory === "TS1" && users.length > 0 ? (
-                                users.map((item) => (
-                                  <MenuItem key={item.id} value={item.name}>
-                                    {item.name}
-                                  </MenuItem>
-                                ))
-                              ) : jcCategory === "Reliability" &&
-                                reliabilityUsers.length > 0 ? (
-                                reliabilityUsers.map((item) => (
-                                  <MenuItem key={item.id} value={item.name}>
-                                    {item.name}
-                                  </MenuItem>
-                                ))
-                              ) : (
-                                <MenuItem disabled value="">
-                                  No Users Available
-                                </MenuItem>
-                              )}
-                            </Select>
-                          </FormControl>
-                        </Grid>
-
-                        {jcCategory !== "Reliability" && (
-                          <Grid item xs={12} md={4}>
-                            <LocalizationProvider dateAdapter={AdapterDayjs}>
-                              <DatePicker
-                                label="Item Received Date"
-                                variant="outlined"
-                                value={
-                                  itemReceivedDate
-                                    ? dayjs(itemReceivedDate)
-                                    : null
-                                }
-                                onChange={handleItemReceivedDateChange}
-                                renderInput={(props) => (
-                                  <TextField
-                                    {...props}
-                                    sx={{ width: "100%" }}
-                                  />
-                                )}
-                                format="YYYY-MM-DD"
-                              />
-                            </LocalizationProvider>
-                          </Grid>
-                        )}
-                      </Grid>
-                    </Grid>
-                  </Grid>
-                </Grid>
-
                 {jcCategory !== "Reliability" && (
                   <>
                     <Accordion>

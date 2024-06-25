@@ -122,6 +122,7 @@ export default function JCHome() {
         try {
           // Fetch the Testing JC's
           const testingJcResponse = await axios.get(getTestingJcURL);
+          console.log("JC Data", testingJcResponse.data);
           setJcTableData(testingJcResponse.data);
           setOriginalJcTableData(testingJcResponse.data);
 

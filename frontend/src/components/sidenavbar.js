@@ -17,7 +17,16 @@ import ListItem from "@mui/material/ListItem";
 import ListItemButton from "@mui/material/ListItemButton";
 import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
-import { Avatar, Popover, Tooltip } from "@mui/material";
+import {
+  Avatar,
+  Badge,
+  Button,
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  Popover,
+  Tooltip,
+} from "@mui/material";
 
 import HomeIcon from "@mui/icons-material/Home";
 import SpaceDashboardIcon from "@mui/icons-material/SpaceDashboard";
@@ -28,6 +37,7 @@ import ArticleIcon from "@mui/icons-material/Article";
 import SettingsIcon from "@mui/icons-material/Settings";
 import NoteAddIcon from "@mui/icons-material/NoteAdd";
 import KitchenIcon from "@mui/icons-material/Kitchen";
+import NotificationsIcon from "@mui/icons-material/Notifications";
 import ManageAccountsIcon from "@mui/icons-material/ManageAccounts";
 import { Link, Outlet, useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -37,6 +47,7 @@ import UserProfile from "../LoginRegister/UserProfile";
 
 import { serverBaseAddress } from "../Pages/APIPage";
 import { UserContext } from "../Pages/UserContext";
+import { NotificationContext } from "../Pages/NotificationContext";
 
 const styles = {
   "@font-face": {
@@ -114,6 +125,10 @@ const Drawer = styled(MuiDrawer, {
 
 export default function SidenavigationBar() {
   const theme = useTheme();
+
+  const { loggedInUser, loggedInUserDepartment } = useContext(UserContext);
+  const { notifications } = useContext(NotificationContext);
+
   const [open, setOpen] = useState(false); // "true" to keep open, and "false" is for keep it closed
 
   const [menudata, setMenudata] = useState("Home");
@@ -121,12 +136,32 @@ export default function SidenavigationBar() {
   //States and functions to handle the onclick events on Avatar:
   const [anchorEl, setAnchorEl] = useState(null);
 
+  const [notificationDialogOpen, setNotificationDialogOpen] = useState(false);
+  const [notificationAnchorEl, setNotificationAnchorEl] = useState(null);
+
   const handleClickAvatar = (event) => {
     setAnchorEl(event.currentTarget);
   };
 
   const handleCloseAvatar = () => {
     setAnchorEl(null);
+  };
+
+  //Function to open the notification bar:
+  const handleClickNotification = (event) => {
+    setNotificationAnchorEl(event.currentTarget);
+    setNotificationDialogOpen(true);
+  };
+
+  //Function to close the notification bar:
+  const handleCloseNotificationDialog = () => {
+    setNotificationDialogOpen(false);
+    setNotificationAnchorEl(null);
+  };
+
+  const handleClearNotifications = () => {
+    notifications.length = 0;
+    setNotificationDialogOpen(false);
   };
 
   const isOpenUserProfileWindow = Boolean(anchorEl);
@@ -140,8 +175,6 @@ export default function SidenavigationBar() {
   const handleListItemClick = (event, index) => {
     setSelectedIndex(index);
   };
-
-  const { loggedInUser, loggedInUserDepartment } = useContext(UserContext);
 
   // Create avatar texts to display in the sidebar
   const firstLetter = loggedInUser.charAt(0).toUpperCase();
@@ -318,20 +351,29 @@ export default function SidenavigationBar() {
         >
           <Toolbar>
             <IconButton
-              color="inherit"
               aria-label="open drawer"
               onClick={handleMenuToggle}
               edge="start"
             >
-              <MenuIcon />
+              <MenuIcon sx={{ color: "white" }} />
             </IconButton>
 
-            <Typography variant="h6" noWrap component="div">
+            <Typography variant="h6" noWrap component="div" color={"white"}>
               Lab Bee
             </Typography>
 
             {/* Add the box with flexGrow which will acts as a spacer item */}
             <Box sx={{ flexGrow: 1 }} />
+
+            <IconButton
+              title="Notifications"
+              onClick={handleClickNotification}
+              size="large"
+            >
+              <Badge badgeContent={notifications.length} showZero color="error">
+                <NotificationsIcon sx={{ color: "white" }} size="large" />
+              </Badge>
+            </IconButton>
 
             <IconButton onClick={handleClickAvatar}>
               <Avatar sx={{ backgroundColor: "#ff3333" }}>{userAvatar}</Avatar>
@@ -354,6 +396,51 @@ export default function SidenavigationBar() {
               <UserProfile userAvatar={userAvatar} userName={loggedInUser} />
             </Popover>
           </Toolbar>
+
+          {/* <Dialog
+            open={notificationDialogOpen}
+            onClose={handleCloseNotificationDialog}
+            aria-labelledby="notification-dialog-title"
+          >
+            <DialogTitle id="notification-dialog-title">
+              Notifications
+            </DialogTitle>
+            <DialogContent>
+              <List>
+                {notifications.map((notification, index) => (
+                  <ListItem key={index}>
+                    <ListItemText primary={notification} />
+                  </ListItem>
+                ))}
+              </List>
+            </DialogContent>
+          </Dialog> */}
+
+          <Dialog
+            open={notificationDialogOpen}
+            onClose={handleCloseNotificationDialog}
+            aria-labelledby="notification-dialog-title"
+          >
+            <DialogTitle id="notification-dialog-title">
+              Notifications
+            </DialogTitle>
+            <DialogContent>
+              <List>
+                {notifications.map((notification, index) => (
+                  <ListItem key={index}>
+                    <ListItemText primary={notification} />
+                  </ListItem>
+                ))}
+              </List>
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={handleClearNotifications}
+              >
+                Clear Notifications
+              </Button>
+            </DialogContent>
+          </Dialog>
         </AppBar>
 
         <Drawer variant="permanent" open={open}>
