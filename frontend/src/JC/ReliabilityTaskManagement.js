@@ -35,6 +35,7 @@ const ReliabilityTaskManagement = ({
   const [reliabilityTasks, setReliabilityTasks] = useState([]);
   // const [users, setUsers] = useState([])
   const [reliabilityUsers, setReliabilityUsers] = useState([]);
+  const [reliabilityTaskAssigners, setReliabilityTaskAssigners] = useState([]);
   const [rowAdded, setRowAdded] = useState(false);
 
   const [dateTimeValue, setDateTimeValue] = useState(null);
@@ -127,6 +128,12 @@ const ReliabilityTaskManagement = ({
       .then((result) => {
         setReliabilityTasks(result.data);
       });
+
+    axios
+      .get(`${serverBaseAddress}/api/getReliabilityTaskAssigners/`)
+      .then((result) => {
+        setReliabilityTaskAssigners(result.data);
+      });
   }, []);
 
   const ITEM_HEIGHT = 48;
@@ -201,7 +208,7 @@ const ReliabilityTaskManagement = ({
                           )
                         }
                       >
-                        {reliabilityUsers.map((item) => (
+                        {reliabilityTaskAssigners.map((item) => (
                           <MenuItem key={item.id} value={item.name}>
                             {item.name}
                           </MenuItem>

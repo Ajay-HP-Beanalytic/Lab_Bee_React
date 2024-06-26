@@ -23,6 +23,8 @@ const socketIo = require("socket.io");
 const app = express();
 
 const server = http.createServer(app);
+
+///Make the app.connection available to the socket.io server:
 // const io = socketIo(server);
 
 const io = socketIo(server, {
@@ -34,10 +36,49 @@ const io = socketIo(server, {
   },
 });
 
+// io.on("connection", (socket) => {
+//   console.log("A user connected");
+//   socket.on("disconnect", () => {
+//     console.log("A user disconnected");
+//   });
+// });
+
+let labbeeUsers = {};
+
+// io.on("connection", (socket) => {
+//   socket.on("user_connected", (user) => {
+//     labbeeUsers[socket.id] = user; // Store the user's department
+//     console.log(
+//       `User ${user.username} connected with department ${user.department}`
+//     );
+//   });
+
+//   socket.on("user_disconnected", () => {
+//     if (labbeeUsers[socket.id]) {
+//       console.log(`User ${labbeeUsers[socket.id].username} disconnected`);
+//       delete labbeeUsers[socket.id];
+//     }
+//   });
+// });
+
 io.on("connection", (socket) => {
-  console.log("A user connected");
+  socket.on("user_connected", (user) => {
+    labbeeUsers[socket.id] = user; // Store the user's department
+    // console.log("Current connected users:", labbeeUsers); // Log the current state of labbeeUsers
+  });
+
+  socket.on("user_disconnected", () => {
+    if (labbeeUsers[socket.id]) {
+      delete labbeeUsers[socket.id];
+      // console.log("Current connected users:", labbeeUsers); // Log the current state of labbeeUsers
+    }
+  });
+
   socket.on("disconnect", () => {
-    console.log("A user disconnected");
+    if (labbeeUsers[socket.id]) {
+      delete labbeeUsers[socket.id];
+      // console.log("Current connected users:", labbeeUsers); // Log the current state of labbeeUsers
+    }
   });
 });
 
@@ -158,7 +199,7 @@ usersDataAPIs(app);
 
 // backend connection from 'BEAQuotationsTable' page:
 const { mainQuotationsTableAPIs } = require("./BEAQuotationsTable");
-mainQuotationsTableAPIs(app);
+mainQuotationsTableAPIs(app, io, labbeeUsers);
 
 // backend connection from 'BEAQuotationsTable' page:
 const { chambersAndCalibrationAPIs } = require("./ChambersAndCalibrationAPI");
@@ -182,11 +223,11 @@ reliabilityTasksListAPIs(app);
 
 // backend connection of jobcard data API's from 'JobcardBackend' page
 const { jobcardsAPIs } = require("./JobcardBackend");
-jobcardsAPIs(app, io);
+jobcardsAPIs(app, io, labbeeUsers);
 
 // backend connection of slotbooking data API's from 'slotbookingBackend' page
 const { slotBookingAPIs } = require("./slotbookingBackend");
-slotBookingAPIs(app);
+slotBookingAPIs(app, io, labbeeUsers);
 
 // backend connection of po_invoice data API's from 'PoInvoiceBackend' page
 const { poInvoiceBackendAPIs } = require("./PoInvoiceBackend");

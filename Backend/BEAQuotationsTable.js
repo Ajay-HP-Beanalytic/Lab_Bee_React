@@ -2,7 +2,7 @@
 
 const { db } = require("./db");
 
-function mainQuotationsTableAPIs(app) {
+function mainQuotationsTableAPIs(app, io, labbeeUsers) {
   // To store the table data in the 'bea_quotations_table' table:
   app.post("/api/quotation", (req, res) => {
     const {
@@ -20,6 +20,7 @@ function mainQuotationsTableAPIs(app) {
       totalAmountWords,
       tableData,
       quotationCreatedBy,
+      loggedInUser,
     } = req.body;
     const formattedDate = new Date(selectedDate);
 
@@ -45,7 +46,26 @@ function mainQuotationsTableAPIs(app) {
         JSON.stringify(tableData),
       ],
       (error, result) => {
-        if (error) return res.status(500).json(error);
+        if (error) {
+          return res.status(500).json(error);
+        }
+
+        const departmentsToNotify = ["Administrator", "Accounts", "Marketing"];
+
+        for (let socketId in labbeeUsers) {
+          if (
+            departmentsToNotify.includes(labbeeUsers[socketId].department) &&
+            labbeeUsers[socketId].username !== loggedInUser
+          ) {
+            let message = `New Quotation: ${quotationIdString} created, by ${loggedInUser}`;
+
+            io.to(socketId).emit("new_quote_created_notification", {
+              message: message,
+              sender: loggedInUser,
+            });
+          }
+        }
+
         return res.status(200).json(result);
       }
     );
@@ -105,6 +125,7 @@ function mainQuotationsTableAPIs(app) {
       taxableAmount,
       totalAmountWords,
       tableData,
+      loggedInUser,
     } = req.body;
 
     // const formattedDate = new Date(selectedDate);
@@ -144,7 +165,26 @@ function mainQuotationsTableAPIs(app) {
         id,
       ],
       (error, result) => {
-        if (error) return res.status(500).json(error);
+        if (error) {
+          return res.status(500).json(error);
+        }
+
+        const departmentsToNotify = ["Administrator", "Accounts", "Marketing"];
+
+        for (let socketId in labbeeUsers) {
+          if (
+            departmentsToNotify.includes(labbeeUsers[socketId].department) &&
+            labbeeUsers[socketId].username !== loggedInUser
+          ) {
+            let message = `Quotation: ${quotationIdString} updated, by ${loggedInUser}`;
+
+            io.to(socketId).emit("quote_update_notification", {
+              message: message,
+              sender: loggedInUser,
+            });
+          }
+        }
+
         return res.status(200).json(result);
       }
     );
