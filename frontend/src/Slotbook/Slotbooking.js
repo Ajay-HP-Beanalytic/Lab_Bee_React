@@ -245,6 +245,8 @@ export default function Slotbooking() {
 
       slotStartDateTime: selectedSlotStartDate.format("YYYY-MM-DD HH:mm"),
       slotEndDateTime: selectedSlotEndDate.format("YYYY-MM-DD HH:mm"),
+      loggedInUser: loggedInUser,
+      loggedInUserDepartment: loggedInUserDepartment,
     };
 
     try {
@@ -283,7 +285,7 @@ export default function Slotbooking() {
       const deleteResponse = await axios.delete(
         `${serverBaseAddress}/api/deleteBooking`,
         {
-          data: { bookingID: bookingIDToBeDeleted },
+          data: { bookingID: bookingIDToBeDeleted, loggedInUser: loggedInUser },
         }
       );
 
@@ -302,31 +304,27 @@ export default function Slotbooking() {
   const fetchBookingData = async (selectedBookingId) => {
     try {
       const response = await axios.get(
-        `${serverBaseAddress}/api/getBookingData/${selectedBookingId}`
+        `${serverBaseAddress}/api/getBookingData/` + selectedBookingId
       );
       const bookingData = response.data[0];
-
       setValue("company", bookingData.company_name);
       setValue("customerName", bookingData.customer_name);
       setValue("customerEmail", bookingData.customer_email);
       setValue("customerPhone", bookingData.customer_phone);
       setValue("testName", bookingData.test_name);
 
-      const selectedChamberId = myResourcesList.find(
-        (item) => item.id === bookingData.chamber_allotted
-      )?.id;
-      if (selectedChamberId) {
-        const selectedChamberName = myResourcesList.find(
-          (item) => item.id === selectedChamberId
-        )?.title;
-        if (selectedChamberName) {
-          setValue("selectedChamber", selectedChamberId);
-          setSelectedChamber(selectedChamberName);
-        } else {
-          console.error("Error: Chamber title not found in myResourceList");
-        }
+      const selectedChamber = myResourcesList.find(
+        (item) => item.title === bookingData.chamber_allotted
+      );
+
+      if (selectedChamber) {
+        const selectedChamberId = selectedChamber.id;
+        const selectedChamberName = selectedChamber.title;
+
+        setValue("selectedChamber", selectedChamberName);
+        setSelectedChamber(selectedChamberName);
       } else {
-        console.error("Error: Chamber not found in myResourceList");
+        console.error("Error: Chamber title not found in myResourceList");
       }
 
       // Format the dates using dayjs

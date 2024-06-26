@@ -8,7 +8,7 @@ const path = require("path");
 const fs = require("fs");
 
 // function of jobcard api's:
-function jobcardsAPIs(app, io) {
+function jobcardsAPIs(app, io, labbeeUsers) {
   // const filesUploadedFolderPath = path.join(process.cwd(), 'FilesUploaded');
   // console.log('Path to FilesUploaded folder:', filesUploadedFolderPath);
 
@@ -50,6 +50,7 @@ function jobcardsAPIs(app, io) {
       observations,
       jcLastModifiedBy,
       loggedInUser,
+      loggedInUserDepartment,
     } = req.body;
 
     const formattedItemReceivedDate = itemReceivedDate
@@ -102,11 +103,35 @@ function jobcardsAPIs(app, io) {
         console.log(error);
         return res.status(500).json({ message: "Internal server error" });
       } else {
-        // Emit the event to all connected clients except the one who triggered it
-        io.emit("jobcard_submit_notification", {
-          message: `New job card ${jcNumber} created`,
-          sender: loggedInUser,
-        });
+        // Emit the event to specific departments
+        const departmentsToNotify = [
+          "Administrator",
+          "Accounts",
+          "TS1 Testing",
+          "Reliability",
+        ];
+
+        for (let socketId in labbeeUsers) {
+          if (
+            departmentsToNotify.includes(labbeeUsers[socketId].department) &&
+            labbeeUsers[socketId].username !== loggedInUser
+          ) {
+            let message = "";
+
+            if (jcCategory === "TS1") {
+              message = `New TS1 ${jcNumber} created by ${loggedInUser}`;
+            } else if (jcCategory === "Reliability") {
+              message = `New Reliability ${jcNumber} created by ${loggedInUser}`;
+            } else if (jcCategory === "TS2") {
+              message = `New TS2 ${jcNumber} created by ${loggedInUser}`;
+            }
+
+            io.to(socketId).emit("jobcard_submit_notification", {
+              message: message,
+              sender: loggedInUser,
+            });
+          }
+        }
 
         return res.status(200).json({ message: "Jobcards added successfully" });
       }
@@ -156,7 +181,6 @@ function jobcardsAPIs(app, io) {
         });
       }
       res.send(result);
-      console.log(result);
     });
   });
 
@@ -294,6 +318,7 @@ function jobcardsAPIs(app, io) {
       observations,
       jcLastModifiedBy,
       loggedInUser,
+      loggedInUserDepartment,
     } = req.body;
 
     const formattedItemReceivedDate = itemReceivedDate
@@ -374,10 +399,39 @@ function jobcardsAPIs(app, io) {
         return res.status(404).json({ message: "Jobcard not found" });
       }
 
-      io.emit("jobcard_update_notification", {
-        message: `JC ${jcNumber} Updated`,
-        sender: loggedInUser,
-      });
+      // io.emit("jobcard_update_notification", {
+      //   message: `TS1 JC ${jcNumber} updated by ${loggedInUser}`,
+      //   sender: loggedInUser,
+      // });
+
+      const departmentsToNotify = [
+        "Administrator",
+        "Accounts",
+        "TS1 Testing",
+        "Reliability",
+      ];
+
+      for (let socketId in labbeeUsers) {
+        if (
+          departmentsToNotify.includes(labbeeUsers[socketId].department) &&
+          labbeeUsers[socketId].username !== loggedInUser
+        ) {
+          let message = "";
+
+          if (jcCategory === "TS1") {
+            message = `TS1 JC ${jcNumber} updated by ${loggedInUser}`;
+          } else if (jcCategory === "Reliability") {
+            message = `Reliability JC ${jcNumber} updated by ${loggedInUser}`;
+          } else if (jcCategory === "TS2") {
+            message = `TS2 JC ${jcNumber} updated by ${loggedInUser}`;
+          }
+
+          io.to(socketId).emit("jobcard_update_notification", {
+            message: message,
+            sender: loggedInUser,
+          });
+        }
+      }
       res.status(200).json({
         message: "Jobcard updated successfully",
       });
@@ -1148,6 +1202,29 @@ function jobcardsAPIs(app, io) {
       });
 
       res.json(formattedChamberUtilizationResult);
+    });
+  });
+
+  //////////////////////////////////////////////////////////////////////////////
+  // To get the month-year of the Job-card
+  // To get the last JC number of the previous month
+  app.get("/api/getPreviousMonthJC", (req, res) => {
+    const sqlQuery = `
+      SELECT jc_number 
+      FROM bea_jobcards 
+      WHERE MONTH(jc_open_date) = MONTH(CURRENT_DATE - INTERVAL 1 MONTH)
+      ORDER BY jc_open_date DESC 
+      LIMIT 1`;
+
+    db.query(sqlQuery, (error, result) => {
+      if (error) {
+        return res.status(500).json({
+          error:
+            "An error occurred while fetching the last JC number of the previous month",
+        });
+      }
+      res.json(result);
+      console.log("last month last JC", result);
     });
   });
 

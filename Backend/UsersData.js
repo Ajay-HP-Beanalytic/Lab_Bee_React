@@ -236,6 +236,15 @@ function usersDataAPIs(app) {
     });
   });
 
+  // Fetch the Reliability department users:
+  app.get("/api/getReliabilityTaskAssigners", (req, res) => {
+    const reliabilityTaskAssignersList =
+      "SELECT name FROM labbee_users WHERE role ='Reliability Manager' OR role = 'Managing Director' ";
+    db.query(reliabilityTaskAssignersList, (error, result) => {
+      res.send(result);
+    });
+  });
+
   app.get("/api/getMarketingUsers", (req, res) => {
     const marketingUsersList =
       "SELECT name FROM labbee_users WHERE department LIKE '%Marketing%' ";

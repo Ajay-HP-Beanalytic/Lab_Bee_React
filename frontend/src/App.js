@@ -38,84 +38,15 @@ import UserManagement from "./LoginRegister/UserManagement";
 import { UserContext } from "./Pages/UserContext";
 import ProtectedRoute from "./Pages/ProtectedRoute";
 import { Helmet } from "react-helmet";
-import { io } from "socket.io-client";
+
 import { serverBaseAddress } from "./Pages/APIPage";
 import { NotificationContext } from "./Pages/NotificationContext";
+import NotificationsManagement from "./Pages/NotificationsManagement";
 
 function App() {
   const location = useLocation();
   const navigate = useNavigate();
   const { loggedInUser, loggedInUserDepartment } = useContext(UserContext);
-  const { setNotifications } = useContext(NotificationContext);
-
-  const socket = io(serverBaseAddress); // Replace with your server address
-
-  // useEffect(() => {
-  //   console.log(loggedInUser);
-  //   const handleJobcardSubmitNotification = ({ message, sender }) => {
-  //     if (sender !== loggedInUser) {
-  //       toast.info(message);
-  //     }
-  //   };
-
-  //   const handleJobcardUpdateNotification = ({ message, sender }) => {
-  //     if (sender !== loggedInUser) {
-  //       toast.info(message);
-  //     }
-  //   };
-
-  //   // Set up event listeners
-  //   socket.on("jobcard_submit_notification", handleJobcardSubmitNotification);
-  //   socket.on("jobcard_update_notification", handleJobcardUpdateNotification);
-
-  //   // Cleanup function to remove event listeners
-  //   return () => {
-  //     socket.off(
-  //       "jobcard_submit_notification",
-  //       handleJobcardSubmitNotification
-  //     );
-  //     socket.off(
-  //       "jobcard_update_notification",
-  //       handleJobcardUpdateNotification
-  //     );
-  //   };
-  // }, []);
-
-  useEffect(() => {
-    const handleJobcardSubmitNotification = ({ message, sender }) => {
-      if (sender !== loggedInUser) {
-        setNotifications((prevNotifications) => [
-          ...prevNotifications,
-          message,
-        ]);
-      }
-    };
-
-    const handleJobcardUpdateNotification = ({ message, sender }) => {
-      if (sender !== loggedInUser) {
-        setNotifications((prevNotifications) => [
-          ...prevNotifications,
-          message,
-        ]);
-      }
-    };
-
-    // Set up event listeners
-    socket.on("jobcard_submit_notification", handleJobcardSubmitNotification);
-    socket.on("jobcard_update_notification", handleJobcardUpdateNotification);
-
-    // Cleanup function to remove event listeners
-    return () => {
-      socket.off(
-        "jobcard_submit_notification",
-        handleJobcardSubmitNotification
-      );
-      socket.off(
-        "jobcard_update_notification",
-        handleJobcardUpdateNotification
-      );
-    };
-  }, [loggedInUser, setNotifications]);
 
   useEffect(() => {
     const handleRouteChange = () => {
@@ -197,6 +128,10 @@ function App() {
         <meta name="description" content="App of BE Analytic." />
       </Helmet>
       <ToastContainer position="top-center" />
+
+      {/* Include the NotificationsManagement component */}
+      <NotificationsManagement />
+
       <Routes>
         {/* Public Routes */}
         <Route path="/" exact element={<Login />} />

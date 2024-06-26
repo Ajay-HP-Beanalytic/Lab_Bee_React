@@ -354,8 +354,6 @@ export default function Quotation() {
   const handleSubmitETQuotation = async (e) => {
     e.preventDefault();
 
-    console.log("4", selectedDate);
-
     if (
       !quotationIdString ||
       !customerId ||
@@ -420,6 +418,7 @@ export default function Quotation() {
         totalAmountWords,
         quotationCreatedBy,
         tableData,
+        loggedInUser,
       })
       .then((res) => {
         if (res.status === 200)

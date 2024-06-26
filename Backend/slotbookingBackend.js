@@ -3,7 +3,7 @@ const { db } = require("./db");
 const dayjs = require("dayjs");
 const moment = require("moment");
 
-function slotBookingAPIs(app) {
+function slotBookingAPIs(app, io, labbeeUsers) {
   // To add chambers to the table:
   app.post("/api/addChamberForSlotBooking", (req, res) => {
     const { chamberName } = req.body;
@@ -102,6 +102,28 @@ function slotBookingAPIs(app) {
           .status(500)
           .json({ error: "An error occurred while booking the slot" });
       } else {
+        const departmentsToNotify = [
+          "Administrator",
+          "Accounts",
+          "TS1 Testing",
+          "Marketing",
+        ];
+
+        const loggedInUser = formData.loggedInUser;
+
+        for (let socketId in labbeeUsers) {
+          if (
+            departmentsToNotify.includes(labbeeUsers[socketId].department) &&
+            labbeeUsers[socketId].username !== loggedInUser
+          ) {
+            let message = `New TS1 Slot: ${formData.bookingID} booked, by ${loggedInUser}`;
+
+            io.to(socketId).emit("new_slot_booking_notification", {
+              message: message,
+              sender: loggedInUser,
+            });
+          }
+        }
         res.status(200).json({ message: "Slot Booked Successfully" });
       }
     });
@@ -214,6 +236,29 @@ function slotBookingAPIs(app) {
           .status(500)
           .json({ error: "An error occurred while updating the booking" });
       } else {
+        const departmentsToNotify = [
+          "Administrator",
+          "Accounts",
+          "TS1 Testing",
+          "Marketing",
+        ];
+
+        const loggedInUser = formData.loggedInUser;
+
+        for (let socketId in labbeeUsers) {
+          if (
+            departmentsToNotify.includes(labbeeUsers[socketId].department) &&
+            labbeeUsers[socketId].username !== loggedInUser
+          ) {
+            let message = `TS1 Slot: ${formData.bookingID} updated by ${loggedInUser}`;
+
+            io.to(socketId).emit("update_slot_booking_notification", {
+              message: message,
+              sender: loggedInUser,
+            });
+          }
+        }
+
         res.status(200).json({ message: "Booking updated successfully" });
       }
     });
@@ -221,7 +266,7 @@ function slotBookingAPIs(app) {
 
   // Delete or remove the selected booking:
   app.delete("/api/deleteBooking", (req, res) => {
-    const { bookingID } = req.body;
+    const { bookingID, loggedInUser } = req.body;
     const deleteBookings = "DELETE FROM bookings_table  WHERE booking_id = ?";
     db.query(deleteBookings, [bookingID], (error, result) => {
       if (error) {
@@ -234,6 +279,27 @@ function slotBookingAPIs(app) {
         });
       } else {
         if (result.affectedRows > 0) {
+          const departmentsToNotify = [
+            "Administrator",
+            "Accounts",
+            "TS1 Testing",
+            "Marketing",
+          ];
+
+          for (let socketId in labbeeUsers) {
+            if (
+              departmentsToNotify.includes(labbeeUsers[socketId].department) &&
+              labbeeUsers[socketId].username !== loggedInUser
+            ) {
+              let message = `TS1 Slot: ${bookingID} deleted by ${loggedInUser}`;
+
+              io.to(socketId).emit("delete_slot_booking_notification", {
+                message: message,
+                sender: loggedInUser,
+              });
+            }
+          }
+
           return res.json({
             message: "Booking marked as deleted successfully",
           });

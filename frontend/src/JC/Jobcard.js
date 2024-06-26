@@ -158,6 +158,12 @@ const Jobcard = ({ jobCardData }) => {
     { value: "Test", label: "Test" },
   ];
 
+  const jcCategoryOptions = [
+    { value: "TS1", label: "TS1" },
+    { value: "Reliability", label: "Reliability" },
+    { value: "TS2", label: "TS2" },
+  ];
+
   let { id } = useParams("id");
   if (!id) {
     id = "";
@@ -169,10 +175,12 @@ const Jobcard = ({ jobCardData }) => {
       setJcCategory("TS1");
     } else if (loggedInUserDepartment === "Reliability") {
       setJcCategory("Reliability");
+    } else if (loggedInUserDepartment === "Administrator") {
     }
   });
 
   useEffect(() => {
+    setTestInchargeName(loggedInUser);
     setJcLastModifiedBy(loggedInUser);
   }, []);
 
@@ -485,6 +493,7 @@ const Jobcard = ({ jobCardData }) => {
           observations,
           jcLastModifiedBy,
           loggedInUser,
+          loggedInUserDepartment,
         })
         .then((res) => {
           {
@@ -762,6 +771,28 @@ const Jobcard = ({ jobCardData }) => {
     navigate("/jobcard_dashboard");
   };
 
+  const handleAddJcForPreviousMonth = () => {
+    const fetchPreviousMonthJC = async () => {
+      try {
+        const response = await axios.get(
+          `${serverBaseAddress}/api/getPreviousMonthJC`
+        );
+        const lastJCNumber = response.data[0]?.jc_number;
+
+        console.log("Last JC Number of Previous Month:", lastJCNumber);
+        // You can now use lastJCNumber as needed
+      } catch (error) {
+        console.error(
+          "Error fetching last JC number of previous month:",
+          error
+        );
+      }
+    };
+
+    // Call this function when needed, e.g., on component mount or button click
+    fetchPreviousMonthJC();
+  };
+
   //////////////////////////////////////////////////////////
 
   // Custom style for the table header
@@ -798,6 +829,34 @@ const Jobcard = ({ jobCardData }) => {
       <form onSubmit={handleSubmitJobcard}>
         <Box sx={{ mb: 1 }}>
           <Grid container justifyContent="flex-end">
+            <Grid
+              item
+              xs={12}
+              md={6}
+              sx={{ display: "flex", justifyContent: "flex-start" }}
+            >
+              {loggedInUserDepartment === "Administrator" && (
+                <Tooltip title="Add JC for previous month">
+                  <Button
+                    sx={{
+                      borderRadius: 3,
+                      mx: 0.5,
+                      mb: 1,
+                      bgcolor: "orange",
+                      color: "white",
+                      borderColor: "black",
+                    }}
+                    variant="contained"
+                    color="primary"
+                    onClick={handleAddJcForPreviousMonth}
+                  >
+                    {" "}
+                    Add JC{" "}
+                  </Button>
+                </Tooltip>
+              )}
+            </Grid>
+
             <Grid
               item
               xs={12}
@@ -1454,7 +1513,7 @@ const Jobcard = ({ jobCardData }) => {
           <CardContent>
             <Grid container justifyContent="center" spacing={2}>
               <Grid item xs={12} md={12} sx={{ borderRadius: 3 }}>
-                <Grid container spacing={2}>
+                <Grid container spacing={4}>
                   <Grid container spacing={2} sx={{ mt: 1, mb: 1 }}>
                     <Grid item xs={12} md={4}>
                       <LocalizationProvider dateAdapter={AdapterDayjs}>
@@ -1475,36 +1534,6 @@ const Jobcard = ({ jobCardData }) => {
                       </LocalizationProvider>
                     </Grid>
 
-                    <Grid item xs={12} md={4}>
-                      <FormControl fullWidth>
-                        <InputLabel>JC created by</InputLabel>
-                        <Select
-                          label="test-incharge"
-                          value={testInchargeName}
-                          onChange={(e) => setTestInchargeName(e.target.value)}
-                        >
-                          {jcCategory === "TS1" && users.length > 0 ? (
-                            users.map((item) => (
-                              <MenuItem key={item.id} value={item.name}>
-                                {item.name}
-                              </MenuItem>
-                            ))
-                          ) : jcCategory === "Reliability" &&
-                            reliabilityUsers.length > 0 ? (
-                            reliabilityUsers.map((item) => (
-                              <MenuItem key={item.id} value={item.name}>
-                                {item.name}
-                              </MenuItem>
-                            ))
-                          ) : (
-                            <MenuItem disabled value="">
-                              No Users Available
-                            </MenuItem>
-                          )}
-                        </Select>
-                      </FormControl>
-                    </Grid>
-
                     {jcCategory !== "Reliability" && (
                       <Grid item xs={12} md={4}>
                         <LocalizationProvider dateAdapter={AdapterDayjs}>
@@ -1521,6 +1550,25 @@ const Jobcard = ({ jobCardData }) => {
                             format="YYYY-MM-DD"
                           />
                         </LocalizationProvider>
+                      </Grid>
+                    )}
+
+                    {loggedInUserDepartment === "Administrator" && (
+                      <Grid item xs={12} md={4}>
+                        <FormControl fullWidth>
+                          <InputLabel>JC category</InputLabel>
+                          <Select
+                            label="test-incharge"
+                            value={jcCategory}
+                            onChange={(e) => setJcCategory(e.target.value)}
+                          >
+                            {jcCategoryOptions.map((item) => (
+                              <MenuItem key={item.id} value={item.value}>
+                                {item.label}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                        </FormControl>
                       </Grid>
                     )}
                   </Grid>

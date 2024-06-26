@@ -135,8 +135,6 @@ export default function SidenavigationBar() {
 
   //States and functions to handle the onclick events on Avatar:
   const [anchorEl, setAnchorEl] = useState(null);
-
-  const [notificationDialogOpen, setNotificationDialogOpen] = useState(false);
   const [notificationAnchorEl, setNotificationAnchorEl] = useState(null);
 
   const handleClickAvatar = (event) => {
@@ -150,23 +148,27 @@ export default function SidenavigationBar() {
   //Function to open the notification bar:
   const handleClickNotification = (event) => {
     setNotificationAnchorEl(event.currentTarget);
-    setNotificationDialogOpen(true);
   };
 
   //Function to close the notification bar:
-  const handleCloseNotificationDialog = () => {
-    setNotificationDialogOpen(false);
+  const handleClearNotifications = () => {
+    notifications.length = 0;
     setNotificationAnchorEl(null);
   };
 
-  const handleClearNotifications = () => {
-    notifications.length = 0;
-    setNotificationDialogOpen(false);
+  //Function to close the notification bar:
+  const handleCloseNotification = () => {
+    setNotificationAnchorEl(null);
   };
 
   const isOpenUserProfileWindow = Boolean(anchorEl);
   const userProfileWindowId = isOpenUserProfileWindow
     ? "user-profile-window-popover"
+    : undefined;
+
+  const isOpenNotificationWindow = Boolean(notificationAnchorEl);
+  const notificationWindowId = isOpenNotificationWindow
+    ? "notification-window-popover"
     : undefined;
 
   // To highlight the selected or clicked buton
@@ -397,34 +399,22 @@ export default function SidenavigationBar() {
             </Popover>
           </Toolbar>
 
-          {/* <Dialog
-            open={notificationDialogOpen}
-            onClose={handleCloseNotificationDialog}
-            aria-labelledby="notification-dialog-title"
+          <Popover
+            id={notificationWindowId}
+            open={isOpenNotificationWindow}
+            anchorEl={notificationAnchorEl}
+            onClose={handleCloseNotification}
+            anchorOrigin={{
+              vertical: "bottom",
+              horizontal: "center",
+            }}
+            transformOrigin={{
+              vertical: "top",
+              horizontal: "center",
+            }}
           >
-            <DialogTitle id="notification-dialog-title">
-              Notifications
-            </DialogTitle>
-            <DialogContent>
-              <List>
-                {notifications.map((notification, index) => (
-                  <ListItem key={index}>
-                    <ListItemText primary={notification} />
-                  </ListItem>
-                ))}
-              </List>
-            </DialogContent>
-          </Dialog> */}
-
-          <Dialog
-            open={notificationDialogOpen}
-            onClose={handleCloseNotificationDialog}
-            aria-labelledby="notification-dialog-title"
-          >
-            <DialogTitle id="notification-dialog-title">
-              Notifications
-            </DialogTitle>
-            <DialogContent>
+            <Box sx={{ padding: 2 }}>
+              <Typography variant="h6">Notifications</Typography>
               <List>
                 {notifications.map((notification, index) => (
                   <ListItem key={index}>
@@ -439,8 +429,8 @@ export default function SidenavigationBar() {
               >
                 Clear Notifications
               </Button>
-            </DialogContent>
-          </Dialog>
+            </Box>
+          </Popover>
         </AppBar>
 
         <Drawer variant="permanent" open={open}>
