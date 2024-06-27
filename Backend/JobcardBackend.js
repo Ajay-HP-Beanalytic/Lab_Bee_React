@@ -1224,136 +1224,10 @@ function jobcardsAPIs(app, io, labbeeUsers) {
         });
       }
       res.json(result);
-      console.log("last month last JC", result);
     });
   });
 
   //////////////////////////////////////////////////////////////////////////////
-
-  // const storage = multer.diskStorage({
-  //   destination: (req, file, cb) => {
-  //     cb(null, path.join(__dirname, "FilesUploaded"));
-  //   },
-  //   filename: (req, file, cb) => {
-  //     cb(null, `${Date.now()}_${file.originalname}`);
-  //   },
-  // });
-
-  // const storage = multer.diskStorage({
-  //   destination: (req, file, cb) => {
-  //     cb(null, path.join(__dirname, "FilesUploaded"));
-  //   },
-  //   filename: (req, file, cb) => {
-  //     cb(null, `${Date.now()}_${file.originalname}`);
-  //   },
-  // });
-
-  // const storage = multer.diskStorage({
-  //   destination: (req, file, cb) => {
-  //     const uploadDir = path.join(__dirname, "FilesUploaded");
-  //     // Check if directory exists, if not create it
-  //     if (!fs.existsSync(uploadDir)) {
-  //       fs.mkdirSync(uploadDir, { recursive: true });
-  //     }
-  //     cb(null, uploadDir);
-  //   },
-  //   filename: (req, file, cb) => {
-  //     cb(null, `${Date.now()}_${file.originalname}`);
-  //   },
-  // });
-
-  // const filesUploadUsingMulter = multer({
-  //   storage,
-  //   limits: {
-  //     fileSize: 25 * 1024 * 1024,
-  //   }, // Maximum is 25 MB.
-  // });
-
-  // app.post(
-  //   "/api/uploadFiles",
-  //   filesUploadUsingMulter.array("attachedFiles"),
-  //   (req, res) => {
-  //     if (!req.files || req.files.length === 0) {
-  //       return res.status(400).send("No files were uploaded.");
-  //     }
-
-  //     const { jcNumber } = req.body;
-  //     if (!jcNumber) {
-  //       return res.status(400).send("jcNumber is required.");
-  //     }
-
-  //     const files = req.files;
-
-  //     const filePromises = files.map((file) => {
-  //       // Use forward slashes for the file path
-  //       const relativeFilePath = file.path.replace(/\\/g, "/");
-  //       const sqlInsertFile =
-  //         "INSERT INTO attachments (jc_number, file_name, file_path, file_type) VALUES (?, ?, ?, ?)";
-  //       return new Promise((resolve, reject) => {
-  //         db.query(
-  //           sqlInsertFile,
-  //           [jcNumber, file.originalname, relativeFilePath, file.mimetype],
-  //           (err, results) => {
-  //             if (err) {
-  //               return reject(err);
-  //             }
-  //             resolve(results);
-  //           }
-  //         );
-  //       });
-  //     });
-
-  //     Promise.all(filePromises)
-  //       .then(() => {
-  //         res
-  //           .status(200)
-  //           .send("Files uploaded and saved to database successfully.");
-  //       })
-  //       .catch((error) => {
-  //         console.error("Error uploading files:", error);
-  //         res.status(500).send("Internal server error.");
-  //       });
-  //   }
-  // );
-
-  // // Backend API to delete the attachments:
-  // app.delete("/api/deleteFile/:id", (req, res) => {
-  //   const fileId = req.params.id;
-
-  //   const sqlSelectFile = "SELECT * FROM attachments WHERE id = ?";
-  //   db.query(sqlSelectFile, [fileId], (error, result) => {
-  //     if (error) {
-  //       console.error("Error selecting file:", error);
-  //       return res.status(500).json({ error });
-  //     }
-
-  //     if (result.length === 0) {
-  //       console.warn("File not found for fileId:", fileId);
-  //       return res.status(404).json({ message: "File not found" });
-  //     }
-
-  //     const file = result[0];
-  //     const filePath = path.resolve(file.file_path); // Ensure absolute path
-
-  //     const sqlDeleteFile = "DELETE FROM attachments WHERE id = ?";
-  //     db.query(sqlDeleteFile, [fileId], (error) => {
-  //       if (error) {
-  //         console.error("Error deleting file record from database:", error);
-  //         return res.status(500).json({ error });
-  //       }
-
-  //       fs.unlink(filePath, (err) => {
-  //         if (err) {
-  //           console.error("Error deleting file from filesystem:", err);
-  //           return res
-  //             .status(500)
-  //             .json({ error: "Error deleting file from filesystem" });
-  //         }
-  //         res.status(200).json({ message: "File deleted successfully" });
-  //       });
-  //     });
-  //   });
-  // });
 
   const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -1402,17 +1276,15 @@ function jobcardsAPIs(app, io, labbeeUsers) {
               if (err) {
                 return reject(err);
               }
-              resolve(results);
+              resolve({ id: results.insertId, file_path: relativeFilePath });
             }
           );
         });
       });
 
       Promise.all(filePromises)
-        .then(() => {
-          res
-            .status(200)
-            .send("Files uploaded and saved to database successfully.");
+        .then((fileData) => {
+          res.status(200).json(fileData);
         })
         .catch((error) => {
           console.error("Error uploading files:", error);
@@ -1461,31 +1333,26 @@ function jobcardsAPIs(app, io, labbeeUsers) {
 
   // Backend API to fetch and view the attachments:
   app.get("/api/FilesUploaded/:filename", (req, res) => {
-    const fileNameWithTimestamp = req.params.filename; // e.g., 1717664272093_SWTM-2088_Atlassian-Git-Cheatsheet.pdf
-    const originalFileName = fileNameWithTimestamp.replace(/^\d+_/, ""); // Remove timestamp
+    const fileNameWithTimestamp = req.params.filename;
 
-    const sqlSelectFile =
-      "SELECT * FROM attachments WHERE file_name = ? OR file_name = ?";
-    db.query(
-      sqlSelectFile,
-      [fileNameWithTimestamp, originalFileName],
-      (err, results) => {
-        if (err || results.length === 0) {
-          console.error("File not found in database:", err);
-          return res.status(404).send("File not found");
-        }
-
-        const file = results[0];
-        const filePath = file.file_path; // Use the correct file path from the database
-
-        res.sendFile(filePath, (err) => {
-          if (err) {
-            console.error("File sending error:", err);
-            res.status(404).send("File not found");
-          }
-        });
+    // Query should match the exact file_path stored in the database
+    const sqlSelectFile = "SELECT * FROM attachments WHERE file_path LIKE ?";
+    db.query(sqlSelectFile, [`%${fileNameWithTimestamp}`], (err, results) => {
+      if (err || results.length === 0) {
+        console.error("File not found in database:", err);
+        return res.status(404).send("File not found");
       }
-    );
+
+      const file = results[0];
+      const filePath = path.resolve(file.file_path); // Ensure absolute path
+
+      res.sendFile(filePath, (err) => {
+        if (err) {
+          console.error("File sending error:", err);
+          res.status(404).send("File not found");
+        }
+      });
+    });
   });
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////

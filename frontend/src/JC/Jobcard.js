@@ -56,6 +56,8 @@ import CustomModal from "../common/CustomModalWithTable";
 import { DatePicker } from "@mui/x-date-pickers";
 import { UserContext } from "../Pages/UserContext";
 
+import "../css/accordion.css";
+
 // const Jobcard = () => {
 const Jobcard = ({ jobCardData }) => {
   const navigate = useNavigate();
@@ -116,6 +118,10 @@ const Jobcard = ({ jobCardData }) => {
 
   const [editJc, setEditJc] = useState(false);
 
+  const [addNewJcToLastMonth, setAddNewJcToLastMonth] = useState(false);
+  const [lastMonthJcNumberString, setLastMonthJcNumberString] = useState("");
+  const [lastMonthSrfNumber, setLastMonthSrfNumber] = useState("");
+
   const testCategoryOptions = [
     { value: "Environmental", label: "Environmental" },
     { value: "Screening", label: "Screening" },
@@ -151,6 +157,10 @@ const Jobcard = ({ jobCardData }) => {
     { value: "Send Draft Report Only", label: "Send Draft Report Only" },
     { value: "Send Final Report", label: "Send Final Report" },
     { value: "Hold Report", label: "Hold Report" },
+    {
+      value: "Consult with accounts dept",
+      label: "Consult with accounts dept",
+    },
   ];
 
   const testUnitOptions = [
@@ -751,6 +761,8 @@ const Jobcard = ({ jobCardData }) => {
     setJcStatus("");
     setJcCloseDate("");
     setObservations("");
+
+    setAddNewJcToLastMonth(false);
   };
 
   const handleOpenModal = () => {
@@ -771,32 +783,56 @@ const Jobcard = ({ jobCardData }) => {
     navigate("/jobcard_dashboard");
   };
 
-  const handleAddJcForPreviousMonth = () => {
-    const fetchPreviousMonthJC = async () => {
-      try {
-        const response = await axios.get(
-          `${serverBaseAddress}/api/getPreviousMonthJC`
-        );
-        const lastJCNumber = response.data[0]?.jc_number;
+  //Function to add new jc to the last month:
+  const handleAddJcForPreviousMonth = async () => {
+    try {
+      const response = await axios.get(
+        `${serverBaseAddress}/api/getPreviousMonthJC`
+      );
+      const lastJCNumber = response.data[0]?.jc_number;
+      if (lastJCNumber) {
+        //Extract the number part from the last jc number:
+        const lastJCNumberArray = lastJCNumber.split("-");
+        const jcNumberPart = lastJCNumberArray[2];
+        const jcNumberToIncrement = parseInt(jcNumberPart, 10);
 
-        console.log("Last JC Number of Previous Month:", lastJCNumber);
-        // You can now use lastJCNumber as needed
-      } catch (error) {
-        console.error(
-          "Error fetching last JC number of previous month:",
-          error
+        // Increment the JC number
+        const newJcNumber = jcNumberToIncrement + 1;
+        const newJcNumberPadded = newJcNumber.toString().padStart(3, "0"); // Pad with leading zeros if needed
+
+        // Construct the new JC number
+        const newJCNumberForLastMonth = `${lastJCNumberArray[0]}-${lastJCNumberArray[1]}-${newJcNumberPadded}`;
+
+        toast.info(
+          "last JC Number for Previous Month: " +
+            lastJCNumber +
+            "New JC Number for Previous Month: " +
+            newJCNumberForLastMonth
         );
+        setAddNewJcToLastMonth(true);
+        setLastMonthJcNumberString(newJCNumberForLastMonth);
+        setJcumberString(lastMonthJcNumberString);
+      } else {
+        toast.error("Error: Last JC Number of Previous Month not found");
       }
-    };
-
-    // Call this function when needed, e.g., on component mount or button click
-    fetchPreviousMonthJC();
+      // You can now use lastJCNumber as needed
+    } catch (error) {
+      console.error("Error fetching last JC number of previous month:", error);
+    }
   };
+
+  //Function to get the last month's JC number and SRF number:
+  useEffect(() => {
+    if (lastMonthJcNumberString) {
+      setLastMonthSrfNumber(`BEA/TR/SRF/${lastMonthJcNumberString}`);
+      setSrfNumber(`BEA/TR/SRF/${lastMonthJcNumberString}`);
+    }
+  }, [lastMonthJcNumberString]);
 
   //////////////////////////////////////////////////////////
 
   // Custom style for the table header
-  const tableHeaderStyle = { backgroundColor: "#0f6675", fontWeight: "bold" };
+  const tableHeaderStyle = { backgroundColor: "#006699", fontWeight: "bold" };
 
   const tableCellStyle = { color: "white" };
 
@@ -851,7 +887,7 @@ const Jobcard = ({ jobCardData }) => {
                     onClick={handleAddJcForPreviousMonth}
                   >
                     {" "}
-                    Add JC{" "}
+                    Add JC
                   </Button>
                 </Tooltip>
               )}
@@ -872,7 +908,8 @@ const Jobcard = ({ jobCardData }) => {
                   textDecoration: "underline",
                 }}
               >
-                JC Number : {jcNumberString}
+                JC Number:{" "}
+                {addNewJcToLastMonth ? lastMonthJcNumberString : jcNumberString}
               </Typography>
             </Grid>
           </Grid>
@@ -881,7 +918,7 @@ const Jobcard = ({ jobCardData }) => {
         <Accordion>
           <AccordionSummary
             expandIcon={<ExpandMoreIcon />}
-            sx={{ backgroundColor: "#00cc99" }}
+            className="fixed-height-accordion-summary-jc-component"
             aria-controls="customer-details-header"
             id="customer-details-header"
           >
@@ -913,7 +950,8 @@ const Jobcard = ({ jobCardData }) => {
                             textDecoration: "underline",
                           }}
                         >
-                          SRF Number :{srfNumber}
+                          SRF Number:
+                          {addNewJcToLastMonth ? lastMonthSrfNumber : srfNumber}
                         </Typography>
                       </Grid>
                     </Grid>
@@ -1013,19 +1051,24 @@ const Jobcard = ({ jobCardData }) => {
                       />
                     </Grid>
 
-                    <Grid item xs={12}>
-                      <TextField
-                        sx={{ borderRadius: 3 }}
-                        label="Instructions during test - (by customer)"
-                        margin="normal"
-                        variant="outlined"
-                        multiline
-                        rows={4}
-                        fullWidth
-                        value={testInstructions}
-                        onChange={(e) => setTestInstructions(e.target.value)}
-                      />
-                    </Grid>
+                    {loggedInUserDepartment !== "Reliability" ||
+                      (loggedInUserDepartment !== "Administrator" && (
+                        <Grid item xs={12}>
+                          <TextField
+                            sx={{ borderRadius: 3 }}
+                            label="Instructions during test - (by customer)"
+                            margin="normal"
+                            variant="outlined"
+                            multiline
+                            rows={4}
+                            fullWidth
+                            value={testInstructions}
+                            onChange={(e) =>
+                              setTestInstructions(e.target.value)
+                            }
+                          />
+                        </Grid>
+                      ))}
                   </Grid>
 
                   {jcCategory !== "Reliability" && (
@@ -1145,14 +1188,14 @@ const Jobcard = ({ jobCardData }) => {
                         </FormControl>
                       </Grid>
 
-                      {/* <Grid item xs={12} md={4}>
+                      <Grid item xs={12} md={4}>
                         <FileUploadComponent
                           fieldName="Attach Files"
                           onFilesChange={handleFilesChange}
                           jcNumber={jcNumberString}
                           existingAttachments={referanceDocs}
                         />
-                      </Grid> */}
+                      </Grid>
                     </Grid>
                   )}
 
@@ -1202,7 +1245,7 @@ const Jobcard = ({ jobCardData }) => {
                       <Accordion>
                         <AccordionSummary
                           expandIcon={<ExpandMoreIcon />}
-                          sx={{ backgroundColor: "#a6b28c" }}
+                          className="fixed-height-accordion-summary-jc-table-accordion"
                           aria-controls="eut-details-table-content"
                           id="eut-details-table-header"
                         >
@@ -1368,7 +1411,7 @@ const Jobcard = ({ jobCardData }) => {
                       <Accordion>
                         <AccordionSummary
                           expandIcon={<ExpandMoreIcon />}
-                          sx={{ backgroundColor: "#a6b28c" }}
+                          className="fixed-height-accordion-summary-jc-table-accordion"
                           aria-controls="tests-table-content"
                           id="tests-table-header"
                         >
@@ -1508,9 +1551,16 @@ const Jobcard = ({ jobCardData }) => {
         <br />
 
         <Card
-          sx={{ width: "100%", borderRadius: 3, elevation: 2, mt: 2, mb: 2 }}
+          sx={{
+            width: "100%",
+            borderRadius: 3,
+            elevation: 2,
+            mt: 2,
+            mb: 2,
+            backgroundColor: "#47d1d1",
+          }}
         >
-          <CardContent>
+          <CardContent sx={{ mt: 2 }}>
             <Grid container justifyContent="center" spacing={2}>
               <Grid item xs={12} md={12} sx={{ borderRadius: 3 }}>
                 <Grid container spacing={4}>
@@ -1532,6 +1582,12 @@ const Jobcard = ({ jobCardData }) => {
                           format="YYYY-MM-DD"
                         />
                       </LocalizationProvider>
+
+                      {addNewJcToLastMonth && (
+                        <Typography variant="body2" sx={{ color: "red" }}>
+                          *Only Select Last Month Date
+                        </Typography>
+                      )}
                     </Grid>
 
                     {jcCategory !== "Reliability" && (
@@ -1577,12 +1633,11 @@ const Jobcard = ({ jobCardData }) => {
             </Grid>
           </CardContent>
         </Card>
-        <br />
 
         <Accordion>
           <AccordionSummary
             expandIcon={<ExpandMoreIcon />}
-            sx={{ backgroundColor: "#00cc99" }}
+            className="fixed-height-accordion-summary-jc-component"
             aria-controls="primary-details-header"
             id="primary-details-header"
           >
@@ -1596,7 +1651,7 @@ const Jobcard = ({ jobCardData }) => {
                     <Accordion>
                       <AccordionSummary
                         expandIcon={<ExpandMoreIcon />}
-                        sx={{ backgroundColor: "#a6b28c" }}
+                        className="fixed-height-accordion-summary-jc-table-accordion"
                         aria-controls="test-details-table-content"
                         id="test-details-table-header"
                       >
@@ -2185,7 +2240,7 @@ const Jobcard = ({ jobCardData }) => {
                                           )}
                                         </Select>
                                       </FormControl>
-                                      <Tooltip title="Send Notification">
+                                      {/* <Tooltip title="Send Notification">
                                         <IconButton
                                           size="small"
                                           sx={{ marginLeft: 2 }}
@@ -2198,7 +2253,7 @@ const Jobcard = ({ jobCardData }) => {
                                         >
                                           <AddAlertIcon />
                                         </IconButton>
-                                      </Tooltip>
+                                      </Tooltip> */}
                                     </Box>
                                   </TableCell>
 
