@@ -510,8 +510,12 @@ export default function Quotation() {
   }, [tableData, originalTaxableAmount]);
 
   // Custom style for the table header
-  const tableHeaderStyle = { backgroundColor: "#d1b054", fontWeight: "bold" };
+  const tableHeaderStyle = {
+    backgroundColor: "#006699",
+    fontWeight: "bold",
+  };
 
+  const tableCellStyle = { color: "white" };
   const [showPdfDialog, setShowPdfDialog] = useState(false);
 
   // Function to handle download action
@@ -829,7 +833,7 @@ export default function Quotation() {
             justifyContent="center"
             sx={{ marginTop: "10", paddingBottom: "3" }}
           >
-            <Grid item xs={12} textAlign="center" sx={{ marginBottom: 2 }}>
+            <Grid item xs={12} textAlign="center">
               <Typography sx={{ paddingBottom: 3, paddingTop: 5 }} variant="h5">
                 Test Details
               </Typography>
@@ -840,33 +844,49 @@ export default function Quotation() {
                 <Table sx={{ minWidth: 650 }} aria-label="simple table">
                   <TableHead sx={tableHeaderStyle}>
                     <TableRow>
-                      <TableCell>Sl No</TableCell>
+                      <TableCell sx={tableCellStyle}>Sl No</TableCell>
                       {(quoteCategory === "Environmental Testing" ||
                         quoteCategory === "EMI & EMC" ||
                         quoteCategory === "Reliability") && (
-                        <TableCell align="center">Test Description</TableCell>
+                        <TableCell align="center" sx={tableCellStyle}>
+                          Test Description
+                        </TableCell>
                       )}
 
                       {(quoteCategory === "Environmental Testing" ||
                         quoteCategory === "EMI & EMC") && (
                         <>
-                          <TableCell align="center">SAC No</TableCell>
-                          <TableCell align="center">
+                          <TableCell align="center" sx={tableCellStyle}>
+                            SAC No
+                          </TableCell>
+                          <TableCell align="center" sx={tableCellStyle}>
                             {" "}
                             Duration/Quantity
                           </TableCell>
-                          <TableCell align="center">Unit</TableCell>
-                          <TableCell align="center">Per Unit Charge</TableCell>
+                          <TableCell align="center" sx={tableCellStyle}>
+                            Unit
+                          </TableCell>
+                          <TableCell align="center" sx={tableCellStyle}>
+                            Per Unit Charge
+                          </TableCell>
                         </>
                       )}
 
                       {quoteCategory === "Item Soft" && (
-                        <TableCell align="center">Module</TableCell>
+                        <TableCell align="center" sx={tableCellStyle}>
+                          Module
+                        </TableCell>
                       )}
-                      <TableCell align="center">Amount</TableCell>
+                      <TableCell align="center" sx={tableCellStyle}>
+                        Amount
+                      </TableCell>
 
                       <TableCell align="center">
-                        <IconButton size="small" onClick={addRow}>
+                        <IconButton
+                          size="small"
+                          onClick={addRow}
+                          sx={{ color: "white" }}
+                        >
                           <Tooltip title="Add Row" arrow>
                             <AddIcon />
                           </Tooltip>

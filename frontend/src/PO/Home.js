@@ -275,28 +275,6 @@ export default function Home() {
               </Grid>
 
               <Grid item>
-                {/* <Controller
-                                    name="jcOpenDate"
-                                    type="date"
-                                    control={control}
-                                    render={({ field }) => (
-                                        <LocalizationProvider dateAdapter={AdapterDayjs}>
-                                            <DatePicker
-                                                sx={{ width: '52%', mt: 2, pr: 1, borderRadius: 3 }}
-                                                label="JC Date"
-                                                value={jcOpenDate}
-                                                onChange={(newValue) => {
-                                                    field.onChange(newValue);
-                                                    setJcOpenDate(newValue);
-                                                }}
-                                                renderInput={(props) => <TextField {...props} />}
-                                                format="YYYY-MM-DD"
-                                            />
-                                        </LocalizationProvider>
-                                    )}
-                                    {...register('jcOpenDate', { valueAsDate: true })}
-                                /> */}
-
                 <Controller
                   name="jcOpenDate"
                   control={control}

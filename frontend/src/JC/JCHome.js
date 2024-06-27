@@ -494,7 +494,7 @@ export default function JCHome() {
         <Grid item xs={12} md={8} container alignItems="center" spacing={2}>
           <Grid item xs={12} sm={6} md={4}>
             <FormControl fullWidth>
-              <InputLabel>Select Year</InputLabel>
+              <InputLabel>Year</InputLabel>
               <Select
                 label="Year"
                 type="text"
@@ -512,7 +512,7 @@ export default function JCHome() {
 
           <Grid item xs={12} sm={6} md={4}>
             <FormControl fullWidth>
-              <InputLabel>Select Month</InputLabel>
+              <InputLabel>Month</InputLabel>
               <Select
                 label="Month"
                 type="text"

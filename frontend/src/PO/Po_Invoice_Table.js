@@ -326,7 +326,7 @@ export default function PoInvoiceStatusTable({
   const optionsForPoStatusPieChart = {
     responsive: true,
     // maintainAspectRatio: false,   // False will keep the size small. If it's true then we can define the size using aspectRatio
-    aspectRatio: 2.5,
+    aspectRatio: 2,
     plugins: {
       legend: {
         position: "top",
@@ -376,7 +376,7 @@ export default function PoInvoiceStatusTable({
   const optionsForInvoiceStatusPieChart = {
     responsive: true,
     // maintainAspectRatio: false,   // False will keep the size small. If it's true then we can define the size using aspectRatio
-    aspectRatio: 2.5,
+    aspectRatio: 2,
     plugins: {
       legend: {
         position: "top",
@@ -426,7 +426,7 @@ export default function PoInvoiceStatusTable({
   const optionsForPaymentStatusPieChart = {
     responsive: true,
     // maintainAspectRatio: false,   // False will keep the size small. If it's true then we can define the size using aspectRatio
-    aspectRatio: 2.5,
+    aspectRatio: 2,
     plugins: {
       legend: {
         position: "top",
@@ -534,7 +534,7 @@ export default function PoInvoiceStatusTable({
         anchor: "end",
         font: {
           family: "Arial",
-          size: 15,
+          size: 13,
           weight: "bold",
         },
       },
@@ -557,7 +557,7 @@ export default function PoInvoiceStatusTable({
       y: {
         title: {
           display: true,
-          text: "Number of Quotes",
+          text: "Revenue in INR",
           font: {
             family: "Arial",
             size: 15,
@@ -821,7 +821,7 @@ export default function PoInvoiceStatusTable({
         <Grid item xs={12} md={8} container alignItems="center" spacing={2}>
           <Grid item xs={12} sm={6} md={4}>
             <FormControl fullWidth>
-              <InputLabel>Select Year</InputLabel>
+              <InputLabel>Year</InputLabel>
               <Select
                 label="Year"
                 type="text"
@@ -839,7 +839,7 @@ export default function PoInvoiceStatusTable({
 
           <Grid item xs={12} sm={6} md={4}>
             <FormControl fullWidth>
-              <InputLabel>Select Month</InputLabel>
+              <InputLabel>Month</InputLabel>
               <Select
                 label="Month"
                 type="text"
@@ -971,39 +971,69 @@ export default function PoInvoiceStatusTable({
 
       {/* PO, Invoice, Payment status pi charts */}
 
-      <Grid
-        container
-        spacing={2}
-        sx={{ padding: { xs: 2, sm: 3 }, backgroundColor: "#fff2e6" }}
-      >
-        <Grid container spacing={2}>
-          <Grid item xs={12} sm={6} md={6} lg={6}>
+      <Grid container spacing={4} sx={{ padding: { xs: 3, sm: 4 } }}>
+        <Grid item xs={12} sm={6} md={6}>
+          <Box
+            sx={{
+              backgroundColor: "#e0ebeb",
+              padding: 2,
+              borderRadius: 2,
+              boxShadow: 2,
+            }}
+          >
             <CreatePieChart
               data={poStatusPieChart}
               options={optionsForPoStatusPieChart}
             />
-          </Grid>
+          </Box>
+        </Grid>
 
-          <Grid item xs={12} sm={6} md={6} lg={6}>
+        <Grid item xs={12} sm={6} md={6}>
+          <Box
+            sx={{
+              backgroundColor: "#e0ebeb",
+              padding: 2,
+              borderRadius: 2,
+              boxShadow: 2,
+            }}
+          >
             <CreatePieChart
               data={invoiceStatusPieChart}
               options={optionsForInvoiceStatusPieChart}
             />
-          </Grid>
+          </Box>
+        </Grid>
 
-          <Grid item xs={12} sm={6} md={6} lg={6}>
+        <Grid item xs={12} sm={6} md={6}>
+          <Box
+            sx={{
+              backgroundColor: "#e0ebeb",
+              padding: 2,
+              borderRadius: 2,
+              boxShadow: 2,
+            }}
+          >
             <CreatePieChart
               data={paymentStatusPieChart}
               options={optionsForPaymentStatusPieChart}
             />
-          </Grid>
+          </Box>
+        </Grid>
 
-          <Grid item xs={12} sm={6} md={6} lg={6}>
+        <Grid item xs={12} sm={6} md={6}>
+          <Box
+            sx={{
+              backgroundColor: "#e0ebeb",
+              padding: 2,
+              borderRadius: 2,
+              boxShadow: 2,
+            }}
+          >
             <CreateBarChart
               data={dataForMonthWiseRevenueBarChart}
               options={optionsForMonthWiseRevenueBarChart}
             />
-          </Grid>
+          </Box>
         </Grid>
       </Grid>
 

@@ -648,7 +648,7 @@ export default function QuotationsDashboard() {
         <Grid item xs={12} md={8} container alignItems="center" spacing={2}>
           <Grid item xs={12} sm={6} md={4}>
             <FormControl fullWidth>
-              <InputLabel>Select Year</InputLabel>
+              <InputLabel>Year</InputLabel>
               <Select
                 label="Year"
                 value={quoteYear}
@@ -665,7 +665,7 @@ export default function QuotationsDashboard() {
 
           <Grid item xs={12} sm={6} md={4}>
             <FormControl fullWidth>
-              <InputLabel>Select Month</InputLabel>
+              <InputLabel>Month</InputLabel>
               <Select
                 label="Month"
                 value={quoteMonth}
@@ -813,22 +813,36 @@ export default function QuotationsDashboard() {
             </Box>
           </Grid>
 
-          <Grid item xs={12} md={6}>
-            <Card elevation={5} sx={{ p: 2, backgroundColor: "transparent" }}>
+          <Grid item xs={12} sm={6} md={6}>
+            <Box
+              sx={{
+                backgroundColor: "#e0ebeb",
+                padding: 2,
+                borderRadius: 2,
+                boxShadow: 2,
+              }}
+            >
               <CreatePieChart
                 data={categorywiseQuotesPieChart}
                 options={optionsForQuotesPieChart}
               />
-            </Card>
+            </Box>
           </Grid>
 
-          <Grid item xs={12} md={6}>
-            <Card elevation={5} sx={{ p: 2, backgroundColor: "transparent" }}>
+          <Grid item xs={12} sm={6} md={6}>
+            <Box
+              sx={{
+                backgroundColor: "#e0ebeb",
+                padding: 2,
+                borderRadius: 2,
+                boxShadow: 2,
+              }}
+            >
               <CreateBarChart
                 data={barChartData}
                 options={optionsForBarChart}
               />
-            </Card>
+            </Box>
           </Grid>
         </Grid>
       </Box>

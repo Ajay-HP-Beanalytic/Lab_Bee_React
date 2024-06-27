@@ -40,7 +40,7 @@ const ReliabilityTaskManagement = ({
 
   const [dateTimeValue, setDateTimeValue] = useState(null);
 
-  const tableHeaderStyle = { backgroundColor: "#0f6675", fontWeight: "bold" };
+  const tableHeaderStyle = { backgroundColor: "#006699", fontWeight: "bold" };
 
   const tableCellStyle = { color: "white" };
 
