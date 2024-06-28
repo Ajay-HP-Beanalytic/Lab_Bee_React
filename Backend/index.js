@@ -291,7 +291,7 @@ app.get("/", (req, res) => {
 //   console.log("Server is running on port 4000");
 // });
 
-const PORT = 4000;
+const PORT = 4002;
 server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });

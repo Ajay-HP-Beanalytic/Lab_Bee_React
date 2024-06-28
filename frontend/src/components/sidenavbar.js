@@ -31,21 +31,21 @@ import {
 import HomeIcon from "@mui/icons-material/Home";
 import SpaceDashboardIcon from "@mui/icons-material/SpaceDashboard";
 import RequestQuoteIcon from "@mui/icons-material/RequestQuote";
-import EditNoteIcon from "@mui/icons-material/EditNote";
+// import EditNoteIcon from "@mui/icons-material/EditNote";
 import CalendarMonthSharpIcon from "@mui/icons-material/CalendarMonthSharp";
 import ArticleIcon from "@mui/icons-material/Article";
-import SettingsIcon from "@mui/icons-material/Settings";
+// import SettingsIcon from "@mui/icons-material/Settings";
 import NoteAddIcon from "@mui/icons-material/NoteAdd";
 import KitchenIcon from "@mui/icons-material/Kitchen";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import ManageAccountsIcon from "@mui/icons-material/ManageAccounts";
 import { Link, Outlet, useNavigate } from "react-router-dom";
-import axios from "axios";
+// import axios from "axios";
 
 import RobotoBoldFont from "../fonts/Roboto-Bold.ttf";
 import UserProfile from "../LoginRegister/UserProfile";
 
-import { serverBaseAddress } from "../Pages/APIPage";
+// import { serverBaseAddress } from "../Pages/APIPage";
 import { UserContext } from "../Pages/UserContext";
 import { NotificationContext } from "../Pages/NotificationContext";
 
