@@ -10,9 +10,9 @@ import { ThemeProvider, createTheme } from "@mui/material";
 import axios from "axios";
 import { NotificationProvider } from "./Pages/NotificationContext";
 
-{
-  /*Original code was this*/
-}
+// {
+//   /*Original code was this*/
+// }
 
 // const root = ReactDOM.createRoot(document.getElementById('root'));
 // root.render(
