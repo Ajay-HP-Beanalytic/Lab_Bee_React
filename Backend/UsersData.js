@@ -175,8 +175,6 @@ function usersDataAPIs(app) {
   app.post("/api/getUserStatus", (req, res) => {
     const { email } = req.body;
 
-    console.log(email);
-
     // Fetch user status from the database
     const user = "SELECT user_status FROM labbee_users WHERE email=? ";
 

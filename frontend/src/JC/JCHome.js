@@ -115,6 +115,8 @@ export default function JCHome() {
       `${serverBaseAddress}/api/getPrimaryJCDataOfReliability?` +
       urlParametersForReliability;
 
+    ///////////////////////////////////////////////////////
+
     if (filterRow.length > 0) {
       setFilterRow(filterRow);
     } else {
@@ -122,7 +124,6 @@ export default function JCHome() {
         try {
           // Fetch the Testing JC's
           const testingJcResponse = await axios.get(getTestingJcURL);
-          console.log("JC Data", testingJcResponse.data);
           setJcTableData(testingJcResponse.data);
           setOriginalJcTableData(testingJcResponse.data);
 
@@ -610,28 +611,40 @@ export default function JCHome() {
           filteredReliabilityJcData.length === 0 ? (
             <EmptyCard message="No JC Found" />
           ) : (
-            <Box
-              sx={{
-                height: 500,
-                width: "100%",
-                "& .custom-header-color": {
-                  backgroundColor: "#0f6675",
-                  color: "whitesmoke",
-                  fontWeight: "bold",
-                  fontSize: "15px",
-                },
-                mt: 2,
-              }}
-            >
-              <DataGrid
-                rows={reliabilityJcDataWithSerialNumbers}
-                columns={reliabilityTableColumns}
-                sx={{ "&:hover": { cursor: "pointer" } }}
-                onRowClick={(params) => editSelectedRowData(params.row)}
-                pageSize={5}
-                rowsPerPageOptions={[5, 10, 20]}
-              />
-            </Box>
+            <>
+              <Box
+                sx={{
+                  height: 500,
+                  width: "100%",
+                  "& .custom-header-color": {
+                    backgroundColor: "#0f6675",
+                    color: "whitesmoke",
+                    fontWeight: "bold",
+                    fontSize: "15px",
+                  },
+                  mt: 2,
+                }}
+              >
+                <DataGrid
+                  rows={reliabilityJcDataWithSerialNumbers}
+                  columns={reliabilityTableColumns}
+                  sx={{ "&:hover": { cursor: "pointer" } }}
+                  onRowClick={(params) => editSelectedRowData(params.row)}
+                  pageSize={5}
+                  rowsPerPageOptions={[5, 10, 20]}
+                />
+              </Box>
+
+              {/* Tasks completed by each person: */}
+              {/* <Box sx={{ mt: 2 }}>
+                <Divider>
+                  <Typography variant="h4" sx={{ color: "#003366" }}>
+                    {" "}
+                    Reliability Tasks Completed By Each Person
+                  </Typography>
+                </Divider>
+              </Box> */}
+            </>
           )}
         </>
       )}

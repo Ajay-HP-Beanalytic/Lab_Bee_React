@@ -39,6 +39,7 @@ export default function PoInvoiceStatusTable({
 
   const [searchInputTextOfPO, setSearchInputTextOfPO] = useState("");
   const [filteredPOData, setFilteredPOData] = useState(poDataList);
+  console.log("poDataList", poDataList);
 
   const [filterRow, setFilterRow] = useState([]); //To filter out the table based on search
   const [refresh, setRefresh] = useState(false);
@@ -110,6 +111,29 @@ export default function PoInvoiceStatusTable({
       getPoAndInvoiceList();
     }
   }, [newJcAdded, poYear, poMonth, filterRow, refresh]);
+
+  // useEffect(() => {
+  //   const fetchData = async () => {
+  //     try {
+  //       const response = await axios.get(
+  //         `${serverBaseAddress}/api/getJcCountList`,
+  //         {
+  //           params: { year: poYear, month: poMonth },
+  //         }
+  //       );
+
+  //       const { totalJcCount, categoryWiseCounts, statusWiseCounts } =
+  //         response.data;
+  //       console.log("response.data-->", response.data);
+
+  //       // Use totalJcCount, categoryWiseCounts, and statusWiseCounts to plot pie charts
+  //     } catch (error) {
+  //       console.error("Error fetching JC data:", error);
+  //     }
+  //   };
+
+  //   fetchData();
+  // }, [poYear, poMonth]);
 
   // Function to fetch the month and year list data
   useEffect(() => {
@@ -311,6 +335,57 @@ export default function PoInvoiceStatusTable({
     getMonthwiseRevenueDataForBarChart(poDataList);
 
   //////////////////////////////////////////////////////////////////////////////
+
+  // Creating pie chart for JC created vs JC data updated in PO dashboard:
+  const jcStatusPieChart = {
+    labels: ["JC Created", "JC Updated"],
+    datasets: [
+      {
+        data: poStatusData,
+        backgroundColor: ["#8cd9b3", "#ff6666"],
+      },
+    ],
+  };
+
+  const optionsForJcStatusPieChart = {
+    responsive: true,
+    // maintainAspectRatio: false,   // False will keep the size small. If it's true then we can define the size using aspectRatio
+    aspectRatio: 2,
+    plugins: {
+      legend: {
+        position: "top",
+        display: true,
+      },
+      title: {
+        display: true,
+        text: "JC Status For Payment Data",
+        font: {
+          family: "Helvetica Neue",
+          size: 30,
+          weight: "bold",
+        },
+      },
+      subtitle: {
+        display: true,
+        text: "Monthly Created JC & Updated JC For Payment Data",
+        font: {
+          family: "Arial",
+          size: 15,
+          weight: "bold",
+        },
+      },
+      datalabels: {
+        display: true,
+        color: "black",
+        fontWeight: "bold",
+        font: {
+          family: "Arial",
+          size: 15,
+          weight: "bold",
+        },
+      },
+    },
+  };
 
   // Creating a pie chart for calibration status for chambers and equipments:
   const poStatusPieChart = {
@@ -818,7 +893,7 @@ export default function PoInvoiceStatusTable({
   return (
     <>
       <Grid container spacing={2} alignItems="center">
-        <Grid item xs={12} md={8} container alignItems="center" spacing={2}>
+        <Grid item xs={12} md={8} container spacing={2}>
           <Grid item xs={12} sm={6} md={4}>
             <FormControl fullWidth>
               <InputLabel>Year</InputLabel>
@@ -855,7 +930,7 @@ export default function PoInvoiceStatusTable({
             </FormControl>
           </Grid>
 
-          <Grid item xs={12} md={4}>
+          <Grid item xs={12} sm={6} md={4}>
             <DateRangeFilter
               onClickDateRangeSelectDoneButton={handlePODateRangeChange}
               onClickDateRangeSelectClearButton={handlePODateRangeClear}
@@ -872,6 +947,43 @@ export default function PoInvoiceStatusTable({
           />
         </Grid>
       </Grid>
+
+      {/* JC Details */}
+      {/* <Box sx={{ mt: 2, mb: 2, width: "100% " }}>
+        <Grid container spacing={2} alignItems="center">
+          <Grid item xs={12} sm={6} md={6}>
+            <Box
+              sx={{
+                backgroundColor: "#e0ebeb",
+                padding: 2,
+                borderRadius: 2,
+                boxShadow: 2,
+              }}
+            >
+              <CreatePieChart
+                data={jcStatusPieChart}
+                options={optionsForJcStatusPieChart}
+              />
+            </Box>
+          </Grid>
+
+          <Grid item xs={12} sm={6} md={6}>
+            <Box
+              sx={{
+                backgroundColor: "#e0ebeb",
+                padding: 2,
+                borderRadius: 2,
+                boxShadow: 2,
+              }}
+            >
+              <CreatePieChart
+                data={paymentStatusPieChart}
+                options={optionsForPaymentStatusPieChart}
+              />
+            </Box>
+          </Grid>
+        </Grid>
+      </Box> */}
 
       {filteredPOData && filteredPOData.length === 0 ? (
         <EmptyCard message="PO and Invoice Data not found" />

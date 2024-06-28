@@ -21,11 +21,13 @@ import {
   Select,
   Autocomplete,
   Divider,
+  Card,
 } from "@mui/material";
 import axios from "axios";
 import moment from "moment"; // To convert the date into desired format
 import { sum, toWords } from "number-to-words"; // To convert number to words
 import numberToWords from "number-to-words";
+import { ToWords } from "to-words";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { styled } from "@mui/material/styles";
@@ -504,10 +506,33 @@ export default function Quotation() {
 
     setTaxableAmount(subtotal);
     setTotalAmountWords(
-      numberToWords.toWords(subTotalAfterDiscount).toUpperCase()
+      // numberToWords.toWords(subTotalAfterDiscount).toUpperCase()
+      toWords.convert(subTotalAfterDiscount).toUpperCase()
     );
     setTotalAmountAfterDiscount(subTotalAfterDiscount);
   }, [tableData, originalTaxableAmount]);
+
+  //Indian rupees to words configuration
+  const toWords = new ToWords({
+    localeCode: "en-IN",
+    converterOptions: {
+      currency: true,
+      ignoreDecimal: false,
+      ignoreZeroCurrency: false,
+      doNotAddOnly: false,
+      currencyOptions: {
+        // can be used to override defaults for the selected locale
+        name: "Rupee",
+        plural: "Rupees",
+        symbol: "₹",
+        fractionalUnit: {
+          name: "Paisa",
+          plural: "Paise",
+          symbol: "",
+        },
+      },
+    },
+  });
 
   // Custom style for the table header
   const tableHeaderStyle = {
@@ -604,22 +629,17 @@ export default function Quotation() {
           </Grid>
         </Box>
 
-        <Box
+        <Card
           sx={{
             paddingTop: "5",
             paddingBottom: "5",
             marginTop: "5",
             marginBottom: "5",
-            border: 1,
-            borderColor: "primary.main",
+            elevation: 3,
           }}
         >
           <Grid container justifyContent="center" spacing={2}>
             <Grid item xs={12} md={6} elevation={4} sx={{ borderRadius: 3 }}>
-              <Typography variant="h5" align="center" sx={{ mb: 2 }}>
-                Customer Details
-              </Typography>
-
               <Container
                 component="span"
                 margin={1}
@@ -629,6 +649,7 @@ export default function Quotation() {
                 <Box>
                   <TextField
                     sx={{
+                      marginTop: "16px",
                       marginBottom: "16px",
                       marginLeft: "10px",
                       borderRadius: 3,
@@ -636,7 +657,6 @@ export default function Quotation() {
                     value={companyName}
                     onChange={(e) => setCompanyName(e.target.value)}
                     label="Company Name"
-                    margin="normal"
                     fullWidth
                     variant="outlined"
                     autoComplete="on"
@@ -651,7 +671,6 @@ export default function Quotation() {
                       label="To Address"
                       value={toCompanyAddress}
                       onChange={(e) => setToCompanyAddress(e.target.value)}
-                      margin="normal"
                       fullWidth
                       variant="outlined"
                       multiline={true}
@@ -669,7 +688,6 @@ export default function Quotation() {
                       value={kindAttention}
                       onChange={(e) => setKindAttention(e.target.value)}
                       label="Customer Name/Contact Person"
-                      margin="normal"
                       variant="outlined"
                       autoComplete="on"
                       fullWidth
@@ -680,10 +698,6 @@ export default function Quotation() {
             </Grid>
 
             <Grid item xs={12} md={6} elevation={4} sx={{ borderRadius: 3 }}>
-              <Typography variant="h5" align="center" sx={{ mb: 2 }}>
-                Primary Details
-              </Typography>
-
               <Container
                 component="span"
                 margin={1}
@@ -694,6 +708,7 @@ export default function Quotation() {
                   <div>
                     <TextField
                       sx={{
+                        marginTop: "16px",
                         marginBottom: "16px",
                         marginRight: "10px",
                         borderRadius: 3,
@@ -701,7 +716,6 @@ export default function Quotation() {
                       label="Company ID"
                       value={customerId}
                       onChange={handleCompanyNameChange}
-                      margin="normal"
                       variant="outlined"
                       fullWidth
                     />
@@ -711,7 +725,7 @@ export default function Quotation() {
                     <FormControl
                       sx={{
                         width: "100%",
-                        marginBottom: "16px",
+                        marginBottom: "10px",
                         marginRight: "10px",
                         borderRadius: 3,
                       }}
@@ -733,14 +747,13 @@ export default function Quotation() {
                   <div>
                     <TextField
                       sx={{
-                        marginBottom: "16px",
+                        // marginBottom: "16px",
                         marginRight: "10px",
                         borderRadius: 3,
                       }}
                       label="Project Name"
                       value={projectName}
                       onChange={(e) => setProjectName(e.target.value)}
-                      margin="normal"
                       variant="outlined"
                       fullWidth
                     />
@@ -764,7 +777,6 @@ export default function Quotation() {
                         }}
                         label="Quote Given Date"
                         variant="outlined"
-                        margin="normal"
                         value={selectedDate ? dayjs(selectedDate) : null}
                         onChange={handleQuoteGivenDateChange}
                         renderInput={(props) => <TextField {...props} />}
@@ -792,7 +804,6 @@ export default function Quotation() {
                             );
                           }}
                           label="Quote Type"
-                          margin="normal"
                         >
                           <MenuItem value="Environmental Testing">
                             Environmental Testing
@@ -812,7 +823,6 @@ export default function Quotation() {
                         borderRadius: 3,
                       }}
                       label="Quotation Version"
-                      margin="normal"
                       variant="outlined"
                       value={quoteVersion}
                       onChange={(e) => {
@@ -825,7 +835,7 @@ export default function Quotation() {
               </Container>
             </Grid>
           </Grid>
-        </Box>
+        </Card>
 
         <Box>
           <Grid
@@ -1060,11 +1070,8 @@ export default function Quotation() {
                   <TableRow>
                     <TableCell rowSpan={3} />
                     <TableCell colSpan={3}>
-                      <Typography variant="h6">Taxable Amount:</Typography>
-                    </TableCell>
-                    <TableCell align="center">
                       <Typography variant="h6">
-                        {taxableAmount.toFixed(2)}
+                        Taxable Amount (₹): {taxableAmount.toFixed(2)}
                       </Typography>
                     </TableCell>
                   </TableRow>
@@ -1072,11 +1079,8 @@ export default function Quotation() {
                   <TableRow>
                     <TableCell colSpan={3}>
                       <Typography variant="h6">
-                        Total Amount in Rupees:
+                        Total Taxable Amount in Rupees: {totalAmountWords}
                       </Typography>
-                    </TableCell>
-                    <TableCell align="center">
-                      <Typography variant="h6">{totalAmountWords}</Typography>
                     </TableCell>
                   </TableRow>
                 </Box>
