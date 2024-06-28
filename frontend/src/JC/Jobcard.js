@@ -919,8 +919,6 @@ const Jobcard = ({ jobCardData }) => {
           <AccordionSummary
             expandIcon={<ExpandMoreIcon />}
             className="fixed-height-accordion-summary-jc-component"
-            aria-controls="customer-details-header"
-            id="customer-details-header"
           >
             <Box display="flex" flexDirection="column">
               <Typography variant="h6">SERVICE REQUEST FORM</Typography>
@@ -961,7 +959,6 @@ const Jobcard = ({ jobCardData }) => {
                       <TextField
                         sx={{ width: "100%", borderRadius: 3 }}
                         label="Company Name"
-                        margin="normal"
                         variant="outlined"
                         autoComplete="on"
                         fullWidth
@@ -977,7 +974,6 @@ const Jobcard = ({ jobCardData }) => {
                       <TextField
                         sx={{ width: "100%", borderRadius: 3 }}
                         label="Company Address"
-                        margin="normal"
                         variant="outlined"
                         autoComplete="on"
                         multiline
@@ -995,7 +991,6 @@ const Jobcard = ({ jobCardData }) => {
                       <TextField
                         sx={{ width: "100%", borderRadius: 3 }}
                         label="Customer Name/Signature"
-                        margin="normal"
                         variant="outlined"
                         type="text"
                         name="customer_signature"
@@ -1008,7 +1003,6 @@ const Jobcard = ({ jobCardData }) => {
                       <TextField
                         sx={{ width: "100%", borderRadius: 3 }}
                         label="Customer Email"
-                        margin="normal"
                         variant="outlined"
                         type="email"
                         value={customerEmail}
@@ -1020,7 +1014,6 @@ const Jobcard = ({ jobCardData }) => {
                       <TextField
                         sx={{ width: "100%", borderRadius: 3 }}
                         label="Contact Number"
-                        margin="normal"
                         variant="outlined"
                         inputProps={{
                           inputMode: "numeric", // This enables only numbers and symbols
@@ -1043,7 +1036,6 @@ const Jobcard = ({ jobCardData }) => {
                       <TextField
                         sx={{ borderRadius: 3 }}
                         label="Project Name"
-                        margin="normal"
                         variant="outlined"
                         fullWidth
                         value={projectName}
@@ -1051,33 +1043,27 @@ const Jobcard = ({ jobCardData }) => {
                       />
                     </Grid>
 
-                    {loggedInUserDepartment !== "Reliability" ||
-                      (loggedInUserDepartment !== "Administrator" && (
-                        <Grid item xs={12}>
-                          <TextField
-                            sx={{ borderRadius: 3 }}
-                            label="Instructions during test - (by customer)"
-                            margin="normal"
-                            variant="outlined"
-                            multiline
-                            rows={4}
-                            fullWidth
-                            value={testInstructions}
-                            onChange={(e) =>
-                              setTestInstructions(e.target.value)
-                            }
-                          />
-                        </Grid>
-                      ))}
+                    {loggedInUserDepartment !== "Reliability" && (
+                      <Grid item xs={12}>
+                        <TextField
+                          sx={{ borderRadius: 3 }}
+                          label="Instructions during test - (by customer)"
+                          variant="outlined"
+                          multiline
+                          rows={4}
+                          fullWidth
+                          value={testInstructions}
+                          onChange={(e) => setTestInstructions(e.target.value)}
+                        />
+                      </Grid>
+                    )}
                   </Grid>
 
                   {jcCategory !== "Reliability" && (
                     <Grid container spacing={2} sx={{ mt: 1, padding: 2 }}>
                       <Grid item xs={12} md={4}>
                         <FormControl>
-                          <FormLabel component="legend">
-                            Test Category:
-                          </FormLabel>
+                          <FormLabel component="row">Test Category:</FormLabel>
                           <RadioGroup
                             aria-label="Category"
                             name="category"
@@ -1098,7 +1084,7 @@ const Jobcard = ({ jobCardData }) => {
 
                       <Grid item xs={12} md={4}>
                         <FormControl>
-                          <FormLabel component="legend">
+                          <FormLabel component="row">
                             {" "}
                             Test Discipline
                           </FormLabel>
@@ -1548,102 +1534,73 @@ const Jobcard = ({ jobCardData }) => {
           </AccordionDetails>
         </Accordion>
 
-        <br />
-
-        <Card
-          sx={{
-            width: "100%",
-            borderRadius: 3,
-            elevation: 2,
-            mt: 2,
-            mb: 2,
-            backgroundColor: "#47d1d1",
-          }}
-        >
-          <CardContent sx={{ mt: 2 }}>
-            <Grid container justifyContent="center" spacing={2}>
-              <Grid item xs={12} md={12} sx={{ borderRadius: 3 }}>
-                <Grid container spacing={4}>
-                  <Grid container spacing={2} sx={{ mt: 1, mb: 1 }}>
-                    <Grid item xs={12} md={4}>
-                      <LocalizationProvider dateAdapter={AdapterDayjs}>
-                        <DatePicker
-                          label="JC Open Date"
-                          variant="outlined"
-                          value={jcOpenDate ? dayjs(jcOpenDate) : null}
-                          onChange={handleJcStartDateChange}
-                          renderInput={(props) => (
-                            <TextField
-                              {...props}
-                              fullWidth
-                              sx={{ width: "100%" }}
-                            />
-                          )}
-                          format="YYYY-MM-DD"
-                        />
-                      </LocalizationProvider>
-
-                      {addNewJcToLastMonth && (
-                        <Typography variant="body2" sx={{ color: "red" }}>
-                          *Only Select Last Month Date
-                        </Typography>
-                      )}
-                    </Grid>
-
-                    {jcCategory !== "Reliability" && (
-                      <Grid item xs={12} md={4}>
-                        <LocalizationProvider dateAdapter={AdapterDayjs}>
-                          <DatePicker
-                            label="Item Received Date"
-                            variant="outlined"
-                            value={
-                              itemReceivedDate ? dayjs(itemReceivedDate) : null
-                            }
-                            onChange={handleItemReceivedDateChange}
-                            renderInput={(props) => (
-                              <TextField {...props} sx={{ width: "100%" }} />
-                            )}
-                            format="YYYY-MM-DD"
-                          />
-                        </LocalizationProvider>
-                      </Grid>
-                    )}
-
-                    {loggedInUserDepartment === "Administrator" && (
-                      <Grid item xs={12} md={4}>
-                        <FormControl fullWidth>
-                          <InputLabel>JC category</InputLabel>
-                          <Select
-                            label="test-incharge"
-                            value={jcCategory}
-                            onChange={(e) => setJcCategory(e.target.value)}
-                          >
-                            {jcCategoryOptions.map((item) => (
-                              <MenuItem key={item.id} value={item.value}>
-                                {item.label}
-                              </MenuItem>
-                            ))}
-                          </Select>
-                        </FormControl>
-                      </Grid>
-                    )}
-                  </Grid>
-                </Grid>
-              </Grid>
-            </Grid>
-          </CardContent>
-        </Card>
-
-        <Accordion>
+        <Accordion sx={{ mt: 2 }}>
           <AccordionSummary
             expandIcon={<ExpandMoreIcon />}
             className="fixed-height-accordion-summary-jc-component"
-            aria-controls="primary-details-header"
-            id="primary-details-header"
           >
             <Typography variant="h6">Job-Card & Test Details</Typography>
           </AccordionSummary>
           <AccordionDetails>
+            <Grid container spacing={2} sx={{ mt: 1, mb: 1 }}>
+              <Grid item xs={12} md={4}>
+                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                  <DatePicker
+                    label="JC Open Date"
+                    variant="outlined"
+                    value={jcOpenDate ? dayjs(jcOpenDate) : null}
+                    onChange={handleJcStartDateChange}
+                    renderInput={(props) => (
+                      <TextField {...props} fullWidth sx={{ width: "100%" }} />
+                    )}
+                    format="YYYY-MM-DD"
+                  />
+                </LocalizationProvider>
+
+                {addNewJcToLastMonth && (
+                  <Typography variant="body2" sx={{ color: "red" }}>
+                    *Only Select Last Month Date
+                  </Typography>
+                )}
+              </Grid>
+
+              {jcCategory !== "Reliability" && (
+                <Grid item xs={12} md={4}>
+                  <LocalizationProvider dateAdapter={AdapterDayjs}>
+                    <DatePicker
+                      label="Item Received Date"
+                      variant="outlined"
+                      value={itemReceivedDate ? dayjs(itemReceivedDate) : null}
+                      onChange={handleItemReceivedDateChange}
+                      renderInput={(props) => (
+                        <TextField {...props} sx={{ width: "100%" }} />
+                      )}
+                      format="YYYY-MM-DD"
+                    />
+                  </LocalizationProvider>
+                </Grid>
+              )}
+
+              {loggedInUserDepartment === "Administrator" && (
+                <Grid item xs={12} md={4}>
+                  <FormControl fullWidth>
+                    <InputLabel>JC category</InputLabel>
+                    <Select
+                      label="test-incharge"
+                      value={jcCategory}
+                      onChange={(e) => setJcCategory(e.target.value)}
+                    >
+                      {jcCategoryOptions.map((item) => (
+                        <MenuItem key={item.id} value={item.value}>
+                          {item.label}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+              )}
+            </Grid>
+
             <Card sx={{ width: "100%", borderRadius: 3, elevation: 2, mt: 2 }}>
               <CardContent>
                 {jcCategory !== "Reliability" && (

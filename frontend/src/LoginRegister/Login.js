@@ -163,10 +163,12 @@ export default function Login() {
             <Box
               sx={{
                 backgroundImage: `url(${bealogo})`,
-                backgroundSize: "cover",
+                backgroundSize: "contain",
+                backgroundRepeat: "no-repeat", // Prevent repetition of the image
+                backgroundPosition: "center", // Center the logo within the box
                 marginTop: { xs: "100px", sm: "150px", md: "180px" },
                 marginX: { xs: "10px", sm: "15px" },
-                height: { xs: "20vh", sm: "25vh" },
+                height: { xs: "20vh", sm: "25vh", md: "30vh" }, // Adjust height for different screen sizes
                 color: "#f5f5f5",
               }}
             ></Box>

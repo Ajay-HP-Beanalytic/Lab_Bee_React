@@ -761,21 +761,35 @@ export default function ChamberAndCalibration() {
         <Box>
           <Grid container spacing={2} justifyContent="center" sx={{ mt: 2 }}>
             <Grid item xs={12} md={6}>
-              <Card elevation={3} sx={{ backgroundColor: "#fff2e6" }}>
+              <Box
+                sx={{
+                  backgroundColor: "#e0ebeb",
+                  padding: 2,
+                  borderRadius: 2,
+                  boxShadow: 2,
+                }}
+              >
                 <CreatePieChart
                   data={calibrationStatusPieChart}
                   options={optionsForCalibrationStatusPieChart}
                 />
-              </Card>
+              </Box>
             </Grid>
 
             <Grid item xs={12} md={6}>
-              <Card elevation={3} sx={{ backgroundColor: "#fff2e6" }}>
+              <Box
+                sx={{
+                  backgroundColor: "#e0ebeb",
+                  padding: 2,
+                  borderRadius: 2,
+                  boxShadow: 2,
+                }}
+              >
                 <CreatePieChart
                   data={chamberStatusPieChart}
                   options={optionsForChamberStatusPieChart}
                 />
-              </Card>
+              </Box>
             </Grid>
           </Grid>
         </Box>

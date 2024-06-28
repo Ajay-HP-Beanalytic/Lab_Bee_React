@@ -1,38 +1,37 @@
 /* Custom CSS for Fixed Height Accordion Summary of the JC main accordions */
 .fixed-height-accordion-summary-jc-component {
-  background-color: #47d1d1;
-  min-height: 55px;
-  max-height: 55px;
-  align-items: center;
-  overflow: hidden;
+  background-color: #47d1d1 !important;
+  min-height: 55px !important;
+  max-height: 55px !important;
+  align-items: center !important;
+  overflow: hidden !important;
 }
 
-.fixed-height-accordion-summary-jc-component.MuiAccordionSummary-content {
-  margin: 0;
-  overflow: hidden;
+.fixed-height-accordion-summary-jc-component .MuiAccordionSummary-content {
+  margin: 0 !important;
+  overflow: hidden !important;
 }
 
 .fixed-height-accordion-summary-jc-component.Mui-expanded {
-  min-height: 55px;
-  max-height: 55px;
+  min-height: 55px !important;
+  max-height: 55px !important;
 }
-
 /* Custom CSS for Fixed Height Accordion Summary of the JC Table containing accordion */
 .fixed-height-accordion-summary-jc-table-accordion {
-  background-color: #a6b28c;
-  min-height: 50px;
-  max-height: 50px;
-  align-items: center;
-  overflow: hidden;
+  background-color: #a6b28c !important;
+  min-height: 50px !important;
+  max-height: 50px !important;
+  align-items: center !important;
+  overflow: hidden !important;
 }
 
 .fixed-height-accordion-summary-jc-table-accordion
   .MuiAccordionSummary-content {
-  margin: 0;
-  overflow: hidden;
+  margin: 0 !important;
+  overflow: hidden !important;
 }
 
 .fixed-height-accordion-summary-jc-table-accordion.Mui-expanded {
-  min-height: 50px;
-  max-height: 50px;
+  min-height: 50px !important;
+  max-height: 50px !important;
 }

@@ -1,22 +1,21 @@
 const { db } = require("./db");
 
-const dayjs = require('dayjs');
-const moment = require('moment');
+const dayjs = require("dayjs");
+const moment = require("moment");
 // const { getFinancialYear } = require('../frontend/src/functions/UtilityFunctions');
 
-
 function poInvoiceBackendAPIs(app) {
-
   // api to add jc, rfq, po, invoice data to the table
   app.post("/api/addPoInvoice", (req, res) => {
-
     const { formData } = req.body;
 
     const sqlQuery = `
     INSERT INTO po_invoice_table (jc_number, jc_month, jc_category, rfq_number, rfq_value, po_number, po_value, po_status, invoice_number, invoice_value, invoice_status, payment_status, remarks)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
-    const formattedJcOpenDate = moment(formData.jcOpenDate).format('YYYY-MM-DD');
+    const formattedJcOpenDate = moment(formData.jcOpenDate).format(
+      "YYYY-MM-DD"
+    );
 
     const values = [
       formData.jcNumber,
@@ -31,28 +30,40 @@ function poInvoiceBackendAPIs(app) {
       formData.invoiceValue,
       formData.invoiceStatus,
       formData.paymentStatus,
-      formData.remarks
+      formData.remarks,
     ];
 
     db.query(sqlQuery, values, (error, result) => {
       if (error) {
-        return res.status(500).json({ error: "An error occurred while adding PO, Invoice data" });
+        return res
+          .status(500)
+          .json({ error: "An error occurred while adding PO, Invoice data" });
       } else {
-        res.status(200).json({ message: "PO, Invoice data added Successfully" });
+        res
+          .status(200)
+          .json({ message: "PO, Invoice data added Successfully" });
       }
     });
-  })
-
-
-
-
+  });
 
   // Get all po and invoice data to display that in a table:
   app.get("/api/getPoInvoiceDataList", (req, res) => {
-
     const { year, month } = req.query;
 
-    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const monthNames = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+    ];
     // Convert month name to month number
     const monthNumber = monthNames.indexOf(month) + 1;
 
@@ -66,30 +77,28 @@ function poInvoiceBackendAPIs(app) {
                                 WHERE MONTH(jc_month) = ? AND YEAR(jc_month) = ? 
                                 `;
 
-
     db.query(getPoAndInvoiceList, [monthNumber, year], (error, result) => {
       if (error) {
         console.error("Error fetching PO and invoice data:", error);
-        res.status(500).json({ error: "Failed to retrieve PO and invoice data" });
+        res
+          .status(500)
+          .json({ error: "Failed to retrieve PO and invoice data" });
       } else {
         res.status(200).json(result);
-
       }
     });
-  })
-
+  });
 
   ////////////////////////////////////////////////////////////////////
   // Get the PO data between two date ranges:
-  app.get('/api/getPoInvoiceDataBwTwoDates', (req, res) => {
-
+  app.get("/api/getPoInvoiceDataBwTwoDates", (req, res) => {
     const { selectedPODateRange } = req.query;
 
-    if (!selectedPODateRange || typeof selectedPODateRange !== 'string') {
+    if (!selectedPODateRange || typeof selectedPODateRange !== "string") {
       return res.status(400).json({ error: "Invalid date range format" });
     }
 
-    const [fromDate, toDate] = selectedPODateRange.split(' - ');
+    const [fromDate, toDate] = selectedPODateRange.split(" - ");
 
     if (!fromDate || !toDate) {
       return res.status(400).json({ error: "Invalid date range format" });
@@ -104,53 +113,52 @@ function poInvoiceBackendAPIs(app) {
 
     db.query(getPOColumns, [fromDate, toDate], (error, result) => {
       if (error) {
-        return res.status(500).json({ error: "An error occurred while fetching PO table data" });
+        return res
+          .status(500)
+          .json({ error: "An error occurred while fetching PO table data" });
       }
       res.send(result);
     });
-  })
+  });
 
   ////////////////////////////////////////////////////////////////////
 
-
   //API to delete the selected po and invoice data:
-  app.delete('/api/deletePoData/:jc_number', (req, res) => {
-
+  app.delete("/api/deletePoData/:jc_number", (req, res) => {
     const jc_number = req.params.jc_number;
 
     const deleteQuery = "DELETE FROM po_invoice_table WHERE jc_number = ?";
 
     db.query(deleteQuery, [jc_number], (error, result) => {
       if (error) {
-        return res.status(500).json({ error: "An error occurred while deleting the selected PO JC" });
+        return res.status(500).json({
+          error: "An error occurred while deleting the selected PO JC",
+        });
       }
-      res.status(200).json({ message: "PO data for the selected JC number deleted successfully" });
+      res.status(200).json({
+        message: "PO data for the selected JC number deleted successfully",
+      });
     });
-
   });
 
-
-
   //API to edit or update the selected po and invoice data:
-  app.get('/api/getPoData/:id', (req, res) => {
+  app.get("/api/getPoData/:id", (req, res) => {
     const id = req.params.id;
 
     const sqlQuery = `SELECT id, jc_number, jc_month, jc_category, rfq_number, rfq_value, po_number, po_value, po_status, invoice_number, invoice_value, invoice_status, payment_status, remarks FROM po_invoice_table WHERE id = ?`;
 
     db.query(sqlQuery, [id], (error, result) => {
       if (error) {
-        return res.status(500).json({ error: "An error occurred while fetching data" })
+        return res
+          .status(500)
+          .json({ error: "An error occurred while fetching data" });
       }
-      res.send(result)
-    })
+      res.send(result);
+    });
   });
-
-
-
 
   //API to update the selected booking:
   app.post("/api/addPoInvoice/:id", (req, res) => {
-
     const { formData } = req.body;
 
     const sqlQuery = `
@@ -171,7 +179,9 @@ function poInvoiceBackendAPIs(app) {
             remarks = ?
         WHERE id = ?
     `;
-    const formattedJcOpenDate = moment(formData.jcOpenDate).format('YYYY-MM-DD');
+    const formattedJcOpenDate = moment(formData.jcOpenDate).format(
+      "YYYY-MM-DD"
+    );
 
     const values = [
       formData.jcNumber,
@@ -190,51 +200,64 @@ function poInvoiceBackendAPIs(app) {
       formData.id,
     ];
 
-
     db.query(sqlQuery, values, (error, result) => {
       if (error) {
-        console.error('Error updating selected PO data:', error);
-        return res.status(500).json({ error: "An error occurred while updating selected PO data" });
+        console.error("Error updating selected PO data:", error);
+        return res
+          .status(500)
+          .json({ error: "An error occurred while updating selected PO data" });
       } else {
         res.status(200).json({ message: "PO data updated successfully" });
       }
     });
-  })
-
-
+  });
 
   // //API to fetch the year-month list po and invoice data:
-  app.get('/api/getPoDataYearMonth', (req, res) => {
-
+  app.get("/api/getPoDataYearMonth", (req, res) => {
     const sqlQuery = `
-        SELECT 
-            DISTINCT DATE_FORMAT(jc_month, '%b') AS month, 
-            DATE_FORMAT(jc_month, '%Y') AS year 
+        SELECT
+            DISTINCT DATE_FORMAT(jc_month, '%b') AS month,
+            DATE_FORMAT(jc_month, '%Y') AS year
         FROM po_invoice_table`;
+
+    // const sqlQuery = `
+    //     SELECT
+    //         DISTINCT DATE_FORMAT(jc_open_date, '%b') AS month,
+    //         DATE_FORMAT(jc_open_date, '%Y') AS year
+    //     FROM bea_jobcards`;
 
     db.query(sqlQuery, (error, result) => {
       if (error) {
-        return res.status(500).json({ error: "An error occurred while fetching data" });
+        return res
+          .status(500)
+          .json({ error: "An error occurred while fetching data" });
       }
 
-      const formattedData = result.map(row => ({
+      const formattedData = result.map((row) => ({
         month: row.month,
-        year: row.year
+        year: row.year,
       }));
       res.json(formattedData);
     });
   });
 
-
-
-
-
-
-  app.get('/api/getPoStatusData', (req, res) => {
-
+  app.get("/api/getPoStatusData", (req, res) => {
     const { year, month } = req.query;
 
-    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const monthNames = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+    ];
     // Convert month name to month number
     const monthNumber = monthNames.indexOf(month) + 1;
 
@@ -265,7 +288,6 @@ function poInvoiceBackendAPIs(app) {
                         MONTH(jc_month) = ? AND YEAR(jc_month) = ?
                       `;
 
-
     db.query(getPoStatusDataQuery, [monthNumber, year], (error, result) => {
       if (error) {
         console.error("Error fetching PO Status data:", error);
@@ -276,17 +298,84 @@ function poInvoiceBackendAPIs(app) {
     });
   });
 
+  //API to fetch the JC status list of jobcards:
+  app.get("/api/getJcCountList", (req, res) => {
+    const { year, month } = req.query;
 
+    const monthNames = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+    ];
+    const monthNumber = monthNames.indexOf(month) + 1;
 
+    if (monthNumber === 0 || !year) {
+      return res.status(400).json({ error: "Invalid year or month format" });
+    }
 
+    const totalJcCountQuery = `
+        SELECT COUNT(*) as total_jc_count 
+        FROM bea_jobcards 
+        WHERE MONTH(jc_open_date) = ? AND YEAR(jc_open_date) = ?`;
 
+    const categoryWiseCountQuery = `
+        SELECT jc_category, COUNT(*) as count 
+        FROM bea_jobcards 
+        WHERE MONTH(jc_open_date) = ? AND YEAR(jc_open_date) = ? 
+        GROUP BY jc_category`;
 
+    const statusWiseCountQuery = `
+        SELECT jc_status, COUNT(*) as count 
+        FROM bea_jobcards 
+        WHERE MONTH(jc_open_date) = ? AND YEAR(jc_open_date) = ? 
+        GROUP BY jc_status`;
 
-
-
-
-
+    // Execute the queries in parallel
+    Promise.all([
+      new Promise((resolve, reject) => {
+        db.query(totalJcCountQuery, [monthNumber, year], (error, result) => {
+          if (error) return reject(error);
+          resolve(result[0]);
+        });
+      }),
+      new Promise((resolve, reject) => {
+        db.query(
+          categoryWiseCountQuery,
+          [monthNumber, year],
+          (error, result) => {
+            if (error) return reject(error);
+            resolve(result);
+          }
+        );
+      }),
+      new Promise((resolve, reject) => {
+        db.query(statusWiseCountQuery, [monthNumber, year], (error, result) => {
+          if (error) return reject(error);
+          resolve(result);
+        });
+      }),
+    ])
+      .then(([totalJcCount, categoryWiseCounts, statusWiseCounts]) => {
+        res.status(200).json({
+          totalJcCount,
+          categoryWiseCounts,
+          statusWiseCounts,
+        });
+      })
+      .catch((error) => {
+        console.error("Error fetching JC data:", error);
+        res.status(500).json({ error: "Failed to retrieve JC data" });
+      });
+  });
 }
 
-
-module.exports = { poInvoiceBackendAPIs }
+module.exports = { poInvoiceBackendAPIs };
