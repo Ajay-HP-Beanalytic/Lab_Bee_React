@@ -842,13 +842,13 @@ export default function ChamberAndCalibration() {
                   borderRadius: 3,
                 }}
                 value={calibrationDoneDate}
-                onChange={(e) => setCalibrationDoneDate(e.target.value)}
                 type="date"
                 label="Calibration Done On"
                 margin="normal"
                 fullWidth
                 variant="outlined"
                 autoComplete="on"
+                onChange={(e) => setCalibrationDoneDate(e.target.value)}
               />
 
               <TextField
@@ -858,13 +858,13 @@ export default function ChamberAndCalibration() {
                   borderRadius: 3,
                 }}
                 value={calibrationDueDate}
-                onChange={(e) => setCalibrationDueDate(e.target.value)}
                 type="date"
                 label="Calibration Due On"
                 margin="normal"
                 fullWidth
                 variant="outlined"
                 autoComplete="on"
+                onChange={(e) => setCalibrationDueDate(e.target.value)}
               />
 
               <TextField

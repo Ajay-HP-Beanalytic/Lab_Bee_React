@@ -155,7 +155,7 @@ function createBEAQuotationsTable() {
   const createBEAQuotationsTablequery = `
         CREATE TABLE IF NOT EXISTS bea_quotations_table (
             id INT NOT NULL AUTO_INCREMENT,
-            quotation_ids VARCHAR(255),
+            quotation_ids VARCHAR(255) UNIQUE,
             tests TEXT,
             company_name VARCHAR(255),
             company_address VARCHAR(500),
@@ -326,7 +326,7 @@ function createJobcardsTable() {
   const createJobcardsTableQuery = `
     CREATE TABLE IF NOT EXISTS bea_jobcards (
         id INT NOT NULL AUTO_INCREMENT,
-        jc_number VARCHAR(255) ,
+        jc_number VARCHAR(255) UNIQUE,
         srf_number VARCHAR(255) ,
         dcform_number VARCHAR(255) ,
         jc_open_date DATE,

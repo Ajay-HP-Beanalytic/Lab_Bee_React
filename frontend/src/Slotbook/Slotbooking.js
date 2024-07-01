@@ -19,7 +19,8 @@ import {
   Typography,
 } from "@mui/material";
 import { momentLocalizer } from "react-big-calendar";
-import moment from "moment";
+// import moment from "moment";
+import moment from "moment-timezone";
 import Calendar from "../components/Calendar_Comp";
 
 import "../css/calendar.css";
@@ -182,6 +183,10 @@ export default function Slotbooking() {
 
   const handleCloseDeleteSlotDialog = () => {
     setOpenDeleteSlotDialog(false);
+  };
+
+  const formatFetchedSlotDateTime = (dateTime) => {
+    return moment(dateTime).tz("Asia/Kolkata").format("DD/MM/YYYY HH:mm");
   };
 
   /////////////////////////////////////////////////////////////////////////////////////
@@ -702,7 +707,7 @@ export default function Slotbooking() {
                         />
                       </LocalizationProvider>
                     )}
-                    {...register("slotEndDateTime")}
+                    {...register("slotEndDateTime", { valueAsDate: true })}
                   />
 
                   <Typography variant="body2" color="error">
@@ -767,15 +772,29 @@ export default function Slotbooking() {
         options={[
           { label: `Booking ID: ${selectedEvent?.id}` },
           { label: `Booking Info: ${selectedEvent?.title}` },
+          // {
+          //   label: `Slot Start Date & Time: ${moment(
+          //     (selectedEvent?.start)
+          //   ).format("DD/MM/YYYY HH:mm")}`,
+          // },
+          // {
+          //   label: `Slot End Date & Time: ${moment(selectedEvent?.end)
+          //     .format("DD/MM/YYYY HH:mm")}`,
+          // },
+
           {
-            label: `Slot Start Date & Time: ${moment(
+            label: `Slot Start Date & Time: ${
               selectedEvent?.start
-            ).format("DD/MM/YYYY HH:mm")}`,
+                ? formatFetchedSlotDateTime(selectedEvent.start)
+                : "N/A"
+            }`,
           },
           {
-            label: `Slot End Date & Time: ${moment(selectedEvent?.end).format(
-              "DD/MM/YYYY HH:mm"
-            )}`,
+            label: `Slot End Date & Time: ${
+              selectedEvent?.end
+                ? formatFetchedSlotDateTime(selectedEvent.end)
+                : "N/A"
+            }`,
           },
 
           { label: `Slot Duration: ${selectedEvent?.duration}` },
