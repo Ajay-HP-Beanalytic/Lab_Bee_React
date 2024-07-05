@@ -59,6 +59,31 @@ function App() {
     handleRouteChange();
   }, [location]);
 
+  // useEffect(() => {
+  //   if (loggedInUserDepartment) {
+  //     if (location.pathname === "/" || location.pathname === "/home") {
+  //       if (
+  //         loggedInUserDepartment === "Administrator" ||
+  //         loggedInUserDepartment === "Accounts"
+  //       ) {
+  //         navigate("/home");
+  //       } else if (loggedInUserDepartment === "Marketing") {
+  //         navigate("/quotation_dashboard");
+  //       } else if (
+  //         loggedInUserDepartment === "TS1 Testing" ||
+  //         loggedInUserDepartment === "TS2 Testing"
+  //       ) {
+  //         navigate("/jobcard_dashboard");
+  //       } else if (
+  //         loggedInUserDepartment === "Reliability" ||
+  //         loggedInUserDepartment === "Software"
+  //       ) {
+  //         navigate("/jobcard_dashboard");
+  //       }
+  //     }
+  //   }
+  // }, [loggedInUserDepartment, location.pathname, navigate]);
+
   useEffect(() => {
     if (loggedInUserDepartment) {
       if (location.pathname === "/" || location.pathname === "/home") {
@@ -84,46 +109,17 @@ function App() {
     }
   }, [loggedInUserDepartment, location.pathname, navigate]);
 
-  // useEffect(() => {
-  //   if (loggedInUserDepartment) {
-  //     if (
-  //       location.pathname === "/login" ||
-  //       location.pathname === "/register" ||
-  //       location.pathname === "/reset_password"
-  //     ) {
-  //       // Allow access to these pages without redirection
-  //       return;
-  //     }
-
-  //     if (location.pathname === "/" || location.pathname === "/home") {
-  //       if (
-  //         loggedInUserDepartment === "Administrator" ||
-  //         loggedInUserDepartment === "Accounts"
-  //       ) {
-  //         navigate("/home");
-  //       } else if (loggedInUserDepartment === "Marketing") {
-  //         navigate("/quotation_dashboard");
-  //       } else if (
-  //         loggedInUserDepartment === "TS1 Testing" ||
-  //         loggedInUserDepartment === "TS2 Testing"
-  //       ) {
-  //         navigate("/jobcard_dashboard");
-  //       } else if (
-  //         loggedInUserDepartment === "Reliability" ||
-  //         loggedInUserDepartment === "Software"
-  //       ) {
-  //         navigate("/jobcard_dashboard");
-  //       }
-  //     }
-  //   }
-  // }, [loggedInUserDepartment, location.pathname, navigate]);
+  if (!loggedInUserDepartment) {
+    // Optionally show a loading state or a splash screen here
+    return null;
+  }
 
   return (
     <div className="App">
       <Helmet>
         <meta charSet="utf-8" />
         <title>Lab Bee</title>
-        <link rel="canonical" href="http://labbee.beanalytic.com/" /> //{" "}
+        <link rel="canonical" href="https://labbee.beanalytic.com/" /> //{" "}
         {/* for SEO might need to change it */}
         <meta name="description" content="App of BE Analytic." />
       </Helmet>

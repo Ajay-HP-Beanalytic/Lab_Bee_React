@@ -14,12 +14,6 @@ import {
 
 import { serverBaseAddress } from "../Pages/APIPage";
 import axios from "axios";
-
-import PendingIcon from "@mui/icons-material/Pending";
-
-import { toast } from "react-toastify";
-
-import { CreateButtonWithLink } from "../functions/ComponentsFunctions";
 import { getCurrentMonthYear } from "../functions/UtilityFunctions";
 import { DataGrid } from "@mui/x-data-grid";
 import DateRangeFilter from "../common/DateRangeFilter";
@@ -28,6 +22,7 @@ import dayjs from "dayjs";
 import EmptyCard from "../common/EmptyCard";
 import Loader from "../common/Loader";
 import { UserContext } from "../Pages/UserContext";
+import JCPreview from "./JCPreview";
 
 export default function JCHome() {
   const location = useLocation();
@@ -41,10 +36,6 @@ export default function JCHome() {
   const [originalJcTableData, setOriginalJcTableData] = useState([]);
 
   const [loading, setLoading] = useState(true); //To show loading label
-
-  const [msg, setMsg] = useState(
-    <Typography variant="h4"> Loading...</Typography>
-  );
 
   const [error, setError] = useState(null); //To show error label
 
@@ -70,8 +61,6 @@ export default function JCHome() {
 
   const [filteredJcData, setFilteredJcData] = useState(jcTableData);
 
-  // const [loggedInUserDepartment, setLoggedInUserDepartment] = useState("");
-
   const [reliabilityJCTableData, setReliabilityJCTableData] = useState([]);
 
   const [originalReliabilityTableData, setOriginalReliabilityTableData] =
@@ -81,7 +70,171 @@ export default function JCHome() {
     reliabilityJCTableData
   );
 
+  const [jcId, setJcId] = useState(null); // Id of the selected job card
+  const [openJCPreview, setOpenJCPreview] = useState(false);
+
+  const [jcNumberString, setJcumberString] = useState("");
+  const [srfNumber, setSrfNumber] = useState("");
+  const [jcOpenDate, setJcOpenDate] = useState(null);
+  const [itemReceivedDate, setItemReceivedDate] = useState(null);
+  const [poNumber, setPonumber] = useState("");
+  const [jcCategory, setJcCategory] = useState("");
+  const [testCategory, setTestCategory] = useState("");
+  const [testDiscipline, setTestDiscipline] = useState("");
+  const [typeOfRequest, setTypeOfRequest] = useState("");
+  const [testInchargeName, setTestInchargeName] = useState("");
+
+  const [companyName, setCompanyName] = useState("");
+  const [companyAddress, setCompanyAddress] = useState("");
+  const [customerNumber, setCustomerNumber] = useState("");
+  const [customerEmail, setCustomerEmail] = useState("");
+  const [customerName, setCustomerName] = useState("");
+  const [projectName, setProjectName] = useState("");
+  const [testInstructions, setTestInstructions] = useState("");
+  const [sampleCondition, setSampleCondition] = useState("");
+  const [reportType, setReportType] = useState("");
+  const [referanceDocs, setReferanceDocs] = useState([]);
+  const [jcStatus, setJcStatus] = useState("Open");
+  const [jcCloseDate, setJcCloseDate] = useState(null);
+  const [observations, setObservations] = useState("");
+
+  const [eutRows, setEutRows] = useState([{ id: 0 }]);
+  const [testRows, setTestRows] = useState([{ id: 0 }]);
+  const [testDetailsRows, setTestDetailsRows] = useState([
+    { id: 0, startDate: null, endDate: null, duration: 0 },
+  ]);
+
+  const [reliabilityReportStatus, setReliabilityReportStatus] = useState("");
+  const [reliabilityTaskRow, setReliabilityTaskRow] = useState([{ id: 0 }]);
+
+  const [jcLastModifiedBy, setJcLastModifiedBy] = useState();
+
+  const [editJc, setEditJc] = useState(false);
+
   const { loggedInUser, loggedInUserDepartment } = useContext(UserContext);
+
+  // Fetch and update the JC using useEffect
+  useEffect(() => {
+    if (jcId) {
+      axios
+        .get(`${serverBaseAddress}/api/jobcard/${jcId}`)
+        .then((res) => {
+          setJcumberString(res.data.jobcard.jc_number);
+          setSrfNumber(res.data.jobcard.srf_number);
+          const parsedJcStartDate = dayjs(res.data.jobcard.jc_open_date);
+          setJcOpenDate(parsedJcStartDate.isValid() ? parsedJcStartDate : null);
+
+          const parsedItemReceivedDate = dayjs(
+            res.data.jobcard.item_received_date
+          );
+          setItemReceivedDate(
+            parsedItemReceivedDate.isValid() ? parsedItemReceivedDate : null
+          );
+
+          setPonumber(res.data.jobcard.po_number);
+          setTestCategory(res.data.jobcard.test_category);
+          setTestDiscipline(res.data.jobcard.test_discipline);
+          setSampleCondition(res.data.jobcard.sample_condition);
+          setReportType(res.data.jobcard.report_type);
+          setJcCategory(res.data.jobcard.jc_category);
+          setTypeOfRequest(res.data.jobcard.type_of_request);
+          setTestInchargeName(res.data.jobcard.test_incharge);
+          setCompanyName(res.data.jobcard.company_name);
+          setCompanyAddress(res.data.jobcard.company_address);
+          setCustomerNumber(res.data.jobcard.customer_number);
+          setCustomerName(res.data.jobcard.customer_name);
+          setCustomerEmail(res.data.jobcard.customer_email);
+          setProjectName(res.data.jobcard.project_name);
+          setTestInstructions(res.data.jobcard.test_instructions);
+          setReferanceDocs(res.data.jobcard.referance_document);
+          setJcStatus(res.data.jobcard.jc_status);
+          setReliabilityReportStatus(
+            res.data.jobcard.reliability_report_status
+          );
+          setJcCloseDate(res.data.jobcard.jc_closed_date);
+          setObservations(res.data.jobcard.observations);
+          setJcLastModifiedBy(res.data.jobcard.last_updated_by);
+
+          setEutRows(res.data.eut_details);
+          setTestRows(res.data.tests);
+          setTestDetailsRows(res.data.tests_details);
+
+          setReliabilityTaskRow(res.data.reliability_tasks_details);
+
+          setReferanceDocs(res.data.attachments);
+
+          setEditJc(true);
+        })
+        .catch((error) => console.error(error));
+    }
+  }, [jcId]);
+
+  const editSelectedJC = (item) => {
+    navigate(`/jobcard/${item}`);
+  };
+
+  const primaryTS1JCDetailsToPreview = [
+    { label: `Company Name: ${companyName}` },
+    { label: `Company Address: ${companyAddress}` },
+    { label: `Customer Name: ${customerName}` },
+    { label: `Customer Email: ${customerEmail}` },
+    { label: `Contact Number: ${customerNumber}` },
+    { label: `Project Name: ${projectName}` },
+    { label: `SRF Number: ${srfNumber}` },
+    { label: `JC Open Date : ${dayjs(jcOpenDate).format("YYYY/MM/DD")}` },
+    { label: `JC Created By: ${testInchargeName}` },
+    {
+      label: `Item Received Date: ${
+        itemReceivedDate ? dayjs(itemReceivedDate).format("YYYY/MM/DD") : ""
+      }`,
+    },
+    { label: `Test Category: ${jcCategory}` },
+    { label: `Test Discipline: ${testDiscipline}` },
+    { label: `Sample Condition: ${sampleCondition}` },
+    { label: `Type of Requst: ${typeOfRequest}` },
+    { label: `Report Type: ${reportType}` },
+    { label: `JC Status: ${jcStatus}` },
+    {
+      label: `JC Close Date: ${
+        jcCloseDate ? dayjs(jcCloseDate).format("YYYY/MM/DD") : ""
+      }`,
+    },
+    { label: `Observations: ${observations}` },
+  ];
+
+  const primaryReliabilityJCDetailsToPreview = [
+    { label: `Company Name: ${companyName}` },
+    { label: `Company Address: ${companyAddress}` },
+    { label: `Customer Name: ${customerName}` },
+    { label: `Customer Email: ${customerEmail}` },
+    { label: `Contact Number: ${customerNumber}` },
+    { label: `Project Name: ${projectName}` },
+    { label: `JC Open Date : ${dayjs(jcOpenDate).format("YYYY/MM/DD")}` },
+    { label: `JC Created By: ${testInchargeName}` },
+    { label: `JC Status: ${jcStatus}` },
+    {
+      label: `JC Close Date: ${
+        jcCloseDate ? dayjs(jcCloseDate).format("YYYY/MM/DD") : ""
+      }`,
+    },
+    { label: `Observations: ${observations}` },
+  ];
+
+  let primaryJCDetails = [];
+  if (loggedInUserDepartment === "TS1 Testing") {
+    primaryJCDetails = primaryTS1JCDetailsToPreview;
+  } else if (loggedInUserDepartment === "Reliability") {
+    primaryJCDetails = primaryReliabilityJCDetailsToPreview;
+  } else if (
+    loggedInUserDepartment === "Administrator" ||
+    loggedInUserDepartment === "Accounts"
+  ) {
+    if (jcCategory === "TS1") {
+      primaryJCDetails = primaryTS1JCDetailsToPreview;
+    } else if (jcCategory === "Reliability") {
+      primaryJCDetails = primaryReliabilityJCDetailsToPreview;
+    }
+  }
 
   // Simulate fetching jc data from the database
   useEffect(() => {
@@ -126,8 +279,6 @@ export default function JCHome() {
           const testingJcResponse = await axios.get(getTestingJcURL);
           setJcTableData(testingJcResponse.data);
           setOriginalJcTableData(testingJcResponse.data);
-
-          console.log(testingJcResponse.data);
 
           // Fetch the reliability JC's
           const reliabilityJcResponse = await axios.get(getReliabilityJcURL);
@@ -181,23 +332,6 @@ export default function JCHome() {
     setFilteredJcData(jcTableData);
     setFilteredReliabilityJcData(reliabilityJCTableData);
   }, [jcTableData, reliabilityJCTableData]);
-
-  // To validate the user credential its very much important
-  // axios.defaults.withCredentials = true;
-
-  // // To get the logged in user name:
-  // useEffect(() => {
-  //   axios
-  //     .get(`${serverBaseAddress}/api/getLoggedInUser`)
-  //     .then((res) => {
-  //       if (res.data.valid) {
-  //         setLoggedInUserDepartment(res.data.user_department);
-  //       } else {
-  //         navigate("/");
-  //       }
-  //     })
-  //     .catch((err) => console.log(err));
-  // }, []);
 
   //If data is loading then show Loading text
   if (loading) {
@@ -350,12 +484,16 @@ export default function JCHome() {
     setJCMonth(event.target.value);
   };
 
-  // To edit the selected JC
-  const editSelectedRowData = (item) => {
-    navigate(`/jobcard/${item.id}`);
+  const openSelectedRowJCData = (item) => {
+    setJcId(item.id);
+    setOpenJCPreview(true);
   };
 
-  // on selecting the two different dates or date ranges.
+  const handleCloseJCPreview = () => {
+    setOpenJCPreview(false);
+    setJcId(null);
+  };
+
   const handleJCDateRangeChange = (selectedJCDateRange) => {
     if (
       selectedJCDateRange &&
@@ -369,6 +507,7 @@ export default function JCHome() {
       fetchJCDataBetweenTwoDates(formattedDateRange);
     } else {
       console.log("Invalid date range format");
+      return null;
     }
   };
 
@@ -571,7 +710,8 @@ export default function JCHome() {
                 rows={ts1JcDataWithSerialNumbers}
                 columns={columns}
                 sx={{ "&:hover": { cursor: "pointer" } }}
-                onRowClick={(params) => editSelectedRowData(params.row)}
+                // onRowClick={(params) => editSelectedJC(params.row)}
+                onRowClick={(params) => openSelectedRowJCData(params.row)}
                 pageSize={5}
                 rowsPerPageOptions={[5, 10, 20]}
               />
@@ -629,24 +769,32 @@ export default function JCHome() {
                   rows={reliabilityJcDataWithSerialNumbers}
                   columns={reliabilityTableColumns}
                   sx={{ "&:hover": { cursor: "pointer" } }}
-                  onRowClick={(params) => editSelectedRowData(params.row)}
+                  // onRowClick={(params) => editSelectedJC(params.row)}
+                  onRowClick={(params) => openSelectedRowJCData(params.row)}
                   pageSize={5}
                   rowsPerPageOptions={[5, 10, 20]}
                 />
               </Box>
-
-              {/* Tasks completed by each person: */}
-              {/* <Box sx={{ mt: 2 }}>
-                <Divider>
-                  <Typography variant="h4" sx={{ color: "#003366" }}>
-                    {" "}
-                    Reliability Tasks Completed By Each Person
-                  </Typography>
-                </Divider>
-              </Box> */}
             </>
           )}
         </>
+      )}
+
+      {openJCPreview && (
+        <JCPreview
+          open={openJCPreview}
+          onClose={handleCloseJCPreview}
+          jcCategory={jcCategory}
+          jcNumber={jcNumberString}
+          primaryJCDetails={primaryJCDetails}
+          eutRows={eutRows}
+          testRows={testRows}
+          testDetailsRows={testDetailsRows}
+          reliabilityTaskRow={reliabilityTaskRow}
+          onEdit={() => editSelectedJC(jcId)}
+          editJc={editJc}
+          jcId={jcId}
+        />
       )}
     </>
   );

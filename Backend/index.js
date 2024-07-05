@@ -17,12 +17,14 @@ const path = require("path");
 // const fs = require('fs');
 
 const http = require("http");
+const https = require("https");
 const socketIo = require("socket.io");
 
 // create an express application:
 const app = express();
 
 const server = http.createServer(app);
+// const server = https.createServer(app);   //Change during deployment
 
 ///Make the app.connection available to the socket.io server:
 // const io = socketIo(server);
@@ -30,8 +32,8 @@ const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
     origin: true, // mention the host address of the frontend
-    // origin: "http://localhost:3000", // Allow requests from this origin
-    methods: ["GET", "POST"],
+    // origin: "https://labbee.beanalytic.com", // Allow requests from this origin
+    methods: ["GET", "POST", "DELETE", "PUT"],
     credentials: true,
   },
 });
@@ -85,7 +87,7 @@ io.on("connection", (socket) => {
 app.use(
   cors({
     origin: true, // mention the host address of the frontend
-    // origin: [`http://localhost:3000`],
+    // origin: "https://labbee.beanalytic.com", // Allow requests from this origin
     methods: ["POST", "GET", "DELETE"],
     credentials: true,
   })
@@ -291,7 +293,8 @@ app.get("/", (req, res) => {
 //   console.log("Server is running on port 4000");
 // });
 
-const PORT = 4002;
+// const PORT = 4002;
+const PORT = 4000;
 server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });

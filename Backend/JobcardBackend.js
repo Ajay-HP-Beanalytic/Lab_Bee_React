@@ -95,7 +95,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
       reliabilityReportStatus || "",
       formattedCloseDate || null,
       observations || "",
-      jcLastModifiedBy || "",
+      jcLastModifiedBy || loggedInUser,
     ];
 
     db.query(sql, values, (error, result) => {
@@ -856,15 +856,11 @@ function jobcardsAPIs(app, io, labbeeUsers) {
       eutSerialNo,
       standard,
       testStartedBy,
-      startTemp,
-      startRh,
       startDate,
       endDate,
       duration,
       actualTestDuration,
       unit,
-      endTemp,
-      endRh,
       testEndedBy,
       remarks,
       testReportInstructions,
@@ -883,15 +879,11 @@ function jobcardsAPIs(app, io, labbeeUsers) {
           eutSerialNo = ?, 
           standard = ? ,
           testStartedBy = ? ,
-          startTemp = ? ,
-          startRh = ? ,
           startDate = ? ,
           endDate = ? ,
           duration = ? ,
           actualTestDuration = ? ,
           unit =?,
-          endTemp = ? ,
-          endRh = ? ,
           testEndedBy = ? ,
           remarks = ? ,
           testReportInstructions = ? ,
@@ -906,15 +898,11 @@ function jobcardsAPIs(app, io, labbeeUsers) {
       eutSerialNo,
       standard,
       testStartedBy,
-      startTemp,
-      startRh,
       formattedStartDate,
       formattedEndDate,
       duration,
       actualTestDuration,
       unit,
-      endTemp,
-      endRh,
       testEndedBy,
       remarks,
       testReportInstructions,
@@ -925,6 +913,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
       jcNumber,
       testName,
     ];
+
     // console.log(startDate, endDate);
     db.query(sqlQuery, values, (error, result) => {
       if (error) {
