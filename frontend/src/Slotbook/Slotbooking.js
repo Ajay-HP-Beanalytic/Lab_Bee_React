@@ -19,8 +19,8 @@ import {
   Typography,
 } from "@mui/material";
 import { momentLocalizer } from "react-big-calendar";
-// import moment from "moment";
-import moment from "moment-timezone";
+import moment from "moment";
+// import moment from "moment-timezone";
 import Calendar from "../components/Calendar_Comp";
 
 import "../css/calendar.css";
@@ -49,6 +49,8 @@ const localizer = momentLocalizer(moment);
 
 export default function Slotbooking() {
   const [myResourcesList, setMyResourceList] = useState([]);
+  const [myEventsList, setMyEventsList] = useState([]);
+
   const [contextMenuOpen, setContextMenuOpen] = useState(false);
   const [xPosition, setXPosition] = useState(0);
   const [yPosition, setYPosition] = useState(0);
@@ -67,7 +69,6 @@ export default function Slotbooking() {
   const [openDeleteSlotDialog, setOpenDeleteSlotDialog] = useState(false);
   const [editBooking, setEditBooking] = useState(false);
   const [allBookings, setAllBookings] = useState([]);
-  const [myEventsList, setMyEventsList] = useState([]);
 
   const [selectedEvent, setSelectedEvent] = useState(null);
 
@@ -115,7 +116,7 @@ export default function Slotbooking() {
     register,
     handleSubmit,
     control,
-    formState: { values, errors },
+    formState: { errors },
     setValue,
     reset,
   } = useForm({
@@ -185,15 +186,21 @@ export default function Slotbooking() {
     setOpenDeleteSlotDialog(false);
   };
 
-  const formatFetchedSlotDateTime = (dateTime) => {
-    return moment(dateTime).tz("Asia/Kolkata").format("DD/MM/YYYY HH:mm");
-  };
+  // const formatFetchedSlotDateTime = (dateTime) => {
+  //   return moment(dateTime).tz("Asia/Kolkata").format("DD/MM/YYYY HH:mm");
+  // };
 
   /////////////////////////////////////////////////////////////////////////////////////
 
   // Function to check if there is an overlap between two date-time ranges
 
   const onSubmitForm = async (data) => {
+    // Check if the slot duration is negative
+    if (parseFloat(data.slotDuration) < 0) {
+      toast.error("Slot duration should not be negative");
+      return;
+    }
+
     // Get the selected start and end date-time, along with the selected chamber
     const selectedSlotStartDate = editId
       ? dayjs(slotStartDateTime)
@@ -302,7 +309,7 @@ export default function Slotbooking() {
       }
     } catch (error) {
       console.error("Failed to delete booking:", error);
-      alert("Failed to delete booking. Please try again.");
+      toast.error("Failed to delete booking. Please try again.");
     }
   };
 
@@ -383,11 +390,11 @@ export default function Slotbooking() {
         );
         if (response.status === 200) {
           // Transform the fetched data to match the expected resource structure
-          const transformedData = response.data.map((chamber) => ({
-            id: chamber.id,
+          const resourceData = response.data.map((chamber) => ({
+            id: chamber.chamber_id, // Ensure id is a string
             title: chamber.chamber_id,
           }));
-          setMyResourceList(transformedData);
+          setMyResourceList(resourceData);
         } else {
           console.error(
             "Failed to fetch chambers list. Status:",
@@ -441,8 +448,6 @@ export default function Slotbooking() {
     };
 
     fetchAllTheBookings();
-
-    // fetchBookingData(selectedEvent);
   }, [newBookingAdded, slotDeleted]);
 
   // Define a function to get event props based on start date
@@ -507,14 +512,18 @@ export default function Slotbooking() {
       >
         <Calendar
           localizer={localizer}
-          defaultView="month"
-          views={["month", "week", "day"]}
           events={myEventsList}
           resources={myResourcesList}
           toolbar={true}
+          defaultView="month"
+          views={["month", "week", "day"]}
           eventPropGetter={eventPropGetter}
-          selectable
+          selectable={true}
           onSelectEvent={handleEventClick}
+          startAccessor="start"
+          endAccessor="end"
+          resourceIdAccessor="id"
+          resourceTitleAccessor="title"
         />
 
         {contextMenuOpen && (
@@ -532,7 +541,6 @@ export default function Slotbooking() {
               >
                 New Booking
               </MenuItem>
-              {/* <MenuItem onClick={(e) => { onClickingDeleteBooking(e) }}>Delete Booking</MenuItem> */}
             </Menu>
           </ClickAwayListener>
         )}
@@ -726,6 +734,11 @@ export default function Slotbooking() {
                       Total Slot Duration (Hrs): {slotDuration}
                     </Typography>
                   ) : (
+                    //   {slotDuration < 0 ? (
+                    //     <Typography variant="body2" color="error">
+                    //   {errors?.slotDuration && errors.slotDuration.message}
+                    // </Typography>
+                    //   )}
                     <Typography variant="h5">
                       Total Slot Duration (Hrs): 0
                     </Typography>
@@ -772,29 +785,15 @@ export default function Slotbooking() {
         options={[
           { label: `Booking ID: ${selectedEvent?.id}` },
           { label: `Booking Info: ${selectedEvent?.title}` },
-          // {
-          //   label: `Slot Start Date & Time: ${moment(
-          //     (selectedEvent?.start)
-          //   ).format("DD/MM/YYYY HH:mm")}`,
-          // },
-          // {
-          //   label: `Slot End Date & Time: ${moment(selectedEvent?.end)
-          //     .format("DD/MM/YYYY HH:mm")}`,
-          // },
-
           {
-            label: `Slot Start Date & Time: ${
+            label: `Slot Start Date & Time: ${moment(
               selectedEvent?.start
-                ? formatFetchedSlotDateTime(selectedEvent.start)
-                : "N/A"
-            }`,
+            ).format("DD/MM/YYYY HH:mm")}`,
           },
           {
-            label: `Slot End Date & Time: ${
-              selectedEvent?.end
-                ? formatFetchedSlotDateTime(selectedEvent.end)
-                : "N/A"
-            }`,
+            label: `Slot End Date & Time: ${moment(selectedEvent?.end).format(
+              "DD/MM/YYYY HH:mm"
+            )}`,
           },
 
           { label: `Slot Duration: ${selectedEvent?.duration}` },

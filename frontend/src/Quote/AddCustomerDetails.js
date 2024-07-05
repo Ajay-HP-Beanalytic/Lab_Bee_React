@@ -1,5 +1,4 @@
 import {
-  Autocomplete,
   Box,
   Button,
   Dialog,
@@ -7,17 +6,8 @@ import {
   DialogContent,
   DialogTitle,
   Divider,
-  FormControl,
   Grid,
   IconButton,
-  Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TablePagination,
-  TableRow,
   TextField,
   Tooltip,
   Typography,
@@ -25,7 +15,7 @@ import {
 import React, { useState, useRef, useEffect } from "react";
 import { toast } from "react-toastify";
 
-import axios, { Axios } from "axios";
+import axios from "axios";
 import * as XLSX from "xlsx";
 
 import AddIcon from "@mui/icons-material/Add";
@@ -64,9 +54,6 @@ export default function AddCustomerDetails() {
   const [openDeleteCustomerDetailDialog, setOpenDeleteCustomerDetailDialog] =
     useState(false);
   const [deleteItemId, setDeleteItemId] = useState(null);
-
-  const [editCompanyDetailsFields, setEditCompanyDetailsFields] =
-    useState(false);
 
   const [editFields, setEditFields] = useState(false);
 
@@ -302,7 +289,7 @@ export default function AddCustomerDetails() {
 
   const columns = [
     {
-      field: "id",
+      field: "serialNumbers",
       headerName: "SL No",
       width: 60,
       align: "center",
@@ -370,6 +357,17 @@ export default function AddCustomerDetails() {
       ),
     },
   ];
+
+  const addSerialNumbersToRows = (data) => {
+    return data.map((item, index) => ({
+      ...item,
+      serialNumbers: index + 1,
+    }));
+  };
+
+  const customersDataWithSerialNumbers = addSerialNumbersToRows(
+    filteredCompaniesList
+  );
 
   return (
     <div>
@@ -580,7 +578,7 @@ export default function AddCustomerDetails() {
             }}
           >
             <DataGrid
-              rows={filteredCompaniesList}
+              rows={customersDataWithSerialNumbers}
               columns={columns}
               pageSize={5}
               rowsPerPageOptions={[5, 10, 20]}

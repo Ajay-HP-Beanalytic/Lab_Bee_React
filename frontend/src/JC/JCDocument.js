@@ -12,8 +12,6 @@ function loadFile(url, callback) {
 }
 
 export const generateJcDocument = (jobCardData) => {
-  // console.log('jobCardData', jobCardData)
-
   let templateDocument = "";
 
   if (jobCardData.jcCategory === "TS1") {

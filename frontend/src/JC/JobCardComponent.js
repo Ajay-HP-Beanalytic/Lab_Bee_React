@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { useParams } from "react-router-dom";
+// import { useParams } from "react-router-dom";
 import dayjs from "dayjs";
 import { serverBaseAddress } from "../Pages/APIPage";
 import { generateJcDocument } from "./JCDocument";
 import { Button } from "@mui/material";
 
-const JobCardComponent = () => {
-  const { id } = useParams();
+const JobCardComponent = ({ id }) => {
+  // const { id } = useParams();
 
   const [jobCard, setJobCard] = useState({
     jcNumber: "",

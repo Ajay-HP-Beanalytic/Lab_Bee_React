@@ -1,6 +1,6 @@
 // Here we are using "Mini variant drawer" to create a side navigation bar:
 
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useState } from "react";
 import { styled, useTheme } from "@mui/material/styles";
 import Box from "@mui/material/Box";
 import MuiDrawer from "@mui/material/Drawer";
@@ -17,16 +17,7 @@ import ListItem from "@mui/material/ListItem";
 import ListItemButton from "@mui/material/ListItemButton";
 import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
-import {
-  Avatar,
-  Badge,
-  Button,
-  Dialog,
-  DialogContent,
-  DialogTitle,
-  Popover,
-  Tooltip,
-} from "@mui/material";
+import { Avatar, Badge, Button, Popover, Tooltip } from "@mui/material";
 
 import HomeIcon from "@mui/icons-material/Home";
 import SpaceDashboardIcon from "@mui/icons-material/SpaceDashboard";
@@ -39,7 +30,7 @@ import NoteAddIcon from "@mui/icons-material/NoteAdd";
 import KitchenIcon from "@mui/icons-material/Kitchen";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import ManageAccountsIcon from "@mui/icons-material/ManageAccounts";
-import { Link, Outlet, useNavigate } from "react-router-dom";
+import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 // import axios from "axios";
 
 import RobotoBoldFont from "../fonts/Roboto-Bold.ttf";
@@ -334,6 +325,53 @@ export default function SidenavigationBar() {
           </ListItemButton>
         </ListItem>
       </Tooltip>
+
+      // <Tooltip title={item.label} placement="right" arrow>
+      //   <ListItem disablePadding sx={{ display: "block" }}>
+      //     <NavLink
+      //       to={item.path}
+      //       className="nav-link"
+      //       activeClassName="active"
+      //       onClick={(event) => handleListItemClick(event, index)}
+      //       sx={{
+      //         display: "flex",
+      //         alignItems: "center",
+      //         minHeight: 48,
+      //         justifyContent: open ? "initial" : "center",
+      //         px: 2.5,
+      //         textDecoration: "none", // Optional: Remove underline
+      //         color: "inherit", // Optional: Inherit text color
+      //       }}
+      //     >
+      //       <ListItemButton
+      //         selected={selectedIndex === index}
+      //         sx={{
+      //           display: "flex",
+      //           alignItems: "center",
+      //           minWidth: 0,
+      //           mr: open ? 3 : "auto",
+      //           justifyContent: "center",
+      //         }}
+      //       >
+      //         <ListItemIcon>{item.icon}</ListItemIcon>
+      //         <ListItemText
+      //           primary={
+      //             <span
+      //               style={{
+      //                 fontFamily: "Roboto-Bold",
+      //                 fontSize: "14px",
+      //                 fontWeight: "bold",
+      //               }}
+      //             >
+      //               {item.label}
+      //             </span>
+      //           }
+      //           sx={{ opacity: open ? 1 : 0, color: "black" }}
+      //         />
+      //       </ListItemButton>
+      //     </NavLink>
+      //   </ListItem>
+      // </Tooltip>
     );
   }
 
