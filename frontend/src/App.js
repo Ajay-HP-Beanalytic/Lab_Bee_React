@@ -48,6 +48,39 @@ function App() {
   const navigate = useNavigate();
   const { loggedInUser, loggedInUserDepartment } = useContext(UserContext);
 
+
+
+  // const socket = new WebSocket('ws://localhost:8080');
+
+  // socket.onopen = () => {
+  //   console.log('Connected to WebSocket server');
+  // };
+
+  // socket.onmessage = (event) => {
+  //   const chat = document.getElementById('chat');
+  //   const message = document.createElement('div');
+  //   message.textContent = event.data;
+  //   chat.appendChild(message);
+  // };
+
+  // socket.onclose = () => {
+  //   console.log('Disconnected from WebSocket server');
+  // };
+
+  // function sendMessage() {
+  //   const message = `Hello server, greetings from ${loggedInUser}, from ${loggedInUserDepartment}`;
+  //   socket.send(message);
+  // }
+  // sendMessage()
+
+
+
+
+
+
+
+
+
   useEffect(() => {
     const handleRouteChange = () => {
       publish(EVENT_CONSTANTS.openLoader, true);

@@ -219,14 +219,13 @@ export default function Slotbooking() {
               selectedSlotStartDate <= existingEnd)
           ) {
             // Overlap found, show alert and stop further processing
-            toast.error(`${selectedChamberForBooking} already booked for ${
-              booking.company_name
-            }\n
+            toast.error(`${selectedChamberForBooking} already booked for ${booking.company_name
+              }\n
                         From ${moment(existingStart).format(
-                          "YYYY-MM-DD HH:mm"
-                        )} \n To ${moment(existingEnd).format(
-              "YYYY-MM-DD HH:mm"
-            )} \n Please book another slot.`);
+                "YYYY-MM-DD HH:mm"
+              )} \n To ${moment(existingEnd).format(
+                "YYYY-MM-DD HH:mm"
+              )} \n Please book another slot.`);
 
             return;
           }
@@ -275,7 +274,7 @@ export default function Slotbooking() {
   //////////////////////////////////////////////////////////////////////////////////////
 
   // Functions to handle the errors while submission of slot booking form:
-  const onError = (errors) => {};
+  const onError = (errors) => { };
 
   // Function to delete the existing or selected booking:
   const handleDeleteBooking = async (e) => {

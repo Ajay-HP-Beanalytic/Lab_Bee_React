@@ -1183,7 +1183,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
           error
         );
       }
-
+      console.log(results);
       const formattedChamberUtilizationResult = results.map((row, index) => {
         const prevMonthRunHours = parseFloat(row.prevMonthRunHours) || 0;
         const currentMonthRunHours = parseFloat(row.currentMonthRunHours) || 0;

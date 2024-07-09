@@ -11,12 +11,12 @@ async function createUsersTable() {
   const createTableQuery = `
         CREATE TABLE IF NOT EXISTS labbee_users (
             id INT NOT NULL AUTO_INCREMENT,
-            name VARCHAR(255),
-            email VARCHAR(255),
-            password VARCHAR(255),
-            department VARCHAR(255),
-            role VARCHAR(255),
-            user_status VARCHAR(255) NOT NULL,
+            name VARCHAR(255) NOT NULL,
+            email VARCHAR(255) NOT NULL UNIQUE,
+            password VARCHAR(255) NOT NULL,
+            department VARCHAR(255) DEFAULT NULL,
+            role VARCHAR(255) DEFAULT NULL,
+            user_status ENUM('Enable', 'Disable') NOT NULL,
             PRIMARY KEY(id) 
         )`;
 
