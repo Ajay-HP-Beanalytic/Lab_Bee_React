@@ -66,13 +66,12 @@ export default function JCPreview({
   const isTS1Testing = loggedInUserDepartment === "TS1 Testing";
   const isReliability = loggedInUserDepartment === "Reliability";
   const isAdminOrAccounts =
-    loggedInUserDepartment === "Administrator" ||
+    loggedInUserDepartment === "Administration" ||
     loggedInUserDepartment === "Accounts";
 
   const eutTableHeaderNames = [
     "Sl No",
-    "Nomenclature",
-    "Eut Description",
+    "Nomenclature/Eut Description",
     "Quantity",
     "Part Number",
     "Model Number",
@@ -203,8 +202,11 @@ export default function JCPreview({
                   {eutRows.map((row, index) => (
                     <TableRow key={index}>
                       <TableCell> {index + 1}</TableCell>
-                      <TableCell> {row.nomenclature}</TableCell>
-                      <TableCell>{row.eutDescription}</TableCell>
+                      <TableCell>
+                        {" "}
+                        {row.nomenclature}
+                        {row.eutDescription}
+                      </TableCell>
                       <TableCell>{row.qty}</TableCell>
                       <TableCell> {row.partNo}</TableCell>
                       <TableCell>{row.modelNo}</TableCell>

@@ -730,7 +730,7 @@ export default function PoInvoiceStatusTable({
 
   const columns = [
     {
-      field: "id",
+      field: "serialNumbers",
       headerName: "SL No",
       width: 60,
       align: "center",
@@ -842,6 +842,16 @@ export default function PoInvoiceStatusTable({
       headerClassName: "custom-header-color",
     },
   ];
+
+  //Add derial numbers to the table:
+  const addSerialNumbersToRows = (data) => {
+    return data.map((item, index) => ({
+      ...item,
+      serialNumbers: index + 1,
+    }));
+  };
+
+  const poDataTableWithSerialNumbers = addSerialNumbersToRows(filteredPOData);
 
   const [selectedPODateRange, setSelectedPODateRange] = useState(null);
 
@@ -1003,7 +1013,7 @@ export default function PoInvoiceStatusTable({
           }}
         >
           <DataGrid
-            rows={filteredPOData}
+            rows={poDataTableWithSerialNumbers}
             columns={columns}
             sx={{ "&:hover": { cursor: "pointer" } }}
             onRowClick={(params) => editSelectedRowData(params.row)}

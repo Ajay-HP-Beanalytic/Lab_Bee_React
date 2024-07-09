@@ -105,7 +105,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
       } else {
         // Emit the event to specific departments
         const departmentsToNotify = [
-          "Administrator",
+          "Administration",
           "Accounts",
           "TS1 Testing",
           "Reliability",
@@ -405,7 +405,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
       // });
 
       const departmentsToNotify = [
-        "Administrator",
+        "Administration",
         "Accounts",
         "TS1 Testing",
         "Reliability",

@@ -229,7 +229,7 @@ export default function SidenavigationBar() {
 
   // Filter items based on the user's role
   // const filteredItems = items.filter((item) => {
-  //   if (loggedInUserDepartment === "Administrator") {
+  //   if (loggedInUserDepartment === "Administration") {
   //     return true; // Show all items for Admin
   //   } else if (loggedInUserDepartment === "Accounts") {
   //     return [1, 2, 3, 4, 5, 6].includes(item.i);
@@ -247,8 +247,8 @@ export default function SidenavigationBar() {
   // });
 
   const filteredItems = items.filter((item) => {
-    if (loggedInUserDepartment === "Administrator") {
-      return true; // Show all items for Administrator
+    if (loggedInUserDepartment === "Administration") {
+      return true; // Show all items for Administration
     } else if (loggedInUserDepartment === "Accounts") {
       return [1, 2, 3, 4, 5, 6].includes(item.i);
     } else if (loggedInUserDepartment === "Marketing") {

@@ -63,7 +63,7 @@ function App() {
     if (loggedInUserDepartment) {
       if (location.pathname === "/" || location.pathname === "/home") {
         if (
-          loggedInUserDepartment === "Administrator" ||
+          loggedInUserDepartment === "Administration" ||
           loggedInUserDepartment === "Accounts"
         ) {
           navigate("/home");
@@ -88,7 +88,7 @@ function App() {
   //   if (loggedInUserDepartment) {
   //     if (location.pathname === "/" || location.pathname === "/home") {
   //       if (
-  //         loggedInUserDepartment === "Administrator" ||
+  //         loggedInUserDepartment === "Administration" ||
   //         loggedInUserDepartment === "Accounts"
   //       ) {
   //         navigate("/home");
@@ -141,7 +141,7 @@ function App() {
             path="quotation_dashboard"
             element={
               <ProtectedRoute
-                allowedDepartments={["Administrator", "Accounts", "Marketing"]}
+                allowedDepartments={["Administration", "Accounts", "Marketing"]}
               >
                 <QuotationsDashboard />
               </ProtectedRoute>
@@ -151,7 +151,7 @@ function App() {
             path="quotation"
             element={
               <ProtectedRoute
-                allowedDepartments={["Administrator", "Accounts", "Marketing"]}
+                allowedDepartments={["Administration", "Accounts", "Marketing"]}
               >
                 <Quotation />
               </ProtectedRoute>
@@ -161,7 +161,7 @@ function App() {
             path="quotation/:id"
             element={
               <ProtectedRoute
-                allowedDepartments={["Administrator", "Accounts", "Marketing"]}
+                allowedDepartments={["Administration", "Accounts", "Marketing"]}
               >
                 <Quotation />
               </ProtectedRoute>
@@ -171,7 +171,7 @@ function App() {
             path="quotation_essentials"
             element={
               <ProtectedRoute
-                allowedDepartments={["Administrator", "Accounts", "Marketing"]}
+                allowedDepartments={["Administration", "Accounts", "Marketing"]}
               >
                 <QuotationRequirements />
               </ProtectedRoute>
@@ -182,7 +182,7 @@ function App() {
             element={
               <ProtectedRoute
                 allowedDepartments={[
-                  "Administrator",
+                  "Administration",
                   "Accounts",
                   "TS1 Testing",
                   "TS2 Testing",
@@ -199,7 +199,7 @@ function App() {
             element={
               <ProtectedRoute
                 allowedDepartments={[
-                  "Administrator",
+                  "Administration",
                   "Accounts",
                   "TS1 Testing",
                   "TS2 Testing",
@@ -216,7 +216,7 @@ function App() {
             element={
               <ProtectedRoute
                 allowedDepartments={[
-                  "Administrator",
+                  "Administration",
                   "Accounts",
                   "TS1 Testing",
                   "TS2 Testing",
@@ -233,7 +233,7 @@ function App() {
             element={
               <ProtectedRoute
                 allowedDepartments={[
-                  "Administrator",
+                  "Administration",
                   "Accounts",
                   "TS1 Testing",
                   "TS2 Testing",
@@ -249,7 +249,7 @@ function App() {
             path="chamber-calibration"
             element={
               <ProtectedRoute
-                allowedDepartments={["Administrator", "TS1 Testing"]}
+                allowedDepartments={["Administration", "TS1 Testing"]}
               >
                 <ChamberAndCalibration />
               </ProtectedRoute>
@@ -259,7 +259,7 @@ function App() {
             path="slot_booking"
             element={
               <ProtectedRoute
-                allowedDepartments={["Administrator", "TS1 Testing"]}
+                allowedDepartments={["Administration", "TS1 Testing"]}
               >
                 <Slotbooking />
               </ProtectedRoute>
@@ -268,7 +268,7 @@ function App() {
           <Route
             path="user_management"
             element={
-              <ProtectedRoute allowedDepartments={["Administrator"]}>
+              <ProtectedRoute allowedDepartments={["Administration"]}>
                 <UserManagement />
               </ProtectedRoute>
             }

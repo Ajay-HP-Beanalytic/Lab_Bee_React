@@ -50,7 +50,7 @@ function mainQuotationsTableAPIs(app, io, labbeeUsers) {
           return res.status(500).json(error);
         }
 
-        const departmentsToNotify = ["Administrator", "Accounts", "Marketing"];
+        const departmentsToNotify = ["Administration", "Accounts", "Marketing"];
 
         for (let socketId in labbeeUsers) {
           if (
@@ -169,7 +169,7 @@ function mainQuotationsTableAPIs(app, io, labbeeUsers) {
           return res.status(500).json(error);
         }
 
-        const departmentsToNotify = ["Administrator", "Accounts", "Marketing"];
+        const departmentsToNotify = ["Administration", "Accounts", "Marketing"];
 
         for (let socketId in labbeeUsers) {
           if (

@@ -250,18 +250,18 @@ export default function DocToPdf({ id }) {
           <DialogActions sx={{ alignItems: "center" }}>
             <Button
               variant="contained"
+              color="primary"
+              onClick={handleCancelBtnIsClicked}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="contained"
               color="secondary"
               type="submit"
               onClick={onSubmitQuoteTitleButton}
             >
               Submit
-            </Button>
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={handleCancelBtnIsClicked}
-            >
-              Cancel
             </Button>
           </DialogActions>
         </Dialog>
