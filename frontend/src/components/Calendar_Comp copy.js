@@ -18,7 +18,7 @@ const CustomToolbar = (toolbar) => {
   };
 
   const goToToday = () => {
-    toolbar.onNavigate("today");
+    toolbar.onView("today");
   };
 
   return (
@@ -74,3 +74,31 @@ export default function Calendar(props) {
     />
   );
 }
+
+const CustomTimeGutter = ({ timeslots }) => {
+  const timeSlots = [];
+  let currentTime = moment().startOf("day");
+
+  for (let i = 0; i < timeslots; i++) {
+    timeSlots.push(
+      <div className="rbc-time-slot" key={i}>
+        <span className="rbc-label">{currentTime.format("h:mm A")}</span>
+      </div>
+    );
+    currentTime = currentTime.add(30, "minutes");
+  }
+
+  return <div className="rbc-time-gutter rbc-time-column">{timeSlots}</div>;
+};
+
+const CustomResourceHeader = ({ resources }) => {
+  return (
+    <div className="rbc-time-header-content">
+      {resources.map((resource) => (
+        <div className="rbc-row rbc-row-resource" key={resource.id}>
+          <div className="rbc-header">{resource.title}</div>
+        </div>
+      ))}
+    </div>
+  );
+};

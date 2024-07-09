@@ -226,7 +226,7 @@ export default function JCHome() {
   } else if (loggedInUserDepartment === "Reliability") {
     primaryJCDetails = primaryReliabilityJCDetailsToPreview;
   } else if (
-    loggedInUserDepartment === "Administrator" ||
+    loggedInUserDepartment === "Administration" ||
     loggedInUserDepartment === "Accounts"
   ) {
     if (jcCategory === "TS1") {
@@ -687,7 +687,7 @@ export default function JCHome() {
       </Grid>
 
       {(loggedInUserDepartment === "TS1 Testing" ||
-        loggedInUserDepartment === "Administrator" ||
+        loggedInUserDepartment === "Administration" ||
         loggedInUserDepartment === "Accounts") && (
         <>
           {filteredJcData && filteredJcData.length === 0 ? (
@@ -721,7 +721,7 @@ export default function JCHome() {
       )}
 
       {(loggedInUserDepartment === "Reliability" ||
-        loggedInUserDepartment === "Administrator" ||
+        loggedInUserDepartment === "Administration" ||
         loggedInUserDepartment === "Accounts") && (
         <>
           <Grid

@@ -103,7 +103,7 @@ function slotBookingAPIs(app, io, labbeeUsers) {
           .json({ error: "An error occurred while booking the slot" });
       } else {
         const departmentsToNotify = [
-          "Administrator",
+          "Administration",
           "Accounts",
           "TS1 Testing",
           "Marketing",
@@ -237,7 +237,7 @@ function slotBookingAPIs(app, io, labbeeUsers) {
           .json({ error: "An error occurred while updating the booking" });
       } else {
         const departmentsToNotify = [
-          "Administrator",
+          "Administration",
           "Accounts",
           "TS1 Testing",
           "Marketing",
@@ -280,7 +280,7 @@ function slotBookingAPIs(app, io, labbeeUsers) {
       } else {
         if (result.affectedRows > 0) {
           const departmentsToNotify = [
-            "Administrator",
+            "Administration",
             "Accounts",
             "TS1 Testing",
             "Marketing",

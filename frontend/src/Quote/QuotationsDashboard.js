@@ -199,7 +199,7 @@ export default function QuotationsDashboard() {
 
   const columns = [
     {
-      field: "id",
+      field: "serialNumbers",
       headerName: "SL No",
       width: 100,
       align: "center",
@@ -596,6 +596,16 @@ export default function QuotationsDashboard() {
 
   const kpiColors = ["#66cc99", "#d6d6c2", "#e6e6ff", "#e6ffcc", "#ffe6cc"];
 
+  const addSerialNumbersToRows = (data) => {
+    return data.map((item, index) => ({
+      ...item,
+      serialNumbers: index + 1,
+    }));
+  };
+
+  const quotationTableWithSerialNumbers =
+    addSerialNumbersToRows(filteredQuoteData);
+
   return (
     <>
       <Box
@@ -743,7 +753,7 @@ export default function QuotationsDashboard() {
           <EmptyCard message="No Quote Found" />
         ) : (
           <DataGrid
-            rows={filteredQuoteData}
+            rows={quotationTableWithSerialNumbers}
             columns={columns}
             sx={{
               "&:hover": { cursor: "pointer" },

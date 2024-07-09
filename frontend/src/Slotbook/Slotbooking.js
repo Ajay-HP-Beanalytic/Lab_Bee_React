@@ -199,6 +199,9 @@ export default function Slotbooking() {
     if (parseFloat(data.slotDuration) < 0) {
       toast.error("Slot duration should not be negative");
       return;
+    } else if (parseFloat(data.slotDuration) === 0) {
+      toast.error("Slot duration should not be zero");
+      return;
     }
 
     // Get the selected start and end date-time, along with the selected chamber
@@ -520,10 +523,6 @@ export default function Slotbooking() {
           eventPropGetter={eventPropGetter}
           selectable={true}
           onSelectEvent={handleEventClick}
-          startAccessor="start"
-          endAccessor="end"
-          resourceIdAccessor="id"
-          resourceTitleAccessor="title"
         />
 
         {contextMenuOpen && (

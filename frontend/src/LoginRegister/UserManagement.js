@@ -60,7 +60,7 @@ export default function UserManagement() {
 
   const userDepartmentOptions = [
     "Accounts",
-    "Administrator",
+    "Administration",
     "Marketing",
     "Reliability",
     "Software",
@@ -70,7 +70,11 @@ export default function UserManagement() {
 
   const userDepartmentAndRoles = {
     Accounts: ["Accounts Admin", "Accounts Executive"],
-    Administrator: ["Administrator", "Managing Director", "Operations Manager"],
+    Administration: [
+      "Administrator",
+      "Managing Director",
+      "Operations Manager",
+    ],
     Marketing: ["Marketing Manager", "Marketing Executive"],
     Reliability: ["Reliability Manager", "Reliability Engineer"],
     Software: ["Software Engineer"],
@@ -373,7 +377,7 @@ export default function UserManagement() {
         </Typography>
       </Divider>
 
-      {loggedInUserDepartment === "Administrator" && (
+      {loggedInUserDepartment === "Administration" && (
         <Box sx={{ width: "100%" }}>
           <div>
             <Dialog open={openDeleteUserDialog} onClose={handleClose}>

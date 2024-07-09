@@ -540,7 +540,14 @@ export default function Quotation() {
     fontWeight: "bold",
   };
 
-  const tableCellStyle = { color: "white" };
+  const tableCellStyle = { color: "white", minWidth: "150px", padding: "8px" };
+  const tableSerialNumberCellStyle = {
+    color: "white",
+  };
+  const tableContainerStyle = {
+    overflowX: "auto", // Enable horizontal scrolling
+  };
+
   const [showPdfDialog, setShowPdfDialog] = useState(false);
 
   // Function to handle download action
@@ -850,11 +857,14 @@ export default function Quotation() {
             </Grid>
 
             <Grid item xs={12}>
-              <TableContainer component={Paper}>
-                <Table sx={{ minWidth: 650 }} aria-label="simple table">
+              <TableContainer component={Paper} sx={tableContainerStyle}>
+                <Table sx={{ minWidth: "100%" }} aria-label="simple table">
                   <TableHead sx={tableHeaderStyle}>
                     <TableRow>
-                      <TableCell sx={tableCellStyle}>Sl No</TableCell>
+                      <TableCell sx={tableSerialNumberCellStyle}>
+                        {" "}
+                        Sl No
+                      </TableCell>
                       {(quoteCategory === "Environmental Testing" ||
                         quoteCategory === "EMI & EMC" ||
                         quoteCategory === "Reliability") && (
@@ -1050,6 +1060,20 @@ export default function Quotation() {
                       </StyledTableRow>
                     ))}
                   </TableBody>
+                  <Box display="flex" justifyContent="flex-end">
+                    <Button
+                      variant="outlined"
+                      onClick={addRow}
+                      sx={{
+                        mt: 1,
+                        ml: 1,
+                        minWidth: "120px",
+                        textAlign: "center",
+                      }}
+                    >
+                      Add Row
+                    </Button>
+                  </Box>
                 </Table>
 
                 <hr

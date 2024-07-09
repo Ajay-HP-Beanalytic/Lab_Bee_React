@@ -31,8 +31,8 @@ const server = http.createServer(app);
 
 const io = socketIo(server, {
   cors: {
-    // origin: true, // mention the host address of the frontend
-    origin: "https://labbee.beanalytic.com", // Allow requests from this origin
+    origin: true, // mention the host address of the frontend
+    // origin: "https://labbee.beanalytic.com", // Allow requests from this origin
     methods: ["GET", "POST", "DELETE", "PUT"],
     credentials: true,
   },
@@ -86,8 +86,8 @@ io.on("connection", (socket) => {
 
 app.use(
   cors({
-    // origin: true, // mention the host address of the frontend
-    origin: "https://labbee.beanalytic.com", // Allow requests from this origin
+    origin: true, // mention the host address of the frontend
+    // origin: "https://labbee.beanalytic.com", // Allow requests from this origin
     methods: ["POST", "GET", "DELETE"],
     credentials: true,
   })
@@ -293,8 +293,8 @@ app.get("/", (req, res) => {
 //   console.log("Server is running on port 4000");
 // });
 
-const PORT = 4002; //For deployment
-// const PORT = 4000;
+// const PORT = 4002; //For deployment
+const PORT = 4000;
 server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });

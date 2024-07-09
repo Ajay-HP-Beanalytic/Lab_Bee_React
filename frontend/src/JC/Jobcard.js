@@ -175,7 +175,7 @@ const Jobcard = ({ jobCardData }) => {
       setJcCategory("TS1");
     } else if (loggedInUserDepartment === "Reliability") {
       setJcCategory("Reliability");
-    } else if (loggedInUserDepartment === "Administrator") {
+    } else if (loggedInUserDepartment === "Administration") {
     }
   }, [loggedInUserDepartment]);
 
@@ -322,6 +322,7 @@ const Jobcard = ({ jobCardData }) => {
   };
 
   const handleRemoveEutRow = (id) => {
+    alert("Are you sure you want to delete this row?");
     const updatedRows = eutRows.filter((row) => row.id !== id);
     setEutRows(updatedRows);
   };
@@ -339,6 +340,7 @@ const Jobcard = ({ jobCardData }) => {
   };
 
   const handleRemoveTestRow = (id) => {
+    alert("Are you sure you want to delete this row?");
     const updatedRows = testRows.filter((row) => row.id !== id);
     setTestRows(updatedRows);
   };
@@ -367,6 +369,7 @@ const Jobcard = ({ jobCardData }) => {
   };
 
   const handleRemoveTestDetailsRow = (id) => {
+    alert("Are you sure you want to delete this row?");
     const updatedRows = testdetailsRows.filter((row) => row.id !== id);
     setTestDetailsRows(updatedRows);
   };
@@ -842,7 +845,7 @@ const Jobcard = ({ jobCardData }) => {
               md={6}
               sx={{ display: "flex", justifyContent: "flex-start" }}
             >
-              {loggedInUserDepartment === "Administrator" && (
+              {loggedInUserDepartment === "Administration" && (
                 <div>
                   <Tooltip title="Add JC for previous month">
                     <Button
@@ -1202,11 +1205,11 @@ const Jobcard = ({ jobCardData }) => {
                               Sl No
                             </TableCell>
                             <TableCell align="center" sx={tableCellStyle}>
-                              Nomenclature
+                              Nomenclature/Eut Description
                             </TableCell>
-                            <TableCell align="center" sx={tableCellStyle}>
+                            {/* <TableCell align="center" sx={tableCellStyle}>
                               Eut Description
-                            </TableCell>
+                            </TableCell> */}
                             <TableCell align="center" sx={tableCellStyle}>
                               Qty
                             </TableCell>
@@ -1249,7 +1252,7 @@ const Jobcard = ({ jobCardData }) => {
                                   />
                                 </TableCell>
 
-                                <TableCell>
+                                {/* <TableCell>
                                   <TextField
                                     style={{ align: "center" }}
                                     variant="outlined"
@@ -1262,7 +1265,7 @@ const Jobcard = ({ jobCardData }) => {
                                       )
                                     }
                                   />
-                                </TableCell>
+                                </TableCell> */}
 
                                 <TableCell>
                                   <TextField
@@ -1530,7 +1533,7 @@ const Jobcard = ({ jobCardData }) => {
                 </Grid>
               )}
 
-              {loggedInUserDepartment === "Administrator" && (
+              {loggedInUserDepartment === "Administration" && (
                 <Grid item xs={12} md={4}>
                   <FormControl fullWidth>
                     <InputLabel>JC category</InputLabel>
