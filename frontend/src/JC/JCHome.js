@@ -191,7 +191,7 @@ export default function JCHome() {
     { label: `Test Category: ${jcCategory}` },
     { label: `Test Discipline: ${testDiscipline}` },
     { label: `Sample Condition: ${sampleCondition}` },
-    { label: `Type of Requst: ${typeOfRequest}` },
+    { label: `Type of Request: ${typeOfRequest}` },
     { label: `Report Type: ${reportType}` },
     { label: `JC Status: ${jcStatus}` },
     {

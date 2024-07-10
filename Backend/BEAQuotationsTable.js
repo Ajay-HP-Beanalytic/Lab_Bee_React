@@ -255,8 +255,10 @@ function mainQuotationsTableAPIs(app, io, labbeeUsers) {
     const sqlQuery = `
         SELECT 
             DISTINCT DATE_FORMAT(quote_given_date, '%b') AS month,
-            DATE_FORMAT(quote_given_date, '%Y') AS year
-        FROM bea_quotations_table`;
+            DATE_FORMAT(quote_given_date, '%Y') AS year,
+            MONTH(quote_given_date) AS monthNumber
+        FROM bea_quotations_table
+        ORDER BY year ASC, monthNumber ASC`;
 
     db.query(sqlQuery, (error, result) => {
       if (error) {

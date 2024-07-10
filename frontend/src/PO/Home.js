@@ -99,6 +99,8 @@ export default function Home() {
       );
       const poData = response.data[0];
 
+      setValue("companyName", poData.company_name);
+
       setValue("jcNumber", poData.jc_number);
 
       setValue("jcOpenDate", dayjs(poData.jc_month));
@@ -258,6 +260,21 @@ export default function Home() {
             {/* <DialogTitle variant='h4'>New Booking</DialogTitle> */}
             <DialogContent>
               {/* {editPoData ? <Typography variant='h6'> ID:{editId} </Typography> : null} */}
+
+              <Grid item>
+                <TextField
+                  variant="outlined"
+                  type="text"
+                  name="companyName"
+                  label="Company Name"
+                  fullWidth
+                  sx={{ mt: 2 }}
+                  {...register("companyName")}
+                />
+                <Typography variant="body2" color="error">
+                  {errors?.companyName && errors.companyName.message}
+                </Typography>
+              </Grid>
 
               <Grid item>
                 <TextField

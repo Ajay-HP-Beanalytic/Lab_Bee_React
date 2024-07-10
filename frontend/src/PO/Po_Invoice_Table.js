@@ -738,6 +738,14 @@ export default function PoInvoiceStatusTable({
       headerClassName: "custom-header-color",
     },
     {
+      field: "company_name",
+      headerName: "Company",
+      width: 100,
+      align: "center",
+      headerAlign: "center",
+      headerClassName: "custom-header-color",
+    },
+    {
       field: "jc_number",
       headerName: "JC Number",
       width: 150,

@@ -10,14 +10,15 @@ function poInvoiceBackendAPIs(app) {
     const { formData } = req.body;
 
     const sqlQuery = `
-    INSERT INTO po_invoice_table (jc_number, jc_month, jc_category, rfq_number, rfq_value, po_number, po_value, po_status, invoice_number, invoice_value, invoice_status, payment_status, remarks)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    INSERT INTO po_invoice_table (company_name, jc_number, jc_month, jc_category, rfq_number, rfq_value, po_number, po_value, po_status, invoice_number, invoice_value, invoice_status, payment_status, remarks)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)`;
 
     const formattedJcOpenDate = moment(formData.jcOpenDate).format(
       "YYYY-MM-DD"
     );
 
     const values = [
+      formData.companyName,
       formData.jcNumber,
       formattedJcOpenDate,
       formData.jcCategory,
@@ -72,7 +73,7 @@ function poInvoiceBackendAPIs(app) {
     }
 
     const getPoAndInvoiceList = `SELECT 
-                                id, jc_number, DATE_FORMAT(jc_month, '%Y-%m-%d') as jc_month, jc_category, rfq_number, rfq_value, po_number, po_value, po_status, invoice_number, invoice_value, invoice_status, payment_status, remarks
+                                id, company_name, jc_number, DATE_FORMAT(jc_month, '%Y-%m-%d') as jc_month, jc_category, rfq_number, rfq_value, po_number, po_value, po_status, invoice_number, invoice_value, invoice_status, payment_status, remarks
                                 FROM po_invoice_table 
                                 WHERE MONTH(jc_month) = ? AND YEAR(jc_month) = ? 
                                 `;
@@ -106,7 +107,7 @@ function poInvoiceBackendAPIs(app) {
 
     const getPOColumns = `
         SELECT 
-        id, jc_number, DATE_FORMAT(jc_month, '%Y-%m-%d') as jc_month, jc_category, rfq_number, rfq_value, po_number, po_value, po_status, invoice_number, invoice_value, invoice_status, payment_status, remarks
+        id, company_name, jc_number, DATE_FORMAT(jc_month, '%Y-%m-%d') as jc_month, jc_category, rfq_number, rfq_value, po_number, po_value, po_status, invoice_number, invoice_value, invoice_status, payment_status, remarks
         FROM po_invoice_table
         WHERE jc_month BETWEEN ? AND ?
       `;
@@ -145,7 +146,7 @@ function poInvoiceBackendAPIs(app) {
   app.get("/api/getPoData/:id", (req, res) => {
     const id = req.params.id;
 
-    const sqlQuery = `SELECT id, jc_number, jc_month, jc_category, rfq_number, rfq_value, po_number, po_value, po_status, invoice_number, invoice_value, invoice_status, payment_status, remarks FROM po_invoice_table WHERE id = ?`;
+    const sqlQuery = `SELECT id, company_name, jc_number, jc_month, jc_category, rfq_number, rfq_value, po_number, po_value, po_status, invoice_number, invoice_value, invoice_status, payment_status, remarks FROM po_invoice_table WHERE id = ?`;
 
     db.query(sqlQuery, [id], (error, result) => {
       if (error) {
@@ -164,6 +165,7 @@ function poInvoiceBackendAPIs(app) {
     const sqlQuery = `
         UPDATE po_invoice_table
         SET
+        company_name = ?,
             jc_number = ?,
             jc_month = ?,
             jc_category = ?,
@@ -184,6 +186,7 @@ function poInvoiceBackendAPIs(app) {
     );
 
     const values = [
+      formData.companyName,
       formData.jcNumber,
       formattedJcOpenDate,
       formData.jcCategory,
@@ -217,8 +220,10 @@ function poInvoiceBackendAPIs(app) {
     const sqlQuery = `
         SELECT
             DISTINCT DATE_FORMAT(jc_month, '%b') AS month,
-            DATE_FORMAT(jc_month, '%Y') AS year
-        FROM po_invoice_table`;
+            DATE_FORMAT(jc_month, '%Y') AS year,
+            MONTH(jc_month) AS monthNumber
+        FROM po_invoice_table
+        ORDER BY year ASC, monthNumber ASC`;
 
     // const sqlQuery = `
     //     SELECT

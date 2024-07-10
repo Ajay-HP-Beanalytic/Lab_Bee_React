@@ -1134,8 +1134,10 @@ function jobcardsAPIs(app, io, labbeeUsers) {
     const sqlQuery = `
         SELECT 
             DISTINCT DATE_FORMAT(jc_open_date, '%b') AS month,
-            DATE_FORMAT(jc_open_date, '%Y') AS year
-        FROM bea_jobcards`;
+            DATE_FORMAT(jc_open_date, '%Y') AS year,
+            MONTH(jc_open_date) AS monthNumber
+        FROM bea_jobcards
+        ORDER BY year ASC, monthNumber ASC`;
 
     db.query(sqlQuery, (error, result) => {
       if (error) {
@@ -1157,11 +1159,12 @@ function jobcardsAPIs(app, io, labbeeUsers) {
     const chamberUtilizationQuery = `
                     SELECT 
                         testChamber,
-                        SUM(CASE WHEN MONTH(startDate) = MONTH(CURDATE()) - 1 THEN actualTestDuration ELSE 0 END) AS prevMonthRunHours,
+                        SUM(CASE WHEN MONTH(startDate) = MONTH(DATE_SUB(CURDATE(), INTERVAL 1 MONTH)) THEN actualTestDuration ELSE 0 END) AS prevMonthRunHours,
                         SUM(CASE WHEN MONTH(startDate) = MONTH(CURDATE()) THEN actualTestDuration ELSE 0 END) AS currentMonthRunHours,
                         SUM(actualTestDuration) AS totalRunHours
                     FROM 
                         tests_details
+                    WHERE testChamber IS NOT NULL AND testChamber <> ''
                     GROUP BY
                         testChamber
                     `;

@@ -90,10 +90,10 @@ export default function Slotbooking() {
       .matches(/@/, 'Email must contain "@"')
       .email("Invalid email")
       .required("Email is required"),
-    customerPhone: yup
-      .string()
-      .matches(/^\d{10}$/, "Invalid phone number, it must be 10 digits")
-      .required("Phone number is required"),
+    // customerPhone: yup
+    //   .string()
+    //   .matches(/^\d{10}$/, "Invalid phone number, it must be 10 digits")
+    //   .required("Phone number is required"),
     testName: yup.string().required("Enter the test name"),
     selectedChamber: yup.string().required("Select the Chamber"),
   });
