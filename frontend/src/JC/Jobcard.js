@@ -50,6 +50,7 @@ import { DatePicker } from "@mui/x-date-pickers";
 import { UserContext } from "../Pages/UserContext";
 
 import "../css/accordion.css";
+import ConfirmationDialog from "../common/ConfirmationDialog";
 
 // const Jobcard = () => {
 const Jobcard = ({ jobCardData }) => {
@@ -111,6 +112,8 @@ const Jobcard = ({ jobCardData }) => {
   const [addNewJcToLastMonth, setAddNewJcToLastMonth] = useState(false);
   const [lastMonthJcNumberString, setLastMonthJcNumberString] = useState("");
   const [lastMonthSrfNumber, setLastMonthSrfNumber] = useState("");
+
+  const [openRemoveRowDialog, setOpenRemoveRowDialog] = useState(false);
 
   const testCategoryOptions = [
     { value: "Environmental", label: "Environmental" },
@@ -322,9 +325,10 @@ const Jobcard = ({ jobCardData }) => {
   };
 
   const handleRemoveEutRow = (id) => {
-    alert("Are you sure you want to delete this row?");
-    const updatedRows = eutRows.filter((row) => row.id !== id);
-    setEutRows(updatedRows);
+    if (window.confirm("Are you sure you want to delete this row?")) {
+      const updatedRows = eutRows.filter((row) => row.id !== id);
+      setEutRows(updatedRows);
+    }
   };
 
   // Functions to add and remove the 'Tests' table rows on clicking the add and remove icon.
@@ -340,9 +344,10 @@ const Jobcard = ({ jobCardData }) => {
   };
 
   const handleRemoveTestRow = (id) => {
-    alert("Are you sure you want to delete this row?");
-    const updatedRows = testRows.filter((row) => row.id !== id);
-    setTestRows(updatedRows);
+    if (window.confirm("Are you sure you want to delete this row?")) {
+      const updatedRows = testRows.filter((row) => row.id !== id);
+      setTestRows(updatedRows);
+    }
   };
 
   // Functions to add and remove the 'Test Details' table rows on clicking the add and remove icon.
@@ -369,9 +374,10 @@ const Jobcard = ({ jobCardData }) => {
   };
 
   const handleRemoveTestDetailsRow = (id) => {
-    alert("Are you sure you want to delete this row?");
-    const updatedRows = testdetailsRows.filter((row) => row.id !== id);
-    setTestDetailsRows(updatedRows);
+    if (window.confirm("Are you sure you want to delete this row?")) {
+      const updatedRows = testdetailsRows.filter((row) => row.id !== id);
+      setTestDetailsRows(updatedRows);
+    }
   };
 
   ////////////////////////////////////////////////
@@ -1342,6 +1348,21 @@ const Jobcard = ({ jobCardData }) => {
                             );
                           })}
                         </TableBody>
+                        <Box display="flex" justifyContent="flex-end">
+                          <Button
+                            variant="outlined"
+                            onClick={handleAddEutRow}
+                            sx={{
+                              mt: 1,
+                              mb: 1,
+                              ml: 1,
+                              minWidth: "120px",
+                              textAlign: "center",
+                            }}
+                          >
+                            Add Row
+                          </Button>
+                        </Box>
                       </Table>
                     </TableContainer>
                   </AccordionDetails>
@@ -1477,6 +1498,21 @@ const Jobcard = ({ jobCardData }) => {
                             </TableRow>
                           ))}
                         </TableBody>
+                        <Box display="flex" justifyContent="flex-end">
+                          <Button
+                            variant="outlined"
+                            onClick={handleAddTestRow}
+                            sx={{
+                              mt: 1,
+                              mb: 1,
+                              ml: 1,
+                              minWidth: "120px",
+                              textAlign: "center",
+                            }}
+                          >
+                            Add Row
+                          </Button>
+                        </Box>
                       </Table>
                     </TableContainer>
                   </AccordionDetails>
@@ -2121,6 +2157,21 @@ const Jobcard = ({ jobCardData }) => {
                             </TableRow>
                           ))}
                         </TableBody>
+                        <Box display="flex" justifyContent="flex-end">
+                          <Button
+                            variant="outlined"
+                            onClick={handleAddTestDetailsRow}
+                            sx={{
+                              mt: 1,
+                              mb: 1,
+                              ml: 1,
+                              minWidth: "120px",
+                              textAlign: "center",
+                            }}
+                          >
+                            Add Row
+                          </Button>
+                        </Box>
                       </Table>
                     </TableContainer>
                   </AccordionDetails>
@@ -2282,6 +2333,16 @@ const Jobcard = ({ jobCardData }) => {
           {/* {editJc ? <JobCardComponent id={id} /> : null} */}
         </Box>
       </form>
+
+      {/* <ConfirmationDialog
+      open={openRemoveRowDialog}
+      onClose={handleRemoveRowDialog}
+      onConfirm={handleRemoveRow}
+      title="Remove Confirmation"
+      contentText="Are you sure you want to remove this row?"
+      confirmButtonText="Remove"
+      cancelButtonText="Cancel"
+      /> */}
     </>
   );
 };

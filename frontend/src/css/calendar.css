@@ -1,47 +1,4 @@
 /* Calendar Header */
-/* .rbc-header {
-  background: #009999;
-  color: whitesmoke;
-  padding: 6px;
-  font-size: 15px;
-  font-weight: bold;
-} */
-
-/* For the event  */
-/* .rbc-event {
-  padding: 0 !important;
-  font-size: 18px;
-  position: relative;
-} */
-
-/* For the event label to display */
-/* .rbc-event-label {
-  display: none !important;
-}
-
-.rbc-event-container {
-  width: 100%;
-} */
-
-/* .rbc-time-slot {
-  background-color: #eaf3fa;
-  color: #74a4c3;
-  border-color: aqua;
-} */
-
-/* .rbc-row,
-.rbc-row-resource {
-  height: 50px;
-}
-
-.rbc-row,
-.rbc-time-header-cell {
-  height: 50px;
-} */
-
-/* ////////////////////////////////////////////////////////////////// */
-
-/* Calendar Header */
 .rbc-header {
   background: #009999;
   color: whitesmoke;
@@ -50,7 +7,7 @@
   font-weight: bold;
 }
 
-/* For the event */
+/* For the event  */
 .rbc-event {
   padding: 0 !important;
   font-size: 18px;
@@ -66,34 +23,21 @@
   width: 100%;
 }
 
+.rbc-time-slot {
+  background-color: #eaf3fa;
+  color: #74a4c3;
+  border-color: aqua;
+  height: 50px;
+}
+
 .rbc-row,
 .rbc-row-resource {
-  height: 50px; /* Adjust row height as needed */
+  height: 30px;
 }
 
-/* Adjust height of rows */
 .rbc-row,
 .rbc-time-header-cell {
-  height: 70px; /* Adjust row height as needed */
+  height: 40px;
 }
 
-/* Adjust height of individual date cells if necessary */
-.rbc-allday-cell {
-  height: 50px; /* Adjust cell height as needed */
-}
-
-/* Adjust height of inner rows if necessary */
-.rbc-allday-cell .rbc-row-content {
-  height: 10px; /* Adjust height as needed */
-}
-
-/* Adjust height of day backgrounds if necessary */
-.rbc-allday-cell .rbc-row-bg .rbc-day-bg {
-  height: 30px; /* Adjust height as needed */
-}
-
-/* Medium height for first and second rows */
-.rbc-allday-cell .rbc-row-content .rbc-row:first-child,
-.rbc-allday-cell .rbc-row-content .rbc-row:nth-child(2) {
-  height: 30px; /* Adjust medium height as needed */
-}
+/* ////////////////////////////////////////////////////////////////// */

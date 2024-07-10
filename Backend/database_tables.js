@@ -526,6 +526,7 @@ function createPoStatusTable() {
   const createTableQuery = `
         CREATE TABLE IF NOT EXISTS po_invoice_table (
             id INT NOT NULL AUTO_INCREMENT,
+            company_name VARCHAR(255),
             jc_number VARCHAR(255),
             jc_month DATE,
             jc_category VARCHAR(255),
@@ -539,9 +540,6 @@ function createPoStatusTable() {
             invoice_status VARCHAR(255),
             payment_status VARCHAR(255),
             remarks VARCHAR(2500),
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-            deleted_at TIMESTAMP DEFAULT NULL,
             PRIMARY KEY(id) 
         )`;
 
