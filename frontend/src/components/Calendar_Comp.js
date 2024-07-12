@@ -18,7 +18,7 @@ const CustomToolbar = (toolbar) => {
   };
 
   const goToToday = () => {
-    toolbar.onNavigate("today");
+    toolbar.onNavigate("TODAY");
   };
 
   return (
