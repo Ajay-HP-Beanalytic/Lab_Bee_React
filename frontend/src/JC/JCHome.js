@@ -7,6 +7,8 @@ import {
   FormControl,
   Grid,
   InputLabel,
+  List,
+  ListItem,
   MenuItem,
   Select,
   Typography,
@@ -75,6 +77,7 @@ export default function JCHome() {
 
   const [jcNumberString, setJcumberString] = useState("");
   const [srfNumber, setSrfNumber] = useState("");
+  const [srfDate, setSrfDate] = useState(null);
   const [jcOpenDate, setJcOpenDate] = useState(null);
   const [itemReceivedDate, setItemReceivedDate] = useState(null);
   const [poNumber, setPonumber] = useState("");
@@ -107,6 +110,8 @@ export default function JCHome() {
   const [reliabilityReportStatus, setReliabilityReportStatus] = useState("");
   const [reliabilityTaskRow, setReliabilityTaskRow] = useState([{ id: 0 }]);
 
+  const [reliabilityJCNumbers, setReliabilityJCNumbers] = useState([]);
+
   const [jcLastModifiedBy, setJcLastModifiedBy] = useState();
 
   const [editJc, setEditJc] = useState(false);
@@ -121,6 +126,10 @@ export default function JCHome() {
         .then((res) => {
           setJcumberString(res.data.jobcard.jc_number);
           setSrfNumber(res.data.jobcard.srf_number);
+
+          const parsedSrfDate = dayjs(res.data.jobcard.srf_date);
+          setSrfDate(parsedSrfDate.isValid() ? parsedSrfDate : null);
+
           const parsedJcStartDate = dayjs(res.data.jobcard.jc_open_date);
           setJcOpenDate(parsedJcStartDate.isValid() ? parsedJcStartDate : null);
 
@@ -181,6 +190,7 @@ export default function JCHome() {
     { label: `Contact Number: ${customerNumber}` },
     { label: `Project Name: ${projectName}` },
     { label: `SRF Number: ${srfNumber}` },
+    { label: `SRF Date : ${dayjs(srfDate).format("YYYY/MM/DD")}` },
     { label: `JC Open Date : ${dayjs(jcOpenDate).format("YYYY/MM/DD")}` },
     { label: `JC Created By: ${testInchargeName}` },
     {
@@ -242,7 +252,7 @@ export default function JCHome() {
 
     let requiredAPIdata = {
       _fields:
-        "jc_number,  jc_open_date, company_name,  jc_status, last_updated_by",
+        "jc_number,  jc_open_date, company_name,  jc_status, jc_closed_date, last_updated_by",
       year: jcYear,
       month: jcMonth,
     };
@@ -255,7 +265,7 @@ export default function JCHome() {
     /////////////////////////////////////////////////////
     let requiredAPIdataForReliability = {
       _fields:
-        "jc_number,  jc_open_date, company_name, project_name, reliability_report_status,  jc_status, last_updated_by",
+        "jc_number,  jc_open_date, company_name, project_name, reliability_report_status,  jc_status, jc_closed_date, last_updated_by",
       year: jcYear,
       month: jcMonth,
     };
@@ -331,6 +341,10 @@ export default function JCHome() {
   useEffect(() => {
     setFilteredJcData(jcTableData);
     setFilteredReliabilityJcData(reliabilityJCTableData);
+
+    setReliabilityJCNumbers(
+      filteredReliabilityJcData.map((row) => row.jc_number)
+    );
   }, [jcTableData, reliabilityJCTableData]);
 
   //If data is loading then show Loading text
@@ -380,6 +394,14 @@ export default function JCHome() {
     {
       field: "jc_status",
       headerName: "JC Status",
+      width: 200,
+      align: "center",
+      headerAlign: "center",
+      headerClassName: "custom-header-color",
+    },
+    {
+      field: "jc_closed_date",
+      headerName: "JC Closed Date",
       width: 200,
       align: "center",
       headerAlign: "center",
@@ -447,6 +469,14 @@ export default function JCHome() {
     {
       field: "jc_status",
       headerName: "JC Status",
+      width: 200,
+      align: "center",
+      headerAlign: "center",
+      headerClassName: "custom-header-color",
+    },
+    {
+      field: "jc_closed_date",
+      headerName: "JC Closed Date",
       width: 200,
       align: "center",
       headerAlign: "center",
@@ -716,6 +746,23 @@ export default function JCHome() {
                 rowsPerPageOptions={[5, 10, 20]}
               />
             </Box>
+          )}
+
+          {filteredReliabilityJcData.length !== 0 ? (
+            <Box sx={{ mt: 2 }}>
+              <Typography variant="h5" color="#003366">
+                {" "}
+                Reliability JC Numbers
+              </Typography>
+
+              {reliabilityJCNumbers.map((jcNumber) => (
+                <List>
+                  <ListItem value={jcNumber}>{jcNumber}</ListItem>
+                </List>
+              ))}
+            </Box>
+          ) : (
+            ""
           )}
         </>
       )}

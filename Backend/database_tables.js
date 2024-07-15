@@ -327,8 +327,9 @@ function createJobcardsTable() {
     CREATE TABLE IF NOT EXISTS bea_jobcards (
         id INT NOT NULL AUTO_INCREMENT,
         jc_number VARCHAR(255) UNIQUE,
-        srf_number VARCHAR(255) ,
-        dcform_number VARCHAR(255) ,
+        srf_number VARCHAR(255),
+        srf_date DATE,
+        dcform_number VARCHAR(255),
         jc_open_date DATE,
         item_received_date DATE,
         po_number  VARCHAR(255),

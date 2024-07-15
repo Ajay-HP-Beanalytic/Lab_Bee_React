@@ -17,6 +17,8 @@
 /* For the event label to display */
 .rbc-event-label {
   display: none !important;
+  display: flex;
+  justify-content: flex-start;
 }
 
 .rbc-event-container {
@@ -38,6 +40,19 @@
 .rbc-row,
 .rbc-time-header-cell {
   height: 40px;
+}
+
+.rbc-event-content {
+  font-size: 13px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 100%;
+  text-align: left;
+}
+
+.rbc-row-segment {
+  flex-basis: 100% !important;
 }
 
 /* ////////////////////////////////////////////////////////////////// */

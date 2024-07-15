@@ -436,7 +436,7 @@ export default function Slotbooking() {
 
         const events = allBookingsData.data.map((booking) => ({
           id: booking.booking_id,
-          title: `${booking.test_name} for ${booking.company_name}, ${booking.customer_name}`,
+          title: `${booking.test_name} for ${booking.company_name}`,
           start: new Date(booking.slot_start_datetime),
           end: new Date(booking.slot_end_datetime),
           duration: booking.slot_duration,
