@@ -77,6 +77,7 @@ const Jobcard = ({ jobCardData }) => {
 
   const [dcNumber, setDcnumber] = useState("");
   const [jcOpenDate, setJcOpenDate] = useState(null);
+  const [srfDate, setSrfDate] = useState(null);
   const [itemReceivedDate, setItemReceivedDate] = useState(null);
   const [poNumber, setPonumber] = useState("");
   const [jcCategory, setJcCategory] = useState("");
@@ -105,7 +106,7 @@ const Jobcard = ({ jobCardData }) => {
   const [reliabilityReportStatus, setReliabilityReportStatus] = useState("");
   const [reliabilityTaskRow, setReliabilityTaskRow] = useState([{ id: 0 }]);
 
-  const [jcLastModifiedBy, setJcLastModifiedBy] = useState();
+  const [jcLastModifiedBy, setJcLastModifiedBy] = useState(null);
 
   const [editJc, setEditJc] = useState(false);
 
@@ -156,6 +157,26 @@ const Jobcard = ({ jobCardData }) => {
     },
   ];
 
+  const TS1ReportStausOptions = [
+    { value: "Draft Report Sent", label: "Draft Report Sent" },
+    { value: "Final Report Sent", label: "Final Report Sent" },
+    { value: "Not Sent", label: "Not Sent" },
+    {
+      value: "On-Hold",
+      label: "On-Hold",
+    },
+  ];
+
+  const reliabilityReportStatusOptions = [
+    { value: "Draft Report Sent", label: "Draft Report Sent" },
+    { value: "Final Report Sent", label: "Final Report Sent" },
+    { value: "Not Sent", label: "Not Sent" },
+    {
+      value: "On-Hold",
+      label: "On-Hold",
+    },
+  ];
+
   const testUnitOptions = [
     { value: "Hours", label: "Hours" },
     { value: "Test", label: "Test" },
@@ -165,6 +186,13 @@ const Jobcard = ({ jobCardData }) => {
     { value: "TS1", label: "TS1" },
     { value: "Reliability", label: "Reliability" },
     { value: "TS2", label: "TS2" },
+  ];
+
+  const jcStatusOptions = [
+    { value: "Open", label: "Open" },
+    { value: "Running", label: "Running" },
+    { value: "Closed", label: "Closed" },
+    { value: "Test Completed", label: "Test Completed" },
   ];
 
   let { id } = useParams("id");
@@ -198,6 +226,9 @@ const Jobcard = ({ jobCardData }) => {
           setDcnumber(res.data.jobcard.dcform_number || "");
           const parsedJcStartDate = dayjs(res.data.jobcard.jc_open_date);
           setJcOpenDate(parsedJcStartDate.isValid() ? parsedJcStartDate : null);
+
+          const parsedSrfDate = dayjs(res.data.jobcard.srf_date);
+          setSrfDate(parsedSrfDate.isValid() ? parsedSrfDate : null);
 
           const parsedItemReceivedDate = dayjs(
             res.data.jobcard.item_received_date
@@ -268,6 +299,18 @@ const Jobcard = ({ jobCardData }) => {
 
   const handleReportTypeChange = (event) => {
     setReportType(event.target.value);
+  };
+
+  // Handle SRF recieved or created date:
+  const handleSrfDateChange = (newDate) => {
+    try {
+      const formattedSrfDate = newDate
+        ? dayjs(newDate).format("YYYY-MM-DD")
+        : null;
+      setSrfDate(formattedSrfDate);
+    } catch (error) {
+      console.error("Error formatting SRF date:", error);
+    }
   };
 
   // To get the selected date and Time
@@ -473,6 +516,7 @@ const Jobcard = ({ jobCardData }) => {
         .post(api_url, {
           jcNumber: jcNumberString,
           srfNumber,
+          srfDate,
           dcNumber,
           jcOpenDate,
           itemReceivedDate,
@@ -750,6 +794,7 @@ const Jobcard = ({ jobCardData }) => {
     setReferanceDocs("");
     setJcStatus("");
     setJcCloseDate("");
+    setSrfDate("");
     setObservations("");
 
     setAddNewJcToLastMonth(false);
@@ -913,6 +958,40 @@ const Jobcard = ({ jobCardData }) => {
             <Grid item xs={12} md={6} sx={{ borderRadius: 3 }}>
               <Box sx={{ mt: 1, mb: 1 }}>
                 <Grid container justifyContent="flex-end">
+                  <Grid
+                    item
+                    xs={12}
+                    md={6}
+                    sx={{
+                      display: "flex",
+                      justifyContent: "flex-start",
+                      mb: 1,
+                    }}
+                  >
+                    <LocalizationProvider dateAdapter={AdapterDayjs}>
+                      <DatePicker
+                        label="SRF Date"
+                        variant="outlined"
+                        value={srfDate ? dayjs(srfDate) : null}
+                        onChange={handleSrfDateChange}
+                        renderInput={(props) => (
+                          <TextField
+                            {...props}
+                            fullWidth
+                            sx={{ width: "100%" }}
+                          />
+                        )}
+                        format="YYYY-MM-DD"
+                      />
+                    </LocalizationProvider>
+
+                    {addNewJcToLastMonth && (
+                      <Typography variant="body2" sx={{ color: "red" }}>
+                        *Only Select Last Month Date
+                      </Typography>
+                    )}
+                  </Grid>
+
                   <Grid
                     item
                     xs={12}
@@ -2130,16 +2209,16 @@ const Jobcard = ({ jobCardData }) => {
                                       )
                                     }
                                   >
-                                    <MenuItem value="Draft Report Sent">
-                                      Draft Report Sent
-                                    </MenuItem>
-                                    <MenuItem value="Final Report Sent">
-                                      Final Report Sent
-                                    </MenuItem>
-                                    <MenuItem value="Not-Sent">
-                                      Not-Sent
-                                    </MenuItem>
-                                    <MenuItem value="On-Hold">On-Hold</MenuItem>
+                                    {TS1ReportStausOptions.map((option) => {
+                                      return (
+                                        <MenuItem
+                                          key={option.value}
+                                          value={option.value}
+                                        >
+                                          {option.label}
+                                        </MenuItem>
+                                      );
+                                    })}
                                   </Select>
                                 </FormControl>
                               </TableCell>
@@ -2206,9 +2285,13 @@ const Jobcard = ({ jobCardData }) => {
                     value={jcStatus}
                     onChange={(e) => setJcStatus(e.target.value)}
                   >
-                    <MenuItem value="Open">Open</MenuItem>
-                    <MenuItem value="Running">Running</MenuItem>
-                    <MenuItem value="Close">Close</MenuItem>
+                    {jcStatusOptions.map((option) => {
+                      return (
+                        <MenuItem key={option.value} value={option.value}>
+                          {option.label}
+                        </MenuItem>
+                      );
+                    })}
                   </Select>
                 </FormControl>
               </Grid>
@@ -2229,14 +2312,13 @@ const Jobcard = ({ jobCardData }) => {
                         setReliabilityReportStatus(e.target.value)
                       }
                     >
-                      <MenuItem value="Draft Report Sent">
-                        Draft Report Sent
-                      </MenuItem>
-                      <MenuItem value="Final Report Sent">
-                        Final Report Sent
-                      </MenuItem>
-                      <MenuItem value="Not Sent">Not Sent</MenuItem>
-                      <MenuItem value="On-Hold">On-Hold</MenuItem>
+                      {reliabilityReportStatusOptions.map((option) => {
+                        return (
+                          <MenuItem key={option.value} value={option.value}>
+                            {option.label}
+                          </MenuItem>
+                        );
+                      })}
                     </Select>
                   </FormControl>
                 </Grid>

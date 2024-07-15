@@ -8,6 +8,7 @@ import moment from "moment";
 
 const localizer = momentLocalizer(moment);
 
+//Code to modify the custom toolbar:
 const CustomToolbar = (toolbar) => {
   const goToBack = () => {
     toolbar.onNavigate("PREV");
@@ -51,6 +52,16 @@ const CustomToolbar = (toolbar) => {
   );
 };
 
+//Modify the eventGutter:
+const CustomGutterHeader = ({ label }) => {
+  return (
+    <div className="rbc-label rbc-time-header-gutter custom-header">
+      <span>{label}</span>
+      <span>Full Day Events</span>
+    </div>
+  );
+};
+
 export default function Calendar(props) {
   return (
     <BigCalendar
@@ -70,6 +81,7 @@ export default function Calendar(props) {
       style={{ height: "100vh" }}
       components={{
         toolbar: CustomToolbar,
+        timeGutterHeader: CustomGutterHeader,
       }}
     />
   );

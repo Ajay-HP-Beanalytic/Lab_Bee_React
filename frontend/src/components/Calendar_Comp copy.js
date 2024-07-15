@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   Calendar as BigCalendar,
   CalendarProps,
@@ -8,6 +8,7 @@ import moment from "moment";
 
 const localizer = momentLocalizer(moment);
 
+//Code to modify the custom toolbar:
 const CustomToolbar = (toolbar) => {
   const goToBack = () => {
     toolbar.onNavigate("PREV");
@@ -18,7 +19,7 @@ const CustomToolbar = (toolbar) => {
   };
 
   const goToToday = () => {
-    toolbar.onView("today");
+    toolbar.onNavigate("TODAY");
   };
 
   return (
@@ -51,54 +52,75 @@ const CustomToolbar = (toolbar) => {
   );
 };
 
-export default function Calendar(props) {
+//Modify the eventGutter:
+const CustomGutterHeader = ({ label }) => {
   return (
-    <BigCalendar
-      {...props}
-      localizer={localizer}
-      draggableAccessor={"isDraggable"}
-      resizable
-      onDragStart={(props) => {
-        console.log("onDragStart", props);
-      }}
-      onEventDrop={(props) => {
-        console.log("onEventDrop", props);
-      }}
-      onEventResize={(props) => {
-        console.log("onEventResize", props);
-      }}
-      style={{ height: "100vh" }}
-      components={{
-        toolbar: CustomToolbar,
-      }}
-    />
-  );
-}
-
-const CustomTimeGutter = ({ timeslots }) => {
-  const timeSlots = [];
-  let currentTime = moment().startOf("day");
-
-  for (let i = 0; i < timeslots; i++) {
-    timeSlots.push(
-      <div className="rbc-time-slot" key={i}>
-        <span className="rbc-label">{currentTime.format("h:mm A")}</span>
-      </div>
-    );
-    currentTime = currentTime.add(30, "minutes");
-  }
-
-  return <div className="rbc-time-gutter rbc-time-column">{timeSlots}</div>;
-};
-
-const CustomResourceHeader = ({ resources }) => {
-  return (
-    <div className="rbc-time-header-content">
-      {resources.map((resource) => (
-        <div className="rbc-row rbc-row-resource" key={resource.id}>
-          <div className="rbc-header">{resource.title}</div>
-        </div>
-      ))}
+    <div className="rbc-label rbc-time-header-gutter custom-header">
+      <span>{label}</span>
+      <span>Full Day Events</span>
     </div>
   );
 };
+
+export default function Calendar(props) {
+  const [selectedEvents, setSelectedEvents] = useState([]);
+  const [showModal, setShowModal] = useState(false);
+
+  const eventPropGetter = (event, start, end, isSelected) => {
+    const className = isSelected ? "rbc-selected" : "";
+    return { className };
+  };
+
+  const onShowMore = (events, date) => {
+    setSelectedEvents(events);
+    setShowModal(true);
+  };
+
+  const handleEventClick = (event) => {
+    // Redirect to the day view or handle the event click here
+    console.log("Event clicked:", event);
+  };
+
+  return (
+    <>
+      <BigCalendar
+        {...props}
+        localizer={localizer}
+        draggableAccessor={"isDraggable"}
+        resizable
+        onDragStart={(props) => {
+          console.log("onDragStart", props);
+        }}
+        onEventDrop={(props) => {
+          console.log("onEventDrop", props);
+        }}
+        onEventResize={(props) => {
+          console.log("onEventResize", props);
+        }}
+        style={{ height: "100vh" }}
+        components={{
+          toolbar: CustomToolbar,
+          timeGutterHeader: CustomGutterHeader,
+        }}
+        eventPropGetter={eventPropGetter}
+        onShowMore={onShowMore}
+      />
+
+      {showModal && (
+        <div className="custom-modal">
+          <div className="modal-content">
+            <h4>Events</h4>
+            <ul>
+              {selectedEvents.map((event, index) => (
+                <li key={index} onClick={() => handleEventClick(event)}>
+                  {event.title}
+                </li>
+              ))}
+            </ul>
+            <button onClick={() => setShowModal(false)}>Close</button>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}

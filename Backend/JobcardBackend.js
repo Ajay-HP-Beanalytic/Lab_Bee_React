@@ -26,6 +26,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
     const {
       jcNumber,
       srfNumber,
+      srfDate,
       dcNumber,
       jcOpenDate,
       itemReceivedDate,
@@ -53,6 +54,10 @@ function jobcardsAPIs(app, io, labbeeUsers) {
       loggedInUserDepartment,
     } = req.body;
 
+    const formattedSrfDate = srfDate
+      ? dayjs(srfDate).format("YYYY-MM-DD")
+      : null;
+
     const formattedItemReceivedDate = itemReceivedDate
       ? dayjs(itemReceivedDate).format("YYYY-MM-DD")
       : null;
@@ -64,15 +69,16 @@ function jobcardsAPIs(app, io, labbeeUsers) {
       : null;
 
     const sql = `INSERT INTO bea_jobcards(
-        jc_number, srf_number, dcform_number, jc_open_date, item_received_date, po_number, 
+        jc_number, srf_number, srf_date, dcform_number, jc_open_date, item_received_date, po_number, 
         test_category, test_discipline, sample_condition, type_of_request, report_type, test_incharge, jc_category, company_name, company_address,
         customer_name, customer_email, customer_number, project_name, test_instructions, 
          jc_status, reliability_report_status, jc_closed_date, observations, last_updated_by
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
     const values = [
       jcNumber,
       srfNumber,
+      formattedSrfDate,
       dcNumber,
       formattedOpenDate || null,
       formattedItemReceivedDate || null,
@@ -166,7 +172,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
 
     const getJCColumns = `
                             SELECT 
-                                id, jc_number, DATE_FORMAT(jc_open_date, '%Y-%m-%d') as jc_open_date, company_name, jc_status, last_updated_by
+                                id, jc_number, DATE_FORMAT(jc_open_date, '%Y-%m-%d') as jc_open_date, company_name, jc_status, DATE_FORMAT(jc_closed_date, '%Y-%m-%d') as jc_closed_date, last_updated_by
                             FROM 
                                 bea_jobcards
                             WHERE 
@@ -197,7 +203,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
 
     const getReliabilityJCColumns = `
                             SELECT 
-                                id, jc_number, DATE_FORMAT(jc_open_date, '%Y-%m-%d') as jc_open_date, company_name, project_name, reliability_report_status, jc_status, last_updated_by 
+                                id, jc_number, DATE_FORMAT(jc_open_date, '%Y-%m-%d') as jc_open_date, company_name, project_name, reliability_report_status, jc_status, DATE_FORMAT(jc_closed_date, '%Y-%m-%d') as jc_closed_date, last_updated_by 
                             FROM 
                                 bea_jobcards
                             WHERE 
@@ -294,6 +300,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
     const {
       jcNumber,
       srfNumber,
+      srfDate,
       dcNumber,
       jcOpenDate,
       itemReceivedDate,
@@ -321,6 +328,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
       loggedInUserDepartment,
     } = req.body;
 
+    const formattedSrfDate = srfDate ? convertDateTime(srfDate) : null;
     const formattedItemReceivedDate = itemReceivedDate
       ? dayjs(itemReceivedDate).format("YYYY-MM-DD")
       : null;
@@ -333,6 +341,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
     const sqlQuery = `
         UPDATE bea_jobcards SET
             srf_number = ?,
+            srf_date = ?,
             dcform_number = ?, 
             jc_open_date = ?, 
             item_received_date = ?,
@@ -361,6 +370,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
 
     const values = [
       srfNumber,
+      formattedSrfDate,
       dcNumber,
       formattedOpenDate,
       formattedItemReceivedDate,
@@ -383,7 +393,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
       reliabilityReportStatus,
       formattedCloseDate,
       observations,
-      jcLastModifiedBy,
+      loggedInUser,
       jcNumber,
     ];
 
