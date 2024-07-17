@@ -426,6 +426,34 @@ export default function Slotbooking() {
   }, [loggedInUser, setValue]);
 
   // get all the bookings:
+  // useEffect(() => {
+  //   const fetchAllTheBookings = async () => {
+  //     try {
+  //       const allBookingsData = await axios.get(
+  //         `${serverBaseAddress}/api/getAllBookings`
+  //       );
+  //       setAllBookings(allBookingsData.data);
+
+  //       const events = allBookingsData.data.map((booking) => ({
+
+  //         id: booking.booking_id,
+  //         title: `${booking.test_name} for ${booking.company_name}`,
+  //         start: new Date(booking.slot_start_datetime),
+  //         end: new Date(booking.slot_end_datetime),
+  //         duration: booking.slot_duration,
+  //         resourceId: booking.chamber_allotted,
+  //         slotBookedBy: booking.slot_booked_by,
+  //       }));
+  //       setMyEventsList(events);
+  //     } catch (error) {
+  //       console.error("Failed to fetch the bookings", error);
+  //       return null;
+  //     }
+  //   };
+
+  //   fetchAllTheBookings();
+  // }, [newBookingAdded, slotDeleted]);
+
   useEffect(() => {
     const fetchAllTheBookings = async () => {
       try {
@@ -434,15 +462,24 @@ export default function Slotbooking() {
         );
         setAllBookings(allBookingsData.data);
 
-        const events = allBookingsData.data.map((booking) => ({
-          id: booking.booking_id,
-          title: `${booking.test_name} for ${booking.company_name}`,
-          start: new Date(booking.slot_start_datetime),
-          end: new Date(booking.slot_end_datetime),
-          duration: booking.slot_duration,
-          resourceId: booking.chamber_allotted,
-          slotBookedBy: booking.slot_booked_by,
-        }));
+        const events = allBookingsData.data.map((booking) => {
+          //Split the test name:
+          const splitTestName = booking.test_name.split(" ");
+
+          //Shorten the test name:
+          const shortTestName = splitTestName.slice(0, 2).join(" ");
+
+          return {
+            id: booking.booking_id,
+            // title: `${booking.test_name} for ${booking.company_name}`,
+            title: `${shortTestName} for ${booking.company_name}`,
+            start: new Date(booking.slot_start_datetime),
+            end: new Date(booking.slot_end_datetime),
+            duration: booking.slot_duration,
+            resourceId: booking.chamber_allotted,
+            slotBookedBy: booking.slot_booked_by,
+          };
+        });
         setMyEventsList(events);
       } catch (error) {
         console.error("Failed to fetch the bookings", error);

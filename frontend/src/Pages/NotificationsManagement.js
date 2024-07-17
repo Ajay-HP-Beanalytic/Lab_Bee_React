@@ -8,7 +8,11 @@ export default function NotificationsManagement() {
   const { loggedInUser, loggedInUserDepartment } = useContext(UserContext);
   const { setNotifications } = useContext(NotificationContext);
 
-  const socket = io(serverBaseAddress); // Replace with your server address
+  // const socket = io(serverBaseAddress); // Replace with your server address
+  const socket = io(serverBaseAddress, {
+    withCredentials: true,
+    transports: ["websocket", "polling"],
+  });
 
   //Handle notifications here:
   useEffect(() => {

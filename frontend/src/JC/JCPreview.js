@@ -32,7 +32,7 @@ const Transition = forwardRef(function Transition(props, ref) {
 const formatDateTime = (dateString) => {
   const dateValue = dayjs(dateString);
   if (!dateValue.isValid()) {
-    return "Invalid Date";
+    return "";
   }
 
   return dateValue.format("YYYY/MM/DD HH:mm");
@@ -41,7 +41,7 @@ const formatDateTime = (dateString) => {
 const formatDate = (dateString) => {
   const dateValue = dayjs(dateString);
   if (!dateValue.isValid()) {
-    return "Invalid Date";
+    return "";
   }
 
   return dateValue.format("YYYY/MM/DD");
