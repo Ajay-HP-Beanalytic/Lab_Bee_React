@@ -502,7 +502,7 @@ const Jobcard = ({ jobCardData }) => {
   };
 
   // To submit the Job-card data and store it in a database:
-  const handleSubmitJobcard = async (e) => {
+  const handleSubmitJobcard = (e) => {
     e.preventDefault();
 
     let api_url = `${serverBaseAddress}/api/jobcard/${id}`;
@@ -513,225 +513,248 @@ const Jobcard = ({ jobCardData }) => {
     }
 
     try {
-      await axios.post(api_url, {
-        jcNumber: jcNumberString,
-        srfNumber,
-        srfDate,
-        dcNumber,
-        jcOpenDate,
-        itemReceivedDate,
-        poNumber,
-        testCategory,
-        testDiscipline,
-        typeOfRequest,
-        sampleCondition,
-        reportType,
-        testInchargeName,
-        jcCategory,
-        companyName,
-        companyAddress,
-        customerName,
-        customerEmail,
-        customerNumber,
-        projectName,
-        testInstructions,
-        jcStatus,
-        reliabilityReportStatus,
-        jcCloseDate,
-        observations,
-        jcLastModifiedBy,
-        loggedInUser,
-        loggedInUserDepartment,
-      });
-
-      if (jcCategory === "TS1") {
-        const eutdetailsdata = (i) => {
-          return {
-            nomenclature: eutRows[i].nomenclature || "",
-            eutDescription: eutRows[i].eutDescription || "",
-            qty: eutRows[i].qty || "",
-            partNo: eutRows[i].partNo || "",
-            modelNo: eutRows[i].modelNo || "",
-            serialNo: eutRows[i].serialNo,
-            jcNumber: jcNumberString,
-          };
-        };
-
-        // First we should send all the serial numbers. (so that they can be inserted or deleted)
-        const serialNos = eutRows.map((item) => item.serialNo || "");
-
-        // Check if any serial number is empty or null
-        const missingSerialNumber = serialNos.some((serialNo) => !serialNo);
-
-        if (missingSerialNumber) {
-          toast.warning("Please enter EUT/DUT Serial Numbers");
-          return;
-        }
-        axios
-          .post(`${serverBaseAddress}/api/eutdetails/serialNos/`, {
-            jcNumberString,
-            serialNos,
-          })
-          .then((res) => {
-            eutRows.map((row, index) => {
-              axios
-                .post(
-                  `${serverBaseAddress}/api/eutdetails/`,
-                  eutdetailsdata(index)
-                )
-                .then((res) => {
-                  if (res.status === 200) {
-                  }
-                })
-                .catch((error) => console.log(error));
-            });
-          })
-          .catch((error) => console.error(error));
-
-        // Function to extract tests data based on the index
-        const testsdata = (i) => {
-          return {
-            test: testRows[i].test,
-            nabl: testRows[i].nabl,
-            testStandard: testRows[i].testStandard,
-            testProfile: testRows[i].testProfile,
-            jcNumber: jcNumberString,
-          };
-        };
-
-        // first sync tests (add or delete) based on test name
-        const tests = testRows.map((item) => item.test);
-        axios
-          .post(`${serverBaseAddress}/api/tests_sync/names/`, {
-            jcNumberString,
-            tests,
-          })
-          .then(() => {
-            // Iterating over testRows using map to submit data to the server
-            testRows.map((row, index) => {
-              axios
-                .post(`${serverBaseAddress}/api/tests/`, testsdata(index))
-                .then((res) => {
-                  if (res.status === 200) {
-                  }
-                })
-                .catch((error) => console.log(error));
-            });
-          })
-          .catch((error) => console.log(error));
-
-        // Function to extract test details based on the index
-        const testdetailsdata = (i) => {
-          return {
-            testName: testdetailsRows[i].testName,
-            testChamber: testdetailsRows[i].testChamber,
-            eutSerialNo: testdetailsRows[i].eutSerialNo,
-            standard: testdetailsRows[i].standard,
-            testStartedBy: testdetailsRows[i].testStartedBy,
-
-            startTemp: testdetailsRows[i].startTemp,
-            startRh: testdetailsRows[i].startRh,
-
-            startDate: testdetailsRows[i].startDate,
-            endDate: testdetailsRows[i].endDate,
-            duration: testdetailsRows[i].duration,
-            actualTestDuration: testdetailsRows[i].actualTestDuration,
-            unit: testdetailsRows[i].unit,
-
-            endTemp: testdetailsRows[i].endTemp,
-            endRh: testdetailsRows[i].endRh,
-
-            testEndedBy: testdetailsRows[i].testEndedBy,
-            remarks: testdetailsRows[i].remarks,
-
-            testReportInstructions: testdetailsRows[i].testReportInstructions,
-
-            reportNumber: testdetailsRows[i].reportNumber,
-            preparedBy: testdetailsRows[i].preparedBy,
-            nablUploaded: testdetailsRows[i].nablUploaded,
-            reportStatus: testdetailsRows[i].reportStatus,
-            jcNumber: jcNumberString,
-          };
-        };
-
-        const testNames = testdetailsRows.map((item) => item.testName);
-        axios
-          .post(`${serverBaseAddress}/api/testdetails_sync/names/`, {
-            jcNumberString,
-            testNames,
-          })
-          .then((res) => {
-            testdetailsRows.map((row, index) => {
-              axios
-                .post(
-                  `${serverBaseAddress}/api/testdetails/`,
-                  testdetailsdata(index)
-                )
-                .then((res) => {
-                  if (res.status === 200) {
-                  }
-                })
-                .catch((error) => console.log(error));
-            });
-          });
-      }
-
-      // Handle RE specific data
-      if (jcCategory === "Reliability") {
-        // Function to extract test details based on the index
-        const relTaskData = (i) => {
-          return {
-            task_description: reliabilityTaskRow[i].task_description,
-            task_assigned_by: reliabilityTaskRow[i].task_assigned_by,
-            task_start_date: reliabilityTaskRow[i].task_start_date,
-            task_end_date: reliabilityTaskRow[i].task_end_date,
-            task_assigned_to: reliabilityTaskRow[i].task_assigned_to,
-            task_status: reliabilityTaskRow[i].task_status,
-            task_completed_date: reliabilityTaskRow[i].task_completed_date,
-            note_remarks: reliabilityTaskRow[i].note_remarks,
-            jcNumberString: jcNumberString,
-          };
-        };
-
-        const taskDescriptions = reliabilityTaskRow.map(
-          (item) => item.task_description
-        );
-
-        axios
-          .post(`${serverBaseAddress}/api/relTasks/taskName/`, {
-            task_description: taskDescriptions,
-            jcNumberString,
-          })
-          .then((res) => {
-            reliabilityTaskRow.forEach((row, index) => {
-              axios
-                .post(`${serverBaseAddress}/api/relTasks/`, relTaskData(index))
-                .then((res) => {
-                  if (res.status === 200) {
-                  }
-                })
-                .catch((error) =>
-                  console.log(
-                    "Error in relTasks API for index",
-                    index,
-                    ":",
-                    error
-                  )
-                );
-            });
-          })
-          .catch((error) => console.error("Error in taskName API:", error));
-      }
-
-      toast.success(
-        editJc ? "JobCard Updated Successfully" : "JobCard Created Successfully"
-      );
-      // navigate('/jobcard_dashboard')
-      navigate("/jobcard_dashboard", { state: { updated: true } });
+      axios
+        .post(api_url, {
+          jcNumber: jcNumberString,
+          srfNumber,
+          srfDate,
+          dcNumber,
+          jcOpenDate,
+          itemReceivedDate,
+          poNumber,
+          testCategory,
+          testDiscipline,
+          typeOfRequest,
+          sampleCondition,
+          reportType,
+          testInchargeName,
+          jcCategory,
+          companyName,
+          companyAddress,
+          customerName,
+          customerEmail,
+          customerNumber,
+          projectName,
+          testInstructions,
+          jcStatus,
+          reliabilityReportStatus,
+          jcCloseDate,
+          observations,
+          jcLastModifiedBy,
+          loggedInUser,
+          loggedInUserDepartment,
+        })
+        .then((res) => {
+          {
+            editJc
+              ? toast.success("JobCard Updated Successfully")
+              : toast.success("JobCard Created Successfully");
+          }
+        });
     } catch (error) {
       console.error("Error submitting Job-Card:", error);
-      toast.error("Failed to submit Job-Card. Please try again later.");
     }
+
+    if (jcCategory === "TS1") {
+      const eutdetailsdata = (i) => {
+        return {
+          nomenclature: eutRows[i].nomenclature || "",
+          eutDescription: eutRows[i].eutDescription || "",
+          qty: eutRows[i].qty || "",
+          partNo: eutRows[i].partNo || "",
+          modelNo: eutRows[i].modelNo || "",
+          serialNo: eutRows[i].serialNo || "",
+          jcNumber: jcNumberString,
+        };
+      };
+
+      // First we should send all the serial numbers. (so that they can be inserted or deleted)
+      const serialNos = eutRows.map((item) => item.serialNo || "");
+      axios
+        .post(`${serverBaseAddress}/api/eutdetails/serialNos/`, {
+          jcNumberString,
+          serialNos,
+        })
+        .then((res) => {
+          eutRows.map((row, index) => {
+            axios
+              .post(
+                `${serverBaseAddress}/api/eutdetails/`,
+                eutdetailsdata(index)
+              )
+              .then((res) => {
+                if (res.status === 200) {
+                }
+              })
+              .catch((error) => console.log(error));
+          });
+        })
+        .catch((error) => console.error(error));
+
+      // Function to extract tests data based on the index
+      const testsdata = (i) => {
+        return {
+          test: testRows[i].test,
+          nabl: testRows[i].nabl,
+          testStandard: testRows[i].testStandard,
+          testProfile: testRows[i].testProfile,
+          jcNumber: jcNumberString,
+        };
+      };
+
+      // first sync tests (add or delete) based on test name
+      const tests = testRows.map((item) => item.test);
+      axios
+        .post(`${serverBaseAddress}/api/tests_sync/names/`, {
+          jcNumberString,
+          tests,
+        })
+        .then(() => {
+          // Iterating over testRows using map to submit data to the server
+          testRows.map((row, index) => {
+            axios
+              .post(`${serverBaseAddress}/api/tests/`, testsdata(index))
+              .then((res) => {
+                if (res.status === 200) {
+                }
+              })
+              .catch((error) => console.log(error));
+          });
+        })
+        .catch((error) => console.log(error));
+
+      // Function to extract test details based on the index
+      const testdetailsdata = (i) => {
+        // return {
+        //   testName: testdetailsRows[i].testName,
+        //   testChamber: testdetailsRows[i].testChamber,
+        //   eutSerialNo: testdetailsRows[i].eutSerialNo,
+        //   standard: testdetailsRows[i].standard,
+        //   testStartedBy: testdetailsRows[i].testStartedBy,
+
+        //   startTemp: testdetailsRows[i].startTemp,
+        //   startRh: testdetailsRows[i].startRh,
+
+        //   startDate: testdetailsRows[i].startDate,
+        //   endDate: testdetailsRows[i].endDate,
+        //   duration: testdetailsRows[i].duration,
+        //   actualTestDuration: testdetailsRows[i].actualTestDuration,
+        //   unit: testdetailsRows[i].unit,
+
+        //   endTemp: testdetailsRows[i].endTemp,
+        //   endRh: testdetailsRows[i].endRh,
+
+        //   testEndedBy: testdetailsRows[i].testEndedBy,
+        //   remarks: testdetailsRows[i].remarks,
+
+        //   testReportInstructions: testdetailsRows[i].testReportInstructions,
+
+        //   reportNumber: testdetailsRows[i].reportNumber,
+        //   preparedBy: testdetailsRows[i].preparedBy,
+        //   nablUploaded: testdetailsRows[i].nablUploaded,
+        //   reportStatus: testdetailsRows[i].reportStatus,
+        //   jcNumber: jcNumberString,
+        // };
+
+        const row = testdetailsRows[i];
+        return {
+          testName: row.testName || "",
+          testChamber: row.testChamber || "",
+          eutSerialNo: row.eutSerialNo || "",
+          standard: row.standard || "",
+          testStartedBy: row.testStartedBy || "",
+          startTemp: row.startTemp || "",
+          startRh: row.startRh || "",
+          startDate: row.startDate || null,
+          endDate: row.endDate || null,
+          duration: row.duration || 0,
+          actualTestDuration: row.actualTestDuration || "",
+          unit: row.unit || "",
+          endTemp: row.endTemp || "",
+          endRh: row.endRh || "",
+          testEndedBy: row.testEndedBy || "",
+          remarks: row.remarks || "",
+          testReportInstructions: row.testReportInstructions || "",
+          reportNumber: row.reportNumber || "",
+          preparedBy: row.preparedBy || "",
+          nablUploaded: row.nablUploaded || false,
+          reportStatus: row.reportStatus || "",
+          jcNumber: jcNumberString,
+        };
+      };
+
+      // first sync tests (add or delete) based on test name
+      const testNames = testdetailsRows.map((item) => item.testName);
+      axios
+        .post(`${serverBaseAddress}/api/testdetails_sync/names/`, {
+          jcNumberString,
+          testNames,
+        })
+        .then((res) => {
+          testdetailsRows.map((row, index) => {
+            axios
+              .post(
+                `${serverBaseAddress}/api/testdetails/`,
+                testdetailsdata(index)
+              )
+              .then((res) => {
+                if (res.status === 200) {
+                }
+              })
+              .catch((error) => console.log(error));
+          });
+        });
+    }
+
+    // Handle RE specific data
+    if (jcCategory === "Reliability") {
+      // Function to extract test details based on the index
+      const relTaskData = (i) => {
+        return {
+          task_description: reliabilityTaskRow[i].task_description,
+          task_assigned_by: reliabilityTaskRow[i].task_assigned_by,
+          task_start_date: reliabilityTaskRow[i].task_start_date,
+          task_end_date: reliabilityTaskRow[i].task_end_date,
+          task_assigned_to: reliabilityTaskRow[i].task_assigned_to,
+          task_status: reliabilityTaskRow[i].task_status,
+          task_completed_date: reliabilityTaskRow[i].task_completed_date,
+          note_remarks: reliabilityTaskRow[i].note_remarks,
+          jcNumberString: jcNumberString,
+        };
+      };
+
+      const taskDescriptions = reliabilityTaskRow.map(
+        (item) => item.task_description
+      );
+
+      axios
+        .post(`${serverBaseAddress}/api/relTasks/taskName/`, {
+          task_description: taskDescriptions,
+          jcNumberString,
+        })
+        .then((res) => {
+          reliabilityTaskRow.forEach((row, index) => {
+            axios
+              .post(`${serverBaseAddress}/api/relTasks/`, relTaskData(index))
+              .then((res) => {
+                if (res.status === 200) {
+                }
+              })
+              .catch((error) =>
+                console.log(
+                  "Error in relTasks API for index",
+                  index,
+                  ":",
+                  error
+                )
+              );
+          });
+        })
+        .catch((error) => console.error("Error in taskName API:", error));
+    }
+
+    // navigate('/jobcard_dashboard')
+    navigate("/jobcard_dashboard", { state: { updated: true } });
   };
 
   // function handle changes in "eut" table row data
@@ -772,6 +795,20 @@ const Jobcard = ({ jobCardData }) => {
     }
 
     setTestDetailsRows(updatedRows);
+
+    // Save data immediately
+    saveTestDetailsData(index, updatedRows[index]);
+  };
+
+  const saveTestDetailsData = (index, rowData) => {
+    axios
+      .post(`${serverBaseAddress}/api/testdetails/`, rowData)
+      .then((res) => {
+        if (res.status === 200) {
+          console.log("Data saved successfully");
+        }
+      })
+      .catch((error) => console.log(error));
   };
 
   // To clear the fields of job card:
@@ -1819,7 +1856,7 @@ const Jobcard = ({ jobCardData }) => {
                                 <TextField
                                   style={{ align: "center" }}
                                   variant="outlined"
-                                  value={row.testName || ""}
+                                  value={row.testName}
                                   onChange={(e) =>
                                     handleTestDetailsRowChange(
                                       index,
@@ -1837,7 +1874,7 @@ const Jobcard = ({ jobCardData }) => {
                                   <InputLabel>Chamber</InputLabel>
                                   <Select
                                     label="test-chamber"
-                                    value={row.testChamber || ""}
+                                    value={row.testChamber}
                                     onChange={(e) =>
                                       handleTestDetailsRowChange(
                                         index,
@@ -1899,7 +1936,7 @@ const Jobcard = ({ jobCardData }) => {
                                 <TextField
                                   style={{ align: "center" }}
                                   variant="outlined"
-                                  value={row.eutSerialNo || ""}
+                                  value={row.eutSerialNo}
                                   onChange={(e) =>
                                     handleTestDetailsRowChange(
                                       index,
@@ -1913,7 +1950,7 @@ const Jobcard = ({ jobCardData }) => {
                                 <TextField
                                   style={{ align: "center" }}
                                   variant="outlined"
-                                  value={row.standard || ""}
+                                  value={row.standard}
                                   onChange={(e) =>
                                     handleTestDetailsRowChange(
                                       index,
@@ -1930,7 +1967,7 @@ const Jobcard = ({ jobCardData }) => {
                                   <InputLabel>Started By</InputLabel>
                                   <Select
                                     label="test-started-by"
-                                    value={row.testStartedBy || ""}
+                                    value={row.testStartedBy}
                                     onChange={(e) =>
                                       handleTestDetailsRowChange(
                                         index,
@@ -1956,17 +1993,12 @@ const Jobcard = ({ jobCardData }) => {
                                     label="Test start date"
                                     variant="outlined"
                                     margin="normal"
-                                    // value={
-                                    //   testdetailsRows[index].startDate
-                                    //     ? dayjs(
-                                    //         testdetailsRows[index].startDate
-                                    //       )
-                                    //     : dateTimeValue
-                                    // }
                                     value={
-                                      row.startDate
-                                        ? dayjs(row.startDate)
-                                        : null
+                                      testdetailsRows[index].startDate
+                                        ? dayjs(
+                                            testdetailsRows[index].startDate
+                                          )
+                                        : dateTimeValue
                                     }
                                     onChange={(date) =>
                                       handleTestDetailsRowChange(
@@ -1991,13 +2023,10 @@ const Jobcard = ({ jobCardData }) => {
                                     label="Test end date"
                                     variant="outlined"
                                     margin="normal"
-                                    // value={
-                                    //   testdetailsRows[index].endDate
-                                    //     ? dayjs(testdetailsRows[index].endDate)
-                                    //     : dateTimeValue
-                                    // }
                                     value={
-                                      row.endDate ? dayjs(row.endDate) : null
+                                      testdetailsRows[index].endDate
+                                        ? dayjs(testdetailsRows[index].endDate)
+                                        : dateTimeValue
                                     }
                                     onChange={(date) =>
                                       handleTestDetailsRowChange(
@@ -2019,7 +2048,7 @@ const Jobcard = ({ jobCardData }) => {
                                   style={{ align: "center" }}
                                   variant="outlined"
                                   // disabled={!endDateActivated}
-                                  value={row.duration || ""}
+                                  value={row.duration}
                                   onChange={(e) =>
                                     handleTestDetailsRowChange(
                                       index,
@@ -2033,7 +2062,7 @@ const Jobcard = ({ jobCardData }) => {
                                 <TextField
                                   style={{ align: "center" }}
                                   variant="outlined"
-                                  value={row.actualTestDuration || ""}
+                                  value={row.actualTestDuration}
                                   onChange={(e) =>
                                     handleTestDetailsRowChange(
                                       index,
@@ -2050,7 +2079,7 @@ const Jobcard = ({ jobCardData }) => {
                                   <InputLabel>Hours/Test</InputLabel>
                                   <Select
                                     label="test-units"
-                                    value={row.unit || ""}
+                                    value={row.unit}
                                     onChange={(e) =>
                                       handleTestDetailsRowChange(
                                         index,
@@ -2077,7 +2106,7 @@ const Jobcard = ({ jobCardData }) => {
                                   <InputLabel>Ended By</InputLabel>
                                   <Select
                                     label="test-ended-by"
-                                    value={row.testEndedBy || ""}
+                                    value={row.testEndedBy}
                                     onChange={(e) =>
                                       handleTestDetailsRowChange(
                                         index,
@@ -2099,7 +2128,7 @@ const Jobcard = ({ jobCardData }) => {
                                 <TextField
                                   style={{ align: "center" }}
                                   variant="outlined"
-                                  value={row.remarks || ""}
+                                  value={row.remarks}
                                   onChange={(e) =>
                                     handleTestDetailsRowChange(
                                       index,
@@ -2115,7 +2144,7 @@ const Jobcard = ({ jobCardData }) => {
                                     <InputLabel>Instructions</InputLabel>
                                     <Select
                                       label="Instructions"
-                                      value={row.testReportInstructions || ""}
+                                      value={row.testReportInstructions}
                                       onChange={(e) =>
                                         handleTestDetailsRowChange(
                                           index,
@@ -2143,7 +2172,7 @@ const Jobcard = ({ jobCardData }) => {
                                 <TextField
                                   style={{ align: "center" }}
                                   variant="outlined"
-                                  value={row.reportNumber || ""}
+                                  value={row.reportNumber}
                                   onChange={(e) =>
                                     handleTestDetailsRowChange(
                                       index,
@@ -2160,7 +2189,7 @@ const Jobcard = ({ jobCardData }) => {
                                   <InputLabel>Report Prepared By</InputLabel>
                                   <Select
                                     label="report-prepared-by"
-                                    value={row.preparedBy || ""}
+                                    value={row.preparedBy}
                                     onChange={(e) =>
                                       handleTestDetailsRowChange(
                                         index,
@@ -2184,7 +2213,7 @@ const Jobcard = ({ jobCardData }) => {
                                   <InputLabel>NABL Status</InputLabel>
                                   <Select
                                     label="Nabl-upload-status"
-                                    value={row.nablUploaded || ""}
+                                    value={row.nablUploaded}
                                     onChange={(e) =>
                                       handleTestDetailsRowChange(
                                         index,
@@ -2209,7 +2238,7 @@ const Jobcard = ({ jobCardData }) => {
                                   <InputLabel>Status</InputLabel>
                                   <Select
                                     label="Report-delivery-status"
-                                    value={row.reportStatus || ""}
+                                    value={row.reportStatus}
                                     onChange={(e) =>
                                       handleTestDetailsRowChange(
                                         index,

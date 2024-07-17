@@ -39,7 +39,6 @@ export default function PoInvoiceStatusTable({
 
   const [searchInputTextOfPO, setSearchInputTextOfPO] = useState("");
   const [filteredPOData, setFilteredPOData] = useState(poDataList);
-  console.log("poDataList", poDataList);
 
   const [filterRow, setFilterRow] = useState([]); //To filter out the table based on search
   const [refresh, setRefresh] = useState(false);

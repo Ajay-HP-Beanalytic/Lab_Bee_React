@@ -125,6 +125,9 @@ const JobCardComponent = ({ id }) => {
         setJobCard({
           jcNumber: jobcard.jc_number,
           srfNumber: jobcard.srf_number,
+          srfDate: dayjs(jobcard.srf_date).isValid()
+            ? dayjs(jobcard.srf_date).format("YYYY-MM-DD")
+            : "",
           jcOpenDate: dayjs(jobcard.jc_open_date).isValid()
             ? dayjs(jobcard.jc_open_date).format("YYYY-MM-DD")
             : "",
