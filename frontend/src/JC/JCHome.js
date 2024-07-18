@@ -342,9 +342,7 @@ export default function JCHome() {
     setFilteredJcData(jcTableData);
     setFilteredReliabilityJcData(reliabilityJCTableData);
 
-    setReliabilityJCNumbers(
-      filteredReliabilityJcData.map((row) => row.jc_number)
-    );
+    setReliabilityJCNumbers(reliabilityJCTableData.map((row) => row.jc_number));
     console.log("reliabilityJCNumbers are", reliabilityJCNumbers);
   }, [jcTableData, reliabilityJCTableData]);
 
