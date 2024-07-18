@@ -40,8 +40,8 @@ const server = https.createServer(serverOptions, app); //Change during deploymen
 
 const io = socketIo(server, {
   cors: {
-    origin: true, // mention the host address of the frontend
-    //origin: "https://labbee.beanalytic.com", // Allow requests from this origin
+    //origin: true, // mention the host address of the frontend
+    origin: "https://labbee.beanalytic.com", // Allow requests from this origin
     methods: ["GET", "POST", "DELETE", "PUT"],
     credentials: true,
   },
@@ -95,8 +95,8 @@ io.on("connection", (socket) => {
 
 app.use(
   cors({
-    origin: true, // mention the host address of the frontend
-    //origin: "https://labbee.beanalytic.com", // Allow requests from this origin
+    //origin: true, // mention the host address of the frontend
+    origin: "https://labbee.beanalytic.com", // Allow requests from this origin
     methods: ["POST", "GET", "DELETE", "PUT"],
     credentials: true,
   })
@@ -129,7 +129,7 @@ app.use(
     saveUninitialized: false,
     cookie: {
       secure: false,
-      maxAge: 60 * 60 * 1000,
+      maxAge: 120 * 60 * 1000,
       //maxAge: 30 * 60 * 1000, // 30 minutes in milliseconds (the value is calculated by multiplying the number of minutes (30) by the number of seconds in a minute (60) and then by 1000 to convert it to milliseconds.)
 
       //name: 'labbee_user', // Set your custom cookie name here (Default is : connect.sid if we use 'express-session')
