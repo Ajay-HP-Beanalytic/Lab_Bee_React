@@ -454,6 +454,42 @@ export default function Slotbooking() {
   //   fetchAllTheBookings();
   // }, [newBookingAdded, slotDeleted]);
 
+  // useEffect(() => {
+  //   const fetchAllTheBookings = async () => {
+  //     try {
+  //       const allBookingsData = await axios.get(
+  //         `${serverBaseAddress}/api/getAllBookings`
+  //       );
+  //       setAllBookings(allBookingsData.data);
+
+  //       const events = allBookingsData.data.map((booking) => {
+  //         //Split the test name:
+  //         const splitTestName = booking.test_name.split(" ");
+
+  //         //Shorten the test name:
+  //         const shortTestName = splitTestName.slice(0, 2).join(" ");
+
+  //         return {
+  //           id: booking.booking_id,
+  //           // title: `${booking.test_name} for ${booking.company_name}`,
+  //           title: `${shortTestName} for ${booking.company_name}`,
+  //           start: new Date(booking.slot_start_datetime),
+  //           end: new Date(booking.slot_end_datetime),
+  //           duration: booking.slot_duration,
+  //           resourceId: booking.chamber_allotted,
+  //           slotBookedBy: booking.slot_booked_by,
+  //         };
+  //       });
+  //       setMyEventsList(events);
+  //     } catch (error) {
+  //       console.error("Failed to fetch the bookings", error);
+  //       return null;
+  //     }
+  //   };
+
+  //   fetchAllTheBookings();
+  // }, [newBookingAdded, slotDeleted]);
+
   useEffect(() => {
     const fetchAllTheBookings = async () => {
       try {
@@ -463,15 +499,25 @@ export default function Slotbooking() {
         setAllBookings(allBookingsData.data);
 
         const events = allBookingsData.data.map((booking) => {
-          //Split the test name:
-          const splitTestName = booking.test_name.split(" ");
+          // Limit the test name to a specific number of characters
+          const maxLength = 20; // Maximum number of characters
+          let shortTestName = booking.test_name;
 
-          //Shorten the test name:
-          const shortTestName = splitTestName.slice(0, 2).join(" ");
+          if (shortTestName.length > maxLength) {
+            shortTestName = shortTestName.substring(0, maxLength);
+
+            // Ensure it doesn't cut off in the middle of a word
+            if (shortTestName.charAt(maxLength - 1) !== " ") {
+              const lastSpaceIndex = shortTestName.lastIndexOf(" ");
+              if (lastSpaceIndex > 0) {
+                shortTestName = shortTestName.substring(0, lastSpaceIndex);
+              }
+            }
+            shortTestName += "..."; // Add ellipsis to indicate truncation
+          }
 
           return {
             id: booking.booking_id,
-            // title: `${booking.test_name} for ${booking.company_name}`,
             title: `${shortTestName} for ${booking.company_name}`,
             start: new Date(booking.slot_start_datetime),
             end: new Date(booking.slot_end_datetime),
