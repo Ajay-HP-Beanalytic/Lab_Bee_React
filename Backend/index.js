@@ -40,8 +40,8 @@ const server = https.createServer(serverOptions, app); //Change during deploymen
 
 const io = socketIo(server, {
   cors: {
-    //origin: true, // mention the host address of the frontend
-    origin: "https://labbee.beanalytic.com", // Allow requests from this origin
+    origin: true, // mention the host address of the frontend
+    // origin: "https://labbee.beanalytic.com", // Allow requests from this origin
     methods: ["GET", "POST", "DELETE", "PUT"],
     credentials: true,
   },
@@ -95,8 +95,8 @@ io.on("connection", (socket) => {
 
 app.use(
   cors({
-    //origin: true, // mention the host address of the frontend
-    origin: "https://labbee.beanalytic.com", // Allow requests from this origin
+    origin: true, // mention the host address of the frontend
+    //origin: "https://labbee.beanalytic.com", // Allow requests from this origin
     methods: ["POST", "GET", "DELETE", "PUT"],
     credentials: true,
   })
