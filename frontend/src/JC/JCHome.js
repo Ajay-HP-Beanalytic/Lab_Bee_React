@@ -343,7 +343,6 @@ export default function JCHome() {
     setFilteredReliabilityJcData(reliabilityJCTableData);
 
     setReliabilityJCNumbers(reliabilityJCTableData.map((row) => row.jc_number));
-    console.log("reliabilityJCNumbers are", reliabilityJCNumbers);
   }, [jcTableData, reliabilityJCTableData]);
 
   //If data is loading then show Loading text
