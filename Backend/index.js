@@ -305,6 +305,10 @@ const PORT = 4002; //For deployment
 //   console.log("Server is running on port 4000");
 // });
 
+app.get("/api/testing", (req, res) => {
+  res.send("Backend is up and running...");
+});
+
 server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
