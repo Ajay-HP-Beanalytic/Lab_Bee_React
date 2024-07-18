@@ -755,9 +755,9 @@ export default function JCHome() {
                 Reliability JC Numbers
               </Typography>
 
-              {reliabilityJCNumbers.map((jcNumber) => (
+              {reliabilityJCNumbers.map((jcNumber, index) => (
                 <List>
-                  <ListItem value={jcNumber}>{jcNumber}</ListItem>
+                  <ListItem key={index}>{jcNumber}</ListItem>
                 </List>
               ))}
             </Box>
