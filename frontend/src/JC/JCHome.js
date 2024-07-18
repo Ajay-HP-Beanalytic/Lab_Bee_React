@@ -345,6 +345,7 @@ export default function JCHome() {
     setReliabilityJCNumbers(
       filteredReliabilityJcData.map((row) => row.jc_number)
     );
+    console.log("reliabilityJCNumbers are", reliabilityJCNumbers);
   }, [jcTableData, reliabilityJCTableData]);
 
   //If data is loading then show Loading text
@@ -748,7 +749,7 @@ export default function JCHome() {
             </Box>
           )}
 
-          {filteredReliabilityJcData.length !== 0 ? (
+          {filteredReliabilityJcData.length !== 0 && (
             <Box sx={{ mt: 2 }}>
               <Typography variant="h5" color="#003366">
                 {" "}
@@ -761,8 +762,6 @@ export default function JCHome() {
                 </List>
               ))}
             </Box>
-          ) : (
-            ""
           )}
         </>
       )}
