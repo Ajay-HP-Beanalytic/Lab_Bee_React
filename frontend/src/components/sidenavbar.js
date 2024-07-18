@@ -250,7 +250,7 @@ export default function SidenavigationBar() {
     if (loggedInUserDepartment === "Administration") {
       return true; // Show all items for Administration
     } else if (loggedInUserDepartment === "Accounts") {
-      return [1, 2, 3, 4, 5, 6].includes(item.i);
+      return [1, 2, 3, 4, 5, 6, 8].includes(item.i);
     } else if (loggedInUserDepartment === "Marketing") {
       return [2, 3, 4].includes(item.i);
     } else if (
