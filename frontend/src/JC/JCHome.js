@@ -25,6 +25,7 @@ import EmptyCard from "../common/EmptyCard";
 import Loader from "../common/Loader";
 import { UserContext } from "../Pages/UserContext";
 import JCPreview from "./JCPreview";
+import { CreatePieChart } from "../functions/DashboardFunctions";
 
 export default function JCHome() {
   const location = useLocation();
@@ -610,6 +611,112 @@ export default function JCHome() {
     navigate(`/jobcard`);
   };
 
+  ///Function to get the count of jc status:
+  const getJobcardStatusCount = (data) => {
+    let jcOpenCount = 0;
+    let jcRunningCount = 0;
+    let jcClosedCount = 0;
+    let jcTestCompletedCount = 0;
+
+    data.forEach((item) => {
+      if (item.jc_status !== "") {
+        switch (item.jc_status) {
+          case "Open":
+            jcOpenCount++;
+            break;
+
+          case "Running":
+            jcRunningCount++;
+            break;
+
+          case "Close":
+            jcClosedCount++;
+            break;
+
+          case "Test Completed":
+            jcTestCompletedCount++;
+            break;
+
+          default:
+            break;
+        }
+      }
+    });
+    return { jcOpenCount, jcRunningCount, jcClosedCount, jcTestCompletedCount };
+  };
+
+  const { jcOpenCount, jcRunningCount, jcClosedCount, jcTestCompletedCount } =
+    getJobcardStatusCount(filteredJcData);
+  console.log(jcOpenCount, jcRunningCount, jcClosedCount, jcTestCompletedCount);
+
+  const jcStatusRawData = getJobcardStatusCount(filteredJcData);
+  console.log(jcStatusRawData);
+
+  // Prepare data for the pie chart
+  const jcStatusData = {
+    key: ["Open", "Running", "Close", "Test Completed"],
+    value: [
+      jcStatusRawData.jcOpenCount,
+      jcStatusRawData.jcRunningCount,
+      jcStatusRawData.jcClosedCount,
+      jcStatusRawData.jcTestCompletedCount,
+    ],
+  };
+
+  // let jcStatusData = [10, 15, 6, 8];
+
+  const jcStatusPieChart = {
+    // labels: ["Open", "Running", "Closed", "Test Completed"],
+    labels: jcStatusData.key,
+    datasets: [
+      {
+        // data: jcStatusData,
+        data: jcStatusData.value,
+        backgroundColor: ["#8cd9b3", "#ff6666", "#4472c4", "#ffc000"],
+      },
+    ],
+  };
+
+  const optionsForJcStatusPieChart = {
+    responsive: true,
+    // maintainAspectRatio: false,   // False will keep the size small. If it's true then we can define the size using aspectRatio
+    aspectRatio: 2,
+    plugins: {
+      legend: {
+        position: "top",
+        display: true,
+      },
+      title: {
+        display: true,
+        text: "Job-Card Status",
+        font: {
+          family: "Helvetica Neue",
+          size: 30,
+          weight: "bold",
+        },
+      },
+      subtitle: {
+        display: true,
+        text: "Monthly Job-Card Status",
+        font: {
+          family: "Arial",
+          size: 15,
+          weight: "bold",
+        },
+      },
+      datalabels: {
+        display: true,
+        color: "black",
+        fontWeight: "bold",
+        font: {
+          family: "Arial",
+          size: 15,
+          weight: "bold",
+        },
+      },
+    },
+  };
+
   return (
     <>
       <Box
@@ -760,6 +867,24 @@ export default function JCHome() {
               ))}
             </Box>
           )}
+
+          <Grid container spacing={4} sx={{ padding: { xs: 3, sm: 4 } }}>
+            <Grid item xs={12} sm={6} md={6}>
+              <Box
+                sx={{
+                  backgroundColor: "#e0ebeb",
+                  padding: 2,
+                  borderRadius: 2,
+                  boxShadow: 2,
+                }}
+              >
+                <CreatePieChart
+                  data={jcStatusPieChart}
+                  options={optionsForJcStatusPieChart}
+                />
+              </Box>
+            </Grid>
+          </Grid>
         </>
       )}
 
