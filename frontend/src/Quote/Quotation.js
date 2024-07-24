@@ -73,6 +73,7 @@ export default function Quotation() {
 
   const initialTableData = [
     {
+      id: 1,
       slno: 1,
       testDescription: defTestDescription,
       sacNo: defSacNo,
@@ -193,9 +194,12 @@ export default function Quotation() {
 
   // Function to add the new row on clicking plus btn:
   const addRow = () => {
-    const maxSlNo = Math.max(...tableData.map((row) => row.slno), 0);
     const newRow = {
-      slno: maxSlNo + 1,
+      id:
+        tableData.length > 0
+          ? Math.max(...tableData.map((row) => row.id || 0)) + 1
+          : 1,
+      slno: tableData.length + 1,
       testDescription: defTestDescription,
       sacNo: defSacNo,
       duration: defDuration,
@@ -204,12 +208,16 @@ export default function Quotation() {
       amount: defAmount,
     };
     setTableData([...tableData, newRow]);
-    setCounter(maxSlNo + 1);
   };
 
   // Function to remove the new row on clicking minus btn:
-  const removeRow = (slno) => {
-    const updatedData = tableData.filter((row) => row.slno !== slno);
+  const removeRow = (id) => {
+    const updatedData = tableData
+      .filter((row) => row.id !== id)
+      .map((row, index) => ({
+        ...row,
+        slno: index + 1, // Reassign slno based on new index
+      }));
     setTableData(updatedData);
   };
 
@@ -918,7 +926,7 @@ export default function Quotation() {
                   <TableBody>
                     {tableData.map((row) => (
                       <StyledTableRow
-                        key={row.slno}
+                        key={row.id}
                         sx={{
                           "&:last-child td, &:last-child th": { border: 0 },
                         }}
@@ -961,7 +969,7 @@ export default function Quotation() {
                             <TableCell align="center">
                               <TextField
                                 value={row.duration}
-                                //type='number'
+                                type="number"
                                 onChange={(e) =>
                                   handleCellChange(
                                     row.slno,
@@ -1051,9 +1059,13 @@ export default function Quotation() {
                         </TableCell>
 
                         <TableCell align="center">
-                          <IconButton color="secondary" size="small">
+                          <IconButton
+                            color="secondary"
+                            size="small"
+                            onClick={() => removeRow(row.id)}
+                          >
                             <Tooltip title="Remove row" arrow>
-                              <RemoveIcon onClick={() => removeRow(row.slno)} />
+                              <RemoveIcon />
                             </Tooltip>
                           </IconButton>
                         </TableCell>

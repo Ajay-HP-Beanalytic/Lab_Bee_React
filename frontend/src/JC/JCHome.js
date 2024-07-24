@@ -842,6 +842,11 @@ export default function JCHome() {
               }}
             >
               <DataGrid
+                initialState={{
+                  sorting: {
+                    sortModel: [{ field: "jc_number", sort: "desc" }],
+                  },
+                }}
                 rows={ts1JcDataWithSerialNumbers}
                 columns={columns}
                 sx={{ "&:hover": { cursor: "pointer" } }}
@@ -934,6 +939,11 @@ export default function JCHome() {
                 }}
               >
                 <DataGrid
+                  initialState={{
+                    sorting: {
+                      sortModel: [{ field: "jc_number", sort: "desc" }],
+                    },
+                  }}
                   rows={reliabilityJcDataWithSerialNumbers}
                   columns={reliabilityTableColumns}
                   sx={{ "&:hover": { cursor: "pointer" } }}

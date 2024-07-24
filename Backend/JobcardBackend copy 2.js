@@ -21,6 +21,20 @@ function jobcardsAPIs(app, io, labbeeUsers) {
   //     res.sendFile(filePath);
   // });
 
+  function convertDateTime(originalTimestamp) {
+    if (!originalTimestamp) {
+      return "";
+    }
+    const dateObject = new Date(originalTimestamp);
+    const year = dateObject.getFullYear();
+    const month = String(dateObject.getMonth() + 1).padStart(2, "0"); // Month is zero-indexed
+    const day = String(dateObject.getDate()).padStart(2, "0");
+    const hours = String(dateObject.getHours()).padStart(2, "0");
+    const minutes = String(dateObject.getMinutes()).padStart(2, "0");
+
+    return `${year}-${month}-${day} ${hours}:${minutes}`;
+  }
+
   // Add primary details of the jobcard to the 'bea_jobcards' table:
   app.post("/api/jobcard", (req, res) => {
     const {
@@ -556,48 +570,6 @@ function jobcardsAPIs(app, io, labbeeUsers) {
     });
   });
 
-  // app.post("/api/eutdetails/serialNos/", (req, res) => {
-  //   const { serialNos, jcNumberString } = req.body;
-  //   const selectQuery =
-  //     "SELECT id, serialNo FROM eut_details WHERE jc_number = ?";
-
-  //   db.query(selectQuery, [jcNumberString], (error, result) => {
-  //     if (error) return res.status(500).json(error.message);
-
-  //     const existingSerialNos = result
-  //       .map((item) => item.serialNo)
-  //       .filter(Boolean);
-  //     const existingIds = result.map((item) => item.id);
-
-  //     const toDelete = existingSerialNos.filter(
-  //       (el) => !serialNos.includes(el)
-  //     );
-  //     const toAdd = serialNos.filter((el) => !existingSerialNos.includes(el));
-
-  //     toDelete.forEach((serialNo) => {
-  //       const deleteQuery =
-  //         "DELETE FROM eut_details WHERE serialNo = ? AND jc_number = ?";
-  //       db.query(deleteQuery, [serialNo, jcNumberString], (error, result) => {
-  //         if (error) return res.status(500).json(error.message);
-  //       });
-  //     });
-
-  //     toAdd.forEach((serialNo) => {
-  //       if (serialNo) {
-  //         const insertQuery =
-  //           "INSERT INTO eut_details (jc_number, serialNo) VALUES (?, ?)";
-  //         db.query(insertQuery, [jcNumberString, serialNo], (error, result) => {
-  //           if (error) return res.status(500).json(error.message);
-  //         });
-  //       }
-  //     });
-
-  //     res
-  //       .status(200)
-  //       .json({ message: "eut_details synced successfully", toDelete, toAdd });
-  //   });
-  // });
-
   // To Edit the selected eut_details:
   app.post("/api/eutdetails/", (req, res) => {
     const {
@@ -609,7 +581,6 @@ function jobcardsAPIs(app, io, labbeeUsers) {
       jcNumber,
       serialNo,
     } = req.body;
-    console.log(req.body);
 
     if (serialNo) {
       const sqlQuery = `UPDATE eut_details SET
@@ -837,6 +808,8 @@ function jobcardsAPIs(app, io, labbeeUsers) {
     });
   });
 
+  //////////////////////////////////////////////////////////////////////
+
   // To Insert or delete Test Details based on test name:
   app.post("/api/testdetails_sync/names/", (req, res) => {
     let { testNames, jcNumberString } = req.body;
@@ -871,20 +844,6 @@ function jobcardsAPIs(app, io, labbeeUsers) {
     });
   });
 
-  function convertDateTime(originalTimestamp) {
-    if (!originalTimestamp) {
-      return "";
-    }
-    const dateObject = new Date(originalTimestamp);
-    const year = dateObject.getFullYear();
-    const month = String(dateObject.getMonth() + 1).padStart(2, "0"); // Month is zero-indexed
-    const day = String(dateObject.getDate()).padStart(2, "0");
-    const hours = String(dateObject.getHours()).padStart(2, "0");
-    const minutes = String(dateObject.getMinutes()).padStart(2, "0");
-
-    return `${year}-${month}-${day} ${hours}:${minutes}`;
-  }
-
   //To Edit the selected testdetails:
   app.post("/api/testdetails/", (req, res) => {
     const {
@@ -907,8 +866,10 @@ function jobcardsAPIs(app, io, labbeeUsers) {
       reportStatus,
       jcNumber,
     } = req.body;
-    const formattedStartDate = convertDateTime(startDate);
-    const formattedEndDate = convertDateTime(endDate);
+
+    const formattedStartDate = startDate ? convertDateTime(startDate) : null;
+    const formattedEndDate = endDate ? convertDateTime(endDate) : null;
+    const formattedDuration = duration < 0 ? 0 : duration;
     const sqlQuery = `
         UPDATE tests_details
         SET 
@@ -931,29 +892,29 @@ function jobcardsAPIs(app, io, labbeeUsers) {
         WHERE jc_number = ? AND testName = ?`;
 
     const values = [
-      testChamber,
-      eutSerialNo,
-      standard,
-      testStartedBy,
+      testChamber || "",
+      eutSerialNo || "",
+      standard || "",
+      testStartedBy || "",
       formattedStartDate,
       formattedEndDate,
-      duration,
-      actualTestDuration,
-      unit,
-      testEndedBy,
-      remarks,
-      testReportInstructions,
-      reportNumber,
-      preparedBy,
-      nablUploaded,
-      reportStatus,
-      jcNumber,
-      testName,
+      formattedDuration,
+      actualTestDuration || "",
+      unit || "",
+      testEndedBy || "",
+      remarks || "",
+      testReportInstructions || "",
+      reportNumber || "",
+      preparedBy || "",
+      nablUploaded || "",
+      reportStatus || "",
+      jcNumber || "",
+      testName || "",
     ];
 
-    // console.log(startDate, endDate);
     db.query(sqlQuery, values, (error, result) => {
       if (error) {
+        console.error("Error updating test details:", error);
         return res
           .status(500)
           .json({ message: "Internal server error", error });
@@ -962,6 +923,8 @@ function jobcardsAPIs(app, io, labbeeUsers) {
       }
     });
   });
+
+  ////////////////////////////////////////////////////////////////////////////////////////
 
   //To fetch the jcnumber from the table 'tests_details'
   app.get("/api/gettestdetails", (req, res) => {
