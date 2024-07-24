@@ -64,13 +64,15 @@ const Jobcard = ({ jobCardData }) => {
   const [reliabilityUsers, setReliabilityUsers] = useState([]);
 
   const [dateTimeValue, setDateTimeValue] = useState(null);
-  const [eutRows, setEutRows] = useState([{ id: 0 }]);
-  const [testRows, setTestRows] = useState([{ id: 0 }]);
+  // const [eutRows, setEutRows] = useState([{ id: 0 }]);
+  // const [testRows, setTestRows] = useState([{ id: 0 }]);
+  //const [testdetailsRows, setTestDetailsRows] = useState([{ id: 0 }]);
 
-  // const [testdetailsRows, setTestDetailsRows] = useState([
-  //   { id: 0, startDate: null, endDate: null, duration: 0, testChamber: [] },
-  // ]);
-  const [testdetailsRows, setTestDetailsRows] = useState([{ id: 0 }]);
+  const [eutRows, setEutRows] = useState([{ id: 0, temporary: true }]);
+  const [testRows, setTestRows] = useState([{ id: 0, temporary: true }]);
+  const [testdetailsRows, setTestDetailsRows] = useState([
+    { id: 0, temporary: true },
+  ]);
 
   ////////////////////////
 
@@ -357,70 +359,105 @@ const Jobcard = ({ jobCardData }) => {
 
   // Functions to add and remove the 'EUT Details' table rows on clicking the add and remove icon.
   const handleAddEutRow = () => {
-    if (eutRows.length > 0) {
-      const lastId = eutRows[eutRows.length - 1].id;
-      // console.log(eutRows.length);
-      const newRow = { id: lastId + 1 };
-      setEutRows([...eutRows, newRow]);
-    } else {
-      const newRow = { id: eutRows.length };
-      setEutRows([...eutRows, newRow]);
-    }
+    const lastId = eutRows.length > 0 ? eutRows[eutRows.length - 1].id : -1;
+    const newRow = { id: lastId + 1, temporary: true };
+    setEutRows([...eutRows, newRow]);
   };
 
   const handleRemoveEutRow = (id) => {
     if (window.confirm("Are you sure you want to delete this row?")) {
-      const updatedRows = eutRows.filter((row) => row.id !== id);
-      setEutRows(updatedRows);
+      const rowIndex = eutRows.findIndex((row) => row.id === id);
+
+      if (rowIndex === -1) {
+        console.error(`Row with id ${id} not found`);
+        return;
+      }
+
+      if (eutRows[rowIndex].temporary) {
+        const updatedRows = eutRows.filter((row) => row.id !== id);
+        setEutRows(updatedRows);
+      } else {
+        axios
+          .delete(`${serverBaseAddress}/api/eutdetails/${id}`)
+          .then((res) => {
+            if (res.status === 200) {
+              const updatedRows = eutRows.filter((row) => row.id !== id);
+              setEutRows(updatedRows);
+            }
+          })
+          .catch((error) => console.log(error));
+      }
     }
   };
 
   // Functions to add and remove the 'Tests' table rows on clicking the add and remove icon.
   const handleAddTestRow = () => {
-    if (testRows.length > 0) {
-      const lastId = testRows[testRows.length - 1].id;
-      const newRow = { id: lastId + 1 };
-      setTestRows([...testRows, newRow]);
-    } else {
-      const newRow = { id: testRows.length };
-      setTestRows([...testRows, newRow]);
-    }
+    const lastId = testRows.length > 0 ? testRows[testRows.length - 1].id : -1;
+    const newRow = { id: lastId + 1, temporary: true };
+    setTestRows([...testRows, newRow]);
   };
 
   const handleRemoveTestRow = (id) => {
     if (window.confirm("Are you sure you want to delete this row?")) {
-      const updatedRows = testRows.filter((row) => row.id !== id);
-      setTestRows(updatedRows);
+      const rowIndex = testRows.findIndex((row) => row.id === id);
+
+      if (rowIndex === -1) {
+        console.error(`Row with id ${id} not found`);
+        return;
+      }
+
+      if (testRows[rowIndex].temporary) {
+        const updatedRows = testRows.filter((row) => row.id !== id);
+        setTestRows(updatedRows);
+      } else {
+        axios
+          .delete(`${serverBaseAddress}/api/tests/${id}`)
+          .then((res) => {
+            if (res.status === 200) {
+              const updatedRows = testRows.filter((row) => row.id !== id);
+              setTestRows(updatedRows);
+            }
+          })
+          .catch((error) => console.log(error));
+      }
     }
   };
 
   // Functions to add and remove the 'Test Details' table rows on clicking the add and remove icon.
   const handleAddTestDetailsRow = () => {
-    let newRow = {};
-    if (testdetailsRows.length > 0) {
-      const lastId = testdetailsRows[testdetailsRows.length - 1].id;
-      newRow = {
-        id: lastId + 1,
-        startDate: null,
-        endDate: null,
-        duration: 0,
-      };
-      setTestDetailsRows([...testdetailsRows, newRow]);
-    } else {
-      newRow = {
-        id: 0,
-        startDate: null,
-        endDate: null,
-        duration: 0,
-      };
-    }
+    const lastId =
+      testdetailsRows.length > 0
+        ? testdetailsRows[testdetailsRows.length - 1].id
+        : -1;
+    const newRow = { id: lastId + 1, temporary: true };
     setTestDetailsRows([...testdetailsRows, newRow]);
   };
 
   const handleRemoveTestDetailsRow = (id) => {
     if (window.confirm("Are you sure you want to delete this row?")) {
-      const updatedRows = testdetailsRows.filter((row) => row.id !== id);
-      setTestDetailsRows(updatedRows);
+      const rowIndex = testdetailsRows.findIndex((row) => row.id === id);
+
+      if (rowIndex === -1) {
+        console.error(`Row with id ${id} not found`);
+        return;
+      }
+
+      if (testdetailsRows[rowIndex].temporary) {
+        const updatedRows = testdetailsRows.filter((row) => row.id !== id);
+        setTestDetailsRows(updatedRows);
+      } else {
+        axios
+          .delete(`${serverBaseAddress}/api/testdetails/${id}`)
+          .then((res) => {
+            if (res.status === 200) {
+              const updatedRows = testdetailsRows.filter(
+                (row) => row.id !== id
+              );
+              setTestDetailsRows(updatedRows);
+            }
+          })
+          .catch((error) => console.log(error));
+      }
     }
   };
 
@@ -547,6 +584,7 @@ const Jobcard = ({ jobCardData }) => {
       if (jcCategory === "TS1") {
         const eutdetailsdata = (i) => {
           return {
+            eutRowId: eutRows[i].id,
             nomenclature: eutRows[i].nomenclature || "",
             eutDescription: eutRows[i].eutDescription || "",
             qty: eutRows[i].qty || "",
@@ -557,23 +595,30 @@ const Jobcard = ({ jobCardData }) => {
           };
         };
 
-        // First we should send all the serial numbers. (so that they can be inserted or deleted)
-        const serialNos = eutRows.map((item) => item.serialNo || "");
+        // First, we send all the row IDs.
+        const eutRowIds = eutRows.map((row) => row.id);
 
-        // Check if any serial number is empty or null
-        const missingSerialNumber = serialNos.some((serialNo) => !serialNo);
-
-        if (missingSerialNumber) {
-          toast.warning("Please enter EUT/DUT Serial Numbers");
-          return;
-        }
         axios
           .post(`${serverBaseAddress}/api/eutdetails/serialNos/`, {
             jcNumberString,
-            serialNos,
+            eutRowIds,
           })
           .then((res) => {
-            eutRows.map((row, index) => {
+            const { newIds } = res.data;
+
+            // Update temporary rows with new IDs from the server response
+            const updatedRows = [...eutRows];
+            newIds.forEach((id, index) => {
+              const tempIndex = updatedRows.findIndex((row) => row.temporary);
+              if (tempIndex !== -1) {
+                updatedRows[tempIndex].id = id;
+                updatedRows[tempIndex].temporary = false;
+              }
+            });
+
+            setEutRows(updatedRows);
+
+            updatedRows.forEach((row, index) => {
               axios
                 .post(
                   `${serverBaseAddress}/api/eutdetails/`,
@@ -581,6 +626,7 @@ const Jobcard = ({ jobCardData }) => {
                 )
                 .then((res) => {
                   if (res.status === 200) {
+                    console.log(`Row ${index} saved successfully`);
                   }
                 })
                 .catch((error) => console.log(error));
@@ -591,6 +637,7 @@ const Jobcard = ({ jobCardData }) => {
         // Function to extract tests data based on the index
         const testsdata = (i) => {
           return {
+            testId: testRows[i].id,
             test: testRows[i].test,
             nabl: testRows[i].nabl,
             testStandard: testRows[i].testStandard,
@@ -600,11 +647,11 @@ const Jobcard = ({ jobCardData }) => {
         };
 
         // first sync tests (add or delete) based on test name
-        const tests = testRows.map((item) => item.test);
+        const testRowIds = testRows.map((row) => row.id);
         axios
           .post(`${serverBaseAddress}/api/tests_sync/names/`, {
             jcNumberString,
-            tests,
+            testRowIds,
           })
           .then(() => {
             // Iterating over testRows using map to submit data to the server
@@ -623,6 +670,7 @@ const Jobcard = ({ jobCardData }) => {
         // Function to extract test details based on the index
         const testdetailsdata = (i) => {
           return {
+            testDetailRowId: testdetailsRows[i].id,
             testName: testdetailsRows[i].testName,
             testChamber: testdetailsRows[i].testChamber,
             eutSerialNo: testdetailsRows[i].eutSerialNo,
@@ -654,13 +702,13 @@ const Jobcard = ({ jobCardData }) => {
           };
         };
 
-        const testNames = testdetailsRows.map((item) => item.testName);
+        const testDetailsRowIds = testdetailsRows.map((row) => row.id);
         axios
           .post(`${serverBaseAddress}/api/testdetails_sync/names/`, {
             jcNumberString,
-            testNames,
+            testDetailsRowIds,
           })
-          .then((res) => {
+          .then(() => {
             testdetailsRows.map((row, index) => {
               axios
                 .post(
@@ -669,6 +717,7 @@ const Jobcard = ({ jobCardData }) => {
                 )
                 .then((res) => {
                   if (res.status === 200) {
+                    console.log("Test details updated successfully");
                   }
                 })
                 .catch((error) => console.log(error));
@@ -2033,6 +2082,7 @@ const Jobcard = ({ jobCardData }) => {
                                 <TextField
                                   style={{ align: "center" }}
                                   variant="outlined"
+                                  type="number"
                                   value={row.actualTestDuration || ""}
                                   onChange={(e) =>
                                     handleTestDetailsRowChange(
@@ -2333,7 +2383,8 @@ const Jobcard = ({ jobCardData }) => {
                 </Grid>
               )}
 
-              {jcStatus === "Close" && (
+              {/* {(jcStatus === "Closed" || jcStatus === "Test Completed") && ( */}
+              {jcStatus === "Closed" && (
                 <Grid item xs={12} md={6}>
                   <LocalizationProvider dateAdapter={AdapterDayjs}>
                     <DatePicker

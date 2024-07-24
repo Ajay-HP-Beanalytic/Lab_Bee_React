@@ -522,99 +522,166 @@ function jobcardsAPIs(app, io, labbeeUsers) {
     });
   });
 
-  // To delete the eut_details  from the table:
-  app.delete("/api/geteutdetails/:jc_number", (req, res) => {
-    const jcnumber = req.params.jc_number;
-    const deleteQuery = "DELETE FROM eut_details WHERE jc_number = ?";
+  // To Insert or delete EUTDetails:
+  app.post("/api/eutdetails/serialNos/", (req, res) => {
+    let { eutRowIds, jcNumberString } = req.body;
 
-    db.query(deleteQuery, [jcnumber], (error, result) => {
-      if (error) {
-        return res
-          .status(500)
-          .json({ error: "An error occurred while deleting the module" });
+    let sqlQuery = "SELECT id FROM eut_details WHERE jc_number=?";
+    db.query(sqlQuery, [jcNumberString], async (error, result) => {
+      if (error) return res.status(500).json(error.message);
+
+      let existingIds = result.map((item) => item.id);
+      let toDelete = existingIds.filter((id) => !eutRowIds.includes(id));
+      let toAddCount = eutRowIds.length - existingIds.length;
+
+      try {
+        // Delete rows
+        await Promise.all(
+          toDelete.map((id) => {
+            return new Promise((resolve, reject) => {
+              sqlQuery = "DELETE FROM eut_details WHERE id=?";
+              db.query(sqlQuery, [id], (error) => {
+                if (error) return reject(error);
+                resolve();
+              });
+            });
+          })
+        );
+
+        // Add new rows
+        const newIds = [];
+        for (let i = 0; i < toAddCount; i++) {
+          await new Promise((resolve, reject) => {
+            sqlQuery = "INSERT INTO eut_details (jc_number) VALUES (?)";
+            db.query(sqlQuery, [jcNumberString], (error, result) => {
+              if (error) return reject(error);
+              newIds.push(result.insertId);
+              resolve();
+            });
+          });
+        }
+
+        res.status(200).json({
+          message: "eut_details synced successfully",
+          toDelete,
+          newIds,
+        });
+      } catch (error) {
+        res.status(500).json({ message: "Internal server error", error });
       }
-      res.status(200).json({ message: "eutdetails data deleted successfully" });
     });
   });
 
-  // To Insert or delete EUTDetails:
-  app.post("/api/eutdetails/serialNos/", (req, res) => {
-    let { serialNos, jcNumberString } = req.body;
-    let sqlQuery = "SELECT serialNo FROM eut_details WHERE jc_number=?";
-    db.query(sqlQuery, [jcNumberString], (error, result) => {
-      if (error) return res.status(500).json(error.message);
-      let newResult = result.map((item) => item.serialNo);
-      let toDelete = newResult.filter(function (el) {
-        return !serialNos.includes(el);
-      });
-      let toAdd = serialNos.filter(function (el) {
-        return !newResult.includes(el);
-      });
-      toDelete.forEach((serialNo) => {
-        sqlQuery = "DELETE FROM eut_details WHERE serialNo=? AND jc_number=?";
-        db.query(sqlQuery, [serialNo, jcNumberString], (error, result) => {
-          if (error) return res.status(500).json(error.message);
-        });
-      });
-      toAdd.forEach((serialNo) => {
-        sqlQuery = "INSERT INTO eut_details (jc_number,serialNo) VALUES (?,?)";
-        if (serialNo) {
-          db.query(sqlQuery, [jcNumberString, serialNo], (error, result) => {
-            if (error) return res.status(500).json(error.message);
-          });
-        }
-      });
-      res
-        .status(200)
-        .json({ message: `eut_details synced successfully`, toDelete, toAdd });
+  // To Delete the selected eut_details row:
+  app.delete("/api/eutdetails/:id", (req, res) => {
+    const id = req.params.id;
+
+    let sqlQuery = "DELETE FROM eut_details WHERE id=?";
+    db.query(sqlQuery, [id], (error, result) => {
+      if (error) return res.status(500).json({ message: error.message });
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ message: "Row not found" });
+      }
+      res.status(200).json({ message: "Row deleted successfully" });
     });
   });
 
   // To Edit the selected eut_details:
   app.post("/api/eutdetails/", (req, res) => {
     const {
+      eutRowId,
       nomenclature,
       eutDescription,
       qty,
       partNo,
       modelNo,
-      jcNumber,
       serialNo,
+      jcNumber,
     } = req.body;
 
-    if (serialNo) {
-      const sqlQuery = `UPDATE eut_details SET
-                nomenclature = ?,
-                eutDescription = ?,
-                qty = ?,
-                partNo = ?,
-                modelNo = ?
-                WHERE jc_number=? AND serialNo=?`;
+    if (eutRowId !== undefined) {
+      // Check if the row exists with the given jcNumber and eutRowId
+      const checkIfExistsQuery =
+        "SELECT id FROM eut_details WHERE jc_number=? AND id=?";
+      db.query(
+        checkIfExistsQuery,
+        [jcNumber, eutRowId],
+        (checkError, checkResult) => {
+          if (checkError) {
+            return res
+              .status(500)
+              .json({ message: "Internal server error", error: checkError });
+          }
 
-      // Use an array to provide values for placeholders in the query
-      const values = [
-        nomenclature,
-        eutDescription,
-        qty,
-        partNo,
-        modelNo,
-        jcNumber,
-        serialNo,
-      ];
+          if (checkResult.length > 0) {
+            // Row exists, so update it
+            const updateQuery = `UPDATE eut_details SET
+                    nomenclature = ?,
+                    eutDescription = ?,
+                    qty = ?,
+                    partNo = ?,
+                    modelNo = ?,
+                    serialNo = ?
+                    WHERE jc_number=? AND id=?`;
 
-      db.query(sqlQuery, values, (error, result) => {
-        if (error) {
-          return res
-            .status(500)
-            .json({ message: "Internal server error", error });
-        } else {
-          res
-            .status(200)
-            .json({ message: "eut_details updated successfully", result });
+            const updateValues = [
+              nomenclature,
+              eutDescription,
+              qty,
+              partNo,
+              modelNo,
+              serialNo,
+              jcNumber,
+              eutRowId,
+            ];
+
+            db.query(updateQuery, updateValues, (updateError, updateResult) => {
+              if (updateError) {
+                return res.status(500).json({
+                  message: "Internal server error",
+                  error: updateError,
+                });
+              } else {
+                return res.status(200).json({
+                  message: "eut_details updated successfully",
+                  result: updateResult,
+                });
+              }
+            });
+          } else {
+            // Row does not exist, so insert it
+            const insertQuery = `INSERT INTO eut_details (nomenclature, eutDescription, qty, partNo, modelNo, serialNo, jc_number)
+                                     VALUES (?, ?, ?, ?, ?, ?, ?)`;
+
+            const insertValues = [
+              nomenclature,
+              eutDescription,
+              qty,
+              partNo,
+              modelNo,
+              serialNo,
+              jcNumber,
+            ];
+
+            db.query(insertQuery, insertValues, (insertError, insertResult) => {
+              if (insertError) {
+                return res.status(500).json({
+                  message: "Internal server error",
+                  error: insertError,
+                });
+              } else {
+                return res.status(200).json({
+                  message: "eut_details inserted successfully",
+                  result: insertResult,
+                  insertedId: insertResult.insertId,
+                });
+              }
+            });
+          }
         }
-      });
+      );
     } else {
-      res.status(400).json({ message: "Serial number is required" });
+      res.status(400).json({ message: "Row ID is required" });
     }
   });
 
@@ -662,78 +729,135 @@ function jobcardsAPIs(app, io, labbeeUsers) {
   //     });
   // });
 
-  // To delete the tests from the table:
-  app.delete("/api/gettests/:jc_number", (req, res) => {
-    const jcNumber = req.params.jc_number;
-    const deleteQuery = "DELETE FROM jc_tests WHERE jc_number = ?";
+  // To Delete the selected eut_details row:
+  app.delete("/api/tests/:id", (req, res) => {
+    const id = req.params.id;
 
-    db.query(deleteQuery, [jcNumber], (error, result) => {
-      if (error) {
-        return res
-          .status(500)
-          .json({ error: "An error occurred while deleting the module" });
+    let sqlQuery = "DELETE FROM jc_tests WHERE id=?";
+    db.query(sqlQuery, [id], (error, result) => {
+      if (error) return res.status(500).json({ message: error.message });
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ message: "Row not found" });
       }
-      res.status(200).json({ message: "tests data deleted successfully" });
+      res.status(200).json({ message: "JC Tests Row deleted successfully" });
     });
   });
 
   // To Insert or delete Tests based on test name:
   app.post("/api/tests_sync/names/", (req, res) => {
-    let { tests, jcNumberString } = req.body;
-    let sqlQuery = "SELECT test FROM jc_tests WHERE jc_number=?";
+    let { testRowIds, jcNumberString } = req.body;
+
+    let sqlQuery = "SELECT id FROM jc_tests WHERE jc_number=?";
     db.query(sqlQuery, [jcNumberString], (error, result) => {
       if (error) return res.status(500).json(error.message);
-      let newResult = result.map((item) => item.test);
-      let toDelete = newResult.filter(function (el) {
-        return !tests.includes(el);
-      });
-      let toAdd = tests.filter(function (el) {
-        return !newResult.includes(el);
-      });
-      toDelete.forEach((test) => {
-        sqlQuery = "DELETE FROM jc_tests WHERE test=? AND jc_number=?";
-        db.query(sqlQuery, [test, jcNumberString], (error, result) => {
+
+      let existingIds = result.map((item) => item.id);
+      let toDelete = existingIds.filter((id) => !testRowIds.includes(id));
+      let toAddCount = testRowIds.length - existingIds.length;
+
+      // Delete rows
+      toDelete.forEach((id) => {
+        sqlQuery = "DELETE FROM jc_tests WHERE id=?";
+        db.query(sqlQuery, [id], (error) => {
           if (error) return res.status(500).json(error.message);
         });
       });
-      toAdd.forEach((test) => {
-        sqlQuery = "INSERT INTO jc_tests (jc_number,test) VALUES (?,?)";
-        if (test) {
-          db.query(sqlQuery, [jcNumberString, test], (error, result) => {
-            if (error) return res.status(500).json(error.message);
-          });
-        }
-      });
-      res
-        .status(200)
-        .json({ message: `tests synced successfully`, toDelete, toAdd });
+
+      // Add new rows
+      for (let i = 0; i < toAddCount; i++) {
+        sqlQuery = "INSERT INTO jc_tests (jc_number) VALUES (?)";
+        db.query(sqlQuery, [jcNumberString], (error, result) => {
+          if (error) return res.status(500).json(error.message);
+        });
+      }
+
+      res.status(200).json({ message: "tests synced successfully", toDelete });
     });
   });
 
   // To Edit the selected tests:
   app.post("/api/tests/", (req, res) => {
-    const { test, nabl, testStandard, testProfile, jcNumber } = req.body;
+    const { testId, test, nabl, testStandard, testProfile, jcNumber } =
+      req.body;
 
-    const sqlQuery = `
-        UPDATE jc_tests
-        SET
-          nabl = ?, 
-          testStandard = ?, 
-          testProfile = ? 
-        WHERE jc_number = ? AND test = ?`;
+    if (testId !== undefined) {
+      const checkIfExistsQuery =
+        "SELECT id FROM jc_tests WHERE jc_number=? AND id=?";
+      db.query(
+        checkIfExistsQuery,
+        [jcNumber, testId],
+        (checkError, checkResult) => {
+          if (checkError) {
+            return res
+              .status(500)
+              .json({ message: "Internal server error", error: checkError });
+          }
 
-    const values = [nabl, testStandard, testProfile, jcNumber, test];
+          if (checkResult.length > 0) {
+            // Row exists, so update it
+            const updateQuery = `
+                    UPDATE jc_tests
+                    SET
+                        test = ?, 
+                        nabl = ?, 
+                        testStandard = ?, 
+                        testProfile = ?
+                    WHERE jc_number = ? AND id = ?`;
+            const updateValues = [
+              test,
+              nabl,
+              testStandard,
+              testProfile,
+              jcNumber,
+              testId,
+            ];
 
-    db.query(sqlQuery, values, (error, result) => {
-      if (error) {
-        console.log(error);
-        return res
-          .status(500)
-          .json({ message: "Internal server error", result });
-      } else {
-        res.status(200).json({ message: "tests updated successfully" });
-      }
-    });
+            db.query(updateQuery, updateValues, (updateError, updateResult) => {
+              if (updateError) {
+                return res.status(500).json({
+                  message: "Internal server error",
+                  error: updateError,
+                });
+              } else {
+                return res.status(200).json({
+                  message: "Test updated successfully",
+                  result: updateResult,
+                });
+              }
+            });
+          } else {
+            // Row does not exist, so insert it
+            const insertQuery = `
+                    INSERT INTO jc_tests (test, nabl, testStandard, testProfile, jc_number)
+                    VALUES (?, ?, ?, ?, ?)`;
+            const insertValues = [
+              test,
+              nabl,
+              testStandard,
+              testProfile,
+              jcNumber,
+            ];
+
+            db.query(insertQuery, insertValues, (insertError, insertResult) => {
+              if (insertError) {
+                return res.status(500).json({
+                  message: "Internal server error",
+                  error: insertError,
+                });
+              } else {
+                return res.status(200).json({
+                  message: "Test inserted successfully",
+                  result: insertResult,
+                  insertedId: insertResult.insertId,
+                });
+              }
+            });
+          }
+        }
+      );
+    } else {
+      res.status(400).json({ message: "Row ID is required" });
+    }
   });
 
   // To fetch the jcnumber from the table 'tests'
@@ -764,47 +888,20 @@ function jobcardsAPIs(app, io, labbeeUsers) {
     });
   });
 
-  // To add new testdetails to the database:
-  // app.post('/api/testdetails', (req, res) => {
-  //     const { jcNumber, testName, testChamber, eutSerialNo, standard, testStartedBy, startDate, endDate, duration, testEndedBy, remarks, reportNumber, preparedBy, nablUploaded, reportStatus } = req.body;
+  // To Delete the selected eut_details row:
+  app.delete("/api/testdetails/:id", (req, res) => {
+    const id = req.params.id;
 
-  //     // Parse the date using moment.js
-  //     // const formattedstartDate = moment(startDate, 'DD/MM/YYYY', true).format('%Y-%m-%d %H:%i:%s');
-  //     const formattedstartDate = dayjs(startDate, 'YYYY-MM-DD HH:mm:ss').format('YYYY-MM-DD HH:mm:ss');
-  //     const formattedendDate = dayjs(endDate, 'YYYY-MM-DD HH:mm:ss').format('YYYY-MM-DD HH:mm:ss');
-  //     // const formattedendDate = moment(endDate, 'DD/MM/YYYY', true).format('%Y-%m-%d %H:%i:%s');
-  //     // const formattedDuration = `${hours}:${minutes}:${seconds}`;
-
-  //     const sql = `INSERT INTO tests_details (jc_number, testName, testChamber, eutSerialNo, standard, testStartedBy, startDate, endDate, duration, testEndedBy, remarks, reportNumber, preparedBy, nablUploaded, reportStatus) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`;
-
-  //     // console.log('SQL Query:', sql);
-  //     // console.log('Query Values:', [jcNumber, test, chamber, eutSerialNo, standard, testStartedBy, startDate, endDate, duration, testEndedBy, remarks, reportNumber, preparedBy, nablUploaded, reportStatus]);
-
-  //     db.query(sql, [jcNumber, testName, testChamber, eutSerialNo, standard, testStartedBy, formattedstartDate, formattedendDate, duration, testEndedBy, remarks, reportNumber, preparedBy, nablUploaded, reportStatus], (error, result) => {
-  //         if (error) {
-  //             console.log(error);
-  //             return res.status(500).json({ message: 'Internal server error' });
-  //         } else {
-  //             return res.status(200).json({ message: 'testdetails added successfully' });
-  //         }
-
-  //     });
-  // });
-
-  //To delete the testdetails from the table:
-  app.delete("/api/gettestdetails/:jc_number", (req, res) => {
-    const jcnumber = req.params.jc_number;
-    const deleteQuery = "DELETE FROM tests_details WHERE jc_number = ?";
-
-    db.query(deleteQuery, [jcnumber], (error, result) => {
+    let sqlQuery = "DELETE FROM tests_details WHERE id=?";
+    db.query(sqlQuery, [id], (error, result) => {
       if (error) {
-        return res
-          .status(500)
-          .json({ error: "An error occurred while deleting the module" });
+        console.error("Error deleting test detail:", error);
+        return res.status(500).json({ message: error.message });
+      } else {
+        res
+          .status(200)
+          .json({ message: "JC Test Details Row deleted successfully" });
       }
-      res
-        .status(200)
-        .json({ message: "testdetails data deleted successfully" });
     });
   });
 
@@ -812,41 +909,44 @@ function jobcardsAPIs(app, io, labbeeUsers) {
 
   // To Insert or delete Test Details based on test name:
   app.post("/api/testdetails_sync/names/", (req, res) => {
-    let { testNames, jcNumberString } = req.body;
-    let sqlQuery = "SELECT testName FROM tests_details WHERE jc_number=?";
+    let { testDetailsRowIds, jcNumberString } = req.body;
+
+    let sqlQuery = "SELECT id FROM tests_details WHERE jc_number=?";
     db.query(sqlQuery, [jcNumberString], (error, result) => {
       if (error) return res.status(500).json(error.message);
-      let newResult = result.map((item) => item.testName);
-      let toDelete = newResult.filter(function (el) {
-        return !testNames.includes(el);
-      });
-      let toAdd = testNames.filter(function (el) {
-        return !newResult.includes(el);
-      });
-      toDelete.forEach((test) => {
-        sqlQuery = "DELETE FROM tests_details WHERE testName=? AND jc_number=?";
-        db.query(sqlQuery, [test, jcNumberString], (error, result) => {
+
+      let existingIds = result.map((item) => item.id);
+      let toDelete = existingIds.filter(
+        (id) => !testDetailsRowIds.includes(id)
+      );
+      let toAddCount = testDetailsRowIds.length - existingIds.length;
+
+      // Delete rows
+      toDelete.forEach((id) => {
+        sqlQuery = "DELETE FROM tests_details WHERE id=?";
+        db.query(sqlQuery, [id], (error) => {
           if (error) return res.status(500).json(error.message);
         });
       });
-      toAdd.forEach((test) => {
-        sqlQuery =
-          "INSERT INTO tests_details (jc_number,testName) VALUES (?,?)";
-        if (test) {
-          db.query(sqlQuery, [jcNumberString, test], (error, result) => {
-            if (error) return res.status(500).json(error.message);
-          });
-        }
-      });
+
+      // Add new rows
+      for (let i = 0; i < toAddCount; i++) {
+        sqlQuery = "INSERT INTO tests_details (jc_number) VALUES (?)";
+        db.query(sqlQuery, [jcNumberString], (error, result) => {
+          if (error) return res.status(500).json(error.message);
+        });
+      }
+
       res
         .status(200)
-        .json({ message: `tests synced successfully`, toDelete, toAdd });
+        .json({ message: "test details synced successfully", toDelete });
     });
   });
 
   //To Edit the selected testdetails:
   app.post("/api/testdetails/", (req, res) => {
     const {
+      testDetailRowId,
       testName,
       testChamber,
       eutSerialNo,
@@ -870,28 +970,53 @@ function jobcardsAPIs(app, io, labbeeUsers) {
     const formattedStartDate = startDate ? convertDateTime(startDate) : null;
     const formattedEndDate = endDate ? convertDateTime(endDate) : null;
     const formattedDuration = duration < 0 ? 0 : duration;
-    const sqlQuery = `
-        UPDATE tests_details
-        SET 
-          testChamber = ?, 
-          eutSerialNo = ?, 
-          standard = ? ,
-          testStartedBy = ? ,
-          startDate = ? ,
-          endDate = ? ,
-          duration = ? ,
-          actualTestDuration = ? ,
-          unit =?,
-          testEndedBy = ? ,
-          remarks = ? ,
-          testReportInstructions = ? ,
-          reportNumber = ? ,
-          preparedBy = ? ,
-          nablUploaded = ? ,
-          reportStatus = ? 
-        WHERE jc_number = ? AND testName = ?`;
 
-    const values = [
+    const sqlUpdateQuery = `
+      UPDATE tests_details
+      SET 
+        testName = ?,
+        testChamber = ?, 
+        eutSerialNo = ?, 
+        standard = ?, 
+        testStartedBy = ?, 
+        startDate = ?, 
+        endDate = ?, 
+        duration = ?, 
+        actualTestDuration = ?, 
+        unit = ?, 
+        testEndedBy = ?, 
+        remarks = ?, 
+        testReportInstructions = ?, 
+        reportNumber = ?, 
+        preparedBy = ?, 
+        nablUploaded = ?, 
+        reportStatus = ? 
+      WHERE jc_number = ? AND id = ?`;
+
+    const sqlInsertQuery = `
+      INSERT INTO tests_details (
+        testName,
+        testChamber, 
+        eutSerialNo, 
+        standard, 
+        testStartedBy, 
+        startDate, 
+        endDate, 
+        duration, 
+        actualTestDuration, 
+        unit, 
+        testEndedBy, 
+        remarks, 
+        testReportInstructions, 
+        reportNumber, 
+        preparedBy, 
+        nablUploaded, 
+        reportStatus, 
+        jc_number
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+
+    const updateValues = [
+      testName || "",
       testChamber || "",
       eutSerialNo || "",
       standard || "",
@@ -908,18 +1033,56 @@ function jobcardsAPIs(app, io, labbeeUsers) {
       preparedBy || "",
       nablUploaded || "",
       reportStatus || "",
-      jcNumber || "",
-      testName || "",
+      jcNumber,
+      testDetailRowId,
     ];
 
-    db.query(sqlQuery, values, (error, result) => {
+    const insertValues = [
+      testName || "",
+      testChamber || "",
+      eutSerialNo || "",
+      standard || "",
+      testStartedBy || "",
+      formattedStartDate,
+      formattedEndDate,
+      formattedDuration,
+      actualTestDuration || "",
+      unit || "",
+      testEndedBy || "",
+      remarks || "",
+      testReportInstructions || "",
+      reportNumber || "",
+      preparedBy || "",
+      nablUploaded || "",
+      reportStatus || "",
+      jcNumber,
+    ];
+
+    db.query(sqlUpdateQuery, updateValues, (error, result) => {
       if (error) {
         console.error("Error updating test details:", error);
         return res
           .status(500)
           .json({ message: "Internal server error", error });
       } else {
-        res.status(200).json({ message: "tests_details updated successfully" });
+        if (result.affectedRows === 0) {
+          db.query(sqlInsertQuery, insertValues, (error, result) => {
+            if (error) {
+              console.error("Error inserting test details:", error);
+              return res
+                .status(500)
+                .json({ message: "Internal server error", error });
+            } else {
+              res
+                .status(200)
+                .json({ message: "tests_details inserted successfully" });
+            }
+          });
+        } else {
+          res
+            .status(200)
+            .json({ message: "tests_details updated successfully" });
+        }
       }
     });
   });

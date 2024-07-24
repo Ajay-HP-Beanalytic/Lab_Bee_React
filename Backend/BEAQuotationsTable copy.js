@@ -4,7 +4,7 @@ const { db } = require("./db");
 
 function mainQuotationsTableAPIs(app, io, labbeeUsers) {
   // To store the table data in the 'bea_quotations_table' table:
-  app.post("/api/quotation", async (req, res) => {
+  app.post("/api/quotation", (req, res) => {
     const {
       quotationIdString,
       companyName,
@@ -24,19 +24,7 @@ function mainQuotationsTableAPIs(app, io, labbeeUsers) {
     } = req.body;
     const formattedDate = new Date(selectedDate);
 
-    // const sqlCheckQuoteId =
-    //   "SELECT * FROM bea_quotations_table WHERE quotation_ids=?";
-
-    // db.query(sqlCheckQuoteId, [quotationIdString], (error, result) => {
-    //   if (error) {
-    //     console.error("Error checking quotation ID:", error);
-    //     return res.status(500).json({ message: "Internal server error" });
-    //   }
-
-    //   if (result.length > 0) {
-    //     return res.status(400).json({ message: "Quotation already exists" });
-    //   }
-    // });
+    console.log(quotationIdString, quoteCategory);
 
     const sql =
       "INSERT INTO bea_quotations_table(quotation_ids, company_name, company_address, quote_given_date, customer_id, customer_referance, kind_attention, project_name, quote_category, quote_version, total_amount, total_taxable_amount_in_words, quote_created_by, tests) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
