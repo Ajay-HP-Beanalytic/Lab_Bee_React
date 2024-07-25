@@ -573,7 +573,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
   });
 
   // To Delete the selected eut_details row:
-  app.delete("/api/eutdetails/:id", (req, res) => {
+  app.delete("/api/deleteEutTableRows/:id", (req, res) => {
     const id = req.params.id;
 
     let sqlQuery = "DELETE FROM eut_details WHERE id=?";
@@ -685,52 +685,10 @@ function jobcardsAPIs(app, io, labbeeUsers) {
     }
   });
 
-  // To fetch the jcnumber from the table 'eut_details'
-  app.get("/api/geteutdetails", (req, res) => {
-    const sqlQuery = `SELECT jc_number FROM eut_details`;
-    db.query(sqlQuery, (error, result) => {
-      if (error) {
-        return res
-          .status(500)
-          .json({ error: "An error occurred while fetching data" });
-      }
-      res.send(result);
-    });
-  });
-
-  // To fetch the data based on the jcnumber from the table 'eut_details'
-  app.get("/api/geteutdetailslist/:jc_number", (req, res) => {
-    const jcNumber = req.params.jc_number;
-    const sqlQuery = `SELECT nomenclature, eutDescription, qty, partNo, modelNo, serialNo FROM eut_details WHERE jc_number = ?`;
-
-    db.query(sqlQuery, [jcNumber], (error, result) => {
-      if (error) {
-        return res
-          .status(500)
-          .json({ error: "An error occurred while fetching data" });
-      }
-      res.send(result);
-    });
-  });
-
-  // To add new tests to the database:
-  // app.post('/api/tests', (req, res) => {
-  //     const { jcNumber, test, nabl, testStandard, referenceDocument } = req.body;
-
-  //     const sql = `INSERT INTO jc_tests (jc_number, test, nabl, testStandard, referenceDocument) VALUES (?,?,?,?,?)`;
-
-  //     db.query(sql, [jcNumber, test, nabl, testStandard, referenceDocument], (error, result) => {
-  //         if (error) {
-  //             console.log(error);
-  //             return res.status(500).json({ message: 'Internal server error', error });
-  //         } else {
-  //             return res.status(200).json({ message: 'tests added successfully' });
-  //         }
-  //     });
-  // });
+  ////////////////////////////////////////////////////////////////////////////////////////////////////
 
   // To Delete the selected eut_details row:
-  app.delete("/api/tests/:id", (req, res) => {
+  app.delete("/api/deleteTestTableRows/:id", (req, res) => {
     const id = req.params.id;
 
     let sqlQuery = "DELETE FROM jc_tests WHERE id=?";
@@ -748,30 +706,48 @@ function jobcardsAPIs(app, io, labbeeUsers) {
     let { testRowIds, jcNumberString } = req.body;
 
     let sqlQuery = "SELECT id FROM jc_tests WHERE jc_number=?";
-    db.query(sqlQuery, [jcNumberString], (error, result) => {
+    db.query(sqlQuery, [jcNumberString], async (error, result) => {
       if (error) return res.status(500).json(error.message);
 
       let existingIds = result.map((item) => item.id);
       let toDelete = existingIds.filter((id) => !testRowIds.includes(id));
       let toAddCount = testRowIds.length - existingIds.length;
 
-      // Delete rows
-      toDelete.forEach((id) => {
-        sqlQuery = "DELETE FROM jc_tests WHERE id=?";
-        db.query(sqlQuery, [id], (error) => {
-          if (error) return res.status(500).json(error.message);
-        });
-      });
+      try {
+        // Delete rows
+        await Promise.all(
+          toDelete.map((id) => {
+            return new Promise((resolve, reject) => {
+              sqlQuery = "DELETE FROM jc_tests WHERE id=?";
+              db.query(sqlQuery, [id], (error) => {
+                if (error) return reject(error);
+                resolve();
+              });
+            });
+          })
+        );
 
-      // Add new rows
-      for (let i = 0; i < toAddCount; i++) {
-        sqlQuery = "INSERT INTO jc_tests (jc_number) VALUES (?)";
-        db.query(sqlQuery, [jcNumberString], (error, result) => {
-          if (error) return res.status(500).json(error.message);
+        // Add new rows
+        const newIds = [];
+        for (let i = 0; i < toAddCount; i++) {
+          await new Promise((resolve, reject) => {
+            sqlQuery = "INSERT INTO jc_tests (jc_number) VALUES (?)";
+            db.query(sqlQuery, [jcNumberString], (error, result) => {
+              if (error) return reject(error);
+              newIds.push(result.insertId);
+              resolve();
+            });
+          });
+        }
+
+        res.status(200).json({
+          message: "tests synced successfully",
+          toDelete,
+          newIds,
         });
+      } catch (error) {
+        res.status(500).json({ message: "Internal server error", error });
       }
-
-      res.status(200).json({ message: "tests synced successfully", toDelete });
     });
   });
 
@@ -860,36 +836,12 @@ function jobcardsAPIs(app, io, labbeeUsers) {
     }
   });
 
-  // To fetch the jcnumber from the table 'tests'
-  app.get("/api/gettests", (req, res) => {
-    const sqlQuery = `SELECT jc_number FROM jc_tests`;
-    db.query(sqlQuery, (error, result) => {
-      if (error) {
-        return res
-          .status(500)
-          .json({ error: "An error occurred while fetching data" });
-      }
-      res.send(result);
-    });
-  });
+  ////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  // To fetch the data based on the jcnumber from the table 'tests'
-  app.get("/api/gettestslist/:jc_number", (req, res) => {
-    const jcNumber = req.params.jc_number;
-    const sqlQuery = `SELECT test, nabl, testStandard, testProfile FROM jc_tests WHERE jc_number = ?`;
+  //////////////////////////////////////////////////////////////////////
 
-    db.query(sqlQuery, [jcNumber], (error, result) => {
-      if (error) {
-        return res
-          .status(500)
-          .json({ error: "An error occurred while fetching data" });
-      }
-      res.send(result);
-    });
-  });
-
-  // To Delete the selected eut_details row:
-  app.delete("/api/testdetails/:id", (req, res) => {
+  // To Delete the selected test_details row:
+  app.delete("/api/deleteTestDetailsTableRows/:id", (req, res) => {
     const id = req.params.id;
 
     let sqlQuery = "DELETE FROM tests_details WHERE id=?";
@@ -905,14 +857,12 @@ function jobcardsAPIs(app, io, labbeeUsers) {
     });
   });
 
-  //////////////////////////////////////////////////////////////////////
-
   // To Insert or delete Test Details based on test name:
-  app.post("/api/testdetails_sync/names/", (req, res) => {
+  app.post("/api/testdetails_sync/names/", async (req, res) => {
     let { testDetailsRowIds, jcNumberString } = req.body;
 
     let sqlQuery = "SELECT id FROM tests_details WHERE jc_number=?";
-    db.query(sqlQuery, [jcNumberString], (error, result) => {
+    db.query(sqlQuery, [jcNumberString], async (error, result) => {
       if (error) return res.status(500).json(error.message);
 
       let existingIds = result.map((item) => item.id);
@@ -921,25 +871,41 @@ function jobcardsAPIs(app, io, labbeeUsers) {
       );
       let toAddCount = testDetailsRowIds.length - existingIds.length;
 
-      // Delete rows
-      toDelete.forEach((id) => {
-        sqlQuery = "DELETE FROM tests_details WHERE id=?";
-        db.query(sqlQuery, [id], (error) => {
-          if (error) return res.status(500).json(error.message);
-        });
-      });
+      try {
+        // Delete rows
+        await Promise.all(
+          toDelete.map((id) => {
+            return new Promise((resolve, reject) => {
+              sqlQuery = "DELETE FROM tests_details WHERE id=?";
+              db.query(sqlQuery, [id], (error) => {
+                if (error) return reject(error);
+                resolve();
+              });
+            });
+          })
+        );
 
-      // Add new rows
-      for (let i = 0; i < toAddCount; i++) {
-        sqlQuery = "INSERT INTO tests_details (jc_number) VALUES (?)";
-        db.query(sqlQuery, [jcNumberString], (error, result) => {
-          if (error) return res.status(500).json(error.message);
+        // Add new rows
+        const newIds = [];
+        for (let i = 0; i < toAddCount; i++) {
+          await new Promise((resolve, reject) => {
+            sqlQuery = "INSERT INTO tests_details (jc_number) VALUES (?)";
+            db.query(sqlQuery, [jcNumberString], (error, result) => {
+              if (error) return reject(error);
+              newIds.push(result.insertId);
+              resolve();
+            });
+          });
+        }
+
+        res.status(200).json({
+          message: "test details synced successfully",
+          toDelete,
+          newIds,
         });
+      } catch (error) {
+        res.status(500).json({ message: "Internal server error", error });
       }
-
-      res
-        .status(200)
-        .json({ message: "test details synced successfully", toDelete });
     });
   });
 
