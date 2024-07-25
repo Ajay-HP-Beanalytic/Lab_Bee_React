@@ -559,13 +559,6 @@ const Jobcard = ({ jobCardData }) => {
       }
     }
 
-    if (jcStatus === "Closed") {
-      if (!jcCloseDate) {
-        toast.warning("Please Enter Job-Card Close Date");
-        return;
-      }
-    }
-
     try {
       await axios.post(api_url, {
         jcNumber: jcNumberString,
@@ -670,24 +663,9 @@ const Jobcard = ({ jobCardData }) => {
             jcNumberString,
             testRowIds,
           })
-          .then((res) => {
-            const { newIds } = res.data;
-
-            // Update temporary rows with new IDs from the server response
-            const updatedRows = [...testRows];
-
-            newIds.forEach((id) => {
-              const tempIndex = updatedRows.findIndex((row) => row.temporary);
-              if (tempIndex !== -1) {
-                updatedRows[tempIndex].id = id;
-                updatedRows[tempIndex].temporary = false;
-              }
-            });
-
-            setTestRows(updatedRows);
-
+          .then(() => {
             // Iterating over testRows using map to submit data to the server
-            updatedRows.map((row, index) => {
+            testRows.map((row, index) => {
               axios
                 .post(`${serverBaseAddress}/api/tests/`, testsdata(index))
                 .then((res) => {
@@ -740,23 +718,8 @@ const Jobcard = ({ jobCardData }) => {
             jcNumberString,
             testDetailsRowIds,
           })
-          .then((res) => {
-            const { newIds } = res.data;
-
-            // Update temporary rows with new IDs from the server response
-            const updatedRows = [...testdetailsRows];
-
-            newIds.forEach((id) => {
-              const tempIndex = updatedRows.findIndex((row) => row.temporary);
-              if (tempIndex !== -1) {
-                updatedRows[tempIndex].id = id;
-                updatedRows[tempIndex].temporary = false;
-              }
-            });
-
-            setTestDetailsRows(updatedRows);
-
-            updatedRows.map((row, index) => {
+          .then(() => {
+            testdetailsRows.map((row, index) => {
               axios
                 .post(
                   `${serverBaseAddress}/api/testdetails/`,

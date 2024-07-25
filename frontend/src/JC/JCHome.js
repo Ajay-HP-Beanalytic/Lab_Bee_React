@@ -858,21 +858,6 @@ export default function JCHome() {
             </Box>
           )}
 
-          {filteredReliabilityJcData.length !== 0 && (
-            <Box sx={{ mt: 2 }}>
-              <Typography variant="h5" color="#003366">
-                {" "}
-                Reliability JC Numbers
-              </Typography>
-
-              {reliabilityJCNumbers.map((jcNumber, index) => (
-                <List>
-                  <ListItem key={index}>{jcNumber}</ListItem>
-                </List>
-              ))}
-            </Box>
-          )}
-
           <Grid container spacing={4} sx={{ padding: { xs: 3, sm: 4 } }}>
             <Grid item xs={12} sm={6} md={6}>
               <Box
@@ -888,6 +873,52 @@ export default function JCHome() {
                   options={optionsForJcStatusPieChart}
                 />
               </Box>
+            </Grid>
+
+            {/* <Grid item xs={12} sm={6} md={6}>
+              {filteredReliabilityJcData.length !== 0 && (
+                <Box sx={{ mt: 2 }}>
+                  <Typography variant="h5" color="#003366">
+                    {" "}
+                    Reliability JC Numbers
+                  </Typography>
+
+                  {reliabilityJCNumbers.map((jcNumber, index) => (
+                    <List sx={{ width: "100%", textAlign: "center" }}>
+                      <ListItem key={index}>{jcNumber}</ListItem>
+                    </List>
+                  ))}
+                </Box>
+              )}
+            </Grid> */}
+
+            <Grid item xs={12} sm={6} md={6}>
+              {filteredReliabilityJcData.length !== 0 && (
+                <Box sx={{ mt: 2 }}>
+                  <Typography variant="h5" color="#003366" align="center">
+                    Reliability JC Numbers
+                  </Typography>
+
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      flexDirection: "column",
+                      mt: 2,
+                    }}
+                  >
+                    {reliabilityJCNumbers.map((jcNumber, index) => (
+                      <List
+                        key={index}
+                        sx={{ width: "100%", textAlign: "center" }}
+                      >
+                        <ListItem>{jcNumber}</ListItem>
+                      </List>
+                    ))}
+                  </Box>
+                </Box>
+              )}
             </Grid>
           </Grid>
         </>
