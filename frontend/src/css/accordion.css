@@ -1,6 +1,8 @@
 /* Custom CSS for Fixed Height Accordion Summary of the JC main accordions */
 .fixed-height-accordion-summary-jc-component {
-  background-color: #47d1d1 !important;
+  /* background-color: #47d1d1 !important; */
+  /* background-color: #b8cce0 !important; */
+  background-color: #60799f !important;
   min-height: 55px !important;
   max-height: 55px !important;
   align-items: center !important;
