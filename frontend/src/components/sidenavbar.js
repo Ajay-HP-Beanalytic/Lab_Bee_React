@@ -380,13 +380,12 @@ export default function SidenavigationBar() {
       <Box
         sx={{ paddingLeft: `${leftmargin}px`, transition: "0.2s ease-in-out" }}
       >
-        {/* <Box> */}
         <CssBaseline />
 
         {/* To cutomize the top header or the app bar */}
         <AppBar
           position="fixed"
-          elevation={4}
+          elevation={1}
           sx={{ backgroundColor: "#0D809D", color: "#2f2f2f", height: "64px" }}
         >
           <Toolbar>
@@ -491,12 +490,10 @@ export default function SidenavigationBar() {
 
         <Box component="main" sx={{ flexGrow: 1, padding: 3 }}>
           <Box
-            height={100}
             sx={{
-              marginTop: "1",
-              marginBottom: "0.5",
-              marginRight: "1",
-              paddingTop: "5",
+              height: 50,
+              marginTop: 0,
+              paddingTop: 0,
             }}
           />
           <Outlet />
