@@ -234,7 +234,7 @@ const AddModulesAndTests = () => {
 
       <Box>
         <Divider>
-          <Typography variant="h4" sx={{ color: "#003366" }}>
+          <Typography variant="h5" sx={{ color: "#003366" }}>
             {" "}
             Add Item Soft Modules And Tests{" "}
           </Typography>
