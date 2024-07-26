@@ -680,7 +680,7 @@ export default function JCHome() {
   const optionsForJcStatusPieChart = {
     responsive: true,
     //maintainAspectRatio: false, // False will keep the size small. If it's true then we can define the size using aspectRatio
-    aspectRatio: 2.5,
+    aspectRatio: 2,
     plugins: {
       legend: {
         position: "top",

@@ -373,9 +373,9 @@ export default function AddCustomerDetails() {
     <div>
       <Box>
         <Divider>
-          <Typography variant="h4" sx={{ color: "#003366" }}>
+          <Typography variant="h5" sx={{ color: "#003366" }}>
             {" "}
-            Add Company Detials{" "}
+            Add Company Details{" "}
           </Typography>
         </Divider>
 

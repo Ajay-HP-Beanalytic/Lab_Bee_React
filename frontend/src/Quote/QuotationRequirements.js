@@ -11,10 +11,7 @@ export default function QuotationRequirements() {
 
   return (
     <>
-      <Typography
-        variant="h4"
-        sx={{ textDecoration: "underline", color: "#003366" }}
-      >
+      <Typography variant="h4" sx={{ color: "#003366" }}>
         {" "}
         Quotation Requirements{" "}
       </Typography>

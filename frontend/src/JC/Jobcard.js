@@ -1028,8 +1028,7 @@ const Jobcard = ({ jobCardData }) => {
                 sx={{
                   fontWeight: "bold",
                   fontStyle: "italic",
-                  color: "blue",
-                  textDecoration: "underline",
+                  color: "#003399",
                 }}
               >
                 JC Number:{" "}

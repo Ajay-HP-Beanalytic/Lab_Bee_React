@@ -365,7 +365,7 @@ export default function ChamberAndCalibration() {
   const optionsForCalibrationStatusPieChart = {
     responsive: true,
     //maintainAspectRatio: false,   // False will keep the size small. If it's true then we can define the size using aspectRatio
-    aspectRatio: 2.5,
+    aspectRatio: 2,
     plugins: {
       legend: {
         position: "top",
@@ -416,7 +416,7 @@ export default function ChamberAndCalibration() {
   const optionsForChamberStatusPieChart = {
     responsive: true,
     //maintainAspectRatio: false,   // False will keep the size small. If it's true then we can define the size using aspectRatio
-    aspectRatio: 2.5,
+    aspectRatio: 2,
     plugins: {
       legend: {
         position: "top",
@@ -676,7 +676,7 @@ export default function ChamberAndCalibration() {
             <Divider>
               <Typography variant="h4" sx={{ color: "#003366" }}>
                 {" "}
-                Chamber and Calibration Data{" "}
+                Chambers and Calibration Data{" "}
               </Typography>
             </Divider>
           </Box>

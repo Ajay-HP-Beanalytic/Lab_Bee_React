@@ -634,8 +634,7 @@ export default function Quotation() {
                 sx={{
                   fontWeight: "bold",
                   fontStyle: "italic",
-                  color: "blue",
-                  textDecoration: "underline",
+                  color: "#003399",
                 }}
               >
                 Quotation ID: {quotationIdString}
