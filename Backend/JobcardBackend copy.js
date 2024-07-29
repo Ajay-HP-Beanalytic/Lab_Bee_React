@@ -1433,14 +1433,11 @@ function jobcardsAPIs(app, io, labbeeUsers) {
         })
         .catch((error) => {
           console.error("Error uploading files:", error);
-          if (!res.headersSent) {
-            res.status(500).send("Internal server error.");
-          }
+          res.status(500).send("Internal server error.");
         });
     }
   );
 
-  //To remove or delete the file
   app.delete("/api/deleteFile/:id", (req, res) => {
     const fileId = req.params.id;
 
@@ -1463,21 +1460,15 @@ function jobcardsAPIs(app, io, labbeeUsers) {
       db.query(sqlDeleteFile, [fileId], (error) => {
         if (error) {
           console.error("Error deleting file record from database:", error);
-          if (!res.headersSent) {
-            return res.status(500).json({ error });
-          }
-          return;
+          return res.status(500).json({ error });
         }
 
         fs.unlink(filePath, (err) => {
           if (err) {
             console.error("Error deleting file from filesystem:", err);
-            if (!res.headersSent) {
-              return res
-                .status(500)
-                .json({ error: "Error deleting file from filesystem" });
-            }
-            return;
+            return res
+              .status(500)
+              .json({ error: "Error deleting file from filesystem" });
           }
           res.status(200).json({ message: "File deleted successfully" });
         });
@@ -1503,9 +1494,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
       res.sendFile(filePath, (err) => {
         if (err) {
           console.error("File sending error:", err);
-          if (!res.headersSent) {
-            res.status(404).send("File not found");
-          }
+          res.status(404).send("File not found");
         }
       });
     });
