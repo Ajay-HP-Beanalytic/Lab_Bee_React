@@ -617,8 +617,8 @@ const Jobcard = ({ jobCardData }) => {
 
         axios
           .post(`${serverBaseAddress}/api/eutdetails/serialNos/`, {
-            jcNumberString,
             eutRowIds,
+            jcNumberString,
           })
           .then((res) => {
             const { newIds } = res.data;
@@ -667,8 +667,8 @@ const Jobcard = ({ jobCardData }) => {
         const testRowIds = testRows.map((row) => row.id);
         axios
           .post(`${serverBaseAddress}/api/tests_sync/names/`, {
-            jcNumberString,
             testRowIds,
+            jcNumberString,
           })
           .then((res) => {
             const { newIds } = res.data;
@@ -737,8 +737,8 @@ const Jobcard = ({ jobCardData }) => {
         const testDetailsRowIds = testdetailsRows.map((row) => row.id);
         axios
           .post(`${serverBaseAddress}/api/testdetails_sync/names/`, {
-            jcNumberString,
             testDetailsRowIds,
+            jcNumberString,
           })
           .then((res) => {
             const { newIds } = res.data;
