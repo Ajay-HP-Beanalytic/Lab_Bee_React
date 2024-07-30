@@ -61,7 +61,7 @@ const CreateKpiCard = ({
 }) => (
   <div style={{ padding: "10px" }}>
     <div>
-      <Typography variant="subtitle1" fontWeight="bold" align="left">
+      <Typography variant="h6" fontWeight="bold" align="left">
         {kpiTitle}
       </Typography>
     </div>
@@ -104,7 +104,7 @@ const CreateKpiCard = ({
   </div>
 );
 
-export { CreateKpiCard }; // Export the CreateKpiCard function
+export { CreateKpiCard };
 
 // Function to create a pie chart:
 const CreatePieChart = ({ data, options }) => (

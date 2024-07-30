@@ -237,7 +237,7 @@ export default function Home() {
           <Divider>
             <Typography variant="h4" sx={{ color: "#003366" }}>
               {" "}
-              HOME{" "}
+              Home{" "}
             </Typography>
           </Divider>
         </Box>
@@ -482,10 +482,6 @@ export default function Home() {
                     onChange={handlePaymentStatus}
                     value={paymentStatus}
                   >
-                    {/* {paymentStatusOptions.map((statusName) => (
-                                            <MenuItem key={statusName} value={statusName}>{statusName}</MenuItem>
-                                        ))} */}
-
                     {paymentStatusOptions.map((status) => (
                       <MenuItem key={status.id} value={status.label}>
                         {status.label}

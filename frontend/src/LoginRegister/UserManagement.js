@@ -581,9 +581,9 @@ export default function UserManagement() {
             </Dialog>
           )}
 
-          <Box sx={{ mt: 2, mb: 2 }}>
-            <Grid container spacing={2} alignItems="center">
-              <Grid item xs={12} md={4} container justifyContent="flex-end">
+          <Box sx={{ mb: 1 }}>
+            <Grid container spacing={2} justifyContent="flex-end">
+              <Grid item xs={12} md={4}>
                 <SearchBar
                   placeholder="Search User"
                   searchInputText={searchInputTextOfUserManagement}

@@ -28,6 +28,8 @@ import EmptyCard from "../common/EmptyCard";
 import { EVENT_CONSTANTS, publish } from "../common/CustomEvents";
 import CountUp from "react-countup";
 
+import "../css/robotoFonts.css";
+
 export default function PoInvoiceStatusTable({
   newJcAdded,
   openDialog,
@@ -334,7 +336,6 @@ export default function PoInvoiceStatusTable({
     getMonthwiseRevenueDataForBarChart(poDataList);
 
   //////////////////////////////////////////////////////////////////////////////
-
   // Creating pie chart for JC created vs JC data updated in PO dashboard:
   const jcStatusPieChart = {
     labels: ["JC Created", "JC Updated"],
@@ -392,7 +393,8 @@ export default function PoInvoiceStatusTable({
     datasets: [
       {
         data: poStatusData,
-        backgroundColor: ["#8cd9b3", "#ff6666"],
+        // backgroundColor: ["#8cd9b3", "#ff6666"],
+        backgroundColor: ["#67a353", "#fe6e73"],
       },
     ],
   };
@@ -410,7 +412,7 @@ export default function PoInvoiceStatusTable({
         display: true,
         text: "PO Status",
         font: {
-          family: "Helvetica Neue",
+          family: "Roboto-Bold",
           size: 30,
           weight: "bold",
         },
@@ -419,7 +421,7 @@ export default function PoInvoiceStatusTable({
         display: true,
         text: "Monthly Received & Not Received PO",
         font: {
-          family: "Arial",
+          family: "Roboto-Regular",
           size: 15,
           weight: "bold",
         },
@@ -429,7 +431,7 @@ export default function PoInvoiceStatusTable({
         color: "black",
         fontWeight: "bold",
         font: {
-          family: "Arial",
+          family: "Roboto-Regular",
           size: 15,
           weight: "bold",
         },
@@ -442,7 +444,8 @@ export default function PoInvoiceStatusTable({
     datasets: [
       {
         data: invoiceStatusData,
-        backgroundColor: ["#8cd9b3", "#ff6666"],
+        // backgroundColor: ["#8cd9b3", "#ff6666"],
+        backgroundColor: ["#67a353", "#fe6e73"],
       },
     ],
   };
@@ -460,7 +463,7 @@ export default function PoInvoiceStatusTable({
         display: true,
         text: "Invoice Status",
         font: {
-          family: "Helvetica Neue",
+          family: "Roboto-Bold",
           size: 30,
           weight: "bold",
         },
@@ -469,7 +472,7 @@ export default function PoInvoiceStatusTable({
         display: true,
         text: "Monthly Sent & Not Sent Invoices",
         font: {
-          family: "Arial",
+          family: "Roboto-Regular",
           size: 15,
           weight: "bold",
         },
@@ -479,7 +482,7 @@ export default function PoInvoiceStatusTable({
         color: "black",
         fontWeight: "bold",
         font: {
-          family: "Arial",
+          family: "Roboto-Regular",
           size: 15,
           weight: "bold",
         },
@@ -492,7 +495,7 @@ export default function PoInvoiceStatusTable({
     datasets: [
       {
         data: paymentStatusData,
-        backgroundColor: ["#8cd9b3", "#ff6666", "#668799"],
+        backgroundColor: ["#67a353", "#fe6e73", "#dfb52c"],
       },
     ],
   };
@@ -510,7 +513,7 @@ export default function PoInvoiceStatusTable({
         display: true,
         text: "Payment Status",
         font: {
-          family: "Helvetica Neue",
+          family: "Roboto-Bold",
           size: 30,
           weight: "bold",
         },
@@ -519,7 +522,7 @@ export default function PoInvoiceStatusTable({
         display: true,
         text: "Monthly Recieved and Pending Payment Status",
         font: {
-          family: "Arial",
+          family: "Roboto-Regular",
           size: 15,
           weight: "bold",
         },
@@ -529,7 +532,7 @@ export default function PoInvoiceStatusTable({
         color: "black",
         fontWeight: "bold",
         font: {
-          family: "Arial",
+          family: "Roboto-Regular",
           size: 15,
           weight: "bold",
         },
@@ -542,7 +545,7 @@ export default function PoInvoiceStatusTable({
     labels: monthLabels,
     datasets: [
       {
-        label: "Month wise Revenue",
+        label: "Month-wise Revenue",
         backgroundColor: [
           "#FF6384",
           "#FF9F40",
@@ -586,7 +589,7 @@ export default function PoInvoiceStatusTable({
         display: true,
         text: "Month wise Revenue",
         font: {
-          family: "Helvetica Neue",
+          family: "Roboto-Bold",
           size: 30,
           weight: "bold",
         },
@@ -595,7 +598,7 @@ export default function PoInvoiceStatusTable({
         display: true,
         text: "Total revenue generated in each month",
         font: {
-          family: "Arial",
+          family: "Roboto-Regular",
           size: 15,
           weight: "bold",
         },
@@ -607,7 +610,7 @@ export default function PoInvoiceStatusTable({
         align: "end",
         anchor: "end",
         font: {
-          family: "Arial",
+          family: "Roboto-Regular",
           size: 13,
           weight: "bold",
         },
@@ -619,7 +622,7 @@ export default function PoInvoiceStatusTable({
           display: true,
           text: "Months",
           font: {
-            family: "Arial",
+            family: "Roboto-Regular",
             size: 15,
             weight: "bold",
           },
@@ -633,7 +636,7 @@ export default function PoInvoiceStatusTable({
           display: true,
           text: "Revenue in INR",
           font: {
-            family: "Arial",
+            family: "Roboto-Regular",
             size: 15,
             weight: "bold",
           },
@@ -947,7 +950,14 @@ export default function PoInvoiceStatusTable({
             </FormControl>
           </Grid>
 
-          <Grid item xs={12} sm={6} md={4}>
+          <Grid
+            item
+            xs={12}
+            sm={6}
+            md={4}
+            container
+            justifyContent="flex-start"
+          >
             <DateRangeFilter
               onClickDateRangeSelectDoneButton={handlePODateRangeChange}
               onClickDateRangeSelectClearButton={handlePODateRangeClear}
@@ -965,43 +975,6 @@ export default function PoInvoiceStatusTable({
         </Grid>
       </Grid>
 
-      {/* JC Details */}
-      {/* <Box sx={{ mt: 2, mb: 2, width: "100% " }}>
-        <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12} sm={6} md={6}>
-            <Box
-              sx={{
-                backgroundColor: "#e0ebeb",
-                padding: 2,
-                borderRadius: 2,
-                boxShadow: 2,
-              }}
-            >
-              <CreatePieChart
-                data={jcStatusPieChart}
-                options={optionsForJcStatusPieChart}
-              />
-            </Box>
-          </Grid>
-
-          <Grid item xs={12} sm={6} md={6}>
-            <Box
-              sx={{
-                backgroundColor: "#e0ebeb",
-                padding: 2,
-                borderRadius: 2,
-                boxShadow: 2,
-              }}
-            >
-              <CreatePieChart
-                data={paymentStatusPieChart}
-                options={optionsForPaymentStatusPieChart}
-              />
-            </Box>
-          </Grid>
-        </Grid>
-      </Box> */}
-
       {filteredPOData && filteredPOData.length === 0 ? (
         <EmptyCard message="PO and Invoice Data not found" />
       ) : (
@@ -1010,7 +983,8 @@ export default function PoInvoiceStatusTable({
             height: 500,
             width: "100%",
             "& .custom-header-color": {
-              backgroundColor: "#0f6675",
+              // backgroundColor: "#0f6675",
+              backgroundColor: "#476f95",
               color: "whitesmoke",
               fontWeight: "bold",
               fontSize: "15px",
@@ -1031,13 +1005,10 @@ export default function PoInvoiceStatusTable({
       )}
 
       {/* KPI Cards*/}
-      <Box sx={{ mt: 1, mb: 1, padding: 3 }}>
-        <Grid container spacing={3}>
+      <Box sx={{ width: "100%" }}>
+        <Grid container spacing={3} sx={{ mt: 3, mb: 1 }}>
           <Grid item xs={12} sm={6} md={3}>
-            <Card
-              elevation={3}
-              sx={{ p: 2, backgroundColor: "#66cc99", flex: 1, mx: 2 }}
-            >
+            <Card elevation={3} sx={{ backgroundColor: "#66cc99", flex: 1 }}>
               <CreateKpiCard
                 kpiTitle="Total Payment Received"
                 kpiValue={
@@ -1050,10 +1021,7 @@ export default function PoInvoiceStatusTable({
           </Grid>
 
           <Grid item xs={12} sm={6} md={3}>
-            <Card
-              elevation={3}
-              sx={{ p: 2, backgroundColor: "#e6e6ff", flex: 1, mx: 2 }}
-            >
+            <Card elevation={3} sx={{ backgroundColor: "#e6e6ff", flex: 1 }}>
               <CreateKpiCard
                 kpiTitle="Total Pending Invoice Value"
                 kpiValue={
@@ -1065,10 +1033,7 @@ export default function PoInvoiceStatusTable({
             </Card>
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
-            <Card
-              elevation={3}
-              sx={{ p: 2, backgroundColor: "#ffe6cc", flex: 1, mx: 2 }}
-            >
+            <Card elevation={3} sx={{ backgroundColor: "#ffe6cc", flex: 1 }}>
               <CreateKpiCard
                 kpiTitle="Total On-Hold Invoice Value"
                 kpiValue={
@@ -1081,10 +1046,7 @@ export default function PoInvoiceStatusTable({
           </Grid>
 
           <Grid item xs={12} sm={6} md={3}>
-            <Card
-              elevation={3}
-              sx={{ p: 2, backgroundColor: "#ccddff", flex: 1, mx: 2 }}
-            >
+            <Card elevation={3} sx={{ backgroundColor: "#ccddff", flex: 1 }}>
               <CreateKpiCard
                 kpiTitle="Total Revenue Generated"
                 kpiValue={
@@ -1099,14 +1061,13 @@ export default function PoInvoiceStatusTable({
       </Box>
 
       {/* PO, Invoice, Payment status pi charts */}
-
-      <Grid container spacing={4} sx={{ padding: { xs: 3, sm: 4 } }}>
+      <Grid container spacing={4} sx={{ mt: 1, mb: 1 }}>
         <Grid item xs={12} sm={6} md={6}>
           <Box
             sx={{
-              backgroundColor: "#e0ebeb",
+              // backgroundColor: "#f0f4f7",
               padding: 2,
-              borderRadius: 2,
+              borderRadius: 5,
               boxShadow: 2,
             }}
           >
@@ -1120,9 +1081,9 @@ export default function PoInvoiceStatusTable({
         <Grid item xs={12} sm={6} md={6}>
           <Box
             sx={{
-              backgroundColor: "#e0ebeb",
+              // backgroundColor: "#e2dcec",
               padding: 2,
-              borderRadius: 2,
+              borderRadius: 5,
               boxShadow: 2,
             }}
           >
@@ -1136,9 +1097,9 @@ export default function PoInvoiceStatusTable({
         <Grid item xs={12} sm={6} md={6}>
           <Box
             sx={{
-              backgroundColor: "#e0ebeb",
+              // backgroundColor: "#e0ebeb",
               padding: 2,
-              borderRadius: 2,
+              borderRadius: 5,
               boxShadow: 2,
             }}
           >
@@ -1152,9 +1113,9 @@ export default function PoInvoiceStatusTable({
         <Grid item xs={12} sm={6} md={6}>
           <Box
             sx={{
-              backgroundColor: "#e0ebeb",
+              // backgroundColor: "#e0ebeb",
               padding: 2,
-              borderRadius: 2,
+              borderRadius: 5,
               boxShadow: 2,
             }}
           >
@@ -1167,7 +1128,7 @@ export default function PoInvoiceStatusTable({
       </Grid>
 
       {/* Departmentwise revenue accordion card */}
-      <Box sx={{ padding: { xs: 2, sm: 3 } }}>
+      <Box sx={{ width: "100%" }}>
         <Grid container spacing={2}>
           <Grid item xs={12}>
             <CreateKpiCardWithAccordion

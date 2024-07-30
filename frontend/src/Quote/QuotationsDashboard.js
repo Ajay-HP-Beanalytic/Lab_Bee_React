@@ -648,7 +648,7 @@ export default function QuotationsDashboard() {
           <Divider>
             <Typography variant="h4" sx={{ color: "#003366" }}>
               {" "}
-              Quotations Dashboard{" "}
+              Quotation Dashboard{" "}
             </Typography>
           </Divider>
         </Box>
@@ -690,7 +690,7 @@ export default function QuotationsDashboard() {
             </FormControl>
           </Grid>
 
-          <Grid item xs={12} md={4}>
+          <Grid item xs={12} md={4} container justifyContent="flex-start">
             <DateRangeFilter
               onClickDateRangeSelectDoneButton={handleQuoteDateRangeChange}
               onClickDateRangeSelectClearButton={handleQuoteDateRangeClear}

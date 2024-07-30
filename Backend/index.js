@@ -23,17 +23,17 @@ const socketIo = require("socket.io");
 // create an express application:
 const app = express();
 
-const serverOptions = {
-  key: fs.readFileSync(
-    "/etc/letsencrypt/live/labbee.beanalytic.com/privkey.pem"
-  ),
-  cert: fs.readFileSync(
-    "/etc/letsencrypt/live/labbee.beanalytic.com/fullchain.pem"
-  ),
-};
+// const serverOptions = {
+//   key: fs.readFileSync(
+//     "/etc/letsencrypt/live/labbee.beanalytic.com/privkey.pem"
+//   ),
+//   cert: fs.readFileSync(
+//     "/etc/letsencrypt/live/labbee.beanalytic.com/fullchain.pem"
+//   ),
+// };
 
-//const server = http.createServer(app);
-const server = https.createServer(serverOptions, app); //Change during deployment
+const server = http.createServer(app);
+//const server = https.createServer(serverOptions, app); //Change during deployment
 
 ///Make the app.connection available to the socket.io server:
 // const io = socketIo(server);
@@ -297,8 +297,8 @@ app.get("/", (req, res) => {
   res.send("Hello Welcome to Labbee...");
 });
 
-const PORT = 4002; //For deployment
-// const PORT = 4000;
+//const PORT = 4002; //For deployment
+const PORT = 4000;
 
 app.get("/api/testing", (req, res) => {
   res.send("Backend is up and running...");
