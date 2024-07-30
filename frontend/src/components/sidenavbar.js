@@ -17,7 +17,14 @@ import ListItem from "@mui/material/ListItem";
 import ListItemButton from "@mui/material/ListItemButton";
 import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
-import { Avatar, Badge, Button, Popover, Tooltip } from "@mui/material";
+import {
+  Avatar,
+  Badge,
+  Button,
+  Popover,
+  SvgIcon,
+  Tooltip,
+} from "@mui/material";
 
 import HomeIcon from "@mui/icons-material/Home";
 import SpaceDashboardIcon from "@mui/icons-material/SpaceDashboard";
@@ -39,6 +46,7 @@ import UserProfile from "../LoginRegister/UserProfile";
 // import { serverBaseAddress } from "../Pages/APIPage";
 import { UserContext } from "../Pages/UserContext";
 import { NotificationContext } from "../Pages/NotificationContext";
+import { useEffect } from "react";
 
 const styles = {
   "@font-face": {
@@ -122,7 +130,8 @@ export default function SidenavigationBar() {
 
   const [open, setOpen] = useState(false); // "true" to keep open, and "false" is for keep it closed
 
-  const [menudata, setMenudata] = useState("Home");
+  const [filteredMenuItems, setFilteredMenuItems] = useState([]);
+  const [loadingMenuItems, setLoadingMenuItems] = useState(true);
 
   //States and functions to handle the onclick events on Avatar:
   const [anchorEl, setAnchorEl] = useState(null);
@@ -173,78 +182,100 @@ export default function SidenavigationBar() {
   const firstLetter = loggedInUser.charAt(0).toUpperCase();
   const userAvatar = firstLetter;
 
+  const GradientIcon = ({ children, gradientId }) => (
+    <SvgIcon
+      sx={{
+        "& .MuiSvgIcon-root": {
+          fill: `url(#${gradientId})`,
+        },
+      }}
+    >
+      <defs>
+        <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" style={{ stopColor: "#62cff4", stopOpacity: 1 }} />
+          <stop
+            offset="100%"
+            style={{ stopColor: "#2c67f2", stopOpacity: 1 }}
+          />
+        </linearGradient>
+      </defs>
+      {children}
+    </SvgIcon>
+  );
+
   // Create items to display in the side navigation bar
   const items = [
-    { i: 1, label: "Home", icon: <HomeIcon />, path: "/home" },
+    {
+      i: 1,
+      label: "Home",
+      icon: <HomeIcon />,
+      path: "/home",
+      gradientId: "homeGradient",
+    },
     {
       i: 2,
       label: "Quotation Dashboard",
       icon: <SpaceDashboardIcon />,
       path: "/quotation_dashboard",
+      gradientId: "quotationDashboardGradient",
     },
     {
       i: 3,
       label: "Add Quotation",
       icon: <RequestQuoteIcon />,
       path: "/quotation",
+      gradientId: "addQuotationGradient",
     },
     {
       i: 4,
       label: "Quotation Essentials",
       icon: <NoteAddIcon />,
       path: "/quotation_essentials",
+      gradientId: "quotationEssentialsGradient",
     },
     {
       i: 5,
       label: "JC Dashboard",
       icon: <SpaceDashboardIcon />,
       path: "/jobcard_dashboard",
+      gradientId: "jcDashboardGradient",
     },
-    { i: 6, label: "Jobcard", icon: <ArticleIcon />, path: "/jobcard" },
+    {
+      i: 6,
+      label: "Jobcard",
+      icon: <ArticleIcon />,
+      path: "/jobcard",
+      gradientId: "jobcardGradient",
+    },
     {
       i: 7,
-      label: "Jobcard Essentials",
+      label: "JC Essentials",
       icon: <NoteAddIcon />,
       path: "/jobcard_essentials",
+      gradientId: "jcEssentialsGradient",
     },
     {
       i: 8,
       label: "Slot Booking",
       icon: <CalendarMonthSharpIcon />,
       path: "/slot_booking",
+      gradientId: "slotBookingGradient",
     },
     {
       i: 9,
-      label: "Chamber & Calibration",
+      label: "Chambers & Calibration",
       icon: <KitchenIcon />,
       path: "/chamber-calibration",
+      gradientId: "chambersCalibrationGradient",
     },
     {
       i: 10,
-      label: "User Management",
+      label: "Users Management",
       icon: <ManageAccountsIcon />,
       path: "/user_management",
+      gradientId: "usersManagementGradient",
     },
   ];
-
-  // Filter items based on the user's role
-  // const filteredItems = items.filter((item) => {
-  //   if (loggedInUserDepartment === "Administration") {
-  //     return true; // Show all items for Admin
-  //   } else if (loggedInUserDepartment === "Accounts") {
-  //     return [1, 2, 3, 4, 5, 6].includes(item.i);
-  //   } else if (loggedInUserDepartment === "Marketing") {
-  //     return [2, 3, 4].includes(item.i);
-  //   } else if (loggedInUserDepartment === "Testing") {
-  //     return [5, 6, 7, 8, 9].includes(item.i);
-  //   } else if (
-  //     loggedInUserDepartment === "Reliability" ||
-  //     loggedInUserDepartment === "Software"
-  //   ) {
-  //     return [5, 6, 7].includes(item.i);
-  //   }
-  //   return false; // Default: Hide the item
-  // });
 
   const filteredItems = items.filter((item) => {
     if (loggedInUserDepartment === "Administration") {
@@ -292,23 +323,24 @@ export default function SidenavigationBar() {
             onClick={(event) => handleListItemClick(event, index)}
             sx={{
               display: "flex",
-              alignItems: "center",
+              alignItems: "left",
               minHeight: 48,
-              justifyContent: open ? "initial" : "center",
-              px: 2.5,
             }}
           >
             <ListItemIcon
               sx={{
                 minWidth: 0,
-                mr: open ? 3 : "auto",
-                justifyContent: "center",
+                mr: open ? 1 : "auto",
+                color: "hsl(216, 100%, 40%)",
               }}
             >
-              {item.icon}
+              {/* {item.icon} */}
+              <GradientIcon gradientId={item.gradientId}>
+                {item.icon}
+              </GradientIcon>
             </ListItemIcon>
+
             <ListItemText
-              // primary={item.label}
               primary={
                 <span
                   style={{
@@ -325,53 +357,6 @@ export default function SidenavigationBar() {
           </ListItemButton>
         </ListItem>
       </Tooltip>
-
-      // <Tooltip title={item.label} placement="right" arrow>
-      //   <ListItem disablePadding sx={{ display: "block" }}>
-      //     <NavLink
-      //       to={item.path}
-      //       className="nav-link"
-      //       activeClassName="active"
-      //       onClick={(event) => handleListItemClick(event, index)}
-      //       sx={{
-      //         display: "flex",
-      //         alignItems: "center",
-      //         minHeight: 48,
-      //         justifyContent: open ? "initial" : "center",
-      //         px: 2.5,
-      //         textDecoration: "none", // Optional: Remove underline
-      //         color: "inherit", // Optional: Inherit text color
-      //       }}
-      //     >
-      //       <ListItemButton
-      //         selected={selectedIndex === index}
-      //         sx={{
-      //           display: "flex",
-      //           alignItems: "center",
-      //           minWidth: 0,
-      //           mr: open ? 3 : "auto",
-      //           justifyContent: "center",
-      //         }}
-      //       >
-      //         <ListItemIcon>{item.icon}</ListItemIcon>
-      //         <ListItemText
-      //           primary={
-      //             <span
-      //               style={{
-      //                 fontFamily: "Roboto-Bold",
-      //                 fontSize: "14px",
-      //                 fontWeight: "bold",
-      //               }}
-      //             >
-      //               {item.label}
-      //             </span>
-      //           }
-      //           sx={{ opacity: open ? 1 : 0, color: "black" }}
-      //         />
-      //       </ListItemButton>
-      //     </NavLink>
-      //   </ListItem>
-      // </Tooltip>
     );
   }
 
@@ -386,7 +371,8 @@ export default function SidenavigationBar() {
         <AppBar
           position="fixed"
           elevation={1}
-          sx={{ backgroundColor: "#0D809D", color: "#2f2f2f", height: "64px" }}
+          // sx={{ backgroundColor: "#0D809D", color: "#2f2f2f", height: "64px" }}
+          sx={{ backgroundColor: "#0f6cbd", color: "#2f2f2f", height: "64px" }}
         >
           <Toolbar>
             <IconButton
@@ -481,9 +467,7 @@ export default function SidenavigationBar() {
             </IconButton>
           </DrawerHeader>
 
-          {/* Create a list and add the number of items in order show it in a sidebar */}
           {filteredItems.map((item) => (
-            // Render your item component here
             <MenuItem key={item.i} item={item} index={item.i} />
           ))}
         </Drawer>
