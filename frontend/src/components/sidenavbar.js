@@ -203,7 +203,6 @@ export default function SidenavigationBar() {
     </SvgIcon>
   );
 
-  // Create items to display in the side navigation bar
   const items = [
     {
       i: 1,
@@ -215,61 +214,47 @@ export default function SidenavigationBar() {
     {
       i: 2,
       label: "Quotation Dashboard",
-      icon: <SpaceDashboardIcon />,
+      icon: <RequestQuoteIcon />,
       path: "/quotation_dashboard",
       gradientId: "quotationDashboardGradient",
     },
     {
       i: 3,
-      label: "Add Quotation",
-      icon: <RequestQuoteIcon />,
-      path: "/quotation",
-      gradientId: "addQuotationGradient",
-    },
-    {
-      i: 4,
       label: "Quotation Essentials",
       icon: <NoteAddIcon />,
       path: "/quotation_essentials",
       gradientId: "quotationEssentialsGradient",
     },
     {
-      i: 5,
+      i: 4,
       label: "JC Dashboard",
-      icon: <SpaceDashboardIcon />,
+      icon: <ArticleIcon />,
       path: "/jobcard_dashboard",
       gradientId: "jcDashboardGradient",
     },
     {
-      i: 6,
-      label: "Jobcard",
-      icon: <ArticleIcon />,
-      path: "/jobcard",
-      gradientId: "jobcardGradient",
-    },
-    {
-      i: 7,
+      i: 5,
       label: "JC Essentials",
       icon: <NoteAddIcon />,
       path: "/jobcard_essentials",
       gradientId: "jcEssentialsGradient",
     },
     {
-      i: 8,
+      i: 6,
       label: "Slot Booking",
       icon: <CalendarMonthSharpIcon />,
       path: "/slot_booking",
       gradientId: "slotBookingGradient",
     },
     {
-      i: 9,
+      i: 7,
       label: "Chambers & Calibration",
       icon: <KitchenIcon />,
       path: "/chamber-calibration",
       gradientId: "chambersCalibrationGradient",
     },
     {
-      i: 10,
+      i: 8,
       label: "Users Management",
       icon: <ManageAccountsIcon />,
       path: "/user_management",
@@ -281,19 +266,19 @@ export default function SidenavigationBar() {
     if (loggedInUserDepartment === "Administration") {
       return true; // Show all items for Administration
     } else if (loggedInUserDepartment === "Accounts") {
-      return [1, 2, 3, 4, 5, 6, 8].includes(item.i);
+      return [1, 2, 3, 4, 5, 6].includes(item.i);
     } else if (loggedInUserDepartment === "Marketing") {
-      return [2, 3, 4].includes(item.i);
+      return [2, 3].includes(item.i);
     } else if (
       loggedInUserDepartment === "TS1 Testing" ||
       loggedInUserDepartment === "TS2 Testing"
     ) {
-      return [5, 6, 7, 8, 9].includes(item.i);
+      return [4, 6, 7].includes(item.i);
     } else if (
       loggedInUserDepartment === "Reliability" ||
       loggedInUserDepartment === "Software"
     ) {
-      return [5, 6, 7].includes(item.i);
+      return [4, 5].includes(item.i);
     }
     return false; // Default: Hide the item
   });
@@ -345,7 +330,7 @@ export default function SidenavigationBar() {
                 <span
                   style={{
                     fontFamily: "Roboto-Bold",
-                    fontSize: "14px",
+                    fontSize: "13px",
                     fontWeight: "bold",
                   }}
                 >
@@ -371,7 +356,6 @@ export default function SidenavigationBar() {
         <AppBar
           position="fixed"
           elevation={1}
-          // sx={{ backgroundColor: "#0D809D", color: "#2f2f2f", height: "64px" }}
           sx={{ backgroundColor: "#0f6cbd", color: "#2f2f2f", height: "64px" }}
         >
           <Toolbar>

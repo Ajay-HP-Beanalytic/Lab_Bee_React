@@ -126,15 +126,15 @@ const CreateKpiCardWithAccordion = ({ totalValue, categoryWiseValue }) => {
       elevation={3}
       sx={{
         backgroundColor: "#ffffff",
-        borderRadius: "15px",
+        borderRadius: "20px",
         overflow: "hidden",
         boxShadow: "0 6px 20px rgba(0,0,0,0.1)",
-        margin: "20px",
+        marginTop: 3,
       }}
     >
-      <CardContent sx={{ padding: "30px", backgroundColor: "#d6d6c2" }}>
+      <CardContent sx={{ backgroundColor: "#d6d6c2" }}>
         <Typography
-          variant="h4"
+          variant="h5"
           component="div"
           sx={{
             textAlign: "center",
@@ -143,10 +143,10 @@ const CreateKpiCardWithAccordion = ({ totalValue, categoryWiseValue }) => {
             // color: '#3f51b5'
           }}
         >
-          Total Revenue
+          Total Revenue In INR
         </Typography>
         <Typography
-          variant="h3"
+          variant="h4"
           component="div"
           sx={{
             textAlign: "center",
@@ -168,7 +168,7 @@ const CreateKpiCardWithAccordion = ({ totalValue, categoryWiseValue }) => {
               padding: "10px 20px",
             }}
           >
-            <Typography variant="h5">Category Wise Details</Typography>
+            <Typography variant="h5">Departmentwise Details</Typography>
           </AccordionSummary>
           <AccordionDetails
             sx={{ padding: "20px", backgroundColor: "#d1cec1" }}

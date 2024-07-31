@@ -315,7 +315,7 @@ export default function QuotationsDashboard() {
     datasets: [
       {
         data: quoteCategoryCountsForQuotePieChart,
-        backgroundColor: ["#8cd9b3", "#ffad99", "#C7B040", "#929292"],
+        backgroundColor: ["#70a288", "#d1495b", "#119da4", "#679436"],
       },
     ],
   };
@@ -334,8 +334,8 @@ export default function QuotationsDashboard() {
         display: true,
         text: `Quotation Category`,
         font: {
-          family: "Helvetica Neue",
-          size: 30,
+          family: "Roboto-Bold",
+          size: 25,
           weight: "bold",
         },
       },
@@ -343,7 +343,7 @@ export default function QuotationsDashboard() {
         display: true,
         text: "Categorywise quotations count",
         font: {
-          family: "Arial",
+          family: "Roboto-Regular",
           size: 15,
           weight: "bold",
         },
@@ -353,7 +353,7 @@ export default function QuotationsDashboard() {
         color: "black",
         fontWeight: "bold",
         font: {
-          family: "Arial",
+          family: "Roboto-Regular",
           size: 15,
           weight: "bold",
         },
@@ -458,8 +458,8 @@ export default function QuotationsDashboard() {
         display: true,
         text: "Monthwise Total Quotations",
         font: {
-          family: "Helvetica Neue",
-          size: 30,
+          family: "Roboto-Bold",
+          size: 25,
           weight: "bold",
         },
       },
@@ -467,7 +467,7 @@ export default function QuotationsDashboard() {
         display: true,
         text: "Total quotations created in each month",
         font: {
-          family: "Arial",
+          family: "Roboto-Regular",
           size: 15,
           weight: "bold",
         },
@@ -479,8 +479,8 @@ export default function QuotationsDashboard() {
         align: "end",
         anchor: "end",
         font: {
-          family: "Arial",
-          size: 15,
+          family: "Roboto-Regular",
+          size: 13,
           weight: "bold",
         },
       },
@@ -491,9 +491,8 @@ export default function QuotationsDashboard() {
           display: true,
           text: "Months",
           font: {
-            family: "Arial",
+            family: "Roboto-Regular",
             size: 15,
-            weight: "bold",
           },
         },
         ticks: {
@@ -505,9 +504,8 @@ export default function QuotationsDashboard() {
           display: true,
           text: "Number of Quotes",
           font: {
-            family: "Arial",
+            family: "Roboto-Regular",
             size: 15,
-            weight: "bold",
           },
         },
         ticks: {
@@ -594,7 +592,8 @@ export default function QuotationsDashboard() {
     setFilteredQuoteData(quotesTableData);
   };
 
-  const kpiColors = ["#66cc99", "#d6d6c2", "#e6e6ff", "#e6ffcc", "#ffe6cc"];
+  // const kpiColors = ["#66cc99", "#d6d6c2", "#e6e6ff", "#e6ffcc", "#ffe6cc"];
+  const kpiColors = ["#00cc99", "#70a288", "#d1495b", "#119da4", "#679436"];
 
   const addSerialNumbersToRows = (data) => {
     return data.map((item, index) => ({
@@ -708,40 +707,13 @@ export default function QuotationsDashboard() {
         </Grid>
       </Grid>
 
-      {/* {filteredQuoteData && filteredQuoteData.length === 0 ? (
-        <EmptyCard message="No Quote Found" />
-      ) : (
-        <Box
-          sx={{
-            height: 500,
-            width: "100%",
-            "& .custom-header-color": {
-              backgroundColor: "#0f6675",
-              color: "whitesmoke",
-              fontWeight: "bold",
-              fontSize: "15px",
-            },
-            mt: 2,
-          }}
-        >
-          <DataGrid
-            rows={filteredQuoteData}
-            columns={columns}
-            sx={{ "&:hover": { cursor: "pointer" } }}
-            onRowClick={(params) => editSelectedRowData(params.row)}
-            pageSize={5}
-            rowsPerPageOptions={[5, 10, 20]}
-          />
-        </Box>
-      )} */}
-
       <Box
         sx={{
           height: 500,
           width: "100%",
           minWidth: isSmallScreen ? "100%" : "auto",
           "& .custom-header-color": {
-            backgroundColor: "#0f6675",
+            backgroundColor: "#476f95",
             color: "whitesmoke",
             fontWeight: "bold",
             fontSize: "15px",
@@ -773,13 +745,17 @@ export default function QuotationsDashboard() {
         )}
       </Box>
 
-      <Box sx={{ padding: 3 }}>
-        <Grid container spacing={3}>
+      <Box sx={{ width: "100%" }}>
+        <Grid container spacing={3} sx={{ mt: 3, mb: 1 }}>
           <Grid item xs={12}>
-            <Box display="flex" justifyContent="space-between" sx={{ mb: 2 }}>
+            <Box
+              display="flex"
+              justifyContent="space-between"
+              sx={{ mb: 2, width: "100%" }}
+            >
               <Card
                 elevation={3}
-                sx={{ p: 2, backgroundColor: "#66cc99", flex: 1, mx: 2 }}
+                sx={{ backgroundColor: "#66cc99", flex: 1, mx: 2 }}
               >
                 <CreateKpiCard
                   kpiTitle="Total Number Of Quotes"
@@ -800,7 +776,6 @@ export default function QuotationsDashboard() {
                   key={label}
                   elevation={3}
                   sx={{
-                    p: 2,
                     backgroundColor: kpiColors[index + 1],
                     flex: 1,
                     mx: 2,
@@ -826,9 +801,9 @@ export default function QuotationsDashboard() {
           <Grid item xs={12} sm={6} md={6}>
             <Box
               sx={{
-                backgroundColor: "#e0ebeb",
+                backgroundColor: "#ebf0fa",
                 padding: 2,
-                borderRadius: 2,
+                borderRadius: 5,
                 boxShadow: 2,
               }}
             >
@@ -842,9 +817,9 @@ export default function QuotationsDashboard() {
           <Grid item xs={12} sm={6} md={6}>
             <Box
               sx={{
-                backgroundColor: "#e0ebeb",
+                backgroundColor: "#ebf0fa",
                 padding: 2,
-                borderRadius: 2,
+                borderRadius: 5,
                 boxShadow: 2,
               }}
             >

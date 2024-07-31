@@ -237,7 +237,7 @@ export default function Home() {
           <Divider>
             <Typography variant="h4" sx={{ color: "#003366" }}>
               {" "}
-              Home{" "}
+              HOME{" "}
             </Typography>
           </Divider>
         </Box>
@@ -252,9 +252,9 @@ export default function Home() {
         >
           <form onSubmit={handleSubmit(onSubmitForm, onError)}>
             {editPoData ? (
-              <DialogTitle variant="h4">Update Data</DialogTitle>
+              <DialogTitle variant="h5">Update Data</DialogTitle>
             ) : (
-              <DialogTitle variant="h4">Enter Data</DialogTitle>
+              <DialogTitle variant="h5">Enter Data</DialogTitle>
             )}
 
             {/* <DialogTitle variant='h4'>New Booking</DialogTitle> */}

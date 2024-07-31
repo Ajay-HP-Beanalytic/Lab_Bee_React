@@ -130,7 +130,7 @@ export default function ChamberRunHours() {
       >
         <Box sx={{ width: "100%" }}>
           <Divider>
-            <Typography variant="h4" sx={{ color: "#003366" }}>
+            <Typography variant="h5" sx={{ color: "#003366" }}>
               {" "}
               Chamber Run Hours Table{" "}
             </Typography>
@@ -157,7 +157,7 @@ export default function ChamberRunHours() {
             height: 500,
             width: "100%",
             "& .custom-header-color": {
-              backgroundColor: "#0f6675",
+              backgroundColor: "#476f95",
               color: "whitesmoke",
               fontWeight: "bold",
               fontSize: "15px",

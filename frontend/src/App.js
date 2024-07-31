@@ -259,7 +259,11 @@ function App() {
             path="slot_booking"
             element={
               <ProtectedRoute
-                allowedDepartments={["Administration", "TS1 Testing"]}
+                allowedDepartments={[
+                  "Administration",
+                  "Accounts",
+                  "TS1 Testing",
+                ]}
               >
                 <Slotbooking />
               </ProtectedRoute>
