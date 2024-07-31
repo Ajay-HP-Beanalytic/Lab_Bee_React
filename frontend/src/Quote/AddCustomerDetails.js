@@ -568,7 +568,7 @@ export default function AddCustomerDetails() {
               height: 500,
               width: "100%",
               "& .custom-header-color": {
-                backgroundColor: "#0f6675",
+                backgroundColor: "#476f95",
                 color: "whitesmoke",
                 fontWeight: "bold",
                 fontSize: "15px",

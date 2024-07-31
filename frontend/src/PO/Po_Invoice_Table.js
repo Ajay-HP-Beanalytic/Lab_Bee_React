@@ -413,7 +413,7 @@ export default function PoInvoiceStatusTable({
         text: "PO Status",
         font: {
           family: "Roboto-Bold",
-          size: 30,
+          size: 25,
           weight: "bold",
         },
       },
@@ -464,7 +464,7 @@ export default function PoInvoiceStatusTable({
         text: "Invoice Status",
         font: {
           family: "Roboto-Bold",
-          size: 30,
+          size: 25,
           weight: "bold",
         },
       },
@@ -514,7 +514,7 @@ export default function PoInvoiceStatusTable({
         text: "Payment Status",
         font: {
           family: "Roboto-Bold",
-          size: 30,
+          size: 25,
           weight: "bold",
         },
       },
@@ -587,10 +587,10 @@ export default function PoInvoiceStatusTable({
     plugins: {
       title: {
         display: true,
-        text: "Month wise Revenue",
+        text: "Month-wise Revenue",
         font: {
           family: "Roboto-Bold",
-          size: 30,
+          size: 25,
           weight: "bold",
         },
       },
@@ -624,7 +624,6 @@ export default function PoInvoiceStatusTable({
           font: {
             family: "Roboto-Regular",
             size: 15,
-            weight: "bold",
           },
         },
         ticks: {
@@ -638,7 +637,6 @@ export default function PoInvoiceStatusTable({
           font: {
             family: "Roboto-Regular",
             size: 15,
-            weight: "bold",
           },
         },
         ticks: {
@@ -983,7 +981,6 @@ export default function PoInvoiceStatusTable({
             height: 500,
             width: "100%",
             "& .custom-header-color": {
-              // backgroundColor: "#0f6675",
               backgroundColor: "#476f95",
               color: "whitesmoke",
               fontWeight: "bold",
@@ -1065,7 +1062,7 @@ export default function PoInvoiceStatusTable({
         <Grid item xs={12} sm={6} md={6}>
           <Box
             sx={{
-              // backgroundColor: "#f0f4f7",
+              backgroundColor: "#ebf0fa",
               padding: 2,
               borderRadius: 5,
               boxShadow: 2,
@@ -1081,7 +1078,7 @@ export default function PoInvoiceStatusTable({
         <Grid item xs={12} sm={6} md={6}>
           <Box
             sx={{
-              // backgroundColor: "#e2dcec",
+              backgroundColor: "#ebf0fa",
               padding: 2,
               borderRadius: 5,
               boxShadow: 2,
@@ -1097,7 +1094,7 @@ export default function PoInvoiceStatusTable({
         <Grid item xs={12} sm={6} md={6}>
           <Box
             sx={{
-              // backgroundColor: "#e0ebeb",
+              backgroundColor: "#ebf0fa",
               padding: 2,
               borderRadius: 5,
               boxShadow: 2,
@@ -1113,7 +1110,7 @@ export default function PoInvoiceStatusTable({
         <Grid item xs={12} sm={6} md={6}>
           <Box
             sx={{
-              // backgroundColor: "#e0ebeb",
+              backgroundColor: "#ebf0fa",
               padding: 2,
               borderRadius: 5,
               boxShadow: 2,
