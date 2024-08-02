@@ -357,7 +357,7 @@ export default function ChamberAndCalibration() {
     datasets: [
       {
         data: [upToDate_CalibrationCount, expired_CalibrationCount],
-        backgroundColor: ["#8cd9b3", "#ff6666"],
+        backgroundColor: ["#67a353", "#fe6e73"],
       },
     ],
   };
@@ -375,26 +375,18 @@ export default function ChamberAndCalibration() {
         display: true,
         text: "Calibration Status",
         font: {
-          family: "Helvetica Neue",
-          size: 30,
+          family: "Roboto-Bold",
+          size: 25,
           weight: "bold",
         },
       },
-      subtitle: {
-        display: true,
-        // text: "Up to Date & Expired chamber & equipments calibrations count",
-        font: {
-          family: "Arial",
-          size: 15,
-          weight: "bold",
-        },
-      },
+
       datalabels: {
         display: true,
         color: "black",
         fontWeight: "bold",
         font: {
-          family: "Arial",
+          family: "Roboto-Regular",
           size: 15,
           weight: "bold",
         },
@@ -408,7 +400,7 @@ export default function ChamberAndCalibration() {
     datasets: [
       {
         data: [good_ChamberCount, underMaintenance_ChamberCount],
-        backgroundColor: ["#8cd9b3", "#ff6666"],
+        backgroundColor: ["#67a353", "#fe6e73"],
       },
     ],
   };
@@ -424,19 +416,10 @@ export default function ChamberAndCalibration() {
       },
       title: {
         display: true,
-        text: "Chamber Status",
+        text: "Chambers Status",
         font: {
-          family: "Helvetica Neue",
-          size: 30,
-          weight: "bold",
-        },
-      },
-      subtitle: {
-        display: true,
-        // text: "Good & Under Maintenance chamber & equipments count",
-        font: {
-          family: "Arial",
-          size: 15,
+          family: "Roboto-Bold",
+          size: 25,
           weight: "bold",
         },
       },
@@ -445,7 +428,7 @@ export default function ChamberAndCalibration() {
         color: "black",
         fontWeight: "bold",
         font: {
-          family: "Arial",
+          family: "Roboto-Regular",
           size: 15,
           weight: "bold",
         },
@@ -763,9 +746,9 @@ export default function ChamberAndCalibration() {
             <Grid item xs={12} md={6}>
               <Box
                 sx={{
-                  backgroundColor: "#e0ebeb",
+                  backgroundColor: "#ebf0fa",
                   padding: 2,
-                  borderRadius: 2,
+                  borderRadius: 5,
                   boxShadow: 2,
                 }}
               >
@@ -779,9 +762,9 @@ export default function ChamberAndCalibration() {
             <Grid item xs={12} md={6}>
               <Box
                 sx={{
-                  backgroundColor: "#e0ebeb",
+                  backgroundColor: "#ebf0fa",
                   padding: 2,
-                  borderRadius: 2,
+                  borderRadius: 5,
                   boxShadow: 2,
                 }}
               >
@@ -1036,7 +1019,7 @@ export default function ChamberAndCalibration() {
               height: 500,
               width: "100%",
               "& .custom-header-color": {
-                backgroundColor: "#0f6675",
+                backgroundColor: "#476f95",
                 color: "whitesmoke",
                 fontWeight: "bold",
                 fontSize: "15px",

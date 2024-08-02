@@ -602,9 +602,9 @@ export default function UserManagement() {
                 aria-label="admin-table"
               >
                 <TableHead
-                  sx={{ backgroundColor: "#227DD4", fontWeight: "bold" }}
+                  sx={{ backgroundColor: "#476f95", fontWeight: "bold" }}
                 >
-                  <TableRow>
+                  <TableRow sx={{ color: "white" }}>
                     {tableHeadersText.map((header, index) => (
                       <TableCell
                         key={index}
