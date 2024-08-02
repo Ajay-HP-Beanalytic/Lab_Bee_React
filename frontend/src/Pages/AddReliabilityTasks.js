@@ -341,11 +341,15 @@ export default function AddReliabilityTasks() {
 
         <TableContainer component={Paper}>
           <Table sx={{ minWidth: 650 }} aria-label="simple table" size="small">
-            <TableHead sx={{ backgroundColor: "#227DD4", fontWeight: "bold" }}>
+            <TableHead sx={{ backgroundColor: "#476f95", fontWeight: "bold" }}>
               <TableRow>
-                <TableCell>Sl No</TableCell>
-                <TableCell align="center">Task Description</TableCell>
-                <TableCell align="center">Action</TableCell>
+                <TableCell sx={{ color: "white" }}>Sl No</TableCell>
+                <TableCell sx={{ color: "white" }} align="center">
+                  Task Description
+                </TableCell>
+                <TableCell sx={{ color: "white" }} align="center">
+                  Action
+                </TableCell>
               </TableRow>
             </TableHead>
             <TableBody>

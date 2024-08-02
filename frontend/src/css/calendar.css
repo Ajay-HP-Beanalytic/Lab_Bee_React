@@ -1,8 +1,8 @@
 /* Calendar Header */
 .rbc-header {
-  background: #009999;
+  background: #476f95;
   color: whitesmoke;
-  padding: 6px;
+  /* padding: 6px; */
   font-size: 15px;
   font-weight: bold;
 }
@@ -28,7 +28,7 @@
 .rbc-time-slot {
   background-color: #eaf3fa;
   color: #74a4c3;
-  border-color: aqua;
+  /* border-color: aqua; */
   height: 50px;
 }
 
@@ -53,6 +53,10 @@
 
 .rbc-row-segment {
   flex-basis: 100% !important;
+}
+
+.rbc-row-content {
+  height: 20px; /* Match the height of .rbc-row-bg */
 }
 
 /* ////////////////////////////////////////////////////////////////// */

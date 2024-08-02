@@ -282,7 +282,6 @@ export default function Quotation() {
         .padStart(2, "0");
       const currentDay = currentDate.getDate().toString();
       final_date = `${currentYear}${currentMonth}${currentDay}`;
-
       try {
         const response = await axios.get(
           `${serverBaseAddress}/api/getLatestQuotationID`
@@ -292,29 +291,14 @@ export default function Quotation() {
           // Assign the last fetched quotation ID to the variable:
           const lastQuotationID = response.data[0]?.quotation_ids;
 
-          if (lastQuotationID) {
-            // Extract the date part from the last quotation ID
-            const lastDatePart = lastQuotationID.split("/")[3].split("-")[0];
-
-            // Extract the year and month from the last date part
-            const lastYear = lastDatePart.substring(0, 2);
-            const lastMonth = lastDatePart.substring(2, 4);
-
-            // Compare with the current year and month
-            if (lastYear === currentYear && lastMonth === currentMonth) {
-              // If the same month, increment the number
-              const existingIncrementedNumber = parseInt(
-                lastQuotationID.split("-")[1]
-              );
-              newIncrementedNumber = existingIncrementedNumber + 1;
-            } else {
-              // If a new month, reset the number to 1
-              newIncrementedNumber = 1;
-            }
-          } else {
-            // If no last quotation ID exists, start with 1
-            newIncrementedNumber = 1;
-          }
+          // Extract the existing incremented number and convert it to a number
+          //const existingIncrementedNumber = parseInt(lastQuotationID.split('-')[1]);
+          const existingIncrementedNumber = !isNaN(
+            parseInt(lastQuotationID.split("-")[1])
+          )
+            ? parseInt(lastQuotationID.split("-")[1])
+            : 1;
+          newIncrementedNumber = existingIncrementedNumber + 1;
         } else {
           console.error("Failed to fetch the last incrementedNumber.");
         }

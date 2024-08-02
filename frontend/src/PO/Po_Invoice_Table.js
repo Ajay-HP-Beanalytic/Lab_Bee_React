@@ -393,7 +393,6 @@ export default function PoInvoiceStatusTable({
     datasets: [
       {
         data: poStatusData,
-        // backgroundColor: ["#8cd9b3", "#ff6666"],
         backgroundColor: ["#67a353", "#fe6e73"],
       },
     ],

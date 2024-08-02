@@ -9,10 +9,6 @@ export default function JobcardRequirements() {
       <Typography variant="h4"> Job Card Requirements</Typography>
       <br />
       {/* <AddTestsList /> */}
-
-      {/* <br />
-            <br /> */}
-
       <AddReliabilityTasks />
     </>
   );

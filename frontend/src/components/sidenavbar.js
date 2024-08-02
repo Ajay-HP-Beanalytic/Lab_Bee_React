@@ -27,8 +27,6 @@ import {
 } from "@mui/material";
 
 import HomeIcon from "@mui/icons-material/Home";
-import SpaceDashboardIcon from "@mui/icons-material/SpaceDashboard";
-import RequestQuoteIcon from "@mui/icons-material/RequestQuote";
 // import EditNoteIcon from "@mui/icons-material/EditNote";
 import CalendarMonthSharpIcon from "@mui/icons-material/CalendarMonthSharp";
 import ArticleIcon from "@mui/icons-material/Article";
@@ -37,6 +35,7 @@ import NoteAddIcon from "@mui/icons-material/NoteAdd";
 import KitchenIcon from "@mui/icons-material/Kitchen";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import ManageAccountsIcon from "@mui/icons-material/ManageAccounts";
+import CurrencyRupeeIcon from "@mui/icons-material/CurrencyRupee";
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 // import axios from "axios";
 
@@ -46,7 +45,6 @@ import UserProfile from "../LoginRegister/UserProfile";
 // import { serverBaseAddress } from "../Pages/APIPage";
 import { UserContext } from "../Pages/UserContext";
 import { NotificationContext } from "../Pages/NotificationContext";
-import { useEffect } from "react";
 
 const styles = {
   "@font-face": {
@@ -213,8 +211,8 @@ export default function SidenavigationBar() {
     },
     {
       i: 2,
-      label: "Quotation Dashboard",
-      icon: <RequestQuoteIcon />,
+      label: "Quotation",
+      icon: <CurrencyRupeeIcon />,
       path: "/quotation_dashboard",
       gradientId: "quotationDashboardGradient",
     },
@@ -227,7 +225,7 @@ export default function SidenavigationBar() {
     },
     {
       i: 4,
-      label: "JC Dashboard",
+      label: "Job-Card",
       icon: <ArticleIcon />,
       path: "/jobcard_dashboard",
       gradientId: "jcDashboardGradient",

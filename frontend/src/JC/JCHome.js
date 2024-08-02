@@ -690,8 +690,8 @@ export default function JCHome() {
         display: true,
         text: "Job-Card Status",
         font: {
-          family: "Helvetica Neue",
-          size: 30,
+          family: "Roboto-Bold",
+          size: 25,
           weight: "bold",
         },
       },
@@ -699,7 +699,7 @@ export default function JCHome() {
         display: true,
         text: "Monthly Job-Card Status",
         font: {
-          family: "Arial",
+          family: "Roboto-Regular",
           size: 15,
           weight: "bold",
         },
@@ -709,7 +709,7 @@ export default function JCHome() {
         color: "black",
         fontWeight: "bold",
         font: {
-          family: "Arial",
+          family: "Roboto-Regular",
           size: 15,
           weight: "bold",
         },
@@ -833,7 +833,7 @@ export default function JCHome() {
                 height: 500,
                 width: "100%",
                 "& .custom-header-color": {
-                  backgroundColor: "#0f6675",
+                  backgroundColor: "#476f95",
                   color: "whitesmoke",
                   fontWeight: "bold",
                   fontSize: "15px",
@@ -858,13 +858,13 @@ export default function JCHome() {
             </Box>
           )}
 
-          <Grid container spacing={4} sx={{ padding: { xs: 3, sm: 4 } }}>
+          <Grid container spacing={4} sx={{ mt: 2 }}>
             <Grid item xs={12} sm={6} md={6}>
               <Box
                 sx={{
-                  backgroundColor: "#e0ebeb",
+                  backgroundColor: "#ebf0fa",
                   padding: 2,
-                  borderRadius: 2,
+                  borderRadius: 5,
                   boxShadow: 2,
                 }}
               >
@@ -875,48 +875,37 @@ export default function JCHome() {
               </Box>
             </Grid>
 
-            {/* <Grid item xs={12} sm={6} md={6}>
-              {filteredReliabilityJcData.length !== 0 && (
-                <Box sx={{ mt: 2 }}>
-                  <Typography variant="h5" color="#003366">
-                    {" "}
-                    Reliability JC Numbers
-                  </Typography>
-
-                  {reliabilityJCNumbers.map((jcNumber, index) => (
-                    <List sx={{ width: "100%", textAlign: "center" }}>
-                      <ListItem key={index}>{jcNumber}</ListItem>
-                    </List>
-                  ))}
-                </Box>
-              )}
-            </Grid> */}
-
             <Grid item xs={12} sm={6} md={6}>
               {filteredReliabilityJcData.length !== 0 && (
-                <Box sx={{ mt: 2 }}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    flexDirection: "column",
+                    padding: 2,
+                    borderRadius: 5,
+                    boxShadow: 2,
+                    backgroundColor: "#ebf0fa",
+                  }}
+                >
                   <Typography variant="h5" color="#003366" align="center">
                     Reliability JC Numbers
                   </Typography>
-
-                  <Box
-                    sx={{
-                      display: "flex",
-                      justifyContent: "center",
-                      alignItems: "center",
-                      flexDirection: "column",
-                      mt: 2,
-                    }}
-                  >
-                    {reliabilityJCNumbers.map((jcNumber, index) => (
-                      <List
-                        key={index}
-                        sx={{ width: "100%", textAlign: "center" }}
-                      >
-                        <ListItem>{jcNumber}</ListItem>
-                      </List>
-                    ))}
-                  </Box>
+                  {reliabilityJCNumbers.map((jcNumber, index) => (
+                    <List
+                      key={index}
+                      sx={{
+                        width: "100%",
+                        display: "flex",
+                        justifyContent: "center",
+                      }}
+                    >
+                      <ListItem sx={{ justifyContent: "center" }}>
+                        {jcNumber}
+                      </ListItem>
+                    </List>
+                  ))}
                 </Box>
               )}
             </Grid>
@@ -941,7 +930,7 @@ export default function JCHome() {
           >
             <Box sx={{ width: "100%" }}>
               <Divider sx={{ mt: 5 }}>
-                <Typography variant="h4" sx={{ color: "#003366" }}>
+                <Typography variant="h5" sx={{ color: "#003366" }}>
                   {" "}
                   Reliability Task Management
                 </Typography>
@@ -961,7 +950,7 @@ export default function JCHome() {
                   height: 500,
                   width: "100%",
                   "& .custom-header-color": {
-                    backgroundColor: "#0f6675",
+                    backgroundColor: "#476f95",
                     color: "whitesmoke",
                     fontWeight: "bold",
                     fontSize: "15px",
