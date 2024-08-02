@@ -42,6 +42,7 @@ import { Helmet } from "react-helmet";
 import { serverBaseAddress } from "./Pages/APIPage";
 import { NotificationContext } from "./Pages/NotificationContext";
 import NotificationsManagement from "./Pages/NotificationsManagement";
+import EmiJobcard from "./EMI/EmiJobcard";
 
 function App() {
   const location = useLocation();
@@ -274,6 +275,21 @@ function App() {
             element={
               <ProtectedRoute allowedDepartments={["Administration"]}>
                 <UserManagement />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="emi_jobcard"
+            element={
+              <ProtectedRoute
+                allowedDepartments={[
+                  "Administration",
+                  "Accounts",
+                  "TS2 Testing",
+                ]}
+              >
+                <EmiJobcard />
               </ProtectedRoute>
             }
           />
