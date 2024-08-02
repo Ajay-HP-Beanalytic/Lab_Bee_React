@@ -36,6 +36,7 @@ import KitchenIcon from "@mui/icons-material/Kitchen";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import ManageAccountsIcon from "@mui/icons-material/ManageAccounts";
 import CurrencyRupeeIcon from "@mui/icons-material/CurrencyRupee";
+import TrackChangesIcon from "@mui/icons-material/TrackChanges";
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 // import axios from "axios";
 
@@ -257,6 +258,13 @@ export default function SidenavigationBar() {
       icon: <ManageAccountsIcon />,
       path: "/user_management",
       gradientId: "usersManagementGradient",
+    },
+    {
+      i: 9,
+      label: "EMI/EMC JC",
+      icon: <TrackChangesIcon />,
+      path: "/emi_jobcard",
+      gradientId: "emiGradient",
     },
   ];
 
