@@ -1357,7 +1357,8 @@ function jobcardsAPIs(app, io, labbeeUsers) {
     const sqlQuery = `
       SELECT jc_number 
       FROM bea_jobcards 
-      WHERE MONTH(jc_open_date) = MONTH(CURRENT_DATE - INTERVAL 1 MONTH)
+      WHERE YEAR(jc_open_date) = YEAR(CURRENT_DATE - INTERVAL 1 MONTH)
+      AND MONTH(jc_open_date) = MONTH(CURRENT_DATE - INTERVAL 1 MONTH)
       ORDER BY jc_open_date DESC 
       LIMIT 1`;
 

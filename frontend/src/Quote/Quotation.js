@@ -106,6 +106,9 @@ export default function Quotation() {
   const [editId, setEditId] = useState("");
   const formattedDate = moment(new Date()).format("YYYY-MM-DD");
   const [selectedDate, setSelectedDate] = useState(formattedDate);
+  const [catCode, setCatCode] = useState("TS1");
+  const [updatingQuote, setUpdatingQuote] = useState(false);
+  const [existingQuoteId, setExistingQuoteId] = useState("");
 
   // State variable to set the user name:
 
@@ -135,6 +138,7 @@ export default function Quotation() {
   // UseEffect to set the quotation data during update of the quotation:
   useEffect(() => {
     if (id) {
+      setUpdatingQuote(true);
       axios.get(`${serverBaseAddress}/api/quotation/` + id).then((result) => {
         setCompanyName(result.data[0].company_name);
         setQuotationIDString(result.data[0].quotation_ids);
@@ -151,6 +155,8 @@ export default function Quotation() {
         setQuoteCategory(result.data[0].quote_category);
         setQuoteVersion(result.data[0].quote_version);
         setTableData(JSON.parse(result.data[0].tests));
+
+        setExistingQuoteId(result.data[0].quotation_ids);
       });
     }
 
@@ -167,10 +173,7 @@ export default function Quotation() {
 
     // Set initial quotation ID when the component mounts
     setInitialQuotationId(initialCompanyName);
-
-    // Fetch the last Booking ID when the component mounts
-    fetchLatestQuotationId();
-  }, []);
+  }, [id]);
 
   // To prefill the primary company details on selecting company name:
   const prefillTextFields = (selectedCompanyId) => {
@@ -184,7 +187,6 @@ export default function Quotation() {
           setCustomerId(result.data[0].company_id);
           setCustomerreferance(result.data[0].customer_referance);
           setSelectedDate(formattedDate);
-          generateDynamicQuotationIdString(result.data[0].company_id);
         })
         .catch((error) => {
           console.log(error);
@@ -230,9 +232,22 @@ export default function Quotation() {
 
   // To handle company names field:
   const handleCompanyNameChange = (e) => {
+    if (id) {
+      const arrayOfQuoteId = existingQuoteId.split("/");
+
+      let updatedArrayOfQuoteId = [];
+
+      updatedArrayOfQuoteId.push(arrayOfQuoteId[0]);
+      updatedArrayOfQuoteId.push(arrayOfQuoteId[1]);
+      updatedArrayOfQuoteId.push(e.target.value.toUpperCase());
+      updatedArrayOfQuoteId.push(arrayOfQuoteId.at(-1));
+
+      let result = updatedArrayOfQuoteId.join("/");
+
+      setExistingQuoteId(result);
+    }
     const newCompanyName = e.target.value.toUpperCase();
     setCustomerId(newCompanyName);
-    generateDynamicQuotationIdString(newCompanyName);
   };
 
   // To get the selected date and Time
@@ -260,129 +275,68 @@ export default function Quotation() {
   };
 
   // To generate quotation ID dynamically based on the last saved quoataion ID:
-  const generateDynamicQuotationIdString = async (
-    newCompanyName,
-    catCodefromTarget = ""
-  ) => {
-    let final_date = "";
-    let newIncrementedNumber = "";
+  const generateDynamicQuotationIdString = async () =>
+    // newCompanyName,
+    // catCodefromTarget = ""
 
-    if (id) {
-      const currentDate = new Date(selectedDate);
-      final_date = selectedDate.replaceAll("-", "");
-      final_date =
-        final_date.substring(6, 8) +
-        final_date.substring(2, 4) +
-        final_date.substring(0, 2);
-      newIncrementedNumber = quotationIdString.split("-")[1];
-    } else {
-      const currentDate = new Date();
-      const currentYear = currentDate.getFullYear().toString().slice(-2);
-      const currentMonth = (currentDate.getMonth() + 1)
-        .toString()
-        .padStart(2, "0");
-      const currentDay = currentDate.getDate().toString().padStart(2, "0");
-      final_date = `${currentYear}${currentMonth}${currentDay}`;
-
-      try {
-        const response = await axios.get(
-          `${serverBaseAddress}/api/getLatestQuotationID`
-        );
-
-        if (response.status === 200) {
-          const lastQuotationID = response.data[0]?.quotation_ids;
-
-          if (lastQuotationID) {
-            const lastDatePart = lastQuotationID.split("/")[3].split("-")[0];
-            const lastYear = lastDatePart.substring(0, 2);
-            const lastMonth = lastDatePart.substring(2, 4);
-
-            if (lastYear === currentYear && lastMonth === currentMonth) {
-              const existingIncrementedNumber = parseInt(
-                lastQuotationID.split("-")[1]
-              );
-              if (!isNaN(existingIncrementedNumber)) {
-                newIncrementedNumber = existingIncrementedNumber + 1;
-              } else {
-                newIncrementedNumber = 1;
-              }
-            } else {
-              newIncrementedNumber = 1;
-            }
-          } else {
-            newIncrementedNumber = 1;
-          }
-        } else {
-          console.error("Failed to fetch the last incrementedNumber.");
-          newIncrementedNumber = 1; // Fallback value
-        }
-      } catch (error) {
-        console.error(
-          "An error occurred while fetching the last incrementedNumber: " +
-            error
-        );
-        newIncrementedNumber = 1; // Fallback value
-      }
-    }
-
-    const formattedIncrementedNumber = newIncrementedNumber
-      .toString()
-      .padStart(3, "0");
-
-    let x = catCodefromTarget || quoteCategory;
-    let catCode = "";
-    switch (x) {
-      case "Item Soft":
-        catCode = "IT";
-        break;
-      case "Reliability":
-        catCode = "RE";
-        break;
-      case "Environmental Testing":
-        catCode = "TS1";
-        break;
-      case "EMI & EMC":
-        catCode = "TS2";
-        break;
-      default:
-        catCode = "TS1";
-        break;
-    }
-
-    const dynamicQuotationIdString = `BEA/${catCode}/${newCompanyName}/${final_date}-${formattedIncrementedNumber}`;
-
-    // Set the quotation ID after fetching the last ID
-    setQuotationIDString(dynamicQuotationIdString);
-  };
-
-  // Fetch the last saved quotaion_id:
-  const fetchLatestQuotationId = async () => {
-    try {
-      // Make an API call to fetch the last quotation ID from your database
-      const response = await axios.get(
-        `${serverBaseAddress}/api/getLatestQuotationID`
-      );
-
-      if (response.status === 200) {
-        //const latestQuotationID = response.data; // Assuming your backend sends the latest Quotation ID in the response data
-        const latestQuotationID = response.data[0]?.quotation_ids; // Access the specific property containing the ID
-
-        if (latestQuotationID) {
-          if (!id) {
-            setQuotationIDString(latestQuotationID);
-          }
-        } else {
-          setInitialQuotationId(companyName);
-        }
+    {
+      if (id) {
+        setQuotationIDString(existingQuoteId);
       } else {
-        console.error("Failed to fetch the latest Quotation ID.");
+        const currentDate = new Date();
+
+        const newQuoteDate = currentDate
+          .toISOString()
+          .split("T")[0]
+          .replace(/-/g, "")
+          .slice(2);
+        let lastQuotationID = "";
+
+        try {
+          const response = await axios.get(
+            `${serverBaseAddress}/api/getLatestQuotationID`
+          );
+
+          if (response.status === 200) {
+            lastQuotationID = response.data[0]?.quotation_ids;
+          }
+        } catch (error) {
+          return;
+        }
+        let previousQuoteNumber = "";
+        let newQuoteNumber = "";
+        let newQuoteNumberStr = "";
+        if (lastQuotationID) {
+          const lastYearStr = lastQuotationID.slice(-10, -8);
+          const lastMonthStr = lastQuotationID.slice(-8, -6);
+
+          const currentYear = currentDate.getFullYear();
+          const currentYearStr = currentYear.toString().slice(-2);
+          const currentMonth = currentDate.getMonth() + 1;
+          const currentMonthStr = currentMonth.toString().padStart(2, "0");
+
+          if (
+            lastYearStr === currentYearStr &&
+            lastMonthStr === currentMonthStr
+          ) {
+            previousQuoteNumber = parseInt(lastQuotationID.slice(-3));
+            newQuoteNumber = parseInt(previousQuoteNumber) + 1;
+            newQuoteNumberStr = newQuoteNumber.toString().padStart(3, "0");
+          } else {
+            newQuoteNumberStr = "001";
+          }
+        }
+
+        const newQuoteId = `BEA/${catCode}/${customerId}/${newQuoteDate}-${newQuoteNumberStr}`;
+
+        // Set the quotation ID after fetching the last ID
+        setQuotationIDString(newQuoteId);
       }
-    } catch {
-      console.error(
-        "An error occurred while fetching the latest Quotation ID."
-      );
-    }
-  };
+    };
+
+  useEffect(() => {
+    generateDynamicQuotationIdString();
+  }, [quoteCategory, customerId]);
 
   // To submit the data and store it in a database:
   const handleSubmitETQuotation = async (e) => {
@@ -507,9 +461,6 @@ export default function Quotation() {
     setProjectName(initialProjectName);
     setTableData(initialTableData);
 
-    if (!id) {
-      fetchLatestQuotationId(); // Call the function here to which will fetch the latest quotation id
-    }
     //setQuotationIDString(quotationIdString);
     setIsTotalDiscountVisible(false);
     setTaxableAmount(0);
@@ -662,6 +613,7 @@ export default function Quotation() {
                 }}
               >
                 Quotation ID: {quotationIdString}
+                {/* Quotation ID: {editId ? existingQuoteId : quotationIdString} */}
               </Typography>
             </Grid>
           </Grid>
@@ -836,10 +788,19 @@ export default function Quotation() {
                           value={quoteCategory}
                           onChange={(e) => {
                             setQuoteCategory(e.target.value);
-                            generateDynamicQuotationIdString(
-                              customerId,
-                              e.target.value
-                            );
+                            if (e.target.value === "Environmental Testing") {
+                              setCatCode("TS1");
+                              // newCatCode = "TS1";
+                            } else if (e.target.value === "EMI & EMC") {
+                              setCatCode("TS2");
+                              // newCatCode = "TS2";
+                            } else if (e.target.value === "Reliability") {
+                              setCatCode("RE");
+                              // newCatCode = "RE";
+                            } else if (e.target.value === "Item Soft") {
+                              setCatCode("IT");
+                              // newCatCode = "IT";
+                            }
                           }}
                           label="Quote Type"
                         >
