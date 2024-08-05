@@ -266,6 +266,7 @@ export default function Quotation() {
   ) => {
     let final_date = "";
     let newIncrementedNumber = "";
+
     if (id) {
       const currentDate = new Date(selectedDate);
       final_date = selectedDate.replaceAll("-", "");
@@ -280,7 +281,7 @@ export default function Quotation() {
       const currentMonth = (currentDate.getMonth() + 1)
         .toString()
         .padStart(2, "0");
-      const currentDay = currentDate.getDate().toString();
+      const currentDay = currentDate.getDate().toString().padStart(2, "0");
       final_date = `${currentYear}${currentMonth}${currentDay}`;
 
       try {
@@ -289,58 +290,65 @@ export default function Quotation() {
         );
 
         if (response.status === 200) {
-          // Assign the last fetched quotation ID to the variable:
           const lastQuotationID = response.data[0]?.quotation_ids;
 
           if (lastQuotationID) {
-            // Extract the date part from the last quotation ID
             const lastDatePart = lastQuotationID.split("/")[3].split("-")[0];
-
-            // Extract the year and month from the last date part
             const lastYear = lastDatePart.substring(0, 2);
             const lastMonth = lastDatePart.substring(2, 4);
 
-            // Compare with the current year and month
             if (lastYear === currentYear && lastMonth === currentMonth) {
-              // If the same month, increment the number
               const existingIncrementedNumber = parseInt(
                 lastQuotationID.split("-")[1]
               );
-              newIncrementedNumber = existingIncrementedNumber + 1;
+              if (!isNaN(existingIncrementedNumber)) {
+                newIncrementedNumber = existingIncrementedNumber + 1;
+              } else {
+                newIncrementedNumber = 1;
+              }
             } else {
-              // If a new month, reset the number to 1
               newIncrementedNumber = 1;
             }
           } else {
-            // If no last quotation ID exists, start with 1
             newIncrementedNumber = 1;
           }
         } else {
           console.error("Failed to fetch the last incrementedNumber.");
+          newIncrementedNumber = 1; // Fallback value
         }
       } catch (error) {
         console.error(
           "An error occurred while fetching the last incrementedNumber: " +
             error
         );
+        newIncrementedNumber = 1; // Fallback value
       }
     }
+
     const formattedIncrementedNumber = newIncrementedNumber
       .toString()
       .padStart(3, "0");
-    let x = "";
-    if (catCodefromTarget) {
-      x = catCodefromTarget;
-    } else {
-      x = quoteCategory;
-    }
-    let catCode = "";
-    if (x === "Item Soft") catCode = "IT";
-    if (x === "Reliability") catCode = "RE";
-    if (x === "Environmental Testing") catCode = "TS1";
-    if (x === "EMI & EMC") catCode = "TS2";
 
-    // Create a quotation string as per the requirement:
+    let x = catCodefromTarget || quoteCategory;
+    let catCode = "";
+    switch (x) {
+      case "Item Soft":
+        catCode = "IT";
+        break;
+      case "Reliability":
+        catCode = "RE";
+        break;
+      case "Environmental Testing":
+        catCode = "TS1";
+        break;
+      case "EMI & EMC":
+        catCode = "TS2";
+        break;
+      default:
+        catCode = "TS1";
+        break;
+    }
+
     const dynamicQuotationIdString = `BEA/${catCode}/${newCompanyName}/${final_date}-${formattedIncrementedNumber}`;
 
     // Set the quotation ID after fetching the last ID
