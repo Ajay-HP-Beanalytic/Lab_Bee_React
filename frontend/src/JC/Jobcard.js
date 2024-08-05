@@ -224,7 +224,7 @@ const Jobcard = ({ jobCardData }) => {
       axios
         .get(`${serverBaseAddress}/api/jobcard/${id}`)
         .then((res) => {
-          setJcumberString(res.data.jobcard.jc_number);
+          setJcNumberString(res.data.jobcard.jc_number);
           setSrfNumber(res.data.jobcard.srf_number);
           setDcnumber(res.data.jobcard.dcform_number || "");
           const parsedJcStartDate = dayjs(res.data.jobcard.jc_open_date);
@@ -463,7 +463,7 @@ const Jobcard = ({ jobCardData }) => {
 
   ////////////////////////////////////////////////
 
-  const [jcNumberString, setJcumberString] = useState("");
+  const [jcNumberString, setJcNumberString] = useState("");
   const [jcCount, setJcCount] = useState();
   const [srfNumber, setSrfNumber] = useState("");
 
@@ -509,7 +509,7 @@ const Jobcard = ({ jobCardData }) => {
       const dynamicJcNumberString = `${finYear}-${(jcCount + 1)
         .toString()
         .padStart(3, "0")}`;
-      setJcumberString(dynamicJcNumberString);
+      setJcNumberString(dynamicJcNumberString);
 
       //generate srf number
       setSrfNumber(`BEA/TR/SRF/${dynamicJcNumberString}`);
@@ -909,6 +909,7 @@ const Jobcard = ({ jobCardData }) => {
       );
       const lastJCNumber = response.data[0]?.jc_number;
       if (lastJCNumber) {
+        console.log("lastJCNumber", lastJCNumber);
         //Extract the number part from the last jc number:
         const lastJCNumberArray = lastJCNumber.split("-");
         const jcNumberPart = lastJCNumberArray[2];
@@ -920,6 +921,7 @@ const Jobcard = ({ jobCardData }) => {
 
         // Construct the new JC number
         const newJCNumberForLastMonth = `${lastJCNumberArray[0]}-${lastJCNumberArray[1]}-${newJcNumberPadded}`;
+        console.log("newJCNumberForLastMonth", newJCNumberForLastMonth);
 
         toast.info(
           "last JC Number for Previous Month: " +
@@ -929,7 +931,7 @@ const Jobcard = ({ jobCardData }) => {
         );
         setAddNewJcToLastMonth(true);
         setLastMonthJcNumberString(newJCNumberForLastMonth);
-        setJcumberString(lastMonthJcNumberString);
+        setJcNumberString(lastMonthJcNumberString);
       } else {
         toast.error("Error: Last JC Number of Previous Month not found");
       }
