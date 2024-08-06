@@ -117,6 +117,10 @@ const Jobcard = ({ jobCardData }) => {
   const [lastMonthJcNumberString, setLastMonthJcNumberString] = useState("");
   const [lastMonthSrfNumber, setLastMonthSrfNumber] = useState("");
 
+  const [newJcNumberStringForLastMonth, setNewJcNumberStringForLastMonth] =
+    useState("");
+  const [newSrfNumberForLastMonth, setNewSrfNumberForLastMonth] = useState("");
+
   const [openRemoveRowDialog, setOpenRemoveRowDialog] = useState(false);
 
   const testCategoryOptions = [
@@ -926,28 +930,22 @@ const Jobcard = ({ jobCardData }) => {
         toast.info(
           "last JC Number for Previous Month: " +
             lastJCNumber +
+            "\n" +
             "New JC Number for Previous Month: " +
             newJCNumberForLastMonth
         );
         setAddNewJcToLastMonth(true);
-        setLastMonthJcNumberString(newJCNumberForLastMonth);
-        setJcNumberString(lastMonthJcNumberString);
+        setJcNumberString(newJCNumberForLastMonth);
+        setSrfNumber(`BEA/TR/SRF/${newJCNumberForLastMonth}`);
+        setNewJcNumberStringForLastMonth(newJCNumberForLastMonth);
+        setNewSrfNumberForLastMonth(`BEA/TR/SRF/${newJCNumberForLastMonth}`);
       } else {
         toast.error("Error: Last JC Number of Previous Month not found");
       }
-      // You can now use lastJCNumber as needed
     } catch (error) {
       console.error("Error fetching last JC number of previous month:", error);
     }
   };
-
-  //Function to get the last month's JC number and SRF number:
-  useEffect(() => {
-    if (lastMonthJcNumberString) {
-      setLastMonthSrfNumber(`BEA/TR/SRF/${lastMonthJcNumberString}`);
-      setSrfNumber(`BEA/TR/SRF/${lastMonthJcNumberString}`);
-    }
-  }, [lastMonthJcNumberString]);
 
   // Custom style for the table header
   const tableHeaderStyle = { backgroundColor: "#006699", fontWeight: "bold" };
@@ -1034,7 +1032,10 @@ const Jobcard = ({ jobCardData }) => {
                 }}
               >
                 JC Number:{" "}
-                {addNewJcToLastMonth ? lastMonthJcNumberString : jcNumberString}
+                {/* {addNewJcToLastMonth ? lastMonthJcNumberString : jcNumberString} */}
+                {addNewJcToLastMonth
+                  ? newJcNumberStringForLastMonth
+                  : jcNumberString}
               </Typography>
             </Grid>
           </Grid>
@@ -1110,7 +1111,9 @@ const Jobcard = ({ jobCardData }) => {
                       {addNewJcToLastMonth ? lastMonthSrfNumber : srfNumber} */}
                       {loggedInUserDepartment !== "Reliability"
                         ? `SRF Number: ${
-                            addNewJcToLastMonth ? lastMonthSrfNumber : srfNumber
+                            addNewJcToLastMonth
+                              ? newSrfNumberForLastMonth
+                              : srfNumber
                           }`
                         : ""}
                     </Typography>

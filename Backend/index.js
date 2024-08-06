@@ -32,7 +32,7 @@ const serverOptions = {
   ),
 };
 
-//const server = http.createServer(app);
+// const server = http.createServer(app);
 const server = https.createServer(serverOptions, app);
 
 ///Make the app.connection available to the socket.io server:
