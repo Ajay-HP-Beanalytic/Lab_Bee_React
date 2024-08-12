@@ -23,17 +23,17 @@ const socketIo = require("socket.io");
 // create an express application:
 const app = express();
 
-const serverOptions = {
-  key: fs.readFileSync(
-    "/etc/letsencrypt/live/labbee.beanalytic.com/privkey.pem"
-  ),
-  cert: fs.readFileSync(
-    "/etc/letsencrypt/live/labbee.beanalytic.com/fullchain.pem"
-  ),
-};
+// const serverOptions = {
+//   key: fs.readFileSync(
+//     "/etc/letsencrypt/live/labbee.beanalytic.com/privkey.pem"
+//   ),
+//   cert: fs.readFileSync(
+//     "/etc/letsencrypt/live/labbee.beanalytic.com/fullchain.pem"
+//   ),
+// };
 
-// const server = http.createServer(app);
-const server = https.createServer(serverOptions, app);
+const server = http.createServer(app);
+// const server = https.createServer(serverOptions, app);
 
 ///Make the app.connection available to the socket.io server:
 // const io = socketIo(server);
@@ -56,26 +56,17 @@ const io = socketIo(server, {
 
 let labbeeUsers = {};
 
-// io.on("connection", (socket) => {
-//   socket.on("user_connected", (user) => {
-//     labbeeUsers[socket.id] = user; // Store the user's department
-//     console.log(
-//       `User ${user.username} connected with department ${user.department}`
-//     );
-//   });
-
-//   socket.on("user_disconnected", () => {
-//     if (labbeeUsers[socket.id]) {
-//       console.log(`User ${labbeeUsers[socket.id].username} disconnected`);
-//       delete labbeeUsers[socket.id];
-//     }
-//   });
-// });
-
 io.on("connection", (socket) => {
   socket.on("user_connected", (user) => {
-    labbeeUsers[socket.id] = user; // Store the user's department
-    // console.log("Current connected users:", labbeeUsers); // Log the current state of labbeeUsers
+    // labbeeUsers[socket.id] = user;
+    // Store the user's name, department, and role
+    labbeeUsers[socket.id] = {
+      name: user.username,
+      department: user.department,
+      role: user.userRole,
+    };
+
+    // console.log("Current connected users:", labbeeUsers);
   });
 
   socket.on("user_disconnected", () => {
@@ -129,7 +120,7 @@ app.use(
     saveUninitialized: false,
     cookie: {
       secure: false,
-      maxAge: 120 * 60 * 1000,
+      maxAge: 540 * 60 * 1000,
       //maxAge: 30 * 60 * 1000, // 30 minutes in milliseconds (the value is calculated by multiplying the number of minutes (30) by the number of seconds in a minute (60) and then by 1000 to convert it to milliseconds.)
 
       //name: 'labbee_user', // Set your custom cookie name here (Default is : connect.sid if we use 'express-session')
@@ -297,8 +288,8 @@ app.get("/", (req, res) => {
   res.send("Hello Welcome to Labbee...");
 });
 
-const PORT = 4002; //For deployment
-//const PORT = 4000;
+//const PORT = 4002; //For deployment
+const PORT = 4000;
 
 app.get("/api/testing", (req, res) => {
   res.send("Backend is up and running...");

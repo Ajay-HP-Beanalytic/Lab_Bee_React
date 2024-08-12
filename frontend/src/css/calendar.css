@@ -60,3 +60,33 @@
 }
 
 /* ////////////////////////////////////////////////////////////////// */
+
+.rbc-toolbar {
+  background-color: #476f95; /* Darker shade for better contrast */
+  color: #ffffff; /* White text for clarity */
+  font-size: 16px; /* Slightly larger font for better readability */
+  font-weight: bold;
+  padding: 10px 15px; /* Add padding for a cleaner layout */
+  border-radius: 5px; /* Rounded corners for a modern look */
+  box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1); /* Subtle shadow for depth */
+}
+
+.rbc-btn-group {
+  font-size: 14px;
+  font-weight: bold;
+}
+
+.rbc-btn-group button {
+  background-color: #ffffff; /* White background for buttons */
+  color: #476f95; /* Match the toolbar for a cohesive look */
+  border: 1px solid #476f95; /* Outline for distinction */
+  padding: 5px 10px; /* Comfortable padding */
+  margin: 0 5px; /* Space between buttons */
+  border-radius: 4px; /* Rounded corners */
+  transition: background-color 0.3s, color 0.3s; /* Smooth hover transition */
+}
+
+.rbc-btn-group button:hover {
+  background-color: red; /* Invert colors on hover */
+  color: #ffffff; /* White text on hover */
+}

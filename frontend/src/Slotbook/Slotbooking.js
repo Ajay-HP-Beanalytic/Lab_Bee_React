@@ -44,6 +44,7 @@ import CustomModal from "../common/CustomModalWithTable";
 import ConfirmationDialog from "../common/ConfirmationDialog";
 import { useParams } from "react-router-dom";
 import { UserContext } from "../Pages/UserContext";
+import SearchBar from "../common/SearchBar";
 
 const localizer = momentLocalizer(moment);
 
@@ -78,18 +79,21 @@ export default function Slotbooking() {
 
   const { id } = useParams("id");
 
+  const [searchInputTextOfSlot, setSearchInputTextOfSlot] = useState("");
+  const [filteredSlots, setFilteredSlots] = useState(myEventsList);
+
   // Initialize useRef hook
   const calendarRef = useRef(null);
 
   // Define Yup schema for validation
   const slotBookingFormSchema = yup.object().shape({
     company: yup.string().required("Enter the company name"),
-    customerName: yup.string().required("Enter the customer name"),
-    customerEmail: yup
-      .string()
-      .matches(/@/, 'Email must contain "@"')
-      .email("Invalid email")
-      .required("Email is required"),
+    //customerName: yup.string().required("Enter the customer name"),
+    // customerEmail: yup
+    //   .string()
+    //   .matches(/@/, 'Email must contain "@"')
+    //   .email("Invalid email")
+    //   .required("Email is required"),
     // customerPhone: yup
     //   .string()
     //   .matches(/^\d{10}$/, "Invalid phone number, it must be 10 digits")
@@ -460,6 +464,7 @@ export default function Slotbooking() {
           };
         });
         setMyEventsList(events);
+        setFilteredSlots(events);
       } catch (error) {
         console.error("Failed to fetch the bookings", error);
         return null;
@@ -496,6 +501,56 @@ export default function Slotbooking() {
     };
   };
 
+  const handleSelectSlot = (e) => {
+    handleOpenDialog();
+
+    const startDateTime = dayjs(e?.start);
+    const endDateTime = dayjs(e?.end);
+
+    setSlotStartDateTime(startDateTime);
+    setValue("slotStartDateTime", startDateTime);
+
+    setValue("slotEndDateTime", endDateTime);
+    setSlotEndDateTime(endDateTime);
+
+    if (startDateTime && endDateTime) {
+      const durationInMillis = endDateTime.diff(startDateTime);
+      const durationInHours = Math.floor(durationInMillis / (1000 * 60 * 60));
+      const remainingMillis =
+        durationInMillis - durationInHours * (1000 * 60 * 60);
+      const durationInMinutes = Math.round(remainingMillis / (1000 * 60));
+      const duration = `${durationInHours}.${durationInMinutes}`;
+      setSlotDuration(duration);
+      setValue("slotDuration", duration);
+    }
+    // Set the selected chamber by resourceId
+    const selectedResource = myResourcesList.find(
+      (item) => item.id === e?.resourceId
+    );
+
+    if (selectedResource) {
+      const selectedResourceName = selectedResource.id;
+      setSelectedChamber(selectedResourceName);
+      setValue("selectedChamber", selectedResourceName);
+    }
+  };
+
+  const onChangeOfSearchInputOfSlot = (e) => {
+    const query = e.target.value.toLowerCase();
+    setSearchInputTextOfSlot(query);
+
+    const filtered = myEventsList.filter((event) =>
+      event.title.toLowerCase().includes(query)
+    );
+
+    setFilteredSlots(filtered);
+  };
+
+  const onClearSearchInputOfSlot = (e) => {
+    setSearchInputTextOfSlot("");
+    setFilteredSlots(myEventsList);
+  };
+
   return (
     <>
       <Box
@@ -524,14 +579,21 @@ export default function Slotbooking() {
           Slot Booking
         </Typography>
       </Divider>
-      <div
-        ref={calendarRef}
-        onContextMenu={handleCalendarContextMenu}
-        style={{ cursor: "context-menu" }}
-      >
+      <Grid container sx={{ mt: 1, mb: 2 }} spacing={2}>
+        <Grid item xs={12} sm={6} md={12}>
+          <SearchBar
+            placeholder="Search Slot"
+            searchInputText={searchInputTextOfSlot}
+            onChangeOfSearchInput={onChangeOfSearchInputOfSlot}
+            onClearSearchInput={onClearSearchInputOfSlot}
+          />
+        </Grid>
+      </Grid>
+      <div ref={calendarRef}>
         <Calendar
           localizer={localizer}
-          events={myEventsList}
+          // events={myEventsList}
+          events={filteredSlots}
           resources={myResourcesList}
           toolbar={true}
           defaultView="month"
@@ -539,26 +601,10 @@ export default function Slotbooking() {
           eventPropGetter={eventPropGetter}
           selectable={true}
           onSelectEvent={handleEventClick}
+          startAccessor="start"
+          endAccessor="end"
+          onSelectSlot={handleSelectSlot}
         />
-
-        {contextMenuOpen && (
-          <ClickAwayListener onClickAway={() => setContextMenuOpen(false)}>
-            <Menu
-              open={contextMenuOpen}
-              onClose={() => handleCloseContextMenu(false)}
-              anchorReference="anchorPosition"
-              anchorPosition={{ top: yPosition, left: xPosition }}
-            >
-              <MenuItem
-                onClick={(e) => {
-                  onClickingNewBooking(e);
-                }}
-              >
-                New Booking
-              </MenuItem>
-            </Menu>
-          </ClickAwayListener>
-        )}
       </div>
       {openDialog && (
         <Grid container sx={{ display: "flex" }}>
@@ -596,7 +642,7 @@ export default function Slotbooking() {
                   </Typography>
                 </Grid>
 
-                <Grid item>
+                {/* <Grid item>
                   <TextField
                     variant="outlined"
                     type="text"
@@ -609,19 +655,19 @@ export default function Slotbooking() {
                   <Typography variant="body2" color="error">
                     {errors?.customerName && errors.customerName.message}
                   </Typography>
-                </Grid>
+                </Grid> */}
 
                 <Grid item>
-                  <TextField
+                  {/* <TextField
                     variant="outlined"
                     type="email"
                     name="customerEmail"
                     label="Customer Email"
                     sx={{ width: "52%", mt: 2, pr: 1 }}
                     {...register("customerEmail")}
-                  />
+                  /> */}
 
-                  <TextField
+                  {/* <TextField
                     variant="outlined"
                     type="tel"
                     name="customerPhone"
@@ -638,7 +684,7 @@ export default function Slotbooking() {
                     <Typography variant="body2" color="error">
                       {errors?.customerPhone && errors.customerPhone.message}
                     </Typography>
-                  </div>
+                  </div> */}
                 </Grid>
 
                 <Grid item>

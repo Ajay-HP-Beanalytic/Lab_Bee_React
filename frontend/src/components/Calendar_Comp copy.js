@@ -1,12 +1,14 @@
-import React, { useState } from "react";
+import React from "react";
 import {
   Calendar as BigCalendar,
   CalendarProps,
   momentLocalizer,
 } from "react-big-calendar";
 import moment from "moment";
+import withDragAndDrop from "react-big-calendar/lib/addons/dragAndDrop";
 
 const localizer = momentLocalizer(moment);
+const DragAndDropCalendar = withDragAndDrop(BigCalendar);
 
 //Code to modify the custom toolbar:
 const CustomToolbar = (toolbar) => {
@@ -63,64 +65,48 @@ const CustomGutterHeader = ({ label }) => {
 };
 
 export default function Calendar(props) {
-  const [selectedEvents, setSelectedEvents] = useState([]);
-  const [showModal, setShowModal] = useState(false);
-
-  const eventPropGetter = (event, start, end, isSelected) => {
-    const className = isSelected ? "rbc-selected" : "";
-    return { className };
-  };
-
-  const onShowMore = (events, date) => {
-    setSelectedEvents(events);
-    setShowModal(true);
-  };
-
-  const handleEventClick = (event) => {
-    // Redirect to the day view or handle the event click here
-    console.log("Event clicked:", event);
-  };
-
   return (
-    <>
-      <BigCalendar
-        {...props}
-        localizer={localizer}
-        draggableAccessor={"isDraggable"}
-        resizable
-        onDragStart={(props) => {
-          console.log("onDragStart", props);
-        }}
-        onEventDrop={(props) => {
-          console.log("onEventDrop", props);
-        }}
-        onEventResize={(props) => {
-          console.log("onEventResize", props);
-        }}
-        style={{ height: "100vh" }}
-        components={{
-          toolbar: CustomToolbar,
-          timeGutterHeader: CustomGutterHeader,
-        }}
-        eventPropGetter={eventPropGetter}
-        onShowMore={onShowMore}
-      />
+    // <BigCalendar
+    //   {...props}
+    //   localizer={localizer}
+    //   draggableAccessor={"isDraggable"}
+    //   resizable
+    //   onDragStart={(props) => {
+    //     console.log("onDragStart", props);
+    //   }}
+    //   onEventDrop={(props) => {
+    //     console.log("onEventDrop", props);
+    //   }}
+    //   onEventResize={(props) => {
+    //     console.log("onEventResize", props);
+    //   }}
+    //   style={{ height: "100vh" }}
+    //   components={{
+    //     toolbar: CustomToolbar,
+    //     timeGutterHeader: CustomGutterHeader,
+    //   }}
+    // />
 
-      {showModal && (
-        <div className="custom-modal">
-          <div className="modal-content">
-            <h4>Events</h4>
-            <ul>
-              {selectedEvents.map((event, index) => (
-                <li key={index} onClick={() => handleEventClick(event)}>
-                  {event.title}
-                </li>
-              ))}
-            </ul>
-            <button onClick={() => setShowModal(false)}>Close</button>
-          </div>
-        </div>
-      )}
-    </>
+    <DragAndDropCalendar
+      {...props}
+      localizer={localizer}
+      draggableAccessor={"isDraggable"}
+      selectable={true}
+      resizable
+      onDragStart={(props) => {
+        console.log("onDragStart", props);
+      }}
+      onEventDrop={(props) => {
+        console.log("onEventDrop", props);
+      }}
+      onEventResize={(props) => {
+        console.log("onEventResize", props);
+      }}
+      style={{ height: "100vh" }}
+      components={{
+        toolbar: CustomToolbar,
+        timeGutterHeader: CustomGutterHeader,
+      }}
+    />
   );
 }

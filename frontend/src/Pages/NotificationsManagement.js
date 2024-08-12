@@ -5,7 +5,8 @@ import { NotificationContext } from "./NotificationContext";
 import { io } from "socket.io-client";
 
 export default function NotificationsManagement() {
-  const { loggedInUser, loggedInUserDepartment } = useContext(UserContext);
+  const { loggedInUser, loggedInUserDepartment, loggedInUserRole } =
+    useContext(UserContext);
   const { setNotifications } = useContext(NotificationContext);
 
   // const socket = io(serverBaseAddress); // Replace with your server address
@@ -20,6 +21,7 @@ export default function NotificationsManagement() {
       socket.emit("user_connected", {
         username: loggedInUser,
         department: loggedInUserDepartment,
+        userRole: loggedInUserRole,
       });
     }
 
@@ -60,6 +62,58 @@ export default function NotificationsManagement() {
         // Show a browser notification
         if (Notification.permission === "granted") {
           new Notification("New Notification", { body: message });
+        }
+      }
+    };
+
+    const handleJobcardTestCompletedNotification = ({ message, sender }) => {
+      if (sender !== loggedInUser) {
+        setNotifications((prevNotifications) => [
+          ...prevNotifications,
+          message,
+        ]);
+        // Show a browser notification
+        if (Notification.permission === "granted") {
+          new Notification("JC Test Completed Notification", { body: message });
+        }
+      }
+    };
+
+    const handleJobcardClosedNotification = ({ message, sender }) => {
+      if (sender !== loggedInUser) {
+        setNotifications((prevNotifications) => [
+          ...prevNotifications,
+          message,
+        ]);
+        // Show a browser notification
+        if (Notification.permission === "granted") {
+          new Notification("JC Closed Notification", { body: message });
+        }
+      }
+    };
+
+    const handleJobcardReportDeliveryNotification = ({ message, sender }) => {
+      if (sender !== loggedInUser) {
+        setNotifications((prevNotifications) => [
+          ...prevNotifications,
+          message,
+        ]);
+        // Show a browser notification
+        if (Notification.permission === "granted") {
+          new Notification("Report Delivery Notification", { body: message });
+        }
+      }
+    };
+
+    const handleJobcardReportStatusNotification = ({ message, sender }) => {
+      if (sender !== loggedInUser) {
+        setNotifications((prevNotifications) => [
+          ...prevNotifications,
+          message,
+        ]);
+        // Show a browser notification
+        if (Notification.permission === "granted") {
+          new Notification("Report Status Notification", { body: message });
         }
       }
     };
@@ -133,6 +187,22 @@ export default function NotificationsManagement() {
     socket.on("jobcard_submit_notification", handleJobcardSubmitNotification);
     socket.on("jobcard_update_notification", handleJobcardUpdateNotification);
     socket.on(
+      "jobcard_status_test_completed_notification",
+      handleJobcardTestCompletedNotification
+    );
+    socket.on(
+      "jobcard_status_closed_notification",
+      handleJobcardClosedNotification
+    );
+    socket.on(
+      "jobcard_report_delivery_notification",
+      handleJobcardReportDeliveryNotification
+    );
+    socket.on(
+      "jobcard_report_status_notification",
+      handleJobcardReportStatusNotification
+    );
+    socket.on(
       "new_slot_booking_notification",
       handleNewSlotBookingNotification
     );
@@ -162,8 +232,20 @@ export default function NotificationsManagement() {
         handleJobcardUpdateNotification
       );
       socket.off(
-        "jobcard_update_notification",
-        handleJobcardUpdateNotification
+        "jobcard_status_test_completed_notification",
+        handleJobcardTestCompletedNotification
+      );
+      socket.off(
+        "jobcard_status_closed_notification",
+        handleJobcardClosedNotification
+      );
+      socket.off(
+        "jobcard_report_delivery_notification",
+        handleJobcardReportDeliveryNotification
+      );
+      socket.off(
+        "jobcard_report_status_notification",
+        handleJobcardReportStatusNotification
       );
       socket.off(
         "update_slot_booking_notification",

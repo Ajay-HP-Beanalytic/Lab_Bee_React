@@ -5,8 +5,10 @@ import {
   momentLocalizer,
 } from "react-big-calendar";
 import moment from "moment";
+import withDragAndDrop from "react-big-calendar/lib/addons/dragAndDrop";
 
 const localizer = momentLocalizer(moment);
+const DragAndDropCalendar = withDragAndDrop(BigCalendar);
 
 //Code to modify the custom toolbar:
 const CustomToolbar = (toolbar) => {
@@ -64,10 +66,32 @@ const CustomGutterHeader = ({ label }) => {
 
 export default function Calendar(props) {
   return (
-    <BigCalendar
+    // <BigCalendar
+    //   {...props}
+    //   localizer={localizer}
+    //   draggableAccessor={"isDraggable"}
+    //   resizable
+    //   onDragStart={(props) => {
+    //     console.log("onDragStart", props);
+    //   }}
+    //   onEventDrop={(props) => {
+    //     console.log("onEventDrop", props);
+    //   }}
+    //   onEventResize={(props) => {
+    //     console.log("onEventResize", props);
+    //   }}
+    //   style={{ height: "100vh" }}
+    //   components={{
+    //     toolbar: CustomToolbar,
+    //     timeGutterHeader: CustomGutterHeader,
+    //   }}
+    // />
+
+    <DragAndDropCalendar
       {...props}
       localizer={localizer}
       draggableAccessor={"isDraggable"}
+      selectable={true}
       resizable
       onDragStart={(props) => {
         console.log("onDragStart", props);

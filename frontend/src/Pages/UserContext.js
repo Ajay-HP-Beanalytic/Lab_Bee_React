@@ -37,6 +37,7 @@ export const UserProvider = ({ children }) => {
 
   const [loggedInUser, setLoggedInUser] = useState("");
   const [loggedInUserDepartment, setLoggedInUserDepartment] = useState("");
+  const [loggedInUserRole, setLoggedInUserRole] = useState("");
 
   // To set the axios defaults only once
   useEffect(() => {
@@ -50,6 +51,7 @@ export const UserProvider = ({ children }) => {
         if (res.data.valid) {
           setLoggedInUser(res.data.user_name);
           setLoggedInUserDepartment(res.data.user_department);
+          setLoggedInUserRole(res.data.user_role);
         } else {
           navigate("/");
         }
@@ -68,6 +70,8 @@ export const UserProvider = ({ children }) => {
         setLoggedInUser,
         loggedInUserDepartment,
         setLoggedInUserDepartment,
+        loggedInUserRole,
+        setLoggedInUserRole,
       }}
     >
       {children}

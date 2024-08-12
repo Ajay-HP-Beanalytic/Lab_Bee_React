@@ -72,7 +72,8 @@ function App() {
           navigate("/quotation_dashboard");
         } else if (
           loggedInUserDepartment === "TS1 Testing" ||
-          loggedInUserDepartment === "TS2 Testing"
+          loggedInUserDepartment === "TS2 Testing" ||
+          loggedInUserDepartment === "Reports & Scrutiny"
         ) {
           navigate("/jobcard_dashboard");
         } else if (
@@ -137,7 +138,19 @@ function App() {
 
         {/* Protected Routes */}
         <Route path="" element={<SidenavigationBar />}>
-          <Route path="home" element={<Home />} />
+          {/* <Route path="home" element={<Home />} /> */}
+
+          <Route
+            path="home"
+            element={
+              <ProtectedRoute
+                allowedDepartments={["Administration", "Accounts"]}
+              >
+                <Home />
+              </ProtectedRoute>
+            }
+          />
+
           <Route
             path="quotation_dashboard"
             element={
@@ -189,6 +202,7 @@ function App() {
                   "TS2 Testing",
                   "Reliability",
                   "Software",
+                  "Reports & Scrutiny",
                 ]}
               >
                 <JCHome />
@@ -206,6 +220,7 @@ function App() {
                   "TS2 Testing",
                   "Reliability",
                   "Software",
+                  "Reports & Scrutiny",
                 ]}
               >
                 <Jobcard />
@@ -223,6 +238,7 @@ function App() {
                   "TS2 Testing",
                   "Reliability",
                   "Software",
+                  "Reports & Scrutiny",
                 ]}
               >
                 <Jobcard />
@@ -240,6 +256,7 @@ function App() {
                   "TS2 Testing",
                   "Reliability",
                   "Software",
+                  "Reports & Scrutiny",
                 ]}
               >
                 <JobcardRequirements />
@@ -250,7 +267,11 @@ function App() {
             path="chamber-calibration"
             element={
               <ProtectedRoute
-                allowedDepartments={["Administration", "TS1 Testing"]}
+                allowedDepartments={[
+                  "Administration",
+                  "TS1 Testing",
+                  "Reports & Scrutiny",
+                ]}
               >
                 <ChamberAndCalibration />
               </ProtectedRoute>
@@ -264,6 +285,7 @@ function App() {
                   "Administration",
                   "Accounts",
                   "TS1 Testing",
+                  "Reports & Scrutiny",
                 ]}
               >
                 <Slotbooking />

@@ -123,36 +123,6 @@ function jobcardsAPIs(app, io, labbeeUsers) {
         console.log(error);
         return res.status(500).json({ message: "Internal server error" });
       } else {
-        // Emit the event to specific departments
-        const departmentsToNotify = [
-          "Administration",
-          "Accounts",
-          "TS1 Testing",
-          "Reliability",
-        ];
-
-        for (let socketId in labbeeUsers) {
-          if (
-            departmentsToNotify.includes(labbeeUsers[socketId].department) &&
-            labbeeUsers[socketId].username !== loggedInUser
-          ) {
-            let message = "";
-
-            if (jcCategory === "TS1") {
-              message = `New TS1 ${jcNumber} created by ${loggedInUser}`;
-            } else if (jcCategory === "Reliability") {
-              message = `New Reliability ${jcNumber} created by ${loggedInUser}`;
-            } else if (jcCategory === "TS2") {
-              message = `New TS2 ${jcNumber} created by ${loggedInUser}`;
-            }
-
-            io.to(socketId).emit("jobcard_submit_notification", {
-              message: message,
-              sender: loggedInUser,
-            });
-          }
-        }
-
         return res.status(200).json({ message: "Jobcards added successfully" });
       }
     });
@@ -423,39 +393,48 @@ function jobcardsAPIs(app, io, labbeeUsers) {
         return res.status(404).json({ message: "Jobcard not found" });
       }
 
-      // io.emit("jobcard_update_notification", {
-      //   message: `TS1 JC ${jcNumber} updated by ${loggedInUser}`,
-      //   sender: loggedInUser,
-      // });
-
-      const departmentsToNotify = [
-        "Administration",
-        "Accounts",
-        "TS1 Testing",
-        "Reliability",
-      ];
+      const departmentsToNotify = ["Administration", "Accounts"];
+      const usersToNotify = ["Lab Manager"];
 
       for (let socketId in labbeeUsers) {
-        if (
-          departmentsToNotify.includes(labbeeUsers[socketId].department) &&
-          labbeeUsers[socketId].username !== loggedInUser
-        ) {
-          let message = "";
+        const user = labbeeUsers[socketId];
 
-          if (jcCategory === "TS1") {
-            message = `TS1 JC ${jcNumber} updated by ${loggedInUser}`;
-          } else if (jcCategory === "Reliability") {
-            message = `Reliability JC ${jcNumber} updated by ${loggedInUser}`;
-          } else if (jcCategory === "TS2") {
-            message = `TS2 JC ${jcNumber} updated by ${loggedInUser}`;
+        let message = "";
+
+        if (
+          (departmentsToNotify.includes(user.department) ||
+            usersToNotify.includes(user.role)) &&
+          user.name !== loggedInUser
+        ) {
+          // Notification for "Test Completed" status
+          if (jcCategory === "TS1" && jcStatus === "Test Completed") {
+            message = `TS1 JC ${jcNumber} status updated to Test Completed by ${loggedInUser}`;
+            io.to(socketId).emit("jobcard_status_test_completed_notification", {
+              message: message,
+              sender: loggedInUser,
+            });
           }
 
-          io.to(socketId).emit("jobcard_update_notification", {
-            message: message,
-            sender: loggedInUser,
-          });
+          // Notification for "Closed" status in TS1
+          if (jcCategory === "TS1" && jcStatus === "Closed") {
+            message = `TS1 JC ${jcNumber} status updated to Closed by ${loggedInUser}`;
+            io.to(socketId).emit("jobcard_status_closed_notification", {
+              message: message,
+              sender: loggedInUser,
+            });
+          }
+
+          // Notification for "Closed" status in Reliability
+          if (jcCategory === "Reliability" && jcStatus === "Closed") {
+            message = `Reliability JC ${jcNumber} Closed by ${loggedInUser}`;
+            io.to(socketId).emit("jobcard_update_notification", {
+              message: message,
+              sender: loggedInUser,
+            });
+          }
         }
       }
+
       res.status(200).json({
         message: "Jobcard updated successfully",
       });
@@ -955,6 +934,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
       nablUploaded,
       reportStatus,
       jcNumber,
+      loggedInUser,
     } = req.body;
 
     const formattedStartDate = startDate ? convertDateTime(startDate) : null;
@@ -1068,12 +1048,62 @@ function jobcardsAPIs(app, io, labbeeUsers) {
                 .json({ message: "tests_details inserted successfully" });
             }
           });
-        } else {
-          res
-            .status(200)
-            .json({ message: "tests_details updated successfully" });
         }
       }
+
+      const departmentsToNotifyReportStatus = [
+        "Administration",
+        "Accounts",
+        "Reports & Scrutiny",
+      ];
+
+      const usersToNotifyReportStatus = ["Lab Manager"];
+
+      const testReportInstructionOptions = [
+        "Send Draft Report Only",
+        "Send Final Report",
+        "Hold Report",
+      ];
+
+      const reportStatusOptions = [
+        "Draft Report Sent",
+        "Final Report Sent",
+        "On-Hold",
+        "Not Sent",
+      ];
+
+      for (let socketId in labbeeUsers) {
+        const user = labbeeUsers[socketId];
+
+        let message = "";
+
+        if (
+          (departmentsToNotifyReportStatus.includes(user.department) ||
+            usersToNotifyReportStatus.includes(user.role)) &&
+          user.name !== loggedInUser
+        ) {
+          if (
+            testReportInstructions &&
+            testReportInstructionOptions.includes(testReportInstructions)
+          ) {
+            message = `Test Report Instructions: "${testReportInstructions}" of TS1 JC ${jcNumber} updated by ${loggedInUser}`;
+            io.to(socketId).emit("jobcard_report_delivery_notification", {
+              message: message,
+              sender: loggedInUser,
+            });
+          }
+
+          // Handle notification for reportStatus
+          if (reportStatus && reportStatusOptions.includes(reportStatus)) {
+            message = `Report Status: "${reportStatus}" of TS1 JC ${jcNumber} updated by ${loggedInUser}`;
+            io.to(socketId).emit("jobcard_report_status_notification", {
+              message: message,
+              sender: loggedInUser,
+            });
+          }
+        }
+      }
+      res.status(200).json({ message: "tests_details updated successfully" });
     });
   });
 
