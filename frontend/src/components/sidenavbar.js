@@ -277,7 +277,7 @@ export default function SidenavigationBar() {
       return [2, 3].includes(item.i);
     } else if (
       loggedInUserDepartment === "TS1 Testing" ||
-      loggedInUserDepartment === "TS2 Testing"
+      loggedInUserDepartment === "Reports & Scrutiny"
     ) {
       return [4, 6, 7].includes(item.i);
     } else if (

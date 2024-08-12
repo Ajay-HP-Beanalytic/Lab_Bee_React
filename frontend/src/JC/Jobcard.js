@@ -158,10 +158,10 @@ const Jobcard = ({ jobCardData }) => {
     { value: "Send Draft Report Only", label: "Send Draft Report Only" },
     { value: "Send Final Report", label: "Send Final Report" },
     { value: "Hold Report", label: "Hold Report" },
-    {
-      value: "Consult with accounts dept",
-      label: "Consult with accounts dept",
-    },
+    // {
+    //   value: "Consult with accounts dept",
+    //   label: "Consult with accounts dept",
+    // },
   ];
 
   const TS1ReportStausOptions = [
@@ -735,6 +735,7 @@ const Jobcard = ({ jobCardData }) => {
             nablUploaded: testdetailsRows[i].nablUploaded,
             reportStatus: testdetailsRows[i].reportStatus,
             jcNumber: jcNumberString,
+            loggedInUser: loggedInUser,
           };
         };
 

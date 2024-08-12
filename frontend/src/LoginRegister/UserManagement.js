@@ -66,6 +66,7 @@ export default function UserManagement() {
     "Software",
     "TS1 Testing",
     "TS2 Testing",
+    "Reports & Scrutiny",
   ];
 
   const userDepartmentAndRoles = {
@@ -85,6 +86,7 @@ export default function UserManagement() {
       "Lab Assistant",
       "Quality Manager",
       "Deputy Quality Manager",
+      "Reports & Scrutiny Manager",
     ],
     "TS2 Testing": [
       "Lab Manager",
@@ -92,6 +94,7 @@ export default function UserManagement() {
       "Lab Technician",
       "Lab Assistant",
     ],
+    "Reports & Scrutiny": ["Reports & Scrutiny Manager", "Quality Engineer"],
   };
 
   const userStatusOptions = ["Enable", "Disable"];

@@ -633,6 +633,10 @@ export default function JCHome() {
             jcClosedCount++;
             break;
 
+          case "Closed":
+            jcClosedCount++;
+            break;
+
           case "Test Completed":
             jcTestCompletedCount++;
             break;
@@ -823,7 +827,8 @@ export default function JCHome() {
 
       {(loggedInUserDepartment === "TS1 Testing" ||
         loggedInUserDepartment === "Administration" ||
-        loggedInUserDepartment === "Accounts") && (
+        loggedInUserDepartment === "Accounts" ||
+        loggedInUserDepartment === "Reports & Scrutiny") && (
         <>
           {filteredJcData && filteredJcData.length === 0 ? (
             <EmptyCard message="No JC Found" />
