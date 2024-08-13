@@ -64,6 +64,7 @@ export default function JCPreview({
   const { loggedInUser, loggedInUserDepartment } = useContext(UserContext);
 
   const isTS1Testing = loggedInUserDepartment === "TS1 Testing";
+  const isReportsAndScrutiny = loggedInUserDepartment === "Reports & Scrutiny";
   const isReliability = loggedInUserDepartment === "Reliability";
   const isAdminOrAccounts =
     loggedInUserDepartment === "Administration" ||
@@ -174,138 +175,139 @@ export default function JCPreview({
 
       <Divider />
 
-      {jcCategory === "TS1" && (isTS1Testing || isAdminOrAccounts) && (
-        <>
-          {eutRows && eutRows.length > 0 && (
-            <TableContainer
-              component={Paper}
-              sx={{ padding: 2, mt: 2, backgroundColor: "#f5f5f0" }}
-            >
-              <Typography variant="h6" align="center">
-                EUT Details
-              </Typography>
-              <Table
-                size="small"
-                aria-label="simple table"
-                sx={{ minWidth: "100%" }}
+      {jcCategory === "TS1" &&
+        (isTS1Testing || isReportsAndScrutiny || isAdminOrAccounts) && (
+          <>
+            {eutRows && eutRows.length > 0 && (
+              <TableContainer
+                component={Paper}
+                sx={{ padding: 2, mt: 2, backgroundColor: "#f5f5f0" }}
               >
-                <TableHead sx={tableHeaderStyle}>
-                  <TableRow>
-                    {eutTableHeaderNames.map((name, index) => (
-                      <TableCell key={index} sx={tableCellStyle}>
-                        {name}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {eutRows.map((row, index) => (
-                    <TableRow key={index}>
-                      <TableCell> {index + 1}</TableCell>
-                      <TableCell>
-                        {" "}
-                        {row.nomenclature}
-                        {row.eutDescription}
-                      </TableCell>
-                      <TableCell>{row.qty}</TableCell>
-                      <TableCell> {row.partNo}</TableCell>
-                      <TableCell>{row.modelNo}</TableCell>
-                      <TableCell> {row.serialNo}</TableCell>
+                <Typography variant="h6" align="center">
+                  EUT Details
+                </Typography>
+                <Table
+                  size="small"
+                  aria-label="simple table"
+                  sx={{ minWidth: "100%" }}
+                >
+                  <TableHead sx={tableHeaderStyle}>
+                    <TableRow>
+                      {eutTableHeaderNames.map((name, index) => (
+                        <TableCell key={index} sx={tableCellStyle}>
+                          {name}
+                        </TableCell>
+                      ))}
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          )}
+                  </TableHead>
+                  <TableBody>
+                    {eutRows.map((row, index) => (
+                      <TableRow key={index}>
+                        <TableCell> {index + 1}</TableCell>
+                        <TableCell>
+                          {" "}
+                          {row.nomenclature}
+                          {row.eutDescription}
+                        </TableCell>
+                        <TableCell>{row.qty}</TableCell>
+                        <TableCell> {row.partNo}</TableCell>
+                        <TableCell>{row.modelNo}</TableCell>
+                        <TableCell> {row.serialNo}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            )}
 
-          {testRows && testRows.length > 0 && (
-            <TableContainer
-              component={Paper}
-              sx={{ padding: 2, mt: 2, backgroundColor: "#f5f5f0" }}
-            >
-              <Typography variant="h6" align="center">
-                Tests Requested
-              </Typography>
-              <Table
-                size="small"
-                aria-label="simple table"
-                sx={{ minWidth: "100%" }}
+            {testRows && testRows.length > 0 && (
+              <TableContainer
+                component={Paper}
+                sx={{ padding: 2, mt: 2, backgroundColor: "#f5f5f0" }}
               >
-                <TableHead sx={tableHeaderStyle}>
-                  <TableRow>
-                    {testsTableHeaderNames.map((name, index) => (
-                      <TableCell key={index} sx={tableCellStyle}>
-                        {name}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {testRows.map((row, index) => (
-                    <TableRow key={index}>
-                      <TableCell>{index + 1}</TableCell>
-                      <TableCell>{row.test}</TableCell>
-                      <TableCell>{row.nabl}</TableCell>
-                      <TableCell>{row.testStandard}</TableCell>
-                      <TableCell>{row.testProfile}</TableCell>
+                <Typography variant="h6" align="center">
+                  Tests Requested
+                </Typography>
+                <Table
+                  size="small"
+                  aria-label="simple table"
+                  sx={{ minWidth: "100%" }}
+                >
+                  <TableHead sx={tableHeaderStyle}>
+                    <TableRow>
+                      {testsTableHeaderNames.map((name, index) => (
+                        <TableCell key={index} sx={tableCellStyle}>
+                          {name}
+                        </TableCell>
+                      ))}
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          )}
+                  </TableHead>
+                  <TableBody>
+                    {testRows.map((row, index) => (
+                      <TableRow key={index}>
+                        <TableCell>{index + 1}</TableCell>
+                        <TableCell>{row.test}</TableCell>
+                        <TableCell>{row.nabl}</TableCell>
+                        <TableCell>{row.testStandard}</TableCell>
+                        <TableCell>{row.testProfile}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            )}
 
-          {testDetailsRows && testDetailsRows.length > 0 && (
-            <TableContainer
-              component={Paper}
-              sx={{ padding: 2, mt: 2, backgroundColor: "#f5f5f0" }}
-            >
-              <Typography variant="h6" align="center">
-                Tests Performed
-              </Typography>
-              <Table
-                size="small"
-                aria-label="simple table"
-                sx={{ minWidth: "100%" }}
+            {testDetailsRows && testDetailsRows.length > 0 && (
+              <TableContainer
+                component={Paper}
+                sx={{ padding: 2, mt: 2, backgroundColor: "#f5f5f0" }}
               >
-                <TableHead sx={tableHeaderStyle}>
-                  <TableRow>
-                    {testPerformedTableHeaderNames.map((name, index) => (
-                      <TableCell key={index} sx={tableCellStyle}>
-                        {name}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {testDetailsRows.map((row, index) => (
-                    <TableRow key={index}>
-                      <TableCell>{index + 1}</TableCell>
-                      <TableCell>{row.testName}</TableCell>
-                      <TableCell>{row.testChamber}</TableCell>
-                      <TableCell>{row.eutSerialNo}</TableCell>
-                      <TableCell>{row.standard}</TableCell>
-                      <TableCell>{row.testStartedBy}</TableCell>
-                      <TableCell>{formatDateTime(row.startDate)}</TableCell>
-                      <TableCell>{formatDateTime(row.endDate)}</TableCell>
-                      <TableCell>{row.duration}</TableCell>
-                      <TableCell>{row.actualTestDuration}</TableCell>
-                      <TableCell>{row.unit}</TableCell>
-                      <TableCell>{row.testEndedBy}</TableCell>
-                      <TableCell>{row.remarks}</TableCell>
-                      <TableCell>{row.testReportInstructions}</TableCell>
-                      <TableCell>{row.reportNumber}</TableCell>
-                      <TableCell>{row.preparedBy}</TableCell>
-                      <TableCell>{row.nablUploaded}</TableCell>
-                      <TableCell>{row.reportStatus}</TableCell>
+                <Typography variant="h6" align="center">
+                  Tests Performed
+                </Typography>
+                <Table
+                  size="small"
+                  aria-label="simple table"
+                  sx={{ minWidth: "100%" }}
+                >
+                  <TableHead sx={tableHeaderStyle}>
+                    <TableRow>
+                      {testPerformedTableHeaderNames.map((name, index) => (
+                        <TableCell key={index} sx={tableCellStyle}>
+                          {name}
+                        </TableCell>
+                      ))}
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          )}
-        </>
-      )}
+                  </TableHead>
+                  <TableBody>
+                    {testDetailsRows.map((row, index) => (
+                      <TableRow key={index}>
+                        <TableCell>{index + 1}</TableCell>
+                        <TableCell>{row.testName}</TableCell>
+                        <TableCell>{row.testChamber}</TableCell>
+                        <TableCell>{row.eutSerialNo}</TableCell>
+                        <TableCell>{row.standard}</TableCell>
+                        <TableCell>{row.testStartedBy}</TableCell>
+                        <TableCell>{formatDateTime(row.startDate)}</TableCell>
+                        <TableCell>{formatDateTime(row.endDate)}</TableCell>
+                        <TableCell>{row.duration}</TableCell>
+                        <TableCell>{row.actualTestDuration}</TableCell>
+                        <TableCell>{row.unit}</TableCell>
+                        <TableCell>{row.testEndedBy}</TableCell>
+                        <TableCell>{row.remarks}</TableCell>
+                        <TableCell>{row.testReportInstructions}</TableCell>
+                        <TableCell>{row.reportNumber}</TableCell>
+                        <TableCell>{row.preparedBy}</TableCell>
+                        <TableCell>{row.nablUploaded}</TableCell>
+                        <TableCell>{row.reportStatus}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            )}
+          </>
+        )}
 
       {jcCategory === "Reliability" && (isReliability || isAdminOrAccounts) && (
         <>

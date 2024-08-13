@@ -232,7 +232,10 @@ export default function JCHome() {
   ];
 
   let primaryJCDetails = [];
-  if (loggedInUserDepartment === "TS1 Testing") {
+  if (
+    loggedInUserDepartment === "TS1 Testing" ||
+    loggedInUserDepartment === "Reports & Scrutiny"
+  ) {
     primaryJCDetails = primaryTS1JCDetailsToPreview;
   } else if (loggedInUserDepartment === "Reliability") {
     primaryJCDetails = primaryReliabilityJCDetailsToPreview;
@@ -344,7 +347,7 @@ export default function JCHome() {
     setFilteredReliabilityJcData(reliabilityJCTableData);
 
     setReliabilityJCNumbers(reliabilityJCTableData.map((row) => row.jc_number));
-  }, [jcTableData, reliabilityJCTableData]);
+  }, [jcTableData, reliabilityJCTableData, refresh, location.state]);
 
   //If data is loading then show Loading text
   if (loading) {

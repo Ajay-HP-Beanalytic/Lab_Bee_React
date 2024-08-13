@@ -365,7 +365,11 @@ export default function Quotation() {
         (row) => row.module_id && row.amount
       );
     }
-    if (quoteCategory === "Reliability") {
+    if (
+      quoteCategory === "Reliability" ||
+      quoteCategory === "Software" ||
+      quoteCategory === "Others"
+    ) {
       isAtLeastOneRowIsFilled = tableData.some(
         (row) => row.testDescription && row.amount
       );
@@ -790,16 +794,16 @@ export default function Quotation() {
                             setQuoteCategory(e.target.value);
                             if (e.target.value === "Environmental Testing") {
                               setCatCode("TS1");
-                              // newCatCode = "TS1";
                             } else if (e.target.value === "EMI & EMC") {
                               setCatCode("TS2");
-                              // newCatCode = "TS2";
                             } else if (e.target.value === "Reliability") {
                               setCatCode("RE");
-                              // newCatCode = "RE";
                             } else if (e.target.value === "Item Soft") {
                               setCatCode("IT");
-                              // newCatCode = "IT";
+                            } else if (e.target.value === "Software") {
+                              setCatCode("SOFTWARE");
+                            } else if (e.target.value === "Others") {
+                              setCatCode("Others");
                             }
                           }}
                           label="Quote Type"
@@ -810,6 +814,8 @@ export default function Quotation() {
                           <MenuItem value="Reliability">Reliability</MenuItem>
                           <MenuItem value="EMI & EMC">EMI & EMC</MenuItem>
                           <MenuItem value="Item Soft">Item Soft</MenuItem>
+                          <MenuItem value="Software">Software</MenuItem>
+                          <MenuItem value="Others">Others</MenuItem>
                         </Select>
                       </FormControl>
                     )}
@@ -859,7 +865,9 @@ export default function Quotation() {
                       </TableCell>
                       {(quoteCategory === "Environmental Testing" ||
                         quoteCategory === "EMI & EMC" ||
-                        quoteCategory === "Reliability") && (
+                        quoteCategory === "Reliability" ||
+                        quoteCategory === "Software" ||
+                        quoteCategory === "Others") && (
                         <TableCell align="center" sx={tableCellStyle}>
                           Test Description
                         </TableCell>
@@ -920,7 +928,9 @@ export default function Quotation() {
                         </TableCell>
                         {(quoteCategory === "Environmental Testing" ||
                           quoteCategory === "EMI & EMC" ||
-                          quoteCategory === "Reliability") && (
+                          quoteCategory === "Reliability" ||
+                          quoteCategory === "Software" ||
+                          quoteCategory === "Others") && (
                           <TableCell align="center">
                             <TextField
                               value={row.testDescription}

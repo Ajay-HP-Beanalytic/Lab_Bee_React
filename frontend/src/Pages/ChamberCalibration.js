@@ -678,7 +678,7 @@ export default function ChamberAndCalibration() {
                   // kpiNames={calibrationsPendingThisMonth}
                   kpiNames={calibrationsPendingNext45Days}
                   accordianTitleString={accordianTitleString}
-                  kpiIcon={<FcOvertime size="130px" />}
+                  kpiIcon={<FcOvertime size="100px" />}
                 />
               </Card>
             </Grid>

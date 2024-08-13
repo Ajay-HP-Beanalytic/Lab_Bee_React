@@ -96,7 +96,11 @@ export default function DocToPdf({ id }) {
       templateDocument = TS1Template;
     }
 
-    if (quoteCategory === "Reliability") {
+    if (
+      quoteCategory === "Reliability" ||
+      quoteCategory === "Software" ||
+      quoteCategory === "Others"
+    ) {
       templateDocument = RETemplate;
     }
 
