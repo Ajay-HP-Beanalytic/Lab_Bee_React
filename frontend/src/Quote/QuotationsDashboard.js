@@ -315,7 +315,13 @@ export default function QuotationsDashboard() {
     datasets: [
       {
         data: quoteCategoryCountsForQuotePieChart,
-        backgroundColor: ["#70a288", "#d1495b", "#119da4", "#679436"],
+        backgroundColor: [
+          "#70a288",
+          "#d1495b",
+          "#119da4",
+          "#679436",
+          "#ffcc80",
+        ],
       },
     ],
   };
@@ -593,7 +599,14 @@ export default function QuotationsDashboard() {
   };
 
   // const kpiColors = ["#66cc99", "#d6d6c2", "#e6e6ff", "#e6ffcc", "#ffe6cc"];
-  const kpiColors = ["#00cc99", "#70a288", "#d1495b", "#119da4", "#679436"];
+  const kpiColors = [
+    "#00cc99",
+    "#70a288",
+    "#d1495b",
+    "#119da4",
+    "#679436",
+    "#ffcc80",
+  ];
 
   const addSerialNumbersToRows = (data) => {
     return data.map((item, index) => ({

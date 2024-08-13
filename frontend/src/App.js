@@ -15,7 +15,6 @@ import "./App.css";
 import Login from "./LoginRegister/Login";
 import Register from "./LoginRegister/Register";
 import ResetPassword from "./LoginRegister/ForgotPassword";
-import TrailPage from "./TrailPage";
 import SidenavigationBar from "./components/sidenavbar";
 
 import NotFoundPage from "./Pages/NotFoundPage";
@@ -85,36 +84,6 @@ function App() {
       }
     }
   }, [loggedInUserDepartment, location.pathname, navigate]);
-
-  // useEffect(() => {
-  //   if (loggedInUserDepartment) {
-  //     if (location.pathname === "/" || location.pathname === "/home") {
-  //       if (
-  //         loggedInUserDepartment === "Administration" ||
-  //         loggedInUserDepartment === "Accounts"
-  //       ) {
-  //         navigate("/home");
-  //       } else if (loggedInUserDepartment === "Marketing") {
-  //         navigate("/quotation_dashboard");
-  //       } else if (
-  //         loggedInUserDepartment === "TS1 Testing" ||
-  //         loggedInUserDepartment === "TS2 Testing"
-  //       ) {
-  //         navigate("/jobcard_dashboard");
-  //       } else if (
-  //         loggedInUserDepartment === "Reliability" ||
-  //         loggedInUserDepartment === "Software"
-  //       ) {
-  //         navigate("/jobcard_dashboard");
-  //       }
-  //     }
-  //   }
-  // }, [loggedInUserDepartment, location.pathname, navigate]);
-
-  // if (!loggedInUserDepartment) {
-  //   // Optionally show a loading state or a splash screen here
-  //   return null;
-  // }
 
   return (
     <div className="App">
@@ -315,7 +284,7 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route path="trailpage" element={<TrailPage />} />
+
           <Route path="*" element={<NotFoundPage />} />
         </Route>
       </Routes>

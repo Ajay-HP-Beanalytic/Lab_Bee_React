@@ -123,6 +123,34 @@ function jobcardsAPIs(app, io, labbeeUsers) {
         console.log(error);
         return res.status(500).json({ message: "Internal server error" });
       } else {
+        const departmentsToNotify = [
+          // "Accounts",
+          "TS1 Testing",
+          "Reliability",
+          "Reports & Scrutiny",
+        ];
+
+        for (let socketId in labbeeUsers) {
+          if (
+            departmentsToNotify.includes(labbeeUsers[socketId].department) &&
+            labbeeUsers[socketId].username !== loggedInUser
+          ) {
+            let message = "";
+
+            if (jcCategory === "TS1") {
+              message = `New TS1 ${jcNumber} created by ${loggedInUser}`;
+            } else if (jcCategory === "Reliability") {
+              message = `New Reliability ${jcNumber} created by ${loggedInUser}`;
+            } else if (jcCategory === "TS2") {
+              message = `New TS2 ${jcNumber} created by ${loggedInUser}`;
+            }
+
+            io.to(socketId).emit("jobcard_submit_notification", {
+              message: message,
+              sender: loggedInUser,
+            });
+          }
+        }
         return res.status(200).json({ message: "Jobcards added successfully" });
       }
     });
@@ -280,6 +308,183 @@ function jobcardsAPIs(app, io, labbeeUsers) {
   // });
 
   // To Edit the selected jobcards:
+  // app.post("/api/jobcard/:id", (req, res) => {
+  //   const {
+  //     jcNumber,
+  //     srfNumber,
+  //     srfDate,
+  //     dcNumber,
+  //     jcOpenDate,
+  //     itemReceivedDate,
+  //     poNumber,
+  //     testCategory,
+  //     testDiscipline,
+  //     sampleCondition,
+  //     typeOfRequest,
+  //     reportType,
+  //     testInchargeName,
+  //     jcCategory,
+  //     companyName,
+  //     companyAddress,
+  //     customerName,
+  //     customerEmail,
+  //     customerNumber,
+  //     projectName,
+  //     testInstructions,
+  //     jcStatus,
+  //     reliabilityReportStatus,
+  //     jcCloseDate,
+  //     observations,
+  //     jcLastModifiedBy,
+  //     loggedInUser,
+  //     loggedInUserDepartment,
+  //   } = req.body;
+
+  //   const formattedSrfDate = srfDate ? convertDateTime(srfDate) : null;
+  //   const formattedItemReceivedDate = itemReceivedDate
+  //     ? dayjs(itemReceivedDate).format("YYYY-MM-DD")
+  //     : null;
+  //   // const referanceDocsSerialized = JSON.stringify(referanceDocs);
+  //   const formattedOpenDate = jcOpenDate ? convertDateTime(jcOpenDate) : null;
+  //   const formattedCloseDate = jcCloseDate
+  //     ? convertDateTime(jcCloseDate)
+  //     : null;
+
+  //   const sqlQuery = `
+  //       UPDATE bea_jobcards SET
+  //           srf_number = ?,
+  //           srf_date = ?,
+  //           dcform_number = ?,
+  //           jc_open_date = ?,
+  //           item_received_date = ?,
+  //           po_number = ?,
+  //           test_category = ?,
+  //           test_discipline = ?,
+  //           sample_condition = ?,
+  //           type_of_request = ?,
+  //           report_type = ?,
+  //           test_incharge = ?,
+  //           jc_category = ?,
+  //           company_name = ?,
+  //           company_address = ?,
+  //           customer_name = ?,
+  //           customer_email = ?,
+  //           customer_number = ?,
+  //           project_name = ?,
+  //           test_instructions = ?,
+  //           jc_status = ?,
+  //           reliability_report_status = ?,
+  //           jc_closed_date = ?,
+  //           observations = ?,
+  //           last_updated_by = ?
+  //       WHERE jc_number = ?
+  //   `;
+
+  //   const values = [
+  //     srfNumber,
+  //     formattedSrfDate,
+  //     dcNumber,
+  //     formattedOpenDate,
+  //     formattedItemReceivedDate,
+  //     poNumber,
+  //     testCategory,
+  //     testDiscipline,
+  //     sampleCondition,
+  //     typeOfRequest,
+  //     reportType,
+  //     testInchargeName,
+  //     jcCategory,
+  //     companyName,
+  //     companyAddress,
+  //     customerName,
+  //     customerEmail,
+  //     customerNumber,
+  //     projectName,
+  //     testInstructions,
+  //     jcStatus,
+  //     reliabilityReportStatus,
+  //     formattedCloseDate,
+  //     observations,
+  //     loggedInUser,
+  //     jcNumber,
+  //   ];
+
+  //   db.query(sqlQuery, values, (error, result) => {
+  //     if (error) {
+  //       console.error("Error executing query:", error.message);
+  //       return res
+  //         .status(500)
+  //         .json({ message: "Internal server error", error: error.message });
+  //     }
+  //     if (result.affectedRows === 0) {
+  //       console.warn("No rows updated. Check if the jc_number exists.");
+  //       return res.status(404).json({ message: "Jobcard not found" });
+  //     }
+
+  //     const testCompletedToNotify = ["Lab Manager"];
+  //     const jcClosedToNotify = ["Accounts Admin", "Accounts Executive"];
+
+  //     for (let socketId in labbeeUsers) {
+  //       const user = labbeeUsers[socketId];
+  //       let message = "";
+
+  //       if (
+  //         testCompletedToNotify.includes(user.role) &&
+  //         user.name !== loggedInUser
+  //       ) {
+  //         // Notification for "Test Completed" status
+  //         if (jcCategory === "TS1" && jcStatus === "Test Completed") {
+  //           message = `TS1 JC ${jcNumber} Test Completed, by ${loggedInUser}`;
+  //           io.to(socketId).emit("jobcard_status_test_completed_notification", {
+  //             message: message,
+  //             sender: loggedInUser,
+  //           });
+  //         }
+  //       }
+
+  //       if (
+  //         jcClosedToNotify.includes(user.role) &&
+  //         user.name !== loggedInUser
+  //       ) {
+  //         // Notification for "Closed" status in TS1
+  //         if (
+  //           jcCategory === "TS1" &&
+  //           (jcStatus === "Closed" || jcStatus === "Close")
+  //         ) {
+  //           message = `TS1 JC ${jcNumber} Closed, by ${loggedInUser}`;
+  //           io.to(socketId).emit("jobcard_status_closed_notification", {
+  //             message: message,
+  //             sender: loggedInUser,
+  //           });
+  //         }
+  //       }
+
+  //       if (
+  //         jcClosedToNotify.includes(user.role) &&
+  //         user.name !== loggedInUser
+  //       ) {
+  //         // Notification for "Closed" status in Reliability
+  //         if (
+  //           jcCategory === "Reliability" &&
+  //           (jcStatus === "Closed" || jcStatus === "Close")
+  //         ) {
+  //           message = `Reliability JC ${jcNumber} Closed, by ${loggedInUser}`;
+  //           io.to(socketId).emit("jobcard_status_closed_notification", {
+  //             message: message,
+  //             sender: loggedInUser,
+  //           });
+  //         }
+  //       }
+  //     }
+
+  //     res.status(200).json({
+  //       message: "Jobcard updated successfully",
+  //     });
+  //   });
+  // });
+
+  //////////////////////////////////////////////////////////////////////////////////////////
+
   app.post("/api/jobcard/:id", (req, res) => {
     const {
       jcNumber,
@@ -316,13 +521,27 @@ function jobcardsAPIs(app, io, labbeeUsers) {
     const formattedItemReceivedDate = itemReceivedDate
       ? dayjs(itemReceivedDate).format("YYYY-MM-DD")
       : null;
-    // const referanceDocsSerialized = JSON.stringify(referanceDocs);
     const formattedOpenDate = jcOpenDate ? convertDateTime(jcOpenDate) : null;
     const formattedCloseDate = jcCloseDate
       ? convertDateTime(jcCloseDate)
       : null;
 
-    const sqlQuery = `
+    // First, fetch the existing jcStatus from the database
+    const fetchQuery = `SELECT jc_status FROM bea_jobcards WHERE jc_number = ?`;
+
+    db.query(fetchQuery, [jcNumber], (fetchError, fetchResult) => {
+      if (fetchError) {
+        console.error("Error fetching existing jcStatus:", fetchError.message);
+        return res.status(500).json({
+          message: "Internal server error",
+          error: fetchError.message,
+        });
+      }
+
+      const existingJcStatus = fetchResult[0]?.jc_status;
+
+      // Proceed with the update only after fetching the current status
+      const sqlQuery = `
         UPDATE bea_jobcards SET
             srf_number = ?,
             srf_date = ?,
@@ -350,96 +569,120 @@ function jobcardsAPIs(app, io, labbeeUsers) {
             observations = ?,
             last_updated_by = ?
         WHERE jc_number = ?
-    `;
+      `;
 
-    const values = [
-      srfNumber,
-      formattedSrfDate,
-      dcNumber,
-      formattedOpenDate,
-      formattedItemReceivedDate,
-      poNumber,
-      testCategory,
-      testDiscipline,
-      sampleCondition,
-      typeOfRequest,
-      reportType,
-      testInchargeName,
-      jcCategory,
-      companyName,
-      companyAddress,
-      customerName,
-      customerEmail,
-      customerNumber,
-      projectName,
-      testInstructions,
-      jcStatus,
-      reliabilityReportStatus,
-      formattedCloseDate,
-      observations,
-      loggedInUser,
-      jcNumber,
-    ];
+      const values = [
+        srfNumber,
+        formattedSrfDate,
+        dcNumber,
+        formattedOpenDate,
+        formattedItemReceivedDate,
+        poNumber,
+        testCategory,
+        testDiscipline,
+        sampleCondition,
+        typeOfRequest,
+        reportType,
+        testInchargeName,
+        jcCategory,
+        companyName,
+        companyAddress,
+        customerName,
+        customerEmail,
+        customerNumber,
+        projectName,
+        testInstructions,
+        jcStatus,
+        reliabilityReportStatus,
+        formattedCloseDate,
+        observations,
+        loggedInUser,
+        jcNumber,
+      ];
 
-    db.query(sqlQuery, values, (error, result) => {
-      if (error) {
-        console.error("Error executing query:", error.message);
-        return res
-          .status(500)
-          .json({ message: "Internal server error", error: error.message });
-      }
-      if (result.affectedRows === 0) {
-        console.warn("No rows updated. Check if the jc_number exists.");
-        return res.status(404).json({ message: "Jobcard not found" });
-      }
+      db.query(sqlQuery, values, (updateError, result) => {
+        if (updateError) {
+          console.error("Error executing query:", updateError.message);
+          return res.status(500).json({
+            message: "Internal server error",
+            error: updateError.message,
+          });
+        }
+        if (result.affectedRows === 0) {
+          console.warn("No rows updated. Check if the jc_number exists.");
+          return res.status(404).json({ message: "Jobcard not found" });
+        }
 
-      const departmentsToNotify = ["Administration", "Accounts"];
-      const usersToNotify = ["Lab Manager"];
+        // Now, trigger notifications only if the jcStatus has changed
+        if (existingJcStatus !== jcStatus) {
+          const testCompletedToNotify = ["Lab Manager"];
+          const jcClosedToNotify = ["Accounts Admin", "Accounts Executive"];
 
-      for (let socketId in labbeeUsers) {
-        const user = labbeeUsers[socketId];
+          for (let socketId in labbeeUsers) {
+            const user = labbeeUsers[socketId];
+            let message = "";
 
-        let message = "";
+            if (
+              testCompletedToNotify.includes(user.role) &&
+              user.name !== loggedInUser
+            ) {
+              // Notification for "Test Completed" status
+              if (jcCategory === "TS1" && jcStatus === "Test Completed") {
+                message = `TS1 JC ${jcNumber} Test Completed, by ${loggedInUser}`;
+                io.to(socketId).emit(
+                  "jobcard_status_test_completed_notification",
+                  {
+                    message: message,
+                    sender: loggedInUser,
+                  }
+                );
+              }
+            }
 
-        if (
-          (departmentsToNotify.includes(user.department) ||
-            usersToNotify.includes(user.role)) &&
-          user.name !== loggedInUser
-        ) {
-          // Notification for "Test Completed" status
-          if (jcCategory === "TS1" && jcStatus === "Test Completed") {
-            message = `TS1 JC ${jcNumber} status updated to Test Completed by ${loggedInUser}`;
-            io.to(socketId).emit("jobcard_status_test_completed_notification", {
-              message: message,
-              sender: loggedInUser,
-            });
-          }
+            if (
+              jcClosedToNotify.includes(user.role) &&
+              user.name !== loggedInUser
+            ) {
+              // Notification for "Closed" status in TS1
+              if (
+                jcCategory === "TS1" &&
+                (jcStatus === "Closed" || jcStatus === "Close")
+              ) {
+                message = `TS1 JC ${jcNumber} Closed, by ${loggedInUser}`;
+                io.to(socketId).emit("jobcard_status_closed_notification", {
+                  message: message,
+                  sender: loggedInUser,
+                });
+              }
+            }
 
-          // Notification for "Closed" status in TS1
-          if (jcCategory === "TS1" && jcStatus === "Closed") {
-            message = `TS1 JC ${jcNumber} status updated to Closed by ${loggedInUser}`;
-            io.to(socketId).emit("jobcard_status_closed_notification", {
-              message: message,
-              sender: loggedInUser,
-            });
-          }
-
-          // Notification for "Closed" status in Reliability
-          if (jcCategory === "Reliability" && jcStatus === "Closed") {
-            message = `Reliability JC ${jcNumber} Closed by ${loggedInUser}`;
-            io.to(socketId).emit("jobcard_update_notification", {
-              message: message,
-              sender: loggedInUser,
-            });
+            if (
+              jcClosedToNotify.includes(user.role) &&
+              user.name !== loggedInUser
+            ) {
+              // Notification for "Closed" status in Reliability
+              if (
+                jcCategory === "Reliability" &&
+                (jcStatus === "Closed" || jcStatus === "Close")
+              ) {
+                message = `Reliability JC ${jcNumber} Closed, by ${loggedInUser}`;
+                io.to(socketId).emit("jobcard_status_closed_notification", {
+                  message: message,
+                  sender: loggedInUser,
+                });
+              }
+            }
           }
         }
-      }
 
-      res.status(200).json({
-        message: "Jobcard updated successfully",
+        res.status(200).json({
+          message: "Jobcard updated successfully",
+        });
       });
     });
   });
+
+  //////////////////////////////////////////////////////////////////////////////////////////
 
   // To fetch the jcnumber from the table 'jobcards'
   app.get("/api/getjobcard", (req, res) => {
@@ -457,7 +700,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
   // To fetch the data based on the jcnumber from the table 'jobcards'
   app.get("/api/getjobcardlist/:jc_number", (req, res) => {
     const jcnumber = req.params.jc_number;
-    const sqlQuery = `SELECT  dcform_number, jc_opendate, po_number, category, test_inchargename, company_name, customer_number, customer_signature, project_name, sample_condition, referance_document FROM bea_jobcards WHERE jc_number = ?`;
+    const sqlQuery = `SELECT dcform_number, jc_opendate, po_number, category, test_inchargename, company_name, customer_number, customer_signature, project_name, sample_condition, referance_document FROM bea_jobcards WHERE jc_number = ?`;
 
     db.query(sqlQuery, [jcnumber], (error, result) => {
       if (error) {
@@ -913,6 +1156,287 @@ function jobcardsAPIs(app, io, labbeeUsers) {
   });
 
   //To Edit the selected testdetails:
+  // app.post("/api/testdetails/", (req, res) => {
+  //   const {
+  //     testDetailRowId,
+  //     testName,
+  //     testChamber,
+  //     eutSerialNo,
+  //     standard,
+  //     testStartedBy,
+  //     startDate,
+  //     endDate,
+  //     duration,
+  //     actualTestDuration,
+  //     unit,
+  //     testEndedBy,
+  //     remarks,
+  //     testReportInstructions,
+  //     reportNumber,
+  //     preparedBy,
+  //     nablUploaded,
+  //     reportStatus,
+  //     jcNumber,
+  //     loggedInUser,
+  //   } = req.body;
+
+  //   const formattedStartDate = startDate ? convertDateTime(startDate) : null;
+  //   const formattedEndDate = endDate ? convertDateTime(endDate) : null;
+  //   const formattedDuration = duration < 0 ? 0 : duration;
+
+  //   const sqlUpdateQuery = `
+  //     UPDATE tests_details
+  //     SET
+  //       testName = ?,
+  //       testChamber = ?,
+  //       eutSerialNo = ?,
+  //       standard = ?,
+  //       testStartedBy = ?,
+  //       startDate = ?,
+  //       endDate = ?,
+  //       duration = ?,
+  //       actualTestDuration = ?,
+  //       unit = ?,
+  //       testEndedBy = ?,
+  //       remarks = ?,
+  //       testReportInstructions = ?,
+  //       reportNumber = ?,
+  //       preparedBy = ?,
+  //       nablUploaded = ?,
+  //       reportStatus = ?
+  //     WHERE jc_number = ? AND id = ?`;
+
+  //   const sqlInsertQuery = `
+  //     INSERT INTO tests_details (
+  //       testName,
+  //       testChamber,
+  //       eutSerialNo,
+  //       standard,
+  //       testStartedBy,
+  //       startDate,
+  //       endDate,
+  //       duration,
+  //       actualTestDuration,
+  //       unit,
+  //       testEndedBy,
+  //       remarks,
+  //       testReportInstructions,
+  //       reportNumber,
+  //       preparedBy,
+  //       nablUploaded,
+  //       reportStatus,
+  //       jc_number
+  //     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+
+  //   const updateValues = [
+  //     testName || "",
+  //     testChamber || "",
+  //     eutSerialNo || "",
+  //     standard || "",
+  //     testStartedBy || "",
+  //     formattedStartDate,
+  //     formattedEndDate,
+  //     formattedDuration,
+  //     actualTestDuration || "",
+  //     unit || "",
+  //     testEndedBy || "",
+  //     remarks || "",
+  //     testReportInstructions || "",
+  //     reportNumber || "",
+  //     preparedBy || "",
+  //     nablUploaded || "",
+  //     reportStatus || "",
+  //     jcNumber,
+  //     testDetailRowId,
+  //   ];
+
+  //   const insertValues = [
+  //     testName || "",
+  //     testChamber || "",
+  //     eutSerialNo || "",
+  //     standard || "",
+  //     testStartedBy || "",
+  //     formattedStartDate,
+  //     formattedEndDate,
+  //     formattedDuration,
+  //     actualTestDuration || "",
+  //     unit || "",
+  //     testEndedBy || "",
+  //     remarks || "",
+  //     testReportInstructions || "",
+  //     reportNumber || "",
+  //     preparedBy || "",
+  //     nablUploaded || "",
+  //     reportStatus || "",
+  //     jcNumber,
+  //   ];
+
+  //   db.query(sqlUpdateQuery, updateValues, (error, result) => {
+  //     if (error) {
+  //       console.error("Error updating test details:", error);
+  //       return res
+  //         .status(500)
+  //         .json({ message: "Internal server error", error });
+  //     } else {
+  //       if (result.affectedRows === 0) {
+  //         db.query(sqlInsertQuery, insertValues, (error, result) => {
+  //           if (error) {
+  //             console.error("Error inserting test details:", error);
+  //             return res
+  //               .status(500)
+  //               .json({ message: "Internal server error", error });
+  //           } else {
+  //             res
+  //               .status(200)
+  //               .json({ message: "tests_details inserted successfully" });
+  //           }
+  //         });
+  //       }
+  //     }
+
+  //     const sqlFetchQuery = `SELECT testReportInstructions, reportStatus FROM tests_details WHERE id = ?`;
+
+  //     db.query(sqlFetchQuery, [testDetailRowId], (error, results) => {
+  //       if (error) {
+  //         console.error("Error fetching test details:", error);
+  //         return res
+  //           .status(500)
+  //           .json({ message: "Internal server error", error });
+  //       }
+
+  //       const existingRow = results[0];
+  //       const existingTestReportInstructions =
+  //         existingRow.testReportInstructions;
+  //       const existingReportStatus = existingRow.reportStatus;
+
+  //       console.log("existingRow", existingRow);
+  //       console.log(
+  //         "existingTestReportInstructions",
+  //         existingTestReportInstructions
+  //       );
+  //       console.log("existingReportStatus", existingReportStatus);
+
+  //       const usersToNotifyReportDeliveryInstructions = [
+  //         "Lab Manager",
+  //         "Reports & Scrutiny Manager",
+  //         "Quality Engineer",
+  //       ];
+
+  //       const usersToNotifyReportDeliveryStatus = [
+  //         "Lab Manager",
+  //         "Accounts Admin",
+  //         "Accounts Executive",
+  //       ];
+
+  //       const testReportInstructionOptions = [
+  //         "Send Draft Report Only",
+  //         "Send Final Report",
+  //         "Hold Report",
+  //       ];
+
+  //       const reportStatusOptions = [
+  //         "Draft Report Sent",
+  //         "Final Report Sent",
+  //         "On-Hold",
+  //         "Not Sent",
+  //       ];
+
+  //       for (let socketId in labbeeUsers) {
+  //         const user = labbeeUsers[socketId];
+  //         let message = "";
+
+  //         // Handle notification for report delivery instructions
+  //         if (
+  //           usersToNotifyReportDeliveryInstructions.includes(user.role) &&
+  //           user.name !== loggedInUser &&
+  //           testReportInstructions !== existingTestReportInstructions &&
+  //           testReportInstructionOptions.includes(testReportInstructions)
+  //         ) {
+  //           message = `"${testReportInstructions}" of TS1 JC ${jcNumber}, by ${loggedInUser}`;
+  //           io.to(socketId).emit("jobcard_report_delivery_notification", {
+  //             message: message,
+  //             sender: loggedInUser,
+  //           });
+  //         }
+
+  //         // Handle notification for reportStatus
+  //         if (
+  //           usersToNotifyReportDeliveryStatus.includes(user.role) &&
+  //           user.name !== loggedInUser &&
+  //           reportStatus !== existingReportStatus &&
+  //           reportStatusOptions.includes(reportStatus)
+  //         ) {
+  //           message = `"${reportStatus}" of TS1 JC ${jcNumber}, by ${loggedInUser}`;
+  //           io.to(socketId).emit("jobcard_report_status_notification", {
+  //             message: message,
+  //             sender: loggedInUser,
+  //           });
+  //         }
+  //       }
+  //     });
+
+  //     // const usersToNotifyReportDeliveryInstructions = [
+  //     //   "Lab Manager",
+  //     //   "Reports & Scrutiny Manager",
+  //     //   "Quality Engineer",
+  //     // ];
+  //     // const usersToNotifyReportDeliveryStatus = [
+  //     //   "Lab Manager",
+  //     //   "Accounts Admin",
+  //     //   "Accounts Executive",
+  //     // ];
+
+  //     // const testReportInstructionOptions = [
+  //     //   "Send Draft Report Only",
+  //     //   "Send Final Report",
+  //     //   "Hold Report",
+  //     // ];
+
+  //     // const reportStatusOptions = [
+  //     //   "Draft Report Sent",
+  //     //   "Final Report Sent",
+  //     //   "On-Hold",
+  //     //   "Not Sent",
+  //     // ];
+
+  //     // if (
+  //     //   testReportInstructions &&
+  //     //   testReportInstructionOptions.includes(testReportInstructions)
+  //     // ) {
+  //     //   for (let socketId in labbeeUsers) {
+  //     //     const user = labbeeUsers[socketId];
+  //     //     if (
+  //     //       usersToNotifyReportDeliveryInstructions.includes(user.role) &&
+  //     //       user.name !== loggedInUser
+  //     //     ) {
+  //     //       const message = `"${testReportInstructions}" of TS1 JC ${jcNumber}, by ${loggedInUser}`;
+  //     //       io.to(socketId).emit("jobcard_report_delivery_notification", {
+  //     //         message: message,
+  //     //         sender: loggedInUser,
+  //     //       });
+  //     //     }
+  //     //   }
+  //     // }
+
+  //     // if (reportStatus && reportStatusOptions.includes(reportStatus)) {
+  //     //   for (let socketId in labbeeUsers) {
+  //     //     const user = labbeeUsers[socketId];
+  //     //     if (
+  //     //       usersToNotifyReportDeliveryStatus.includes(user.role) &&
+  //     //       user.name !== loggedInUser
+  //     //     ) {
+  //     //       const message = `"${reportStatus}" of TS1 JC ${jcNumber}, by ${loggedInUser}`;
+  //     //       io.to(socketId).emit("jobcard_report_status_notification", {
+  //     //         message: message,
+  //     //         sender: loggedInUser,
+  //     //       });
+  //     //     }
+  //     //   }
+  //     // }
+  //     res.status(200).json({ message: "tests_details updated successfully" });
+  //   });
+  // });
+
   app.post("/api/testdetails/", (req, res) => {
     const {
       testDetailRowId,
@@ -941,123 +1465,32 @@ function jobcardsAPIs(app, io, labbeeUsers) {
     const formattedEndDate = endDate ? convertDateTime(endDate) : null;
     const formattedDuration = duration < 0 ? 0 : duration;
 
-    const sqlUpdateQuery = `
-      UPDATE tests_details
-      SET 
-        testName = ?,
-        testChamber = ?, 
-        eutSerialNo = ?, 
-        standard = ?, 
-        testStartedBy = ?, 
-        startDate = ?, 
-        endDate = ?, 
-        duration = ?, 
-        actualTestDuration = ?, 
-        unit = ?, 
-        testEndedBy = ?, 
-        remarks = ?, 
-        testReportInstructions = ?, 
-        reportNumber = ?, 
-        preparedBy = ?, 
-        nablUploaded = ?, 
-        reportStatus = ? 
-      WHERE jc_number = ? AND id = ?`;
+    const sqlFetchQuery = `SELECT testName, testReportInstructions, reportStatus FROM tests_details WHERE id = ?`;
 
-    const sqlInsertQuery = `
-      INSERT INTO tests_details (
-        testName,
-        testChamber, 
-        eutSerialNo, 
-        standard, 
-        testStartedBy, 
-        startDate, 
-        endDate, 
-        duration, 
-        actualTestDuration, 
-        unit, 
-        testEndedBy, 
-        remarks, 
-        testReportInstructions, 
-        reportNumber, 
-        preparedBy, 
-        nablUploaded, 
-        reportStatus, 
-        jc_number
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-
-    const updateValues = [
-      testName || "",
-      testChamber || "",
-      eutSerialNo || "",
-      standard || "",
-      testStartedBy || "",
-      formattedStartDate,
-      formattedEndDate,
-      formattedDuration,
-      actualTestDuration || "",
-      unit || "",
-      testEndedBy || "",
-      remarks || "",
-      testReportInstructions || "",
-      reportNumber || "",
-      preparedBy || "",
-      nablUploaded || "",
-      reportStatus || "",
-      jcNumber,
-      testDetailRowId,
-    ];
-
-    const insertValues = [
-      testName || "",
-      testChamber || "",
-      eutSerialNo || "",
-      standard || "",
-      testStartedBy || "",
-      formattedStartDate,
-      formattedEndDate,
-      formattedDuration,
-      actualTestDuration || "",
-      unit || "",
-      testEndedBy || "",
-      remarks || "",
-      testReportInstructions || "",
-      reportNumber || "",
-      preparedBy || "",
-      nablUploaded || "",
-      reportStatus || "",
-      jcNumber,
-    ];
-
-    db.query(sqlUpdateQuery, updateValues, (error, result) => {
+    db.query(sqlFetchQuery, [testDetailRowId], (error, results) => {
       if (error) {
-        console.error("Error updating test details:", error);
+        console.error("Error fetching test details:", error);
         return res
           .status(500)
           .json({ message: "Internal server error", error });
-      } else {
-        if (result.affectedRows === 0) {
-          db.query(sqlInsertQuery, insertValues, (error, result) => {
-            if (error) {
-              console.error("Error inserting test details:", error);
-              return res
-                .status(500)
-                .json({ message: "Internal server error", error });
-            } else {
-              res
-                .status(200)
-                .json({ message: "tests_details inserted successfully" });
-            }
-          });
-        }
       }
 
-      const departmentsToNotifyReportStatus = [
-        "Administration",
-        "Accounts",
-        "Reports & Scrutiny",
+      const existingRow = results[0];
+      const existingTestName = existingRow.testName;
+      const existingTestReportInstructions = existingRow.testReportInstructions;
+      const existingReportStatus = existingRow.reportStatus;
+
+      const usersToNotifyReportDeliveryInstructions = [
+        "Lab Manager",
+        "Reports & Scrutiny Manager",
+        "Quality Engineer",
       ];
 
-      const usersToNotifyReportStatus = ["Lab Manager"];
+      const usersToNotifyReportDeliveryStatus = [
+        "Lab Manager",
+        "Accounts Admin",
+        "Accounts Executive",
+      ];
 
       const testReportInstructionOptions = [
         "Send Draft Report Only",
@@ -1072,38 +1505,154 @@ function jobcardsAPIs(app, io, labbeeUsers) {
         "Not Sent",
       ];
 
-      for (let socketId in labbeeUsers) {
-        const user = labbeeUsers[socketId];
+      const sqlUpdateQuery = `
+        UPDATE tests_details
+        SET 
+          testName = ?,
+          testChamber = ?, 
+          eutSerialNo = ?, 
+          standard = ?, 
+          testStartedBy = ?, 
+          startDate = ?, 
+          endDate = ?, 
+          duration = ?, 
+          actualTestDuration = ?, 
+          unit = ?, 
+          testEndedBy = ?, 
+          remarks = ?, 
+          testReportInstructions = ?, 
+          reportNumber = ?, 
+          preparedBy = ?, 
+          nablUploaded = ?, 
+          reportStatus = ? 
+        WHERE jc_number = ? AND id = ?`;
 
-        let message = "";
+      const sqlInsertQuery = `
+        INSERT INTO tests_details (
+          testName,
+          testChamber, 
+          eutSerialNo, 
+          standard, 
+          testStartedBy, 
+          startDate, 
+          endDate, 
+          duration, 
+          actualTestDuration, 
+          unit, 
+          testEndedBy, 
+          remarks, 
+          testReportInstructions, 
+          reportNumber, 
+          preparedBy, 
+          nablUploaded, 
+          reportStatus, 
+          jc_number
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
-        if (
-          (departmentsToNotifyReportStatus.includes(user.department) ||
-            usersToNotifyReportStatus.includes(user.role)) &&
-          user.name !== loggedInUser
-        ) {
-          if (
-            testReportInstructions &&
-            testReportInstructionOptions.includes(testReportInstructions)
-          ) {
-            message = `Test Report Instructions: "${testReportInstructions}" of TS1 JC ${jcNumber} updated by ${loggedInUser}`;
-            io.to(socketId).emit("jobcard_report_delivery_notification", {
-              message: message,
-              sender: loggedInUser,
+      const updateValues = [
+        testName || "",
+        testChamber || "",
+        eutSerialNo || "",
+        standard || "",
+        testStartedBy || "",
+        formattedStartDate,
+        formattedEndDate,
+        formattedDuration,
+        actualTestDuration || "",
+        unit || "",
+        testEndedBy || "",
+        remarks || "",
+        testReportInstructions || "",
+        reportNumber || "",
+        preparedBy || "",
+        nablUploaded || "",
+        reportStatus || "",
+        jcNumber,
+        testDetailRowId,
+      ];
+
+      const insertValues = [
+        testName || "",
+        testChamber || "",
+        eutSerialNo || "",
+        standard || "",
+        testStartedBy || "",
+        formattedStartDate,
+        formattedEndDate,
+        formattedDuration,
+        actualTestDuration || "",
+        unit || "",
+        testEndedBy || "",
+        remarks || "",
+        testReportInstructions || "",
+        reportNumber || "",
+        preparedBy || "",
+        nablUploaded || "",
+        reportStatus || "",
+        jcNumber,
+      ];
+
+      db.query(sqlUpdateQuery, updateValues, (error, result) => {
+        if (error) {
+          console.error("Error updating test details:", error);
+          return res
+            .status(500)
+            .json({ message: "Internal server error", error });
+        } else {
+          if (result.affectedRows === 0) {
+            db.query(sqlInsertQuery, insertValues, (error, result) => {
+              if (error) {
+                console.error("Error inserting test details:", error);
+                return res
+                  .status(500)
+                  .json({ message: "Internal server error", error });
+              } else {
+                res
+                  .status(200)
+                  .json({ message: "tests_details inserted successfully" });
+              }
             });
-          }
+          } else {
+            // Handle notifications only after the update
+            for (let socketId in labbeeUsers) {
+              const user = labbeeUsers[socketId];
+              let message = "";
 
-          // Handle notification for reportStatus
-          if (reportStatus && reportStatusOptions.includes(reportStatus)) {
-            message = `Report Status: "${reportStatus}" of TS1 JC ${jcNumber} updated by ${loggedInUser}`;
-            io.to(socketId).emit("jobcard_report_status_notification", {
-              message: message,
-              sender: loggedInUser,
-            });
+              // Handle notification for report delivery instructions
+              if (
+                usersToNotifyReportDeliveryInstructions.includes(user.role) &&
+                user.name !== loggedInUser &&
+                testReportInstructions !== existingTestReportInstructions &&
+                testReportInstructionOptions.includes(testReportInstructions)
+              ) {
+                message = `"${testReportInstructions}" of ${existingTestName} of TS1 JC ${jcNumber}, by ${loggedInUser}`;
+                io.to(socketId).emit("jobcard_report_delivery_notification", {
+                  message: message,
+                  sender: loggedInUser,
+                });
+              }
+
+              // Handle notification for reportStatus
+              if (
+                usersToNotifyReportDeliveryStatus.includes(user.role) &&
+                user.name !== loggedInUser &&
+                reportStatus !== existingReportStatus &&
+                reportStatusOptions.includes(reportStatus)
+              ) {
+                message = `"${reportStatus}" of ${existingTestName} of TS1 JC ${jcNumber}, by ${loggedInUser}`;
+                io.to(socketId).emit("jobcard_report_status_notification", {
+                  message: message,
+                  sender: loggedInUser,
+                });
+              }
+            }
+
+            res
+              .status(200)
+              .json({ message: "tests_details updated successfully" });
           }
         }
-      }
-      res.status(200).json({ message: "tests_details updated successfully" });
+      });
     });
   });
 

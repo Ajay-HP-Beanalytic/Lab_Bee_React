@@ -454,7 +454,7 @@ export default function Slotbooking() {
           return {
             id: booking.booking_id,
             // title: `${booking.test_name} for ${booking.company_name}`,
-            title: `${shortTestName} for ${shortCompanyName}`,
+            title: `${shortCompanyName}`,
             fullTitle: `${booking.test_name} for ${booking.company_name}`,
             start: new Date(booking.slot_start_datetime),
             end: new Date(booking.slot_end_datetime),

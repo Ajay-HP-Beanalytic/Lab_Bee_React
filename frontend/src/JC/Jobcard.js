@@ -198,8 +198,8 @@ const Jobcard = ({ jobCardData }) => {
   const jcStatusOptions = [
     { value: "Open", label: "Open" },
     { value: "Running", label: "Running" },
-    { value: "Closed", label: "Closed" },
     { value: "Test Completed", label: "Test Completed" },
+    { value: "Closed", label: "Closed" },
   ];
 
   let { id } = useParams("id");
