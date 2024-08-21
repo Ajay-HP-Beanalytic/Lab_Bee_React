@@ -99,8 +99,6 @@ export default function UserManagement() {
 
   const userStatusOptions = ["Enable", "Disable"];
 
-  const [allowedComponents, setAllowedComponents] = useState([]);
-
   // "Password must be between 8 to 15 characters, contain at least one uppercase letter, one lowercase letter, one digit, and one special character."
   const passwordRegex =
     /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[^a-zA-Z0-9])(?!.*\s).{8,15}$/;

@@ -170,6 +170,12 @@ export default function SidenavigationBar() {
     ? "notification-window-popover"
     : undefined;
 
+  const handleDeleteSelectedNotification = (index) => {
+    alert("selected index: " + index);
+    // notifications.splice(index, 1);
+    // setNotificationAnchorEl(null);
+  };
+
   // To highlight the selected or clicked buton
   const [selectedIndex, setSelectedIndex] = useState(0);
 
@@ -432,6 +438,12 @@ export default function SidenavigationBar() {
                 {notifications.map((notification, index) => (
                   <ListItem key={index}>
                     <ListItemText primary={notification} />
+                    {/* <Button
+                      onClick={() => handleDeleteSelectedNotification(index)}
+                    >
+                      {" "}
+                      DELETE
+                    </Button> */}
                   </ListItem>
                 ))}
               </List>
