@@ -126,7 +126,7 @@ export default function NotificationsManagement() {
         ]);
         // Show a browser notification
         if (Notification.permission === "granted") {
-          new Notification("New Notification", { body: message });
+          new Notification("New Slot Booking", { body: message });
         }
       }
     };
@@ -139,7 +139,7 @@ export default function NotificationsManagement() {
         ]);
         // Show a browser notification
         if (Notification.permission === "granted") {
-          new Notification("New Notification", { body: message });
+          new Notification("Slot Booking Update", { body: message });
         }
       }
     };
@@ -152,7 +152,7 @@ export default function NotificationsManagement() {
         ]);
         // Show a browser notification
         if (Notification.permission === "granted") {
-          new Notification("New Notification", { body: message });
+          new Notification("Slot Booking Update", { body: message });
         }
       }
     };
@@ -165,7 +165,7 @@ export default function NotificationsManagement() {
         ]);
         // Show a browser notification
         if (Notification.permission === "granted") {
-          new Notification("New Notification", { body: message });
+          new Notification("New Quote", { body: message });
         }
       }
     };
@@ -178,7 +178,7 @@ export default function NotificationsManagement() {
         ]);
         // Show a browser notification
         if (Notification.permission === "granted") {
-          new Notification("New Notification", { body: message });
+          new Notification("Quote Update", { body: message });
         }
       }
     };

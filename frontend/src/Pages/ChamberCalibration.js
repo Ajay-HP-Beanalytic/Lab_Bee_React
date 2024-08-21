@@ -308,20 +308,32 @@ export default function ChamberAndCalibration() {
   let expired_CalibrationCount = 0;
   let calibration_expiredChamberNames = [];
 
-  // Iterate through the table data
-  chambersList.forEach((item) => {
-    // Assuming 'item.calibration_status' contains either 'Up to Date' or 'Expired'
+  console.log("chambersList", chambersList);
 
-    if (item.calibration_status === "Up to Date") {
-      upToDate_CalibrationCount++;
-    } else if (item.calibration_status === "Expired") {
+  // Iterate through the table data
+  // chambersList.forEach((item) => {
+  //   if (item.calibration_status === "Up to Date") {
+  //     upToDate_CalibrationCount++;
+  //   } else if (item.calibration_status === "Expired") {
+  //     expired_CalibrationCount++;
+  //     calibration_expiredChamberNames.push(item.chamber_name);
+  //   } else {
+  //     // Handle other cases (optional)
+  //     console.warn(
+  //       `Unexpected value in 'calibration_status': ${item.calibration_status}`
+  //     );
+  //   }
+  // });
+
+  chambersList.forEach((item) => {
+    const todaysDate = new Date();
+    const dueDate = new Date(item.calibration_due_date);
+
+    if (dueDate < todaysDate) {
       expired_CalibrationCount++;
       calibration_expiredChamberNames.push(item.chamber_name);
     } else {
-      // Handle other cases (optional)
-      console.warn(
-        `Unexpected value in 'calibration_status': ${item.calibration_status}`
-      );
+      upToDate_CalibrationCount++;
     }
   });
 
@@ -499,8 +511,12 @@ export default function ChamberAndCalibration() {
   //Function to filter the table
   const filterDataGridTable = (searchValue) => {
     const filtered = chambersList.filter((row) => {
-      return Object.values(row).some((value) =>
-        value.toString().toLowerCase().includes(searchValue.toLowerCase())
+      return Object.values(row).some(
+        (value) =>
+          value != null &&
+          value !== "" &&
+          value !== undefined &&
+          value.toString().toLowerCase().includes(searchValue.toLowerCase())
       );
     });
     setFilteredChamberList(filtered);

@@ -32,7 +32,7 @@ const serverOptions = {
   ),
 };
 
-//const server = http.createServer(app);
+// const server = http.createServer(app);
 const server = https.createServer(serverOptions, app);
 
 ///Make the app.connection available to the socket.io server:
@@ -289,7 +289,7 @@ app.get("/", (req, res) => {
 });
 
 const PORT = 4002; //For deployment
-//const PORT = 4000;
+// const PORT = 4000;
 
 app.get("/api/testing", (req, res) => {
   res.send("Backend is up and running...");
