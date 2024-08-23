@@ -288,7 +288,7 @@ app.get("/", (req, res) => {
   res.send("Hello Welcome to Labbee...");
 });
 
-const PORT = 4002; //For deployment
+const PORT = 4002; //For deploymentt
 // const PORT = 4000;
 
 app.get("/api/testing", (req, res) => {

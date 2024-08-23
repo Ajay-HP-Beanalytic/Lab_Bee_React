@@ -381,6 +381,35 @@ function poInvoiceBackendAPIs(app) {
         res.status(500).json({ error: "Failed to retrieve JC data" });
       });
   });
+
+  //API to fetch the total monthwise quotations count:
+  app.get("/api/getLastSixMonthsRevenueData", (req, res) => {
+    const sqlQuery = `
+    SELECT 
+      DATE_FORMAT(jc_month, '%Y-%b') AS month_year,
+      SUM(CAST(invoice_value AS DECIMAL(15,2))) AS total_revenue
+    FROM 
+      po_invoice_table
+    WHERE
+      jc_month >= DATE_FORMAT(DATE_SUB(CURDATE(), INTERVAL 5 MONTH), '%Y-%m-01')
+    GROUP BY 
+      month_year
+    ORDER BY 
+      MIN(jc_month) ASC
+    LIMIT 6;
+    `;
+
+    db.query(sqlQuery, (error, result) => {
+      if (error) {
+        console.error("SQL error:", error.message);
+        return res.status(500).json({
+          error: "Error while fetching the monthwise revenue list",
+          details: error.message,
+        });
+      }
+      res.send(result);
+    });
+  });
 }
 
 module.exports = { poInvoiceBackendAPIs };

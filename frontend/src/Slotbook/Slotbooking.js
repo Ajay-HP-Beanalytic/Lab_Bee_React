@@ -475,22 +475,58 @@ export default function Slotbooking() {
   }, [newBookingAdded, slotDeleted]);
 
   // Define a function to get event props based on start date
+  // const eventPropGetter = (event, start, end, isSelected) => {
+  //   // Get the current date
+  //   const currentDate = moment();
+
+  //   // Get the start date of the event
+  //   const eventStartDate = moment(event.start);
+
+  //   // Define colors for different date comparisons
+  //   let backgroundColor = "#00b300"; // Default, 'Green' color
+
+  //   if (eventStartDate.isBefore(currentDate, "day")) {
+  //     backgroundColor = "#ff4d4d"; // Completed Event ,'Red' color
+  //   } else if (eventStartDate.isAfter(currentDate, "day")) {
+  //     backgroundColor = "#00b300"; // Upcoming, 'Green' color
+  //   } else {
+  //     backgroundColor = "#004080"; // Event starts on current date,  'Blue' color
+  //   }
+
+  //   // Return props with background color
+  //   return {
+  //     style: {
+  //       backgroundColor: backgroundColor,
+  //     },
+  //   };
+  // };
+
   const eventPropGetter = (event, start, end, isSelected) => {
     // Get the current date
     const currentDate = moment();
 
     // Get the start date of the event
     const eventStartDate = moment(event.start);
+    const eventEndDate = moment(event.end);
 
     // Define colors for different date comparisons
     let backgroundColor = "#00b300"; // Default, 'Green' color
 
-    if (eventStartDate.isBefore(currentDate, "day")) {
-      backgroundColor = "#ff4d4d"; // Completed Event ,'Red' color
+    if (
+      eventStartDate.isBefore(currentDate, "day") &&
+      eventEndDate.isAfter(currentDate, "day")
+    ) {
+      // Event starts today or is currently running (starts before today and ends after today)
+      backgroundColor = "#00b300"; // Running Event, 'Green' color
+    } else if (eventEndDate.isBefore(currentDate, "day")) {
+      // Event ended before today
+      backgroundColor = "#ff4d4d"; // Completed Event, 'Red' color
     } else if (eventStartDate.isAfter(currentDate, "day")) {
-      backgroundColor = "#00b300"; // Upcoming, 'Green' color
-    } else {
-      backgroundColor = "#004080"; // Event starts on current date,  'Blue' color
+      // Event started after today
+      backgroundColor = "#00b300"; // Upcoming Event, 'Green' color
+    } else if (eventStartDate.isSame(currentDate, "day")) {
+      // Event starts today
+      backgroundColor = "#004080"; // Event starts on current date ,  'Blue' color
     }
 
     // Return props with background color

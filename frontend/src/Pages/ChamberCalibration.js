@@ -308,23 +308,6 @@ export default function ChamberAndCalibration() {
   let expired_CalibrationCount = 0;
   let calibration_expiredChamberNames = [];
 
-  console.log("chambersList", chambersList);
-
-  // Iterate through the table data
-  // chambersList.forEach((item) => {
-  //   if (item.calibration_status === "Up to Date") {
-  //     upToDate_CalibrationCount++;
-  //   } else if (item.calibration_status === "Expired") {
-  //     expired_CalibrationCount++;
-  //     calibration_expiredChamberNames.push(item.chamber_name);
-  //   } else {
-  //     // Handle other cases (optional)
-  //     console.warn(
-  //       `Unexpected value in 'calibration_status': ${item.calibration_status}`
-  //     );
-  //   }
-  // });
-
   chambersList.forEach((item) => {
     const todaysDate = new Date();
     const dueDate = new Date(item.calibration_due_date);
