@@ -60,6 +60,8 @@ export default function PoInvoiceStatusTable({
 
   const [poDataForChart, setPoDataForChart] = useState("");
 
+  const [monthwiseRevenueData, setMonthWiseRevenueData] = useState([]);
+
   const [openDeleteDataDialog, setOpenDeleteDataDialog] = useState(false);
   const [selectedItemForDeletion, setSelectedItemForDeletion] = useState(null);
 
@@ -293,33 +295,6 @@ export default function PoInvoiceStatusTable({
   };
 
   //Function to get the month wise revenue for bar chart:
-  const getMonthwiseRevenueDataForBarChart = (data) => {
-    const monthWiseRevenue = {};
-
-    data.forEach((item) => {
-      const monthName = new Date(item.jc_month).toLocaleString("default", {
-        month: "long",
-      });
-
-      if (
-        item.invoice_status === "Invoice Sent" &&
-        item.payment_status === "Payment Received"
-      ) {
-        const revenue = parseFloat(item.invoice_value) || 0;
-
-        if (monthName in monthWiseRevenue) {
-          monthWiseRevenue[monthName] += revenue;
-        } else {
-          monthWiseRevenue[monthName] = revenue;
-        }
-      }
-    });
-
-    const monthLabels = Object.keys(monthWiseRevenue);
-    const monthWiseRevenueData = Object.values(monthWiseRevenue);
-
-    return { monthLabels, monthWiseRevenueData };
-  };
 
   const {
     totalPaymentReceived,
@@ -332,8 +307,26 @@ export default function PoInvoiceStatusTable({
   const { poStatusData, invoiceStatusData, paymentStatusData } =
     getPoInvoiceDataForPieChart(poDataList);
 
-  const { monthLabels, monthWiseRevenueData } =
-    getMonthwiseRevenueDataForBarChart(poDataList);
+  useEffect(() => {
+    const fetchMonthwiseRevenueData = async () => {
+      try {
+        const response = await axios.get(
+          `${serverBaseAddress}/api/getLastSixMonthsRevenueData`
+        );
+        if (response.status === 200) {
+          setMonthWiseRevenueData(response.data);
+        } else {
+          console.error(
+            "Failed to fetch monthwise revenue data. Status:",
+            response.status
+          );
+        }
+      } catch (error) {
+        console.error("Failed to fetch the monthwise revenue data", error);
+      }
+    };
+    fetchMonthwiseRevenueData();
+  }, []);
 
   //////////////////////////////////////////////////////////////////////////////
   // Creating pie chart for JC created vs JC data updated in PO dashboard:
@@ -541,40 +534,28 @@ export default function PoInvoiceStatusTable({
 
   // Data for month wise revenue generated bar chart:
   const dataForMonthWiseRevenueBarChart = {
-    labels: monthLabels,
+    labels: monthwiseRevenueData.map((item) => item.month_year),
     datasets: [
       {
         label: "Month-wise Revenue",
         backgroundColor: [
-          "#FF6384",
-          "#FF9F40",
-          "#FFCD56",
-          "#669966",
-          "#fbd0d0",
-          "#b8b8e0",
-          "#ccb0e8",
-          "#F8C471",
-          "#AED581",
-          "#9B59B6",
-          "#F9F3E1",
-          "#FABEBD",
+          "#4E79A7", // Slate Blue
+          "#F28E2C", // Mandarin Orange
+          "#E15759", // Terra Cotta
+          "#76B7B2", // Sea Green
+          "#59A14F", // Olive Green
+          "#EDC949", // Gold
         ],
         borderColor: [
-          "#E5506F",
-          "#D38433",
-          "#C7B040",
-          "#929292",
-          "#83C1C1",
-          "#4D66FF",
-          "#B1B3B5",
-          "#D6AA59",
-          "#96B768",
-          "#85469D",
-          "#E4E0D9",
-          "#E3A4A7",
+          "#3C5A83", // Darker Slate Blue
+          "#C57324", // Darker Mandarin Orange
+          "#B5484C", // Darker Terra Cotta
+          "#5B948F", // Darker Sea Green
+          "#43793A", // Darker Olive Green
+          "#B9973B", // Darker Gold
         ],
         borderWidth: 1,
-        data: monthWiseRevenueData,
+        data: monthwiseRevenueData.map((item) => item.total_revenue),
       },
     ],
   };
@@ -619,7 +600,7 @@ export default function PoInvoiceStatusTable({
       x: {
         title: {
           display: true,
-          text: "Months",
+          text: "Year-Month",
           font: {
             family: "Roboto-Regular",
             size: 15,

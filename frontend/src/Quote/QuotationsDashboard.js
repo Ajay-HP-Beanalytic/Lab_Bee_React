@@ -58,22 +58,13 @@ import Loader from "../common/Loader";
 import EmptyCard from "../common/EmptyCard";
 
 export default function QuotationsDashboard() {
-  // Define the table headers:
-  const quotationTableHeadersText = [
-    "Sl No",
-    "Quotation ID",
-    "Company",
-    "Quote Given Date",
-    "Category",
-    "Quote Given By",
-    "Action",
-  ];
-
   // State variables to hold the data fetched from the database:
 
   const [quotesTableData, setQuotesTableData] = useState([]); //fetch data from the database & to show inside a table
 
   const [originalQuoteTableData, setOriginalQuoteTableData] = useState([]);
+
+  const [monthWiseQuotesCount, setMonthWiseQuotesCount] = useState([]);
 
   const [loading, setLoading] = useState(false); //To show loading label
 
@@ -104,6 +95,28 @@ export default function QuotationsDashboard() {
   const isSmallScreen = useMediaQuery((theme) => theme.breakpoints.down("sm"));
 
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchMonthwiseQuotesCount = async () => {
+      try {
+        const response = await axios.get(
+          `${serverBaseAddress}/api/getLastSixMonthsQuotesCount`
+        );
+        if (response.status === 200) {
+          console.log("quotes count", response.data);
+          setMonthWiseQuotesCount(response.data);
+        } else {
+          console.error(
+            "Failed to fetch quotes list. Status:",
+            response.status
+          );
+        }
+      } catch (error) {
+        console.error("Failed to fetch the data", error);
+      }
+    };
+    fetchMonthwiseQuotesCount();
+  }, []);
 
   // Simulate fetching data from the database
   useEffect(() => {
@@ -370,87 +383,31 @@ export default function QuotationsDashboard() {
   /////////////////////////////////////////////////////////////////////////
 
   //Function for the bar chart
-  const getMonthlyCountsLists = (data) => {
-    const currentDate = new Date();
-    const currentMonth = currentDate.getMonth() + 1;
-    const currentYear = currentDate.getFullYear();
-
-    const monthNames = [];
-    const quotesCountPerMonth = [];
-
-    const monthNameMap = {
-      1: "Jan",
-      2: "Feb",
-      3: "Mar",
-      4: "Apr",
-      5: "May",
-      6: "Jun",
-      7: "Jul",
-      8: "Aug",
-      9: "Sep",
-      10: "Oct",
-      11: "Nov",
-      12: "Dec",
-    };
-
-    data.forEach((item) => {
-      const date = new Date(item.formatted_quote_given_date);
-      const monthKey = `${date.getFullYear()}-${date.getMonth() + 1}`;
-
-      if (!monthNames.includes(monthNameMap[date.getMonth() + 1])) {
-        monthNames.push(monthNameMap[date.getMonth() + 1]);
-        quotesCountPerMonth.push(1);
-      } else {
-        const index = monthNames.indexOf(monthNameMap[date.getMonth() + 1]);
-        quotesCountPerMonth[index]++;
-      }
-    });
-
-    return { monthNames, quotesCountPerMonth };
-  };
-
-  // Example usage
-  const { monthNames, quotesCountPerMonth } =
-    getMonthlyCountsLists(quotesTableData);
 
   // Dataset for creating a quotations per month bar chart:
   const barChartData = {
-    labels: monthNames,
+    labels: monthWiseQuotesCount.map((item) => item.month_year),
     datasets: [
       {
         label: "Month wise Quotes Count",
         backgroundColor: [
-          "#FF6384",
-          "#FF9F40",
-          "#FFCD56",
-          "#669966",
-          "#fbd0d0",
-          "#b8b8e0",
-          "#ccb0e8",
-          "#F8C471",
-          "#AED581",
-          "#9B59B6",
-          "#F9F3E1",
-          "#FABEBD",
+          "#4E79A7", // Slate Blue
+          "#F28E2C", // Mandarin Orange
+          "#E15759", // Terra Cotta
+          "#76B7B2", // Sea Green
+          "#59A14F", // Olive Green
+          "#EDC949", // Gold
         ],
         borderColor: [
-          "#E5506F",
-          "#D38433",
-          "#C7B040",
-          "#929292",
-          "#83C1C1",
-          "#4D66FF",
-          "#B1B3B5",
-          "#D6AA59",
-          "#96B768",
-          "#85469D",
-          "#E4E0D9",
-          "#E3A4A7",
+          "#3C5A83", // Darker Slate Blue
+          "#C57324", // Darker Mandarin Orange
+          "#B5484C", // Darker Terra Cotta
+          "#5B948F", // Darker Sea Green
+          "#43793A", // Darker Olive Green
+          "#B9973B", // Darker Gold
         ],
         borderWidth: 1,
-        // hoverBackgroundColor: 'rgba(75,192,192,0.8)',
-        // hoverBorderColor: 'rgba(75,192,192,1)',
-        data: quotesCountPerMonth,
+        data: monthWiseQuotesCount.map((item) => item.quote_count),
       },
     ],
   };
@@ -495,7 +452,7 @@ export default function QuotationsDashboard() {
       x: {
         title: {
           display: true,
-          text: "Months",
+          text: "Year-Month",
           font: {
             family: "Roboto-Regular",
             size: 15,

@@ -35,11 +35,148 @@ function jobcardsAPIs(app, io, labbeeUsers) {
     return `${year}-${month}-${day} ${hours}:${minutes}`;
   }
 
+  const getCurrentYearAndMonth = () => {
+    const currentDate = new Date();
+    const currentYear = currentDate.getFullYear();
+    const currentMonth = currentDate.getMonth() + 1; // Adding 1 because months are zero-indexed
+
+    return { currentYear, currentMonth };
+  };
+
   // Add primary details of the jobcard to the 'bea_jobcards' table:
-  app.post("/api/jobcard", (req, res) => {
+  // app.post("/api/jobcard", (req, res) => {
+  //   const {
+  //     jcNumber,
+  //     srfNumber,
+  //     srfDate,
+  //     dcNumber,
+  //     jcOpenDate,
+  //     itemReceivedDate,
+  //     poNumber,
+  //     testCategory,
+  //     testDiscipline,
+  //     sampleCondition,
+  //     typeOfRequest,
+  //     reportType,
+  //     testInchargeName,
+  //     jcCategory,
+  //     companyName,
+  //     companyAddress,
+  //     customerName,
+  //     customerEmail,
+  //     customerNumber,
+  //     projectName,
+  //     testInstructions,
+  //     jcStatus,
+  //     reliabilityReportStatus,
+  //     jcCloseDate,
+  //     observations,
+  //     jcLastModifiedBy,
+  //     loggedInUser,
+  //     loggedInUserDepartment,
+  //   } = req.body;
+
+  //   console.log("jcNumber: ", jcNumber);
+  //   console.log("srfNumber: ", srfNumber);
+
+  //   // Extract the sequence number from jcNumber and srfNumber
+  //   const jcNumberParts = jcNumber.split("-");
+  //   const srfNumberParts = srfNumber.split("/");
+
+  //   console.log("------------------------------------------");
+  //   console.log("jcNumberParts: ", jcNumberParts);
+  //   console.log("srfNumberParts: ", srfNumberParts);
+
+  //   const formattedSrfDate = srfDate
+  //     ? dayjs(srfDate).format("YYYY-MM-DD")
+  //     : null;
+
+  //   const formattedItemReceivedDate = itemReceivedDate
+  //     ? dayjs(itemReceivedDate).format("YYYY-MM-DD")
+  //     : null;
+  //   const formattedOpenDate = jcOpenDate
+  //     ? dayjs(jcOpenDate).format("YYYY-MM-DD")
+  //     : null;
+  //   const formattedCloseDate = jcCloseDate
+  //     ? dayjs(jcCloseDate).format("YYYY-MM-DD")
+  //     : null;
+
+  //   const sql = `INSERT INTO bea_jobcards(
+  //       jc_number, srf_number, srf_date, dcform_number, jc_open_date, item_received_date, po_number,
+  //       test_category, test_discipline, sample_condition, type_of_request, report_type, test_incharge, jc_category, company_name, company_address,
+  //       customer_name, customer_email, customer_number, project_name, test_instructions,
+  //        jc_status, reliability_report_status, jc_closed_date, observations, last_updated_by
+  //   ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+
+  //   const values = [
+  //     jcNumber,
+  //     srfNumber,
+  //     formattedSrfDate,
+  //     dcNumber,
+  //     formattedOpenDate || null,
+  //     formattedItemReceivedDate || null,
+  //     poNumber || "",
+  //     testCategory || "",
+  //     testDiscipline || "",
+  //     sampleCondition || "",
+  //     typeOfRequest || "",
+  //     reportType || "",
+  //     testInchargeName || "",
+  //     jcCategory || "",
+  //     companyName || "",
+  //     companyAddress || "",
+  //     customerName || "",
+  //     customerEmail || "",
+  //     customerNumber || "",
+  //     projectName || "",
+  //     testInstructions || "",
+  //     jcStatus || "",
+  //     reliabilityReportStatus || "",
+  //     formattedCloseDate || null,
+  //     observations || "",
+  //     jcLastModifiedBy || loggedInUser,
+  //   ];
+
+  //   db.query(sql, values, (error, result) => {
+  //     if (error) {
+  //       console.log(error);
+  //       return res.status(500).json({ message: "Internal server error" });
+  //     } else {
+  //       const departmentsToNotify = [
+  //         // "Accounts",
+  //         "TS1 Testing",
+  //         "Reliability",
+  //         "Reports & Scrutiny",
+  //       ];
+
+  //       for (let socketId in labbeeUsers) {
+  //         if (
+  //           departmentsToNotify.includes(labbeeUsers[socketId].department) &&
+  //           labbeeUsers[socketId].username !== loggedInUser
+  //         ) {
+  //           let message = "";
+
+  //           if (jcCategory === "TS1") {
+  //             message = `New TS1 ${jcNumber} created by ${loggedInUser}`;
+  //           } else if (jcCategory === "Reliability") {
+  //             message = `New Reliability ${jcNumber} created by ${loggedInUser}`;
+  //           } else if (jcCategory === "TS2") {
+  //             message = `New TS2 ${jcNumber} created by ${loggedInUser}`;
+  //           }
+
+  //           io.to(socketId).emit("jobcard_submit_notification", {
+  //             message: message,
+  //             sender: loggedInUser,
+  //           });
+  //         }
+  //       }
+  //       return res.status(200).json({ message: "Jobcards added successfully" });
+  //     }
+  //   });
+  // });
+
+  app.post("/api/jobcard", async (req, res) => {
     const {
-      jcNumber,
-      srfNumber,
       srfDate,
       dcNumber,
       jcOpenDate,
@@ -71,7 +208,6 @@ function jobcardsAPIs(app, io, labbeeUsers) {
     const formattedSrfDate = srfDate
       ? dayjs(srfDate).format("YYYY-MM-DD")
       : null;
-
     const formattedItemReceivedDate = itemReceivedDate
       ? dayjs(itemReceivedDate).format("YYYY-MM-DD")
       : null;
@@ -82,79 +218,119 @@ function jobcardsAPIs(app, io, labbeeUsers) {
       ? dayjs(jcCloseDate).format("YYYY-MM-DD")
       : null;
 
-    const sql = `INSERT INTO bea_jobcards(
-        jc_number, srf_number, srf_date, dcform_number, jc_open_date, item_received_date, po_number, 
-        test_category, test_discipline, sample_condition, type_of_request, report_type, test_incharge, jc_category, company_name, company_address,
-        customer_name, customer_email, customer_number, project_name, test_instructions, 
-         jc_status, reliability_report_status, jc_closed_date, observations, last_updated_by
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    let connection;
+    try {
+      // Establish a connection
+      connection = await db.promise().getConnection();
 
-    const values = [
-      jcNumber,
-      srfNumber,
-      formattedSrfDate,
-      dcNumber,
-      formattedOpenDate || null,
-      formattedItemReceivedDate || null,
-      poNumber || "",
-      testCategory || "",
-      testDiscipline || "",
-      sampleCondition || "",
-      typeOfRequest || "",
-      reportType || "",
-      testInchargeName || "",
-      jcCategory || "",
-      companyName || "",
-      companyAddress || "",
-      customerName || "",
-      customerEmail || "",
-      customerNumber || "",
-      projectName || "",
-      testInstructions || "",
-      jcStatus || "",
-      reliabilityReportStatus || "",
-      formattedCloseDate || null,
-      observations || "",
-      jcLastModifiedBy || loggedInUser,
-    ];
+      // Start a transaction
+      await connection.beginTransaction();
 
-    db.query(sql, values, (error, result) => {
-      if (error) {
-        console.log(error);
-        return res.status(500).json({ message: "Internal server error" });
+      // Extract financial year and month part
+      const { currentYear, currentMonth } = getCurrentYearAndMonth();
+      let finYear =
+        currentMonth > 2
+          ? `${currentYear}-${currentYear + 1}/${currentMonth}`
+          : `${currentYear - 1}-${currentYear}/${currentMonth}`;
+
+      let newSequenceNumber;
+
+      const [recentJCs] = await connection.query(
+        `SELECT jc_number FROM bea_jobcards WHERE jc_number LIKE ? ORDER BY jc_number DESC LIMIT 1`,
+        [`${finYear}-%`]
+      );
+
+      if (recentJCs.length > 0) {
+        // Extract the sequence number part from the last job card number
+        const lastJcNumber = recentJCs[0].jc_number;
+        const lastSequence = parseInt(lastJcNumber.split("-")[2], 10);
+        newSequenceNumber = lastSequence + 1;
       } else {
-        const departmentsToNotify = [
-          // "Accounts",
-          "TS1 Testing",
-          "Reliability",
-          "Reports & Scrutiny",
-        ];
-
-        for (let socketId in labbeeUsers) {
-          if (
-            departmentsToNotify.includes(labbeeUsers[socketId].department) &&
-            labbeeUsers[socketId].username !== loggedInUser
-          ) {
-            let message = "";
-
-            if (jcCategory === "TS1") {
-              message = `New TS1 ${jcNumber} created by ${loggedInUser}`;
-            } else if (jcCategory === "Reliability") {
-              message = `New Reliability ${jcNumber} created by ${loggedInUser}`;
-            } else if (jcCategory === "TS2") {
-              message = `New TS2 ${jcNumber} created by ${loggedInUser}`;
-            }
-
-            io.to(socketId).emit("jobcard_submit_notification", {
-              message: message,
-              sender: loggedInUser,
-            });
-          }
-        }
-        return res.status(200).json({ message: "Jobcards added successfully" });
+        newSequenceNumber = 1;
       }
-    });
+
+      // Generate the new jcNumber and srfNumber
+      const newJcNumber = `${finYear}-${newSequenceNumber
+        .toString()
+        .padStart(3, "0")}`;
+      const newSrfNumber = `BEA/TR/SRF/${newJcNumber}`;
+
+      const sql = `INSERT INTO bea_jobcards(
+            jc_number, srf_number, srf_date, dcform_number, jc_open_date, item_received_date, po_number, 
+            test_category, test_discipline, sample_condition, type_of_request, report_type, test_incharge, jc_category, company_name, company_address,
+            customer_name, customer_email, customer_number, project_name, test_instructions, 
+            jc_status, reliability_report_status, jc_closed_date, observations, last_updated_by
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+
+      const values = [
+        newJcNumber,
+        newSrfNumber,
+        formattedSrfDate,
+        dcNumber,
+        formattedOpenDate || null,
+        formattedItemReceivedDate || null,
+        poNumber || "",
+        testCategory || "",
+        testDiscipline || "",
+        sampleCondition || "",
+        typeOfRequest || "",
+        reportType || "",
+        testInchargeName || "",
+        jcCategory || "",
+        companyName || "",
+        companyAddress || "",
+        customerName || "",
+        customerEmail || "",
+        customerNumber || "",
+        projectName || "",
+        testInstructions || "",
+        jcStatus || "",
+        reliabilityReportStatus || "",
+        formattedCloseDate || null,
+        observations || "",
+        jcLastModifiedBy || loggedInUser,
+      ];
+
+      await connection.query(sql, values);
+
+      // Commit the transaction
+      await connection.commit();
+
+      // Notify relevant departments (as before)
+      const departmentsToNotify = [
+        "TS1 Testing",
+        "Reliability",
+        "Reports & Scrutiny",
+      ];
+
+      for (let socketId in labbeeUsers) {
+        if (
+          departmentsToNotify.includes(labbeeUsers[socketId].department) &&
+          labbeeUsers[socketId].username !== loggedInUser
+        ) {
+          let message = `New ${jcCategory} ${newJcNumber} created by ${loggedInUser}`;
+          io.to(socketId).emit("jobcard_submit_notification", {
+            message: message,
+            sender: loggedInUser,
+          });
+        }
+      }
+
+      return res.status(200).json({
+        message: "Jobcard added successfully",
+        jcNumber: newJcNumber,
+        srfNumber: newSrfNumber,
+      });
+    } catch (error) {
+      console.log(error);
+      if (connection) await connection.rollback(); // Rollback transaction in case of error
+      return res.status(500).json({ message: "Internal server error" });
+    } finally {
+      if (connection) await connection.release(); // Release the connection back to the pool
+    }
   });
+
+  ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   const monthNames = [
     "Jan",
@@ -1475,10 +1651,15 @@ function jobcardsAPIs(app, io, labbeeUsers) {
           .json({ message: "Internal server error", error });
       }
 
-      const existingRow = results[0];
-      const existingTestName = existingRow.testName;
-      const existingTestReportInstructions = existingRow.testReportInstructions;
-      const existingReportStatus = existingRow.reportStatus;
+      // Check if results are returned, if not, set default values
+      const existingRow = results.length > 0 ? results[0] : null;
+      const existingTestName = existingRow ? existingRow.testName : null;
+      const existingTestReportInstructions = existingRow
+        ? existingRow.testReportInstructions
+        : null;
+      const existingReportStatus = existingRow
+        ? existingRow.reportStatus
+        : null;
 
       const usersToNotifyReportDeliveryInstructions = [
         "Lab Manager",

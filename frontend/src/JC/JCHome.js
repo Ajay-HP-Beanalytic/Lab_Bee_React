@@ -654,10 +654,8 @@ export default function JCHome() {
 
   const { jcOpenCount, jcRunningCount, jcClosedCount, jcTestCompletedCount } =
     getJobcardStatusCount(filteredJcData);
-  console.log(jcOpenCount, jcRunningCount, jcClosedCount, jcTestCompletedCount);
 
   const jcStatusRawData = getJobcardStatusCount(filteredJcData);
-  console.log(jcStatusRawData);
 
   // Prepare data for the pie chart
   const jcStatusData = {
