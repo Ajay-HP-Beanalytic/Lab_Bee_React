@@ -555,7 +555,8 @@ const Jobcard = ({ jobCardData }) => {
 
     if (
       loggedInUserDepartment === "Administration" ||
-      loggedInUserDepartment === "Accounts"
+      loggedInUserDepartment === "Accounts" ||
+      loggedInUserDepartment === "Reports & Scrutiny"
     ) {
       if (!jcCategory) {
         toast.warning("Please Enter Job-Card Category");
@@ -2352,7 +2353,8 @@ const Jobcard = ({ jobCardData }) => {
               </Grid>
 
               {(loggedInUserDepartment === "Administration" ||
-                loggedInUserDepartment === "Accounts") && (
+                loggedInUserDepartment === "Accounts" ||
+                loggedInUserDepartment === "Reports & Scrutiny") && (
                 <Grid
                   item
                   xs={12}

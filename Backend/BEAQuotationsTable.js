@@ -1,8 +1,44 @@
 // Function to handle the operations of the Item soft modules:
 
 const { db } = require("./db");
+const moment = require("moment");
 
 function mainQuotationsTableAPIs(app, io, labbeeUsers) {
+  const usersToNotifyQuotation = JSON.parse(
+    process.env.USERS_TO_BE_NOTIFY_ABOUT_QUOTATION
+  );
+
+  // Function to store the notifications to the table:
+  const saveNotificationToDatabase = async (
+    message,
+    receivedAt,
+    usersToBeNotified,
+    sender
+  ) => {
+    const query = `
+      INSERT INTO notifications_table (message, receivedAt, users_to_be_notified, notification_sent_by)
+      VALUES (?, ?, ?, ?)
+    `;
+
+    const formattedDateTime = moment(receivedAt).format("YYYY-MM-DD HH:mm:ss");
+    const values = [
+      message,
+      formattedDateTime,
+      usersToBeNotified.join(","),
+      sender,
+    ];
+
+    // Assuming you're using a MySQL connection pool
+    try {
+      await db.execute(query, values);
+      console.log("Notification saved to the database successfully");
+    } catch (err) {
+      console.error("Error saving notification to the database:", err);
+    }
+  };
+
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+
   // To store the table data in the 'bea_quotations_table' table:
   app.post("/api/quotation", async (req, res) => {
     const {
@@ -50,21 +86,51 @@ function mainQuotationsTableAPIs(app, io, labbeeUsers) {
           return res.status(500).json(error);
         }
 
-        const departmentsToNotify = ["Administration", "Accounts", "Marketing"];
+        // for (let socketId in labbeeUsers) {
+        //   if (
+        //     departmentsToNotify.includes(labbeeUsers[socketId].department) &&
+        //     labbeeUsers[socketId].username !== loggedInUser
+        //   ) {
+        //     let message = `New Quotation: ${quotationIdString} created, by ${loggedInUser}`;
+
+        //     io.to(socketId).emit("new_quote_created_notification", {
+        //       message: message,
+        //       sender: loggedInUser,
+        //     });
+        //   }
+        // }
+
+        const currentTimestampForSlotBooking = new Date().toISOString();
+
+        let message = `New Quotation: ${quotationIdString} created, by ${loggedInUser}`;
+        let usersToNotifyNewQuotation = [];
 
         for (let socketId in labbeeUsers) {
-          if (
-            departmentsToNotify.includes(labbeeUsers[socketId].department) &&
-            labbeeUsers[socketId].username !== loggedInUser
-          ) {
-            let message = `New Quotation: ${quotationIdString} created, by ${loggedInUser}`;
+          const user = labbeeUsers[socketId];
 
+          if (
+            usersToNotifyQuotation.includes(user.role) &&
+            user.name !== loggedInUser
+          ) {
             io.to(socketId).emit("new_quote_created_notification", {
               message: message,
               sender: loggedInUser,
+              receivedAt: currentTimestampForSlotBooking,
             });
+
+            if (!usersToNotifyNewQuotation.includes(user.role)) {
+              usersToNotifyNewQuotation.push(user.role);
+            }
           }
         }
+
+        // Save the notification in the database
+        saveNotificationToDatabase(
+          message,
+          currentTimestampForSlotBooking,
+          usersToNotifyNewQuotation,
+          loggedInUser
+        );
 
         return res.status(200).json(result);
       }
@@ -513,21 +579,53 @@ function mainQuotationsTableAPIs(app, io, labbeeUsers) {
           return res.status(500).json(error);
         }
 
-        const departmentsToNotify = ["Administration", "Accounts", "Marketing"];
+        // const departmentsToNotify = ["Administration", "Accounts", "Marketing"];
+
+        // for (let socketId in labbeeUsers) {
+        //   if (
+        //     departmentsToNotify.includes(labbeeUsers[socketId].department) &&
+        //     labbeeUsers[socketId].username !== loggedInUser
+        //   ) {
+        //     let message = `Quotation: ${quotationIdString} updated, by ${loggedInUser}`;
+
+        //     io.to(socketId).emit("quote_update_notification", {
+        //       message: message,
+        //       sender: loggedInUser,
+        //     });
+        //   }
+        // }
+
+        const currentTimestampForSlotBooking = new Date().toISOString();
+
+        let message = `Quotation: ${quotationIdString} updated, by ${loggedInUser}`;
+        let usersToNotifyQuoteUpdate = [];
 
         for (let socketId in labbeeUsers) {
-          if (
-            departmentsToNotify.includes(labbeeUsers[socketId].department) &&
-            labbeeUsers[socketId].username !== loggedInUser
-          ) {
-            let message = `Quotation: ${quotationIdString} updated, by ${loggedInUser}`;
+          const user = labbeeUsers[socketId];
 
+          if (
+            usersToNotifyQuotation.includes(user.role) &&
+            user.name !== loggedInUser
+          ) {
             io.to(socketId).emit("quote_update_notification", {
               message: message,
               sender: loggedInUser,
+              receivedAt: currentTimestampForSlotBooking,
             });
+
+            if (!usersToNotifyQuoteUpdate.includes(user.role)) {
+              usersToNotifyQuoteUpdate.push(user.role);
+            }
           }
         }
+
+        // Save the notification in the database
+        saveNotificationToDatabase(
+          message,
+          currentTimestampForSlotBooking,
+          usersToNotifyQuoteUpdate,
+          loggedInUser
+        );
 
         return res.status(200).json(result);
       }

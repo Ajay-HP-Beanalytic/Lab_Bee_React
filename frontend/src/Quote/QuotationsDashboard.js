@@ -103,7 +103,6 @@ export default function QuotationsDashboard() {
           `${serverBaseAddress}/api/getLastSixMonthsQuotesCount`
         );
         if (response.status === 200) {
-          console.log("quotes count", response.data);
           setMonthWiseQuotesCount(response.data);
         } else {
           console.error(

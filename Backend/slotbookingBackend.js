@@ -2,8 +2,44 @@ const { db } = require("./db");
 
 const dayjs = require("dayjs");
 const moment = require("moment");
+require("dotenv").config(); // Ensure .env is loaded
 
 function slotBookingAPIs(app, io, labbeeUsers) {
+  const usersToNotifySlotBooking = JSON.parse(
+    process.env.USERS_TO_BE_NOTIFY_ABOUT_SLOT_BOOKING
+  );
+
+  // Function to store the notifications to the table:
+  const saveNotificationToDatabase = async (
+    message,
+    receivedAt,
+    usersToBeNotified,
+    sender
+  ) => {
+    const query = `
+      INSERT INTO notifications_table (message, receivedAt, users_to_be_notified, notification_sent_by)
+      VALUES (?, ?, ?, ?)
+    `;
+
+    const formattedDateTime = moment(receivedAt).format("YYYY-MM-DD HH:mm:ss");
+    const values = [
+      message,
+      formattedDateTime,
+      usersToBeNotified.join(","),
+      sender,
+    ];
+
+    // Assuming you're using a MySQL connection pool
+    try {
+      await db.execute(query, values);
+      console.log("Notification saved to the database successfully");
+    } catch (err) {
+      console.error("Error saving notification to the database:", err);
+    }
+  };
+
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+
   // To add chambers to the table:
   app.post("/api/addChamberForSlotBooking", (req, res) => {
     const { chamberName } = req.body;
@@ -67,11 +103,73 @@ function slotBookingAPIs(app, io, labbeeUsers) {
   });
 
   // To create a new slot booking and save that to the database:
+  // app.post("/api/slotBooking", (req, res) => {
+  //   const { formData } = req.body;
+  //   const sqlQuery = `
+  //   INSERT INTO bookings_table (booking_id, company_name, customer_name, customer_email, customer_phone, test_name, chamber_allotted, slot_start_datetime, slot_end_datetime, slot_duration, remarks, slot_booked_by)
+  //   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+
+  //   const formattedSlotStartDateTime = moment(
+  //     formData.slotStartDateTime
+  //   ).format("YYYY-MM-DD HH:mm");
+  //   const formattedSlotEndDateTime = moment(formData.slotEndDateTime).format(
+  //     "YYYY-MM-DD HH:mm"
+  //   );
+
+  //   const values = [
+  //     formData.bookingID,
+
+  //     formData.company,
+  //     formData.customerName,
+  //     formData.customerEmail,
+  //     formData.customerPhone,
+  //     formData.testName,
+  //     formData.selectedChamber,
+  //     formattedSlotStartDateTime,
+  //     formattedSlotEndDateTime,
+  //     formData.slotDuration,
+  //     formData.remarks,
+  //     formData.slotBookedBy,
+  //   ];
+
+  //   db.query(sqlQuery, values, (error, result) => {
+  //     if (error) {
+  //       return res
+  //         .status(500)
+  //         .json({ error: "An error occurred while booking the slot" });
+  //     } else {
+  //       const departmentsToNotify = [
+  //         // "Administration",
+  //         "TS1 Testing",
+  //         "Marketing",
+  //       ];
+
+  //       const loggedInUser = formData.loggedInUser;
+
+  //       for (let socketId in labbeeUsers) {
+  //         if (
+  //           departmentsToNotify.includes(labbeeUsers[socketId].department) &&
+  //           labbeeUsers[socketId].username !== loggedInUser
+  //         ) {
+  //           let message = `New TS1 Slot: ${formData.bookingID} booked, by ${loggedInUser}`;
+
+  //           io.to(socketId).emit("new_slot_booking_notification", {
+  //             message: message,
+  //             sender: loggedInUser,
+  //           });
+  //         }
+  //       }
+  //       res.status(200).json({ message: "Slot Booked Successfully" });
+  //     }
+  //   });
+  // });
+
   app.post("/api/slotBooking", (req, res) => {
     const { formData } = req.body;
+
     const sqlQuery = `
-    INSERT INTO bookings_table (booking_id, company_name, customer_name, customer_email, customer_phone, test_name, chamber_allotted, slot_start_datetime, slot_end_datetime, slot_duration, remarks, slot_booked_by)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+      INSERT INTO bookings_table (booking_id, company_name, customer_name, customer_email, customer_phone, test_name, chamber_allotted, slot_start_datetime, slot_end_datetime, slot_duration, remarks, slot_booked_by)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
     const formattedSlotStartDateTime = moment(
       formData.slotStartDateTime
@@ -82,7 +180,6 @@ function slotBookingAPIs(app, io, labbeeUsers) {
 
     const values = [
       formData.bookingID,
-
       formData.company,
       formData.customerName,
       formData.customerEmail,
@@ -102,27 +199,41 @@ function slotBookingAPIs(app, io, labbeeUsers) {
           .status(500)
           .json({ error: "An error occurred while booking the slot" });
       } else {
-        const departmentsToNotify = [
-          // "Administration",
-          "TS1 Testing",
-          "Marketing",
-        ];
+        const currentTimestampForSlotBooking = new Date().toISOString();
+
+        let message = `New TS1 Slot: ${formData.bookingID} booked, by ${formData.slotBookedBy}`;
+        let usersToNotifyNewSlotBooking = [];
 
         const loggedInUser = formData.loggedInUser;
 
         for (let socketId in labbeeUsers) {
-          if (
-            departmentsToNotify.includes(labbeeUsers[socketId].department) &&
-            labbeeUsers[socketId].username !== loggedInUser
-          ) {
-            let message = `New TS1 Slot: ${formData.bookingID} booked, by ${loggedInUser}`;
+          const user = labbeeUsers[socketId];
 
+          // Use user.role if USERS_TO_BE_NOTIFY_ABOUT_SLOT_BOOKING contains roles
+          if (
+            usersToNotifySlotBooking.includes(user.role) &&
+            user.name !== loggedInUser
+          ) {
             io.to(socketId).emit("new_slot_booking_notification", {
               message: message,
               sender: loggedInUser,
+              receivedAt: currentTimestampForSlotBooking,
             });
+
+            if (!usersToNotifyNewSlotBooking.includes(user.role)) {
+              usersToNotifyNewSlotBooking.push(user.role);
+            }
           }
         }
+
+        // Save the notification in the database
+        saveNotificationToDatabase(
+          message,
+          currentTimestampForSlotBooking,
+          usersToNotifyNewSlotBooking,
+          loggedInUser
+        );
+
         res.status(200).json({ message: "Slot Booked Successfully" });
       }
     });
@@ -180,6 +291,88 @@ function slotBookingAPIs(app, io, labbeeUsers) {
   });
 
   //API to update the selected booking:
+  // app.post("/api/slotBooking/:booking_id", (req, res) => {
+  //   const { formData } = req.body;
+
+  //   const bookingId = req.params.booking_id;
+  //   if (!bookingId)
+  //     return res
+  //       .status(400)
+  //       .json({ error: "Selected booking Id is missing or invalid" });
+
+  //   const sqlQuery = `
+  //       UPDATE bookings_table
+  //       SET
+  //           company_name = ?,
+  //           customer_name = ?,
+  //           customer_email = ?,
+  //           customer_phone = ?,
+  //           test_name = ?,
+  //           chamber_allotted = ?,
+  //           slot_start_datetime = ?,
+  //           slot_end_datetime = ?,
+  //           slot_duration = ?,
+  //           remarks = ?,
+  //           slot_booked_by = ?
+  //       WHERE booking_id = ?
+  //   `;
+
+  //   const formattedSlotStartDateTime = moment(
+  //     formData.slotStartDateTime
+  //   ).format("YYYY-MM-DD HH:mm");
+  //   const formattedSlotEndDateTime = moment(formData.slotEndDateTime).format(
+  //     "YYYY-MM-DD HH:mm"
+  //   );
+
+  //   const values = [
+  //     formData.company,
+  //     formData.customerName,
+  //     formData.customerEmail,
+  //     formData.customerPhone,
+  //     formData.testName,
+  //     formData.selectedChamber,
+  //     formattedSlotStartDateTime,
+  //     formattedSlotEndDateTime,
+  //     formData.slotDuration,
+  //     formData.remarks,
+  //     formData.slotBookedBy,
+  //     bookingId,
+  //   ];
+
+  //   db.query(sqlQuery, values, (error, result) => {
+  //     if (error) {
+  //       console.error("Error updating booking:", error);
+  //       return res
+  //         .status(500)
+  //         .json({ error: "An error occurred while updating the booking" });
+  //     } else {
+  //       const departmentsToNotify = [
+  //         // "Administration",
+  //         "TS1 Testing",
+  //         "Marketing",
+  //       ];
+
+  //       const loggedInUser = formData.loggedInUser;
+
+  //       for (let socketId in labbeeUsers) {
+  //         if (
+  //           departmentsToNotify.includes(labbeeUsers[socketId].department) &&
+  //           labbeeUsers[socketId].username !== loggedInUser
+  //         ) {
+  //           let message = `TS1 Slot: ${formData.bookingID} updated by ${loggedInUser}`;
+
+  //           io.to(socketId).emit("update_slot_booking_notification", {
+  //             message: message,
+  //             sender: loggedInUser,
+  //           });
+  //         }
+  //       }
+
+  //       res.status(200).json({ message: "Booking updated successfully" });
+  //     }
+  //   });
+  // });
+
   app.post("/api/slotBooking/:booking_id", (req, res) => {
     const { formData } = req.body;
 
@@ -235,27 +428,39 @@ function slotBookingAPIs(app, io, labbeeUsers) {
           .status(500)
           .json({ error: "An error occurred while updating the booking" });
       } else {
-        const departmentsToNotify = [
-          // "Administration",
-          "TS1 Testing",
-          "Marketing",
-        ];
-
         const loggedInUser = formData.loggedInUser;
 
-        for (let socketId in labbeeUsers) {
-          if (
-            departmentsToNotify.includes(labbeeUsers[socketId].department) &&
-            labbeeUsers[socketId].username !== loggedInUser
-          ) {
-            let message = `TS1 Slot: ${formData.bookingID} updated by ${loggedInUser}`;
+        const currentTimestampForSlotBooking = new Date().toISOString();
 
+        let message = `TS1 Slot: ${formData.bookingID} updated, by ${loggedInUser}`;
+        let usersToNotifyNewSlotBooking = [];
+
+        for (let socketId in labbeeUsers) {
+          const user = labbeeUsers[socketId];
+
+          if (
+            usersToNotifySlotBooking.includes(user.role) &&
+            user.name !== loggedInUser
+          ) {
             io.to(socketId).emit("update_slot_booking_notification", {
               message: message,
               sender: loggedInUser,
+              receivedAt: currentTimestampForSlotBooking,
             });
+
+            if (!usersToNotifyNewSlotBooking.includes(user.role)) {
+              usersToNotifyNewSlotBooking.push(user.role);
+            }
           }
         }
+
+        // Save the notification in the database
+        saveNotificationToDatabase(
+          message,
+          currentTimestampForSlotBooking,
+          usersToNotifyNewSlotBooking,
+          loggedInUser
+        );
 
         res.status(200).json({ message: "Booking updated successfully" });
       }
@@ -263,6 +468,50 @@ function slotBookingAPIs(app, io, labbeeUsers) {
   });
 
   // Delete or remove the selected booking:
+  // app.delete("/api/deleteBooking", (req, res) => {
+  //   const { bookingID, loggedInUser } = req.body;
+  //   const deleteBookings = "DELETE FROM bookings_table  WHERE booking_id = ?";
+  //   db.query(deleteBookings, [bookingID], (error, result) => {
+  //     if (error) {
+  //       console.error(
+  //         "Error while marking the selected booking as deleted",
+  //         error
+  //       );
+  //       return res.status(500).json({
+  //         error: "An error occurred while updating the booking status",
+  //       });
+  //     } else {
+  //       if (result.affectedRows > 0) {
+  //         const departmentsToNotify = [
+  //           // "Administration",
+  //           "TS1 Testing",
+  //           "Marketing",
+  //         ];
+
+  //         for (let socketId in labbeeUsers) {
+  //           if (
+  //             departmentsToNotify.includes(labbeeUsers[socketId].department) &&
+  //             labbeeUsers[socketId].username !== loggedInUser
+  //           ) {
+  //             let message = `TS1 Slot: ${bookingID} deleted by ${loggedInUser}`;
+
+  //             io.to(socketId).emit("delete_slot_booking_notification", {
+  //               message: message,
+  //               sender: loggedInUser,
+  //             });
+  //           }
+  //         }
+
+  //         return res.json({
+  //           message: "Booking marked as deleted successfully",
+  //         });
+  //       } else {
+  //         return res.status(404).json({ message: "Booking not found" });
+  //       }
+  //     }
+  //   });
+  // });
+
   app.delete("/api/deleteBooking", (req, res) => {
     const { bookingID, loggedInUser } = req.body;
     const deleteBookings = "DELETE FROM bookings_table  WHERE booking_id = ?";
@@ -277,25 +526,37 @@ function slotBookingAPIs(app, io, labbeeUsers) {
         });
       } else {
         if (result.affectedRows > 0) {
-          const departmentsToNotify = [
-            // "Administration",
-            "TS1 Testing",
-            "Marketing",
-          ];
+          const currentTimestampForSlotBooking = new Date().toISOString();
+
+          let message = `TS1 Slot: ${bookingID} Deleted, by ${loggedInUser}`;
+          let usersToNotifyNewSlotBooking = [];
 
           for (let socketId in labbeeUsers) {
-            if (
-              departmentsToNotify.includes(labbeeUsers[socketId].department) &&
-              labbeeUsers[socketId].username !== loggedInUser
-            ) {
-              let message = `TS1 Slot: ${bookingID} deleted by ${loggedInUser}`;
+            const user = labbeeUsers[socketId];
 
+            if (
+              usersToNotifySlotBooking.includes(user.role) &&
+              user.name !== loggedInUser
+            ) {
               io.to(socketId).emit("delete_slot_booking_notification", {
                 message: message,
                 sender: loggedInUser,
+                receivedAt: currentTimestampForSlotBooking,
               });
+
+              if (!usersToNotifyNewSlotBooking.includes(user.role)) {
+                usersToNotifyNewSlotBooking.push(user.role);
+              }
             }
           }
+
+          // Save the notification in the database
+          saveNotificationToDatabase(
+            message,
+            currentTimestampForSlotBooking,
+            usersToNotifyNewSlotBooking,
+            loggedInUser
+          );
 
           return res.json({
             message: "Booking marked as deleted successfully",
