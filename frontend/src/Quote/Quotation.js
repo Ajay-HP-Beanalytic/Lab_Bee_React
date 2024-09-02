@@ -275,64 +275,60 @@ export default function Quotation() {
   };
 
   // To generate quotation ID dynamically based on the last saved quoataion ID:
-  const generateDynamicQuotationIdString = async () =>
-    // newCompanyName,
-    // catCodefromTarget = ""
+  const generateDynamicQuotationIdString = async () => {
+    if (id) {
+      setQuotationIDString(existingQuoteId);
+    } else {
+      const currentDate = new Date();
 
-    {
-      if (id) {
-        setQuotationIDString(existingQuoteId);
-      } else {
-        const currentDate = new Date();
+      const newQuoteDate = currentDate
+        .toISOString()
+        .split("T")[0]
+        .replace(/-/g, "")
+        .slice(2);
+      let lastQuotationID = "";
 
-        const newQuoteDate = currentDate
-          .toISOString()
-          .split("T")[0]
-          .replace(/-/g, "")
-          .slice(2);
-        let lastQuotationID = "";
+      try {
+        const response = await axios.get(
+          `${serverBaseAddress}/api/getLatestQuotationID`
+        );
 
-        try {
-          const response = await axios.get(
-            `${serverBaseAddress}/api/getLatestQuotationID`
-          );
-
-          if (response.status === 200) {
-            lastQuotationID = response.data[0]?.quotation_ids;
-          }
-        } catch (error) {
-          return;
+        if (response.status === 200) {
+          lastQuotationID = response.data[0]?.quotation_ids;
         }
-        let previousQuoteNumber = "";
-        let newQuoteNumber = "";
-        let newQuoteNumberStr = "";
-        if (lastQuotationID) {
-          const lastYearStr = lastQuotationID.slice(-10, -8);
-          const lastMonthStr = lastQuotationID.slice(-8, -6);
-
-          const currentYear = currentDate.getFullYear();
-          const currentYearStr = currentYear.toString().slice(-2);
-          const currentMonth = currentDate.getMonth() + 1;
-          const currentMonthStr = currentMonth.toString().padStart(2, "0");
-
-          if (
-            lastYearStr === currentYearStr &&
-            lastMonthStr === currentMonthStr
-          ) {
-            previousQuoteNumber = parseInt(lastQuotationID.slice(-3));
-            newQuoteNumber = parseInt(previousQuoteNumber) + 1;
-            newQuoteNumberStr = newQuoteNumber.toString().padStart(3, "0");
-          } else {
-            newQuoteNumberStr = "001";
-          }
-        }
-
-        const newQuoteId = `BEA/${catCode}/${customerId}/${newQuoteDate}-${newQuoteNumberStr}`;
-
-        // Set the quotation ID after fetching the last ID
-        setQuotationIDString(newQuoteId);
+      } catch (error) {
+        return;
       }
-    };
+      let previousQuoteNumber = "";
+      let newQuoteNumber = "";
+      let newQuoteNumberStr = "";
+      if (lastQuotationID) {
+        const lastYearStr = lastQuotationID.slice(-10, -8);
+        const lastMonthStr = lastQuotationID.slice(-8, -6);
+
+        const currentYear = currentDate.getFullYear();
+        const currentYearStr = currentYear.toString().slice(-2);
+        const currentMonth = currentDate.getMonth() + 1;
+        const currentMonthStr = currentMonth.toString().padStart(2, "0");
+
+        if (
+          lastYearStr === currentYearStr &&
+          lastMonthStr === currentMonthStr
+        ) {
+          previousQuoteNumber = parseInt(lastQuotationID.slice(-3));
+          newQuoteNumber = parseInt(previousQuoteNumber) + 1;
+          newQuoteNumberStr = newQuoteNumber.toString().padStart(3, "0");
+        } else {
+          newQuoteNumberStr = "001";
+        }
+      }
+
+      const newQuoteId = `BEA/${catCode}/${customerId}/${newQuoteDate}-${newQuoteNumberStr}`;
+
+      // Set the quotation ID after fetching the last ID
+      setQuotationIDString(newQuoteId);
+    }
+  };
 
   useEffect(() => {
     generateDynamicQuotationIdString();

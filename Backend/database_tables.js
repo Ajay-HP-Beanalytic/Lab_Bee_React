@@ -553,6 +553,31 @@ function createPoStatusTable() {
   });
 }
 
+////////////////////////////////////////////////////////////////////////////////////
+//Function to create a notifications table:
+function createNotificationsTable() {
+  const createTableQuery = `
+  CREATE TABLE IF NOT EXISTS notifications_table (
+    id int NOT NULL AUTO_INCREMENT,
+    message VARCHAR(1000) DEFAULT NULL,
+    receivedAt datetime DEFAULT NULL,
+    users_to_be_notified VARCHAR(1000) DEFAULT NULL,
+    notification_sent_by VARCHAR(255) DEFAULT NULL,
+    isReadBy VARCHAR(1000) DEFAULT NULL,
+    isUnReadBy VARCHAR(1000) DEFAULT NULL,
+    isDeletedBy VARCHAR(1000) DEFAULT NULL,
+    PRIMARY KEY (id)
+  )`;
+
+  db.query(createTableQuery, function (err, result) {
+    if (err) {
+      console.error("Error while creating notifications_table", err);
+    } else {
+      //console.log("Users_table created successfully.")
+    }
+  });
+}
+
 // Handle the process exiting to gracefully end the connection pool.
 process.on("exit", function () {
   db.end(function (err) {
@@ -586,4 +611,6 @@ module.exports = {
   createChambersForSlotBookingTable,
   createSlotBookingTable,
   createPoStatusTable,
+
+  createNotificationsTable,
 };

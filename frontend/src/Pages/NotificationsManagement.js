@@ -33,15 +33,22 @@ export default function NotificationsManagement() {
      * @param {string} options.sender - The sender of the notification.
      * @return {void} This function does not return anything.
      */
-    const handleJobcardSubmitNotification = ({ message, sender }) => {
+    const handleJobcardSubmitNotification = ({
+      message,
+      sender,
+      receivedAt,
+    }) => {
       if (sender !== loggedInUser) {
-        setNotifications((prevNotifications) => [
-          ...prevNotifications,
-          message,
-        ]);
+        setNotifications((prevNotifications) => {
+          const updatedNotifications = [
+            { message, receivedAt },
+            ...prevNotifications,
+          ];
+          return updatedNotifications;
+        });
         // Show a browser notification
         if (Notification.permission === "granted") {
-          new Notification("New Notification", { body: message });
+          new Notification("New JC Created:", { body: message });
         }
       }
     };
@@ -53,77 +60,119 @@ export default function NotificationsManagement() {
      * @param {string} options.message - The notification message.
      * @param {string} options.sender - The sender of the notification.
      */
-    const handleJobcardUpdateNotification = ({ message, sender }) => {
+    const handleJobcardUpdateNotification = ({
+      message,
+      sender,
+      receivedAt,
+    }) => {
       if (sender !== loggedInUser) {
-        setNotifications((prevNotifications) => [
-          ...prevNotifications,
-          message,
-        ]);
+        setNotifications((prevNotifications) => {
+          const updatedNotifications = [
+            { message, receivedAt },
+            ...prevNotifications,
+          ];
+          return updatedNotifications;
+        });
         // Show a browser notification
         if (Notification.permission === "granted") {
-          new Notification("New Notification", { body: message });
+          new Notification("TS1JC Update:", { body: message });
         }
       }
     };
 
-    const handleJobcardTestCompletedNotification = ({ message, sender }) => {
+    const handleJobcardTestCompletedNotification = ({
+      message,
+      sender,
+      receivedAt,
+    }) => {
       if (sender !== loggedInUser) {
-        setNotifications((prevNotifications) => [
-          ...prevNotifications,
-          message,
-        ]);
+        setNotifications((prevNotifications) => {
+          const updatedNotifications = [
+            { message, receivedAt },
+            ...prevNotifications,
+          ];
+          return updatedNotifications;
+        });
         // Show a browser notification
         if (Notification.permission === "granted") {
-          new Notification("JC Test Completed Notification", { body: message });
+          new Notification("JC Test Completed:", { body: message });
         }
       }
     };
 
-    const handleJobcardClosedNotification = ({ message, sender }) => {
+    const handleJobcardClosedNotification = ({
+      message,
+      sender,
+      receivedAt,
+    }) => {
       if (sender !== loggedInUser) {
-        setNotifications((prevNotifications) => [
-          ...prevNotifications,
-          message,
-        ]);
+        setNotifications((prevNotifications) => {
+          const updatedNotifications = [
+            { message, receivedAt },
+            ...prevNotifications,
+          ];
+          return updatedNotifications;
+        });
         // Show a browser notification
         if (Notification.permission === "granted") {
-          new Notification("JC Closed Notification", { body: message });
+          new Notification("JC Closed", { body: message });
         }
       }
     };
 
-    const handleJobcardReportDeliveryNotification = ({ message, sender }) => {
+    const handleJobcardReportDeliveryNotification = ({
+      message,
+      sender,
+      receivedAt,
+    }) => {
       if (sender !== loggedInUser) {
-        setNotifications((prevNotifications) => [
-          ...prevNotifications,
-          message,
-        ]);
+        setNotifications((prevNotifications) => {
+          const updatedNotifications = [
+            { message, receivedAt },
+            ...prevNotifications,
+          ];
+          return updatedNotifications;
+        });
         // Show a browser notification
         if (Notification.permission === "granted") {
-          new Notification("Report Delivery Notification", { body: message });
+          new Notification("Report Delivery Instruction", { body: message });
         }
       }
     };
 
-    const handleJobcardReportStatusNotification = ({ message, sender }) => {
+    const handleJobcardReportStatusNotification = ({
+      message,
+      sender,
+      receivedAt,
+    }) => {
       if (sender !== loggedInUser) {
-        setNotifications((prevNotifications) => [
-          ...prevNotifications,
-          message,
-        ]);
+        setNotifications((prevNotifications) => {
+          const updatedNotifications = [
+            { message, receivedAt },
+            ...prevNotifications,
+          ];
+          return updatedNotifications;
+        });
         // Show a browser notification
         if (Notification.permission === "granted") {
-          new Notification("Report Status Notification", { body: message });
+          new Notification("TS1 Report Status", { body: message });
         }
       }
     };
 
-    const handleNewSlotBookingNotification = ({ message, sender }) => {
+    const handleNewSlotBookingNotification = ({
+      message,
+      sender,
+      receivedAt,
+    }) => {
       if (sender !== loggedInUser) {
-        setNotifications((prevNotifications) => [
-          ...prevNotifications,
-          message,
-        ]);
+        setNotifications((prevNotifications) => {
+          const updatedNotifications = [
+            { message, receivedAt },
+            ...prevNotifications,
+          ];
+          return updatedNotifications;
+        });
         // Show a browser notification
         if (Notification.permission === "granted") {
           new Notification("New Slot Booking", { body: message });
@@ -131,38 +180,59 @@ export default function NotificationsManagement() {
       }
     };
 
-    const handleUpdateSlotBookingNotification = ({ message, sender }) => {
+    const handleUpdateSlotBookingNotification = ({
+      message,
+      sender,
+      receivedAt,
+    }) => {
       if (sender !== loggedInUser) {
-        setNotifications((prevNotifications) => [
-          ...prevNotifications,
-          message,
-        ]);
+        setNotifications((prevNotifications) => {
+          const updatedNotifications = [
+            { message, receivedAt },
+            ...prevNotifications,
+          ];
+          return updatedNotifications;
+        });
         // Show a browser notification
         if (Notification.permission === "granted") {
-          new Notification("Slot Booking Update", { body: message });
+          new Notification("Slot Update", { body: message });
         }
       }
     };
 
-    const handleDeleteSlotBookingNotification = ({ message, sender }) => {
+    const handleDeleteSlotBookingNotification = ({
+      message,
+      sender,
+      receivedAt,
+    }) => {
       if (sender !== loggedInUser) {
-        setNotifications((prevNotifications) => [
-          ...prevNotifications,
-          message,
-        ]);
+        setNotifications((prevNotifications) => {
+          const updatedNotifications = [
+            { message, receivedAt },
+            ...prevNotifications,
+          ];
+          return updatedNotifications;
+        });
         // Show a browser notification
         if (Notification.permission === "granted") {
-          new Notification("Slot Booking Update", { body: message });
+          new Notification("Slot Delete", { body: message });
         }
       }
     };
 
-    const handleNewQuoteCreatedNotification = ({ message, sender }) => {
+    const handleNewQuoteCreatedNotification = ({
+      message,
+      sender,
+      receivedAt,
+    }) => {
       if (sender !== loggedInUser) {
-        setNotifications((prevNotifications) => [
-          ...prevNotifications,
-          message,
-        ]);
+        setNotifications((prevNotifications) => {
+          const updatedNotifications = [
+            { message, receivedAt },
+            ...prevNotifications,
+          ];
+          return updatedNotifications;
+        });
         // Show a browser notification
         if (Notification.permission === "granted") {
           new Notification("New Quote", { body: message });
@@ -170,12 +240,15 @@ export default function NotificationsManagement() {
       }
     };
 
-    const handleQuoteUpdateNotification = ({ message, sender }) => {
+    const handleQuoteUpdateNotification = ({ message, sender, receivedAt }) => {
       if (sender !== loggedInUser) {
-        setNotifications((prevNotifications) => [
-          ...prevNotifications,
-          message,
-        ]);
+        setNotifications((prevNotifications) => {
+          const updatedNotifications = [
+            { message, receivedAt },
+            ...prevNotifications,
+          ];
+          return updatedNotifications;
+        });
         // Show a browser notification
         if (Notification.permission === "granted") {
           new Notification("Quote Update", { body: message });
