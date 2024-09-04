@@ -50,7 +50,6 @@ import UserProfile from "../LoginRegister/UserProfile";
 // import { serverBaseAddress } from "../Pages/APIPage";
 import { UserContext } from "../Pages/UserContext";
 import { NotificationContext } from "../Pages/NotificationContext";
-import SearchBar from "../common/SearchBar";
 import axios from "axios";
 import { serverBaseAddress } from "../Pages/APIPage";
 
@@ -133,24 +132,29 @@ export default function SidenavigationBar() {
 
   const { loggedInUser, loggedInUserDepartment, loggedInUserRole } =
     useContext(UserContext);
-  const { notifications, setNotifications, newNotificationReceived } =
-    useContext(NotificationContext);
+  const {
+    notifications,
+    setNotifications,
+    newNotificationReceived,
+    addNotification,
+  } = useContext(NotificationContext);
 
   const [open, setOpen] = useState(false); // "true" to keep open, and "false" is for keep it closed
-
-  const [filteredMenuItems, setFilteredMenuItems] = useState([]);
-  const [loadingMenuItems, setLoadingMenuItems] = useState(true);
 
   //States and functions to handle the onclick events on Avatar:
   const [anchorEl, setAnchorEl] = useState(null);
   const [notificationAnchorEl, setNotificationAnchorEl] = useState(null);
 
   //State to mark all the notifications as default unread:
-  // const [readStatus, setReadStatus] = useState(notifications.map(() => false));
-  const [readStatus, setReadStatus] = useState([]);
-  const [searchNotificationText, setSearchNotificationText] = useState("");
-  const [filteredNotifications, setFilteredNotifications] =
-    useState(notifications);
+  // const [readStatus, setReadStatus] = useState([]);
+  const [readStatus, setReadStatus] = useState({});
+
+  // const [searchNotificationText, setSearchNotificationText] = useState("");
+  // const [filteredNotifications, setFilteredNotifications] =
+  //   useState(notifications);
+
+  const [numberOfUnreadNotifications, setNumberOfUnreadNotifications] =
+    useState(0);
 
   const handleClickAvatar = (event) => {
     setAnchorEl(event.currentTarget);
@@ -166,10 +170,10 @@ export default function SidenavigationBar() {
   };
 
   //Function to close the notification bar:
-  const handleClearNotifications = () => {
-    notifications.length = 0;
-    setNotificationAnchorEl(null);
-  };
+  // const handleClearNotifications = () => {
+  //   notifications.length = 0;
+  //   setNotificationAnchorEl(null);
+  // };
 
   //Function to close the notification bar:
   const handleCloseNotification = () => {
@@ -186,31 +190,35 @@ export default function SidenavigationBar() {
     ? "notification-window-popover"
     : undefined;
 
-  // useEffect(() => {
-  //   // Update filteredNotifications whenever the search text or notifications change
-  //   const filteredNotificationsAfterSearch = notifications.filter(
-  //     (notification) => {
-  //       const message = notification.message || ""; // Fallback to an empty string if message is undefined
-  //       return message
-  //         .toLowerCase()
-  //         .includes(searchNotificationText.toLowerCase());
-  //     }
-  //   );
+  // const onChangeSearchNotificationText = (event) => {
+  //   const searchText = event.target.value;
+  //   setSearchNotificationText(searchText);
+  // };
 
-  //   setFilteredNotifications(filteredNotificationsAfterSearch);
-  // }, [searchNotificationText, notifications]);
+  // const onClearSearchNotificationText = () => {
+  //   setSearchNotificationText("");
+  // };
 
-  const onChangeSearchNotificationText = (event) => {
-    const searchText = event.target.value;
-    setSearchNotificationText(searchText);
-  };
-
-  const onClearSearchNotificationText = () => {
-    setSearchNotificationText("");
+  //Fetch the number of un-read notifictions:
+  const fetchUnreadNotificationsCount = async () => {
+    try {
+      const response = await axios.get(
+        `${serverBaseAddress}/api/getUnreadNotificationsCount`,
+        {
+          params: {
+            userName: loggedInUser,
+            userRole: loggedInUserRole,
+          },
+        }
+      );
+      const fetchedUnreadCount = response.data?.count;
+      setNumberOfUnreadNotifications(fetchedUnreadCount);
+    } catch (error) {
+      console.error("Error fetching unread notifications count:", error);
+    }
   };
 
   //Fetch all the notifications which are recieved by the logged in users:
-
   useEffect(() => {
     const fetchNotifications = async () => {
       try {
@@ -231,12 +239,12 @@ export default function SidenavigationBar() {
             !notification.isDeletedBy ||
             !notification.isDeletedBy.split(",").includes(loggedInUser)
         );
-
         // Update readStatus array based on isReadBy field
         const newReadStatus = filteredNotifications.map((notification) => {
           const isRead = notification.isReadBy
             ? notification.isReadBy.split(",").includes(loggedInUser)
             : false;
+
           return isRead;
         });
 
@@ -247,15 +255,20 @@ export default function SidenavigationBar() {
       }
     };
 
+    //Call and initiate the function to fetch the notifications:
     fetchNotifications();
-  }, [loggedInUserRole, loggedInUser]);
 
+    //Call and initiate the function:
+    fetchUnreadNotificationsCount();
+  }, [loggedInUserRole, loggedInUser, newNotificationReceived]);
+
+  //Working Fine:
   useEffect(() => {
     if (notifications.length > 0) {
       const newReadStatus = notifications.reduce((status, notification) => {
         // Ensure every notification has a valid ID
         if (!notification.id) {
-          console.error("Notification with missing ID:", notification);
+          // console.error("Notification with missing ID:", notification);
           return status;
         }
 
@@ -272,78 +285,112 @@ export default function SidenavigationBar() {
 
       setReadStatus(newReadStatus);
     }
-  }, [notifications, loggedInUser]);
+  }, [notifications, loggedInUser, newNotificationReceived]);
+
+  ///////////////////////////////////////////////////////////////////////////////////////////
 
   const handleReadSelectedNotification = (notificationId) => {
     // Mark the notification as read in the backend
     const markNotificationAsRead = async (notificationId, loggedInUser) => {
       try {
-        await axios.post(`${serverBaseAddress}/api/notifications/markAsRead`, {
-          id: notificationId,
-          userName: loggedInUser,
-        });
+        const response = await axios.post(
+          `${serverBaseAddress}/api/notifications/markAsRead/${notificationId}`,
+          { userName: loggedInUser }
+        );
+
+        if (response.status === 200) {
+          // Update the read status based on the notification id
+          setReadStatus((prevReadStatus) => ({
+            ...prevReadStatus,
+            [notificationId]: true,
+          }));
+          await fetchUnreadNotificationsCount();
+        }
       } catch (error) {
         console.error("Error marking notification as read:", error);
       }
     };
 
     markNotificationAsRead(notificationId, loggedInUser);
-
-    // Update the read status based on the notification id
-    setReadStatus((prevReadStatus) => ({
-      ...prevReadStatus,
-      [notificationId]: true,
-    }));
+    // fetchUnreadNotificationsCount();
   };
 
   const handleUnreadSelectedNotification = (notificationId) => {
     // Mark the notification as unread in the backend
     const markNotificationAsUnRead = async (notificationId, loggedInUser) => {
       try {
-        await axios.post(
-          `${serverBaseAddress}/api/notifications/markAsUnRead`,
-          {
-            id: notificationId,
-            userName: loggedInUser,
-          }
+        const response = await axios.post(
+          `${serverBaseAddress}/api/notifications/markAsUnRead/${notificationId}`,
+          { userName: loggedInUser }
         );
+
+        if (response.status === 200) {
+          setReadStatus((prevReadStatus) => ({
+            ...prevReadStatus,
+            [notificationId]: false,
+          }));
+          await fetchUnreadNotificationsCount();
+        }
       } catch (error) {
         console.error("Error marking notification as un-read:", error);
       }
     };
 
     markNotificationAsUnRead(notificationId, loggedInUser);
-
-    // Update the read status based on the notification id
-    setReadStatus((prevReadStatus) => ({
-      ...prevReadStatus,
-      [notificationId]: false,
-    }));
+    // fetchUnreadNotificationsCount();
   };
 
-  const handleDeleteSelectedNotification = (notificationId) => {
-    // Delete the notification in the backend
-    const deleteNotification = async (notificationId, loggedInUser) => {
-      try {
-        await axios.delete(
-          `${serverBaseAddress}/api/deleteNotification/${notificationId}`,
-          {
-            data: { userName: loggedInUser },
-          }
-        );
-      } catch (error) {
-        console.error("Error deleting the notification", error);
-      }
-    };
+  // const handleDeleteSelectedNotification = (notificationId) => {
+  //   // Delete the notification in the backend
+  //   const deleteNotification = async (notificationId, loggedInUser) => {
+  //     try {
+  //       await axios.delete(
+  //         `${serverBaseAddress}/api/deleteNotification/${notificationId}`,
+  //         {
+  //           data: { userName: loggedInUser },
+  //         }
+  //       );
+  //     } catch (error) {
+  //       console.error("Error deleting the notification", error);
+  //     }
+  //   };
 
-    deleteNotification(notificationId, loggedInUser);
+  //   deleteNotification(notificationId, loggedInUser);
 
-    // Update the notifications and read status states
-    setNotifications((prevNotifications) =>
-      prevNotifications.filter(
-        (notification) => notification.id !== notificationId
-      )
-    );
+  //   // Update the notifications and read status states
+  //   setNotifications((prevNotifications) =>
+  //     prevNotifications.filter(
+  //       (notification) => notification.id !== notificationId
+  //     )
+  //   );
+  // };
+
+  // Delete a notification
+  const handleDeleteSelectedNotification = async (notificationId) => {
+    try {
+      await axios.delete(
+        `${serverBaseAddress}/api/deleteNotification/${notificationId}`,
+        {
+          data: { userName: loggedInUser },
+        }
+      );
+
+      // Update the notifications and read status, then fetch the updated unread count
+      setNotifications((prevNotifications) =>
+        prevNotifications.filter(
+          (notification) => notification.id !== notificationId
+        )
+      );
+      setReadStatus((prevReadStatus) => {
+        const updatedStatus = { ...prevReadStatus };
+        delete updatedStatus[notificationId];
+        return updatedStatus;
+      });
+
+      await fetchUnreadNotificationsCount();
+    } catch (error) {
+      console.error("Error deleting the notification", error);
+    }
   };
 
   // Function to format the received date or time
@@ -588,7 +635,7 @@ export default function SidenavigationBar() {
             >
               <Badge
                 showZero
-                badgeContent={notifications.length || 0}
+                badgeContent={numberOfUnreadNotifications}
                 color="error"
               >
                 <NotificationsIcon sx={{ color: "white" }} size="large" />
@@ -616,114 +663,6 @@ export default function SidenavigationBar() {
               <UserProfile userAvatar={userAvatar} userName={loggedInUser} />
             </Popover>
           </Toolbar>
-
-          {/* <Popover
-            id={notificationWindowId}
-            open={isOpenNotificationWindow}
-            anchorEl={notificationAnchorEl}
-            onClose={handleCloseNotification}
-            anchorOrigin={{
-              vertical: "bottom",
-              horizontal: "center",
-            }}
-            transformOrigin={{
-              vertical: "top",
-              horizontal: "center",
-            }}
-          >
-            <Box sx={{ padding: 2 }}>
-              <Typography variant="h6">Notifications</Typography>
-              <List>
-                {notifications.map((notification, index) => {
-                  if (typeof notification === "string") {
-                    notification = {
-                      message: notification,
-                      receivedAt: undefined,
-                    };
-                  }
-                  return (
-                    <ListItem
-                      key={index}
-                      sx={{
-                        backgroundColor: readStatus[index]
-                          ? "white"
-                          : "#c3ddf8",
-                        borderBottom: "1px solid #e0e0e0",
-                        transition: "background-color 0.3s",
-                        display: "flex", // Aligns items horizontally
-                        justifyContent: "space-between", // Space between dot-message and buttons
-                        alignItems: "center", // Aligns items vertically centered
-                        "&:hover": {
-                          backgroundColor: readStatus[index]
-                            ? "#e0e0e0"
-                            : "#c3ddf8",
-                        },
-                      }}
-                    >
-                      <Box sx={{ display: "flex", alignItems: "center" }}>
-                        {!readStatus[index] && (
-                          <FiberManualRecordIcon
-                            sx={{
-                              fontSize: 10, // Size of the dot
-                              color: "blue", // Color of the dot, adjust as needed
-                              marginRight: 1, // Space between dot and message
-                            }}
-                          />
-                        )}
-                        <ListItemText
-                          primary={notification.message} // Message text
-                          secondary={formatDateOrTime(notification.receivedAt)} // Format the receivedAt date/time
-                        />
-                      </Box>
-
-                      <Box sx={{ display: "flex", alignItems: "center" }}>
-                        <Tooltip
-                          title={
-                            readStatus[index]
-                              ? "Mark as Un-Read"
-                              : "Mark as Read"
-                          }
-                        >
-                          <IconButton
-                            onClick={() =>
-                              readStatus[index]
-                                ? handleUnreadSelectedNotification(
-                                    notification.id,
-                                    index
-                                  )
-                                : handleReadSelectedNotification(
-                                    notification.id,
-                                    index
-                                  )
-                            }
-                          >
-                            {readStatus[index] ? (
-                              <MarkChatUnreadIcon />
-                            ) : (
-                              <MarkChatReadIcon />
-                            )}
-                          </IconButton>
-                        </Tooltip>
-
-                        <Tooltip title="Delete Notification">
-                          <IconButton
-                            onClick={() =>
-                              handleDeleteSelectedNotification(
-                                notification.id,
-                                index
-                              )
-                            }
-                          >
-                            <DeleteIcon />
-                          </IconButton>
-                        </Tooltip>
-                      </Box>
-                    </ListItem>
-                  );
-                })}
-              </List>
-            </Box>
-          </Popover> */}
 
           <Popover
             id={notificationWindowId}

@@ -1,9 +1,26 @@
 const { db } = require("./db");
 const schedule = require("node-schedule");
-const moment = require("moment");
 
 function notificationsAPIs(app, io, labbeeUsers) {
   //Function to auto delete the notifications after 30 days of receiving them:
+  // const deleteOlderNotifications = schedule.scheduleJob(
+  //   "2 * * * *",
+  //   function () {
+  //     const sqlQuery = `
+  //         DELETE FROM notifications_table
+  //         WHERE isDeletedBy IS NOT NULL
+  //         AND DATEDIFF(NOW(), receivedAt) > 30;
+  //       `;
+  //     db.query(sqlQuery, (error, result) => {
+  //       if (error) {
+  //         console.error("Error while deleting older notifications", error);
+  //       } else {
+  //         console.log("Old notifications cleaned up:", result.affectedRows);
+  //       }
+  //     });
+  //     console.log("Deleting older notifications for every 2 hours");
+  //   }
+  // );
 
   // Function to auto delete the notifications after 30 days of receiving them:
   // schedule.scheduleJob("*/2 * * * *", function () { // To run the function every minutes.
@@ -54,41 +71,6 @@ function notificationsAPIs(app, io, labbeeUsers) {
   //   });
   // });
 
-  // API function to add a new notification:
-  app.post("/api/addNotification", async (req, res) => {
-    try {
-      const { message, receivedAt, usersToBeNotified, sender } = req.body;
-
-      const query = `
-      INSERT INTO notifications_table (message, receivedAt, users_to_be_notified, notification_sent_by)
-      VALUES (?, ?, ?, ?)
-    `;
-
-      const formattedDateTime = moment(receivedAt).format(
-        "YYYY-MM-DD HH:mm:ss"
-      );
-      const values = [
-        message,
-        formattedDateTime,
-        usersToBeNotified.join(","),
-        sender,
-      ];
-
-      db.query(query, values, (error, result) => {
-        if (error) {
-          console.error("Error while adding notification:", error.message);
-          return res
-            .status(500)
-            .json({ error: "Error while adding notification" });
-        }
-        res.status(200).json({ message: "Notification added successfully" });
-      });
-    } catch (error) {
-      console.error("Unexpected error:", error.message);
-      res.status(500).json({ error: "Unexpected error occurred" });
-    }
-  });
-
   // API function to fetch all the notifications:
   app.get("/api/getAllNotifications", (req, res) => {
     const { userRole } = req.query;
@@ -108,15 +90,16 @@ function notificationsAPIs(app, io, labbeeUsers) {
           .status(500)
           .json({ error: "Error while fetching notifications" });
       }
-
       res.status(200).json(result);
     });
   });
 
   //API endpoint mark the notification as read :(Working Fine)
-  app.post("/api/notifications/markAsRead/:id", (req, res) => {
-    const { id } = req.params;
-    const { userName } = req.body;
+  app.post("/api/notifications/markAsRead", (req, res) => {
+    const { id, userName } = req.body;
+
+    console.log("userName is-->", userName);
+    console.log("id is-->", id);
 
     const sqlQuery = `
         UPDATE notifications_table 
@@ -150,9 +133,8 @@ function notificationsAPIs(app, io, labbeeUsers) {
   });
 
   //API endpoint mark the notification as unread: (working fine)
-  app.post("/api/notifications/markAsUnRead/:id", (req, res) => {
-    const { id } = req.params;
-    const { userName } = req.body;
+  app.post("/api/notifications/markAsUnRead", (req, res) => {
+    const { id, userName } = req.body;
 
     const sqlQuery = `
         UPDATE notifications_table 
@@ -224,38 +206,6 @@ function notificationsAPIs(app, io, labbeeUsers) {
         res.status(200).json({
           message: "Notification deleted",
         });
-      }
-    );
-  });
-
-  //API to fetch the count of un-read notifications based on logged in user role:
-  app.get("/api/getUnreadNotificationsCount", (req, res) => {
-    const { userName, userRole } = req.query;
-
-    const sqlQuery = `
-            SELECT COUNT(*) AS count 
-            FROM notifications_table
-            WHERE users_to_be_notified LIKE ?
-              AND (isReadBy IS NULL OR isReadBy NOT LIKE ?)
-              AND (isDeletedBy IS NULL OR isDeletedBy NOT LIKE ?)
-          `;
-
-    db.query(
-      sqlQuery,
-      [`%${userRole}%`, `%${userName}%`, `%${userName}%`],
-      (error, result) => {
-        if (error) {
-          console.error(
-            "Error fetching count of unread notifications:",
-            error.message
-          );
-          return res.status(500).json({
-            message: "Internal server error",
-            error: error.message,
-          });
-        }
-        const count = result[0].count;
-        res.status(200).json({ count });
       }
     );
   });

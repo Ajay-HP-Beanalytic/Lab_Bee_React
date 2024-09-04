@@ -7,7 +7,8 @@ import { io } from "socket.io-client";
 export default function NotificationsManagement() {
   const { loggedInUser, loggedInUserDepartment, loggedInUserRole } =
     useContext(UserContext);
-  const { setNotifications } = useContext(NotificationContext);
+  const { setNewNotificationReceived, setNotifications } =
+    useContext(NotificationContext);
 
   // const socket = io(serverBaseAddress); // Replace with your server address
   const socket = io(serverBaseAddress, {
@@ -34,6 +35,7 @@ export default function NotificationsManagement() {
      * @return {void} This function does not return anything.
      */
     const handleJobcardSubmitNotification = ({
+      id,
       message,
       sender,
       receivedAt,
@@ -41,11 +43,15 @@ export default function NotificationsManagement() {
       if (sender !== loggedInUser) {
         setNotifications((prevNotifications) => {
           const updatedNotifications = [
-            { message, receivedAt },
+            { id, message, receivedAt },
             ...prevNotifications,
           ];
           return updatedNotifications;
         });
+
+        // Trigger re-render by updating newNotificationReceived state
+        setNewNotificationReceived((prev) => !prev);
+
         // Show a browser notification
         if (Notification.permission === "granted") {
           new Notification("New JC Created:", { body: message });
@@ -61,6 +67,7 @@ export default function NotificationsManagement() {
      * @param {string} options.sender - The sender of the notification.
      */
     const handleJobcardUpdateNotification = ({
+      id,
       message,
       sender,
       receivedAt,
@@ -68,19 +75,24 @@ export default function NotificationsManagement() {
       if (sender !== loggedInUser) {
         setNotifications((prevNotifications) => {
           const updatedNotifications = [
-            { message, receivedAt },
+            { id, message, receivedAt },
             ...prevNotifications,
           ];
           return updatedNotifications;
         });
+
+        // Trigger re-render by updating newNotificationReceived state
+        setNewNotificationReceived((prev) => !prev);
+
         // Show a browser notification
         if (Notification.permission === "granted") {
-          new Notification("TS1JC Update:", { body: message });
+          new Notification("TS1 JC Update:", { body: message });
         }
       }
     };
 
     const handleJobcardTestCompletedNotification = ({
+      id,
       message,
       sender,
       receivedAt,
@@ -88,11 +100,15 @@ export default function NotificationsManagement() {
       if (sender !== loggedInUser) {
         setNotifications((prevNotifications) => {
           const updatedNotifications = [
-            { message, receivedAt },
+            { id, message, receivedAt },
             ...prevNotifications,
           ];
           return updatedNotifications;
         });
+
+        // Trigger re-render by updating newNotificationReceived state
+        setNewNotificationReceived((prev) => !prev);
+
         // Show a browser notification
         if (Notification.permission === "granted") {
           new Notification("JC Test Completed:", { body: message });
@@ -101,6 +117,7 @@ export default function NotificationsManagement() {
     };
 
     const handleJobcardClosedNotification = ({
+      id,
       message,
       sender,
       receivedAt,
@@ -108,11 +125,15 @@ export default function NotificationsManagement() {
       if (sender !== loggedInUser) {
         setNotifications((prevNotifications) => {
           const updatedNotifications = [
-            { message, receivedAt },
+            { id, message, receivedAt },
             ...prevNotifications,
           ];
           return updatedNotifications;
         });
+
+        // Trigger re-render by updating newNotificationReceived state
+        setNewNotificationReceived((prev) => !prev);
+
         // Show a browser notification
         if (Notification.permission === "granted") {
           new Notification("JC Closed", { body: message });
@@ -121,6 +142,7 @@ export default function NotificationsManagement() {
     };
 
     const handleJobcardReportDeliveryNotification = ({
+      id,
       message,
       sender,
       receivedAt,
@@ -128,11 +150,15 @@ export default function NotificationsManagement() {
       if (sender !== loggedInUser) {
         setNotifications((prevNotifications) => {
           const updatedNotifications = [
-            { message, receivedAt },
+            { id, message, receivedAt },
             ...prevNotifications,
           ];
           return updatedNotifications;
         });
+
+        // Trigger re-render by updating newNotificationReceived state
+        setNewNotificationReceived((prev) => !prev);
+
         // Show a browser notification
         if (Notification.permission === "granted") {
           new Notification("Report Delivery Instruction", { body: message });
@@ -141,6 +167,7 @@ export default function NotificationsManagement() {
     };
 
     const handleJobcardReportStatusNotification = ({
+      id,
       message,
       sender,
       receivedAt,
@@ -148,11 +175,15 @@ export default function NotificationsManagement() {
       if (sender !== loggedInUser) {
         setNotifications((prevNotifications) => {
           const updatedNotifications = [
-            { message, receivedAt },
+            { id, message, receivedAt },
             ...prevNotifications,
           ];
           return updatedNotifications;
         });
+
+        // Trigger re-render by updating newNotificationReceived state
+        setNewNotificationReceived((prev) => !prev);
+
         // Show a browser notification
         if (Notification.permission === "granted") {
           new Notification("TS1 Report Status", { body: message });
@@ -161,6 +192,7 @@ export default function NotificationsManagement() {
     };
 
     const handleNewSlotBookingNotification = ({
+      id,
       message,
       sender,
       receivedAt,
@@ -168,11 +200,15 @@ export default function NotificationsManagement() {
       if (sender !== loggedInUser) {
         setNotifications((prevNotifications) => {
           const updatedNotifications = [
-            { message, receivedAt },
+            { id, message, receivedAt },
             ...prevNotifications,
           ];
           return updatedNotifications;
         });
+
+        // Trigger re-render by updating newNotificationReceived state
+        setNewNotificationReceived((prev) => !prev);
+
         // Show a browser notification
         if (Notification.permission === "granted") {
           new Notification("New Slot Booking", { body: message });
@@ -181,6 +217,7 @@ export default function NotificationsManagement() {
     };
 
     const handleUpdateSlotBookingNotification = ({
+      id,
       message,
       sender,
       receivedAt,
@@ -188,11 +225,15 @@ export default function NotificationsManagement() {
       if (sender !== loggedInUser) {
         setNotifications((prevNotifications) => {
           const updatedNotifications = [
-            { message, receivedAt },
+            { id, message, receivedAt },
             ...prevNotifications,
           ];
           return updatedNotifications;
         });
+
+        // Trigger re-render by updating newNotificationReceived state
+        setNewNotificationReceived((prev) => !prev);
+
         // Show a browser notification
         if (Notification.permission === "granted") {
           new Notification("Slot Update", { body: message });
@@ -201,6 +242,7 @@ export default function NotificationsManagement() {
     };
 
     const handleDeleteSlotBookingNotification = ({
+      id,
       message,
       sender,
       receivedAt,
@@ -208,11 +250,15 @@ export default function NotificationsManagement() {
       if (sender !== loggedInUser) {
         setNotifications((prevNotifications) => {
           const updatedNotifications = [
-            { message, receivedAt },
+            { id, message, receivedAt },
             ...prevNotifications,
           ];
           return updatedNotifications;
         });
+
+        // Trigger re-render by updating newNotificationReceived state
+        setNewNotificationReceived((prev) => !prev);
+
         // Show a browser notification
         if (Notification.permission === "granted") {
           new Notification("Slot Delete", { body: message });
@@ -221,6 +267,7 @@ export default function NotificationsManagement() {
     };
 
     const handleNewQuoteCreatedNotification = ({
+      id,
       message,
       sender,
       receivedAt,
@@ -228,11 +275,15 @@ export default function NotificationsManagement() {
       if (sender !== loggedInUser) {
         setNotifications((prevNotifications) => {
           const updatedNotifications = [
-            { message, receivedAt },
+            { id, message, receivedAt },
             ...prevNotifications,
           ];
           return updatedNotifications;
         });
+
+        // Trigger re-render by updating newNotificationReceived state
+        setNewNotificationReceived((prev) => !prev);
+
         // Show a browser notification
         if (Notification.permission === "granted") {
           new Notification("New Quote", { body: message });
@@ -240,15 +291,24 @@ export default function NotificationsManagement() {
       }
     };
 
-    const handleQuoteUpdateNotification = ({ message, sender, receivedAt }) => {
+    const handleQuoteUpdateNotification = ({
+      id,
+      message,
+      sender,
+      receivedAt,
+    }) => {
       if (sender !== loggedInUser) {
         setNotifications((prevNotifications) => {
           const updatedNotifications = [
-            { message, receivedAt },
+            { id, message, receivedAt },
             ...prevNotifications,
           ];
           return updatedNotifications;
         });
+
+        // Trigger re-render by updating newNotificationReceived state
+        setNewNotificationReceived((prev) => !prev);
+
         // Show a browser notification
         if (Notification.permission === "granted") {
           new Notification("Quote Update", { body: message });
@@ -321,6 +381,10 @@ export default function NotificationsManagement() {
         handleJobcardReportStatusNotification
       );
       socket.off(
+        "new_slot_booking_notification",
+        handleNewSlotBookingNotification
+      );
+      socket.off(
         "update_slot_booking_notification",
         handleUpdateSlotBookingNotification
       );
@@ -335,7 +399,12 @@ export default function NotificationsManagement() {
       );
       socket.off("quote_update_notification", handleQuoteUpdateNotification);
     };
-  }, [loggedInUser, setNotifications, loggedInUserDepartment]);
+  }, [
+    loggedInUser,
+    setNotifications,
+    loggedInUserDepartment,
+    setNewNotificationReceived,
+  ]);
 
   return null; // This component doesn't render anything
 }
