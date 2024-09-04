@@ -6,8 +6,17 @@ const NotificationProvider = ({ children }) => {
   const [notifications, setNotifications] = useState([]);
   const [newNotificationReceived, setNewNotificationReceived] = useState(false);
 
-  const addNotification = (message, receivedAt) => {
+  const addNotification = (id, message, receivedAt) => {
+    if (!id) {
+      console.error("Attempted to add a notification with missing ID:", {
+        message,
+        receivedAt,
+      });
+      return;
+    }
+
     const newNotification = {
+      id,
       message,
       receivedAt,
     };
@@ -28,6 +37,7 @@ const NotificationProvider = ({ children }) => {
         setNotifications,
         addNotification,
         newNotificationReceived,
+        setNewNotificationReceived,
       }}
     >
       {children}

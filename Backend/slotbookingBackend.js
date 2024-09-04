@@ -102,68 +102,8 @@ function slotBookingAPIs(app, io, labbeeUsers) {
     });
   });
 
-  // To create a new slot booking and save that to the database:
-  // app.post("/api/slotBooking", (req, res) => {
-  //   const { formData } = req.body;
-  //   const sqlQuery = `
-  //   INSERT INTO bookings_table (booking_id, company_name, customer_name, customer_email, customer_phone, test_name, chamber_allotted, slot_start_datetime, slot_end_datetime, slot_duration, remarks, slot_booked_by)
-  //   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-
-  //   const formattedSlotStartDateTime = moment(
-  //     formData.slotStartDateTime
-  //   ).format("YYYY-MM-DD HH:mm");
-  //   const formattedSlotEndDateTime = moment(formData.slotEndDateTime).format(
-  //     "YYYY-MM-DD HH:mm"
-  //   );
-
-  //   const values = [
-  //     formData.bookingID,
-
-  //     formData.company,
-  //     formData.customerName,
-  //     formData.customerEmail,
-  //     formData.customerPhone,
-  //     formData.testName,
-  //     formData.selectedChamber,
-  //     formattedSlotStartDateTime,
-  //     formattedSlotEndDateTime,
-  //     formData.slotDuration,
-  //     formData.remarks,
-  //     formData.slotBookedBy,
-  //   ];
-
-  //   db.query(sqlQuery, values, (error, result) => {
-  //     if (error) {
-  //       return res
-  //         .status(500)
-  //         .json({ error: "An error occurred while booking the slot" });
-  //     } else {
-  //       const departmentsToNotify = [
-  //         // "Administration",
-  //         "TS1 Testing",
-  //         "Marketing",
-  //       ];
-
-  //       const loggedInUser = formData.loggedInUser;
-
-  //       for (let socketId in labbeeUsers) {
-  //         if (
-  //           departmentsToNotify.includes(labbeeUsers[socketId].department) &&
-  //           labbeeUsers[socketId].username !== loggedInUser
-  //         ) {
-  //           let message = `New TS1 Slot: ${formData.bookingID} booked, by ${loggedInUser}`;
-
-  //           io.to(socketId).emit("new_slot_booking_notification", {
-  //             message: message,
-  //             sender: loggedInUser,
-  //           });
-  //         }
-  //       }
-  //       res.status(200).json({ message: "Slot Booked Successfully" });
-  //     }
-  //   });
-  // });
-
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+  //Working fine:
   app.post("/api/slotBooking", (req, res) => {
     const { formData } = req.body;
 
@@ -225,6 +165,7 @@ function slotBookingAPIs(app, io, labbeeUsers) {
             }
           }
         }
+        res.status(200).json({ message: "Slot Booked Successfully" });
 
         // Save the notification in the database
         saveNotificationToDatabase(
@@ -233,12 +174,11 @@ function slotBookingAPIs(app, io, labbeeUsers) {
           usersToNotifyNewSlotBooking,
           loggedInUser
         );
-
-        res.status(200).json({ message: "Slot Booked Successfully" });
       }
     });
   });
 
+  ////////////////////////////////////////////////////////////////////////////////////////
   // To fetch the last saved booking Id from the table bookings_table table:
   app.get("/api/getLatestBookingID", (req, res) => {
     const latestBookingId =
@@ -291,88 +231,6 @@ function slotBookingAPIs(app, io, labbeeUsers) {
   });
 
   //API to update the selected booking:
-  // app.post("/api/slotBooking/:booking_id", (req, res) => {
-  //   const { formData } = req.body;
-
-  //   const bookingId = req.params.booking_id;
-  //   if (!bookingId)
-  //     return res
-  //       .status(400)
-  //       .json({ error: "Selected booking Id is missing or invalid" });
-
-  //   const sqlQuery = `
-  //       UPDATE bookings_table
-  //       SET
-  //           company_name = ?,
-  //           customer_name = ?,
-  //           customer_email = ?,
-  //           customer_phone = ?,
-  //           test_name = ?,
-  //           chamber_allotted = ?,
-  //           slot_start_datetime = ?,
-  //           slot_end_datetime = ?,
-  //           slot_duration = ?,
-  //           remarks = ?,
-  //           slot_booked_by = ?
-  //       WHERE booking_id = ?
-  //   `;
-
-  //   const formattedSlotStartDateTime = moment(
-  //     formData.slotStartDateTime
-  //   ).format("YYYY-MM-DD HH:mm");
-  //   const formattedSlotEndDateTime = moment(formData.slotEndDateTime).format(
-  //     "YYYY-MM-DD HH:mm"
-  //   );
-
-  //   const values = [
-  //     formData.company,
-  //     formData.customerName,
-  //     formData.customerEmail,
-  //     formData.customerPhone,
-  //     formData.testName,
-  //     formData.selectedChamber,
-  //     formattedSlotStartDateTime,
-  //     formattedSlotEndDateTime,
-  //     formData.slotDuration,
-  //     formData.remarks,
-  //     formData.slotBookedBy,
-  //     bookingId,
-  //   ];
-
-  //   db.query(sqlQuery, values, (error, result) => {
-  //     if (error) {
-  //       console.error("Error updating booking:", error);
-  //       return res
-  //         .status(500)
-  //         .json({ error: "An error occurred while updating the booking" });
-  //     } else {
-  //       const departmentsToNotify = [
-  //         // "Administration",
-  //         "TS1 Testing",
-  //         "Marketing",
-  //       ];
-
-  //       const loggedInUser = formData.loggedInUser;
-
-  //       for (let socketId in labbeeUsers) {
-  //         if (
-  //           departmentsToNotify.includes(labbeeUsers[socketId].department) &&
-  //           labbeeUsers[socketId].username !== loggedInUser
-  //         ) {
-  //           let message = `TS1 Slot: ${formData.bookingID} updated by ${loggedInUser}`;
-
-  //           io.to(socketId).emit("update_slot_booking_notification", {
-  //             message: message,
-  //             sender: loggedInUser,
-  //           });
-  //         }
-  //       }
-
-  //       res.status(200).json({ message: "Booking updated successfully" });
-  //     }
-  //   });
-  // });
-
   app.post("/api/slotBooking/:booking_id", (req, res) => {
     const { formData } = req.body;
 
@@ -453,6 +311,7 @@ function slotBookingAPIs(app, io, labbeeUsers) {
             }
           }
         }
+        res.status(200).json({ message: "Booking updated successfully" });
 
         // Save the notification in the database
         saveNotificationToDatabase(
@@ -461,8 +320,6 @@ function slotBookingAPIs(app, io, labbeeUsers) {
           usersToNotifyNewSlotBooking,
           loggedInUser
         );
-
-        res.status(200).json({ message: "Booking updated successfully" });
       }
     });
   });
@@ -550,6 +407,8 @@ function slotBookingAPIs(app, io, labbeeUsers) {
             }
           }
 
+          res.json({ message: "Booking marked as deleted successfully" });
+
           // Save the notification in the database
           saveNotificationToDatabase(
             message,
@@ -557,10 +416,6 @@ function slotBookingAPIs(app, io, labbeeUsers) {
             usersToNotifyNewSlotBooking,
             loggedInUser
           );
-
-          return res.json({
-            message: "Booking marked as deleted successfully",
-          });
         } else {
           return res.status(404).json({ message: "Booking not found" });
         }
