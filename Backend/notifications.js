@@ -230,7 +230,7 @@ function notificationsAPIs(app, io, labbeeUsers) {
 
   //API to fetch the count of un-read notifications based on logged in user role:
   app.get("/api/getUnreadNotificationsCount", (req, res) => {
-    const { userName, userRole } = req.query;
+    const { userRole, userName } = req.query;
 
     const sqlQuery = `
             SELECT COUNT(*) AS count 

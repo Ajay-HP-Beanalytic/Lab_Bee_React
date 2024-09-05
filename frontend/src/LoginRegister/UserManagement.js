@@ -88,12 +88,7 @@ export default function UserManagement() {
       "Deputy Quality Manager",
       "Reports & Scrutiny Manager",
     ],
-    "TS2 Testing": [
-      "Lab Manager",
-      "Lab Engineer",
-      "Lab Technician",
-      "Lab Assistant",
-    ],
+    "TS2 Testing": ["Lab Manager(EMI)", "Test Engineer"],
     "Reports & Scrutiny": ["Reports & Scrutiny Manager", "Quality Engineer"],
   };
 
