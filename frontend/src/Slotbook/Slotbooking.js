@@ -3,6 +3,7 @@ import { Controller, useForm } from "react-hook-form";
 import {
   Box,
   Button,
+  Card,
   ClickAwayListener,
   Dialog,
   DialogActions,
@@ -602,6 +603,7 @@ export default function Slotbooking() {
             bgcolor: "orange",
             color: "white",
             borderColor: "black",
+            mb: "10px",
           }}
           variant="contained"
           color="primary"
@@ -610,38 +612,40 @@ export default function Slotbooking() {
           New Booking
         </Button>
       </Box>
-      <Divider>
-        <Typography variant="h4" sx={{ color: "#003366" }}>
-          Slot Booking
-        </Typography>
-      </Divider>
-      <Grid container sx={{ mt: 1, mb: 2 }} spacing={2}>
-        <Grid item xs={12} sm={6} md={12}>
-          <SearchBar
-            placeholder="Search Slot"
-            searchInputText={searchInputTextOfSlot}
-            onChangeOfSearchInput={onChangeOfSearchInputOfSlot}
-            onClearSearchInput={onClearSearchInputOfSlot}
-          />
+      <Card sx={{ width: "100%", padding: "20px" }}>
+        <Divider>
+          <Typography variant="h4" sx={{ color: "#003366" }}>
+            Slot Booking
+          </Typography>
+        </Divider>
+        <Grid container sx={{ mt: 1, mb: 2 }} spacing={2}>
+          <Grid item xs={12} sm={6} md={12}>
+            <SearchBar
+              placeholder="Search Slot"
+              searchInputText={searchInputTextOfSlot}
+              onChangeOfSearchInput={onChangeOfSearchInputOfSlot}
+              onClearSearchInput={onClearSearchInputOfSlot}
+            />
+          </Grid>
         </Grid>
-      </Grid>
-      <div ref={calendarRef}>
-        <Calendar
-          localizer={localizer}
-          // events={myEventsList}
-          events={filteredSlots}
-          resources={myResourcesList}
-          toolbar={true}
-          defaultView="month"
-          views={["month", "week", "day"]}
-          eventPropGetter={eventPropGetter}
-          selectable={true}
-          onSelectEvent={handleEventClick}
-          startAccessor="start"
-          endAccessor="end"
-          onSelectSlot={handleSelectSlot}
-        />
-      </div>
+        <div ref={calendarRef}>
+          <Calendar
+            localizer={localizer}
+            // events={myEventsList}
+            events={filteredSlots}
+            resources={myResourcesList}
+            toolbar={true}
+            defaultView="month"
+            views={["month", "week", "day"]}
+            eventPropGetter={eventPropGetter}
+            selectable={true}
+            onSelectEvent={handleEventClick}
+            startAccessor="start"
+            endAccessor="end"
+            onSelectSlot={handleSelectSlot}
+          />
+        </div>
+      </Card>
       {openDialog && (
         <Grid container sx={{ display: "flex" }}>
           <Dialog

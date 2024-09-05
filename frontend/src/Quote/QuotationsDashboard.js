@@ -592,6 +592,7 @@ export default function QuotationsDashboard() {
             borderColor: "black",
             padding: { xs: "8px 16px", md: "6px 12px" }, // Adjust padding for different screen sizes
             fontSize: { xs: "0.875rem", md: "1rem" }, // Adjust font size for different screen sizes
+            mb: "10px",
           }}
           variant="contained"
           color="primary"
@@ -601,161 +602,138 @@ export default function QuotationsDashboard() {
         </Button>
       </Box>
 
-      <Grid
-        item
-        xs={12}
-        md={6}
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: { xs: "center", md: "center" },
-          mb: 2,
-        }}
-      >
-        <Box sx={{ width: "100%" }}>
-          <Divider>
-            <Typography variant="h4" sx={{ color: "#003366" }}>
-              {" "}
-              Quotation Dashboard{" "}
-            </Typography>
-          </Divider>
-        </Box>
-      </Grid>
+      <Card sx={{ width: "100%", padding: "20px" }}>
+        <Grid
+          item
+          xs={12}
+          md={6}
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: { xs: "center", md: "center" },
+            mb: 2,
+          }}
+        >
+          <Box sx={{ width: "100%" }}>
+            <Divider>
+              <Typography variant="h4" sx={{ color: "#003366" }}>
+                {" "}
+                Quotation Dashboard{" "}
+              </Typography>
+            </Divider>
+          </Box>
+        </Grid>
 
-      <Grid container spacing={2} alignItems="center">
-        <Grid item xs={12} md={8} container alignItems="center" spacing={2}>
-          <Grid item xs={12} sm={6} md={4}>
-            <FormControl fullWidth>
-              <InputLabel>Year</InputLabel>
-              <Select
-                label="Year"
-                value={quoteYear}
-                onChange={handleYearOfQuote}
-              >
-                {years.map((year, index) => (
-                  <MenuItem key={index} value={year}>
-                    {year}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+        <Grid container spacing={2} alignItems="center">
+          <Grid item xs={12} md={8} container alignItems="center" spacing={2}>
+            <Grid item xs={12} sm={6} md={4}>
+              <FormControl fullWidth>
+                <InputLabel>Year</InputLabel>
+                <Select
+                  label="Year"
+                  value={quoteYear}
+                  onChange={handleYearOfQuote}
+                >
+                  {years.map((year, index) => (
+                    <MenuItem key={index} value={year}>
+                      {year}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+
+            <Grid item xs={12} sm={6} md={4}>
+              <FormControl fullWidth>
+                <InputLabel>Month</InputLabel>
+                <Select
+                  label="Month"
+                  value={quoteMonth}
+                  onChange={handleMonthOfQuote}
+                >
+                  {months.map((month, index) => (
+                    <MenuItem key={index} value={month}>
+                      {month}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+
+            <Grid item xs={12} md={4} container justifyContent="flex-start">
+              <DateRangeFilter
+                onClickDateRangeSelectDoneButton={handleQuoteDateRangeChange}
+                onClickDateRangeSelectClearButton={handleQuoteDateRangeClear}
+              />
+            </Grid>
           </Grid>
 
-          <Grid item xs={12} sm={6} md={4}>
-            <FormControl fullWidth>
-              <InputLabel>Month</InputLabel>
-              <Select
-                label="Month"
-                value={quoteMonth}
-                onChange={handleMonthOfQuote}
-              >
-                {months.map((month, index) => (
-                  <MenuItem key={index} value={month}>
-                    {month}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Grid>
-
-          <Grid item xs={12} md={4} container justifyContent="flex-start">
-            <DateRangeFilter
-              onClickDateRangeSelectDoneButton={handleQuoteDateRangeChange}
-              onClickDateRangeSelectClearButton={handleQuoteDateRangeClear}
+          <Grid item xs={12} md={4} container justifyContent="flex-end">
+            <SearchBar
+              placeholder="Search Quote"
+              searchInputText={searchInputTextOfQuote}
+              onChangeOfSearchInput={onChangeOfSearchInputOfQuote}
+              onClearSearchInput={onClearSearchInputOfQuote}
             />
           </Grid>
         </Grid>
 
-        <Grid item xs={12} md={4} container justifyContent="flex-end">
-          <SearchBar
-            placeholder="Search Quote"
-            searchInputText={searchInputTextOfQuote}
-            onChangeOfSearchInput={onChangeOfSearchInputOfQuote}
-            onClearSearchInput={onClearSearchInputOfQuote}
-          />
-        </Grid>
-      </Grid>
+        <Box
+          sx={{
+            height: 500,
+            width: "100%",
+            minWidth: isSmallScreen ? "100%" : "auto",
+            "& .custom-header-color": {
+              backgroundColor: "#476f95",
+              color: "whitesmoke",
+              fontWeight: "bold",
+              fontSize: "15px",
+            },
+            mt: 2,
+          }}
+        >
+          {filteredQuoteData && filteredQuoteData.length === 0 ? (
+            <EmptyCard message="No Quote Found" />
+          ) : (
+            <DataGrid
+              rows={quotationTableWithSerialNumbers}
+              columns={columns}
+              sx={{
+                "&:hover": { cursor: "pointer" },
+                "& .MuiDataGrid-columnHeader": {
+                  whiteSpace: "normal",
+                  wordWrap: "break-word",
+                },
+                "& .MuiDataGrid-cell": {
+                  whiteSpace: "normal",
+                  wordWrap: "break-word",
+                },
+              }}
+              onRowClick={(params) => editSelectedRowData(params.row)}
+              pageSize={5}
+              rowsPerPageOptions={[5, 10, 20]}
+            />
+          )}
+        </Box>
 
-      <Box
-        sx={{
-          height: 500,
-          width: "100%",
-          minWidth: isSmallScreen ? "100%" : "auto",
-          "& .custom-header-color": {
-            backgroundColor: "#476f95",
-            color: "whitesmoke",
-            fontWeight: "bold",
-            fontSize: "15px",
-          },
-          mt: 2,
-        }}
-      >
-        {filteredQuoteData && filteredQuoteData.length === 0 ? (
-          <EmptyCard message="No Quote Found" />
-        ) : (
-          <DataGrid
-            rows={quotationTableWithSerialNumbers}
-            columns={columns}
-            sx={{
-              "&:hover": { cursor: "pointer" },
-              "& .MuiDataGrid-columnHeader": {
-                whiteSpace: "normal",
-                wordWrap: "break-word",
-              },
-              "& .MuiDataGrid-cell": {
-                whiteSpace: "normal",
-                wordWrap: "break-word",
-              },
-            }}
-            onRowClick={(params) => editSelectedRowData(params.row)}
-            pageSize={5}
-            rowsPerPageOptions={[5, 10, 20]}
-          />
-        )}
-      </Box>
-
-      <Box sx={{ width: "100%" }}>
-        <Grid container spacing={3} sx={{ mt: 3, mb: 1 }}>
-          <Grid item xs={12}>
-            <Box
-              display="flex"
-              justifyContent="space-between"
-              sx={{ mb: 2, width: "100%" }}
-            >
-              <Card
-                elevation={3}
-                sx={{ backgroundColor: "#66cc99", flex: 1, mx: 2 }}
+        <Box sx={{ width: "100%" }}>
+          <Grid container spacing={3} sx={{ mt: 3, mb: 1 }}>
+            <Grid item xs={12}>
+              <Box
+                display="flex"
+                justifyContent="space-between"
+                sx={{ mb: 2, width: "100%" }}
               >
-                <CreateKpiCard
-                  kpiTitle="Total Number Of Quotes"
-                  kpiValue={
-                    <CountUp
-                      start={0}
-                      end={monthWiseTotalQuotesCount}
-                      delay={1}
-                    />
-                  }
-                  kpiColor="#3f51b5"
-                  accordianTitleString={accordianTitleString}
-                />
-              </Card>
-
-              {labelsForQuotePieChart.map((label, index) => (
                 <Card
-                  key={label}
                   elevation={3}
-                  sx={{
-                    backgroundColor: kpiColors[index + 1],
-                    flex: 1,
-                    mx: 2,
-                  }}
+                  sx={{ backgroundColor: "#66cc99", flex: 1, mx: 2 }}
                 >
                   <CreateKpiCard
-                    kpiTitle={label}
+                    kpiTitle="Total Number Of Quotes"
                     kpiValue={
                       <CountUp
                         start={0}
-                        end={quoteCategoryCountsForQuotePieChart[index]}
+                        end={monthWiseTotalQuotesCount}
                         delay={1}
                       />
                     }
@@ -763,43 +741,68 @@ export default function QuotationsDashboard() {
                     accordianTitleString={accordianTitleString}
                   />
                 </Card>
-              ))}
-            </Box>
-          </Grid>
 
-          <Grid item xs={12} sm={6} md={6}>
-            <Box
-              sx={{
-                backgroundColor: "#ebf0fa",
-                padding: 2,
-                borderRadius: 5,
-                boxShadow: 2,
-              }}
-            >
-              <CreatePieChart
-                data={categorywiseQuotesPieChart}
-                options={optionsForQuotesPieChart}
-              />
-            </Box>
-          </Grid>
+                {labelsForQuotePieChart.map((label, index) => (
+                  <Card
+                    key={label}
+                    elevation={3}
+                    sx={{
+                      backgroundColor: kpiColors[index + 1],
+                      flex: 1,
+                      mx: 2,
+                    }}
+                  >
+                    <CreateKpiCard
+                      kpiTitle={label}
+                      kpiValue={
+                        <CountUp
+                          start={0}
+                          end={quoteCategoryCountsForQuotePieChart[index]}
+                          delay={1}
+                        />
+                      }
+                      kpiColor="#3f51b5"
+                      accordianTitleString={accordianTitleString}
+                    />
+                  </Card>
+                ))}
+              </Box>
+            </Grid>
 
-          <Grid item xs={12} sm={6} md={6}>
-            <Box
-              sx={{
-                backgroundColor: "#ebf0fa",
-                padding: 2,
-                borderRadius: 5,
-                boxShadow: 2,
-              }}
-            >
-              <CreateBarChart
-                data={barChartData}
-                options={optionsForBarChart}
-              />
-            </Box>
+            <Grid item xs={12} sm={6} md={6}>
+              <Box
+                sx={{
+                  backgroundColor: "#ebf0fa",
+                  padding: 2,
+                  borderRadius: 5,
+                  boxShadow: 2,
+                }}
+              >
+                <CreatePieChart
+                  data={categorywiseQuotesPieChart}
+                  options={optionsForQuotesPieChart}
+                />
+              </Box>
+            </Grid>
+
+            <Grid item xs={12} sm={6} md={6}>
+              <Box
+                sx={{
+                  backgroundColor: "#ebf0fa",
+                  padding: 2,
+                  borderRadius: 5,
+                  boxShadow: 2,
+                }}
+              >
+                <CreateBarChart
+                  data={barChartData}
+                  options={optionsForBarChart}
+                />
+              </Box>
+            </Grid>
           </Grid>
-        </Grid>
-      </Box>
+        </Box>
+      </Card>
     </>
   );
 }

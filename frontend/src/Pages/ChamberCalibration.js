@@ -651,7 +651,7 @@ export default function ChamberAndCalibration() {
             display: "flex",
             alignItems: "center",
             justifyContent: { xs: "center", md: "center" },
-            mb: 2,
+            mb: "10px",
           }}
         >
           <Box sx={{ width: "100%" }}>
@@ -957,8 +957,7 @@ export default function ChamberAndCalibration() {
         />
 
         {/* Box to keep the searchbar and the action buttons in a single row */}
-
-        <Box sx={{ mx: 2, mb: 2, mt: 4 }}>
+        <Card sx={{ width: "100%", mt: "20px", padding: "20px" }}>
           <Grid
             container
             spacing={2}
@@ -1007,34 +1006,34 @@ export default function ChamberAndCalibration() {
               />
             </Grid>
           </Grid>
-        </Box>
 
-        {chamberCalibrationDataWithSerialNumbers &&
-        chamberCalibrationDataWithSerialNumbers.length === 0 ? (
-          <EmptyCard message="Chamber Calibration Data not found" />
-        ) : (
-          <Box
-            sx={{
-              height: 500,
-              width: "100%",
-              "& .custom-header-color": {
-                backgroundColor: "#476f95",
-                color: "whitesmoke",
-                fontWeight: "bold",
-                fontSize: "15px",
-              },
-              mt: 2,
-              mb: 2,
-            }}
-          >
-            <DataGrid
-              rows={chamberCalibrationDataWithSerialNumbers}
-              columns={columns}
-              pageSize={5}
-              rowsPerPageOptions={[5, 10, 20]}
-            />
-          </Box>
-        )}
+          {chamberCalibrationDataWithSerialNumbers &&
+          chamberCalibrationDataWithSerialNumbers.length === 0 ? (
+            <EmptyCard message="Chamber Calibration Data not found" />
+          ) : (
+            <Box
+              sx={{
+                height: 500,
+                width: "100%",
+                "& .custom-header-color": {
+                  backgroundColor: "#476f95",
+                  color: "whitesmoke",
+                  fontWeight: "bold",
+                  fontSize: "15px",
+                },
+                mt: 2,
+                mb: 2,
+              }}
+            >
+              <DataGrid
+                rows={chamberCalibrationDataWithSerialNumbers}
+                columns={columns}
+                pageSize={5}
+                rowsPerPageOptions={[5, 10, 20]}
+              />
+            </Box>
+          )}
+        </Card>
       </Box>
     </>
   );

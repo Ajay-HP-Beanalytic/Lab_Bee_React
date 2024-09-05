@@ -2,6 +2,7 @@ import React, { useContext, useEffect, useRef, useState } from "react";
 import {
   Box,
   Button,
+  Card,
   Dialog,
   DialogActions,
   DialogContent,
@@ -357,6 +358,7 @@ export default function UserManagement() {
             bgcolor: "orange",
             color: "white",
             borderColor: "black",
+            marginBottom: "10px",
           }}
           variant="contained"
           color="primary"
@@ -366,306 +368,310 @@ export default function UserManagement() {
         </Button>
       </Box>
 
-      <Divider>
-        <Typography variant="h4" sx={{ color: "#003366", mb: 2 }}>
-          {" "}
-          Users
-        </Typography>
-      </Divider>
+      <Card sx={{ width: "100%", padding: "20px" }}>
+        <Divider>
+          <Typography variant="h4" sx={{ color: "#003366", mb: 2 }}>
+            {" "}
+            Users
+          </Typography>
+        </Divider>
 
-      {loggedInUserDepartment === "Administration" && (
-        <Box sx={{ width: "100%" }}>
-          <div>
-            <Dialog open={openDeleteUserDialog} onClose={handleClose}>
-              <DialogTitle>Delete Confirmation</DialogTitle>
-              <DialogContent>
-                <DialogContentText>
-                  Are you sure you want to delete this user?
-                </DialogContentText>
-              </DialogContent>
-              <DialogActions>
-                <Button
-                  sx={{
-                    marginBottom: "16px",
-                    marginLeft: "10px",
-                    borderRadius: 3,
-                  }}
-                  variant="contained"
-                  color="secondary"
-                  onClick={handleClose}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  sx={{
-                    marginBottom: "16px",
-                    marginLeft: "10px",
-                    borderRadius: 3,
-                  }}
-                  variant="contained"
-                  color="primary"
-                  onClick={handleDeleteConfirmed}
-                  autoFocus
-                >
-                  Delete
-                </Button>
-              </DialogActions>
-            </Dialog>
-          </div>
+        {loggedInUserDepartment === "Administration" && (
+          <Box sx={{ width: "100%" }}>
+            <div>
+              <Dialog open={openDeleteUserDialog} onClose={handleClose}>
+                <DialogTitle>Delete Confirmation</DialogTitle>
+                <DialogContent>
+                  <DialogContentText>
+                    Are you sure you want to delete this user?
+                  </DialogContentText>
+                </DialogContent>
+                <DialogActions>
+                  <Button
+                    sx={{
+                      marginBottom: "16px",
+                      marginLeft: "10px",
+                      borderRadius: 3,
+                    }}
+                    variant="contained"
+                    color="secondary"
+                    onClick={handleClose}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    sx={{
+                      marginBottom: "16px",
+                      marginLeft: "10px",
+                      borderRadius: 3,
+                    }}
+                    variant="contained"
+                    color="primary"
+                    onClick={handleDeleteConfirmed}
+                    autoFocus
+                  >
+                    Delete
+                  </Button>
+                </DialogActions>
+              </Dialog>
+            </div>
 
-          {editUserDetailsFields && (
-            <Dialog
-              open={editUserDetailsFields}
-              onClose={onCancelAddUserButton}
-              aria-labelledby="add-user-dialog"
-            >
-              <DialogTitle id="add-user-dialog">
-                {editId ? "Edit User Details" : "Add New User"}
-              </DialogTitle>
+            {editUserDetailsFields && (
+              <Dialog
+                open={editUserDetailsFields}
+                onClose={onCancelAddUserButton}
+                aria-labelledby="add-user-dialog"
+              >
+                <DialogTitle id="add-user-dialog">
+                  {editId ? "Edit User Details" : "Add New User"}
+                </DialogTitle>
 
-              <DialogContent>
-                <TextField
-                  sx={{
-                    marginBottom: "16px",
-                    marginLeft: "10px",
-                    borderRadius: 3,
-                  }}
-                  value={userName}
-                  onChange={(e) => setUserName(e.target.value)}
-                  label="User Name"
-                  margin="normal"
-                  fullWidth
-                  variant="outlined"
-                  autoComplete="on"
-                />
-
-                <TextField
-                  sx={{
-                    marginBottom: "16px",
-                    marginLeft: "10px",
-                    borderRadius: 3,
-                  }}
-                  value={userEmail}
-                  onChange={(e) => setUserEmail(e.target.value)}
-                  type="email"
-                  label="User Email"
-                  margin="normal"
-                  fullWidth
-                  variant="outlined"
-                  autoComplete="on"
-                />
-
-                {!editId ? (
+                <DialogContent>
                   <TextField
                     sx={{
                       marginBottom: "16px",
                       marginLeft: "10px",
                       borderRadius: 3,
                     }}
-                    value={initialUserPassword}
-                    onChange={(e) => setInitialUserPassword(e.target.value)}
-                    //type='password'
-                    label="User Password"
+                    value={userName}
+                    onChange={(e) => setUserName(e.target.value)}
+                    label="User Name"
                     margin="normal"
                     fullWidth
                     variant="outlined"
                     autoComplete="on"
                   />
-                ) : null}
 
-                <FormControl
-                  fullWidth
-                  sx={{
-                    marginBottom: "16px",
-                    marginLeft: "10px",
-                    borderRadius: 3,
-                  }}
-                >
-                  <InputLabel> Department </InputLabel>
-                  <Select
-                    label="Department"
-                    value={userDepartment}
-                    onChange={handleUserDepartment}
+                  <TextField
+                    sx={{
+                      marginBottom: "16px",
+                      marginLeft: "10px",
+                      borderRadius: 3,
+                    }}
+                    value={userEmail}
+                    onChange={(e) => setUserEmail(e.target.value)}
+                    type="email"
+                    label="User Email"
+                    margin="normal"
+                    fullWidth
+                    variant="outlined"
+                    autoComplete="on"
+                  />
+
+                  {!editId ? (
+                    <TextField
+                      sx={{
+                        marginBottom: "16px",
+                        marginLeft: "10px",
+                        borderRadius: 3,
+                      }}
+                      value={initialUserPassword}
+                      onChange={(e) => setInitialUserPassword(e.target.value)}
+                      //type='password'
+                      label="User Password"
+                      margin="normal"
+                      fullWidth
+                      variant="outlined"
+                      autoComplete="on"
+                    />
+                  ) : null}
+
+                  <FormControl
+                    fullWidth
+                    sx={{
+                      marginBottom: "16px",
+                      marginLeft: "10px",
+                      borderRadius: 3,
+                    }}
                   >
-                    {Object.keys(userDepartmentAndRoles).map(
-                      (userDep, index) => (
-                        <MenuItem key={index} value={userDep}>
-                          {userDep}
+                    <InputLabel> Department </InputLabel>
+                    <Select
+                      label="Department"
+                      value={userDepartment}
+                      onChange={handleUserDepartment}
+                    >
+                      {Object.keys(userDepartmentAndRoles).map(
+                        (userDep, index) => (
+                          <MenuItem key={index} value={userDep}>
+                            {userDep}
+                          </MenuItem>
+                        )
+                      )}
+                    </Select>
+                  </FormControl>
+
+                  <FormControl
+                    fullWidth
+                    sx={{
+                      marginBottom: "16px",
+                      marginLeft: "10px",
+                      borderRadius: 3,
+                    }}
+                  >
+                    <InputLabel> Roles </InputLabel>
+                    <Select
+                      label="Role"
+                      value={userRole}
+                      onChange={handleChangeRole}
+                      disabled={!userDepartment}
+                    >
+                      {userRoleOptions.map((role, index) => (
+                        <MenuItem key={index} value={role}>
+                          {" "}
+                          {role}
                         </MenuItem>
-                      )
-                    )}
-                  </Select>
-                </FormControl>
+                      ))}
+                    </Select>
+                  </FormControl>
 
-                <FormControl
-                  fullWidth
-                  sx={{
-                    marginBottom: "16px",
-                    marginLeft: "10px",
-                    borderRadius: 3,
-                  }}
-                >
-                  <InputLabel> Roles </InputLabel>
-                  <Select
-                    label="Role"
-                    value={userRole}
-                    onChange={handleChangeRole}
-                    disabled={!userDepartment}
+                  <FormControl
+                    fullWidth
+                    sx={{
+                      marginBottom: "16px",
+                      marginLeft: "10px",
+                      borderRadius: 3,
+                    }}
                   >
-                    {userRoleOptions.map((role, index) => (
-                      <MenuItem key={index} value={role}>
-                        {" "}
-                        {role}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
+                    <InputLabel> User Status </InputLabel>
+                    <Select
+                      label="Status"
+                      value={userStatus}
+                      onChange={handleUserStatus}
+                    >
+                      {userStatusOptions.map((userStatus, index) => (
+                        <MenuItem key={index} value={userStatus}>
+                          {" "}
+                          {userStatus}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </DialogContent>
 
-                <FormControl
-                  fullWidth
-                  sx={{
-                    marginBottom: "16px",
-                    marginLeft: "10px",
-                    borderRadius: 3,
-                  }}
-                >
-                  <InputLabel> User Status </InputLabel>
-                  <Select
-                    label="Status"
-                    value={userStatus}
-                    onChange={handleUserStatus}
+                <DialogActions>
+                  <Button
+                    sx={{
+                      marginBottom: "16px",
+                      marginLeft: "10px",
+                      borderRadius: 3,
+                    }}
+                    variant="contained"
+                    color="primary"
+                    onClick={onCancelAddUserButton}
                   >
-                    {userStatusOptions.map((userStatus, index) => (
-                      <MenuItem key={index} value={userStatus}>
-                        {" "}
-                        {userStatus}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </DialogContent>
+                    Cancel
+                  </Button>
 
-              <DialogActions>
-                <Button
-                  sx={{
-                    marginBottom: "16px",
-                    marginLeft: "10px",
-                    borderRadius: 3,
-                  }}
-                  variant="contained"
-                  color="primary"
-                  onClick={onCancelAddUserButton}
-                >
-                  Cancel
-                </Button>
+                  <Button
+                    sx={{
+                      marginBottom: "16px",
+                      marginLeft: "10px",
+                      borderRadius: 3,
+                    }}
+                    variant="contained"
+                    color="secondary"
+                    type="submit"
+                    onClick={onSubmitAddUserButton}
+                    autoFocus
+                  >
+                    Submit
+                  </Button>
+                </DialogActions>
+              </Dialog>
+            )}
 
-                <Button
-                  sx={{
-                    marginBottom: "16px",
-                    marginLeft: "10px",
-                    borderRadius: 3,
-                  }}
-                  variant="contained"
-                  color="secondary"
-                  type="submit"
-                  onClick={onSubmitAddUserButton}
-                  autoFocus
-                >
-                  Submit
-                </Button>
-              </DialogActions>
-            </Dialog>
-          )}
-
-          <Box sx={{ mb: 1 }}>
-            <Grid container spacing={2} justifyContent="flex-end">
-              <Grid item xs={12} md={4}>
-                <SearchBar
-                  placeholder="Search User"
-                  searchInputText={searchInputTextOfUserManagement}
-                  onChangeOfSearchInput={onChangeOfSearchInputOfUserManagement}
-                  onClearSearchInput={onClearSearchInputOfUserManagement}
-                />
+            <Box sx={{ mb: 1 }}>
+              <Grid container spacing={2} justifyContent="flex-end">
+                <Grid item xs={12} md={4}>
+                  <SearchBar
+                    placeholder="Search User"
+                    searchInputText={searchInputTextOfUserManagement}
+                    onChangeOfSearchInput={
+                      onChangeOfSearchInputOfUserManagement
+                    }
+                    onClearSearchInput={onClearSearchInputOfUserManagement}
+                  />
+                </Grid>
               </Grid>
-            </Grid>
-          </Box>
+            </Box>
 
-          <Paper sx={{ width: "100%", mb: 2 }}>
-            <TableContainer>
-              <Table
-                sx={{ minWidth: 750 }}
-                size="small"
-                aria-label="admin-table"
-              >
-                <TableHead
-                  sx={{ backgroundColor: "#476f95", fontWeight: "bold" }}
+            <Paper sx={{ width: "100%", mb: 2 }}>
+              <TableContainer>
+                <Table
+                  sx={{ minWidth: 750 }}
+                  size="small"
+                  aria-label="admin-table"
                 >
-                  <TableRow sx={{ color: "white" }}>
-                    {tableHeadersText.map((header, index) => (
-                      <TableCell
-                        key={index}
-                        align="center"
-                        style={{ color: "white" }}
-                      >
-                        {" "}
-                        {header}
-                      </TableCell>
-                    ))}
-                  </TableRow>
-                </TableHead>
-
-                <TableBody>
-                  {filteredUsersList.map((item, index) => (
-                    <TableRow key={index} align="center">
-                      <TableCell align="center" component="th" scope="row">
-                        {index + 1}
-                      </TableCell>
-
-                      <TableCell align="center">{item.name}</TableCell>
-                      <TableCell align="center">{item.email}</TableCell>
-                      <TableCell align="center">{item.department}</TableCell>
-                      <TableCell align="center">{item.role}</TableCell>
-                      <TableCell align="center">{item.user_status}</TableCell>
-
-                      <TableCell align="center">
-                        <IconButton
-                          variant="outlined"
-                          size="small"
-                          onClick={() => editUserButton(index, item.id)}
+                  <TableHead
+                    sx={{ backgroundColor: "#476f95", fontWeight: "bold" }}
+                  >
+                    <TableRow sx={{ color: "white" }}>
+                      {tableHeadersText.map((header, index) => (
+                        <TableCell
+                          key={index}
+                          align="center"
+                          style={{ color: "white" }}
                         >
-                          <Tooltip title="Edit" arrow>
-                            <EditIcon fontSize="inherit" />
-                          </Tooltip>
-                        </IconButton>
+                          {" "}
+                          {header}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  </TableHead>
 
-                        <IconButton
-                          variant="outlined"
-                          size="small"
-                          onClick={() => deleteUserButton(item.id)}
-                        >
-                          <Tooltip title="Delete" arrow>
-                            <DeleteIcon fontSize="inherit" />
-                          </Tooltip>
-                        </IconButton>
+                  <TableBody>
+                    {filteredUsersList.map((item, index) => (
+                      <TableRow key={index} align="center">
+                        <TableCell align="center" component="th" scope="row">
+                          {index + 1}
+                        </TableCell>
 
-                        {/* <IconButton variant='outlined' size='small'
+                        <TableCell align="center">{item.name}</TableCell>
+                        <TableCell align="center">{item.email}</TableCell>
+                        <TableCell align="center">{item.department}</TableCell>
+                        <TableCell align="center">{item.role}</TableCell>
+                        <TableCell align="center">{item.user_status}</TableCell>
+
+                        <TableCell align="center">
+                          <IconButton
+                            variant="outlined"
+                            size="small"
+                            onClick={() => editUserButton(index, item.id)}
+                          >
+                            <Tooltip title="Edit" arrow>
+                              <EditIcon fontSize="inherit" />
+                            </Tooltip>
+                          </IconButton>
+
+                          <IconButton
+                            variant="outlined"
+                            size="small"
+                            onClick={() => deleteUserButton(item.id)}
+                          >
+                            <Tooltip title="Delete" arrow>
+                              <DeleteIcon fontSize="inherit" />
+                            </Tooltip>
+                          </IconButton>
+
+                          {/* <IconButton variant='outlined' size='small'
                           onClick={() => resetUserPasswordButton(item.id)}
                         >
                           <Tooltip title='Reset Password' arrow>
                             <PasswordIcon fontSize="inherit" />
                           </Tooltip>
                         </IconButton> */}
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </Paper>
-        </Box>
-      )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            </Paper>
+          </Box>
+        )}
+      </Card>
 
-      <Grid container justifyContent="center">
+      <Grid container justifyContent="center" sx={{ mt: "10px" }}>
         <Grid item>
           <DataBackup />
         </Grid>

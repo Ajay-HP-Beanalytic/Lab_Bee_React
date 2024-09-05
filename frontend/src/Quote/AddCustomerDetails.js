@@ -476,13 +476,11 @@ export default function AddCustomerDetails() {
                   borderRadius: 3,
                 }}
                 variant="contained"
-                color="secondary"
-                type="submit"
-                onClick={onSubmitCustomerDetailsButton}
+                color="primary"
+                onClick={onCancelCustomerDetailsButton}
               >
-                Submit
+                Cancel
               </Button>
-
               <Button
                 sx={{
                   marginBottom: "16px",
@@ -490,10 +488,11 @@ export default function AddCustomerDetails() {
                   borderRadius: 3,
                 }}
                 variant="contained"
-                color="primary"
-                onClick={onCancelCustomerDetailsButton}
+                color="secondary"
+                type="submit"
+                onClick={onSubmitCustomerDetailsButton}
               >
-                Cancel
+                Submit
               </Button>
             </DialogActions>
           </Dialog>

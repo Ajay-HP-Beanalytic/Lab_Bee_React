@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import {
   Box,
   Button,
+  Card,
   Dialog,
   DialogActions,
   DialogContent,
@@ -213,6 +214,7 @@ export default function Home() {
             borderColor: "black",
             padding: { xs: "8px 16px", md: "6px 12px" }, // Adjust padding for different screen sizes
             fontSize: { xs: "0.875rem", md: "1rem" }, // Adjust font size for different screen sizes
+            mb: "10px",
           }}
           variant="contained"
           color="primary"
@@ -222,314 +224,316 @@ export default function Home() {
         </Button>
       </Box>
 
-      <Grid
-        item
-        xs={12}
-        md={6}
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: { xs: "center", md: "center" },
-          mb: 2,
-        }}
-      >
-        <Box sx={{ width: "100%" }}>
-          <Divider>
-            <Typography variant="h4" sx={{ color: "#003366" }}>
-              {" "}
-              HOME{" "}
-            </Typography>
-          </Divider>
-        </Box>
-      </Grid>
-
-      <Grid container sx={{ display: "flex" }}>
-        <Dialog
-          open={openDialog}
-          onClose={handleCloseDialog}
-          fullWidth
-          maxWidth="sm"
+      <Card sx={{ width: "100%", padding: "20px" }}>
+        <Grid
+          item
+          xs={12}
+          md={6}
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: { xs: "center", md: "center" },
+            mb: 2,
+          }}
         >
-          <form onSubmit={handleSubmit(onSubmitForm, onError)}>
-            {editPoData ? (
-              <DialogTitle variant="h5">Update Data</DialogTitle>
-            ) : (
-              <DialogTitle variant="h5">Enter Data</DialogTitle>
-            )}
+          <Box sx={{ width: "100%" }}>
+            <Divider>
+              <Typography variant="h4" sx={{ color: "#003366" }}>
+                {" "}
+                HOME{" "}
+              </Typography>
+            </Divider>
+          </Box>
+        </Grid>
 
-            {/* <DialogTitle variant='h4'>New Booking</DialogTitle> */}
-            <DialogContent>
-              {/* {editPoData ? <Typography variant='h6'> ID:{editId} </Typography> : null} */}
+        <Grid container sx={{ display: "flex" }}>
+          <Dialog
+            open={openDialog}
+            onClose={handleCloseDialog}
+            fullWidth
+            maxWidth="sm"
+          >
+            <form onSubmit={handleSubmit(onSubmitForm, onError)}>
+              {editPoData ? (
+                <DialogTitle variant="h5">Update Data</DialogTitle>
+              ) : (
+                <DialogTitle variant="h5">Enter Data</DialogTitle>
+              )}
 
-              <Grid item>
-                <TextField
-                  variant="outlined"
-                  type="text"
-                  name="companyName"
-                  label="Company Name"
-                  fullWidth
-                  sx={{ mt: 2 }}
-                  {...register("companyName")}
-                />
-                <Typography variant="body2" color="error">
-                  {errors?.companyName && errors.companyName.message}
-                </Typography>
-              </Grid>
+              {/* <DialogTitle variant='h4'>New Booking</DialogTitle> */}
+              <DialogContent>
+                {/* {editPoData ? <Typography variant='h6'> ID:{editId} </Typography> : null} */}
 
-              <Grid item>
-                <TextField
-                  variant="outlined"
-                  type="text"
-                  name="jcNumber"
-                  label="Job-Card Number"
-                  fullWidth
-                  sx={{ mt: 2 }}
-                  {...register("jcNumber")}
-                />
-                <Typography variant="body2" color="error">
-                  {errors?.jcNumber && errors.jcNumber.message}
-                </Typography>
-              </Grid>
-
-              <Grid item>
-                <Controller
-                  name="jcOpenDate"
-                  control={control}
-                  render={({ field }) => (
-                    <LocalizationProvider dateAdapter={AdapterDayjs}>
-                      <DatePicker
-                        sx={{ width: "52%", mt: 2, pr: 1, borderRadius: 3 }}
-                        label="JC Date"
-                        value={field.value || null} // Set the value using field.value
-                        onChange={(newValue) => {
-                          field.onChange(newValue);
-                        }}
-                        renderInput={(props) => <TextField {...props} />}
-                        format="YYYY-MM-DD"
-                      />
-                    </LocalizationProvider>
-                  )}
-                  {...register("jcOpenDate", { valueAsDate: true })}
-                />
-
-                <FormControl sx={{ width: "48%", mt: 2, pl: 1 }}>
-                  <InputLabel>JC Category</InputLabel>
-                  <Select
-                    label="JC Category"
+                <Grid item>
+                  <TextField
+                    variant="outlined"
                     type="text"
-                    {...register("jcCategory")}
-                    onChange={handleJcCategory}
-                    value={jcCategory}
-                  >
-                    {/* {jcCategoryNames.map((categoryName) => (
+                    name="companyName"
+                    label="Company Name"
+                    fullWidth
+                    sx={{ mt: 2 }}
+                    {...register("companyName")}
+                  />
+                  <Typography variant="body2" color="error">
+                    {errors?.companyName && errors.companyName.message}
+                  </Typography>
+                </Grid>
+
+                <Grid item>
+                  <TextField
+                    variant="outlined"
+                    type="text"
+                    name="jcNumber"
+                    label="Job-Card Number"
+                    fullWidth
+                    sx={{ mt: 2 }}
+                    {...register("jcNumber")}
+                  />
+                  <Typography variant="body2" color="error">
+                    {errors?.jcNumber && errors.jcNumber.message}
+                  </Typography>
+                </Grid>
+
+                <Grid item>
+                  <Controller
+                    name="jcOpenDate"
+                    control={control}
+                    render={({ field }) => (
+                      <LocalizationProvider dateAdapter={AdapterDayjs}>
+                        <DatePicker
+                          sx={{ width: "52%", mt: 2, pr: 1, borderRadius: 3 }}
+                          label="JC Date"
+                          value={field.value || null} // Set the value using field.value
+                          onChange={(newValue) => {
+                            field.onChange(newValue);
+                          }}
+                          renderInput={(props) => <TextField {...props} />}
+                          format="YYYY-MM-DD"
+                        />
+                      </LocalizationProvider>
+                    )}
+                    {...register("jcOpenDate", { valueAsDate: true })}
+                  />
+
+                  <FormControl sx={{ width: "48%", mt: 2, pl: 1 }}>
+                    <InputLabel>JC Category</InputLabel>
+                    <Select
+                      label="JC Category"
+                      type="text"
+                      {...register("jcCategory")}
+                      onChange={handleJcCategory}
+                      value={jcCategory}
+                    >
+                      {/* {jcCategoryNames.map((categoryName) => (
                                             <MenuItem key={categoryName} value={categoryName}>{categoryName}</MenuItem>
                                         ))} */}
 
-                    {jcCategoryNames.map((categoryName) => (
-                      <MenuItem
-                        key={categoryName.id}
-                        value={categoryName.label}
-                      >
-                        {categoryName.label}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-                <Typography variant="body2" color="error">
-                  {errors?.jcCategory && errors.jcCategory.message}
-                </Typography>
-              </Grid>
-
-              <Grid item>
-                <TextField
-                  variant="outlined"
-                  type="text"
-                  name="rfqNumber"
-                  label="RFQ Reference ID"
-                  sx={{ width: "52%", mt: 2, pr: 1 }}
-                  {...register("rfqNumber")}
-                />
-
-                <TextField
-                  variant="outlined"
-                  type="text"
-                  name="rfqValue"
-                  label="RFQ Value"
-                  sx={{ width: "48%", mt: 2, pl: 1 }}
-                  {...register("rfqValue")}
-                />
-
-                <div sx={{ justifyContent: "flex-row" }}>
+                      {jcCategoryNames.map((categoryName) => (
+                        <MenuItem
+                          key={categoryName.id}
+                          value={categoryName.label}
+                        >
+                          {categoryName.label}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
                   <Typography variant="body2" color="error">
-                    {errors?.rfqNumber && errors.rfqNumber.message}
+                    {errors?.jcCategory && errors.jcCategory.message}
                   </Typography>
+                </Grid>
 
-                  <Typography variant="body2" color="error">
-                    {errors?.rfqValue && errors.rfqValue.message}
-                  </Typography>
-                </div>
-              </Grid>
-
-              <Grid item>
-                <TextField
-                  variant="outlined"
-                  type="text"
-                  name="poNumber"
-                  label="PO Reference ID"
-                  sx={{ width: "52%", mt: 2, pr: 1 }}
-                  {...register("poNumber")}
-                />
-
-                <TextField
-                  variant="outlined"
-                  type="text"
-                  name="poValue"
-                  label="PO Value"
-                  sx={{ width: "48%", mt: 2, pl: 1 }}
-                  {...register("poValue")}
-                />
-
-                <FormControl fullWidth sx={{ mt: 2, width: "100%" }}>
-                  <InputLabel>PO Status</InputLabel>
-                  <Select
-                    label="PO Status"
+                <Grid item>
+                  <TextField
+                    variant="outlined"
                     type="text"
-                    {...register("poStatus")}
-                    onChange={handlePoStatus}
-                    value={poStatus}
-                  >
-                    {poStatusOptions.map((status) => (
-                      <MenuItem key={status.id} value={status.label}>
-                        {status.label}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
+                    name="rfqNumber"
+                    label="RFQ Reference ID"
+                    sx={{ width: "52%", mt: 2, pr: 1 }}
+                    {...register("rfqNumber")}
+                  />
 
-                <div sx={{ justifyContent: "flex-row" }}>
-                  <Typography variant="body2" color="error">
-                    {errors?.poNumber && errors.poNumber.message}
-                  </Typography>
-
-                  <Typography variant="body2" color="error">
-                    {errors?.poValue && errors.poValue.message}
-                  </Typography>
-
-                  <Typography variant="body2" color="error">
-                    {errors?.poStatus && errors.poStatus.message}
-                  </Typography>
-                </div>
-              </Grid>
-
-              <Grid item>
-                <TextField
-                  variant="outlined"
-                  type="text"
-                  name="invoiceNumber"
-                  label="Invoice ID"
-                  sx={{ width: "52%", mt: 2, pr: 1 }}
-                  {...register("invoiceNumber")}
-                />
-
-                <TextField
-                  variant="outlined"
-                  type="text"
-                  name="invoiceValue"
-                  label="Invoice Value"
-                  sx={{ width: "48%", mt: 2, pl: 1 }}
-                  {...register("invoiceValue")}
-                />
-
-                <FormControl fullWidth sx={{ mt: 2, width: "100%" }}>
-                  <InputLabel>Invoice Status</InputLabel>
-                  <Select
-                    label="Invoice Status"
+                  <TextField
+                    variant="outlined"
                     type="text"
-                    {...register("invoiceStatus")}
-                    onChange={handleInvoiceStatus}
-                    value={invoiceStatus}
-                  >
-                    {invoiceStatusOptions.map((status) => (
-                      <MenuItem key={status.id} value={status.label}>
-                        {status.label}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
+                    name="rfqValue"
+                    label="RFQ Value"
+                    sx={{ width: "48%", mt: 2, pl: 1 }}
+                    {...register("rfqValue")}
+                  />
 
-                <div sx={{ justifyContent: "flex-row" }}>
-                  <Typography variant="body2" color="error">
-                    {errors?.invoiceNumber && errors.invoiceNumber.message}
-                  </Typography>
+                  <div sx={{ justifyContent: "flex-row" }}>
+                    <Typography variant="body2" color="error">
+                      {errors?.rfqNumber && errors.rfqNumber.message}
+                    </Typography>
 
-                  <Typography variant="body2" color="error">
-                    {errors?.invoiceValue && errors.invoiceValue.message}
-                  </Typography>
+                    <Typography variant="body2" color="error">
+                      {errors?.rfqValue && errors.rfqValue.message}
+                    </Typography>
+                  </div>
+                </Grid>
 
-                  <Typography variant="body2" color="error">
-                    {errors?.invoiceStatus && errors.invoiceStatus.message}
-                  </Typography>
-                </div>
-              </Grid>
-
-              <Grid item>
-                <FormControl fullWidth sx={{ mt: 2, width: "100%" }}>
-                  <InputLabel>Payment Status</InputLabel>
-                  <Select
-                    label="Status"
+                <Grid item>
+                  <TextField
+                    variant="outlined"
                     type="text"
-                    {...register("paymentStatus")}
-                    onChange={handlePaymentStatus}
-                    value={paymentStatus}
-                  >
-                    {paymentStatusOptions.map((status) => (
-                      <MenuItem key={status.id} value={status.label}>
-                        {status.label}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-                <Typography variant="body2" color="error">
-                  {errors?.paymentStatus && errors.paymentStatus.message}
-                </Typography>
-              </Grid>
+                    name="poNumber"
+                    label="PO Reference ID"
+                    sx={{ width: "52%", mt: 2, pr: 1 }}
+                    {...register("poNumber")}
+                  />
 
-              <Grid item>
-                <TextField
-                  variant="outlined"
-                  type="text"
-                  name="remarks"
-                  label="Remarks"
-                  fullWidth
-                  multiline={true}
-                  rows={3}
-                  sx={{ mt: 2 }}
-                  {...register("remarks")}
-                />
-              </Grid>
-            </DialogContent>
-            <DialogActions sx={{ justifyContent: "center" }}>
-              <Button
-                variant="contained"
-                color="secondary"
-                onClick={handleCloseDialog}
-              >
-                CANCEL
-              </Button>
-              <Button variant="contained" color="primary" type="submit">
-                SUBMIT
-              </Button>
-            </DialogActions>
-          </form>
-        </Dialog>
-      </Grid>
+                  <TextField
+                    variant="outlined"
+                    type="text"
+                    name="poValue"
+                    label="PO Value"
+                    sx={{ width: "48%", mt: 2, pl: 1 }}
+                    {...register("poValue")}
+                  />
 
-      <PoInvoiceStatusTable
-        newJcAdded={newJcAdded}
-        openDialog={openDialog}
-        setOpenDialog={setOpenDialog}
-        onRowClick={handleRowClick}
-      />
+                  <FormControl fullWidth sx={{ mt: 2, width: "100%" }}>
+                    <InputLabel>PO Status</InputLabel>
+                    <Select
+                      label="PO Status"
+                      type="text"
+                      {...register("poStatus")}
+                      onChange={handlePoStatus}
+                      value={poStatus}
+                    >
+                      {poStatusOptions.map((status) => (
+                        <MenuItem key={status.id} value={status.label}>
+                          {status.label}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+
+                  <div sx={{ justifyContent: "flex-row" }}>
+                    <Typography variant="body2" color="error">
+                      {errors?.poNumber && errors.poNumber.message}
+                    </Typography>
+
+                    <Typography variant="body2" color="error">
+                      {errors?.poValue && errors.poValue.message}
+                    </Typography>
+
+                    <Typography variant="body2" color="error">
+                      {errors?.poStatus && errors.poStatus.message}
+                    </Typography>
+                  </div>
+                </Grid>
+
+                <Grid item>
+                  <TextField
+                    variant="outlined"
+                    type="text"
+                    name="invoiceNumber"
+                    label="Invoice ID"
+                    sx={{ width: "52%", mt: 2, pr: 1 }}
+                    {...register("invoiceNumber")}
+                  />
+
+                  <TextField
+                    variant="outlined"
+                    type="text"
+                    name="invoiceValue"
+                    label="Invoice Value"
+                    sx={{ width: "48%", mt: 2, pl: 1 }}
+                    {...register("invoiceValue")}
+                  />
+
+                  <FormControl fullWidth sx={{ mt: 2, width: "100%" }}>
+                    <InputLabel>Invoice Status</InputLabel>
+                    <Select
+                      label="Invoice Status"
+                      type="text"
+                      {...register("invoiceStatus")}
+                      onChange={handleInvoiceStatus}
+                      value={invoiceStatus}
+                    >
+                      {invoiceStatusOptions.map((status) => (
+                        <MenuItem key={status.id} value={status.label}>
+                          {status.label}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+
+                  <div sx={{ justifyContent: "flex-row" }}>
+                    <Typography variant="body2" color="error">
+                      {errors?.invoiceNumber && errors.invoiceNumber.message}
+                    </Typography>
+
+                    <Typography variant="body2" color="error">
+                      {errors?.invoiceValue && errors.invoiceValue.message}
+                    </Typography>
+
+                    <Typography variant="body2" color="error">
+                      {errors?.invoiceStatus && errors.invoiceStatus.message}
+                    </Typography>
+                  </div>
+                </Grid>
+
+                <Grid item>
+                  <FormControl fullWidth sx={{ mt: 2, width: "100%" }}>
+                    <InputLabel>Payment Status</InputLabel>
+                    <Select
+                      label="Status"
+                      type="text"
+                      {...register("paymentStatus")}
+                      onChange={handlePaymentStatus}
+                      value={paymentStatus}
+                    >
+                      {paymentStatusOptions.map((status) => (
+                        <MenuItem key={status.id} value={status.label}>
+                          {status.label}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                  <Typography variant="body2" color="error">
+                    {errors?.paymentStatus && errors.paymentStatus.message}
+                  </Typography>
+                </Grid>
+
+                <Grid item>
+                  <TextField
+                    variant="outlined"
+                    type="text"
+                    name="remarks"
+                    label="Remarks"
+                    fullWidth
+                    multiline={true}
+                    rows={3}
+                    sx={{ mt: 2 }}
+                    {...register("remarks")}
+                  />
+                </Grid>
+              </DialogContent>
+              <DialogActions sx={{ justifyContent: "center" }}>
+                <Button
+                  variant="contained"
+                  color="secondary"
+                  onClick={handleCloseDialog}
+                >
+                  CANCEL
+                </Button>
+                <Button variant="contained" color="primary" type="submit">
+                  SUBMIT
+                </Button>
+              </DialogActions>
+            </form>
+          </Dialog>
+        </Grid>
+
+        <PoInvoiceStatusTable
+          newJcAdded={newJcAdded}
+          openDialog={openDialog}
+          setOpenDialog={setOpenDialog}
+          onRowClick={handleRowClick}
+        />
+      </Card>
 
       <br />
 
