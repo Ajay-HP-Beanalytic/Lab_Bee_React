@@ -3,7 +3,7 @@
 import React, { useContext } from "react";
 import AddCustomerDetails from "./AddCustomerDetails";
 import AddModulesAndTests from "./AddModulesAndTests";
-import { Box, Divider, Grid, Typography } from "@mui/material";
+import { Box, Card, Divider, Grid, Typography } from "@mui/material";
 import { UserContext } from "../Pages/UserContext";
 
 export default function QuotationRequirements() {
@@ -11,15 +11,17 @@ export default function QuotationRequirements() {
 
   return (
     <>
-      <Typography variant="h4" sx={{ color: "#003366" }}>
+      <Typography variant="h4" sx={{ color: "#003366", mb: "10px" }}>
         {" "}
         Quotation Requirements{" "}
       </Typography>
+      <Card sx={{ width: "100%", padding: "20px" }}>
+        <AddCustomerDetails />
+      </Card>
       <br />
-      <AddCustomerDetails />
-      <br />
-      <br />
-      {loggedInUserDepartment !== "Marketing" && <AddModulesAndTests />}
+      <Card sx={{ width: "100%", padding: "20px" }}>
+        {loggedInUserDepartment !== "Marketing" && <AddModulesAndTests />}
+      </Card>
     </>
   );
 }

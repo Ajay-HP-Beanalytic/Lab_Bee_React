@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import {
   Box,
   Button,
+  Card,
   Divider,
   FormControl,
   Grid,
@@ -740,6 +741,7 @@ export default function JCHome() {
             borderColor: "black",
             padding: { xs: "8px 16px", md: "6px 12px" }, // Adjust padding for different screen sizes
             fontSize: { xs: "0.875rem", md: "1rem" }, // Adjust font size for different screen sizes
+            mb: "10px",
           }}
           variant="contained"
           color="primary"
@@ -749,208 +751,92 @@ export default function JCHome() {
         </Button>
       </Box>
 
-      <Grid
-        item
-        xs={12}
-        md={6}
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: { xs: "center", md: "center" },
-          mb: 2,
-        }}
-      >
-        <Box sx={{ width: "100%" }}>
-          <Divider>
-            <Typography variant="h4" sx={{ color: "#003366" }}>
-              {" "}
-              Job-Card Dashboard{" "}
-            </Typography>
-          </Divider>
-        </Box>
-      </Grid>
+      <Card sx={{ width: "100%", padding: "20px" }}>
+        <Grid
+          item
+          xs={12}
+          md={6}
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: { xs: "center", md: "center" },
+            mb: "10px",
+          }}
+        >
+          <Box sx={{ width: "100%" }}>
+            <Divider>
+              <Typography variant="h4" sx={{ color: "#003366" }}>
+                {" "}
+                Job-Card Dashboard{" "}
+              </Typography>
+            </Divider>
+          </Box>
+        </Grid>
 
-      <Grid container spacing={2} alignItems="center">
-        <Grid item xs={12} md={8} container alignItems="center" spacing={2}>
-          <Grid item xs={12} sm={6} md={4}>
-            <FormControl fullWidth>
-              <InputLabel>Year</InputLabel>
-              <Select
-                label="Year"
-                type="text"
-                value={jcYear}
-                onChange={handleYearOfJC}
-              >
-                {years.map((year, index) => (
-                  <MenuItem key={index} value={year}>
-                    {year}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
+        <Grid container spacing={2} alignItems="center">
+          <Grid item xs={12} md={8} container alignItems="center" spacing={2}>
+            <Grid item xs={12} sm={6} md={4}>
+              <FormControl fullWidth>
+                <InputLabel>Year</InputLabel>
+                <Select
+                  label="Year"
+                  type="text"
+                  value={jcYear}
+                  onChange={handleYearOfJC}
+                >
+                  {years.map((year, index) => (
+                    <MenuItem key={index} value={year}>
+                      {year}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+
+            <Grid item xs={12} sm={6} md={4}>
+              <FormControl fullWidth>
+                <InputLabel>Month</InputLabel>
+                <Select
+                  label="Month"
+                  type="text"
+                  value={jcMonth}
+                  onChange={handleMonthOfJC}
+                >
+                  {months.map((month, index) => (
+                    <MenuItem key={index} value={month}>
+                      {month}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+
+            <Grid item xs={12} md={4} container justifyContent="flex-start">
+              <DateRangeFilter
+                onClickDateRangeSelectDoneButton={handleJCDateRangeChange}
+                onClickDateRangeSelectClearButton={handleJCDateRangeClear}
+              />
+            </Grid>
           </Grid>
 
-          <Grid item xs={12} sm={6} md={4}>
-            <FormControl fullWidth>
-              <InputLabel>Month</InputLabel>
-              <Select
-                label="Month"
-                type="text"
-                value={jcMonth}
-                onChange={handleMonthOfJC}
-              >
-                {months.map((month, index) => (
-                  <MenuItem key={index} value={month}>
-                    {month}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Grid>
-
-          <Grid item xs={12} md={4} container justifyContent="flex-start">
-            <DateRangeFilter
-              onClickDateRangeSelectDoneButton={handleJCDateRangeChange}
-              onClickDateRangeSelectClearButton={handleJCDateRangeClear}
+          <Grid item xs={12} md={4} container justifyContent="flex-end">
+            <SearchBar
+              placeholder="Search JC"
+              searchInputText={searchInputTextOfJC}
+              onChangeOfSearchInput={onChangeOfSearchInputOfJC}
+              onClearSearchInput={onClearSearchInputOfJC}
             />
           </Grid>
         </Grid>
 
-        <Grid item xs={12} md={4} container justifyContent="flex-end">
-          <SearchBar
-            placeholder="Search JC"
-            searchInputText={searchInputTextOfJC}
-            onChangeOfSearchInput={onChangeOfSearchInputOfJC}
-            onClearSearchInput={onClearSearchInputOfJC}
-          />
-        </Grid>
-      </Grid>
-
-      {(loggedInUserDepartment === "TS1 Testing" ||
-        loggedInUserDepartment === "Administration" ||
-        loggedInUserDepartment === "Accounts" ||
-        loggedInUserDepartment === "Reports & Scrutiny") && (
-        <>
-          {filteredJcData && filteredJcData.length === 0 ? (
-            <EmptyCard message="No JC Found" />
-          ) : (
-            <Box
-              sx={{
-                height: 500,
-                width: "100%",
-                "& .custom-header-color": {
-                  backgroundColor: "#476f95",
-                  color: "whitesmoke",
-                  fontWeight: "bold",
-                  fontSize: "15px",
-                },
-                mt: 2,
-              }}
-            >
-              <DataGrid
-                initialState={{
-                  sorting: {
-                    sortModel: [{ field: "jc_number", sort: "desc" }],
-                  },
-                }}
-                rows={ts1JcDataWithSerialNumbers}
-                columns={columns}
-                sx={{ "&:hover": { cursor: "pointer" } }}
-                // onRowClick={(params) => editSelectedJC(params.row)}
-                onRowClick={(params) => openSelectedRowJCData(params.row)}
-                pageSize={5}
-                rowsPerPageOptions={[5, 10, 20]}
-              />
-            </Box>
-          )}
-
-          <Grid container spacing={4} sx={{ mt: 2 }}>
-            <Grid item xs={12} sm={6} md={6}>
-              <Box
-                sx={{
-                  backgroundColor: "#ebf0fa",
-                  padding: 2,
-                  borderRadius: 5,
-                  boxShadow: 2,
-                }}
-              >
-                <CreatePieChart
-                  data={jcStatusPieChart}
-                  options={optionsForJcStatusPieChart}
-                />
-              </Box>
-            </Grid>
-
-            <Grid item xs={12} sm={6} md={6}>
-              {filteredReliabilityJcData.length !== 0 && (
-                <Box
-                  sx={{
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "center",
-                    flexDirection: "column",
-                    padding: 2,
-                    borderRadius: 5,
-                    boxShadow: 2,
-                    backgroundColor: "#ebf0fa",
-                  }}
-                >
-                  <Typography variant="h5" color="#003366" align="center">
-                    Reliability JC Numbers
-                  </Typography>
-                  {reliabilityJCNumbers.map((jcNumber, index) => (
-                    <List
-                      key={index}
-                      sx={{
-                        width: "100%",
-                        display: "flex",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <ListItem sx={{ justifyContent: "center" }}>
-                        {jcNumber}
-                      </ListItem>
-                    </List>
-                  ))}
-                </Box>
-              )}
-            </Grid>
-          </Grid>
-        </>
-      )}
-
-      {(loggedInUserDepartment === "Reliability" ||
-        loggedInUserDepartment === "Administration" ||
-        loggedInUserDepartment === "Accounts") && (
-        <>
-          <Grid
-            item
-            xs={12}
-            md={6}
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: { xs: "center", md: "center" },
-              mb: 2,
-            }}
-          >
-            <Box sx={{ width: "100%" }}>
-              <Divider sx={{ mt: 5 }}>
-                <Typography variant="h5" sx={{ color: "#003366" }}>
-                  {" "}
-                  Reliability Task Management
-                </Typography>
-              </Divider>
-            </Box>
-          </Grid>
-
-          {/* <Typography variant='h4' sx={{ color: '#003366' }}> Its Reliability: {loggedInUserDepartment}</Typography> */}
-
-          {filteredReliabilityJcData &&
-          filteredReliabilityJcData.length === 0 ? (
-            <EmptyCard message="No JC Found" />
-          ) : (
-            <>
+        {(loggedInUserDepartment === "TS1 Testing" ||
+          loggedInUserDepartment === "Administration" ||
+          loggedInUserDepartment === "Accounts" ||
+          loggedInUserDepartment === "Reports & Scrutiny") && (
+          <>
+            {filteredJcData && filteredJcData.length === 0 ? (
+              <EmptyCard message="No JC Found" />
+            ) : (
               <Box
                 sx={{
                   height: 500,
@@ -970,8 +856,8 @@ export default function JCHome() {
                       sortModel: [{ field: "jc_number", sort: "desc" }],
                     },
                   }}
-                  rows={reliabilityJcDataWithSerialNumbers}
-                  columns={reliabilityTableColumns}
+                  rows={ts1JcDataWithSerialNumbers}
+                  columns={columns}
                   sx={{ "&:hover": { cursor: "pointer" } }}
                   // onRowClick={(params) => editSelectedJC(params.row)}
                   onRowClick={(params) => openSelectedRowJCData(params.row)}
@@ -979,27 +865,145 @@ export default function JCHome() {
                   rowsPerPageOptions={[5, 10, 20]}
                 />
               </Box>
-            </>
-          )}
-        </>
-      )}
+            )}
 
-      {openJCPreview && (
-        <JCPreview
-          open={openJCPreview}
-          onClose={handleCloseJCPreview}
-          jcCategory={jcCategory}
-          jcNumber={jcNumberString}
-          primaryJCDetails={primaryJCDetails}
-          eutRows={eutRows}
-          testRows={testRows}
-          testDetailsRows={testDetailsRows}
-          reliabilityTaskRow={reliabilityTaskRow}
-          onEdit={() => editSelectedJC(jcId)}
-          editJc={editJc}
-          jcId={jcId}
-        />
-      )}
+            <Grid container spacing={4} sx={{ mt: 2 }}>
+              <Grid item xs={12} sm={6} md={6}>
+                <Box
+                  sx={{
+                    backgroundColor: "#ebf0fa",
+                    padding: 2,
+                    borderRadius: 5,
+                    boxShadow: 2,
+                  }}
+                >
+                  <CreatePieChart
+                    data={jcStatusPieChart}
+                    options={optionsForJcStatusPieChart}
+                  />
+                </Box>
+              </Grid>
+
+              <Grid item xs={12} sm={6} md={6}>
+                {filteredReliabilityJcData.length !== 0 && (
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "center",
+                      alignItems: "center",
+                      flexDirection: "column",
+                      padding: 2,
+                      borderRadius: 5,
+                      boxShadow: 2,
+                      backgroundColor: "#ebf0fa",
+                    }}
+                  >
+                    <Typography variant="h5" color="#003366" align="center">
+                      Reliability JC Numbers
+                    </Typography>
+                    {reliabilityJCNumbers.map((jcNumber, index) => (
+                      <List
+                        key={index}
+                        sx={{
+                          width: "100%",
+                          display: "flex",
+                          justifyContent: "center",
+                        }}
+                      >
+                        <ListItem sx={{ justifyContent: "center" }}>
+                          {jcNumber}
+                        </ListItem>
+                      </List>
+                    ))}
+                  </Box>
+                )}
+              </Grid>
+            </Grid>
+          </>
+        )}
+
+        {(loggedInUserDepartment === "Reliability" ||
+          loggedInUserDepartment === "Administration" ||
+          loggedInUserDepartment === "Accounts") && (
+          <>
+            <Grid
+              item
+              xs={12}
+              md={6}
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: { xs: "center", md: "center" },
+                mb: 2,
+              }}
+            >
+              <Box sx={{ width: "100%" }}>
+                <Divider sx={{ mt: 5 }}>
+                  <Typography variant="h5" sx={{ color: "#003366" }}>
+                    {" "}
+                    Reliability Task Management
+                  </Typography>
+                </Divider>
+              </Box>
+            </Grid>
+
+            {/* <Typography variant='h4' sx={{ color: '#003366' }}> Its Reliability: {loggedInUserDepartment}</Typography> */}
+
+            {filteredReliabilityJcData &&
+            filteredReliabilityJcData.length === 0 ? (
+              <EmptyCard message="No JC Found" />
+            ) : (
+              <>
+                <Box
+                  sx={{
+                    height: 500,
+                    width: "100%",
+                    "& .custom-header-color": {
+                      backgroundColor: "#476f95",
+                      color: "whitesmoke",
+                      fontWeight: "bold",
+                      fontSize: "15px",
+                    },
+                    mt: 2,
+                  }}
+                >
+                  <DataGrid
+                    initialState={{
+                      sorting: {
+                        sortModel: [{ field: "jc_number", sort: "desc" }],
+                      },
+                    }}
+                    rows={reliabilityJcDataWithSerialNumbers}
+                    columns={reliabilityTableColumns}
+                    sx={{ "&:hover": { cursor: "pointer" } }}
+                    // onRowClick={(params) => editSelectedJC(params.row)}
+                    onRowClick={(params) => openSelectedRowJCData(params.row)}
+                    pageSize={5}
+                    rowsPerPageOptions={[5, 10, 20]}
+                  />
+                </Box>
+              </>
+            )}
+          </>
+        )}
+
+        {openJCPreview && (
+          <JCPreview
+            open={openJCPreview}
+            onClose={handleCloseJCPreview}
+            jcCategory={jcCategory}
+            jcNumber={jcNumberString}
+            primaryJCDetails={primaryJCDetails}
+            eutRows={eutRows}
+            testRows={testRows}
+            testDetailsRows={testDetailsRows}
+            reliabilityTaskRow={reliabilityTaskRow}
+            onEdit={() => editSelectedJC(jcId)}
+            editJc={editJc}
+            jcId={jcId}
+          />
+        )}
+      </Card>
     </>
   );
 }

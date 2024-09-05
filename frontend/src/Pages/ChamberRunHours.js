@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Box, Divider, Grid, Typography } from "@mui/material";
+import { Box, Card, Divider, Grid, Typography } from "@mui/material";
 import axios from "axios";
 import { serverBaseAddress } from "./APIPage";
 import { DataGrid } from "@mui/x-data-grid";
@@ -117,63 +117,65 @@ export default function ChamberRunHours() {
 
   return (
     <>
-      <Grid
-        item
-        xs={12}
-        md={6}
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: { xs: "center", md: "center" },
-          mb: 2,
-        }}
-      >
-        <Box sx={{ width: "100%" }}>
-          <Divider>
-            <Typography variant="h5" sx={{ color: "#003366" }}>
-              {" "}
-              Chamber Run Hours Table{" "}
-            </Typography>
-          </Divider>
-        </Box>
-      </Grid>
-
-      <Grid container spacing={2} justifyContent="flex-end">
-        <Grid item xs={12} md={4} container justifyContent="flex-end">
-          <SearchBar
-            placeholder="Search Chamber"
-            searchInputText={searchInputTextOfCRH}
-            onChangeOfSearchInput={onChangeOfSearchInputOfCRH}
-            onClearSearchInput={onClearSearchInputOfCRH}
-          />
-        </Grid>
-      </Grid>
-
-      {filteredCROData && filteredCROData.length === 0 ? (
-        <EmptyCard message="Chamber Run Hours Data not found" />
-      ) : (
-        <Box
+      <Card sx={{ width: "100%", padding: "20px" }}>
+        <Grid
+          item
+          xs={12}
+          md={6}
           sx={{
-            height: 500,
-            width: "100%",
-            "& .custom-header-color": {
-              backgroundColor: "#476f95",
-              color: "whitesmoke",
-              fontWeight: "bold",
-              fontSize: "15px",
-            },
-            mt: 2,
-            justifyContent: "right",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: { xs: "center", md: "center" },
+            mb: "10px",
           }}
         >
-          <DataGrid
-            rows={filteredCROData}
-            columns={columns}
-            pageSize={5}
-            rowsPerPageOptions={[5, 10, 20]}
-          />
-        </Box>
-      )}
+          <Box sx={{ width: "100%" }}>
+            <Divider>
+              <Typography variant="h5" sx={{ color: "#003366" }}>
+                {" "}
+                Chamber Run Hours Table{" "}
+              </Typography>
+            </Divider>
+          </Box>
+        </Grid>
+
+        <Grid container spacing={2} justifyContent="flex-end">
+          <Grid item xs={12} md={4} container justifyContent="flex-end">
+            <SearchBar
+              placeholder="Search Chamber"
+              searchInputText={searchInputTextOfCRH}
+              onChangeOfSearchInput={onChangeOfSearchInputOfCRH}
+              onClearSearchInput={onClearSearchInputOfCRH}
+            />
+          </Grid>
+        </Grid>
+
+        {filteredCROData && filteredCROData.length === 0 ? (
+          <EmptyCard message="Chamber Run Hours Data not found" />
+        ) : (
+          <Box
+            sx={{
+              height: 500,
+              width: "100%",
+              "& .custom-header-color": {
+                backgroundColor: "#476f95",
+                color: "whitesmoke",
+                fontWeight: "bold",
+                fontSize: "15px",
+              },
+              mt: 2,
+              justifyContent: "right",
+            }}
+          >
+            <DataGrid
+              rows={filteredCROData}
+              columns={columns}
+              pageSize={5}
+              rowsPerPageOptions={[5, 10, 20]}
+            />
+          </Box>
+        )}
+      </Card>
     </>
   );
 }
