@@ -42,6 +42,7 @@ import { serverBaseAddress } from "./Pages/APIPage";
 import { NotificationContext } from "./Pages/NotificationContext";
 import NotificationsManagement from "./Pages/NotificationsManagement";
 import EmiJobcard from "./EMI/EmiJobcard";
+import EMIJCDashboard from "./EMI/EMIJCDashboard";
 
 function App() {
   const location = useLocation();
@@ -71,10 +72,11 @@ function App() {
           navigate("/quotation_dashboard");
         } else if (
           loggedInUserDepartment === "TS1 Testing" ||
-          loggedInUserDepartment === "TS2 Testing" ||
           loggedInUserDepartment === "Reports & Scrutiny"
         ) {
           navigate("/jobcard_dashboard");
+        } else if (loggedInUserDepartment === "TS2 Testing") {
+          navigate("/emi_jc_dashboard");
         } else if (
           loggedInUserDepartment === "Reliability" ||
           loggedInUserDepartment === "Software"
@@ -266,6 +268,21 @@ function App() {
             element={
               <ProtectedRoute allowedDepartments={["Administration"]}>
                 <UserManagement />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="emi_jc_dashboard"
+            element={
+              <ProtectedRoute
+                allowedDepartments={[
+                  "Administration",
+                  "Accounts",
+                  "TS2 Testing",
+                ]}
+              >
+                <EMIJCDashboard />
               </ProtectedRoute>
             }
           />

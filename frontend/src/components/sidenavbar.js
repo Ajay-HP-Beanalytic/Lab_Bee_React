@@ -40,6 +40,7 @@ import KitchenIcon from "@mui/icons-material/Kitchen";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import ManageAccountsIcon from "@mui/icons-material/ManageAccounts";
 import CurrencyRupeeIcon from "@mui/icons-material/CurrencyRupee";
+import DashboardIcon from "@mui/icons-material/Dashboard";
 import TrackChangesIcon from "@mui/icons-material/TrackChanges";
 import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
 // import axios from "axios";
@@ -262,7 +263,7 @@ export default function SidenavigationBar() {
     fetchUnreadNotificationsCount();
   }, [loggedInUserRole, loggedInUser, newNotificationReceived]);
 
-  //Working Fine:
+  //Function to mark the newly recieved notification as read:
   useEffect(() => {
     if (notifications.length > 0) {
       const newReadStatus = notifications.reduce((status, notification) => {
@@ -288,7 +289,7 @@ export default function SidenavigationBar() {
   }, [notifications, loggedInUser, newNotificationReceived]);
 
   ///////////////////////////////////////////////////////////////////////////////////////////
-
+  //Function to make the notification as read:
   const handleReadSelectedNotification = (notificationId) => {
     // Mark the notification as read in the backend
     const markNotificationAsRead = async (notificationId, loggedInUser) => {
@@ -315,6 +316,7 @@ export default function SidenavigationBar() {
     // fetchUnreadNotificationsCount();
   };
 
+  //Function to make the notification as unread:
   const handleUnreadSelectedNotification = (notificationId) => {
     // Mark the notification as unread in the backend
     const markNotificationAsUnRead = async (notificationId, loggedInUser) => {
@@ -409,10 +411,13 @@ export default function SidenavigationBar() {
       });
     } else {
       const day = notificationDate.getDate();
+
+      const dayString = day.toString().padStart(2, "0");
       const month = notificationDate.getMonth() + 1;
+      const monthString = month.toString().padStart(2, "0");
       const year = notificationDate.getFullYear();
 
-      const formattedNotificationDate = `${day}-${month}-${year}`;
+      const formattedNotificationDate = `${dayString}-${monthString}-${year}`;
 
       return formattedNotificationDate;
     }
@@ -509,6 +514,13 @@ export default function SidenavigationBar() {
     },
     {
       i: 9,
+      label: "EMI/EMC JC Dashboard",
+      icon: <DashboardIcon />,
+      path: "/emi_jc_dashboard",
+      gradientId: "emiDashboardGradient",
+    },
+    {
+      i: 10,
       label: "EMI/EMC JC",
       icon: <TrackChangesIcon />,
       path: "/emi_jobcard",
@@ -533,6 +545,8 @@ export default function SidenavigationBar() {
       loggedInUserDepartment === "Software"
     ) {
       return [4, 5].includes(item.i);
+    } else if (loggedInUserDepartment === "TS2 Testing") {
+      return [9, 10].includes(item.i);
     }
     return false; // Default: Hide the item
   });
@@ -712,6 +726,7 @@ export default function SidenavigationBar() {
                               }}
                             />
                           )}
+
                           <ListItemText
                             primary={notification.message} // Message text
                             secondary={formatDateOrTime(
