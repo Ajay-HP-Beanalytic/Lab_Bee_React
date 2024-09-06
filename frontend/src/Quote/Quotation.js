@@ -562,7 +562,7 @@ export default function Quotation() {
       </Grid>
 
       <form onSubmit={handleSubmitETQuotation}>
-        <Box sx={{ mb: 1 }}>
+        <Card sx={{ width: "100%", padding: "20px", overflow: "visible" }}>
           <Grid container alignItems="center">
             <Grid
               item
@@ -617,15 +617,14 @@ export default function Quotation() {
               </Typography>
             </Grid>
           </Grid>
-        </Box>
+        </Card>
 
         <Card
           sx={{
-            paddingTop: "5",
-            paddingBottom: "5",
-            marginTop: "5",
-            marginBottom: "5",
-            elevation: 3,
+            paddingTop: "5px",
+            marginTop: "10px",
+            marginBottom: "5px",
+            elevation: 2,
           }}
         >
           <Grid container justifyContent="center" spacing={2}>
@@ -838,20 +837,23 @@ export default function Quotation() {
           </Grid>
         </Card>
 
-        <Box>
+        <Grid item xs={12} textAlign="center">
+          <Typography
+            sx={{ marginTop: "10px", marginBottom: "10px" }}
+            variant="h5"
+          >
+            Test Details
+          </Typography>
+        </Grid>
+
+        <Card sx={{ width: "100%", padding: "20px" }}>
           <Grid
             container
             justifyContent="center"
             sx={{ marginTop: "10", paddingBottom: "3" }}
           >
-            <Grid item xs={12} textAlign="center">
-              <Typography sx={{ paddingBottom: 3, paddingTop: 5 }} variant="h5">
-                Test Details
-              </Typography>
-            </Grid>
-
             <Grid item xs={12}>
-              <TableContainer component={Paper} sx={tableContainerStyle}>
+              <TableContainer sx={tableContainerStyle}>
                 <Table sx={{ minWidth: "100%" }} aria-label="simple table">
                   <TableHead sx={tableHeaderStyle}>
                     <TableRow>
@@ -1113,65 +1115,65 @@ export default function Quotation() {
               </TableContainer>
             </Grid>
           </Grid>
+        </Card>
 
-          <Box sx={{ marginTop: 3, marginBottom: 0.5, alignContent: "center" }}>
-            <Button
-              sx={{
-                borderRadius: 3,
-                mx: 0.5,
-                mb: 1,
-                bgcolor: "orange",
-                color: "white",
-                borderColor: "black",
-              }}
-              variant="contained"
-              color="primary"
-              onClick={() => navigate("/quotation_dashboard")}
-            >
-              Close
-            </Button>
+        <Box sx={{ marginTop: 3, marginBottom: 0.5, alignContent: "center" }}>
+          <Button
+            sx={{
+              borderRadius: 3,
+              mx: 0.5,
+              mb: 1,
+              bgcolor: "orange",
+              color: "white",
+              borderColor: "black",
+            }}
+            variant="contained"
+            color="primary"
+            onClick={() => navigate("/quotation_dashboard")}
+          >
+            Close
+          </Button>
 
-            <Button
-              sx={{
-                borderRadius: 3,
-                mx: 0.5,
-                mb: 1,
-                bgcolor: "orange",
-                color: "white",
-                borderColor: "black",
-              }}
-              variant="contained"
-              color="primary"
-              type="submit"
-            >
-              {editId ? "Update" : "Submit"}
-            </Button>
+          <Button
+            sx={{
+              borderRadius: 3,
+              mx: 0.5,
+              mb: 1,
+              bgcolor: "orange",
+              color: "white",
+              borderColor: "black",
+            }}
+            variant="contained"
+            color="primary"
+            type="submit"
+          >
+            {editId ? "Update" : "Submit"}
+          </Button>
 
-            {editId && (
-              <Tooltip title="Download quotation" arrow>
-                <Button
-                  variant="contained"
-                  startIcon={<FileDownloadIcon />}
-                  sx={{
-                    borderRadius: 3,
-                    mx: 0.5,
-                    mb: 1,
-                    bgcolor: "orange",
-                    color: "white",
-                    borderColor: "black",
-                  }}
-                  onClick={handleDownloadQuote}
-                >
-                  Download
-                </Button>
-              </Tooltip>
-            )}
+          {editId && (
+            <Tooltip title="Download quotation" arrow>
+              <Button
+                variant="contained"
+                startIcon={<FileDownloadIcon />}
+                sx={{
+                  borderRadius: 3,
+                  mx: 0.5,
+                  mb: 1,
+                  bgcolor: "orange",
+                  color: "white",
+                  borderColor: "black",
+                }}
+                onClick={handleDownloadQuote}
+              >
+                Download
+              </Button>
+            </Tooltip>
+          )}
 
-            {/* Dialog for PDF generation */}
-            {showPdfDialog && (
-              <DocToPdf id={editId} onClose={() => setShowPdfDialog(false)} />
-            )}
-          </Box>
+          {/* Dialog for PDF generation */}
+          {showPdfDialog && (
+            <DocToPdf id={editId} onClose={() => setShowPdfDialog(false)} />
+          )}
         </Box>
       </form>
     </div>

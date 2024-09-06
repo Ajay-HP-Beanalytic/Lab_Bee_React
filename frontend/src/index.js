@@ -9,6 +9,7 @@ import { UserProvider } from "./Pages/UserContext";
 import { ThemeProvider, createTheme } from "@mui/material";
 import axios from "axios";
 import { NotificationProvider } from "./Pages/NotificationContext";
+import { EMIJCContextProvider } from "./EMI/EMIJCContext";
 
 // {
 //   /*Original code was this*/
@@ -24,6 +25,7 @@ import { NotificationProvider } from "./Pages/NotificationContext";
 {
   /*updated code with the loader*/
 }
+
 // const AppWithLoader = () => {
 //   return (
 //     <>
@@ -50,10 +52,12 @@ const AppWithLoader = () => {
         <React.StrictMode>
           <UserProvider>
             <NotificationProvider>
-              <Loader />
-              <ThemeProvider theme={theme}>
-                <App />
-              </ThemeProvider>
+              <EMIJCContextProvider>
+                <Loader />
+                <ThemeProvider theme={theme}>
+                  <App />
+                </ThemeProvider>
+              </EMIJCContextProvider>
             </NotificationProvider>
           </UserProvider>
         </React.StrictMode>

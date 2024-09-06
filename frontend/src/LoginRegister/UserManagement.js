@@ -368,14 +368,16 @@ export default function UserManagement() {
         </Button>
       </Box>
 
+      <Divider>
+        <Typography
+          variant="h4"
+          sx={{ color: "#003366", mb: "10px", mt: "10px" }}
+        >
+          {" "}
+          Users
+        </Typography>
+      </Divider>
       <Card sx={{ width: "100%", padding: "20px" }}>
-        <Divider>
-          <Typography variant="h4" sx={{ color: "#003366", mb: 2 }}>
-            {" "}
-            Users
-          </Typography>
-        </Divider>
-
         {loggedInUserDepartment === "Administration" && (
           <Box sx={{ width: "100%" }}>
             <div>
