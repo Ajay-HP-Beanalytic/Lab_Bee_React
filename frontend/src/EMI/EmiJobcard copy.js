@@ -1,19 +1,15 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useState } from "react";
 
 import { Box, Button, Card, Typography } from "@mui/material";
-import {
-  Controller,
-  FormProvider,
-  useForm,
-  useFormContext,
-} from "react-hook-form";
+import { Controller, FormProvider, useForm } from "react-hook-form";
 import Stepper from "@mui/material/Stepper";
 import Step from "@mui/material/Step";
 import StepButton from "@mui/material/StepButton";
 import EMIJC_StepOne from "./StepOne";
 import EMIJC_StepTwo from "./StepTwo";
 import EMIJC_StepThree from "./StepThree";
-import { EMIJCContext } from "./EMIJCContext";
+
+const EMIJobcardContext = createContext();
 
 export default function EmiJobcard() {
   const steps = ["JC Primary Details", "Test Details", "Observations"];
@@ -22,19 +18,15 @@ export default function EmiJobcard() {
 
   const totalSteps = steps.length;
 
-  // Initialize the form methods using react-hook-form
+  // Initialize useForm for form state management
   const methods = useForm({
     defaultValues: {
-      stepOneData: {},
-      stepTwoData: [],
-      stepThreeData: [],
+      stepOneData: { name: "", description: "" }, // Default values for Step 1
+      stepTwoData: [], // Default values for Step 2
+      stepThreeData: [], // Default values for Step 3
     },
-    mode: "onChange", // Change this based on when you want validation to trigger
+    mode: "onChange", // Validation mode
   });
-
-  //Fetch all the form data from 3 steps:
-  const { stepOneFormData, stepTwoFormData, stepThreeFormData } =
-    useContext(EMIJCContext);
 
   // Go to next step or handle form submit on last step
   const handleNext = () => {
@@ -47,36 +39,25 @@ export default function EmiJobcard() {
     }
   };
 
+  // Go to previous step or act as cancel on first step
+  // const handleCancel = () => {
+  //   if (activeStep === 0) {
+  //     alert("Form cancelled");
+  //   } else {
+  //     setActiveStep((prevStep) => prevStep - 1);
+  //   }
+  // };
+
   const handleCancel = () => {
     setActiveStep((prevStep) => Math.max(prevStep - 1, 0));
   };
 
   // Function to submit the  EMI Jobcard data:
-  const onSubmitEmiJC = () => {
-    const finalData = {
-      stepOneData: stepOneFormData,
-      stepTwoData: stepTwoFormData,
-      stepThreeData: stepThreeFormData,
-    };
-    // Now submit finalData to the backend or process it as needed
-    console.log("Submitting data:", finalData);
-    // Add your API call or other submission logic here
+  const onSubmitEmiJC = (data) => {
+    // All form data from all steps will be available here
+    console.log("Form Data on Submit: ", data);
+    alert("Form Submitted with data: " + JSON.stringify(data));
   };
-
-  useEffect(() => {
-    // You can set default values or handle form values persistence here
-    methods.reset({
-      stepOneData: stepOneFormData,
-      stepTwoData: stepTwoFormData,
-      stepThreeData: stepThreeFormData,
-    });
-  }, [
-    activeStep,
-    stepOneFormData,
-    stepTwoFormData,
-    stepThreeFormData,
-    methods,
-  ]);
 
   return (
     <>
