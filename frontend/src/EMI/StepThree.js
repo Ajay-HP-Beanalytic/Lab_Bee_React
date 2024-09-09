@@ -2,6 +2,7 @@ import React, { useContext, useEffect } from "react";
 import { EMIJCContext } from "./EMIJCContext";
 import { useForm } from "react-hook-form";
 import { Box, TextField } from "@mui/material";
+import _ from "lodash";
 
 export default function EMIJC_StepThree() {
   //Import the respective context:
@@ -13,17 +14,21 @@ export default function EMIJC_StepThree() {
   // When the component mounts, populate the form fields with context data
   useEffect(() => {
     if (stepThreeFormData) {
-      setValue("test", stepThreeFormData.test || "");
-      setValue("duration", stepThreeFormData.duration || "");
+      _.forEach(stepThreeFormData, (value, key) => {
+        setValue(key, value || "");
+      });
     }
   }, [stepThreeFormData, setValue]);
 
   // Watch form fields and update context on value change
   const stepThreeFormValues = watch();
 
+  // Only update the context if the form data changes
   useEffect(() => {
-    updateStepThreeFormData(stepThreeFormValues);
-  }, [stepThreeFormValues, updateStepThreeFormData]);
+    if (!_.isEqual(stepThreeFormValues, stepThreeFormData)) {
+      updateStepThreeFormData(stepThreeFormValues);
+    }
+  }, [stepThreeFormValues, stepThreeFormData, updateStepThreeFormData]);
 
   return (
     <div>

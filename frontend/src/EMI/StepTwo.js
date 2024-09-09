@@ -2,6 +2,7 @@ import React, { useContext, useEffect } from "react";
 import { EMIJCContext } from "./EMIJCContext";
 import { useForm } from "react-hook-form";
 import { Box, TextField } from "@mui/material";
+import _ from "lodash";
 
 export default function EMIJC_StepTwo() {
   //Import the respective context:
@@ -12,16 +13,25 @@ export default function EMIJC_StepTwo() {
   // When the component mounts, populate the form fields with context data
   useEffect(() => {
     if (stepTwoFormData) {
-      setValue("address", stepTwoFormData.address || "");
-      setValue("phone", stepTwoFormData.phone || "");
+      _.forEach(stepTwoFormData, (value, key) => {
+        setValue(key, value || "");
+      });
+
+      //Alternate method is:
+      // const updatedStepOneFormValues = _.mapValues(stepTwoFormData, (value) => value || "");
+      // setValue(updatedStepOneFormValues);
     }
   }, [stepTwoFormData, setValue]);
 
   // Watch form fields and update context on value change
   const stepTwoFormValues = watch();
+
+  // Only update context if form data changes
   useEffect(() => {
-    updateStepTwoFormData(stepTwoFormValues);
-  }, [stepTwoFormValues, updateStepTwoFormData]);
+    if (!_.isEqual(stepTwoFormValues, stepTwoFormData)) {
+      updateStepTwoFormData(stepTwoFormValues);
+    }
+  }, [stepTwoFormValues, stepTwoFormData, updateStepTwoFormData]);
 
   return (
     <div>

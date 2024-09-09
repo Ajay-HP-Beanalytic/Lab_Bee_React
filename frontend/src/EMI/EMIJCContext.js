@@ -41,23 +41,3 @@ const EMIJCContextProvider = ({ children }) => {
 };
 
 export { EMIJCContext, EMIJCContextProvider };
-
-// const EMIJCContextProvider = ({ children }) => {
-//     const [formData, setFormData] = useState({
-//       stepOneData: { name: "", description: "" },
-//       stepTwoData: [],
-//       stepThreeData: [],
-//     });
-
-//     const updateFormData = (stepData) => {
-//       setFormData((prevData) => ({ ...prevData, ...stepData }));
-//     };
-
-//     return (
-//       <EMIJCContext.Provider value={{ formData, updateFormData }}>
-//         {children}
-//       </EMIJCContext.Provider>
-//     );
-//   };
-
-//   export { EMIJCContext, EMIJCContextProvider };
