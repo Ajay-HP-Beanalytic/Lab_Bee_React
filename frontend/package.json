@@ -26,6 +26,7 @@
     "docxtemplater": "^3.42.1",
     "docxtemplater-image-module": "^3.1.0",
     "file-saver": "^2.0.5",
+    "lodash": "^4.17.21",
     "luxon": "^3.4.4",
     "mammoth": "^1.6.0",
     "moment": "^2.29.1",

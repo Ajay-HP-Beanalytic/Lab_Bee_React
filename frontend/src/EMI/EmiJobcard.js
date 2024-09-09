@@ -124,9 +124,8 @@ export default function EmiJobcard() {
 
       <Card sx={{ width: "100%", mt: "10px", mb: "10px" }}>
         {/* For Non Linear Method */}
-        {/* <Stepper activeStep={activeStep} nonLinear alternativeLabel>  */}
-
-        <Stepper activeStep={activeStep} alternativeLabel>
+        <Stepper activeStep={activeStep} nonLinear alternativeLabel>
+          {/* <Stepper activeStep={activeStep} alternativeLabel> */}
           {steps.map((label, index) => (
             <Step key={label} sx={{ mt: "10px", mb: "10px" }}>
               <StepButton color="inherit" onClick={() => setActiveStep(index)}>
@@ -137,13 +136,13 @@ export default function EmiJobcard() {
         </Stepper>
       </Card>
 
-      <Card sx={{ width: "100%", mt: "10px", mb: "10px" }}>
-        <FormProvider {...methods}>
-          {activeStep === 0 && <EMIJC_StepOne />}
-          {activeStep === 1 && <EMIJC_StepTwo />}
-          {activeStep === 2 && <EMIJC_StepThree />}
-        </FormProvider>
-      </Card>
+      {/* <Card sx={{ width: "100%", mt: "10px", mb: "10px" }}> */}
+      <FormProvider {...methods}>
+        {activeStep === 0 && <EMIJC_StepOne />}
+        {activeStep === 1 && <EMIJC_StepTwo />}
+        {activeStep === 2 && <EMIJC_StepThree />}
+      </FormProvider>
+      {/* </Card> */}
     </>
   );
 }
