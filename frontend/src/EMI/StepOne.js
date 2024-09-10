@@ -1,29 +1,86 @@
-import React, { useContext, useEffect } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import {
   Box,
   Card,
   Grid,
-  Table,
-  TableCell,
-  TableHead,
-  TableRow,
-  TextField,
   Typography,
   useMediaQuery,
   useTheme,
 } from "@mui/material";
+
 import { EMIJCContext } from "./EMIJCContext";
-import { useForm, useFormContext } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import _ from "lodash";
 import RenderComponents from "../functions/RenderComponents";
+import RenderTable from "../functions/RenderTable";
 
 export default function EMIJC_StepOne() {
   const theme = useTheme();
   const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
 
   //Import the respective context:
-  const { stepOneFormData, updateStepOneFormData } = useContext(EMIJCContext);
+  // const { stepOneFormData, updateStepOneFormData } = useContext(EMIJCContext);
+  const {
+    stepOneFormData,
+    updateStepOneFormData,
+    eutTableRows,
+    updateEutTableRows,
+    testsTableRows,
+    updateTestsTableRows,
+  } = useContext(EMIJCContext);
   const { control, register, setValue, watch } = useForm();
+
+  //Fields to create a EUT details table:
+  const eutTableColumns = [
+    { id: "serialNumber", label: "SL No", width: 20 },
+    { id: "eutName", label: "EUT Details", width: 300, type: "textField" },
+    { id: "eutQuantity", label: "Quantity", width: 200, type: "textField" },
+    {
+      id: "eutPartNumber",
+      label: "Part Number",
+      width: 300,
+      type: "textField",
+    },
+    {
+      id: "eutModelNumber",
+      label: "Model Number",
+      width: 200,
+      type: "textField",
+    },
+    {
+      id: "eutSerialNumber",
+      label: "Serial Number",
+      width: 200,
+      type: "textField",
+    },
+  ];
+
+  const eutTableRowTemplate = {
+    serialNumber: 1,
+    eutName: "",
+    eutQuantity: "",
+    eutPartNumber: "",
+    eutModelNumber: "",
+    eutSerialNumber: "",
+  };
+  // const [eutTableRows, setEutTableRows] = useState([eutTableRowTemplate]);
+  console.log("eutTableRows", eutTableRows);
+
+  //Fields to create a Tests details table:
+  const testsTableColumns = [
+    { id: "serialNumber", label: "SL No", width: 20 },
+    { id: "testName", label: "Test Name", width: 300, type: "textField" },
+    { id: "testStandard", label: "Standard", width: 300, type: "textField" },
+    { id: "testProfile", label: "Test Profile", width: 400, type: "textField" },
+  ];
+
+  const testsTableRowTemplate = {
+    serialNumber: 1,
+    testName: "",
+    testStandard: "",
+  };
+  // const [testsTableRows, setTestsTableRows] = useState([testsTableRowTemplate]);
+  console.log("testsTableRows", testsTableRows);
 
   // When the component mounts, populate the form fields with context data
   useEffect(() => {
@@ -44,6 +101,27 @@ export default function EMIJC_StepOne() {
       updateStepOneFormData(stepOneFormValues);
     }
   }, [stepOneFormValues, stepOneFormData, updateStepOneFormData]);
+
+  // Load the table data from context when the component mounts
+  useEffect(() => {
+    if (eutTableRows.length === 0) {
+      updateEutTableRows([eutTableRowTemplate]);
+    }
+    if (testsTableRows.length === 0) {
+      updateTestsTableRows([testsTableRowTemplate]); // Add a default row if there's no data
+    }
+  }, [eutTableRows, updateEutTableRows, testsTableRows, updateTestsTableRows]);
+
+  // Watch for changes in testsTableRows and update the context
+  useEffect(() => {
+    if (!_.isEqual(eutTableRows, stepOneFormData.eutTableRows)) {
+      updateEutTableRows(eutTableRows);
+    }
+
+    if (!_.isEqual(testsTableRows, stepOneFormData.testsTableRows)) {
+      updateTestsTableRows(testsTableRows);
+    }
+  }, [eutTableRows, testsTableRows, stepOneFormData, updateTestsTableRows]);
 
   const fieldsToBeFilledByCustomerPartOne = [
     { label: "Company", name: "company", type: "textField", width: "100%" },
@@ -89,77 +167,6 @@ export default function EMIJC_StepOne() {
     },
   ];
 
-  const fieldsToBeFilledByLoggedInUser = [
-    {
-      label: "JC Open Date",
-      name: "jcOpenDate",
-      type: "datePicker",
-      width: "100%",
-    },
-    {
-      label: "Item Received Date",
-      name: "itemReceivedDate",
-      type: "datePicker",
-      width: "100%",
-    },
-    {
-      label: "Type Of Request",
-      name: "typeOfRequest",
-      type: "select",
-      options: [
-        { id: "Testing Of Components", label: "Testing Of Components" },
-        { id: "Equipmemnts", label: "Equipmemnts" },
-        { id: "Systems", label: "Systems" },
-      ],
-      width: "100%",
-    },
-    {
-      label: "Sample Condition",
-      name: "sampleCondition",
-      type: "select",
-      options: [
-        { id: "Good", label: "Good" },
-        { id: "Others", label: "Others/Specify" },
-      ],
-      width: "100%",
-    },
-    {
-      label: "Slot Duration(Hours)",
-      name: "slotDuration",
-      type: "select",
-      options: [
-        { id: "FOUR_HOURS", label: "4" },
-        { id: "EIGHT_HOURS", label: "8" },
-      ],
-      width: "100%",
-    },
-  ];
-
-  const tableHeaderStyle = { backgroundColor: "#006699", fontWeight: "bold" };
-  const tableCellStyle = {
-    color: "white",
-    minWidth: "150px", // Adjust as needed
-    padding: "8px",
-  };
-
-  //Fields to create a EUT details table:
-  const eutTableColumns = [
-    { id: "serialNumber", label: "SL No", minWidth: 100 },
-    { id: "eutName", label: "EUT Details", minWidth: 100 },
-    { id: "eutQuantity", label: "Quantity", minWidth: 100 },
-    { id: "eutPartNumber", label: "Part Number", minWidth: 100 },
-    { id: "eutModelNumber", label: "Model Number", minWidth: 100 },
-    { id: "eutSerialNumber", label: "Serial Number", minWidth: 100 },
-    { id: "", label: "", minWidth: 100 },
-  ];
-
-  const testsTableColumns = [
-    { id: "serialNumber", label: "SL No", minWidth: 100 },
-    { id: "testNae", label: "Test Name", minWidth: 100 },
-    { id: "testStandard", label: "Standard", minWidth: 100 },
-    { id: "", label: "", minWidth: 100 },
-  ];
-
   return (
     <>
       <Card sx={{ width: "100%", mt: "10px", mb: "10px" }}>
@@ -195,26 +202,6 @@ export default function EMIJC_StepOne() {
           </Grid>
         </Grid>
       </Card>
-
-      {/* <Card sx={{ width: "100%", mt: "10px", mb: "10px" }}>
-        <Grid
-          container
-          spacing={2}
-          alignItems="left"
-          justifyContent="left"
-          sx={{ padding: "10px" }}
-        >
-          <Grid item xs={12} sm={6} md={6}>
-            <RenderComponents
-              fields={fieldsToBeFilledByLoggedInUser}
-              register={register}
-              control={control}
-              watch={watch}
-              setValue={setValue}
-            />
-          </Grid>
-        </Grid>
-      </Card> */}
 
       <Card sx={{ width: "100%", mt: "10px", mb: "10px", padding: "10px" }}>
         <Box
@@ -257,52 +244,30 @@ export default function EMIJC_StepOne() {
           <Typography variant="h5" sx={{ mb: "5px" }}>
             EUT Details
           </Typography>
-          <Table>
-            <TableHead sx={tableHeaderStyle}>
-              <TableRow>
-                {eutTableColumns.map((column) => (
-                  <TableCell
-                    key={column.id}
-                    width={column.width}
-                    style={tableCellStyle}
-                  >
-                    {column.label}
-                  </TableCell>
-                ))}
-              </TableRow>
-            </TableHead>
-          </Table>
+
+          <RenderTable
+            tableColumns={eutTableColumns}
+            tableRows={eutTableRows}
+            // setTableRows={setEutTableRows}
+            setTableRows={updateEutTableRows}
+            rowTemplate={eutTableRowTemplate}
+          />
         </Box>
       </Card>
 
       <Card sx={{ width: "100%", mt: "10px", mb: "10px", padding: "10px" }}>
-        <Box
-        // sx={{
-        //   width: "100%",
-        //   marginTop: "10px",
-        //   marginBottom: "10px",
-        //   padding: "10px",
-        // }}
-        >
+        <Box>
           <Typography variant="h5" sx={{ mb: "5px" }}>
             Test Details
           </Typography>
 
-          <Table>
-            <TableHead sx={tableHeaderStyle}>
-              <TableRow>
-                {testsTableColumns.map((column) => (
-                  <TableCell
-                    key={column.id}
-                    width={column.width}
-                    style={tableCellStyle}
-                  >
-                    {column.label}
-                  </TableCell>
-                ))}
-              </TableRow>
-            </TableHead>
-          </Table>
+          <RenderTable
+            tableColumns={testsTableColumns}
+            tableRows={testsTableRows}
+            // setTableRows={setTestsTableRows}
+            setTableRows={updateTestsTableRows}
+            rowTemplate={testsTableRowTemplate}
+          />
         </Box>
       </Card>
     </>

@@ -225,6 +225,14 @@ function usersDataAPIs(app) {
     });
   });
 
+  app.get("/api/getEMIUsers", (req, res) => {
+    const emiUsersList =
+      "SELECT name FROM labbee_users WHERE department LIKE '%TS2 Testing%' ";
+    db.query(emiUsersList, (error, result) => {
+      res.send(result);
+    });
+  });
+
   // Fetch the Reliability department users:
   app.get("/api/getReliabilityUsers", (req, res) => {
     const reliabilityUsersList =
