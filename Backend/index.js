@@ -231,6 +231,10 @@ slotBookingAPIs(app, io, labbeeUsers);
 const { poInvoiceBackendAPIs } = require("./PoInvoiceBackend");
 poInvoiceBackendAPIs(app);
 
+//Backend connection of EMI/EMC jobcards API's from 'EMIBackend' page
+const { emiJobcardsAPIs } = require("./EMIBackend");
+emiJobcardsAPIs(app, io, labbeeUsers);
+
 // backend connection to acess the notifications:
 const { notificationsAPIs } = require("./notifications");
 notificationsAPIs(app, io, labbeeUsers);
