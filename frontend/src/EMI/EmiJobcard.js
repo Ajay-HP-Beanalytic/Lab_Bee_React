@@ -33,8 +33,14 @@ export default function EmiJobcard() {
   });
 
   //Fetch all the form data from 3 steps:
-  const { stepOneFormData, stepTwoFormData, stepThreeFormData } =
-    useContext(EMIJCContext);
+  const {
+    stepOneFormData,
+    stepTwoFormData,
+    stepThreeFormData,
+    eutTableRows,
+    testsTableRows,
+    testPerformedTableRows,
+  } = useContext(EMIJCContext);
 
   // Go to next step or handle form submit on last step
   const handleNext = () => {
@@ -55,7 +61,10 @@ export default function EmiJobcard() {
   const onSubmitEmiJC = () => {
     const finalData = {
       stepOneData: stepOneFormData,
+      eutTableRows,
+      testsTableRows,
       stepTwoData: stepTwoFormData,
+      testPerformedTableRows,
       stepThreeData: stepThreeFormData,
     };
     // Now submit finalData to the backend or process it as needed
@@ -134,6 +143,34 @@ export default function EmiJobcard() {
             </Step>
           ))}
         </Stepper>
+      </Card>
+
+      <Card>
+        <Box
+          sx={{ mx: "10px", padding: "5px" }}
+          display="flex"
+          justifyContent="space-between"
+        >
+          <Typography
+            variant="h5"
+            sx={{
+              fontWeight: "bold",
+              fontStyle: "italic",
+              color: "#003399",
+            }}
+          >
+            JC Number: 2024/25-09-008
+          </Typography>
+          <Typography
+            variant="h7"
+            sx={{
+              fontWeight: "bold",
+              color: "#003399",
+            }}
+          >
+            JC Status: Open
+          </Typography>
+        </Box>
       </Card>
 
       {/* <Card sx={{ width: "100%", mt: "10px", mb: "10px" }}> */}

@@ -13,6 +13,7 @@ import { useForm } from "react-hook-form";
 import _ from "lodash";
 import RenderComponents from "../functions/RenderComponents";
 import RenderTable from "../functions/RenderTable";
+import SignaturePadComponent from "../common/SignaturePad";
 
 export default function EMIJC_StepOne() {
   const theme = useTheme();
@@ -56,7 +57,6 @@ export default function EMIJC_StepOne() {
   ];
 
   const eutTableRowTemplate = {
-    serialNumber: 1,
     eutName: "",
     eutQuantity: "",
     eutPartNumber: "",
@@ -75,7 +75,6 @@ export default function EMIJC_StepOne() {
   ];
 
   const testsTableRowTemplate = {
-    serialNumber: 1,
     testName: "",
     testStandard: "",
   };
@@ -93,7 +92,6 @@ export default function EMIJC_StepOne() {
 
   // Watch form fields and update context on value change
   const stepOneFormValues = watch();
-  console.log("stepOneFormValues", stepOneFormValues);
 
   // Only update the context if the form data changes
   useEffect(() => {
@@ -121,7 +119,13 @@ export default function EMIJC_StepOne() {
     if (!_.isEqual(testsTableRows, stepOneFormData.testsTableRows)) {
       updateTestsTableRows(testsTableRows);
     }
-  }, [eutTableRows, testsTableRows, stepOneFormData, updateTestsTableRows]);
+  }, [
+    eutTableRows,
+    testsTableRows,
+    stepOneFormData,
+    updateEutTableRows,
+    updateTestsTableRows,
+  ]);
 
   const fieldsToBeFilledByCustomerPartOne = [
     { label: "Company", name: "company", type: "textField", width: "100%" },
@@ -173,6 +177,8 @@ export default function EMIJC_StepOne() {
         <Typography variant="h5" sx={{ mb: "5px" }}>
           Customer Details
         </Typography>
+
+        <SignaturePadComponent />
 
         <Grid
           container

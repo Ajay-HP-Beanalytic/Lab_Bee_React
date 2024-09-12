@@ -64,7 +64,7 @@ const RenderTable = ({
               <TableCell
                 key={column.id}
                 width={column.width}
-                // align={column.align || "center"}
+                align={column.align || "center"}
                 style={tableCellStyle}
               >
                 {column.label}
@@ -113,11 +113,27 @@ const RenderTable = ({
                       }
                       fullWidth
                     >
-                      {column.options.map((option) => (
-                        <MenuItem key={option} value={option}>
-                          {option}
-                        </MenuItem>
-                      ))}
+                      {Array.isArray(column.options) &&
+                        column.options.map((option) => {
+                          if (typeof option === "string") {
+                            // For flat list of strings
+                            return (
+                              <MenuItem key={option} value={option}>
+                                {option}
+                              </MenuItem>
+                            );
+                          } else {
+                            // For object-based options (with id and label)
+                            return (
+                              <MenuItem
+                                key={option.id ? option.id : option.label}
+                                value={option.id ? option.id : option.value}
+                              >
+                                {option.label}
+                              </MenuItem>
+                            );
+                          }
+                        })}
                     </Select>
                   ) : column.type === "dateTime" ? (
                     <LocalizationProvider dateAdapter={AdapterDayjs}>
