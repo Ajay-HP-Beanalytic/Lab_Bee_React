@@ -578,6 +578,46 @@ function createNotificationsTable() {
   });
 }
 
+////////////////////////////////////////////////////////////////////////////////////////
+// Function to create the EMI-EMC Jobcard table:
+function createEMIJobcardsTable() {
+  const createEMIJobcardsTableQuery = `
+  CREATE TABLE IF NOT EXISTS emi_jobcards (
+      id INT NOT NULL AUTO_INCREMENT,
+      jcNumber VARCHAR(255) UNIQUE,
+      srfNumber VARCHAR(255),
+      srfDate DATE,
+      jcOpenDate DATE,
+      itemReceivedDate DATE,
+      poNumber VARCHAR(255),
+      typeOfRequest VARCHAR(100),
+      sampleCondition VARCHAR(100),
+      reportType VARCHAR(100),
+      jcIncharge VARCHAR(100),
+      companyName VARCHAR(1000),
+      customerName VARCHAR(1000),
+      customerEmail VARCHAR(1000),
+      customerPhoneNumber VARCHAR(255),
+      projectName VARCHAR(1000),
+      jcStatus  VARCHAR(500),
+      jcClosedDate DATE,
+      observations VARCHAR(500),
+      lastUpdatedBy VARCHAR(100),
+      PRIMARY KEY(id)
+      
+  )`;
+
+  db.query(createEMIJobcardsTableQuery, function (err, result) {
+    if (err) {
+      console.log("Error occurred while creating emi_jobcards table", err);
+    } else {
+      // console.log("emi_jobcards table created successfully.")
+    }
+  });
+}
+
+////////////////////////////////////////////////////////////////////////////////////////
+
 // Handle the process exiting to gracefully end the connection pool.
 process.on("exit", function () {
   db.end(function (err) {
@@ -613,4 +653,6 @@ module.exports = {
   createPoStatusTable,
 
   createNotificationsTable,
+
+  createEMIJobcardsTable,
 };

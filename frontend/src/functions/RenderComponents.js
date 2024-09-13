@@ -15,6 +15,7 @@ import dayjs from "dayjs";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { UserContext } from "../Pages/UserContext";
+import SignaturePadComponent from "../common/SignaturePad";
 
 export default function RenderComponents({
   fields,
@@ -48,7 +49,7 @@ export default function RenderComponents({
                 key={field.name}
                 label={field.label}
                 multiline
-                rows={3}
+                rows={2}
                 placeholder={field.label}
                 name={field.name}
                 {...register(field.name)}
@@ -188,6 +189,13 @@ export default function RenderComponents({
                   ))}
                 </RadioGroup>
               </Box>
+            );
+
+          case "signaturePad":
+            return (
+              <div key={field.name} style={{ width: field.width }}>
+                <SignaturePadComponent />
+              </div>
             );
 
           default:

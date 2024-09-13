@@ -57,6 +57,9 @@ export default function EmiJobcard() {
     setActiveStep((prevStep) => Math.max(prevStep - 1, 0));
   };
 
+  const [jcStatusString, setJcStatusString] = useState("Open");
+  const [jcStatusStringColor, setJcStatusStringColor] = useState("#ff5722");
+
   // Function to submit the  EMI Jobcard data:
   const onSubmitEmiJC = () => {
     const finalData = {
@@ -68,6 +71,7 @@ export default function EmiJobcard() {
       stepThreeData: stepThreeFormData,
     };
     // Now submit finalData to the backend or process it as needed
+
     console.log("Submitting data:", finalData);
     // Add your API call or other submission logic here
   };
@@ -79,6 +83,25 @@ export default function EmiJobcard() {
       stepTwoData: stepTwoFormData,
       stepThreeData: stepThreeFormData,
     });
+
+    //Fetch the JC Status...
+    let currentJcStatus = stepThreeFormData?.jcStatus || "";
+    setJcStatusString(currentJcStatus);
+    // Set the color based on the status
+    switch (currentJcStatus) {
+      case "Open":
+        setJcStatusStringColor("#ff5722");
+        break;
+      case "Running":
+        setJcStatusStringColor("#2196f3");
+        break;
+      case "Closed":
+        setJcStatusStringColor("#4caf50");
+        break;
+      default:
+        setJcStatusStringColor("#000000"); // Default color if none of the cases match
+        break;
+    }
   }, [
     activeStep,
     stepOneFormData,
@@ -145,30 +168,39 @@ export default function EmiJobcard() {
         </Stepper>
       </Card>
 
-      <Card>
+      <Card sx={{ p: 2 }}>
         <Box
-          sx={{ mx: "10px", padding: "5px" }}
-          display="flex"
-          justifyContent="space-between"
+          // sx={{ mx: "10px", padding: "5px" }}
+          // display="flex"
+          // justifyContent="space-between"
+          sx={{
+            display: "flex",
+            flexDirection: { xs: "column", sm: "row" }, // Column layout on small screens, row on larger
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 2, // Spacing between items
+          }}
         >
           <Typography
             variant="h5"
             sx={{
               fontWeight: "bold",
-              fontStyle: "italic",
-              color: "#003399",
+              // fontStyle: "italic",
+              textAlign: { xs: "center", sm: "left" },
             }}
           >
-            JC Number: 2024/25-09-008
+            <span style={{ color: "#003399" }}>JC Number:</span>{" "}
+            <span style={{ color: "#003399" }}>2024/25-09-008</span>
           </Typography>
           <Typography
             variant="h7"
             sx={{
               fontWeight: "bold",
-              color: "#003399",
+              textAlign: { xs: "center", sm: "left" },
             }}
           >
-            JC Status: Open
+            <span style={{ color: "#003399" }}>JC Status:</span>{" "}
+            <span style={{ color: jcStatusStringColor }}>{jcStatusString}</span>
           </Typography>
         </Box>
       </Card>
