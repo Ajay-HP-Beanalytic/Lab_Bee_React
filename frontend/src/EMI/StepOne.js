@@ -157,7 +157,7 @@ export default function EMIJC_StepOne() {
       type: "textField",
       width: "100%",
     },
-    { label: "Standard", name: "standard", type: "textArea", width: "100%" },
+    // { label: "Standard", name: "standard", type: "textArea", width: "100%" },
     {
       label: "Report Type",
       name: "typeOfReport",
@@ -169,6 +169,12 @@ export default function EMIJC_StepOne() {
       ],
       width: "100%",
     },
+    {
+      label: "Customer Signature",
+      name: "customerSignature",
+      type: "signaturePad",
+      width: "100%",
+    },
   ];
 
   return (
@@ -177,8 +183,6 @@ export default function EMIJC_StepOne() {
         <Typography variant="h5" sx={{ mb: "5px" }}>
           Customer Details
         </Typography>
-
-        <SignaturePadComponent />
 
         <Grid
           container
@@ -240,6 +244,19 @@ export default function EMIJC_StepOne() {
               Note 2: NABL Accredited tests report will be provided under the
               NABL scope and if any standard which is not available in NABL
               scope will be considered as NON-NABL tests.
+            </Typography>
+          </Grid>
+
+          <Grid item xs={12} sm={6} sx={{ padding: "5px" }}>
+            <Typography
+              variant={isSmallScreen ? "body2" : "h7"}
+              color="red"
+              gutterBottom
+            >
+              {" "}
+              Note 3: All compliance tests will be conducted according to the
+              sample test guidelines. Charges will be applied on a
+              per-iteration, per-sample basis.
             </Typography>
           </Grid>
         </Box>

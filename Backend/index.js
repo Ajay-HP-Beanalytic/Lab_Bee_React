@@ -151,6 +151,7 @@ const {
   createSlotBookingTable,
   createPoStatusTable,
   createNotificationsTable,
+  createEMIJobcardsTable,
 } = require("./database_tables");
 
 //Get db connection from the db.js file
@@ -187,6 +188,8 @@ db.getConnection(function (err, connection) {
   createPoStatusTable();
 
   createNotificationsTable();
+
+  createEMIJobcardsTable();
 
   connection.release(); // Release the connection back to the pool when done
 });

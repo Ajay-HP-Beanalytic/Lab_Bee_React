@@ -45,6 +45,17 @@ const RenderTable = ({
     setTableRows(updatedRows);
   };
 
+  // Function to handle "Observation Form" changes
+  const handleObservationFormChange = (index, value) => {
+    // Call the function to open a dialog or perform any other action
+    alert(`Observation Form changed to: ${value}`);
+    // Example: Open a dialog or perform some logic here
+    // openDialogFunction(value);
+
+    // Update the state for the specific field
+    handleInputChange(index, "observationForm", value);
+  };
+
   const tableHeaderStyle = { backgroundColor: "#006699", fontWeight: "bold" };
   const tableCellStyle = {
     color: "white",
@@ -108,8 +119,21 @@ const RenderTable = ({
                   ) : column.type === "select" ? (
                     <Select
                       value={row[column.id]}
+                      // onChange={(e) =>
+                      //   handleInputChange(rowIndex, column.id, e.target.value)
+                      // }
+
                       onChange={(e) =>
-                        handleInputChange(rowIndex, column.id, e.target.value)
+                        column.id === "observationForm"
+                          ? handleObservationFormChange(
+                              rowIndex,
+                              e.target.value
+                            )
+                          : handleInputChange(
+                              rowIndex,
+                              column.id,
+                              e.target.value
+                            )
                       }
                       fullWidth
                     >

@@ -62,6 +62,12 @@ export default function EMIJC_StepTwo() {
       width: "100%",
     },
     {
+      label: "PO Number",
+      name: "poNumber",
+      type: "textField",
+      width: "100%",
+    },
+    {
       label: "JC Incharge",
       name: "jcIncharge",
       type: "select",
