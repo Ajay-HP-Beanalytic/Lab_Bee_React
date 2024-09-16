@@ -142,7 +142,12 @@ function slotBookingAPIs(app, io, labbeeUsers) {
         const currentTimestampForSlotBooking = new Date().toISOString();
 
         let message = `New TS1 Slot: ${formData.bookingID} booked, by ${formData.slotBookedBy}`;
-        let usersToNotifyNewSlotBooking = [];
+        let usersToNotifyNewSlotBooking = [
+          "Lab Manager",
+          "Lab Engineer",
+          "Lab Technician",
+          "Lab Assistant",
+        ];
 
         const loggedInUser = formData.loggedInUser;
 
@@ -291,7 +296,12 @@ function slotBookingAPIs(app, io, labbeeUsers) {
         const currentTimestampForSlotBooking = new Date().toISOString();
 
         let message = `TS1 Slot: ${formData.bookingID} updated, by ${loggedInUser}`;
-        let usersToNotifyNewSlotBooking = [];
+        let usersToNotifyUpdateSlotBooking = [
+          "Lab Manager",
+          "Lab Engineer",
+          "Lab Technician",
+          "Lab Assistant",
+        ];
 
         for (let socketId in labbeeUsers) {
           const user = labbeeUsers[socketId];
@@ -306,8 +316,8 @@ function slotBookingAPIs(app, io, labbeeUsers) {
               receivedAt: currentTimestampForSlotBooking,
             });
 
-            if (!usersToNotifyNewSlotBooking.includes(user.role)) {
-              usersToNotifyNewSlotBooking.push(user.role);
+            if (!usersToNotifyUpdateSlotBooking.includes(user.role)) {
+              usersToNotifyUpdateSlotBooking.push(user.role);
             }
           }
         }
@@ -317,7 +327,7 @@ function slotBookingAPIs(app, io, labbeeUsers) {
         saveNotificationToDatabase(
           message,
           currentTimestampForSlotBooking,
-          usersToNotifyNewSlotBooking,
+          usersToNotifyUpdateSlotBooking,
           loggedInUser
         );
       }
@@ -386,7 +396,12 @@ function slotBookingAPIs(app, io, labbeeUsers) {
           const currentTimestampForSlotBooking = new Date().toISOString();
 
           let message = `TS1 Slot: ${bookingID} Deleted, by ${loggedInUser}`;
-          let usersToNotifyNewSlotBooking = [];
+          let usersToNotifyDeleteSlotBooking = [
+            "Lab Manager",
+            "Lab Engineer",
+            "Lab Technician",
+            "Lab Assistant",
+          ];
 
           for (let socketId in labbeeUsers) {
             const user = labbeeUsers[socketId];
@@ -401,8 +416,8 @@ function slotBookingAPIs(app, io, labbeeUsers) {
                 receivedAt: currentTimestampForSlotBooking,
               });
 
-              if (!usersToNotifyNewSlotBooking.includes(user.role)) {
-                usersToNotifyNewSlotBooking.push(user.role);
+              if (!usersToNotifyDeleteSlotBooking.includes(user.role)) {
+                usersToNotifyDeleteSlotBooking.push(user.role);
               }
             }
           }
@@ -413,7 +428,7 @@ function slotBookingAPIs(app, io, labbeeUsers) {
           saveNotificationToDatabase(
             message,
             currentTimestampForSlotBooking,
-            usersToNotifyNewSlotBooking,
+            usersToNotifyDeleteSlotBooking,
             loggedInUser
           );
         } else {

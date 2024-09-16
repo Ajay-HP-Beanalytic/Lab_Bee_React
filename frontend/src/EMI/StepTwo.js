@@ -62,16 +62,15 @@ export default function EMIJC_StepTwo() {
       width: "100%",
     },
     {
-      label: "PO Number",
-      name: "poNumber",
+      label: "Quotation Referance Number",
+      name: "quoteNumber",
       type: "textField",
       width: "100%",
     },
     {
-      label: "JC Incharge",
-      name: "jcIncharge",
-      type: "select",
-      options: emiUsers,
+      label: "PO Referance Number",
+      name: "poNumber",
+      type: "textField",
       width: "100%",
     },
   ];
@@ -108,14 +107,35 @@ export default function EMIJC_StepTwo() {
       ],
       width: "100%",
     },
+    {
+      label: "JC Incharge",
+      name: "jcInchargeName",
+      type: "select",
+      options: emiUsers,
+      width: "100%",
+    },
   ];
 
   //Fields to create Test Performed Table:
   const testPerformedTableColumns = [
     { id: "serialNumber", label: "SL No", width: "20", align: "left" },
     {
+      id: "testName",
+      label: "Test Name",
+      width: 250,
+      type: "textField",
+      align: "center",
+    },
+    {
       id: "eutName",
       label: "EUT Details",
+      width: 250,
+      type: "textField",
+      align: "center",
+    },
+    {
+      id: "eutSerialNumber",
+      label: "EUT Serial Number",
       width: 250,
       type: "textField",
       align: "center",
@@ -142,6 +162,20 @@ export default function EMIJC_StepTwo() {
       align: "center",
     },
     {
+      id: "startTemp",
+      label: "Start Temp(°C)",
+      width: 200,
+      type: "textField",
+      align: "center",
+    },
+    {
+      id: "startRh",
+      label: "Start RH(%)",
+      width: 200,
+      type: "textField",
+      align: "center",
+    },
+    {
       id: "testStartedBy",
       label: "Test Started By",
       width: 250,
@@ -154,6 +188,20 @@ export default function EMIJC_StepTwo() {
       label: "Test End Date & Time",
       width: 800,
       type: "dateTime",
+      align: "center",
+    },
+    {
+      id: "endTemp",
+      label: "End Temp(°C)",
+      width: 200,
+      type: "textField",
+      align: "center",
+    },
+    {
+      id: "endRh",
+      label: "End RH(%)",
+      width: 200,
+      type: "textField",
       align: "center",
     },
     {
@@ -176,6 +224,18 @@ export default function EMIJC_StepTwo() {
       label: "Actual Test Duration(Hrs)",
       width: 200,
       type: "textField",
+      align: "center",
+    },
+    {
+      id: "unit",
+      label: "Unit",
+      width: 200,
+      type: "select",
+      options: [
+        { id: "Hours", label: "Hours" },
+        { id: "Test", label: "Test" },
+        { id: "Days", label: "Days" },
+      ],
       align: "center",
     },
     {
@@ -247,20 +307,28 @@ export default function EMIJC_StepTwo() {
   ];
 
   const testPerformedTableRowTemplate = {
+    testName: "",
     eutName: "",
+    eutSerialNumber: "",
     testMachine: "",
     testStandard: "",
     testStartDateTime: "",
+    startTemp: "",
+    startRh: "",
     testStartedBy: "",
     testEndDateTime: "",
     testEndedBy: "",
+    endTemp: "",
+    endRh: "",
     testDuration: "",
     actualTestDuration: "",
+    unit: "",
     slotDetails: "",
     reportDeliveryStatus: "",
     reportNumber: "",
     reportPreparedBy: "",
     reportStatus: "",
+    observationForm: "",
   };
 
   // UseEffect to fetch the users:

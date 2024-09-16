@@ -14,8 +14,15 @@ import EMIJC_StepOne from "./StepOne";
 import EMIJC_StepTwo from "./StepTwo";
 import EMIJC_StepThree from "./StepThree";
 import { EMIJCContext } from "./EMIJCContext";
+import { serverBaseAddress } from "../Pages/APIPage";
+import axios from "axios";
+import { UserContext } from "../Pages/UserContext";
+import { toast } from "react-toastify";
+import { useParams } from "react-router-dom";
 
 export default function EmiJobcard() {
+  const { loggedInUser, loggedInUserDepartment } = useContext(UserContext);
+
   const steps = ["JC Primary Details", "Test Details", "Observations"];
 
   const [activeStep, setActiveStep] = useState(0);
@@ -42,11 +49,13 @@ export default function EmiJobcard() {
     testPerformedTableRows,
   } = useContext(EMIJCContext);
 
+  const [jcNumberString, setJcNumberString] = useState("");
+
   // Go to next step or handle form submit on last step
   const handleNext = () => {
     if (activeStep === totalSteps - 1) {
       // Handle form submission here
-      alert("Form submitted");
+
       methods.handleSubmit(onSubmitEmiJC)();
     } else {
       setActiveStep((prevStep) => prevStep + 1);
@@ -60,8 +69,20 @@ export default function EmiJobcard() {
   const [jcStatusString, setJcStatusString] = useState("Open");
   const [jcStatusStringColor, setJcStatusStringColor] = useState("#ff5722");
 
+  let { id } = useParams("id");
+  if (!id) {
+    id = "";
+  }
+
   // Function to submit the  EMI Jobcard data:
-  const onSubmitEmiJC = () => {
+  const onSubmitEmiJC = async (data) => {
+    console.log("data", data);
+
+    if (!stepTwoFormData.jcOpenDate) {
+      toast.warning("Please Enter Job-Card Open Date in Step 2");
+      return;
+    }
+
     const finalData = {
       stepOneData: stepOneFormData,
       eutTableRows,
@@ -69,11 +90,27 @@ export default function EmiJobcard() {
       stepTwoData: stepTwoFormData,
       testPerformedTableRows,
       stepThreeData: stepThreeFormData,
+      loggedInUser,
+      loggedInUserDepartment,
     };
     // Now submit finalData to the backend or process it as needed
 
     console.log("Submitting data:", finalData);
     // Add your API call or other submission logic here
+
+    try {
+      const response = await axios.post(
+        `${serverBaseAddress}/api/EMIJobcard/${id}`,
+        finalData
+      );
+      if (response.status === 200) {
+        toast.success("Job-Card Created Successfully");
+        setActiveStep(0);
+      }
+    } catch (error) {
+      console.error("Error submitting Job-Card:", error);
+      toast.error("Failed to submit Job-Card. Please try again later.");
+    }
   };
 
   useEffect(() => {
@@ -109,6 +146,41 @@ export default function EmiJobcard() {
     stepThreeFormData,
     methods,
   ]);
+
+  //Function to fetch the JC Number:
+  useEffect(() => {
+    const fetchLatestJCNumber = async () => {
+      try {
+        const response = await axios.get(
+          `${serverBaseAddress}/api/getLatestEMIJCNumber`
+        );
+        if (response.status === 200) {
+          setJcNumberString(response.data[0]?.jcNumber);
+        } else {
+          console.log("Failed to fetch latest JC number");
+        }
+      } catch (error) {
+        console.error("Error fetching latest JC number:", error);
+      }
+    };
+    fetchLatestJCNumber();
+  }, [loggedInUser, activeStep, methods]);
+
+  /// Function to submit the JC Data:
+  // const handleSubmitEMIJC = (e) => {
+  //   e.preventDefault();
+
+  //   if (stepThreeFormData.jcOpenDate === "" || stepThreeFormData.jcOpenDate === null) {
+  //     toast.warning("Please Enter Job-Card Open Date");
+  //     return;
+  //   }
+
+  //   try {
+
+  //   } catch (error) {
+
+  //   }
+  // }
 
   return (
     <>
@@ -190,7 +262,7 @@ export default function EmiJobcard() {
             }}
           >
             <span style={{ color: "#003399" }}>JC Number:</span>{" "}
-            <span style={{ color: "#003399" }}>2024/25-09-008</span>
+            <span style={{ color: "#003399" }}>{jcNumberString}</span>
           </Typography>
           <Typography
             variant="h7"

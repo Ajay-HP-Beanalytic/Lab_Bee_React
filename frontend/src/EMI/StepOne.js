@@ -128,7 +128,7 @@ export default function EMIJC_StepOne() {
   ]);
 
   const fieldsToBeFilledByCustomerPartOne = [
-    { label: "Company", name: "company", type: "textField", width: "100%" },
+    { label: "Company", name: "companyName", type: "textField", width: "100%" },
     // { label: "Address", name: "address", type: "textArea", width: "100%" },
     {
       label: "Customer/Visitor Name",
