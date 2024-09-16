@@ -103,7 +103,12 @@ function mainQuotationsTableAPIs(app, io, labbeeUsers) {
         const currentTimestampForSlotBooking = new Date().toISOString();
 
         let message = `New Quotation: ${quotationIdString} created, by ${loggedInUser}`;
-        let usersToNotifyNewQuotation = [];
+        let usersToNotifyNewQuotation = [
+          "Administrator",
+          "Accounts Admin",
+          "Accounts Executive",
+          "Marketing Manager",
+        ];
 
         for (let socketId in labbeeUsers) {
           const user = labbeeUsers[socketId];
@@ -598,7 +603,12 @@ function mainQuotationsTableAPIs(app, io, labbeeUsers) {
         const currentTimestampForSlotBooking = new Date().toISOString();
 
         let message = `Quotation: ${quotationIdString} updated, by ${loggedInUser}`;
-        let usersToNotifyQuoteUpdate = [];
+        let usersToNotifyQuoteUpdate = [
+          "Administrator",
+          "Accounts Admin",
+          "Accounts Executive",
+          "Marketing Manager",
+        ];
 
         for (let socketId in labbeeUsers) {
           const user = labbeeUsers[socketId];
@@ -619,7 +629,7 @@ function mainQuotationsTableAPIs(app, io, labbeeUsers) {
           }
         }
 
-        // Save the notification in the database
+        // Save the quote update notification in the database
         saveNotificationToDatabase(
           message,
           currentTimestampForSlotBooking,

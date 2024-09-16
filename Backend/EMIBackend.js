@@ -65,177 +65,395 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
 
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  const usersToNotifyBEAJcCreation = JSON.parse(
+  const usersToNotifyEMIJCCreation = JSON.parse(
     process.env.USERS_TO_BE_NOTIFY_ABOUT_TS2_JC_CREATION
   );
 
-  //   app.post("/api/EMIJobcard", async (req, res) => {
-  //     const {
-  //       srfDate,
-  //       dcNumber,
-  //       jcOpenDate,
-  //       itemReceivedDate,
-  //       poNumber,
-  //       testCategory,
-  //       testDiscipline,
-  //       sampleCondition,
-  //       typeOfRequest,
-  //       reportType,
-  //       testInchargeName,
-  //       jcCategory,
-  //       companyName,
-  //       companyAddress,
-  //       customerName,
-  //       customerEmail,
-  //       customerNumber,
-  //       projectName,
-  //       testInstructions,
-  //       jcStatus,
-  //       reliabilityReportStatus,
-  //       jcCloseDate,
-  //       observations,
-  //       jcLastModifiedBy,
-  //       loggedInUser,
-  //       loggedInUserDepartment,
-  //     } = req.body;
+  app.post("/api/EMIJobcard", async (req, res) => {
+    console.log("Received data:", req.body);
+    // return;
 
-  //     const formattedSrfDate = srfDate
-  //       ? dayjs(srfDate).format("YYYY-MM-DD")
-  //       : null;
-  //     const formattedItemReceivedDate = itemReceivedDate
-  //       ? dayjs(itemReceivedDate).format("YYYY-MM-DD")
-  //       : null;
-  //     const formattedOpenDate = jcOpenDate
-  //       ? dayjs(jcOpenDate).format("YYYY-MM-DD")
-  //       : null;
-  //     const formattedCloseDate = jcCloseDate
-  //       ? dayjs(jcCloseDate).format("YYYY-MM-DD")
-  //       : null;
+    const {
+      stepOneData,
+      eutTableRows,
+      testsTableRows,
+      stepTwoData,
+      testPerformedTableRows,
+      stepThreeData,
+      loggedInUser,
+      loggedInUserDepartment,
+    } = req.body;
 
-  //     let connection;
-  //     try {
-  //       // Establish a connection
-  //       connection = await db.promise().getConnection();
+    const {
+      companyName,
+      customerName,
+      customerEmail,
+      customerPhone,
+      projectName,
+      typeOfReport,
+    } = stepOneData;
 
-  //       // Start a transaction
-  //       await connection.beginTransaction();
+    // Destructure fields from each step's data
+    const {
+      quoteNumber,
+      poNumber,
+      jcOpenDate,
+      itemReceivedDate,
+      typeOfRequest,
+      sampleCondition,
+      slotDuration,
+      jcInchargeName,
+    } = stepTwoData;
 
-  //       // Extract financial year and month part
-  //       const { currentYear, currentMonth } = getCurrentYearAndMonth();
-  //       let finYear =
-  //         currentMonth > 2
-  //           ? `${currentYear}-${currentYear + 1}/${currentMonth}`
-  //           : `${currentYear - 1}-${currentYear}/${currentMonth}`;
+    const { jcObservations, jcClosedDate, jcStatus } = stepThreeData;
 
-  //       let newSequenceNumber;
+    const { id } = req.body;
 
-  //       const [recentJCs] = await connection.query(
-  //         `SELECT jc_number FROM bea_jobcards WHERE jc_number LIKE ? ORDER BY jc_number DESC LIMIT 1`,
-  //         [`${finYear}-%`]
-  //       );
+    // const formattedSrfDate = srfDate
+    //   ? dayjs(srfDate).format("YYYY-MM-DD")
+    //   : null;
+    const formattedItemReceivedDate = itemReceivedDate
+      ? dayjs(itemReceivedDate).format("YYYY-MM-DD")
+      : null;
+    const formattedOpenDate = jcOpenDate
+      ? dayjs(jcOpenDate).format("YYYY-MM-DD")
+      : null;
+    const formattedCloseDate = jcClosedDate
+      ? dayjs(jcClosedDate).format("YYYY-MM-DD")
+      : null;
 
-  //       if (recentJCs.length > 0) {
-  //         // Extract the sequence number part from the last job card number
-  //         const lastJcNumber = recentJCs[0].jc_number;
-  //         const lastSequence = parseInt(lastJcNumber.split("-")[2], 10);
-  //         newSequenceNumber = lastSequence + 1;
-  //       } else {
-  //         newSequenceNumber = 1;
-  //       }
+    let connection;
+    try {
+      // Establish a connection
+      connection = await db.promise().getConnection();
 
-  //       // Generate the new jcNumber and srfNumber
-  //       const newJcNumber = `${finYear}-${newSequenceNumber
-  //         .toString()
-  //         .padStart(3, "0")}`;
-  //       const newSrfNumber = `BEA/TR/SRF/${newJcNumber}`;
+      // Start a transaction
+      await connection.beginTransaction();
 
-  //       const sql = `INSERT INTO bea_jobcards(
-  //             jc_number, srf_number, srf_date, dcform_number, jc_open_date, item_received_date, po_number,
-  //             test_category, test_discipline, sample_condition, type_of_request, report_type, test_incharge, jc_category, company_name, company_address,
-  //             customer_name, customer_email, customer_number, project_name, test_instructions,
-  //             jc_status, reliability_report_status, jc_closed_date, observations, last_updated_by
-  //         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+      // Extract financial year and month part
+      const { currentYear, currentMonth } = getCurrentYearAndMonth();
+      let finYear =
+        currentMonth > 2
+          ? `${currentYear}-${currentYear + 1}/${currentMonth}`
+          : `${currentYear - 1}-${currentYear}/${currentMonth}`;
 
-  //       const values = [
-  //         newJcNumber,
-  //         newSrfNumber,
-  //         formattedSrfDate,
-  //         dcNumber,
-  //         formattedOpenDate || null,
-  //         formattedItemReceivedDate || null,
-  //         poNumber || "",
-  //         testCategory || "",
-  //         testDiscipline || "",
-  //         sampleCondition || "",
-  //         typeOfRequest || "",
-  //         reportType || "",
-  //         testInchargeName || "",
-  //         jcCategory || "",
-  //         companyName || "",
-  //         companyAddress || "",
-  //         customerName || "",
-  //         customerEmail || "",
-  //         customerNumber || "",
-  //         projectName || "",
-  //         testInstructions || "",
-  //         jcStatus || "",
-  //         reliabilityReportStatus || "",
-  //         formattedCloseDate || null,
-  //         observations || "",
-  //         jcLastModifiedBy || loggedInUser,
-  //       ];
+      let newSequenceNumber;
 
-  //       await connection.query(sql, values);
+      const [recentJCs] = await connection.query(
+        `SELECT jcNumber FROM emi_jobcards WHERE jcNumber LIKE ? ORDER BY jcNumber DESC LIMIT 1`,
+        [`${finYear}-%`]
+      );
 
-  //       // Commit the transaction
-  //       await connection.commit();
+      if (recentJCs.length > 0) {
+        // Extract the sequence number part from the last job card number
+        const lastJcNumber = recentJCs[0].jcNumber;
+        const lastSequence = parseInt(lastJcNumber.split("-")[2], 10);
+        newSequenceNumber = lastSequence + 1;
+      } else {
+        newSequenceNumber = 1;
+      }
 
-  //       const currentTimestampForJCCreation = new Date().toISOString(); // Get the current timestamp
+      // Generate the new jcNumber and srfNumber
+      const newJcNumber = `${finYear}-${newSequenceNumber
+        .toString()
+        .padStart(3, "0")}`;
+      // const newSrfNumber = `BEA/TR/SRF/${newJcNumber}`;
 
-  //       let message = `New ${jcCategory} ${newJcNumber} JC created by ${loggedInUser}`;
-  //       let usersToNotifyAboutJCCreation = [];
+      const sql = `INSERT INTO emi_jobcards(
+              jcNumber, quoteNumber, poNumber, jcOpenDate, itemReceivedDate, typeOfRequest, sampleCondition, slotDuration, 
+              companyName, customerName, customerEmail, customerNumber, projectName, reportType, jcIncharge, jcStatus, jcClosedDate, 
+              observations, lastUpdatedBy) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
-  //       for (let socketId in labbeeUsers) {
-  //         const user = labbeeUsers[socketId];
-  //         if (
-  //             usersToNotifyBEAJcCreation.includes(user.role) &&
-  //           user.name !== loggedInUser
-  //         ) {
-  //           io.to(socketId).emit("jobcard_submit_notification", {
-  //             message: message,
-  //             sender: loggedInUser,
-  //             receivedAt: currentTimestampForJCCreation,
-  //           });
+      const jcValues = [
+        newJcNumber,
+        poNumber || "",
+        quoteNumber || "",
+        formattedOpenDate || null,
+        formattedItemReceivedDate || null,
+        typeOfRequest || "",
+        sampleCondition || "",
+        slotDuration || "",
+        companyName || "",
+        customerName || "",
+        customerEmail || "",
+        customerPhone || "",
+        projectName || "",
+        typeOfReport || "",
+        jcInchargeName || "",
+        jcStatus || "",
+        formattedCloseDate || null,
+        jcObservations || "",
+        // jcLastModifiedBy || loggedInUser,
+        loggedInUser,
+      ];
 
-  //           if (!usersToNotifyAboutJCCreation.includes(user.role)) {
-  //             usersToNotifyAboutJCCreation.push(user.role);
-  //           }
-  //         }
-  //       }
+      console.log("values", jcValues);
 
-  //       // Save a single notification with all roles combined
-  //       saveNotificationToDatabase(
-  //         message,
-  //         currentTimestampForJCCreation,
-  //         usersToNotifyAboutJCCreation, // Pass the array directly
-  //         loggedInUser
-  //       );
+      await connection.query(sql, jcValues);
 
-  //       return res.status(200).json({
-  //         message: "Jobcard added successfully",
-  //         jcNumber: newJcNumber,
-  //         srfNumber: newSrfNumber,
-  //       });
-  //     } catch (error) {
-  //       console.log(error);
-  //       if (connection) await connection.rollback(); // Rollback transaction in case of error
-  //       return res.status(500).json({ message: "Internal server error" });
-  //     } finally {
-  //       if (connection) await connection.release(); // Release the connection back to the pool
-  //     }
-  //   });
+      // Insert EUT table data (emi_eut_table)
+      if (eutTableRows && eutTableRows.length > 0) {
+        const eutSql = `INSERT INTO emi_eut_table(
+        jcNumber, eutName, eutQuantity, eutPartNumber, eutModelNumber, eutSerialNumber, lastUpdatedBy)
+        VALUES (?, ?, ?, ?, ?, ?, ?)`;
+
+        for (let eutRow of eutTableRows) {
+          const eutValues = [
+            newJcNumber,
+            eutRow.eutName || "",
+            eutRow.eutQuantity || "",
+            eutRow.eutPartNumber || "",
+            eutRow.eutModelNumber || "",
+            eutRow.eutSerialNumber || "",
+            loggedInUser || "",
+          ];
+          await connection.query(eutSql, eutValues);
+        }
+      }
+
+      // Insert Tests table data (emi_tests_table)
+      if (testsTableRows && testsTableRows.length > 0) {
+        const testsSql = `INSERT INTO emi_tests_table(
+        jcNumber, testName, testStandard, testProfile, lastUpdatedBy)
+        VALUES (?, ?, ?, ?, ?)`;
+
+        for (let testRow of testsTableRows) {
+          const testValues = [
+            newJcNumber,
+            testRow.testName || "",
+            testRow.testStandard || "",
+            testRow.testProfile || "",
+            loggedInUser || "",
+          ];
+          await connection.query(testsSql, testValues);
+        }
+      }
+
+      // Insert test details(emi_tests_details_table)
+      if (testPerformedTableRows && testPerformedTableRows.length > 0) {
+        const testsPerformedSql = `INSERT INTO emi_tests_details_table(
+        jcNumber, testName, eutName, eutSerialNumber, testMachine, testStandard, testStartDateTime, startTemp, startRh, testStartedBy, 
+        testEndDateTime, testEndedBy, endTemp, endRh, testDuration, actualTestDuration, unit, slotDetails, 
+        reportDeliveryStatus, reportNumber, reportPreparedBy, reportStatus, observationForm, lastUpdatedBy)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+
+        for (let testPerformedRow of testPerformedTableRows) {
+          const formattedStartDateTime = testPerformedRow.testStartDateTime
+            ? convertDateTime(testPerformedRow.testStartDateTime)
+            : null;
+          const formattedEndDateTime = testPerformedRow.testEndDateTime
+            ? convertDateTime(testPerformedRow.testEndDateTime)
+            : null;
+          const formattedDuration =
+            testPerformedRow.testDuration < 0
+              ? 0
+              : testPerformedRow.testDuration;
+
+          const testPerformedValues = [
+            newJcNumber,
+            testPerformedRow.testName || "",
+            testPerformedRow.eutName || "",
+            testPerformedRow.eutSerialNumber || "",
+            testPerformedRow.testMachine || "",
+            testPerformedRow.testStandard || "",
+            formattedStartDateTime || "",
+            testPerformedRow.startTemp || "",
+            testPerformedRow.startRh || "",
+            testPerformedRow.testStartedBy || "",
+            formattedEndDateTime || "",
+            testPerformedRow.testEndedBy || "",
+            testPerformedRow.endTemp || "",
+            testPerformedRow.endRh || "",
+            formattedDuration || "",
+            testPerformedRow.actualTestDuration || "",
+            testPerformedRow.unit || "",
+            testPerformedRow.slotDetails || "",
+            testPerformedRow.reportDeliveryStatus || "",
+            testPerformedRow.reportNumber || "",
+            testPerformedRow.reportPreparedBy || "",
+            testPerformedRow.reportStatus || "",
+            testPerformedRow.observationForm || "",
+            loggedInUser || "",
+          ];
+          await connection.query(testsPerformedSql, testPerformedValues);
+        }
+      }
+
+      // Commit the transaction
+      await connection.commit();
+
+      const currentTimestampForJCCreation = new Date().toISOString(); // Get the current timestamp
+
+      let message = `New TS2 ${newJcNumber} JC created by ${loggedInUser}`;
+      let usersToNotifyAboutJCCreation = [
+        "Lab Manager(EMI)",
+        "Test Engineer",
+        "Administrator",
+      ];
+
+      for (let socketId in labbeeUsers) {
+        const user = labbeeUsers[socketId];
+        if (
+          usersToNotifyEMIJCCreation.includes(user.role) &&
+          user.name !== loggedInUser
+        ) {
+          io.to(socketId).emit("jobcard_submit_notification", {
+            message: message,
+            sender: loggedInUser,
+            receivedAt: currentTimestampForJCCreation,
+          });
+
+          if (!usersToNotifyAboutJCCreation.includes(user.role)) {
+            usersToNotifyAboutJCCreation.push(user.role);
+          }
+        }
+      }
+
+      // Save a single notification with all roles combined
+      await saveNotificationToDatabase(
+        message,
+        currentTimestampForJCCreation,
+        usersToNotifyAboutJCCreation, // Pass the array directly
+        loggedInUser
+      );
+
+      return res.status(200).json({
+        message: "Jobcard added successfully",
+        jcNumber: newJcNumber,
+        // srfNumber: newSrfNumber,
+      });
+    } catch (error) {
+      console.log(error);
+      if (connection) await connection.rollback(); // Rollback transaction in case of error
+      return res.status(500).json({ message: "Internal server error" });
+    } finally {
+      if (connection) await connection.release(); // Release the connection back to the pool
+    }
+  });
 
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+  // To fetch the last saved jcnumber  from the table jobcards data table:
+  app.get("/api/getLatestEMIJCNumber", (req, res) => {
+    const latestjcnumberJT =
+      "SELECT jcNumber FROM emi_jobcards ORDER BY id  DESC LIMIT 1 ";
+    db.query(latestjcnumberJT, (error, result) => {
+      if (result.length === 0) {
+        res.send([
+          {
+            jcNumber: "2024-25/00-000",
+          },
+        ]);
+      } else {
+        res.send(result);
+      }
+    });
+  });
+
+  /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+  const monthNames = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
+
+  // API to fetch the primary data of Testing JC's:
+  app.get("/api/getPrimaryJCDataOfTS2", (req, res) => {
+    const { year, month } = req.query;
+
+    // Convert month name to month number
+    const monthNumber = monthNames.indexOf(month) + 1;
+
+    if (monthNumber === 0 || !year) {
+      return res.status(400).json({ error: "Invalid year or month format" });
+    }
+
+    const getJCColumns = `
+                            SELECT 
+                                id, jcNumber, DATE_FORMAT(jcOpenDate, '%Y-%m-%d') as jcOpenDate, companyName, jcStatus, DATE_FORMAT(jcClosedDate, '%Y-%m-%d') as jcClosedDate, lastUpdatedBy
+                            FROM 
+                                emi_jobcards
+                            WHERE 
+                                MONTH(jcOpenDate) = ? AND YEAR(jcOpenDate) = ?
+                            `;
+
+    db.query(getJCColumns, [monthNumber, year], (error, result) => {
+      if (error) {
+        return res.status(500).json({
+          error: "An error occurred while fetching TS2 JC table data",
+        });
+      }
+      res.send(result);
+    });
+  });
+
+  /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  // To get the month-year of the Job-card
+  app.get("/api/getTS2JCYearMonth", (req, res) => {
+    const sqlQuery = `
+        SELECT 
+            DISTINCT DATE_FORMAT(jcOpenDate, '%b') AS month,
+            DATE_FORMAT(jcOpenDate, '%Y') AS year,
+            MONTH(jcOpenDate) AS monthNumber
+        FROM emi_jobcards
+        ORDER BY year ASC, monthNumber ASC`;
+
+    db.query(sqlQuery, (error, result) => {
+      if (error) {
+        return res.status(500).json({
+          error: "An error occurred while fetching JC Month Year data",
+        });
+      }
+
+      const formattedData = result.map((row) => ({
+        month: row.month,
+        year: row.year,
+      }));
+      res.json(formattedData);
+    });
+  });
+
+  /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+  // Get the JC's between two date ranges:
+  app.get("/api/getPrimaryTS2JCDataBwTwoDates", (req, res) => {
+    const { selectedJCDateRange } = req.query;
+
+    if (!selectedJCDateRange || typeof selectedJCDateRange !== "string") {
+      return res.status(400).json({ error: "Invalid date range format" });
+    }
+
+    const [fromDate, toDate] = selectedJCDateRange.split(" - ");
+
+    if (!fromDate || !toDate) {
+      return res.status(400).json({ error: "Invalid date range format" });
+    }
+
+    const getJCColumns = `
+    SELECT id, jcNumber, DATE_FORMAT(jcOpenDate, '%Y-%m-%d') as jcOpenDate, companyName, jcStatus, lastUpdatedBy 
+    FROM emi_jobcards
+    WHERE jcOpenDate BETWEEN ? AND ?
+`;
+
+    db.query(getJCColumns, [fromDate, toDate], (error, result) => {
+      if (error) {
+        return res
+          .status(500)
+          .json({ error: "An error occurred while fetching JC table data" });
+      }
+      res.send(result);
+    });
+  });
 }
 
 module.exports = { emiJobcardsAPIs };

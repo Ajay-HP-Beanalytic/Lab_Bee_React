@@ -336,7 +336,13 @@ function jobcardsAPIs(app, io, labbeeUsers) {
       const currentTimestampForJCCreation = new Date().toISOString(); // Get the current timestamp
 
       let message = `New ${jcCategory} ${newJcNumber} JC created by ${loggedInUser}`;
-      let usersToNotifyAboutJCCreation = [];
+      let usersToNotifyAboutJCCreation = [
+        "Lab Manager",
+        "Lab Engineer",
+        "Lab Technician",
+        "Lab Assistant",
+        "Reports & Scrutiny Manager",
+      ];
 
       for (let socketId in labbeeUsers) {
         const user = labbeeUsers[socketId];

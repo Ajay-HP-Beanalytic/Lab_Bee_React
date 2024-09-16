@@ -587,24 +587,25 @@ function createEMIJobcardsTable() {
       jcNumber VARCHAR(255) UNIQUE,
       srfNumber VARCHAR(255),
       srfDate DATE,
+      quoteNumber VARCHAR(255),
+      poNumber VARCHAR(255),
       jcOpenDate DATE,
       itemReceivedDate DATE,
-      poNumber VARCHAR(255),
       typeOfRequest VARCHAR(100),
       sampleCondition VARCHAR(100),
-      reportType VARCHAR(100),
-      jcIncharge VARCHAR(100),
+      slotDuration VARCHAR(100),
       companyName VARCHAR(1000),
       customerName VARCHAR(1000),
       customerEmail VARCHAR(1000),
-      customerPhoneNumber VARCHAR(255),
+      customerNumber VARCHAR(255),
       projectName VARCHAR(1000),
+      reportType VARCHAR(100),
+      jcIncharge VARCHAR(100),
       jcStatus  VARCHAR(500),
       jcClosedDate DATE,
       observations VARCHAR(500),
       lastUpdatedBy VARCHAR(100),
       PRIMARY KEY(id)
-      
   )`;
 
   db.query(createEMIJobcardsTableQuery, function (err, result) {
@@ -612,6 +613,96 @@ function createEMIJobcardsTable() {
       console.log("Error occurred while creating emi_jobcards table", err);
     } else {
       // console.log("emi_jobcards table created successfully.")
+    }
+  });
+}
+
+// Function to create the EMI-EMC EUT Jobcard table:
+function createEMIJobcardsEUTTable() {
+  const createEMIJobcardsEUTTableQuery = `
+  CREATE TABLE IF NOT EXISTS emi_eut_table (
+      id INT NOT NULL AUTO_INCREMENT,
+      jcNumber VARCHAR(255),
+      eutName VARCHAR(1000),
+      eutQuantity VARCHAR(1000),
+      eutPartNumber VARCHAR(1000),
+      eutModelNumber VARCHAR(1000),
+      eutSerialNumber VARCHAR(1000),
+      lastUpdatedBy VARCHAR(100),
+      PRIMARY KEY(id)
+  )`;
+
+  db.query(createEMIJobcardsEUTTableQuery, function (err, result) {
+    if (err) {
+      console.log("Error occurred while creating emi_eut_table table", err);
+    } else {
+      // console.log("emi_eut_table table created successfully.")
+    }
+  });
+}
+
+// Function to create the EMI-EMC Tests Jobcard table:
+function createEMIJobcardsTestsTable() {
+  const createEMIJobcardsTestsTableQuery = `
+  CREATE TABLE IF NOT EXISTS emi_tests_table (
+      id INT NOT NULL AUTO_INCREMENT,
+      jcNumber VARCHAR(255),
+      testName VARCHAR(1000),
+      testStandard VARCHAR(1000),
+      testProfile VARCHAR(2000),
+      lastUpdatedBy VARCHAR(100),
+      PRIMARY KEY(id)
+  )`;
+
+  db.query(createEMIJobcardsTestsTableQuery, function (err, result) {
+    if (err) {
+      console.log("Error occurred while creating emi_tests_table table", err);
+    } else {
+      // console.log("emi_tests_table table created successfully.")
+    }
+  });
+}
+
+// Function to create the EMI-EMC Tests Performed  table:
+function createEMIJobcardsTestsDetailsTable() {
+  const createEMIJobcardsTestsDetailsTableQuery = `
+  CREATE TABLE IF NOT EXISTS emi_tests_details_table (
+      id INT NOT NULL AUTO_INCREMENT,
+      jcNumber VARCHAR(255),
+      testName VARCHAR(1000), 
+        eutName VARCHAR(1000),
+        eutSerialNumber VARCHAR(1000),
+        testMachine VARCHAR(1000),
+        testStandard VARCHAR(1000),
+        testStartDateTime DATETIME,
+        startTemp VARCHAR(500),
+        startRh VARCHAR(500),
+        testStartedBy VARCHAR(500),
+        testEndDateTime DATETIME,
+        testEndedBy VARCHAR(500),
+        endTemp VARCHAR(500),
+        endRh VARCHAR(500),
+        testDuration VARCHAR(1000),
+        actualTestDuration VARCHAR(1000),
+        unit VARCHAR(500),
+        slotDetails VARCHAR(250),
+        reportDeliveryStatus VARCHAR(500),
+        reportNumber VARCHAR(500),
+        reportPreparedBy VARCHAR(500),
+        reportStatus VARCHAR(500),
+        observationForm VARCHAR(500),
+      lastUpdatedBy VARCHAR(100),
+      PRIMARY KEY(id)
+  )`;
+
+  db.query(createEMIJobcardsTestsDetailsTableQuery, function (err, result) {
+    if (err) {
+      console.log(
+        "Error occurred while creating emi_tests_details_table ",
+        err
+      );
+    } else {
+      // console.log("emi_tests_details_table created successfully.")
     }
   });
 }
@@ -655,4 +746,7 @@ module.exports = {
   createNotificationsTable,
 
   createEMIJobcardsTable,
+  createEMIJobcardsEUTTable,
+  createEMIJobcardsTestsTable,
+  createEMIJobcardsTestsDetailsTable,
 };
