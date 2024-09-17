@@ -302,6 +302,21 @@ function App() {
             }
           />
 
+          <Route
+            path="emi_jobcard/:id"
+            element={
+              <ProtectedRoute
+                allowedDepartments={[
+                  "Administration",
+                  "Accounts",
+                  "TS2 Testing",
+                ]}
+              >
+                <EmiJobcard />
+              </ProtectedRoute>
+            }
+          />
+
           <Route path="*" element={<NotFoundPage />} />
         </Route>
       </Routes>

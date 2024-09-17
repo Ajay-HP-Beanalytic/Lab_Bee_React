@@ -70,9 +70,6 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
   );
 
   app.post("/api/EMIJobcard", async (req, res) => {
-    console.log("Received data:", req.body);
-    // return;
-
     const {
       stepOneData,
       eutTableRows,
@@ -347,6 +344,57 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
       } else {
         res.send(result);
       }
+    });
+  });
+
+  /////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+  // One single end point to "GET" all details based on jcNumber used for editing
+  app.get("/api/emi_jobcard/:id", (req, res) => {
+    const id = req.params.id;
+    let output = {};
+    let sqlQuery = `SELECT * FROM emi_jobcards WHERE id = ?`;
+    db.query(sqlQuery, [id], (error, result) => {
+      if (error) return res.status(500).json({ error });
+
+      // Check if the jobcard exists
+      if (result.length === 0) {
+        return res.status(404).json({ error: "EMI Jobcard not found" });
+      }
+
+      output["emiPrimaryJCData"] = result[0];
+      const jcNumber = result[0].jcNumber;
+
+      // Fetch data from emi_eut_table table
+      sqlQuery = "SELECT * FROM emi_eut_table WHERE jcNumber = ?";
+      db.query(sqlQuery, [jcNumber], (error, result) => {
+        if (error) return res.status(500).json({ error });
+        output["emiEutData"] = result;
+
+        // Fetch data from emi_tests_table table
+        sqlQuery = "SELECT * FROM emi_tests_table WHERE jcNumber = ?";
+        db.query(sqlQuery, [jcNumber], (error, result) => {
+          if (error) return res.status(500).json({ error });
+          output["emiTestsData"] = result;
+
+          // Fetch data from emi_tests_details_table table
+          sqlQuery = "SELECT * FROM emi_tests_details_table WHERE jcNumber = ?";
+          db.query(sqlQuery, [jcNumber], (error, result) => {
+            if (error) return res.status(500).json({ error });
+            output["emiTestsDetailsData"] = result;
+
+            // Fetch data from attachments table
+            // sqlQuery = "SELECT * FROM attachments WHERE jcNumber = ?";
+            // db.query(sqlQuery, [jcNumber], (error, result) => {
+            //   if (error) return res.status(500).json({ error });
+            //   output["attachments"] = result;
+
+            // Send the combined output
+            res.send(output);
+            // });
+          });
+        });
+      });
     });
   });
 
