@@ -18,16 +18,48 @@ import { serverBaseAddress } from "../Pages/APIPage";
 import axios from "axios";
 import { UserContext } from "../Pages/UserContext";
 import { toast } from "react-toastify";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
+import dayjs from "dayjs";
 
 export default function EmiJobcard() {
+  const { id } = useParams(); // Get jcId from the URL
+
+  const navigate = useNavigate();
+
   const { loggedInUser, loggedInUserDepartment } = useContext(UserContext);
+  //Fetch all the form data from 3 steps:
+  const {
+    stepOneFormData,
+    setStepOneFormData,
+    stepTwoFormData,
+    setStepTwoFormData,
+    stepThreeFormData,
+    setStepThreeFormData,
+    eutTableRows,
+    testsTableRows,
+    testPerformedTableRows,
+    updateStepOneFormData,
+    updateStepTwoFormData,
+    updateStepThreeFormData,
+    updateEutTableRows,
+    updateTestsTableRows,
+    updateTestPerformedTableRows,
+    deletedEutIds,
+    deletedTestIds,
+    deletedTestPerformedIds,
+  } = useContext(EMIJCContext);
 
   const steps = ["JC Primary Details", "Test Details", "Observations"];
 
   const [activeStep, setActiveStep] = useState(0);
 
   const totalSteps = steps.length;
+
+  const [newJCNumber, setNewJCNumber] = useState("");
+  const [editingJCNumber, setEditingJCNumber] = useState("");
+  const [jcStatusString, setJcStatusString] = useState("Open");
+  const [jcStatusStringColor, setJcStatusStringColor] = useState("#ff5722");
+  const [editingJC, setEditingJC] = useState(false);
 
   // Initialize the form methods using react-hook-form
   const methods = useForm({
@@ -38,18 +70,6 @@ export default function EmiJobcard() {
     },
     mode: "onChange", // Change this based on when you want validation to trigger
   });
-
-  //Fetch all the form data from 3 steps:
-  const {
-    stepOneFormData,
-    stepTwoFormData,
-    stepThreeFormData,
-    eutTableRows,
-    testsTableRows,
-    testPerformedTableRows,
-  } = useContext(EMIJCContext);
-
-  const [jcNumberString, setJcNumberString] = useState("");
 
   // Go to next step or handle form submit on last step
   const handleNext = () => {
@@ -65,14 +85,6 @@ export default function EmiJobcard() {
   const handleCancel = () => {
     setActiveStep((prevStep) => Math.max(prevStep - 1, 0));
   };
-
-  const [jcStatusString, setJcStatusString] = useState("Open");
-  const [jcStatusStringColor, setJcStatusStringColor] = useState("#ff5722");
-
-  let { id } = useParams("id");
-  if (!id) {
-    id = "";
-  }
 
   // Function to submit the  EMI Jobcard data:
   const onSubmitEmiJC = async (data) => {
@@ -92,10 +104,19 @@ export default function EmiJobcard() {
       stepThreeData: stepThreeFormData,
       loggedInUser,
       loggedInUserDepartment,
+      deletedEutIds,
+      deletedTestIds,
+      deletedTestPerformedIds,
     };
     // Now submit finalData to the backend or process it as needed
 
-    console.log("Submitting data:", finalData);
+    // console.log("Submitting data:", finalData);
+    console.log(
+      "Submitting data:",
+      deletedEutIds,
+      deletedTestIds,
+      deletedTestPerformedIds
+    );
     // Add your API call or other submission logic here
 
     try {
@@ -104,7 +125,12 @@ export default function EmiJobcard() {
         finalData
       );
       if (response.status === 200) {
-        toast.success("Job-Card Created Successfully");
+        // toast.success("Job-Card Created Successfully");
+        toast.success(
+          editingJC
+            ? "Job-Card Updated Successfully"
+            : "Job-Card Created Successfully"
+        );
         setActiveStep(0);
       }
     } catch (error) {
@@ -155,7 +181,22 @@ export default function EmiJobcard() {
           `${serverBaseAddress}/api/getLatestEMIJCNumber`
         );
         if (response.status === 200) {
-          setJcNumberString(response.data[0]?.jcNumber);
+          const lastJCNumberString = response.data[0]?.jcNumber;
+
+          const [yearPart, MonthAndNumberPart] = lastJCNumberString.split("/");
+          const [monthSection, jcNumberSection] = MonthAndNumberPart.split("-");
+
+          const incrementingJCNumber = parseInt(jcNumberSection);
+
+          const newJCNumberPart = String(incrementingJCNumber + 1).padStart(
+            3,
+            "0"
+          );
+
+          const formattedNewJCNumber = `${yearPart}/${monthSection}-${newJCNumberPart}`;
+
+          setNewJCNumber(formattedNewJCNumber);
+          setEditingJC(false);
         } else {
           console.log("Failed to fetch latest JC number");
         }
@@ -163,24 +204,101 @@ export default function EmiJobcard() {
         console.error("Error fetching latest JC number:", error);
       }
     };
+
     fetchLatestJCNumber();
-  }, [loggedInUser, activeStep, methods]);
+    // if (!editingJC) {
+    //   fetchLatestJCNumber();
+    // }
+    // }, [loggedInUser, activeStep, methods]);
+  }, [loggedInUser]);
 
-  /// Function to submit the JC Data:
-  // const handleSubmitEMIJC = (e) => {
-  //   e.preventDefault();
+  ////////////////////////////////////////////////////////////////////////////////////
+  useEffect(() => {
+    const populateData = (data) => {
+      // Populate Step One data (emiEutData and emiTestsData tables)
 
-  //   if (stepThreeFormData.jcOpenDate === "" || stepThreeFormData.jcOpenDate === null) {
-  //     toast.warning("Please Enter Job-Card Open Date");
-  //     return;
-  //   }
+      updateStepOneFormData({
+        companyName: data.emiPrimaryJCData.companyName,
+        customerName: data.emiPrimaryJCData.customerName,
+        customerEmail: data.emiPrimaryJCData.customerEmail,
+        customerPhone: data.emiPrimaryJCData.customerNumber,
+        projectName: data.emiPrimaryJCData.projectName,
+        reportType: data.emiPrimaryJCData.reportType,
+      });
+      updateEutTableRows(data.emiEutData); // populate EUT table
+      updateTestsTableRows(data.emiTestsData); // populate Tests table
 
-  //   try {
+      // Populate Step Two data (emiTestsDetailsData table)
+      updateStepTwoFormData({
+        quoteNumber: data.emiPrimaryJCData.quoteNumber,
+        poNumber: data.emiPrimaryJCData.poNumber,
+        jcOpenDate: data.emiPrimaryJCData.jcOpenDate,
+        itemReceivedDate: data.emiPrimaryJCData.itemReceivedDate,
+        typeOfRequest: data.emiPrimaryJCData.typeOfRequest,
+        sampleCondition: data.emiPrimaryJCData.sampleCondition,
+        slotDuration: data.emiPrimaryJCData.slotDuration,
+        jcIncharge: data.emiPrimaryJCData.jcIncharge,
+        lastUpdatedBy: data.emiPrimaryJCData.lastUpdatedBy,
+      });
+      const parsedTestDetailsData = data.emiTestsDetailsData.map(
+        (testDetail) => ({
+          ...testDetail,
+          testStartDateTime: testDetail.testStartDateTime
+            ? dayjs(testDetail.testStartDateTime)
+            : null,
+          testEndDateTime: testDetail.testEndDateTime
+            ? dayjs(testDetail.testEndDateTime)
+            : null,
+        })
+      );
 
-  //   } catch (error) {
+      updateTestPerformedTableRows(parsedTestDetailsData); // populate Test Details table
 
-  //   }
-  // }
+      // Populate Step Three data (observations, jcStatus, etc.)
+      updateStepThreeFormData({
+        observations: data.emiPrimaryJCData.observations,
+        jcStatus: data.emiPrimaryJCData.jcStatus,
+        jcClosedDate: data.emiPrimaryJCData.jcClosedDate,
+      });
+
+      // Set the JC Number for editing
+      setEditingJC(true);
+      setEditingJCNumber(data.emiPrimaryJCData.jcNumber);
+    };
+
+    const fetchJCData = async () => {
+      if (!id) {
+        console.error("Error: JC ID is not defined.");
+        return;
+      }
+      try {
+        const response = await axios.get(
+          `${serverBaseAddress}/api/emi_jobcard/${id}`
+        );
+        populateData(response.data);
+      } catch (error) {
+        console.error("Error fetching job card data:", error);
+      }
+    };
+
+    fetchJCData();
+  }, [
+    id,
+    editingJC,
+    // activeStep,
+    // updateStepOneFormData,
+    // updateStepTwoFormData,
+    // updateStepThreeFormData,
+    // updateEutTableRows,
+    // updateTestsTableRows,
+    // updateTestPerformedTableRows,
+  ]);
+
+  ///////////////////////////////////////////////////////////////////////////////////////
+
+  const handleGoToJCDashboard = () => {
+    navigate("/emi_jc_dashboard");
+  };
 
   return (
     <>
@@ -192,6 +310,23 @@ export default function EmiJobcard() {
           mt: { xs: 2, md: 0 }, // Add some margin top on small screens
         }}
       >
+        <Button
+          sx={{
+            borderRadius: 1,
+            bgcolor: "orange",
+            color: "white",
+            borderColor: "black",
+            padding: { xs: "8px 16px", md: "6px 12px" }, // Adjust padding for different screen sizes
+            fontSize: { xs: "0.875rem", md: "1rem" }, // Adjust font size for different screen sizes
+            mr: 1,
+          }}
+          variant="contained"
+          color="primary"
+          onClick={handleGoToJCDashboard}
+        >
+          Go to Dashboard
+        </Button>
+
         <Button
           sx={{
             borderRadius: 1,
@@ -262,7 +397,9 @@ export default function EmiJobcard() {
             }}
           >
             <span style={{ color: "#003399" }}>JC Number:</span>{" "}
-            <span style={{ color: "#003399" }}>{jcNumberString}</span>
+            <span style={{ color: "#003399" }}>
+              {editingJC ? editingJCNumber : newJCNumber}
+            </span>
           </Typography>
           <Typography
             variant="h7"
@@ -277,13 +414,11 @@ export default function EmiJobcard() {
         </Box>
       </Card>
 
-      {/* <Card sx={{ width: "100%", mt: "10px", mb: "10px" }}> */}
       <FormProvider {...methods}>
         {activeStep === 0 && <EMIJC_StepOne />}
         {activeStep === 1 && <EMIJC_StepTwo />}
         {activeStep === 2 && <EMIJC_StepThree />}
       </FormProvider>
-      {/* </Card> */}
     </>
   );
 }

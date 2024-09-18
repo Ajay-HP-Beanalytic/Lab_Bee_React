@@ -4,6 +4,7 @@ import { useForm } from "react-hook-form";
 import { Box, Card, Grid, TextField, Typography } from "@mui/material";
 import _ from "lodash";
 import RenderComponents from "../functions/RenderComponents";
+import dayjs from "dayjs";
 
 export default function EMIJC_StepThree() {
   //Import the respective context:
@@ -47,7 +48,7 @@ export default function EMIJC_StepThree() {
     },
     {
       label: "Observations/Remarks",
-      name: "jcObservations",
+      name: "observations",
       type: "textArea",
       width: "100%",
     },
@@ -56,8 +57,17 @@ export default function EMIJC_StepThree() {
   // When the component mounts, populate the form fields with context data
   useEffect(() => {
     if (stepThreeFormData) {
+      // _.forEach(stepThreeFormData, (value, key) => {
+      //   setValue(key, value || "");
+      // });
+
       _.forEach(stepThreeFormData, (value, key) => {
-        setValue(key, value || "");
+        if (key === "jcClosedDate") {
+          // Convert date strings to Day.js objects
+          setValue(key, value ? dayjs(value) : null);
+        } else {
+          setValue(key, value || "");
+        }
       });
     }
   }, [stepThreeFormData, setValue]);

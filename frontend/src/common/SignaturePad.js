@@ -18,7 +18,7 @@ const SignaturePadComponent = () => {
     setSignatureURL(
       signCanvas.current.getTrimmedCanvas().toDataURL("image/png")
     );
-  console.log("signature-->", signatureURL);
+  // console.log("signature-->", signatureURL);
 
   const handleInsertSignature = () => {
     alert("Signture Inserted");

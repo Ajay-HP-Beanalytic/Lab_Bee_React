@@ -87,7 +87,7 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
       customerEmail,
       customerPhone,
       projectName,
-      typeOfReport,
+      reportType,
     } = stepOneData;
 
     // Destructure fields from each step's data
@@ -99,10 +99,10 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
       typeOfRequest,
       sampleCondition,
       slotDuration,
-      jcInchargeName,
+      jcIncharge,
     } = stepTwoData;
 
-    const { jcObservations, jcClosedDate, jcStatus } = stepThreeData;
+    const { observations, jcClosedDate, jcStatus } = stepThreeData;
 
     const { id } = req.body;
 
@@ -175,11 +175,11 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
         customerEmail || "",
         customerPhone || "",
         projectName || "",
-        typeOfReport || "",
-        jcInchargeName || "",
+        reportType || "",
+        jcIncharge || "",
         jcStatus || "",
         formattedCloseDate || null,
-        jcObservations || "",
+        observations || "",
         // jcLastModifiedBy || loggedInUser,
         loggedInUser,
       ];
@@ -319,6 +319,617 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
         jcNumber: newJcNumber,
         // srfNumber: newSrfNumber,
       });
+    } catch (error) {
+      console.log(error);
+      if (connection) await connection.rollback(); // Rollback transaction in case of error
+      return res.status(500).json({ message: "Internal server error" });
+    } finally {
+      if (connection) await connection.release(); // Release the connection back to the pool
+    }
+  });
+
+  //////////////////////////////////////////////////////////////////////////////////////////////////////////
+  //API to edit and update the jobcard details:
+
+  // app.post("/api/EMIJobcard/:id", async (req, res) => {
+  //   const {
+  //     stepOneData,
+  //     eutTableRows,
+  //     testsTableRows,
+  //     stepTwoData,
+  //     testPerformedTableRows,
+  //     stepThreeData,
+  //     loggedInUser,
+  //     loggedInUserDepartment,
+  //   } = req.body;
+
+  //   const { id } = req.params; // Retrieve job card ID from the URL
+  //   console.log("req.body", req.body);
+  //   const {
+  //     companyName,
+  //     customerName,
+  //     customerEmail,
+  //     customerPhone,
+  //     projectName,
+  //     reportType,
+  //   } = stepOneData;
+  //   const {
+  //     quoteNumber,
+  //     poNumber,
+  //     jcOpenDate,
+  //     itemReceivedDate,
+  //     typeOfRequest,
+  //     sampleCondition,
+  //     slotDuration,
+  //     jcIncharge,
+  //   } = stepTwoData;
+  //   const { observations, jcClosedDate, jcStatus } = stepThreeData;
+
+  //   // Date formatting
+  //   const formattedItemReceivedDate = itemReceivedDate
+  //     ? dayjs(itemReceivedDate).format("YYYY-MM-DD")
+  //     : null;
+  //   const formattedOpenDate = jcOpenDate
+  //     ? dayjs(jcOpenDate).format("YYYY-MM-DD")
+  //     : null;
+  //   const formattedCloseDate = jcClosedDate
+  //     ? dayjs(jcClosedDate).format("YYYY-MM-DD")
+  //     : null;
+
+  //   // Generate the jcNumber based on the ID
+  //   let jcNumber;
+  //   try {
+  //     // Establish a connection
+  //     connection = await db.promise().getConnection();
+
+  //     // Start a transaction
+  //     await connection.beginTransaction();
+
+  //     // Fetch the jcNumber using the job card ID
+  //     const [rows] = await connection.query(
+  //       `SELECT jcNumber FROM emi_jobcards WHERE id = ?`,
+  //       [id]
+  //     );
+  //     if (rows.length === 0) {
+  //       throw new Error("Job card not found");
+  //     }
+  //     jcNumber = rows[0].jcNumber;
+
+  //     // Update the main `emi_jobcards` table
+  //     const updateJobCardSql = `
+  //           UPDATE emi_jobcards
+  //           SET
+  //               quoteNumber = ?,
+  //               poNumber = ?,
+  //               jcOpenDate = ?,
+  //               itemReceivedDate = ?,
+  //               typeOfRequest = ?,
+  //               sampleCondition = ?,
+  //               slotDuration = ?,
+  //               companyName = ?,
+  //               customerName = ?,
+  //               customerEmail = ?,
+  //               customerNumber = ?,
+  //               projectName = ?,
+  //               reportType = ?,
+  //               jcIncharge = ?,
+  //               jcStatus = ?,
+  //               jcClosedDate = ?,
+  //               observations = ?,
+  //               lastUpdatedBy = ?
+  //           WHERE id = ?`;
+
+  //     const jobCardValues = [
+  //       quoteNumber || "",
+  //       poNumber || "",
+  //       formattedOpenDate || null,
+  //       formattedItemReceivedDate || null,
+  //       typeOfRequest || "",
+  //       sampleCondition || "",
+  //       slotDuration || "",
+  //       companyName || "",
+  //       customerName || "",
+  //       customerEmail || "",
+  //       customerPhone || "",
+  //       projectName || "",
+  //       reportType || "",
+  //       jcIncharge || "",
+  //       jcStatus || "",
+  //       formattedCloseDate || null,
+  //       observations || "",
+  //       loggedInUser,
+  //       id,
+  //     ];
+
+  //     await connection.query(updateJobCardSql, jobCardValues);
+
+  //     // Handle the EUT table rows
+  //     for (let eutRow of eutTableRows) {
+  //       if (eutRow.id) {
+  //         // Update existing rows
+  //         const updateEutSql = `
+  //                   UPDATE emi_eut_table
+  //                   SET eutName = ?, eutQuantity = ?, eutPartNumber = ?, eutModelNumber = ?, eutSerialNumber = ?, lastUpdatedBy = ?
+  //                   WHERE id = ? AND jcNumber = ?`;
+
+  //         const eutValues = [
+  //           eutRow.eutName || "",
+  //           eutRow.eutQuantity || "",
+  //           eutRow.eutPartNumber || "",
+  //           eutRow.eutModelNumber || "",
+  //           eutRow.eutSerialNumber || "",
+  //           loggedInUser || "",
+  //           eutRow.id,
+  //           jcNumber,
+  //         ];
+
+  //         await connection.query(updateEutSql, eutValues);
+  //       } else {
+  //         // Insert new rows
+  //         const insertEutSql = `
+  //                   INSERT INTO emi_eut_table(jcNumber, eutName, eutQuantity, eutPartNumber, eutModelNumber, eutSerialNumber, lastUpdatedBy)
+  //                   VALUES (?, ?, ?, ?, ?, ?, ?)`;
+
+  //         const eutValues = [
+  //           jcNumber,
+  //           eutRow.eutName || "",
+  //           eutRow.eutQuantity || "",
+  //           eutRow.eutPartNumber || "",
+  //           eutRow.eutModelNumber || "",
+  //           eutRow.eutSerialNumber || "",
+  //           loggedInUser || "",
+  //         ];
+
+  //         await connection.query(insertEutSql, eutValues);
+  //       }
+  //     }
+
+  //     // Handle the Tests table rows
+  //     for (let testRow of testsTableRows) {
+  //       if (testRow.id) {
+  //         // Update existing rows
+  //         const updateTestsSql = `
+  //                   UPDATE emi_tests_table
+  //                   SET testName = ?, testStandard = ?, testProfile = ?, lastUpdatedBy = ?
+  //                   WHERE id = ? AND jcNumber = ?`;
+
+  //         const testValues = [
+  //           testRow.testName || "",
+  //           testRow.testStandard || "",
+  //           testRow.testProfile || "",
+  //           loggedInUser || "",
+  //           testRow.id,
+  //           jcNumber,
+  //         ];
+  //         await connection.query(updateTestsSql, testValues);
+  //       } else {
+  //         // Insert new rows
+  //         const insertTestsSql = `
+  //                   INSERT INTO emi_tests_table(jcNumber, testName, testStandard, testProfile, lastUpdatedBy)
+  //                   VALUES (?, ?, ?, ?, ?)`;
+
+  //         const testValues = [
+  //           jcNumber,
+  //           testRow.testName || "",
+  //           testRow.testStandard || "",
+  //           testRow.testProfile || "",
+  //           loggedInUser || "",
+  //         ];
+  //         await connection.query(insertTestsSql, testValues);
+  //       }
+  //     }
+
+  //     // Handle the Test Performed table rows
+  //     for (let testPerformedRow of testPerformedTableRows) {
+  //       const formattedStartDateTime = testPerformedRow.testStartDateTime
+  //         ? convertDateTime(testPerformedRow.testStartDateTime)
+  //         : null;
+  //       const formattedEndDateTime = testPerformedRow.testEndDateTime
+  //         ? convertDateTime(testPerformedRow.testEndDateTime)
+  //         : null;
+
+  //       if (testPerformedRow.id) {
+  //         // Update existing rows
+  //         const updateTestPerformedSql = `
+  //                   UPDATE emi_tests_details_table
+  //                   SET testName = ?, eutName = ?, eutSerialNumber = ?, testMachine = ?, testStandard = ?,
+  //                       testStartDateTime = ?, startTemp = ?, startRh = ?, testStartedBy = ?,
+  //                       testEndDateTime = ?, testEndedBy = ?, endTemp = ?, endRh = ?, testDuration = ?,
+  //                       actualTestDuration = ?, unit = ?, slotDetails = ?, reportDeliveryStatus = ?,
+  //                       reportNumber = ?, reportPreparedBy = ?, reportStatus = ?, observationForm = ?, lastUpdatedBy = ?
+  //                   WHERE id = ? AND jcNumber = ?`;
+
+  //         const testPerformedValues = [
+  //           testPerformedRow.testName || "",
+  //           testPerformedRow.eutName || "",
+  //           testPerformedRow.eutSerialNumber || "",
+  //           testPerformedRow.testMachine || "",
+  //           testPerformedRow.testStandard || "",
+  //           formattedStartDateTime || null,
+  //           testPerformedRow.startTemp || "",
+  //           testPerformedRow.startRh || "",
+  //           testPerformedRow.testStartedBy || "",
+  //           formattedEndDateTime || null,
+  //           testPerformedRow.testEndedBy || "",
+  //           testPerformedRow.endTemp || "",
+  //           testPerformedRow.endRh || "",
+  //           testPerformedRow.testDuration || "",
+  //           testPerformedRow.actualTestDuration || "",
+  //           testPerformedRow.unit || "",
+  //           testPerformedRow.slotDetails || "",
+  //           testPerformedRow.reportDeliveryStatus || "",
+  //           testPerformedRow.reportNumber || "",
+  //           testPerformedRow.reportPreparedBy || "",
+  //           testPerformedRow.reportStatus || "",
+  //           testPerformedRow.observationForm || "",
+  //           loggedInUser || "",
+  //           testPerformedRow.id,
+  //           jcNumber,
+  //         ];
+
+  //         await connection.query(updateTestPerformedSql, testPerformedValues);
+  //       } else {
+  //         // Insert new rows
+  //         const insertTestPerformedSql = `
+  //                   INSERT INTO emi_tests_details_table(
+  //                     jcNumber, testName, eutName, eutSerialNumber, testMachine, testStandard, testStartDateTime, startTemp,
+  //                     startRh, testStartedBy, testEndDateTime, testEndedBy, endTemp, endRh, testDuration, actualTestDuration,
+  //                     unit, slotDetails, reportDeliveryStatus, reportNumber, reportPreparedBy, reportStatus, observationForm, lastUpdatedBy)
+  //                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+
+  //         const testPerformedValues = [
+  //           jcNumber,
+  //           testPerformedRow.testName || "",
+  //           testPerformedRow.eutName || "",
+  //           testPerformedRow.eutSerialNumber || "",
+  //           testPerformedRow.testMachine || "",
+  //           testPerformedRow.testStandard || "",
+  //           formattedStartDateTime || null,
+  //           testPerformedRow.startTemp || "",
+  //           testPerformedRow.startRh || "",
+  //           testPerformedRow.testStartedBy || "",
+  //           formattedEndDateTime || null,
+  //           testPerformedRow.testEndedBy || "",
+  //           testPerformedRow.endTemp || "",
+  //           testPerformedRow.endRh || "",
+  //           testPerformedRow.testDuration || "",
+  //           testPerformedRow.actualTestDuration || "",
+  //           testPerformedRow.unit || "",
+  //           testPerformedRow.slotDetails || "",
+  //           testPerformedRow.reportDeliveryStatus || "",
+  //           testPerformedRow.reportNumber || "",
+  //           testPerformedRow.reportPreparedBy || "",
+  //           testPerformedRow.reportStatus || "",
+  //           testPerformedRow.observationForm || "",
+  //           loggedInUser || "",
+  //         ];
+
+  //         await connection.query(insertTestPerformedSql, testPerformedValues);
+  //       }
+  //     }
+
+  //     // Commit the transaction
+  //     await connection.commit();
+  //     return res.status(200).json({ message: "Jobcard updated successfully" });
+  //   } catch (error) {
+  //     console.log(error);
+  //     if (connection) await connection.rollback(); // Rollback transaction in case of error
+  //     return res.status(500).json({ message: "Internal server error" });
+  //   } finally {
+  //     if (connection) await connection.release(); // Release the connection back to the pool
+  //   }
+  // });
+
+  app.post("/api/EMIJobcard/:id", async (req, res) => {
+    const {
+      stepOneData,
+      eutTableRows,
+      testsTableRows,
+      stepTwoData,
+      testPerformedTableRows,
+      stepThreeData,
+      deletedEutIds,
+      deletedTestIds,
+      deletedTestPerformedIds,
+      loggedInUser,
+      loggedInUserDepartment,
+    } = req.body;
+
+    const { id } = req.params; // Retrieve job card ID from the URL
+    console.log("id", id);
+    console.log(
+      "Delete ids",
+      deletedEutIds,
+      deletedTestIds,
+      deletedTestPerformedIds
+    );
+    const {
+      companyName,
+      customerName,
+      customerEmail,
+      customerPhone,
+      projectName,
+      reportType,
+    } = stepOneData;
+    const {
+      quoteNumber,
+      poNumber,
+      jcOpenDate,
+      itemReceivedDate,
+      typeOfRequest,
+      sampleCondition,
+      slotDuration,
+      jcIncharge,
+    } = stepTwoData;
+    const { observations, jcClosedDate, jcStatus } = stepThreeData;
+
+    // Date formatting
+    const formattedItemReceivedDate = itemReceivedDate
+      ? dayjs(itemReceivedDate).format("YYYY-MM-DD")
+      : null;
+    const formattedOpenDate = jcOpenDate
+      ? dayjs(jcOpenDate).format("YYYY-MM-DD")
+      : null;
+    const formattedCloseDate = jcClosedDate
+      ? dayjs(jcClosedDate).format("YYYY-MM-DD")
+      : null;
+
+    let jcNumber;
+    let connection;
+    try {
+      // Establish a connection
+      connection = await db.promise().getConnection();
+
+      // Start a transaction
+      await connection.beginTransaction();
+
+      // Fetch the jcNumber using the job card ID
+      const [rows] = await connection.query(
+        `SELECT jcNumber FROM emi_jobcards WHERE id = ?`,
+        [id]
+      );
+      if (rows.length === 0) {
+        throw new Error("Job card not found");
+      }
+      jcNumber = rows[0].jcNumber;
+
+      // Update the main `emi_jobcards` table
+      const updateJobCardSql = `
+            UPDATE emi_jobcards 
+            SET 
+                quoteNumber = ?, 
+                poNumber = ?, 
+                jcOpenDate = ?, 
+                itemReceivedDate = ?, 
+                typeOfRequest = ?, 
+                sampleCondition = ?, 
+                slotDuration = ?, 
+                companyName = ?, 
+                customerName = ?, 
+                customerEmail = ?, 
+                customerNumber = ?, 
+                projectName = ?, 
+                reportType = ?, 
+                jcIncharge = ?, 
+                jcStatus = ?, 
+                jcClosedDate = ?, 
+                observations = ?, 
+                lastUpdatedBy = ?
+            WHERE id = ?`;
+
+      const jobCardValues = [
+        quoteNumber || "",
+        poNumber || "",
+        formattedOpenDate || null,
+        formattedItemReceivedDate || null,
+        typeOfRequest || "",
+        sampleCondition || "",
+        slotDuration || "",
+        companyName || "",
+        customerName || "",
+        customerEmail || "",
+        customerPhone || "",
+        projectName || "",
+        reportType || "",
+        jcIncharge || "",
+        jcStatus || "",
+        formattedCloseDate || null,
+        observations || "",
+        loggedInUser,
+        id,
+      ];
+
+      await connection.query(updateJobCardSql, jobCardValues);
+
+      // Handle the EUT table rows
+      // Delete rows that are marked for deletion
+      if (deletedEutIds.length > 0) {
+        const deleteEutSql = `DELETE FROM emi_eut_table WHERE id IN (?) AND jcNumber = ?`;
+        await connection.query(deleteEutSql, [deletedEutIds, jcNumber]);
+      }
+
+      for (let eutRow of eutTableRows) {
+        if (eutRow.id) {
+          // Update existing rows
+          const updateEutSql = `
+                    UPDATE emi_eut_table 
+                    SET eutName = ?, eutQuantity = ?, eutPartNumber = ?, eutModelNumber = ?, eutSerialNumber = ?, lastUpdatedBy = ?
+                    WHERE id = ? AND jcNumber = ?`;
+
+          const eutValues = [
+            eutRow.eutName || "",
+            eutRow.eutQuantity || "",
+            eutRow.eutPartNumber || "",
+            eutRow.eutModelNumber || "",
+            eutRow.eutSerialNumber || "",
+            loggedInUser || "",
+            eutRow.id,
+            jcNumber,
+          ];
+
+          await connection.query(updateEutSql, eutValues);
+        } else {
+          // Insert new rows
+          const insertEutSql = `
+                    INSERT INTO emi_eut_table(jcNumber, eutName, eutQuantity, eutPartNumber, eutModelNumber, eutSerialNumber, lastUpdatedBy)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)`;
+
+          const eutValues = [
+            jcNumber,
+            eutRow.eutName || "",
+            eutRow.eutQuantity || "",
+            eutRow.eutPartNumber || "",
+            eutRow.eutModelNumber || "",
+            eutRow.eutSerialNumber || "",
+            loggedInUser || "",
+          ];
+
+          await connection.query(insertEutSql, eutValues);
+        }
+      }
+
+      // Handle the Tests table rows
+      // Delete rows that are marked for deletion
+      if (deletedTestIds.length > 0) {
+        const deleteTestSql = `DELETE FROM emi_tests_table WHERE id IN (?) AND jcNumber = ?`;
+        await connection.query(deleteTestSql, [deletedTestIds, jcNumber]);
+      }
+
+      for (let testRow of testsTableRows) {
+        if (testRow.id) {
+          // Update existing rows
+          const updateTestsSql = `
+                    UPDATE emi_tests_table 
+                    SET testName = ?, testStandard = ?, testProfile = ?, lastUpdatedBy = ?
+                    WHERE id = ? AND jcNumber = ?`;
+
+          const testValues = [
+            testRow.testName || "",
+            testRow.testStandard || "",
+            testRow.testProfile || "",
+            loggedInUser || "",
+            testRow.id,
+            jcNumber,
+          ];
+          await connection.query(updateTestsSql, testValues);
+        } else {
+          // Insert new rows
+          const insertTestsSql = `
+                    INSERT INTO emi_tests_table(jcNumber, testName, testStandard, testProfile, lastUpdatedBy)
+                    VALUES (?, ?, ?, ?, ?)`;
+
+          const testValues = [
+            jcNumber,
+            testRow.testName || "",
+            testRow.testStandard || "",
+            testRow.testProfile || "",
+            loggedInUser || "",
+          ];
+          await connection.query(insertTestsSql, testValues);
+        }
+      }
+
+      // Handle the Test Performed table rows
+      // Delete rows that are marked for deletion
+      if (deletedTestPerformedIds.length > 0) {
+        const deleteTestPerformedSql = `DELETE FROM emi_tests_details_table WHERE id IN (?) AND jcNumber = ?`;
+        await connection.query(deleteTestPerformedSql, [
+          deletedTestPerformedIds,
+          jcNumber,
+        ]);
+      }
+
+      for (let testPerformedRow of testPerformedTableRows) {
+        const formattedStartDateTime = testPerformedRow.testStartDateTime
+          ? convertDateTime(testPerformedRow.testStartDateTime)
+          : null;
+        const formattedEndDateTime = testPerformedRow.testEndDateTime
+          ? convertDateTime(testPerformedRow.testEndDateTime)
+          : null;
+
+        if (testPerformedRow.id) {
+          // Update existing rows
+          const updateTestPerformedSql = `
+                    UPDATE emi_tests_details_table 
+                    SET testName = ?, eutName = ?, eutSerialNumber = ?, testMachine = ?, testStandard = ?, 
+                        testStartDateTime = ?, startTemp = ?, startRh = ?, testStartedBy = ?, 
+                        testEndDateTime = ?, testEndedBy = ?, endTemp = ?, endRh = ?, testDuration = ?, 
+                        actualTestDuration = ?, unit = ?, slotDetails = ?, reportDeliveryStatus = ?, 
+                        reportNumber = ?, reportPreparedBy = ?, reportStatus = ?, observationForm = ?, lastUpdatedBy = ?
+                    WHERE id = ? AND jcNumber = ?`;
+
+          const testPerformedValues = [
+            testPerformedRow.testName || "",
+            testPerformedRow.eutName || "",
+            testPerformedRow.eutSerialNumber || "",
+            testPerformedRow.testMachine || "",
+            testPerformedRow.testStandard || "",
+            formattedStartDateTime || null,
+            testPerformedRow.startTemp || "",
+            testPerformedRow.startRh || "",
+            testPerformedRow.testStartedBy || "",
+            formattedEndDateTime || null,
+            testPerformedRow.testEndedBy || "",
+            testPerformedRow.endTemp || "",
+            testPerformedRow.endRh || "",
+            testPerformedRow.testDuration || "",
+            testPerformedRow.actualTestDuration || "",
+            testPerformedRow.unit || "",
+            testPerformedRow.slotDetails || "",
+            testPerformedRow.reportDeliveryStatus || "",
+            testPerformedRow.reportNumber || "",
+            testPerformedRow.reportPreparedBy || "",
+            testPerformedRow.reportStatus || "",
+            testPerformedRow.observationForm || "",
+            loggedInUser || "",
+            testPerformedRow.id,
+            jcNumber,
+          ];
+
+          await connection.query(updateTestPerformedSql, testPerformedValues);
+        } else {
+          // Insert new rows
+          const insertTestPerformedSql = `
+                    INSERT INTO emi_tests_details_table(
+                      jcNumber, testName, eutName, eutSerialNumber, testMachine, testStandard, testStartDateTime, startTemp, 
+                      startRh, testStartedBy, testEndDateTime, testEndedBy, endTemp, endRh, testDuration, actualTestDuration, 
+                      unit, slotDetails, reportDeliveryStatus, reportNumber, reportPreparedBy, reportStatus, observationForm, lastUpdatedBy)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+
+          const testPerformedValues = [
+            jcNumber,
+            testPerformedRow.testName || "",
+            testPerformedRow.eutName || "",
+            testPerformedRow.eutSerialNumber || "",
+            testPerformedRow.testMachine || "",
+            testPerformedRow.testStandard || "",
+            formattedStartDateTime || null,
+            testPerformedRow.startTemp || "",
+            testPerformedRow.startRh || "",
+            testPerformedRow.testStartedBy || "",
+            formattedEndDateTime || null,
+            testPerformedRow.testEndedBy || "",
+            testPerformedRow.endTemp || "",
+            testPerformedRow.endRh || "",
+            testPerformedRow.testDuration || "",
+            testPerformedRow.actualTestDuration || "",
+            testPerformedRow.unit || "",
+            testPerformedRow.slotDetails || "",
+            testPerformedRow.reportDeliveryStatus || "",
+            testPerformedRow.reportNumber || "",
+            testPerformedRow.reportPreparedBy || "",
+            testPerformedRow.reportStatus || "",
+            testPerformedRow.observationForm || "",
+            loggedInUser || "",
+          ];
+
+          await connection.query(insertTestPerformedSql, testPerformedValues);
+        }
+      }
+
+      // Commit the transaction
+      await connection.commit();
+      return res.status(200).json({ message: "Jobcard updated successfully" });
     } catch (error) {
       console.log(error);
       if (connection) await connection.rollback(); // Rollback transaction in case of error

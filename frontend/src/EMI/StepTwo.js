@@ -8,6 +8,7 @@ import RenderTable from "../functions/RenderTable";
 import { serverBaseAddress } from "../Pages/APIPage";
 import { UserContext } from "../Pages/UserContext";
 import axios from "axios";
+import dayjs from "dayjs";
 
 export default function EMIJC_StepTwo() {
   //Import the respective context:
@@ -28,8 +29,17 @@ export default function EMIJC_StepTwo() {
   // When the component mounts, populate the form fields with context data
   useEffect(() => {
     if (stepTwoFormData) {
+      // _.forEach(stepTwoFormData, (value, key) => {
+      //   setValue(key, value || "");
+      // });
+
       _.forEach(stepTwoFormData, (value, key) => {
-        setValue(key, value || "");
+        if (key === "jcOpenDate" || key === "itemReceivedDate") {
+          // Convert date strings to Day.js objects
+          setValue(key, value ? dayjs(value) : null);
+        } else {
+          setValue(key, value || "");
+        }
       });
 
       //Alternate method is:
@@ -102,14 +112,14 @@ export default function EMIJC_StepTwo() {
       name: "slotDuration",
       type: "select",
       options: [
-        { id: "FOUR_HOURS", label: "4" },
-        { id: "EIGHT_HOURS", label: "8" },
+        { id: "4", label: "4" },
+        { id: "8", label: "8" },
       ],
       width: "100%",
     },
     {
       label: "JC Incharge",
-      name: "jcInchargeName",
+      name: "jcIncharge",
       type: "select",
       options: emiUsers,
       width: "100%",
