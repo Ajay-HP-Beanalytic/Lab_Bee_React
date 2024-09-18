@@ -317,6 +317,7 @@ export default function EMIJCDashboard() {
   };
 
   const editSelectedJC = (item) => {
+    console.log("editSelectedJC", item);
     navigate(`/emi_jobcard/${item}`);
   };
 

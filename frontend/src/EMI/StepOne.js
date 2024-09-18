@@ -28,6 +28,10 @@ export default function EMIJC_StepOne() {
     updateEutTableRows,
     testsTableRows,
     updateTestsTableRows,
+    deletedEutIds,
+    setDeletedEutIds,
+    deletedTestIds,
+    setDeletedTestIds,
   } = useContext(EMIJCContext);
   const { control, register, setValue, watch } = useForm();
 
@@ -63,8 +67,6 @@ export default function EMIJC_StepOne() {
     eutModelNumber: "",
     eutSerialNumber: "",
   };
-  // const [eutTableRows, setEutTableRows] = useState([eutTableRowTemplate]);
-  console.log("eutTableRows", eutTableRows);
 
   //Fields to create a Tests details table:
   const testsTableColumns = [
@@ -78,8 +80,6 @@ export default function EMIJC_StepOne() {
     testName: "",
     testStandard: "",
   };
-  // const [testsTableRows, setTestsTableRows] = useState([testsTableRowTemplate]);
-  console.log("testsTableRows", testsTableRows);
 
   // When the component mounts, populate the form fields with context data
   useEffect(() => {
@@ -160,7 +160,7 @@ export default function EMIJC_StepOne() {
     // { label: "Standard", name: "standard", type: "textArea", width: "100%" },
     {
       label: "Report Type",
-      name: "typeOfReport",
+      name: "reportType",
       type: "select",
       options: [
         { id: "NABL", label: "NABL" },
@@ -268,12 +268,21 @@ export default function EMIJC_StepOne() {
             EUT Details
           </Typography>
 
+          {/* <RenderTable
+            tableColumns={eutTableColumns}
+            tableRows={eutTableRows}
+            setTableRows={updateEutTableRows}
+            rowTemplate={eutTableRowTemplate}
+          /> */}
+
           <RenderTable
             tableColumns={eutTableColumns}
             tableRows={eutTableRows}
-            // setTableRows={setEutTableRows}
             setTableRows={updateEutTableRows}
             rowTemplate={eutTableRowTemplate}
+            deletedRowIds={deletedEutIds}
+            setDeletedRowIds={setDeletedEutIds}
+            rowIdField="id"
           />
         </Box>
       </Card>
@@ -284,12 +293,21 @@ export default function EMIJC_StepOne() {
             Test Details
           </Typography>
 
+          {/* <RenderTable
+            tableColumns={testsTableColumns}
+            tableRows={testsTableRows}
+            setTableRows={updateTestsTableRows}
+            rowTemplate={testsTableRowTemplate}
+          /> */}
+
           <RenderTable
             tableColumns={testsTableColumns}
             tableRows={testsTableRows}
-            // setTableRows={setTestsTableRows}
             setTableRows={updateTestsTableRows}
             rowTemplate={testsTableRowTemplate}
+            deletedRowIds={deletedTestIds}
+            setDeletedRowIds={setDeletedTestIds}
+            rowIdField="id"
           />
         </Box>
       </Card>
