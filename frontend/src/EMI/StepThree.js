@@ -1,12 +1,12 @@
 import React, { useContext, useEffect } from "react";
 import { EMIJCContext } from "./EMIJCContext";
 import { useForm } from "react-hook-form";
-import { Box, Card, Grid, TextField, Typography } from "@mui/material";
+import { Card, Grid, Typography } from "@mui/material";
 import _ from "lodash";
 import RenderComponents from "../functions/RenderComponents";
 import dayjs from "dayjs";
 
-export default function EMIJC_StepThree() {
+export default function EMIJCStepThree() {
   //Import the respective context:
   const { stepThreeFormData, updateStepThreeFormData } =
     useContext(EMIJCContext);

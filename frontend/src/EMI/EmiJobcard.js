@@ -1,18 +1,10 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect, useState } from "react";
 
 import { Box, Button, Card, Typography } from "@mui/material";
-import {
-  Controller,
-  FormProvider,
-  useForm,
-  useFormContext,
-} from "react-hook-form";
+import { FormProvider, useForm } from "react-hook-form";
 import Stepper from "@mui/material/Stepper";
 import Step from "@mui/material/Step";
 import StepButton from "@mui/material/StepButton";
-import EMIJC_StepOne from "./StepOne";
-import EMIJC_StepTwo from "./StepTwo";
-import EMIJC_StepThree from "./StepThree";
 import { EMIJCContext } from "./EMIJCContext";
 import { serverBaseAddress } from "../Pages/APIPage";
 import axios from "axios";
@@ -20,6 +12,9 @@ import { UserContext } from "../Pages/UserContext";
 import { toast } from "react-toastify";
 import { useNavigate, useParams } from "react-router-dom";
 import dayjs from "dayjs";
+import EMIJCStepOne from "./StepOne";
+import EMIJCStepTwo from "./StepTwo";
+import EMIJCStepThree from "./StepThree";
 
 export default function EmiJobcard() {
   const { id } = useParams(); // Get jcId from the URL
@@ -29,6 +24,13 @@ export default function EmiJobcard() {
   const { loggedInUser, loggedInUserDepartment } = useContext(UserContext);
   //Fetch all the form data from 3 steps:
   const {
+    initialStepOneFormData,
+    initialStepTwoFormData,
+    initialStepThreeFormData,
+    initialEutTableRows,
+    initialTestsTableRows,
+    initialTestPerformedTableRows,
+    initialDeletedIds,
     stepOneFormData,
     setStepOneFormData,
     stepTwoFormData,
@@ -36,8 +38,11 @@ export default function EmiJobcard() {
     stepThreeFormData,
     setStepThreeFormData,
     eutTableRows,
+    setEutTableRows,
     testsTableRows,
+    setTestsTableRows,
     testPerformedTableRows,
+    setTestPerformedTableRows,
     updateStepOneFormData,
     updateStepTwoFormData,
     updateStepThreeFormData,
@@ -45,8 +50,11 @@ export default function EmiJobcard() {
     updateTestsTableRows,
     updateTestPerformedTableRows,
     deletedEutIds,
+    setDeletedEutIds,
     deletedTestIds,
+    setDeletedTestIds,
     deletedTestPerformedIds,
+    setDeletedTestPerformedIds,
   } = useContext(EMIJCContext);
 
   const steps = ["JC Primary Details", "Test Details", "Observations"];
@@ -65,8 +73,10 @@ export default function EmiJobcard() {
   const methods = useForm({
     defaultValues: {
       stepOneData: {},
-      stepTwoData: [],
-      stepThreeData: [],
+      // stepTwoData: [],
+      // stepThreeData: [],
+      stepTwoData: {},
+      stepThreeData: {},
     },
     mode: "onChange", // Change this based on when you want validation to trigger
   });
@@ -88,8 +98,6 @@ export default function EmiJobcard() {
 
   // Function to submit the  EMI Jobcard data:
   const onSubmitEmiJC = async (data) => {
-    console.log("data", data);
-
     if (!stepTwoFormData.jcOpenDate) {
       toast.warning("Please Enter Job-Card Open Date in Step 2");
       return;
@@ -108,30 +116,46 @@ export default function EmiJobcard() {
       deletedTestIds,
       deletedTestPerformedIds,
     };
-    // Now submit finalData to the backend or process it as needed
 
-    // console.log("Submitting data:", finalData);
-    console.log(
-      "Submitting data:",
-      deletedEutIds,
-      deletedTestIds,
-      deletedTestPerformedIds
-    );
     // Add your API call or other submission logic here
 
     try {
-      const response = await axios.post(
-        `${serverBaseAddress}/api/EMIJobcard/${id}`,
-        finalData
-      );
+      let response;
+
+      if (editingJC && id) {
+        // If editing an existing Job-Card, make a PUT request to the update endpoint
+        response = await axios.put(
+          `${serverBaseAddress}/api/EMIJobcard/${id}`,
+          finalData
+        );
+      } else {
+        // If creating a new Job-Card, make a POST request to the create endpoint
+        response = await axios.post(
+          `${serverBaseAddress}/api/EMIJobcard`,
+          finalData
+        );
+      }
+
       if (response.status === 200) {
-        // toast.success("Job-Card Created Successfully");
         toast.success(
           editingJC
             ? "Job-Card Updated Successfully"
             : "Job-Card Created Successfully"
         );
         setActiveStep(0);
+
+        // Resetting all form data after submission
+        setStepOneFormData(initialStepOneFormData);
+        setStepTwoFormData(initialStepTwoFormData);
+        setStepThreeFormData(initialStepThreeFormData);
+        setEutTableRows(initialEutTableRows);
+        setTestsTableRows(initialTestsTableRows);
+        setTestPerformedTableRows(initialTestPerformedTableRows);
+        setDeletedEutIds(initialDeletedIds);
+        setDeletedTestIds(initialDeletedIds);
+        setDeletedTestPerformedIds(initialDeletedIds);
+
+        navigate("/emi_jc_dashboard");
       }
     } catch (error) {
       console.error("Error submitting Job-Card:", error);
@@ -150,7 +174,6 @@ export default function EmiJobcard() {
     //Fetch the JC Status...
     let currentJcStatus = stepThreeFormData?.jcStatus || "";
     setJcStatusString(currentJcStatus);
-    // Set the color based on the status
     switch (currentJcStatus) {
       case "Open":
         setJcStatusStringColor("#ff5722");
@@ -206,10 +229,6 @@ export default function EmiJobcard() {
     };
 
     fetchLatestJCNumber();
-    // if (!editingJC) {
-    //   fetchLatestJCNumber();
-    // }
-    // }, [loggedInUser, activeStep, methods]);
   }, [loggedInUser]);
 
   ////////////////////////////////////////////////////////////////////////////////////
@@ -282,21 +301,12 @@ export default function EmiJobcard() {
     };
 
     fetchJCData();
-  }, [
-    id,
-    editingJC,
-    // activeStep,
-    // updateStepOneFormData,
-    // updateStepTwoFormData,
-    // updateStepThreeFormData,
-    // updateEutTableRows,
-    // updateTestsTableRows,
-    // updateTestPerformedTableRows,
-  ]);
+  }, [id, editingJC]);
 
   ///////////////////////////////////////////////////////////////////////////////////////
 
   const handleGoToJCDashboard = () => {
+    setEditingJC(false);
     navigate("/emi_jc_dashboard");
   };
 
@@ -327,22 +337,25 @@ export default function EmiJobcard() {
           Go to Dashboard
         </Button>
 
-        <Button
-          sx={{
-            borderRadius: 1,
-            bgcolor: "orange",
-            color: "white",
-            borderColor: "black",
-            padding: { xs: "8px 16px", md: "6px 12px" }, // Adjust padding for different screen sizes
-            fontSize: { xs: "0.875rem", md: "1rem" }, // Adjust font size for different screen sizes
-            mr: 1,
-          }}
-          variant="contained"
-          color="primary"
-          onClick={handleCancel}
-        >
-          {activeStep === 0 ? "Cancel" : "Previous"}
-        </Button>
+        {activeStep !== 0 && (
+          <Button
+            sx={{
+              borderRadius: 1,
+              bgcolor: "orange",
+              color: "white",
+              borderColor: "black",
+              padding: { xs: "8px 16px", md: "6px 12px" }, // Adjust padding for different screen sizes
+              fontSize: { xs: "0.875rem", md: "1rem" }, // Adjust font size for different screen sizes
+              mr: 1,
+            }}
+            variant="contained"
+            color="primary"
+            onClick={handleCancel}
+          >
+            {/* {activeStep === 0 ? "Cancel" : "Previous"} */}
+            Previous
+          </Button>
+        )}
 
         <Button
           sx={{
@@ -401,23 +414,28 @@ export default function EmiJobcard() {
               {editingJC ? editingJCNumber : newJCNumber}
             </span>
           </Typography>
-          <Typography
-            variant="h7"
-            sx={{
-              fontWeight: "bold",
-              textAlign: { xs: "center", sm: "left" },
-            }}
-          >
-            <span style={{ color: "#003399" }}>JC Status:</span>{" "}
-            <span style={{ color: jcStatusStringColor }}>{jcStatusString}</span>
-          </Typography>
+
+          {editingJC && (
+            <Typography
+              variant="h7"
+              sx={{
+                fontWeight: "bold",
+                textAlign: { xs: "center", sm: "left" },
+              }}
+            >
+              <span style={{ color: "#003399" }}>JC Status:</span>{" "}
+              <span style={{ color: jcStatusStringColor }}>
+                {jcStatusString}
+              </span>
+            </Typography>
+          )}
         </Box>
       </Card>
 
       <FormProvider {...methods}>
-        {activeStep === 0 && <EMIJC_StepOne />}
-        {activeStep === 1 && <EMIJC_StepTwo />}
-        {activeStep === 2 && <EMIJC_StepThree />}
+        {activeStep === 0 && <EMIJCStepOne />}
+        {activeStep === 1 && <EMIJCStepTwo />}
+        {activeStep === 2 && <EMIJCStepThree />}
       </FormProvider>
     </>
   );

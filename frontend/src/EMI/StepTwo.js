@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useState } from "react";
 import { EMIJCContext } from "./EMIJCContext";
 import { useForm } from "react-hook-form";
-import { Box, Card, Grid, TextField, Typography } from "@mui/material";
+import { Box, Card, Grid, Typography } from "@mui/material";
 import _ from "lodash";
 import RenderComponents from "../functions/RenderComponents";
 import RenderTable from "../functions/RenderTable";
@@ -10,16 +10,18 @@ import { UserContext } from "../Pages/UserContext";
 import axios from "axios";
 import dayjs from "dayjs";
 
-export default function EMIJC_StepTwo() {
+export default function EMIJCStepTwo() {
   //Import the respective context:
   const {
     stepTwoFormData,
     updateStepTwoFormData,
     testPerformedTableRows,
     updateTestPerformedTableRows,
+    deletedTestPerformedIds,
+    setDeletedTestPerformedIds,
   } = useContext(EMIJCContext);
 
-  const { loggedInUser, loggedInUserDepartment } = useContext(UserContext);
+  const { loggedInUser } = useContext(UserContext);
 
   const { control, register, setValue, watch } = useForm();
 
@@ -226,14 +228,14 @@ export default function EMIJC_StepTwo() {
       id: "testDuration",
       label: "Test Duration",
       width: 200,
-      type: "textField",
+      type: "number",
       align: "center",
     },
     {
       id: "actualTestDuration",
       label: "Actual Test Duration(Hrs)",
       width: 200,
-      type: "textField",
+      type: "number",
       align: "center",
     },
     {
@@ -399,6 +401,8 @@ export default function EMIJC_StepTwo() {
             tableRows={testPerformedTableRows}
             setTableRows={updateTestPerformedTableRows}
             rowTemplate={testPerformedTableRowTemplate}
+            deletedIds={deletedTestPerformedIds}
+            setDeletedIds={setDeletedTestPerformedIds}
           />
         </Box>
       </Card>

@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useContext, useEffect } from "react";
 import {
   Box,
   Card,
@@ -15,7 +15,7 @@ import RenderComponents from "../functions/RenderComponents";
 import RenderTable from "../functions/RenderTable";
 import SignaturePadComponent from "../common/SignaturePad";
 
-export default function EMIJC_StepOne() {
+export default function EMIJCStepOne() {
   const theme = useTheme();
   const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
 
@@ -268,21 +268,13 @@ export default function EMIJC_StepOne() {
             EUT Details
           </Typography>
 
-          {/* <RenderTable
-            tableColumns={eutTableColumns}
-            tableRows={eutTableRows}
-            setTableRows={updateEutTableRows}
-            rowTemplate={eutTableRowTemplate}
-          /> */}
-
           <RenderTable
             tableColumns={eutTableColumns}
             tableRows={eutTableRows}
             setTableRows={updateEutTableRows}
             rowTemplate={eutTableRowTemplate}
-            deletedRowIds={deletedEutIds}
-            setDeletedRowIds={setDeletedEutIds}
-            rowIdField="id"
+            deletedIds={deletedEutIds}
+            setDeletedIds={setDeletedEutIds}
           />
         </Box>
       </Card>
@@ -293,21 +285,13 @@ export default function EMIJC_StepOne() {
             Test Details
           </Typography>
 
-          {/* <RenderTable
-            tableColumns={testsTableColumns}
-            tableRows={testsTableRows}
-            setTableRows={updateTestsTableRows}
-            rowTemplate={testsTableRowTemplate}
-          /> */}
-
           <RenderTable
             tableColumns={testsTableColumns}
             tableRows={testsTableRows}
             setTableRows={updateTestsTableRows}
             rowTemplate={testsTableRowTemplate}
-            deletedRowIds={deletedTestIds}
-            setDeletedRowIds={setDeletedTestIds}
-            rowIdField="id"
+            deletedIds={deletedTestIds}
+            setDeletedIds={setDeletedTestIds}
           />
         </Box>
       </Card>
