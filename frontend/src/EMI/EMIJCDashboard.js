@@ -21,16 +21,35 @@ import { serverBaseAddress } from "../Pages/APIPage";
 import axios from "axios";
 import { useLocation, useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
-import JCPreview from "../JC/JCPreview";
 import EMIJCPreview from "./EMIJCPreview";
 import { CreatePieChart } from "../functions/DashboardFunctions";
+import { EMIJCContext } from "./EMIJCContext";
 
 export default function EMIJCDashboard() {
   const location = useLocation();
 
   const navigate = useNavigate();
 
-  const { loggedInUser, loggedInUserDepartment } = useContext(UserContext);
+  const { loggedInUserDepartment } = useContext(UserContext);
+  const {
+    initialStepOneFormData,
+    initialStepTwoFormData,
+    initialStepThreeFormData,
+    initialEutTableRows,
+    initialTestsTableRows,
+    initialTestPerformedTableRows,
+    initialDeletedIds,
+    setStepOneFormData,
+    setStepTwoFormData,
+    setStepThreeFormData,
+    setEutTableRows,
+    setTestsTableRows,
+    setTestPerformedTableRows,
+    setDeletedEutIds,
+    setDeletedTestIds,
+    setDeletedTestPerformedIds,
+  } = useContext(EMIJCContext);
+
   const [editJc, setEditJc] = useState(false);
   const [jcId, setJcId] = useState(null);
   const [openJCPreview, setOpenJCPreview] = useState(false);
@@ -89,6 +108,18 @@ export default function EMIJCDashboard() {
 
   //Functiopn to redirect to new EMI JC create page:
   const onClickNewEMIJCButton = () => {
+    setEditJc(false);
+    setJcId(null);
+    // Resetting all form data after submission
+    setStepOneFormData(initialStepOneFormData);
+    setStepTwoFormData(initialStepTwoFormData);
+    setStepThreeFormData(initialStepThreeFormData);
+    setEutTableRows(initialEutTableRows);
+    setTestsTableRows(initialTestsTableRows);
+    setTestPerformedTableRows(initialTestPerformedTableRows);
+    setDeletedEutIds(initialDeletedIds);
+    setDeletedTestIds(initialDeletedIds);
+    setDeletedTestPerformedIds(initialDeletedIds);
     navigate(`/emi_jobcard`);
   };
 
@@ -317,7 +348,6 @@ export default function EMIJCDashboard() {
   };
 
   const editSelectedJC = (item) => {
-    console.log("editSelectedJC", item);
     navigate(`/emi_jobcard/${item}`);
   };
 
@@ -350,8 +380,8 @@ export default function EMIJCDashboard() {
     return { jcOpenCount, jcRunningCount, jcClosedCount };
   };
 
-  const { jcOpenCount, jcRunningCount, jcClosedCount } =
-    getJobcardStatusCount(filteredJcData);
+  // const { jcOpenCount, jcRunningCount, jcClosedCount } =
+  //   getJobcardStatusCount(filteredJcData);
 
   const jcStatusRawData = getJobcardStatusCount(filteredJcData);
 
@@ -440,10 +470,10 @@ export default function EMIJCDashboard() {
           : ""
       }`,
     },
-    { label: `JC Incharge:${fetchedEMIJCPrimaryData.jcIncharge}` },
-    { label: `Sample Condition:${fetchedEMIJCPrimaryData.sampleCondition}` },
-    { label: `Type of Request:${fetchedEMIJCPrimaryData.typeOfRequest}` },
-    { label: `Report Type:${fetchedEMIJCPrimaryData.reportType}` },
+    { label: `JC Incharge: ${fetchedEMIJCPrimaryData.jcIncharge}` },
+    { label: `Sample Condition: ${fetchedEMIJCPrimaryData.sampleCondition}` },
+    { label: `Type of Request: ${fetchedEMIJCPrimaryData.typeOfRequest}` },
+    { label: `Report Type: ${fetchedEMIJCPrimaryData.reportType}` },
     { label: `JC Status: ${fetchedEMIJCPrimaryData.jcStatus}` },
     {
       label: `JC Close Date: ${
@@ -510,7 +540,7 @@ export default function EMIJCDashboard() {
             <Divider>
               <Typography variant="h4" sx={{ color: "#003366" }}>
                 {" "}
-                Job-Card Dashboard{" "}
+                EMI-EMC Job-Card Dashboard{" "}
               </Typography>
             </Divider>
           </Box>

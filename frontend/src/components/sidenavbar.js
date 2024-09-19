@@ -21,14 +21,7 @@ import MarkChatReadIcon from "@mui/icons-material/MarkChatRead";
 import MarkChatUnreadIcon from "@mui/icons-material/MarkChatUnread";
 import DeleteIcon from "@mui/icons-material/Delete";
 import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
-import {
-  Avatar,
-  Badge,
-  Button,
-  Popover,
-  SvgIcon,
-  Tooltip,
-} from "@mui/material";
+import { Avatar, Badge, Popover, SvgIcon, Tooltip } from "@mui/material";
 
 import HomeIcon from "@mui/icons-material/Home";
 // import EditNoteIcon from "@mui/icons-material/EditNote";
@@ -42,7 +35,7 @@ import ManageAccountsIcon from "@mui/icons-material/ManageAccounts";
 import CurrencyRupeeIcon from "@mui/icons-material/CurrencyRupee";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import TrackChangesIcon from "@mui/icons-material/TrackChanges";
-import { Link, NavLink, Outlet, useNavigate } from "react-router-dom";
+import { Link, Outlet } from "react-router-dom";
 // import axios from "axios";
 
 import RobotoBoldFont from "../fonts/Roboto-Bold.ttf";
@@ -53,13 +46,6 @@ import { UserContext } from "../Pages/UserContext";
 import { NotificationContext } from "../Pages/NotificationContext";
 import axios from "axios";
 import { serverBaseAddress } from "../Pages/APIPage";
-
-const styles = {
-  "@font-face": {
-    fontFamily: "Roboto-Bold",
-    src: `url(${RobotoBoldFont}) format('truetype')`,
-  },
-};
 
 const drawerWidth = 200;
 
@@ -133,12 +119,8 @@ export default function SidenavigationBar() {
 
   const { loggedInUser, loggedInUserDepartment, loggedInUserRole } =
     useContext(UserContext);
-  const {
-    notifications,
-    setNotifications,
-    newNotificationReceived,
-    addNotification,
-  } = useContext(NotificationContext);
+  const { notifications, setNotifications, newNotificationReceived } =
+    useContext(NotificationContext);
 
   const [open, setOpen] = useState(false); // "true" to keep open, and "false" is for keep it closed
 
@@ -532,7 +514,7 @@ export default function SidenavigationBar() {
     if (loggedInUserDepartment === "Administration") {
       return true; // Show all items for Administration
     } else if (loggedInUserDepartment === "Accounts") {
-      return [1, 2, 3, 4, 5, 6].includes(item.i);
+      return [1, 2, 3, 4, 5, 6, 9].includes(item.i);
     } else if (loggedInUserDepartment === "Marketing") {
       return [2, 3].includes(item.i);
     } else if (
@@ -546,7 +528,7 @@ export default function SidenavigationBar() {
     ) {
       return [4, 5].includes(item.i);
     } else if (loggedInUserDepartment === "TS2 Testing") {
-      return [9, 10].includes(item.i);
+      return [9].includes(item.i);
     }
     return false; // Default: Hide the item
   });

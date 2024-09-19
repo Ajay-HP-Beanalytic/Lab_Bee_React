@@ -5,16 +5,32 @@ const EMIJCContext = createContext();
 
 // Create a provider component
 const EMIJCContextProvider = ({ children }) => {
-  const [stepOneFormData, setStepOneFormData] = useState({});
-  const [stepTwoFormData, setStepTwoFormData] = useState({});
-  const [stepThreeFormData, setStepThreeFormData] = useState({});
-  const [eutTableRows, setEutTableRows] = useState([]);
-  const [testsTableRows, setTestsTableRows] = useState([]);
-  const [deletedEutIds, setDeletedEutIds] = useState([]);
-  const [deletedTestIds, setDeletedTestIds] = useState([]);
-  const [deletedTestPerformedIds, setDeletedTestPerformedIds] = useState([]);
+  const initialStepOneFormData = {};
+  const initialStepTwoFormData = {};
+  const initialStepThreeFormData = {};
+  const initialEutTableRows = [];
+  const initialTestsTableRows = [];
+  const initialTestPerformedTableRows = [];
+  const initialDeletedIds = [];
 
-  const [testPerformedTableRows, setTestPerformedTableRows] = useState([]);
+  const [stepOneFormData, setStepOneFormData] = useState(
+    initialStepOneFormData
+  );
+  const [stepTwoFormData, setStepTwoFormData] = useState(
+    initialStepTwoFormData
+  );
+  const [stepThreeFormData, setStepThreeFormData] = useState(
+    initialStepThreeFormData
+  );
+  const [eutTableRows, setEutTableRows] = useState(initialEutTableRows);
+  const [testsTableRows, setTestsTableRows] = useState(initialTestsTableRows);
+  const [testPerformedTableRows, setTestPerformedTableRows] = useState(
+    initialTestPerformedTableRows
+  );
+  const [deletedEutIds, setDeletedEutIds] = useState(initialDeletedIds);
+  const [deletedTestIds, setDeletedTestIds] = useState(initialDeletedIds);
+  const [deletedTestPerformedIds, setDeletedTestPerformedIds] =
+    useState(initialDeletedIds);
 
   const updateStepOneFormData = (stepData) => {
     setStepOneFormData((prevData) => ({ ...prevData, ...stepData }));
@@ -31,29 +47,28 @@ const EMIJCContextProvider = ({ children }) => {
   // Function to update EUT Table rows
   const updateEutTableRows = (rows) => {
     setEutTableRows(rows);
-    // Track deleted IDs
-    setDeletedEutIds(rows.filter((row) => row.isDeleted).map((row) => row.id));
   };
 
   // Function to update testsTableRows
   const updateTestsTableRows = (rows) => {
     setTestsTableRows(rows);
-    // Track deleted IDs
-    setDeletedTestIds(rows.filter((row) => row.isDeleted).map((row) => row.id));
   };
 
   // Function to update the Tests Performed Table Rows:
   const updateTestPerformedTableRows = (rows) => {
     setTestPerformedTableRows(rows);
-    // Track deleted IDs
-    setDeletedTestPerformedIds(
-      rows.filter((row) => row.isDeleted).map((row) => row.id)
-    );
   };
 
   return (
     <EMIJCContext.Provider
       value={{
+        initialStepOneFormData,
+        initialStepTwoFormData,
+        initialStepThreeFormData,
+        initialEutTableRows,
+        initialTestsTableRows,
+        initialTestPerformedTableRows,
+        initialDeletedIds,
         stepOneFormData,
         setStepOneFormData,
         stepTwoFormData,
