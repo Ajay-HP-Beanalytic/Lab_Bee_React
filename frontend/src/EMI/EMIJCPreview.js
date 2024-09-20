@@ -1,4 +1,4 @@
-import React, { forwardRef, useContext } from "react";
+import React, { forwardRef, useContext, useState } from "react";
 import { UserContext } from "../Pages/UserContext";
 import {
   Box,
@@ -21,6 +21,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import dayjs from "dayjs";
 
 import Slide from "@mui/material/Slide";
+import EMIJCDocument from "./EMIJCDocument";
 
 const Transition = forwardRef(function Transition(props, ref) {
   return <Slide direction="up" ref={ref} {...props} />;
@@ -58,6 +59,8 @@ const EMIJCPreview = ({
   jcId,
 }) => {
   const { loggedInUser, loggedInUserDepartment } = useContext(UserContext);
+
+  const [downloadJC, setDownloadJC] = useState(false);
 
   const isTS2Testing = loggedInUserDepartment === "TS2 Testing";
   const isAdminOrAccounts =
@@ -323,6 +326,23 @@ const EMIJCPreview = ({
 
           {/* Download JC Button */}
           {/* {editJc ? <JobCardComponent id={jcId} /> : null} */}
+          {editJc ? (
+            <Button
+              sx={{
+                borderRadius: 3,
+                mx: 0.5,
+                mb: 1,
+                bgcolor: "orange",
+                color: "white",
+                borderColor: "black",
+              }}
+              variant="contained"
+              color="primary"
+              onClick={() => setDownloadJC(true)}
+            >
+              Download
+            </Button>
+          ) : null}
 
           <Button
             sx={{
@@ -341,6 +361,8 @@ const EMIJCPreview = ({
           </Button>
         </Box>
       </Dialog>
+
+      {downloadJC && <EMIJCDocument id={jcId} />}
     </>
   );
 };
