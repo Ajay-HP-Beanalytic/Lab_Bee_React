@@ -19,8 +19,6 @@ export default function EMIJCStepOne() {
   const theme = useTheme();
   const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
 
-  //Import the respective context:
-  // const { stepOneFormData, updateStepOneFormData } = useContext(EMIJCContext);
   const {
     stepOneFormData,
     updateStepOneFormData,
@@ -33,7 +31,59 @@ export default function EMIJCStepOne() {
     deletedTestIds,
     setDeletedTestIds,
   } = useContext(EMIJCContext);
+
   const { control, register, setValue, watch } = useForm();
+
+  const fieldsToBeFilledByCustomerPartOne = [
+    { label: "Company", name: "companyName", type: "textField", width: "100%" },
+    {
+      label: "Company Address",
+      name: "companyAddress",
+      type: "textArea",
+      width: "100%",
+    },
+
+    {
+      label: "Customer/Visitor Name",
+      name: "customerName",
+      type: "textField",
+      width: "100%",
+    },
+    {
+      label: "Customer Email",
+      name: "customerEmail",
+      type: "textField",
+      width: "100%",
+    },
+  ];
+
+  const fieldsToBeFilledByCustomerPartTwo = [
+    {
+      label: "Customer Phone",
+      name: "customerPhone",
+      type: "textField",
+      width: "100%",
+    },
+
+    {
+      label: "Project Name",
+      name: "projectName",
+      type: "textField",
+      width: "100%",
+    },
+
+    {
+      label: "Report Type",
+      name: "reportType",
+      type: "select",
+      options: [
+        { id: "NABL", label: "NABL" },
+        { id: "NON-NABL", label: "NON-NABL" },
+        { id: "NABL/NON-NABL", label: "NABL & NON-NABL" },
+      ],
+      width: "100%",
+    },
+  ];
 
   //Fields to create a EUT details table:
   const eutTableColumns = [
@@ -73,13 +123,17 @@ export default function EMIJCStepOne() {
     { id: "serialNumber", label: "SL No", width: 20 },
     { id: "testName", label: "Test Name", width: 300, type: "textField" },
     { id: "testStandard", label: "Standard", width: 300, type: "textField" },
-    { id: "testProfile", label: "Test Profile", width: 400, type: "textField" },
+    { id: "testProfile", label: "Limit", width: 300, type: "textField" },
   ];
 
   const testsTableRowTemplate = {
     testName: "",
     testStandard: "",
+    testProfile: "",
   };
+
+  // Watch form fields and update context on value change
+  const stepOneFormValues = watch();
 
   // When the component mounts, populate the form fields with context data
   useEffect(() => {
@@ -89,9 +143,6 @@ export default function EMIJCStepOne() {
       });
     }
   }, [stepOneFormData, setValue]);
-
-  // Watch form fields and update context on value change
-  const stepOneFormValues = watch();
 
   // Only update the context if the form data changes
   useEffect(() => {
@@ -119,63 +170,7 @@ export default function EMIJCStepOne() {
     if (!_.isEqual(testsTableRows, stepOneFormData.testsTableRows)) {
       updateTestsTableRows(testsTableRows);
     }
-  }, [
-    eutTableRows,
-    testsTableRows,
-    stepOneFormData,
-    updateEutTableRows,
-    updateTestsTableRows,
-  ]);
-
-  const fieldsToBeFilledByCustomerPartOne = [
-    { label: "Company", name: "companyName", type: "textField", width: "100%" },
-    // { label: "Address", name: "address", type: "textArea", width: "100%" },
-    {
-      label: "Customer/Visitor Name",
-      name: "customerName",
-      type: "textField",
-      width: "100%",
-    },
-    {
-      label: "Customer Email",
-      name: "customerEmail",
-      type: "textField",
-      width: "100%",
-    },
-    {
-      label: "Customer Phone",
-      name: "customerPhone",
-      type: "textField",
-      width: "100%",
-    },
-  ];
-
-  const fieldsToBeFilledByCustomerPartTwo = [
-    {
-      label: "Project Name",
-      name: "projectName",
-      type: "textField",
-      width: "100%",
-    },
-    // { label: "Standard", name: "standard", type: "textArea", width: "100%" },
-    {
-      label: "Report Type",
-      name: "reportType",
-      type: "select",
-      options: [
-        { id: "NABL", label: "NABL" },
-        { id: "NON-NABL", label: "NON-NABL" },
-        { id: "NABL/NON-NABL", label: "NABL/NON-NABL" },
-      ],
-      width: "100%",
-    },
-    {
-      label: "Customer Signature",
-      name: "customerSignature",
-      type: "signaturePad",
-      width: "100%",
-    },
-  ];
+  }, [eutTableRows, testsTableRows, updateEutTableRows, updateTestsTableRows]);
 
   return (
     <>
@@ -216,8 +211,6 @@ export default function EMIJCStepOne() {
       <Card sx={{ width: "100%", mt: "10px", mb: "10px", padding: "10px" }}>
         <Box
           sx={{
-            // mt: "5px",
-            // mb: "5px",
             border: "1px solid black",
           }}
         >

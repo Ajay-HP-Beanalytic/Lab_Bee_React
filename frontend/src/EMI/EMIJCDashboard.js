@@ -452,6 +452,7 @@ export default function EMIJCDashboard() {
     { label: `PO Number: ${fetchedEMIJCPrimaryData.poNumber}` },
 
     { label: `Company Name: ${fetchedEMIJCPrimaryData.companyName}` },
+    { label: `Company Address: ${fetchedEMIJCPrimaryData.companyAddress}` },
     { label: `Customer Name: ${fetchedEMIJCPrimaryData.customerName}` },
     { label: `Customer Email: ${fetchedEMIJCPrimaryData.customerEmail}` },
     { label: `Contact Number: ${fetchedEMIJCPrimaryData.customerNumber}` },

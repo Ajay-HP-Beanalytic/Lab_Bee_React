@@ -90,8 +90,8 @@ const EMIJCPreview = ({
     "Test Name",
     "EUT Details",
     "EUT Serial Number",
-    "Device/Machine",
     "Test Standard",
+    "Slot Details",
     "Test Started Date & Time",
     "Start Temp (°C)",
     "Start RH (%)",
@@ -100,15 +100,14 @@ const EMIJCPreview = ({
     "End Temp (°C)",
     "End RH (%)",
     "Test Ended By",
-    "Test Duration",
-    "Actual Test Duration",
-    "Unit",
-    "Slot Details",
+    "Test Duration (Mins)",
+    "Actual Test Duration (Hrs)",
+    "Observation Form",
+    "Observation Form Status",
     "Report Delivery Status",
     "Report Number",
     "Report Prepared By",
     "Report Status",
-    "Observation Forms",
     "Last Updated By",
   ];
 
@@ -273,8 +272,8 @@ const EMIJCPreview = ({
                         <TableCell>{row.testName}</TableCell>
                         <TableCell>{row.eutName}</TableCell>
                         <TableCell>{row.eutSerialNumber}</TableCell>
-                        <TableCell>{row.testMachine}</TableCell>
                         <TableCell>{row.testStandard}</TableCell>
+                        <TableCell>{row.slotDetails}</TableCell>
                         <TableCell>
                           {formatDateTime(row.testStartDateTime)}
                         </TableCell>
@@ -289,13 +288,12 @@ const EMIJCPreview = ({
                         <TableCell>{row.testEndedBy}</TableCell>
                         <TableCell>{row.testDuration}</TableCell>
                         <TableCell>{row.actualTestDuration}</TableCell>
-                        <TableCell>{row.unit}</TableCell>
-                        <TableCell>{row.slotDetails}</TableCell>
+                        <TableCell>{row.observationForm}</TableCell>
+                        <TableCell>{row.observationFormStatus}</TableCell>
                         <TableCell>{row.reportDeliveryStatus}</TableCell>
                         <TableCell>{row.reportNumber}</TableCell>
                         <TableCell>{row.reportPreparedBy}</TableCell>
                         <TableCell>{row.reportStatus}</TableCell>
-                        <TableCell>{row.observationForm}</TableCell>
                         <TableCell>{row.lastUpdatedBy}</TableCell>
                       </TableRow>
                     ))}

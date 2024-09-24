@@ -85,9 +85,9 @@ export default function EMIJCStepThree() {
   return (
     <>
       <Card sx={{ width: "100%", mt: "10px", mb: "10px" }}>
-        <Typography variant="h5" sx={{ mb: "5px" }}>
+        {/* <Typography variant="h5" sx={{ mb: "5px" }}>
           Observation Forms
-        </Typography>
+        </Typography> */}
 
         <Grid
           container
