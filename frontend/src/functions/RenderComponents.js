@@ -48,13 +48,12 @@ export default function RenderComponents({
               <TextField
                 key={field.name}
                 label={field.label}
-                multiline
-                rows={2}
-                placeholder={field.label}
                 name={field.name}
                 {...register(field.name)}
                 fullWidth
-                sx={{ mb: "10px", width: fieldWidth }}
+                multiline
+                rows={2}
+                sx={{ mb: "10px", width: field.width }}
               />
             );
 

@@ -1,4 +1,4 @@
-import React, { useContext } from "react";
+import React, { useContext, useState } from "react";
 
 import {
   Table,
@@ -21,6 +21,7 @@ import { DatePicker } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { EMIJCContext } from "../EMI/EMIJCContext";
+import ObservationForms from "../EMI/ObservationForms";
 
 const RenderTable = ({
   tableColumns,
@@ -30,7 +31,26 @@ const RenderTable = ({
   deletedIds,
   setDeletedIds,
 }) => {
-  const { updateTestPerformedTableRows } = useContext(EMIJCContext);
+  const {
+    stepOneFormData,
+    stepTwoFormData,
+    updateStepOneFormData,
+    eutTableRows,
+    updateEutTableRows,
+    testsTableRows,
+    updateTestsTableRows,
+    testPerformedTableRows,
+    updateTestPerformedTableRows,
+  } = useContext(EMIJCContext);
+
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [selectedFormType, setSelectedFormType] = useState("");
+
+  const [commonData, setCommonData] = useState([
+    stepOneFormData,
+    testPerformedTableRows,
+  ]);
+
   // Function to add a new row
   const addTableRow = () => {
     setTableRows([...tableRows, rowTemplate]);
@@ -60,14 +80,15 @@ const RenderTable = ({
 
       if (!isNaN(startTime) && !isNaN(endTime)) {
         let durationInMilliSecond = endTime - startTime;
-        let durationInHours = durationInMilliSecond / (1000 * 60 * 60);
+        let durationInMinutes = durationInMilliSecond / (1000 * 60);
 
         // Ensure duration is not negative:
-        if (durationInHours < 0) {
-          durationInHours = 0;
+        if (durationInMinutes < 0) {
+          durationInMinutes = 0;
         }
 
-        updatedRows[index].testDuration = Math.round(durationInHours);
+        // updatedRows[index].testDuration = Math.round(durationInMinutes);
+        updatedRows[index].testDuration = durationInMinutes;
       }
     }
 
@@ -78,6 +99,20 @@ const RenderTable = ({
   // Function to handle "Observation Form" changes
   const handleObservationFormChange = (index, value) => {
     handleInputChange(index, "observationForm", value);
+    const row = tableRows[index];
+    const formType = row.observationForm;
+    setSelectedFormType(formType);
+    setDialogOpen(true);
+  };
+
+  const handleCloseDialog = () => {
+    setDialogOpen(false);
+  };
+
+  const handleOpenObservationFormButton = (rowIndex) => {
+    const rowId = tableRows[rowIndex].observationForm;
+    console.log("Row ID:", rowId);
+    alert("Opening Observation Form:", rowId);
   };
 
   const tableHeaderStyle = { backgroundColor: "#006699", fontWeight: "bold" };
@@ -91,170 +126,190 @@ const RenderTable = ({
   };
 
   return (
-    <TableContainer sx={tableContainerStyle}>
-      <Table size="small">
-        <TableHead sx={tableHeaderStyle}>
-          <TableRow>
-            {tableColumns.map((column) => (
-              <TableCell
-                key={column.id}
-                width={column.width}
-                align={column.align || "center"}
-                style={tableCellStyle}
-              >
-                {column.label}
-              </TableCell>
-            ))}
-            <TableCell>
-              <IconButton onClick={addTableRow}>
-                <AddIcon sx={{ color: "white" }} size="small" />
-              </IconButton>
-            </TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {tableRows.map((row, rowIndex) => (
-            <TableRow key={rowIndex}>
+    <>
+      <TableContainer sx={tableContainerStyle}>
+        <Table size="small">
+          <TableHead sx={tableHeaderStyle}>
+            <TableRow>
               {tableColumns.map((column) => (
                 <TableCell
                   key={column.id}
                   width={column.width}
                   align={column.align || "center"}
+                  style={tableCellStyle}
                 >
-                  {column.id === "serialNumber" ? (
-                    rowIndex + 1
-                  ) : column.type === "textField" ? (
-                    <TextField
-                      value={row[column.id]}
-                      onChange={(e) =>
-                        handleInputChange(rowIndex, column.id, e.target.value)
-                      }
-                      fullWidth
-                    />
-                  ) : column.type === "number" ? (
-                    <TextField
-                      type="number"
-                      value={row[column.id]}
-                      onChange={(e) =>
-                        handleInputChange(rowIndex, column.id, e.target.value)
-                      }
-                      fullWidth
-                      InputProps={
-                        column.id === "testDuration"
-                          ? { readOnly: true } // Set testDuration as read-only
-                          : {}
-                      }
-                    />
-                  ) : column.type === "select" ? (
-                    <Select
-                      value={row[column.id]}
-                      onChange={(e) =>
-                        column.id === "observationForm"
-                          ? handleObservationFormChange(
-                              rowIndex,
-                              e.target.value
-                            )
-                          : handleInputChange(
-                              rowIndex,
-                              column.id,
-                              e.target.value
-                            )
-                      }
-                      fullWidth
-                    >
-                      {Array.isArray(column.options) &&
-                        column.options.map((option) => {
-                          if (typeof option === "string") {
-                            return (
-                              <MenuItem key={option} value={option}>
-                                {option}
-                              </MenuItem>
-                            );
-                          } else {
-                            return (
-                              <MenuItem
-                                key={option.id ? option.id : option.label}
-                                value={option.id ? option.id : option.value}
-                              >
-                                {option.label}
-                              </MenuItem>
-                            );
-                          }
-                        })}
-                    </Select>
-                  ) : column.type === "dateTime" ? (
-                    <LocalizationProvider dateAdapter={AdapterDayjs}>
-                      <DateTimePicker
-                        value={row[column.id] || null}
-                        onChange={(newValue) =>
-                          handleInputChange(rowIndex, column.id, newValue)
-                        }
-                        fullWidth
-                        renderInput={(props) => (
-                          <TextField {...props} fullWidth />
-                        )}
-                        format="DD/MM/YYYY HH:mm"
-                      />
-                    </LocalizationProvider>
-                  ) : column.type === "date" ? (
-                    <LocalizationProvider dateAdapter={AdapterDayjs}>
-                      <DatePicker
-                        value={row[column.id] || null}
-                        onChange={(newValue) =>
-                          handleInputChange(rowIndex, column.id, newValue)
-                        }
-                        renderInput={(props) => (
-                          <TextField {...props} fullWidth />
-                        )}
-                        format="DD/MM/YYYY"
-                      />
-                    </LocalizationProvider>
-                  ) : column.type === "time" ? (
-                    <LocalizationProvider dateAdapter={AdapterDayjs}>
-                      <TimePicker
-                        value={row[column.id] || null}
-                        onChange={(newValue) =>
-                          handleInputChange(rowIndex, column.id, newValue)
-                        }
-                        renderInput={(props) => (
-                          <TextField {...props} fullWidth />
-                        )}
-                      />
-                    </LocalizationProvider>
-                  ) : (
-                    ""
-                  )}
+                  {column.label}
                 </TableCell>
               ))}
               <TableCell>
-                <IconButton
-                  onClick={() => removeTableRow(rowIndex)}
-                  disabled={tableRows.length === 1}
-                >
-                  <RemoveIcon />
+                <IconButton onClick={addTableRow}>
+                  <AddIcon sx={{ color: "white" }} size="small" />
                 </IconButton>
               </TableCell>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-      <Box display="flex" justifyContent="flex-start">
-        <Button
-          variant="outlined"
-          onClick={addTableRow}
-          sx={{
-            mt: "2px",
-            mb: "2px",
-            ml: "2px",
-            mr: "2px",
-            minWidth: "120px",
-            textAlign: "center",
-          }}
-        >
-          Add Row
-        </Button>
-      </Box>
-    </TableContainer>
+          </TableHead>
+          <TableBody>
+            {tableRows.map((row, rowIndex) => (
+              <TableRow key={rowIndex}>
+                {tableColumns.map((column) => (
+                  <TableCell
+                    key={column.id}
+                    width={column.width}
+                    align={column.align || "center"}
+                  >
+                    {column.id === "serialNumber" ? (
+                      rowIndex + 1
+                    ) : column.type === "textField" ? (
+                      <TextField
+                        value={row[column.id]}
+                        onChange={(e) =>
+                          handleInputChange(rowIndex, column.id, e.target.value)
+                        }
+                        fullWidth
+                      />
+                    ) : column.type === "number" ? (
+                      <TextField
+                        type="number"
+                        value={row[column.id]}
+                        onChange={(e) =>
+                          handleInputChange(rowIndex, column.id, e.target.value)
+                        }
+                        fullWidth
+                        InputProps={
+                          column.id === "testDuration"
+                            ? { readOnly: true } // Set testDuration as read-only
+                            : {}
+                        }
+                      />
+                    ) : column.type === "select" ? (
+                      <Select
+                        value={row[column.id]}
+                        onChange={(e) =>
+                          column.id === "observationForm"
+                            ? handleObservationFormChange(
+                                rowIndex,
+                                e.target.value
+                              )
+                            : handleInputChange(
+                                rowIndex,
+                                column.id,
+                                e.target.value
+                              )
+                        }
+                        fullWidth
+                      >
+                        {Array.isArray(column.options) &&
+                          column.options.map((option) => {
+                            if (typeof option === "string") {
+                              return (
+                                <MenuItem key={option} value={option}>
+                                  {option}
+                                </MenuItem>
+                              );
+                            } else {
+                              return (
+                                <MenuItem
+                                  key={option.id ? option.id : option.label}
+                                  value={option.id ? option.id : option.value}
+                                >
+                                  {option.label}
+                                </MenuItem>
+                              );
+                            }
+                          })}
+                      </Select>
+                    ) : column.type === "dateTime" ? (
+                      <LocalizationProvider dateAdapter={AdapterDayjs}>
+                        <DateTimePicker
+                          value={row[column.id] || null}
+                          onChange={(newValue) =>
+                            handleInputChange(rowIndex, column.id, newValue)
+                          }
+                          fullWidth
+                          renderInput={(props) => (
+                            <TextField {...props} fullWidth />
+                          )}
+                          format="DD/MM/YYYY HH:mm"
+                        />
+                      </LocalizationProvider>
+                    ) : column.type === "date" ? (
+                      <LocalizationProvider dateAdapter={AdapterDayjs}>
+                        <DatePicker
+                          value={row[column.id] || null}
+                          onChange={(newValue) =>
+                            handleInputChange(rowIndex, column.id, newValue)
+                          }
+                          renderInput={(props) => (
+                            <TextField {...props} fullWidth />
+                          )}
+                          format="DD/MM/YYYY"
+                        />
+                      </LocalizationProvider>
+                    ) : column.type === "time" ? (
+                      <LocalizationProvider dateAdapter={AdapterDayjs}>
+                        <TimePicker
+                          value={row[column.id] || null}
+                          onChange={(newValue) =>
+                            handleInputChange(rowIndex, column.id, newValue)
+                          }
+                          renderInput={(props) => (
+                            <TextField {...props} fullWidth />
+                          )}
+                        />
+                      </LocalizationProvider>
+                    ) : column.type === "button" ? (
+                      <Button
+                        variant="outlined"
+                        onClick={() =>
+                          handleOpenObservationFormButton(rowIndex)
+                        }
+                        // onClick={() => handleObservationFormChange(rowIndex,)}
+                        fullWidth
+                      >
+                        Open OF
+                      </Button>
+                    ) : (
+                      ""
+                    )}
+                  </TableCell>
+                ))}
+                <TableCell>
+                  <IconButton
+                    onClick={() => removeTableRow(rowIndex)}
+                    disabled={tableRows.length === 1}
+                  >
+                    <RemoveIcon />
+                  </IconButton>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+        <Box display="flex" justifyContent="flex-start">
+          <Button
+            variant="outlined"
+            onClick={addTableRow}
+            sx={{
+              mt: "2px",
+              mb: "2px",
+              ml: "2px",
+              mr: "2px",
+              minWidth: "120px",
+              textAlign: "center",
+            }}
+          >
+            Add Row
+          </Button>
+        </Box>
+      </TableContainer>
+
+      <ObservationForms
+        open={dialogOpen}
+        onClose={handleCloseDialog}
+        formType={selectedFormType}
+        commonData={commonData} // Pass any common data
+      />
+    </>
   );
 };
 

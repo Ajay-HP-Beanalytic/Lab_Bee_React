@@ -83,6 +83,7 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
 
     const {
       companyName,
+      companyAddress,
       customerName,
       customerEmail,
       customerPhone,
@@ -158,8 +159,8 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
 
       const sql = `INSERT INTO emi_jobcards(
               jcNumber, quoteNumber, poNumber, jcOpenDate, itemReceivedDate, typeOfRequest, sampleCondition, slotDuration, 
-              companyName, customerName, customerEmail, customerNumber, projectName, reportType, jcIncharge, jcStatus, jcClosedDate, 
-              observations, lastUpdatedBy) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+              companyName, companyAddress, customerName, customerEmail, customerNumber, projectName, reportType, jcIncharge, jcStatus, jcClosedDate, 
+              observations, lastUpdatedBy) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
       const jcValues = [
         newJcNumber,
@@ -171,6 +172,7 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
         sampleCondition || "",
         slotDuration || "",
         companyName || "",
+        companyAddress || "",
         customerName || "",
         customerEmail || "",
         customerPhone || "",
@@ -229,8 +231,8 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
         const testsPerformedSql = `INSERT INTO emi_tests_details_table(
         jcNumber, testName, eutName, eutSerialNumber, testMachine, testStandard, testStartDateTime, startTemp, startRh, testStartedBy, 
         testEndDateTime, testEndedBy, endTemp, endRh, testDuration, actualTestDuration, unit, slotDetails, 
-        reportDeliveryStatus, reportNumber, reportPreparedBy, reportStatus, observationForm, lastUpdatedBy)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+        reportDeliveryStatus, reportNumber, reportPreparedBy, reportStatus, observationForm, observationFormStatus, lastUpdatedBy)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)`;
 
         for (let testPerformedRow of testPerformedTableRows) {
           const formattedStartDateTime = testPerformedRow.testStartDateTime
@@ -268,6 +270,7 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
             testPerformedRow.reportPreparedBy || "",
             testPerformedRow.reportStatus || "",
             testPerformedRow.observationForm || "",
+            testPerformedRow.observationFormStatus || "",
             loggedInUser || "",
           ];
           await connection.query(testsPerformedSql, testPerformedValues);
@@ -348,6 +351,7 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
 
     const {
       companyName,
+      companyAddress,
       customerName,
       customerEmail,
       customerPhone,
@@ -408,6 +412,7 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
                 sampleCondition = ?, 
                 slotDuration = ?, 
                 companyName = ?, 
+                companyAddress = ?,
                 customerName = ?, 
                 customerEmail = ?, 
                 customerNumber = ?, 
@@ -429,6 +434,7 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
         sampleCondition || "",
         slotDuration || "",
         companyName || "",
+        companyAddress || "",
         customerName || "",
         customerEmail || "",
         customerPhone || "",
@@ -558,7 +564,7 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
                         testStartDateTime = ?, startTemp = ?, startRh = ?, testStartedBy = ?, 
                         testEndDateTime = ?, testEndedBy = ?, endTemp = ?, endRh = ?, testDuration = ?, 
                         actualTestDuration = ?, unit = ?, slotDetails = ?, reportDeliveryStatus = ?, 
-                        reportNumber = ?, reportPreparedBy = ?, reportStatus = ?, observationForm = ?, lastUpdatedBy = ?
+                        reportNumber = ?, reportPreparedBy = ?, reportStatus = ?, observationForm = ?, observationFormStatus = ?, lastUpdatedBy = ?
                     WHERE id = ? AND jcNumber = ?`;
 
           const testPerformedValues = [
@@ -584,6 +590,7 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
             testPerformedRow.reportPreparedBy || "",
             testPerformedRow.reportStatus || "",
             testPerformedRow.observationForm || "",
+            testPerformedRow.observationFormStatus || "",
             loggedInUser || "",
             testPerformedRow.id,
             jcNumber,
@@ -596,8 +603,8 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
                     INSERT INTO emi_tests_details_table(
                       jcNumber, testName, eutName, eutSerialNumber, testMachine, testStandard, testStartDateTime, startTemp, 
                       startRh, testStartedBy, testEndDateTime, testEndedBy, endTemp, endRh, testDuration, actualTestDuration, 
-                      unit, slotDetails, reportDeliveryStatus, reportNumber, reportPreparedBy, reportStatus, observationForm, lastUpdatedBy)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+                      unit, slotDetails, reportDeliveryStatus, reportNumber, reportPreparedBy, reportStatus, observationForm, observationFormStatus, lastUpdatedBy)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
           const testPerformedValues = [
             jcNumber,
@@ -623,6 +630,7 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
             testPerformedRow.reportPreparedBy || "",
             testPerformedRow.reportStatus || "",
             testPerformedRow.observationForm || "",
+            testPerformedRow.observationFormStatus || "",
             loggedInUser || "",
           ];
 

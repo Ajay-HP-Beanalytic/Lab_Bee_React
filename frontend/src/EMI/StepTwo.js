@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useState } from "react";
 import { EMIJCContext } from "./EMIJCContext";
 import { useForm } from "react-hook-form";
-import { Box, Card, Grid, Typography } from "@mui/material";
+import { Box, Button, Card, Grid, Typography } from "@mui/material";
 import _ from "lodash";
 import RenderComponents from "../functions/RenderComponents";
 import RenderTable from "../functions/RenderTable";
@@ -13,6 +13,7 @@ import dayjs from "dayjs";
 export default function EMIJCStepTwo() {
   //Import the respective context:
   const {
+    stepOneFormData,
     stepTwoFormData,
     updateStepTwoFormData,
     testPerformedTableRows,
@@ -153,17 +154,21 @@ export default function EMIJCStepTwo() {
       align: "center",
     },
     {
-      id: "testMachine",
-      label: "Device/Machine",
-      width: 250,
-      type: "textField",
-      align: "center",
-    },
-    {
       id: "testStandard",
       label: "Test Standard",
       width: 200,
       type: "textField",
+      align: "center",
+    },
+    {
+      id: "slotDetails",
+      label: "Slot Details",
+      width: 200,
+      type: "select",
+      options: [
+        { id: "Pre-Compliance", label: "Pre-Compliance" },
+        { id: "Compliance", label: "Compliance" },
+      ],
       align: "center",
     },
     {
@@ -226,7 +231,7 @@ export default function EMIJCStepTwo() {
     },
     {
       id: "testDuration",
-      label: "Test Duration",
+      label: "Test Duration (Mins)",
       width: 200,
       type: "number",
       align: "center",
@@ -235,31 +240,42 @@ export default function EMIJCStepTwo() {
       id: "actualTestDuration",
       label: "Actual Test Duration(Hrs)",
       width: 200,
-      type: "number",
+      type: "textField",
       align: "center",
     },
+
     {
-      id: "unit",
-      label: "Unit",
+      id: "observationForm",
+      label: "Observation Form",
       width: 200,
       type: "select",
       options: [
-        { id: "Hours", label: "Hours" },
-        { id: "Test", label: "Test" },
-        { id: "Days", label: "Days" },
+        { label: "CS101", value: "CS101" },
+        { label: "CS114", value: "CS114" },
+        { label: "CS115", value: "CS115" },
+        { label: "CS116", value: "CS116" },
+        { label: "CS118", value: "CS118" },
+        { label: "RS101", value: "RS101" },
+        { label: "RS103", value: "RS103" },
       ],
       align: "center",
     },
     {
-      id: "slotDetails",
-      label: "Slot Details",
+      id: "createObservationForm",
+      label: "Create Observation Form",
+      width: 200,
+      type: "button",
+    },
+    {
+      id: "observationFormStatus",
+      label: " Observation Form Status",
+      align: "center",
       width: 200,
       type: "select",
       options: [
-        { id: "Pre-Compliance", label: "Pre-Compliance" },
-        { id: "Compliance", label: "Compliance" },
+        { label: "Added", value: "Added" },
+        { label: "Not Added", value: "Not Added" },
       ],
-      align: "center",
     },
     {
       id: "reportDeliveryStatus",
@@ -297,22 +313,6 @@ export default function EMIJCStepTwo() {
         { id: "Draft Report Sent", label: "Draft Report Sent" },
         { id: "On-Hold", label: "On-Hold" },
         { id: "Final Report Sent", label: "Final Report Sent" },
-      ],
-      align: "center",
-    },
-    {
-      id: "observationForm",
-      label: "Observation Form",
-      width: 200,
-      type: "select",
-      options: [
-        { label: "CS101", value: "CS101" },
-        { label: "CS114", value: "CS114" },
-        { label: "CS115", value: "CS115" },
-        { label: "CS116", value: "CS116" },
-        { label: "CS118", value: "CS118" },
-        { label: "RS101", value: "CS118" },
-        { label: "RS103", value: "RS103" },
       ],
       align: "center",
     },
@@ -357,10 +357,6 @@ export default function EMIJCStepTwo() {
   return (
     <>
       <Card sx={{ width: "100%", mt: "10px", mb: "10px" }}>
-        <Typography variant="h5" sx={{ mb: "5px" }}>
-          Tests Performed
-        </Typography>
-
         <Grid
           container
           spacing={2}
@@ -393,7 +389,7 @@ export default function EMIJCStepTwo() {
       <Card sx={{ width: "100%", mt: "10px", mb: "10px", padding: "10px" }}>
         <Box>
           <Typography variant="h5" sx={{ mb: "5px" }}>
-            Test Details
+            Tests Performed Details
           </Typography>
 
           <RenderTable
