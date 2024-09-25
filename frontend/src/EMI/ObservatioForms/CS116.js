@@ -1,16 +1,39 @@
-import { Grid, TextField } from "@mui/material";
+import {
+  Grid,
+  TextField,
+  FormControl,
+  FormControlLabel,
+  FormLabel,
+  Radio,
+  RadioGroup,
+} from "@mui/material";
 import React, { useContext } from "react";
 import { EMIJCContext } from "../EMIJCContext";
 import RenderTable from "../../functions/RenderTable";
 
-const CS116Form = ({ commonData }) => {
+const CS116Form = ({ formType }) => {
   const {
     observationFormData,
-    setObservationFormData,
     updateObservationFormData,
     updateCs116TableRows,
     cs116TableRows,
   } = useContext(EMIJCContext);
+
+  const performanceCreteriaOptions = [
+    "Criteria A - Normal EUT performance during and after the test as intended",
+    "Criteria B -Temporary loss of function is allowed, EUT should be recoverable without operator intervention",
+    "Criteria C -Temporary loss of function is not allowed, EUT should not be recoverable without operator intervention",
+    "Criteria D -Loss of function is not allowed, EUT should not be recoverable without operator intervention",
+  ];
+
+  const handleCriteriaChange = (event) => {
+    const selectedCriteria = event.target.value;
+
+    updateObservationFormData(formType, "selectedCriteria", selectedCriteria);
+
+    const updatedCS116FormData = `${selectedCriteria}`;
+    updateObservationFormData(formType, "CS116FormData", updatedCS116FormData);
+  };
 
   const cs116TableColumns = [
     { id: "serialNumber", label: "SL No", width: "20", align: "left" },
@@ -99,6 +122,35 @@ const CS116Form = ({ commonData }) => {
         />
       </Grid>
 
+      <Grid
+        item
+        xs={12}
+        sx={{
+          mb: "5px",
+          mt: "5px",
+
+          border: "1px solid #ccc",
+        }}
+      >
+        <FormControl component="fieldset">
+          <FormLabel component="legend">Performance Criteria</FormLabel>
+          <RadioGroup
+            name="performanceCriteria"
+            value={observationFormData[formType]?.selectedCriteria || ""}
+            onChange={handleCriteriaChange} // Handle change on selection
+          >
+            {performanceCreteriaOptions.map((option, index) => (
+              <FormControlLabel
+                key={index}
+                value={option}
+                control={<Radio size="small" />}
+                label={option}
+              />
+            ))}
+          </RadioGroup>
+        </FormControl>
+      </Grid>
+
       <Grid item xs={12}>
         <TextField
           variant="outlined"
@@ -106,9 +158,9 @@ const CS116Form = ({ commonData }) => {
           fullWidth
           multiline
           rows={4}
-          value={observationFormData.CS116FormData || ""}
+          value={observationFormData[formType]?.CS116FormData || ""}
           onChange={(e) =>
-            updateObservationFormData("CS116FormData", e.target.value)
+            updateObservationFormData(formType, "CS116FormData", e.target.value)
           }
         />
       </Grid>
