@@ -45,6 +45,7 @@ const RenderTable = ({
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedFormType, setSelectedFormType] = useState("");
+  const [selectedRowIndex, setSelectedRowIndex] = useState(null);
 
   const [commonData, setCommonData] = useState([
     stepOneFormData,
@@ -106,13 +107,17 @@ const RenderTable = ({
   };
 
   const handleCloseDialog = () => {
+    // setSelectedFormType("");
+    // setSelectedRowIndex(null);
     setDialogOpen(false);
   };
 
   const handleOpenObservationFormButton = (rowIndex) => {
-    const rowId = tableRows[rowIndex].observationForm;
-    console.log("Row ID:", rowId);
-    alert("Opening Observation Form:", rowId);
+    const row = tableRows[rowIndex];
+    const formType = row.observationForm;
+    setSelectedFormType(formType);
+    setSelectedRowIndex(rowIndex);
+    setDialogOpen(true);
   };
 
   const tableHeaderStyle = { backgroundColor: "#006699", fontWeight: "bold" };
@@ -185,16 +190,7 @@ const RenderTable = ({
                       <Select
                         value={row[column.id]}
                         onChange={(e) =>
-                          column.id === "observationForm"
-                            ? handleObservationFormChange(
-                                rowIndex,
-                                e.target.value
-                              )
-                            : handleInputChange(
-                                rowIndex,
-                                column.id,
-                                e.target.value
-                              )
+                          handleInputChange(rowIndex, column.id, e.target.value)
                         }
                         fullWidth
                       >
@@ -263,7 +259,6 @@ const RenderTable = ({
                         onClick={() =>
                           handleOpenObservationFormButton(rowIndex)
                         }
-                        // onClick={() => handleObservationFormChange(rowIndex,)}
                         fullWidth
                       >
                         Open OF
@@ -308,6 +303,7 @@ const RenderTable = ({
         onClose={handleCloseDialog}
         formType={selectedFormType}
         commonData={commonData} // Pass any common data
+        rowIndex={selectedRowIndex} // Pass the rowIndex
       />
     </>
   );

@@ -257,6 +257,7 @@ export default function EMIJCStepTwo() {
         { label: "CS118", value: "CS118" },
         { label: "RS101", value: "RS101" },
         { label: "RS103", value: "RS103" },
+        { label: "NA", value: "NA" },
       ],
       align: "center",
     },

@@ -688,7 +688,7 @@ function createEMIJobcardsTestsDetailsTable() {
       actualTestDuration VARCHAR(1000),
       observationForm VARCHAR(500),
       observationFormStatus VARCHAR(500),
-      unit VARCHAR(500),
+      observationFormData TEXT,
       reportDeliveryStatus VARCHAR(500),
       reportNumber VARCHAR(500),
       reportPreparedBy VARCHAR(500),

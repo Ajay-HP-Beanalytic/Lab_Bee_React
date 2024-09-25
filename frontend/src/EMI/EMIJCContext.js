@@ -83,10 +83,14 @@ const EMIJCContextProvider = ({ children }) => {
     setTestPerformedTableRows(rows);
   };
 
-  const updateObservationFormData = (key, value) => {
-    setObservationFormData((prevState) => ({
-      ...prevState,
-      [key]: value,
+  // Function to update observationFormData
+  const updateObservationFormData = (formType, field, value) => {
+    setObservationFormData((prevData) => ({
+      ...prevData,
+      [formType]: {
+        ...prevData[formType],
+        [field]: value,
+      },
     }));
   };
 
