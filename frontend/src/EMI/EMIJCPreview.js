@@ -103,6 +103,7 @@ const EMIJCPreview = ({
     "Test Duration (Mins)",
     "Actual Test Duration (Hrs)",
     "Observation Form",
+    "Observation Form Data",
     "Observation Form Status",
     "Report Delivery Status",
     "Report Number",
@@ -289,6 +290,7 @@ const EMIJCPreview = ({
                         <TableCell>{row.testDuration}</TableCell>
                         <TableCell>{row.actualTestDuration}</TableCell>
                         <TableCell>{row.observationForm}</TableCell>
+                        <TableCell>{row.observationFormData}</TableCell>
                         <TableCell>{row.observationFormStatus}</TableCell>
                         <TableCell>{row.reportDeliveryStatus}</TableCell>
                         <TableCell>{row.reportNumber}</TableCell>
