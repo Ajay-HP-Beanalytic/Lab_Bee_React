@@ -5,6 +5,11 @@ import { saveAs } from "file-saver";
 import PizZipUtils from "pizzip/utils";
 
 import CS101Template from "../templates/CS101_OBSERVATION_FORM.docx";
+import CS114Template from "../templates/CS114_OBSERVATION_FORM.docx";
+import CS115Template from "../templates/CS115_OBSERVATION_FORM.docx";
+import CS116Template from "../templates/CS116_OBSERVATION_FORM.docx";
+import RS101Template from "../templates/RS101_OBSERVATION_FORM.docx";
+import RS103Template from "../templates/RS103_OBSERVATION_FORM.docx";
 import axios from "axios";
 import { serverBaseAddress } from "../Pages/APIPage";
 import dayjs from "dayjs";
@@ -14,8 +19,6 @@ function loadFile(url, callback) {
 }
 
 const DownloadObservationForm = ({ formType, observationFormData }) => {
-  console.log("observationFormData:", observationFormData);
-  console.log("formType:", formType);
   // Define the correct template based on formType
   let observationTemplate;
   switch (formType) {
@@ -23,10 +26,19 @@ const DownloadObservationForm = ({ formType, observationFormData }) => {
       observationTemplate = CS101Template;
       break;
     case "CS114":
-      observationTemplate = "/path/to/CS114Template.docx";
+      observationTemplate = CS114Template;
       break;
     case "CS115":
-      observationTemplate = "/path/to/CS115Template.docx";
+      observationTemplate = CS115Template;
+      break;
+    case "CS116":
+      observationTemplate = CS116Template;
+      break;
+    case "RS101":
+      observationTemplate = RS101Template;
+      break;
+    case "RS103":
+      observationTemplate = RS103Template;
       break;
     // Add more cases for other forms
     default:
@@ -52,10 +64,13 @@ const DownloadObservationForm = ({ formType, observationFormData }) => {
       testId: observationFormData.testId || "",
       temperature: observationFormData.temperature || "",
       humidity: observationFormData.humidity || "",
-      // Add more fields if needed from observationFormData
+      eutStatus: observationFormData.eutStatus || "",
+      CS101FormData: observationFormData.CS101FormData || "",
+      testStartDateTimeForOF:
+        dayjs(observationFormData.testStartDateTimeForOF).format(
+          "DD-MM-YYYY"
+        ) || "",
     };
-
-    console.log("templateData:", templateData);
 
     // Set the observation form data in the document
     doc.setData(templateData);

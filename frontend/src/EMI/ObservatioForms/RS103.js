@@ -37,14 +37,21 @@ const RS103Form = ({ formType }) => {
     updateObservationFormData(formType, "RS103FormData", updatedRS103FormData);
   };
 
+  const antennasOptions = [
+    { id: "Electric Field Antenna", label: "Electric Field Antenna" },
+    { id: "Hybrid Combi log", label: "Hybrid Combi log" },
+    { id: "Double Ridged Horn Antenna", label: "Double Ridged Horn Antenna" },
+  ];
+
   const rs103TableColumns = [
     { id: "serialNumber", label: "SL No", width: "20", align: "left" },
     {
       id: "antennas",
       label: "Antennas",
       width: 250,
-      type: "textField",
+      type: "select",
       align: "center",
+      options: antennasOptions,
     },
     {
       id: "frequencyRange",

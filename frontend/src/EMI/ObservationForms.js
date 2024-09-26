@@ -25,6 +25,7 @@ import RS101Form from "./ObservatioForms/RS101";
 import RS103Form from "./ObservatioForms/RS103";
 import CS118Form from "./ObservatioForms/CS118";
 import DownloadObservationForm from "./DownloadObservationForm";
+import { useEffect } from "react";
 
 const ObservationForms = ({
   open,
@@ -38,6 +39,12 @@ const ObservationForms = ({
     setObservationFormData,
     updateObservationFormData,
     updateTestPerformedTableRows,
+    cs114TableRows,
+    cs115TableRows,
+    cs116TableRows,
+    cs118ADTableRows,
+    cs118CDTableRows,
+    rs103TableRows,
   } = useContext(EMIJCContext);
 
   const { control, register, setValue, watch } = useForm();
@@ -60,6 +67,54 @@ const ObservationForms = ({
     testStandardForOF: testPerformedTableRows[rowIndex]?.testStandard,
     testStartDateTimeForOF: testPerformedTableRows[rowIndex]?.testStartDateTime,
   };
+
+  const downloadOFormData =
+    testPerformedTableRows[rowIndex]?.observationFormData;
+
+  // Safely parse only if the data exists and is valid JSON
+  let parsedDownloadData = {};
+  if (downloadOFormData) {
+    try {
+      parsedDownloadData = JSON.parse(downloadOFormData);
+    } catch (error) {
+      console.error("Failed to parse observationFormData:", error);
+    }
+  }
+
+  const mergedDataForDownload = {
+    ...commonDataForOF,
+    ...parsedDownloadData,
+  };
+
+  // When the component mounts, load existing observation form data if present
+  useEffect(() => {
+    const storedObservationFormData =
+      testPerformedTableRows[rowIndex]?.observationFormData;
+
+    if (storedObservationFormData) {
+      // Parse the stored JSON data
+      const parsedStoredObservationFormData = JSON.parse(
+        storedObservationFormData
+      );
+
+      // Set each field in the observationFormData from the stored data
+      Object.keys(parsedStoredObservationFormData).forEach((key) => {
+        setValue(key, parsedStoredObservationFormData[key]);
+      });
+
+      // Update observationFormData context for the current formType;
+      setObservationFormData((prevData) => ({
+        ...prevData,
+        [formType]: parsedStoredObservationFormData,
+      }));
+    }
+  }, [
+    rowIndex,
+    formType,
+    setValue,
+    setObservationFormData,
+    testPerformedTableRows,
+  ]);
 
   const BEAADDRESS =
     "BE Analytic Solutions, # B110, Devasandra Industrial Estate, Whitefield Road, Mahadevapura, Bangalore - 560048, India";
@@ -109,10 +164,47 @@ const ObservationForms = ({
 
   const handleSubmitObservationForm = async (rowIndex) => {
     try {
+      let observationFormTableData = [];
+      switch (formType) {
+        case "CS114":
+          observationFormTableData = cs114TableRows;
+          break;
+        case "CS115":
+          observationFormTableData = cs115TableRows;
+          break;
+
+        case "CS116":
+          observationFormTableData = cs116TableRows;
+          break;
+
+        case "CS118AD":
+          observationFormTableData = cs118ADTableRows;
+          break;
+
+        case "CS118CD":
+          observationFormTableData = cs118CDTableRows;
+          break;
+
+        case "RS103":
+          observationFormTableData = rs103TableRows;
+        // Add other cases for other forms
+        default:
+          observationFormTableData = [];
+          break;
+      }
+
+      // Add serialNumberCounter to each row in the table data
+      const observationFormTableDataWithSerialNumbers =
+        observationFormTableData.map((row, index) => ({
+          ...row,
+          serialNumberCounter: index + 1, // Serial number starting from 1
+        }));
+
       // Merge commonData with observationFormData
       const finalObservationFormData = {
         ...commonDataForOF, // This will spread the commonData object fields
         ...observationFormData[formType], // This will spread the observation form-specific fields
+        observationFormTableData: observationFormTableDataWithSerialNumbers,
       };
 
       console.log("Observation Form Data:", finalObservationFormData);
@@ -128,15 +220,6 @@ const ObservationForms = ({
 
       // Update the context or state
       updateTestPerformedTableRows(updatedTestPerformedTableRows);
-
-      console.log(
-        "Updated testPerformedTableRows:",
-        updatedTestPerformedTableRows
-      );
-      console.log(
-        "Observation Form Data saved:",
-        jsonFormatOfObservationFormData
-      );
     } catch (error) {
       console.error("Error in saving observation form data:", error);
     }
@@ -244,7 +327,7 @@ const ObservationForms = ({
               onClick={() => handleSubmitObservationForm(rowIndex)}
               color="primary"
             >
-              Submit
+              Save
             </Button>
             <Button onClick={onClose} color="primary">
               Close
@@ -262,7 +345,7 @@ const ObservationForms = ({
       {downloadObservationForm && (
         <DownloadObservationForm
           formType={formType}
-          observationFormData={commonDataForOF}
+          observationFormData={mergedDataForDownload}
         />
       )}
     </>
