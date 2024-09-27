@@ -38,6 +38,7 @@ export default function RenderComponents({
                 label={field.label}
                 name={field.name}
                 {...register(field.name)}
+                value={watch(field.name) || ""} // Ensure it's never undefined
                 fullWidth
                 sx={{ mb: "10px", width: fieldWidth }}
               />
@@ -50,6 +51,7 @@ export default function RenderComponents({
                 label={field.label}
                 name={field.name}
                 {...register(field.name)}
+                value={watch(field.name) || ""} // Ensure it's never undefined
                 fullWidth
                 multiline
                 rows={2}
@@ -67,7 +69,7 @@ export default function RenderComponents({
                   <LocalizationProvider dateAdapter={AdapterDayjs}>
                     <DatePicker
                       label={field.label}
-                      value={value}
+                      value={value || null}
                       onChange={onChange}
                       fullWidth
                       sx={{ mb: "10px", width: fieldWidth }}
@@ -89,7 +91,7 @@ export default function RenderComponents({
                   <LocalizationProvider dateAdapter={AdapterDayjs}>
                     <DateTimePicker
                       label={field.label}
-                      value={value}
+                      value={value || null}
                       onChange={onChange}
                       sx={{ mb: "10px", width: fieldWidth }}
                       fullWidth
@@ -111,7 +113,7 @@ export default function RenderComponents({
                   <LocalizationProvider dateAdapter={AdapterDayjs}>
                     <TimePicker
                       label={field.label}
-                      value={value}
+                      value={value || null}
                       onChange={onChange}
                       sx={{ mb: "10px", width: fieldWidth }}
                       fullWidth
@@ -175,6 +177,8 @@ export default function RenderComponents({
                   aria-label={field.label}
                   name={field.name}
                   {...register(field.name)}
+                  value={watch(field.name) || ""} // Set value to empty string as fallback
+                  onChange={(e) => setValue(field.name, e.target.value)}
                   fullWidth
                   sx={{ mb: "10px", width: fieldWidth }}
                 >

@@ -11,11 +11,8 @@ import React, { useContext } from "react";
 import { EMIJCContext } from "../EMIJCContext";
 
 const CS101Form = ({ formType }) => {
-  const {
-    observationFormData,
-    setObservationFormData,
-    updateObservationFormData,
-  } = useContext(EMIJCContext);
+  const { observationFormData, updateObservationFormData } =
+    useContext(EMIJCContext);
 
   const performanceCreteriaOptions = [
     "Criteria A - Normal EUT performance during and after the test as intended",

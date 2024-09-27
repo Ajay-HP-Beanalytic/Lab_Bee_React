@@ -175,7 +175,7 @@ const RenderTable = ({
                     ) : column.type === "number" ? (
                       <TextField
                         type="number"
-                        value={row[column.id]}
+                        value={row[column.id] || ""}
                         onChange={(e) =>
                           handleInputChange(rowIndex, column.id, e.target.value)
                         }
@@ -188,7 +188,7 @@ const RenderTable = ({
                       />
                     ) : column.type === "select" ? (
                       <Select
-                        value={row[column.id]}
+                        value={row[column.id] || ""}
                         onChange={(e) =>
                           handleInputChange(rowIndex, column.id, e.target.value)
                         }

@@ -13,7 +13,6 @@ import { useForm } from "react-hook-form";
 import _ from "lodash";
 import RenderComponents from "../functions/RenderComponents";
 import RenderTable from "../functions/RenderTable";
-import SignaturePadComponent from "../common/SignaturePad";
 
 export default function EMIJCStepOne() {
   const theme = useTheme();

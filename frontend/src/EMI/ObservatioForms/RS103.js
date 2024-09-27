@@ -28,6 +28,18 @@ const RS103Form = ({ formType }) => {
     "Criteria D -Loss of function is not allowed, EUT should not be recoverable without operator intervention",
   ];
 
+  const antennasOptions = [
+    "Electric Field Antenna",
+    "Hybrid Combi log",
+    "Double Ridged Horn Antenna",
+  ];
+
+  // const antennasOptions = [
+  //   { id: "Electric Field Antenna", label: "Electric Field Antenna" },
+  //   { id: "Hybrid Combi log", label: "Hybrid Combi log" },
+  //   { id: "Double Ridged Horn Antenna", label: "Double Ridged Horn Antenna" },
+  // ];
+
   const handleCriteriaChange = (event) => {
     const selectedCriteria = event.target.value;
 
@@ -36,12 +48,6 @@ const RS103Form = ({ formType }) => {
     const updatedRS103FormData = `${selectedCriteria}`;
     updateObservationFormData(formType, "RS103FormData", updatedRS103FormData);
   };
-
-  const antennasOptions = [
-    { id: "Electric Field Antenna", label: "Electric Field Antenna" },
-    { id: "Hybrid Combi log", label: "Hybrid Combi log" },
-    { id: "Double Ridged Horn Antenna", label: "Double Ridged Horn Antenna" },
-  ];
 
   const rs103TableColumns = [
     { id: "serialNumber", label: "SL No", width: "20", align: "left" },
@@ -110,7 +116,6 @@ const RS103Form = ({ formType }) => {
         sx={{
           mb: "5px",
           mt: "5px",
-
           border: "1px solid #ccc",
         }}
       >
