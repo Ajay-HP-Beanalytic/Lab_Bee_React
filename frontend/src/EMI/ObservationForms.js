@@ -44,6 +44,7 @@ const ObservationForms = ({
     cs116TableRows,
     cs118ADTableRows,
     cs118CDTableRows,
+    cs118TableRows,
     rs103TableRows,
   } = useContext(EMIJCContext);
 
@@ -56,16 +57,17 @@ const ObservationForms = ({
 
   // Common fields data based on the test performed
   const commonDataForOF = {
-    compayNameForOF: stepOneFormData.companyName,
-    companyAddressForOF: stepOneFormData.companyAddress,
-    customerNameForOF: stepOneFormData.customerName,
-    customerEmailForOF: stepOneFormData.customerEmail,
-    customerPhoneForOF: stepOneFormData.customerPhone,
-    jcNumberForOF: testPerformedTableRows[rowIndex]?.jcNumber,
-    eutNameForOF: testPerformedTableRows[rowIndex]?.eutName,
-    eutSerialNoForOF: testPerformedTableRows[rowIndex]?.eutSerialNumber,
-    testStandardForOF: testPerformedTableRows[rowIndex]?.testStandard,
-    testStartDateTimeForOF: testPerformedTableRows[rowIndex]?.testStartDateTime,
+    companyNameForOF: stepOneFormData.companyName || "",
+    companyAddressForOF: stepOneFormData.companyAddress || "",
+    customerNameForOF: stepOneFormData.customerName || "",
+    customerEmailForOF: stepOneFormData.customerEmail || "",
+    customerPhoneForOF: stepOneFormData.customerPhone || "",
+    jcNumberForOF: testPerformedTableRows[rowIndex]?.jcNumber || "",
+    eutNameForOF: testPerformedTableRows[rowIndex]?.eutName || "",
+    eutSerialNoForOF: testPerformedTableRows[rowIndex]?.eutSerialNumber || "",
+    testStandardForOF: testPerformedTableRows[rowIndex]?.testStandard || "",
+    testStartDateTimeForOF:
+      testPerformedTableRows[rowIndex]?.testStartDateTime || "",
   };
 
   const downloadOFormData =
@@ -111,7 +113,7 @@ const ObservationForms = ({
   }, [
     rowIndex,
     formType,
-    setValue,
+    // setValue,
     setObservationFormData,
     testPerformedTableRows,
   ]);
@@ -120,7 +122,7 @@ const ObservationForms = ({
     "BE Analytic Solutions, # B110, Devasandra Industrial Estate, Whitefield Road, Mahadevapura, Bangalore - 560048, India";
 
   const commonJCDetails = [
-    { label: `Company Name: ${commonDataForOF.compayNameForOF}` },
+    { label: `Company Name: ${commonDataForOF.companyNameForOF}` },
     { label: `Company Address: ${commonDataForOF.companyAddressForOF}` },
     { label: `Customer Name: ${commonDataForOF.customerNameForOF}` },
     { label: `Customer Email: ${commonDataForOF.customerEmailForOF}` },
@@ -162,6 +164,82 @@ const ObservationForms = ({
     }
   };
 
+  // const handleSubmitObservationForm = async (rowIndex) => {
+  //   try {
+  //     let observationFormTableData = [];
+  //     switch (formType) {
+  //       case "CS114":
+  //         observationFormTableData = cs114TableRows;
+  //         break;
+
+  //       case "CS115":
+  //         observationFormTableData = cs115TableRows;
+  //         break;
+
+  //       case "CS116":
+  //         observationFormTableData = cs116TableRows;
+  //         break;
+
+  //       case "CS118":
+  //         // observationFormTableData = [...cs118ADTableRows, ...cs118CDTableRows];
+
+  //         observationFormTableData = {
+  //           cs118ADTableRows: cs118ADTableRows.map((row, index) => ({
+  //             ...row,
+  //             serialNumberCounter: index + 1,
+  //           })),
+  //           cs118CDTableRows: cs118CDTableRows.map((row, index) => ({
+  //             ...row,
+  //             serialNumberCounter: index + 1,
+  //           })),
+  //         };
+  //         console.log(
+  //           "observationFormTableData of CS118",
+  //           observationFormTableData
+  //         );
+  //         break;
+
+  //       case "RS103":
+  //         observationFormTableData = rs103TableRows;
+  //         break;
+  //       // Add other cases for other forms
+  //       default:
+  //         observationFormTableData = [];
+  //         break;
+  //     }
+
+  //     // Add serialNumberCounter to each row in the table data
+  //     const observationFormTableDataWithSerialNumbers =
+  //       observationFormTableData.map((row, index) => ({
+  //         ...row,
+  //         serialNumberCounter: index + 1, // Serial number starting from 1
+  //       }));
+
+  //     // Merge commonData with observationFormData
+  //     const finalObservationFormData = {
+  //       ...commonDataForOF, // This will spread the commonData object fields
+  //       ...observationFormData[formType], // This will spread the observation form-specific fields
+  //       observationFormTableData: observationFormTableDataWithSerialNumbers,
+  //     };
+
+  //     console.log("Observation Form Data:", finalObservationFormData);
+  //     // Convert the merged data to JSON format
+  //     const jsonFormatOfObservationFormData = JSON.stringify(
+  //       finalObservationFormData
+  //     );
+
+  //     // Update the specific row in testPerformedTableRows with the observationFormData
+  //     const updatedTestPerformedTableRows = [...testPerformedTableRows];
+  //     updatedTestPerformedTableRows[rowIndex].observationFormData =
+  //       jsonFormatOfObservationFormData;
+
+  //     // Update the context or state
+  //     updateTestPerformedTableRows(updatedTestPerformedTableRows);
+  //   } catch (error) {
+  //     console.error("Error in saving observation form data:", error);
+  //   }
+  // };
+
   const handleSubmitObservationForm = async (rowIndex) => {
     try {
       let observationFormTableData = [];
@@ -169,6 +247,7 @@ const ObservationForms = ({
         case "CS114":
           observationFormTableData = cs114TableRows;
           break;
+
         case "CS115":
           observationFormTableData = cs115TableRows;
           break;
@@ -177,37 +256,53 @@ const ObservationForms = ({
           observationFormTableData = cs116TableRows;
           break;
 
-        case "CS118AD":
-          observationFormTableData = cs118ADTableRows;
-          break;
-
-        case "CS118CD":
-          observationFormTableData = cs118CDTableRows;
+        case "CS118":
+          // CS118 has two tables, handle them separately
+          observationFormTableData = {
+            cs118ADTableRows: cs118ADTableRows.map((row, index) => ({
+              ...row,
+              serialNumberCounter: index + 1,
+            })),
+            cs118CDTableRows: cs118CDTableRows.map((row, index) => ({
+              ...row,
+              serialNumberCounter: index + 1,
+            })),
+          };
           break;
 
         case "RS103":
           observationFormTableData = rs103TableRows;
-        // Add other cases for other forms
+          break;
+
         default:
           observationFormTableData = [];
           break;
       }
 
-      // Add serialNumberCounter to each row in the table data
-      const observationFormTableDataWithSerialNumbers =
-        observationFormTableData.map((row, index) => ({
-          ...row,
-          serialNumberCounter: index + 1, // Serial number starting from 1
-        }));
+      // Handle table data differently for CS118, since it is an object with two tables
+      let finalObservationFormData = {};
+      if (formType === "CS118") {
+        finalObservationFormData = {
+          ...commonDataForOF, // This will spread the commonData object fields
+          ...observationFormData[formType], // This will spread the observation form-specific fields
+          cs118ADTableRows: observationFormTableData.cs118ADTableRows, // Add the first table
+          cs118CDTableRows: observationFormTableData.cs118CDTableRows, // Add the second table
+        };
+      } else {
+        // For other form types, apply map only when observationFormTableData is an array
+        const observationFormTableDataWithSerialNumbers =
+          observationFormTableData.map((row, index) => ({
+            ...row,
+            serialNumberCounter: index + 1, // Serial number starting from 1
+          }));
 
-      // Merge commonData with observationFormData
-      const finalObservationFormData = {
-        ...commonDataForOF, // This will spread the commonData object fields
-        ...observationFormData[formType], // This will spread the observation form-specific fields
-        observationFormTableData: observationFormTableDataWithSerialNumbers,
-      };
+        finalObservationFormData = {
+          ...commonDataForOF, // Spread commonData object fields
+          ...observationFormData[formType], // Spread observation form-specific fields
+          observationFormTableData: observationFormTableDataWithSerialNumbers,
+        };
+      }
 
-      console.log("Observation Form Data:", finalObservationFormData);
       // Convert the merged data to JSON format
       const jsonFormatOfObservationFormData = JSON.stringify(
         finalObservationFormData
@@ -324,15 +419,45 @@ const ObservationForms = ({
         <DialogActions>
           <Box display="flex" justifyContent="center" width="100%">
             <Button
+              sx={{
+                borderRadius: 3,
+                mx: 0.5,
+                mb: 1,
+                bgcolor: "orange",
+                color: "white",
+                borderColor: "black",
+              }}
+              variant="contained"
               onClick={() => handleSubmitObservationForm(rowIndex)}
               color="primary"
             >
               Save
             </Button>
-            <Button onClick={onClose} color="primary">
+            <Button
+              sx={{
+                borderRadius: 3,
+                mx: 0.5,
+                mb: 1,
+                bgcolor: "orange",
+                color: "white",
+                borderColor: "black",
+              }}
+              variant="contained"
+              onClick={onClose}
+              color="primary"
+            >
               Close
             </Button>
             <Button
+              sx={{
+                borderRadius: 3,
+                mx: 0.5,
+                mb: 1,
+                bgcolor: "orange",
+                color: "white",
+                borderColor: "black",
+              }}
+              variant="contained"
               onClick={() => setDownloadObservationForm(true)}
               color="primary"
             >

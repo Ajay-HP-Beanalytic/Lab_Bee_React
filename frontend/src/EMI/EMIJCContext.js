@@ -19,6 +19,7 @@ const EMIJCContextProvider = ({ children }) => {
   const initialCs115TableRows = [];
   const initialCs116TableRows = [];
   const initialRs103TableRows = [];
+  const initialCs118TableRows = {};
   const initialCs118ADTableRows = [];
   const initialCs118CDTableRows = [];
 
@@ -55,6 +56,7 @@ const EMIJCContextProvider = ({ children }) => {
   const [cs118CDTableRows, setCs118CDTableRows] = useState(
     initialCs118CDTableRows
   );
+  const [cs118TableRows, setCs118TableRows] = useState(initialCs118TableRows);
 
   const updateStepOneFormData = (stepData) => {
     setStepOneFormData((prevData) => ({ ...prevData, ...stepData }));
@@ -120,15 +122,30 @@ const EMIJCContextProvider = ({ children }) => {
 
   const updateCs118ADTableRows = (rows) => {
     setCs118ADTableRows(rows);
+
+    const combinedTableRows = { cs118ADTableRows: rows, cs118CDTableRows };
+    setCs118TableRows(combinedTableRows);
+
     // Update the observationFormData with the new table data
-    updateObservationFormData("CS118ADTableData", rows);
+    updateObservationFormData("CS118TableData", rows);
   };
 
   const updateCs118CDTableRows = (rows) => {
     setCs118CDTableRows(rows);
+
+    // Combine both Contact Discharge and Air Discharge table rows into cs118TableRows
+    const combinedTableRows = { cs118ADTableRows, cs118CDTableRows: rows };
+    setCs118TableRows(combinedTableRows);
+
     // Update the observationFormData with the new table data
-    updateObservationFormData("CS118CDTableData", rows);
+    updateObservationFormData("CS118TableData", rows);
   };
+
+  // const updateCs118TableRows = (rows) => {
+  //   setCs118TableRows(rows);
+  //   // Update the observationFormData with the new table data
+  //   updateObservationFormData("CS118TableData", rows);
+  // };
 
   return (
     <EMIJCContext.Provider
@@ -180,13 +197,16 @@ const EMIJCContextProvider = ({ children }) => {
         initialRs103TableRows,
         rs103TableRows,
         updateRs103TableRows,
-        initialCs118ADTableRows,
 
+        initialCs118ADTableRows,
         cs118ADTableRows,
         updateCs118ADTableRows,
         initialCs118CDTableRows,
         cs118CDTableRows,
         updateCs118CDTableRows,
+
+        initialCs118TableRows,
+        cs118TableRows,
       }}
     >
       {children}

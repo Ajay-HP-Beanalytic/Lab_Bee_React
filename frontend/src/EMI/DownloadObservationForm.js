@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React from "react";
 import Docxtemplater from "docxtemplater";
 import PizZip from "pizzip";
 import { saveAs } from "file-saver";
@@ -8,10 +8,10 @@ import CS101Template from "../templates/CS101_OBSERVATION_FORM.docx";
 import CS114Template from "../templates/CS114_OBSERVATION_FORM.docx";
 import CS115Template from "../templates/CS115_OBSERVATION_FORM.docx";
 import CS116Template from "../templates/CS116_OBSERVATION_FORM.docx";
+import CS118Template from "../templates/CS118_OBSERVATION_FORM.docx";
 import RS101Template from "../templates/RS101_OBSERVATION_FORM.docx";
 import RS103Template from "../templates/RS103_OBSERVATION_FORM.docx";
-import axios from "axios";
-import { serverBaseAddress } from "../Pages/APIPage";
+
 import dayjs from "dayjs";
 
 function loadFile(url, callback) {
@@ -33,6 +33,9 @@ const DownloadObservationForm = ({ formType, observationFormData }) => {
       break;
     case "CS116":
       observationTemplate = CS116Template;
+      break;
+    case "CS118":
+      observationTemplate = CS118Template;
       break;
     case "RS101":
       observationTemplate = RS101Template;

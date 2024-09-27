@@ -14,7 +14,6 @@ import RenderTable from "../../functions/RenderTable";
 const CS115Form = ({ formType }) => {
   const {
     observationFormData,
-    setObservationFormData,
     updateCs115TableRows,
     updateObservationFormData,
     cs115TableRows,

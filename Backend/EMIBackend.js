@@ -254,11 +254,11 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
             testPerformedRow.testMachine || "",
             testPerformedRow.testStandard || "",
             testPerformedRow.slotDetails || "",
-            formattedStartDateTime || "",
+            formattedStartDateTime || null,
             testPerformedRow.startTemp || "",
             testPerformedRow.startRh || "",
             testPerformedRow.testStartedBy || "",
-            formattedEndDateTime || "",
+            formattedEndDateTime || null,
             testPerformedRow.testEndedBy || "",
             testPerformedRow.endTemp || "",
             testPerformedRow.endRh || "",
@@ -563,7 +563,7 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
                     SET testName = ?, eutName = ?, eutSerialNumber = ?, testMachine = ?, testStandard = ?,  slotDetails = ?,
                         testStartDateTime = ?, startTemp = ?, startRh = ?, testStartedBy = ?, 
                         testEndDateTime = ?, testEndedBy = ?, endTemp = ?, endRh = ?, testDuration = ?, 
-                        actualTestDuration = ?,  observationForm = ?, observationFormStatus = ?,observationFormData = ?, 
+                        actualTestDuration = ?,  observationForm = ?, observationFormStatus = ?, observationFormData = ?, 
                         reportDeliveryStatus = ?, reportNumber = ?, reportPreparedBy = ?, reportStatus = ?,  lastUpdatedBy = ?
                     WHERE id = ? AND jcNumber = ?`;
 

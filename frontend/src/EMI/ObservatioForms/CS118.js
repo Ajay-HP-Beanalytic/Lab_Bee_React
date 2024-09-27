@@ -20,6 +20,7 @@ const CS118Form = ({ formType }) => {
     cs118ADTableRows,
     updateCs118CDTableRows,
     cs118CDTableRows,
+    cs118TableRows,
   } = useContext(EMIJCContext);
 
   const performanceCreteriaOptions = [
@@ -48,12 +49,94 @@ const CS118Form = ({ formType }) => {
       align: "center",
     },
     {
-      id: "airDischarge",
-      label: "Air Discharge (kV)",
+      id: "airDischarge2p",
+      label: "Air Discharge (kV) 2P",
       width: 250,
       type: "textField",
       align: "center",
     },
+    {
+      id: "airDischarge2n",
+      label: "Air Discharge (kV) 2N",
+      width: 250,
+      type: "textField",
+      align: "center",
+    },
+    {
+      id: "airDischarge4p",
+      label: "Air Discharge (kV) 4P",
+      width: 250,
+      type: "textField",
+      align: "center",
+    },
+    {
+      id: "airDischarge4n",
+      label: "Air Discharge (kV) 4N",
+      width: 250,
+      type: "textField",
+      align: "center",
+    },
+
+    {
+      id: "airDischarge8p",
+      label: "Air Discharge (kV) 8P",
+      width: 250,
+      type: "textField",
+      align: "center",
+    },
+    {
+      id: "airDischarge8n",
+      label: "Air Discharge (kV) 8N",
+      width: 250,
+      type: "textField",
+      align: "center",
+    },
+
+    {
+      id: "airDischarge15p",
+      label: "Air Discharge (kV) 15P",
+      width: 250,
+      type: "textField",
+      align: "center",
+    },
+    {
+      id: "airDischarge15n",
+      label: "Air Discharge (kV) 15N",
+      width: 250,
+      type: "textField",
+      align: "center",
+    },
+
+    {
+      id: "airDischarge25p",
+      label: "Air Discharge (kV) 25P",
+      width: 250,
+      type: "textField",
+      align: "center",
+    },
+    {
+      id: "airDischarge25n",
+      label: "Air Discharge (kV) 25N",
+      width: 250,
+      type: "textField",
+      align: "center",
+    },
+
+    {
+      id: "airDischarge30p",
+      label: "Air Discharge (kV) 30P",
+      width: 250,
+      type: "textField",
+      align: "center",
+    },
+    {
+      id: "airDischarge30n",
+      label: "Air Discharge (kV) 30N",
+      width: 250,
+      type: "textField",
+      align: "center",
+    },
+
     {
       id: "results",
       label: "Results",
@@ -65,7 +148,18 @@ const CS118Form = ({ formType }) => {
 
   const cs118ADTableRowTemplate = {
     portsTested: "",
-    airDischarge: "",
+    airDischarge2p: "",
+    airDischarge2n: "",
+    airDischarge4p: "",
+    airDischarge4n: "",
+    airDischarge8p: "",
+    airDischarge8n: "",
+    airDischarge15p: "",
+    airDischarge15n: "",
+    airDischarge25p: "",
+    airDischarge25n: "",
+    airDischarge30p: "",
+    airDischarge30n: "",
     results: "",
   };
 
@@ -79,12 +173,95 @@ const CS118Form = ({ formType }) => {
       align: "center",
     },
     {
-      id: "contactDischarge",
-      label: "Contact Discharge (kV)",
+      id: "contactDischarge2p",
+      label: "Contact Discharge (kV) 2P",
       width: 250,
       type: "textField",
       align: "center",
     },
+    {
+      id: "contactDischarge2n",
+      label: "Contact Discharge (kV) 2N",
+      width: 250,
+      type: "textField",
+      align: "center",
+    },
+
+    {
+      id: "contactDischarge4p",
+      label: "Contact Discharge (kV) 4P",
+      width: 250,
+      type: "textField",
+      align: "center",
+    },
+    {
+      id: "contactDischarge4n",
+      label: "Contact Discharge (kV) 4N",
+      width: 250,
+      type: "textField",
+      align: "center",
+    },
+
+    {
+      id: "contactDischarge8p",
+      label: "Contact Discharge (kV) 8P",
+      width: 250,
+      type: "textField",
+      align: "center",
+    },
+    {
+      id: "contactDischarge8n",
+      label: "Contact Discharge (kV) 8N",
+      width: 250,
+      type: "textField",
+      align: "center",
+    },
+
+    {
+      id: "contactDischarge15p",
+      label: "Contact Discharge (kV) 15P",
+      width: 250,
+      type: "textField",
+      align: "center",
+    },
+    {
+      id: "contactDischarge15n",
+      label: "Contact Discharge (kV) 15N",
+      width: 250,
+      type: "textField",
+      align: "center",
+    },
+
+    {
+      id: "contactDischarge25p",
+      label: "Contact Discharge (kV) 25P",
+      width: 250,
+      type: "textField",
+      align: "center",
+    },
+    {
+      id: "contactDischarge25n",
+      label: "Contact Discharge (kV) 25N",
+      width: 250,
+      type: "textField",
+      align: "center",
+    },
+
+    {
+      id: "contactDischarge30p",
+      label: "Contact Discharge (kV) 30P",
+      width: 250,
+      type: "textField",
+      align: "center",
+    },
+    {
+      id: "contactDischarge30n",
+      label: "Contact Discharge (kV) 30N",
+      width: 250,
+      type: "textField",
+      align: "center",
+    },
+
     {
       id: "results",
       label: "Results",
@@ -96,7 +273,18 @@ const CS118Form = ({ formType }) => {
 
   const cs118CDTableRowTemplate = {
     portsTested: "",
-    contactDischarge: "",
+    contactDischarge2p: "",
+    contactDischarge2n: "",
+    contactDischarge4p: "",
+    contactDischarge4n: "",
+    contactDischarge8p: "",
+    contactDischarge8n: "",
+    contactDischarge15p: "",
+    contactDischarge15n: "",
+    contactDischarge25p: "",
+    contactDischarge25n: "",
+    contactDischarge30p: "",
+    contactDischarge30n: "",
     results: "",
   };
 

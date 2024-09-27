@@ -103,6 +103,107 @@ export default function EmiJobcard() {
       return;
     }
 
+    // if (
+    //   stepOneFormData.companyName === "" ||
+    //   stepOneFormData.companyName === null
+    // ) {
+    //   toast.warning("Please Enter Company Name in Step 1");
+    //   return;
+    // }
+
+    // if (
+    //   stepOneFormData.companyAddress === "" ||
+    //   stepOneFormData.companyAddress === null
+    // ) {
+    //   toast.warning("Please Enter Company Address in Step 1");
+    //   return;
+    // }
+
+    // if (
+    //   stepOneFormData.customerName === "" ||
+    //   stepOneFormData.customerName === null
+    // ) {
+    //   toast.warning("Please Enter Customer Name in Step 1");
+    //   return;
+    // }
+
+    // if (
+    //   stepOneFormData.customerEmail === "" ||
+    //   stepOneFormData.customerEmail === null
+    // ) {
+    //   toast.warning("Please Enter Customer Email in Step 1");
+    //   return;
+    // }
+
+    // if (
+    //   stepOneFormData.customerPhone === "" ||
+    //   stepOneFormData.customerPhone === null
+    // ) {
+    //   toast.warning("Please Enter Customer Phone in Step 1");
+    //   return;
+    // }
+
+    // Step One validation for required fields
+    if (!stepOneFormData.companyName) {
+      toast.warning("Please Enter Company Name in Step 1");
+      return;
+    }
+
+    if (!stepOneFormData.companyAddress) {
+      toast.warning("Please Enter Company Address in Step 1");
+      return;
+    }
+
+    if (!stepOneFormData.customerName) {
+      toast.warning("Please Enter Customer Name in Step 1");
+      return;
+    }
+
+    if (!stepOneFormData.customerEmail) {
+      toast.warning("Please Enter Customer Email in Step 1");
+      return;
+    }
+
+    if (!stepOneFormData.customerPhone) {
+      toast.warning("Please Enter Customer Phone in Step 1");
+      return;
+    }
+
+    // Validation for EUT table rows
+    for (let i = 0; i < eutTableRows.length; i++) {
+      const row = eutTableRows[i];
+      if (!row.eutName || row.eutName.trim() === "") {
+        toast.warning(`Please Enter EUT Name for Row ${i + 1} in Step 1`);
+        return;
+      }
+
+      if (!row.eutSerialNumber || row.eutSerialNumber.trim() === "") {
+        toast.warning(
+          `Please Enter EUT Serial Number for Row ${i + 1} in Step 1`
+        );
+        return;
+      }
+    }
+
+    // Validation for Tests table rows:
+    for (let i = 0; i < testsTableRows.length; i++) {
+      const row = testsTableRows[i];
+      if (!row.testName || row.testName.trim() === "") {
+        toast.warning(`Please Enter Test Name for Row ${i + 1} in Step 1`);
+        return;
+      }
+
+      if (!row.testStandard || row.testStandard.trim() === "") {
+        toast.warning(`Please Enter Test Standard for Row ${i + 1} in Step 1`);
+        return;
+      }
+
+      if (!row.testProfile || row.testProfile.trim() === "") {
+        toast.warning(`Please Enter Test Limit for Row ${i + 1} in Step 1`);
+        return;
+      }
+    }
+
     const finalData = {
       stepOneData: stepOneFormData,
       eutTableRows,
@@ -234,21 +335,24 @@ export default function EmiJobcard() {
   ////////////////////////////////////////////////////////////////////////////////////
   useEffect(() => {
     const populateData = (data) => {
+      setEditingJC(true);
+
       // Populate Step One data (emiEutData and emiTestsData tables)
 
-      updateStepOneFormData({
+      setStepOneFormData({
         companyName: data.emiPrimaryJCData.companyName,
+        companyAddress: data.emiPrimaryJCData.companyAddress,
         customerName: data.emiPrimaryJCData.customerName,
         customerEmail: data.emiPrimaryJCData.customerEmail,
         customerPhone: data.emiPrimaryJCData.customerNumber,
         projectName: data.emiPrimaryJCData.projectName,
         reportType: data.emiPrimaryJCData.reportType,
       });
-      updateEutTableRows(data.emiEutData); // populate EUT table
-      updateTestsTableRows(data.emiTestsData); // populate Tests table
+      setEutTableRows(data.emiEutData); // populate EUT table
+      setTestsTableRows(data.emiTestsData); // populate Tests table
 
       // Populate Step Two data (emiTestsDetailsData table)
-      updateStepTwoFormData({
+      setStepTwoFormData({
         quoteNumber: data.emiPrimaryJCData.quoteNumber,
         poNumber: data.emiPrimaryJCData.poNumber,
         jcOpenDate: data.emiPrimaryJCData.jcOpenDate,
@@ -271,17 +375,17 @@ export default function EmiJobcard() {
         })
       );
 
-      updateTestPerformedTableRows(parsedTestDetailsData); // populate Test Details table
+      setTestPerformedTableRows(parsedTestDetailsData); // populate Test Details table
 
       // Populate Step Three data (observations, jcStatus, etc.)
-      updateStepThreeFormData({
+      setStepThreeFormData({
         observations: data.emiPrimaryJCData.observations,
         jcStatus: data.emiPrimaryJCData.jcStatus,
         jcClosedDate: data.emiPrimaryJCData.jcClosedDate,
       });
 
       // Set the JC Number for editing
-      setEditingJC(true);
+
       setEditingJCNumber(data.emiPrimaryJCData.jcNumber);
     };
 
@@ -301,12 +405,18 @@ export default function EmiJobcard() {
     };
 
     fetchJCData();
-  }, [id, editingJC]);
+  }, [editingJC]);
 
   ///////////////////////////////////////////////////////////////////////////////////////
 
   const handleGoToJCDashboard = () => {
     setEditingJC(false);
+    setStepOneFormData(initialStepOneFormData);
+    setEutTableRows(initialEutTableRows);
+    setTestsTableRows(initialTestsTableRows);
+    setStepTwoFormData(initialStepTwoFormData);
+    setTestPerformedTableRows(initialTestPerformedTableRows);
+    setStepThreeFormData(initialStepThreeFormData);
     navigate("/emi_jc_dashboard");
   };
 
