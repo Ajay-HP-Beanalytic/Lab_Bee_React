@@ -146,8 +146,6 @@ const EMIJCDocument = ({ id }) => {
             paragraphLoop: true,
             linebreaks: true,
           });
-
-          console.log("templateData", templateData);
           // Set the fetched data in the document
           doc.setData(templateData);
 
