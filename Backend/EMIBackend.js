@@ -283,11 +283,13 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
       const currentTimestampForJCCreation = new Date().toISOString(); // Get the current timestamp
 
       let message = `New TS2 ${newJcNumber} JC created by ${loggedInUser}`;
-      let usersToNotifyAboutJCCreation = [
-        "Lab Manager(EMI)",
-        "Test Engineer",
-        "Administrator",
-      ];
+      // let usersToNotifyAboutJCCreation = [
+      //   "Lab Manager(EMI)",
+      //   "Test Engineer",
+      //   "Administrator",
+      // ];
+
+      let usersToNotifyAboutJCCreation = [];
 
       for (let socketId in labbeeUsers) {
         const user = labbeeUsers[socketId];
@@ -295,7 +297,7 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
           usersToNotifyEMIJCCreation.includes(user.role) &&
           user.name !== loggedInUser
         ) {
-          io.to(socketId).emit("jobcard_submit_notification", {
+          io.to(socketId).emit("emi_jobcard_submit_notification", {
             message: message,
             sender: loggedInUser,
             receivedAt: currentTimestampForJCCreation,
