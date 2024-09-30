@@ -316,6 +316,39 @@ export default function NotificationsManagement() {
       }
     };
 
+    /**
+     * Handles a jobcard submit notification.
+     *
+     * @param {Object} options - The options object.
+     * @param {string} options.message - The notification message.
+     * @param {string} options.sender - The sender of the notification.
+     * @return {void} This function does not return anything.
+     */
+    const handleEMIJobcardSubmitNotification = ({
+      id,
+      message,
+      sender,
+      receivedAt,
+    }) => {
+      if (sender !== loggedInUser) {
+        setNotifications((prevNotifications) => {
+          const updatedNotifications = [
+            { id, message, receivedAt },
+            ...prevNotifications,
+          ];
+          return updatedNotifications;
+        });
+
+        // Trigger re-render by updating newNotificationReceived state
+        setNewNotificationReceived((prev) => !prev);
+
+        // Show a browser notification
+        if (Notification.permission === "granted") {
+          new Notification("New TS2 JC Created:", { body: message });
+        }
+      }
+    };
+
     // Set up event listeners
     socket.on("jobcard_submit_notification", handleJobcardSubmitNotification);
     socket.on("jobcard_update_notification", handleJobcardUpdateNotification);
@@ -353,6 +386,10 @@ export default function NotificationsManagement() {
       handleNewQuoteCreatedNotification
     );
     socket.on("quote_update_notification", handleQuoteUpdateNotification);
+    socket.on(
+      "emi_jobcard_submit_notification",
+      handleEMIJobcardSubmitNotification
+    );
 
     // Cleanup function to remove event listeners
     return () => {
@@ -398,6 +435,10 @@ export default function NotificationsManagement() {
         handleNewQuoteCreatedNotification
       );
       socket.off("quote_update_notification", handleQuoteUpdateNotification);
+      socket.off(
+        "emi_jobcard_submit_notification",
+        handleEMIJobcardSubmitNotification
+      );
     };
   }, [
     loggedInUser,

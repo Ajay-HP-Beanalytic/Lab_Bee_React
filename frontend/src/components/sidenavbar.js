@@ -487,26 +487,20 @@ export default function SidenavigationBar() {
       path: "/chamber-calibration",
       gradientId: "chambersCalibrationGradient",
     },
+
     {
       i: 8,
-      label: "Users Management",
-      icon: <ManageAccountsIcon />,
-      path: "/user_management",
-      gradientId: "usersManagementGradient",
-    },
-    {
-      i: 9,
       label: "EMI/EMC JC Dashboard",
       icon: <DashboardIcon />,
       path: "/emi_jc_dashboard",
       gradientId: "emiDashboardGradient",
     },
     {
-      i: 10,
-      label: "EMI/EMC JC",
-      icon: <TrackChangesIcon />,
-      path: "/emi_jobcard",
-      gradientId: "emiGradient",
+      i: 9,
+      label: "Users Management",
+      icon: <ManageAccountsIcon />,
+      path: "/user_management",
+      gradientId: "usersManagementGradient",
     },
   ];
 
@@ -514,7 +508,7 @@ export default function SidenavigationBar() {
     if (loggedInUserDepartment === "Administration") {
       return true; // Show all items for Administration
     } else if (loggedInUserDepartment === "Accounts") {
-      return [1, 2, 3, 4, 5, 6, 9].includes(item.i);
+      return [1, 2, 3, 4, 5, 6, 8].includes(item.i);
     } else if (loggedInUserDepartment === "Marketing") {
       return [2, 3].includes(item.i);
     } else if (
@@ -528,7 +522,7 @@ export default function SidenavigationBar() {
     ) {
       return [4, 5].includes(item.i);
     } else if (loggedInUserDepartment === "TS2 Testing") {
-      return [9].includes(item.i);
+      return [8].includes(item.i);
     }
     return false; // Default: Hide the item
   });
