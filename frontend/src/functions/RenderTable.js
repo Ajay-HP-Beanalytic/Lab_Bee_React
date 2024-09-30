@@ -166,7 +166,7 @@ const RenderTable = ({
                       rowIndex + 1
                     ) : column.type === "textField" ? (
                       <TextField
-                        value={row[column.id]}
+                        value={row[column.id] || ""}
                         onChange={(e) =>
                           handleInputChange(rowIndex, column.id, e.target.value)
                         }
