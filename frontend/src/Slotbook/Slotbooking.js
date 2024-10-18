@@ -461,6 +461,7 @@ export default function Slotbooking() {
             end: new Date(booking.slot_end_datetime),
             duration: booking.slot_duration,
             resourceId: booking.chamber_allotted,
+            remarks: booking.remarks,
             slotBookedBy: booking.slot_booked_by,
           };
         });
@@ -900,6 +901,7 @@ export default function Slotbooking() {
 
           { label: `Slot Duration: ${selectedEvent?.duration}` },
           { label: `Allotted Chamber: ${selectedEvent?.resourceId}` },
+          { label: `Remarks: ${selectedEvent?.remarks}` },
           { label: `Slot Booked By: ${selectedEvent?.slotBookedBy}` },
         ]}
       />
