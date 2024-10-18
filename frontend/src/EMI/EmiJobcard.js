@@ -334,9 +334,8 @@ export default function EmiJobcard() {
 
   ////////////////////////////////////////////////////////////////////////////////////
   useEffect(() => {
+    setEditingJC(true);
     const populateData = (data) => {
-      setEditingJC(true);
-
       // Populate Step One data (emiEutData and emiTestsData tables)
 
       setStepOneFormData({

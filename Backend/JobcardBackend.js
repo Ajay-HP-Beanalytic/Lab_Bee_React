@@ -1998,6 +1998,50 @@ function jobcardsAPIs(app, io, labbeeUsers) {
   });
   //////////////////////////////////////////////////////////////////////////////
 
+  // Fetch the number of reports status of the particular JC
+  app.get("/api/jcWiseReportsStatusData", (req, res) => {
+    const jcNumber = req.query.jcNumber; // Use query parameter
+    console.log("JC Number:", jcNumber);
+    const sqlQuery = `
+    SELECT 
+      COUNT(reportNumber) AS reportCount,
+      COUNT(CASE WHEN reportStatus = 'Final Report Sent' THEN 1 END) AS finalReportSentCount,
+      COUNT(CASE WHEN reportStatus = 'Draft Report Sent' THEN 1 END) AS draftReportSentCount,
+      COUNT(CASE WHEN reportStatus = 'On-Hold' THEN 1 END) AS holdReportCount,
+      CASE
+       WHEN COUNT(CASE WHEN reportStatus != 'Final Report Sent' THEN 1 END) = 0
+       THEN 'ALL REPORTS ARE SENT'
+       ELSE 'REPORTS PENDING'
+      END AS overallReportStatus
+    FROM tests_details
+    WHERE jc_number = ? AND reportNumber IS NOT NULL AND reportNumber <> '';
+  `;
+
+    db.query(sqlQuery, [jcNumber], (error, result) => {
+      if (error) {
+        return res.status(500).json({
+          error: "An error occurred while fetching the reports status data",
+        });
+      }
+
+      if (result.length === 0) {
+        return res.status(404).json({
+          message: "No reports found for the given JC number",
+        });
+      }
+
+      res.status(200).json({
+        reportCount: result[0].reportCount || 0,
+        finalReportSentCount: result[0].finalReportSentCount || 0,
+        draftReportSentCount: result[0].draftReportSentCount || 0,
+        holdReportCount: result[0].holdReportCount || 0,
+        overallReportStatus: result[0].overallReportStatus,
+      });
+    });
+  });
+
+  /////////////////////////////////////////////////////////////////////////////
+
   const storage = multer.diskStorage({
     destination: (req, file, cb) => {
       const uploadDir = path.join(__dirname, "FilesUploaded");

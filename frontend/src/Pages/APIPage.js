@@ -4,6 +4,6 @@
 // const serverBaseAddress = `http://localhost:4000`;
 
 //For depolymentt:
-const serverBaseAddress = "https://labbee.beanalytic.com:4002"; //Hostinger IP
+const serverBaseAddress = "https://labbee.beanalytic.com:4002"; //Hostinger IP address
 
 export { serverBaseAddress };

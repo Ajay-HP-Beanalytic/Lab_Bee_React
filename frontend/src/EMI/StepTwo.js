@@ -75,13 +75,13 @@ export default function EMIJCStepTwo() {
       width: "100%",
     },
     {
-      label: "Quotation Referance Number",
+      label: "Quotation Reference Number",
       name: "quoteNumber",
       type: "textField",
       width: "100%",
     },
     {
-      label: "PO Referance Number",
+      label: "PO Reference Number",
       name: "poNumber",
       type: "textField",
       width: "100%",
@@ -95,7 +95,7 @@ export default function EMIJCStepTwo() {
       type: "select",
       options: [
         { id: "Testing Of Components", label: "Testing Of Components" },
-        { id: "Equipmemnts", label: "Equipmemnts" },
+        { id: "Equipments", label: "Equipments" },
         { id: "Systems", label: "Systems" },
       ],
       width: "100%",
