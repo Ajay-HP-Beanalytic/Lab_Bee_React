@@ -50,7 +50,6 @@ import { DatePicker } from "@mui/x-date-pickers";
 import { UserContext } from "../Pages/UserContext";
 
 import "../css/accordion.css";
-import ConfirmationDialog from "../common/ConfirmationDialog";
 
 // const Jobcard = () => {
 const Jobcard = ({ jobCardData }) => {
@@ -571,6 +570,16 @@ const Jobcard = ({ jobCardData }) => {
       }
     }
 
+    const closeDate = dayjs(jcCloseDate);
+    const openDate = dayjs(jcOpenDate);
+
+    if (closeDate.isBefore(openDate)) {
+      toast.warning(
+        "JC Closed Date cannot be earlier than JC Open Date. Please adjust the dates."
+      );
+      return;
+    }
+
     try {
       await axios.post(api_url, {
         jcNumber: jcNumberString,
@@ -915,7 +924,6 @@ const Jobcard = ({ jobCardData }) => {
       );
       const lastJCNumber = response.data[0]?.jc_number;
       if (lastJCNumber) {
-        console.log("lastJCNumber", lastJCNumber);
         //Extract the number part from the last jc number:
         const lastJCNumberArray = lastJCNumber.split("-");
         const jcNumberPart = lastJCNumberArray[2];
@@ -927,7 +935,6 @@ const Jobcard = ({ jobCardData }) => {
 
         // Construct the new JC number
         const newJCNumberForLastMonth = `${lastJCNumberArray[0]}-${lastJCNumberArray[1]}-${newJcNumberPadded}`;
-        console.log("newJCNumberForLastMonth", newJCNumberForLastMonth);
 
         toast.info(
           "last JC Number for Previous Month: " +
@@ -1083,7 +1090,7 @@ const Jobcard = ({ jobCardData }) => {
                               sx={{ width: "100%" }}
                             />
                           )}
-                          format="YYYY-MM-DD"
+                          format="DD-MM-YYYY"
                         />
                       </LocalizationProvider>
                     )}
@@ -2321,7 +2328,7 @@ const Jobcard = ({ jobCardData }) => {
                         renderInput={(props) => (
                           <TextField {...props} fullWidth />
                         )}
-                        format="YYYY-MM-DD"
+                        format="DD-MM-YYYY"
                       />
                     </LocalizationProvider>
                     {addNewJcToLastMonth && (
@@ -2344,7 +2351,7 @@ const Jobcard = ({ jobCardData }) => {
                           renderInput={(props) => (
                             <TextField {...props} fullWidth />
                           )}
-                          format="YYYY-MM-DD"
+                          format="DD-MM-YYYY"
                         />
                       </LocalizationProvider>
                     </Grid>
@@ -2451,7 +2458,7 @@ const Jobcard = ({ jobCardData }) => {
                       renderInput={(props) => (
                         <TextField {...props} fullWidth variant="outlined" />
                       )}
-                      format="YYYY-MM-DD"
+                      format="DD-MM-YYYY"
                     />
                   </LocalizationProvider>
                 </Grid>
@@ -2528,16 +2535,6 @@ const Jobcard = ({ jobCardData }) => {
           {/* {editJc ? <JobCardComponent id={id} /> : null} */}
         </Box>
       </form>
-
-      {/* <ConfirmationDialog
-      open={openRemoveRowDialog}
-      onClose={handleRemoveRowDialog}
-      onConfirm={handleRemoveRow}
-      title="Remove Confirmation"
-      contentText="Are you sure you want to remove this row?"
-      confirmButtonText="Remove"
-      cancelButtonText="Cancel"
-      /> */}
     </>
   );
 };

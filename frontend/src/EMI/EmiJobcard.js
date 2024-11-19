@@ -103,46 +103,6 @@ export default function EmiJobcard() {
       return;
     }
 
-    // if (
-    //   stepOneFormData.companyName === "" ||
-    //   stepOneFormData.companyName === null
-    // ) {
-    //   toast.warning("Please Enter Company Name in Step 1");
-    //   return;
-    // }
-
-    // if (
-    //   stepOneFormData.companyAddress === "" ||
-    //   stepOneFormData.companyAddress === null
-    // ) {
-    //   toast.warning("Please Enter Company Address in Step 1");
-    //   return;
-    // }
-
-    // if (
-    //   stepOneFormData.customerName === "" ||
-    //   stepOneFormData.customerName === null
-    // ) {
-    //   toast.warning("Please Enter Customer Name in Step 1");
-    //   return;
-    // }
-
-    // if (
-    //   stepOneFormData.customerEmail === "" ||
-    //   stepOneFormData.customerEmail === null
-    // ) {
-    //   toast.warning("Please Enter Customer Email in Step 1");
-    //   return;
-    // }
-
-    // if (
-    //   stepOneFormData.customerPhone === "" ||
-    //   stepOneFormData.customerPhone === null
-    // ) {
-    //   toast.warning("Please Enter Customer Phone in Step 1");
-    //   return;
-    // }
-
     // Step One validation for required fields
     if (!stepOneFormData.companyName) {
       toast.warning("Please Enter Company Name in Step 1");
@@ -202,6 +162,13 @@ export default function EmiJobcard() {
         toast.warning(`Please Enter Test Limit for Row ${i + 1} in Step 1`);
         return;
       }
+    }
+
+    if (stepThreeFormData?.jcClosedDate.isBefore(stepTwoFormData?.jcOpenDate)) {
+      toast.warning(
+        "JC Closed Date cannot be earlier than JC Open Date. Please adjust the dates."
+      );
+      return;
     }
 
     const finalData = {
