@@ -35,7 +35,7 @@ const serverOptions = {
 // const server = http.createServer(app);
 const server = https.createServer(serverOptions, app);
 
-///Make the app.connection available to the socket.io server:
+///Make the app.connection available to the socket.io servers:
 const io = socketIo(server, {
   cors: {
     origin: true, // mention the host address of the frontend

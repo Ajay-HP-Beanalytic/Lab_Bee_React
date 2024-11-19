@@ -754,7 +754,7 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
 
     const getJCColumns = `
                             SELECT 
-                                id, jcNumber, DATE_FORMAT(jcOpenDate, '%Y-%m-%d') as jcOpenDate, companyName, jcStatus, DATE_FORMAT(jcClosedDate, '%Y-%m-%d') as jcClosedDate, lastUpdatedBy
+                                id, jcNumber, DATE_FORMAT(jcOpenDate, '%d-%m-%Y') as jcOpenDate, companyName, jcStatus, DATE_FORMAT(jcClosedDate, '%d-%m-%Y') as jcClosedDate, lastUpdatedBy
                             FROM 
                                 emi_jobcards
                             WHERE 
@@ -814,7 +814,7 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
     }
 
     const getJCColumns = `
-    SELECT id, jcNumber, DATE_FORMAT(jcOpenDate, '%Y-%m-%d') as jcOpenDate, companyName, jcStatus, lastUpdatedBy 
+    SELECT id, jcNumber, DATE_FORMAT(jcOpenDate, '%d-%m-%Y') as jcOpenDate, companyName, jcStatus, lastUpdatedBy 
     FROM emi_jobcards
     WHERE jcOpenDate BETWEEN ? AND ?
 `;

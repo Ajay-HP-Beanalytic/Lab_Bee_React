@@ -414,7 +414,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
 
     const getJCColumns = `
                             SELECT 
-                                id, jc_number, DATE_FORMAT(jc_open_date, '%Y-%m-%d') as jc_open_date, company_name, jc_status, DATE_FORMAT(jc_closed_date, '%Y-%m-%d') as jc_closed_date, last_updated_by
+                                id, jc_number, DATE_FORMAT(jc_open_date, '%d-%m-%Y') as jc_open_date, company_name, jc_status, DATE_FORMAT(jc_closed_date, '%d-%m-%Y') as jc_closed_date, last_updated_by
                             FROM 
                                 bea_jobcards
                             WHERE 
@@ -445,7 +445,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
 
     const getReliabilityJCColumns = `
                             SELECT 
-                                id, jc_number, DATE_FORMAT(jc_open_date, '%Y-%m-%d') as jc_open_date, company_name, project_name, reliability_report_status, jc_status, DATE_FORMAT(jc_closed_date, '%Y-%m-%d') as jc_closed_date, last_updated_by 
+                                id, jc_number, DATE_FORMAT(jc_open_date, '%d-%m-%Y') as jc_open_date, company_name, project_name, reliability_report_status, jc_status, DATE_FORMAT(jc_closed_date, '%d-%m-%Y') as jc_closed_date, last_updated_by 
                             FROM 
                                 bea_jobcards
                             WHERE 
@@ -478,7 +478,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
     }
 
     const getJCColumns = `
-        SELECT id, jc_number, DATE_FORMAT(jc_open_date, '%Y-%m-%d') as jc_open_date, company_name, jc_status, last_updated_by 
+        SELECT id, jc_number, DATE_FORMAT(jc_open_date, '%d-%m-%Y') as jc_open_date, company_name, jc_status, last_updated_by 
         FROM bea_jobcards
         WHERE jc_open_date BETWEEN ? AND ?
     `;
@@ -508,7 +508,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
     }
 
     const getJCColumns = `
-        SELECT id, jc_number, DATE_FORMAT(jc_open_date, '%Y-%m-%d') as jc_open_date, company_name, project_name, reliability_report_status, jc_status, last_updated_by  
+        SELECT id, jc_number, DATE_FORMAT(jc_open_date, '%d-%m-%Y') as jc_open_date, company_name, project_name, reliability_report_status, jc_status, last_updated_by  
         FROM bea_jobcards
         WHERE jc_open_date BETWEEN ? AND ?
     `;

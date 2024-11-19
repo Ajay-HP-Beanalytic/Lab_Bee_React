@@ -74,7 +74,7 @@ export default function RenderComponents({
                       fullWidth
                       sx={{ mb: "10px", width: fieldWidth }}
                       renderInput={(params) => <TextField {...params} />}
-                      format="YYYY-MM-DD"
+                      format="DD-MM-YYYY"
                     />
                   </LocalizationProvider>
                 )}
@@ -96,7 +96,7 @@ export default function RenderComponents({
                       sx={{ mb: "10px", width: fieldWidth }}
                       fullWidth
                       renderInput={(params) => <TextField {...params} />}
-                      format="YYYY-MM-DD HH:mm"
+                      format="DD-MM-YYYY HH:mm"
                     />
                   </LocalizationProvider>
                 )}
@@ -118,7 +118,7 @@ export default function RenderComponents({
                       sx={{ mb: "10px", width: fieldWidth }}
                       fullWidth
                       renderInput={(params) => <TextField {...params} />}
-                      format="YYYY-MM-DD HH:mm"
+                      format="DD-MM-YYYY HH:mm"
                     />
                   </LocalizationProvider>
                 )}
