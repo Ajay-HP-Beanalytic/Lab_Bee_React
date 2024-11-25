@@ -94,7 +94,10 @@ function App() {
         <title>Lab Bee</title>
         <link rel="canonical" href="https://labbee.beanalytic.com/" /> //{" "}
         {/* for SEO might need to change it */}
-        <meta name="description" content="App of BE Analytic." />
+        <meta
+          name="description"
+          content="Workflow management application developed by and for BE Analytic."
+        />
       </Helmet>
       <ToastContainer position="top-center" />
 

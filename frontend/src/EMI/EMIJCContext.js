@@ -207,6 +207,14 @@ const EMIJCContextProvider = ({ children }) => {
 
         initialCs118TableRows,
         cs118TableRows,
+
+        setCs114TableRows,
+        setCs115TableRows,
+        setCs116TableRows,
+        setRs103TableRows,
+        setCs118ADTableRows,
+        setCs118CDTableRows,
+        setCs118TableRows,
       }}
     >
       {children}
