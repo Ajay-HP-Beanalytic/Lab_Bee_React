@@ -173,12 +173,12 @@ function slotBookingAPIs(app, io, labbeeUsers) {
         res.status(200).json({ message: "Slot Booked Successfully" });
 
         // Save the notification in the database
-        saveNotificationToDatabase(
-          message,
-          currentTimestampForSlotBooking,
-          usersToNotifyNewSlotBooking,
-          loggedInUser
-        );
+        // saveNotificationToDatabase(
+        //   message,
+        //   currentTimestampForSlotBooking,
+        //   usersToNotifyNewSlotBooking,
+        //   loggedInUser
+        // );
       }
     });
   });
@@ -324,12 +324,12 @@ function slotBookingAPIs(app, io, labbeeUsers) {
         res.status(200).json({ message: "Booking updated successfully" });
 
         // Save the notification in the database
-        saveNotificationToDatabase(
-          message,
-          currentTimestampForSlotBooking,
-          usersToNotifyUpdateSlotBooking,
-          loggedInUser
-        );
+        // saveNotificationToDatabase(
+        //   message,
+        //   currentTimestampForSlotBooking,
+        //   usersToNotifyUpdateSlotBooking,
+        //   loggedInUser
+        // );
       }
     });
   });
@@ -425,12 +425,12 @@ function slotBookingAPIs(app, io, labbeeUsers) {
           res.json({ message: "Booking marked as deleted successfully" });
 
           // Save the notification in the database
-          saveNotificationToDatabase(
-            message,
-            currentTimestampForSlotBooking,
-            usersToNotifyDeleteSlotBooking,
-            loggedInUser
-          );
+          // saveNotificationToDatabase(
+          //   message,
+          //   currentTimestampForSlotBooking,
+          //   usersToNotifyDeleteSlotBooking,
+          //   loggedInUser
+          // );
         } else {
           return res.status(404).json({ message: "Booking not found" });
         }

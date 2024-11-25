@@ -20,7 +20,7 @@ const http = require("http");
 const https = require("https");
 const socketIo = require("socket.io");
 
-// create an express application:
+// create an express application::
 const app = express();
 
 const serverOptions = {

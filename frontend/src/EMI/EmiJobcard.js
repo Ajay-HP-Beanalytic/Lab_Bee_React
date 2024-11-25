@@ -164,7 +164,10 @@ export default function EmiJobcard() {
       }
     }
 
-    if (stepThreeFormData?.jcClosedDate.isBefore(stepTwoFormData?.jcOpenDate)) {
+    if (
+      stepThreeFormData?.jcClosedDate !== null &&
+      stepThreeFormData?.jcClosedDate.isBefore(stepTwoFormData?.jcOpenDate)
+    ) {
       toast.warning(
         "JC Closed Date cannot be earlier than JC Open Date. Please adjust the dates."
       );
@@ -300,76 +303,149 @@ export default function EmiJobcard() {
   }, [loggedInUser]);
 
   ////////////////////////////////////////////////////////////////////////////////////
+  // useEffect(() => {
+  //   setEditingJC(true);
+  //   const populateData = (data) => {
+  //     // Populate Step One data (emiEutData and emiTestsData tables)
+
+  //     setStepOneFormData({
+  //       companyName: data.emiPrimaryJCData.companyName,
+  //       companyAddress: data.emiPrimaryJCData.companyAddress,
+  //       customerName: data.emiPrimaryJCData.customerName,
+  //       customerEmail: data.emiPrimaryJCData.customerEmail,
+  //       customerPhone: data.emiPrimaryJCData.customerNumber,
+  //       projectName: data.emiPrimaryJCData.projectName,
+  //       reportType: data.emiPrimaryJCData.reportType,
+  //     });
+  //     setEutTableRows(data.emiEutData); // populate EUT table
+  //     setTestsTableRows(data.emiTestsData); // populate Tests table
+
+  //     // Populate Step Two data (emiTestsDetailsData table)
+  //     setStepTwoFormData({
+  //       quoteNumber: data.emiPrimaryJCData.quoteNumber,
+  //       poNumber: data.emiPrimaryJCData.poNumber,
+  //       jcOpenDate: data.emiPrimaryJCData.jcOpenDate,
+  //       itemReceivedDate: data.emiPrimaryJCData.itemReceivedDate,
+  //       typeOfRequest: data.emiPrimaryJCData.typeOfRequest,
+  //       sampleCondition: data.emiPrimaryJCData.sampleCondition,
+  //       slotDuration: data.emiPrimaryJCData.slotDuration,
+  //       jcIncharge: data.emiPrimaryJCData.jcIncharge,
+  //       lastUpdatedBy: data.emiPrimaryJCData.lastUpdatedBy,
+  //     });
+  //     const parsedTestDetailsData = data.emiTestsDetailsData.map(
+  //       (testDetail) => ({
+  //         ...testDetail,
+  //         testStartDateTime: testDetail.testStartDateTime
+  //           ? dayjs(testDetail.testStartDateTime)
+  //           : null,
+  //         testEndDateTime: testDetail.testEndDateTime
+  //           ? dayjs(testDetail.testEndDateTime)
+  //           : null,
+  //       })
+  //     );
+
+  //     setTestPerformedTableRows(parsedTestDetailsData); // populate Test Details table
+
+  //     // Populate Step Three data (observations, jcStatus, etc.)
+  //     setStepThreeFormData({
+  //       observations: data.emiPrimaryJCData.observations,
+  //       jcStatus: data.emiPrimaryJCData.jcStatus,
+  //       jcClosedDate: data.emiPrimaryJCData.jcClosedDate,
+  //     });
+
+  //     // Set the JC Number for editing
+
+  //     setEditingJCNumber(data.emiPrimaryJCData.jcNumber);
+  //   };
+
+  //   const fetchJCData = async () => {
+  //     if (!id) {
+  //       console.error("Error: JC ID is not defined.");
+  //       return;
+  //     }
+  //     try {
+  //       const response = await axios.get(
+  //         `${serverBaseAddress}/api/emi_jobcard/${id}`
+  //       );
+  //       populateData(response.data);
+  //     } catch (error) {
+  //       console.error("Error fetching job card data:", error);
+  //     }
+  //   };
+
+  //   fetchJCData();
+  // }, [editingJC]);
+
+  const populateData = (data) => {
+    // Populate Step One data (emiEutData and emiTestsData tables)
+
+    setStepOneFormData({
+      companyName: data.emiPrimaryJCData.companyName,
+      companyAddress: data.emiPrimaryJCData.companyAddress,
+      customerName: data.emiPrimaryJCData.customerName,
+      customerEmail: data.emiPrimaryJCData.customerEmail,
+      customerPhone: data.emiPrimaryJCData.customerNumber,
+      projectName: data.emiPrimaryJCData.projectName,
+      reportType: data.emiPrimaryJCData.reportType,
+    });
+    setEutTableRows(data.emiEutData); // populate EUT table
+    setTestsTableRows(data.emiTestsData); // populate Tests table
+
+    // Populate Step Two data (emiTestsDetailsData table)
+    setStepTwoFormData({
+      quoteNumber: data.emiPrimaryJCData.quoteNumber,
+      poNumber: data.emiPrimaryJCData.poNumber,
+      jcOpenDate: data.emiPrimaryJCData.jcOpenDate,
+      itemReceivedDate: data.emiPrimaryJCData.itemReceivedDate,
+      typeOfRequest: data.emiPrimaryJCData.typeOfRequest,
+      sampleCondition: data.emiPrimaryJCData.sampleCondition,
+      slotDuration: data.emiPrimaryJCData.slotDuration,
+      jcIncharge: data.emiPrimaryJCData.jcIncharge,
+      lastUpdatedBy: data.emiPrimaryJCData.lastUpdatedBy,
+    });
+
+    const parsedTestDetailsData = data.emiTestsDetailsData.map(
+      (testDetail) => ({
+        ...testDetail,
+        testStartDateTime: testDetail.testStartDateTime
+          ? dayjs(testDetail.testStartDateTime)
+          : null,
+        testEndDateTime: testDetail.testEndDateTime
+          ? dayjs(testDetail.testEndDateTime)
+          : null,
+      })
+    );
+    setTestPerformedTableRows(parsedTestDetailsData); // populate Test Details table
+
+    // Populate Step Three data (observations, jcStatus, etc.)
+    setStepThreeFormData({
+      observations: data.emiPrimaryJCData.observations,
+      jcStatus: data.emiPrimaryJCData.jcStatus,
+      jcClosedDate: data.emiPrimaryJCData.jcClosedDate,
+    });
+
+    // Set the JC Number for editing
+
+    setEditingJCNumber(data.emiPrimaryJCData.jcNumber);
+  };
+
+  const fetchJCData = async () => {
+    if (!id) {
+      console.error("Error: JC ID is not defined.");
+      return;
+    }
+    try {
+      const response = await axios.get(
+        `${serverBaseAddress}/api/emi_jobcard/${id}`
+      );
+      populateData(response.data);
+    } catch (error) {
+      console.error("Error fetching job card data:", error);
+    }
+  };
+
   useEffect(() => {
     setEditingJC(true);
-    const populateData = (data) => {
-      // Populate Step One data (emiEutData and emiTestsData tables)
-
-      setStepOneFormData({
-        companyName: data.emiPrimaryJCData.companyName,
-        companyAddress: data.emiPrimaryJCData.companyAddress,
-        customerName: data.emiPrimaryJCData.customerName,
-        customerEmail: data.emiPrimaryJCData.customerEmail,
-        customerPhone: data.emiPrimaryJCData.customerNumber,
-        projectName: data.emiPrimaryJCData.projectName,
-        reportType: data.emiPrimaryJCData.reportType,
-      });
-      setEutTableRows(data.emiEutData); // populate EUT table
-      setTestsTableRows(data.emiTestsData); // populate Tests table
-
-      // Populate Step Two data (emiTestsDetailsData table)
-      setStepTwoFormData({
-        quoteNumber: data.emiPrimaryJCData.quoteNumber,
-        poNumber: data.emiPrimaryJCData.poNumber,
-        jcOpenDate: data.emiPrimaryJCData.jcOpenDate,
-        itemReceivedDate: data.emiPrimaryJCData.itemReceivedDate,
-        typeOfRequest: data.emiPrimaryJCData.typeOfRequest,
-        sampleCondition: data.emiPrimaryJCData.sampleCondition,
-        slotDuration: data.emiPrimaryJCData.slotDuration,
-        jcIncharge: data.emiPrimaryJCData.jcIncharge,
-        lastUpdatedBy: data.emiPrimaryJCData.lastUpdatedBy,
-      });
-      const parsedTestDetailsData = data.emiTestsDetailsData.map(
-        (testDetail) => ({
-          ...testDetail,
-          testStartDateTime: testDetail.testStartDateTime
-            ? dayjs(testDetail.testStartDateTime)
-            : null,
-          testEndDateTime: testDetail.testEndDateTime
-            ? dayjs(testDetail.testEndDateTime)
-            : null,
-        })
-      );
-
-      setTestPerformedTableRows(parsedTestDetailsData); // populate Test Details table
-
-      // Populate Step Three data (observations, jcStatus, etc.)
-      setStepThreeFormData({
-        observations: data.emiPrimaryJCData.observations,
-        jcStatus: data.emiPrimaryJCData.jcStatus,
-        jcClosedDate: data.emiPrimaryJCData.jcClosedDate,
-      });
-
-      // Set the JC Number for editing
-
-      setEditingJCNumber(data.emiPrimaryJCData.jcNumber);
-    };
-
-    const fetchJCData = async () => {
-      if (!id) {
-        console.error("Error: JC ID is not defined.");
-        return;
-      }
-      try {
-        const response = await axios.get(
-          `${serverBaseAddress}/api/emi_jobcard/${id}`
-        );
-        populateData(response.data);
-      } catch (error) {
-        console.error("Error fetching job card data:", error);
-      }
-    };
-
     fetchJCData();
   }, [editingJC]);
 

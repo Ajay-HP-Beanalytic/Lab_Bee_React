@@ -7,11 +7,6 @@ import {
   DialogTitle,
   Divider,
   Grid,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableRow,
   TextField,
   Typography,
 } from "@mui/material";
@@ -29,12 +24,34 @@ import CS115Form from "./ObservatioForms/CS115";
 import RS101Form from "./ObservatioForms/RS101";
 import RS103Form from "./ObservatioForms/RS103";
 import CS118Form from "./ObservatioForms/CS118";
+import DownloadObservationForm from "./DownloadObservationForm";
+import { useEffect } from "react";
 
-const ObservationForms = ({ open, onClose, formType, commonData }) => {
+const ObservationForms = ({
+  open,
+  onClose,
+  formType,
+  commonData,
+  rowIndex,
+}) => {
   const {
     observationFormData,
     setObservationFormData,
     updateObservationFormData,
+    updateTestPerformedTableRows,
+    cs114TableRows,
+    cs115TableRows,
+    cs116TableRows,
+    cs118ADTableRows,
+    cs118CDTableRows,
+    cs118TableRows,
+    rs103TableRows,
+    setCs114TableRows,
+    setCs115TableRows,
+    setCs116TableRows,
+    setRs103TableRows,
+    setCs118ADTableRows,
+    setCs118CDTableRows,
   } = useContext(EMIJCContext);
 
   const { control, register, setValue, watch } = useForm();
@@ -42,37 +59,148 @@ const ObservationForms = ({ open, onClose, formType, commonData }) => {
   const [selectedFormType, setSelectedFormType] = useState(formType);
 
   const [stepOneFormData, testPerformedTableRows] = commonData;
+  const [downloadObservationForm, setDownloadObservationForm] = useState(false);
 
-  let compayNameForOF = stepOneFormData.companyName;
-  let companyAddressForOF = stepOneFormData.companyAddress;
-  let customerNameForOF = stepOneFormData.customerName;
-  let customerEmailForOF = stepOneFormData.customerEmail;
-  let customerPhoneForOF = stepOneFormData.customerPhone;
+  // Common fields data based on the test performed
+  const commonDataForOF = {
+    companyNameForOF: stepOneFormData.companyName || "",
+    companyAddressForOF: stepOneFormData.companyAddress || "",
+    customerNameForOF: stepOneFormData.customerName || "",
+    customerEmailForOF: stepOneFormData.customerEmail || "",
+    customerPhoneForOF: stepOneFormData.customerPhone || "",
+    jcNumberForOF: testPerformedTableRows[rowIndex]?.jcNumber || "",
+    eutNameForOF: testPerformedTableRows[rowIndex]?.eutName || "",
+    eutSerialNoForOF: testPerformedTableRows[rowIndex]?.eutSerialNumber || "",
+    testStandardForOF: testPerformedTableRows[rowIndex]?.testStandard || "",
+    testStartDateTimeForOF:
+      testPerformedTableRows[rowIndex]?.testStartDateTime || "",
+  };
 
-  let jcNumberForOF = testPerformedTableRows[0]?.jcNumber;
-  let eutNameForOF = testPerformedTableRows[0]?.eutName;
-  let eutSerialNoForOF = testPerformedTableRows[0]?.eutSerialNumber;
-  let testStandardForOF = testPerformedTableRows[0]?.testStandard;
-  let testStartDateTimeForOF = testPerformedTableRows[0]?.testStartDateTime;
+  const downloadOFormData =
+    testPerformedTableRows[rowIndex]?.observationFormData;
+
+  // Safely parse only if the data exists and is valid JSON
+  let parsedDownloadData = {};
+  if (downloadOFormData) {
+    try {
+      parsedDownloadData = JSON.parse(downloadOFormData);
+    } catch (error) {
+      console.error("Failed to parse observationFormData:", error);
+    }
+  }
+
+  const mergedDataForDownload = {
+    ...commonDataForOF,
+    ...parsedDownloadData,
+  };
+
+  // When the component mounts, load existing observation form data if present
+  // useEffect(() => {
+  //   const storedObservationFormData =
+  //     testPerformedTableRows[rowIndex]?.observationFormData;
+
+  //   console.log("Stored Observation Form Data:", storedObservationFormData);
+
+  //   if (storedObservationFormData) {
+  //     // Parse the stored JSON data
+  //     const parsedStoredObservationFormData = JSON.parse(
+  //       storedObservationFormData
+  //     );
+
+  //     // Set each field in the observationFormData from the stored data
+  //     Object.keys(parsedStoredObservationFormData).forEach((key) => {
+  //       setValue(key, parsedStoredObservationFormData[key]);
+  //     });
+
+  //     // Update observationFormData context for the current formType;
+  //     setObservationFormData((prevData) => ({
+  //       ...prevData,
+  //       [formType]: parsedStoredObservationFormData,
+  //     }));
+  //   }
+  // }, [
+  //   rowIndex,
+  //   formType,
+  //   // setValue,
+  //   setObservationFormData,
+  //   testPerformedTableRows,
+  // ]);
+
+  /////////////////////////////////
+
+  useEffect(() => {
+    const storedObservationFormData =
+      testPerformedTableRows[rowIndex]?.observationFormData;
+
+    console.log("Stored Observation Form Data:", storedObservationFormData);
+
+    if (storedObservationFormData) {
+      // Parse the stored JSON data
+      const parsedStoredObservationFormData = JSON.parse(
+        storedObservationFormData
+      );
+
+      // Set each field in the observationFormData from the stored data
+      Object.keys(parsedStoredObservationFormData).forEach((key) => {
+        setValue(key, parsedStoredObservationFormData[key]);
+      });
+
+      // Update observationFormData context for the current formType;
+      setObservationFormData((prevData) => ({
+        ...prevData,
+        [formType]: parsedStoredObservationFormData,
+      }));
+
+      // Load table rows for the current form type
+      if (formType === "CS114") {
+        setCs114TableRows(parsedStoredObservationFormData.CS114TableData || []);
+      } else if (formType === "CS115") {
+        setCs115TableRows(parsedStoredObservationFormData.CS115TableData || []);
+      } else if (formType === "CS116") {
+        setCs116TableRows(parsedStoredObservationFormData.CS116TableData || []);
+      } else if (formType === "RS103") {
+        setRs103TableRows(parsedStoredObservationFormData.RS103TableData || []);
+      } else if (formType === "CS118") {
+        setCs118ADTableRows(
+          parsedStoredObservationFormData.CS118TableData?.cs118ADTableRows || []
+        );
+        setCs118CDTableRows(
+          parsedStoredObservationFormData.CS118TableData?.cs118CDTableRows || []
+        );
+      }
+    }
+  }, [
+    rowIndex,
+    formType,
+    // setValue,
+    setObservationFormData,
+    testPerformedTableRows,
+    setCs114TableRows,
+    setCs115TableRows,
+    setCs116TableRows,
+    setRs103TableRows,
+    setCs118ADTableRows,
+    setCs118CDTableRows,
+  ]);
 
   const BEAADDRESS =
     "BE Analytic Solutions, # B110, Devasandra Industrial Estate, Whitefield Road, Mahadevapura, Bangalore - 560048, India";
 
   const commonJCDetails = [
-    { label: `Company Name: ${stepOneFormData.companyName}` },
-    { label: `Company Address: ${stepOneFormData.companyAddress}` },
-    { label: `Customer Name: ${stepOneFormData.customerName}` },
-    { label: `Customer Email: ${stepOneFormData.customerEmail}` },
-    { label: `Contact Number: ${stepOneFormData.customerPhone}` },
+    { label: `Company Name: ${commonDataForOF.companyNameForOF}` },
+    { label: `Company Address: ${commonDataForOF.companyAddressForOF}` },
+    { label: `Customer Name: ${commonDataForOF.customerNameForOF}` },
+    { label: `Customer Email: ${commonDataForOF.customerEmailForOF}` },
+    { label: `Contact Number: ${commonDataForOF.customerPhoneForOF}` },
 
-    { label: `EUT Name: ${testPerformedTableRows[0]?.eutName}` },
+    { label: `EUT Name: ${commonDataForOF.eutNameForOF}` },
     {
-      label: `EUT Serial Number: ${testPerformedTableRows[0]?.eutSerialNumber}`,
+      label: `EUT Serial Number: ${commonDataForOF.eutSerialNoForOF}`,
     },
-    { label: `Test Standard: ${testPerformedTableRows[0]?.testStandard}` },
+    { label: `Test Standard: ${commonDataForOF.testStandardForOF}` },
     {
       label: `Date of Test: ${dayjs(
-        testPerformedTableRows[0]?.testStartDateTime
+        commonDataForOF.testStartDateTimeForOF
       ).format("DD-MM-YYYY")}`,
     },
     { label: `Test Location Address: ${BEAADDRESS}` },
@@ -81,41 +209,101 @@ const ObservationForms = ({ open, onClose, formType, commonData }) => {
   const renderFormContent = () => {
     switch (formType) {
       case "CS101":
-        return <CS101Form commonData={commonData} />;
+        return <CS101Form formType={formType} />;
       case "CS114":
-        return <CS114Form commonData={commonData} />;
+        return <CS114Form formType={formType} />;
       case "CS115":
-        return <CS115Form commonData={commonData} />;
+        return <CS115Form formType={formType} />;
       case "CS116":
-        return <CS116Form commonData={commonData} />;
+        return <CS116Form formType={formType} />;
       case "CS118":
-        return <CS118Form commonData={commonData} />;
+        return <CS118Form formType={formType} />;
       case "RS101":
-        return <RS101Form commonData={commonData} />;
+        return <RS101Form formType={formType} />;
       case "RS103":
-        return <RS103Form commonData={commonData} />;
+        return <RS103Form formType={formType} />;
+      case "NA":
+        return <div>No form available</div>;
       default:
         return <div>No form available</div>;
     }
   };
 
-  const handleSubmitObservationForm = async () => {
+  const handleSubmitObservationForm = async (rowIndex) => {
     try {
-      // Merge commonData with observationFormData
-      const finalObservationFormData = {
-        ...commonData, // This will spread the commonData object fields
-        ...observationFormData, // This will spread the observation form-specific fields
-      };
+      let observationFormTableData = [];
+      switch (formType) {
+        case "CS114":
+          observationFormTableData = cs114TableRows;
+          break;
 
-      console.log("Observation Form Data:", finalObservationFormData);
+        case "CS115":
+          observationFormTableData = cs115TableRows;
+          break;
+
+        case "CS116":
+          observationFormTableData = cs116TableRows;
+          break;
+
+        case "CS118":
+          // CS118 has two tables, handle them separately
+          observationFormTableData = {
+            cs118ADTableRows: cs118ADTableRows.map((row, index) => ({
+              ...row,
+              serialNumberCounter: index + 1,
+            })),
+            cs118CDTableRows: cs118CDTableRows.map((row, index) => ({
+              ...row,
+              serialNumberCounter: index + 1,
+            })),
+          };
+          break;
+
+        case "RS103":
+          observationFormTableData = rs103TableRows;
+          break;
+
+        default:
+          observationFormTableData = [];
+          break;
+      }
+
+      // Handle table data differently for CS118, since it is an object with two tables
+      let finalObservationFormData = {};
+      if (formType === "CS118") {
+        finalObservationFormData = {
+          ...commonDataForOF, // This will spread the commonData object fields
+          ...observationFormData[formType], // This will spread the observation form-specific fields
+          cs118ADTableRows: observationFormTableData.cs118ADTableRows, // Add the first table
+          cs118CDTableRows: observationFormTableData.cs118CDTableRows, // Add the second table
+        };
+      } else {
+        // For other form types, apply map only when observationFormTableData is an array
+        const observationFormTableDataWithSerialNumbers =
+          observationFormTableData.map((row, index) => ({
+            ...row,
+            serialNumberCounter: index + 1, // Serial number starting from 1
+          }));
+
+        finalObservationFormData = {
+          ...commonDataForOF, // Spread commonData object fields
+          ...observationFormData[formType], // Spread observation form-specific fields
+          observationFormTableData: observationFormTableDataWithSerialNumbers,
+        };
+      }
+
       // Convert the merged data to JSON format
       const jsonFormatOfObservationFormData = JSON.stringify(
         finalObservationFormData
       );
-      console.log(
-        "JSON Format of Observation Form Data:",
-        jsonFormatOfObservationFormData
-      );
+
+      // Update the specific row in testPerformedTableRows with the observationFormData
+      const updatedTestPerformedTableRows = [...testPerformedTableRows];
+      updatedTestPerformedTableRows[rowIndex].observationFormData =
+        jsonFormatOfObservationFormData;
+
+      // Update the context or state
+      updateTestPerformedTableRows(updatedTestPerformedTableRows);
     } catch (error) {
       console.error("Error in saving observation form data:", error);
     }
@@ -133,7 +321,7 @@ const ObservationForms = ({ open, onClose, formType, commonData }) => {
             mx: "5px",
           }}
         >
-          {`${formType} Observation Form - For JC Number: ${testPerformedTableRows[0]?.jcNumber} `}{" "}
+          {`${formType} Observation Form - For JC Number: ${commonDataForOF.jcNumberForOF} `}{" "}
         </DialogTitle>
         <Divider />
 
@@ -142,7 +330,7 @@ const ObservationForms = ({ open, onClose, formType, commonData }) => {
           <Grid container spacing={2} sx={{ mx: "5px", mb: "10px" }}>
             {commonJCDetails.map((option, index) => (
               <Grid item xs={12} sm={6} key={index}>
-                <Typography variant="body2">
+                <Typography variant="body2" align="left">
                   <strong>{option.label.split(": ")[0]}:</strong>{" "}
                   {option.label.split(": ")[1]}
                 </Typography>
@@ -150,15 +338,15 @@ const ObservationForms = ({ open, onClose, formType, commonData }) => {
             ))}
           </Grid>
 
-          <Grid container spacing={2} sx={{ mb: 2 }}>
+          <Grid container spacing={2} sx={{ mb: "5px", mt: "5px" }}>
             <Grid item xs={12} sm={6}>
               <TextField
                 variant="outlined"
                 fullWidth
                 label="Test ID"
-                value={observationFormData.testId || ""}
+                value={observationFormData[formType]?.testId || ""}
                 onChange={(e) =>
-                  updateObservationFormData("testId", e.target.value)
+                  updateObservationFormData(formType, "testId", e.target.value)
                 }
               />
             </Grid>
@@ -167,9 +355,13 @@ const ObservationForms = ({ open, onClose, formType, commonData }) => {
                 variant="outlined"
                 fullWidth
                 label="Status of EUT on receipt"
-                value={observationFormData.eutStatus || ""}
+                value={observationFormData[formType]?.eutStatus || ""}
                 onChange={(e) =>
-                  updateObservationFormData("eutStatus", e.target.value)
+                  updateObservationFormData(
+                    formType,
+                    "eutStatus",
+                    e.target.value
+                  )
                 }
               />
             </Grid>
@@ -179,9 +371,13 @@ const ObservationForms = ({ open, onClose, formType, commonData }) => {
                 variant="outlined"
                 fullWidth
                 label="Temperature (°C)"
-                value={observationFormData.temperature || ""}
+                value={observationFormData[formType]?.temperature || ""}
                 onChange={(e) =>
-                  updateObservationFormData("temperature", e.target.value)
+                  updateObservationFormData(
+                    formType,
+                    "temperature",
+                    e.target.value
+                  )
                 }
               />
             </Grid>
@@ -190,74 +386,15 @@ const ObservationForms = ({ open, onClose, formType, commonData }) => {
                 variant="outlined"
                 fullWidth
                 label="Humidity (%)"
-                value={observationFormData.humidity || ""}
+                value={observationFormData[formType]?.humidity || ""}
                 onChange={(e) =>
-                  updateObservationFormData("humidity", e.target.value)
+                  updateObservationFormData(
+                    formType,
+                    "humidity",
+                    e.target.value
+                  )
                 }
               />
-            </Grid>
-          </Grid>
-
-          {/* Performance Criteria */}
-          <Grid
-            container
-            spacing={2}
-            sx={{
-              p: "5px",
-              mb: "5px",
-              mt: "5px",
-            }}
-          >
-            <Grid item xs={12}>
-              <Typography variant="subtitle1" align="center" gutterBottom>
-                Performance Criteria
-              </Typography>
-            </Grid>
-            <Grid item xs={12}>
-              <TableContainer>
-                <Table
-                  sx={{ minWidth: 650, border: "1px solid black" }}
-                  aria-label="performance criteria table"
-                  size="small"
-                >
-                  <TableBody>
-                    {[
-                      {
-                        label: "Criteria A",
-                        description:
-                          "Normal EUT performance during and after the test as intended",
-                      },
-                      {
-                        label: "Criteria B",
-                        description:
-                          "Temporary loss of function is allowed, EUT should be recoverable without operator intervention",
-                      },
-                      {
-                        label: "Criteria C",
-                        description:
-                          "Temporary loss of function is allowed, EUT can be recoverable with operator intervention",
-                      },
-                      {
-                        label: "Criteria D",
-                        description: "Loss of function, not recoverable",
-                      },
-                    ].map((criteria, index) => (
-                      <TableRow key={index}>
-                        <TableCell variant="head">
-                          <Typography variant="body2">
-                            {criteria.label}
-                          </Typography>
-                        </TableCell>
-                        <TableCell>
-                          <Typography variant="body2">
-                            {criteria.description}
-                          </Typography>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
             </Grid>
           </Grid>
 
@@ -266,131 +403,65 @@ const ObservationForms = ({ open, onClose, formType, commonData }) => {
           {renderFormContent()}
 
           <br />
-
-          <Grid container spacing={1} sx={{ mb: "5px", mt: "5px" }}>
-            <Grid item xs={12}>
-              <Typography variant="h7">Test Witness Signatures</Typography>
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <TextField
-                variant="outlined"
-                size="small"
-                fullWidth
-                label="Name"
-                value={observationFormData.testWitnessedBy || ""}
-                onChange={(e) =>
-                  updateObservationFormData("testWitnessedBy", e.target.value)
-                }
-              />
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <TextField
-                variant="outlined"
-                size="small"
-                fullWidth
-                label="Designation"
-                value={observationFormData.testWitnessedByDesignation || ""}
-                onChange={(e) =>
-                  updateObservationFormData(
-                    "testWitnessedByDesignation",
-                    e.target.value
-                  )
-                }
-              />
-            </Grid>
-            <Grid item xs={6} sm={2}>
-              <TextField
-                variant="outlined"
-                size="small"
-                fullWidth
-                label="Signature"
-              />
-            </Grid>
-            <Grid item xs={6} sm={2}>
-              <TextField
-                variant="outlined"
-                size="small"
-                fullWidth
-                label="Date"
-                value={observationFormData.testWitnessedDate || ""}
-                onChange={(e) =>
-                  updateObservationFormData("testWitnessedDate", e.target.value)
-                }
-              />
-            </Grid>
-
-            <Grid item xs={12}>
-              <Typography variant="h7">Test Engineer Signature</Typography>
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <TextField
-                variant="outlined"
-                size="small"
-                fullWidth
-                label="Name"
-                value={observationFormData.testEngineerName || ""}
-                onChange={(e) =>
-                  updateObservationFormData("testEngineerName", e.target.value)
-                }
-              />
-            </Grid>
-            <Grid item xs={6} sm={4}>
-              <TextField
-                variant="outlined"
-                size="small"
-                fullWidth
-                label="Signature"
-              />
-            </Grid>
-            <Grid item xs={6} sm={4}>
-              <TextField
-                variant="outlined"
-                size="small"
-                fullWidth
-                label="Date"
-              />
-            </Grid>
-
-            <Grid item xs={12}>
-              <Typography variant="h7">Lab Manager Signature</Typography>
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <TextField
-                variant="outlined"
-                size="small"
-                fullWidth
-                label="Signature"
-                value={observationFormData.labManagerName || ""}
-                onChange={(e) =>
-                  updateObservationFormData("labManagerName", e.target.value)
-                }
-              />
-            </Grid>
-            <Grid item xs={12} sm={4}>
-              <TextField
-                variant="outlined"
-                size="small"
-                fullWidth
-                label="Date"
-              />
-            </Grid>
-          </Grid>
         </DialogContent>
 
         <DialogActions>
           <Box display="flex" justifyContent="center" width="100%">
-            <Button onClick={() => alert("Save Btn Clicked")} color="primary">
+            <Button
+              sx={{
+                borderRadius: 3,
+                mx: 0.5,
+                mb: 1,
+                bgcolor: "orange",
+                color: "white",
+                borderColor: "black",
+              }}
+              variant="contained"
+              onClick={() => handleSubmitObservationForm(rowIndex)}
+              color="primary"
+            >
               Save
             </Button>
-            <Button onClick={handleSubmitObservationForm} color="primary">
-              Submit
-            </Button>
-            <Button onClick={onClose} color="primary">
+            <Button
+              sx={{
+                borderRadius: 3,
+                mx: 0.5,
+                mb: 1,
+                bgcolor: "orange",
+                color: "white",
+                borderColor: "black",
+              }}
+              variant="contained"
+              onClick={onClose}
+              color="primary"
+            >
               Close
+            </Button>
+            <Button
+              sx={{
+                borderRadius: 3,
+                mx: 0.5,
+                mb: 1,
+                bgcolor: "orange",
+                color: "white",
+                borderColor: "black",
+              }}
+              variant="contained"
+              onClick={() => setDownloadObservationForm(true)}
+              color="primary"
+            >
+              Download
             </Button>
           </Box>
         </DialogActions>
       </Dialog>
+
+      {downloadObservationForm && (
+        <DownloadObservationForm
+          formType={formType}
+          observationFormData={mergedDataForDownload}
+        />
+      )}
     </>
   );
 };

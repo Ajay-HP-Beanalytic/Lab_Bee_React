@@ -34,7 +34,7 @@ const formatDateTime = (dateString) => {
     return "";
   }
 
-  return dateValue.format("YYYY/MM/DD HH:mm");
+  return dateValue.format("DD/MM/YYYY HH:mm");
 };
 
 const formatDate = (dateString) => {
@@ -43,7 +43,7 @@ const formatDate = (dateString) => {
     return "";
   }
 
-  return dateValue.format("YYYY/MM/DD");
+  return dateValue.format("DD/MM/YYYY");
 };
 
 const EMIJCPreview = ({

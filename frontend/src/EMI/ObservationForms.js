@@ -46,6 +46,12 @@ const ObservationForms = ({
     cs118CDTableRows,
     cs118TableRows,
     rs103TableRows,
+    setCs114TableRows,
+    setCs115TableRows,
+    setCs116TableRows,
+    setRs103TableRows,
+    setCs118ADTableRows,
+    setCs118CDTableRows,
   } = useContext(EMIJCContext);
 
   const { control, register, setValue, watch } = useForm();
@@ -89,6 +95,39 @@ const ObservationForms = ({
   };
 
   // When the component mounts, load existing observation form data if present
+  // useEffect(() => {
+  //   const storedObservationFormData =
+  //     testPerformedTableRows[rowIndex]?.observationFormData;
+
+  //   console.log("Stored Observation Form Data:", storedObservationFormData);
+
+  //   if (storedObservationFormData) {
+  //     // Parse the stored JSON data
+  //     const parsedStoredObservationFormData = JSON.parse(
+  //       storedObservationFormData
+  //     );
+
+  //     // Set each field in the observationFormData from the stored data
+  //     Object.keys(parsedStoredObservationFormData).forEach((key) => {
+  //       setValue(key, parsedStoredObservationFormData[key]);
+  //     });
+
+  //     // Update observationFormData context for the current formType;
+  //     setObservationFormData((prevData) => ({
+  //       ...prevData,
+  //       [formType]: parsedStoredObservationFormData,
+  //     }));
+  //   }
+  // }, [
+  //   rowIndex,
+  //   formType,
+  //   // setValue,
+  //   setObservationFormData,
+  //   testPerformedTableRows,
+  // ]);
+
+  /////////////////////////////////
+
   useEffect(() => {
     const storedObservationFormData =
       testPerformedTableRows[rowIndex]?.observationFormData;
@@ -109,6 +148,32 @@ const ObservationForms = ({
         ...prevData,
         [formType]: parsedStoredObservationFormData,
       }));
+
+      // Load table rows for the current form type
+      if (formType === "CS114") {
+        setCs114TableRows(
+          parsedStoredObservationFormData.observationFormTableData || []
+        );
+      } else if (formType === "CS115") {
+        setCs115TableRows(
+          parsedStoredObservationFormData.observationFormTableData || []
+        );
+      } else if (formType === "CS116") {
+        setCs116TableRows(
+          parsedStoredObservationFormData.observationFormTableData || []
+        );
+      } else if (formType === "RS103") {
+        setRs103TableRows(
+          parsedStoredObservationFormData.observationFormTableData || []
+        );
+      } else if (formType === "CS118") {
+        setCs118ADTableRows(
+          parsedStoredObservationFormData.cs118ADTableRows || []
+        );
+        setCs118CDTableRows(
+          parsedStoredObservationFormData.cs118CDTableRows || []
+        );
+      }
     }
   }, [
     rowIndex,
@@ -116,6 +181,12 @@ const ObservationForms = ({
     // setValue,
     setObservationFormData,
     testPerformedTableRows,
+    setCs114TableRows,
+    setCs115TableRows,
+    setCs116TableRows,
+    setRs103TableRows,
+    setCs118ADTableRows,
+    setCs118CDTableRows,
   ]);
 
   const BEAADDRESS =
