@@ -283,6 +283,7 @@ function App() {
                   "Administration",
                   "Accounts",
                   "TS2 Testing",
+                  "Marketing",
                 ]}
               >
                 <EMIJCDashboard />
@@ -298,6 +299,7 @@ function App() {
                   "Administration",
                   "Accounts",
                   "TS2 Testing",
+                  "Marketing",
                 ]}
               >
                 <EmiJobcard />
@@ -313,6 +315,7 @@ function App() {
                   "Administration",
                   "Accounts",
                   "TS2 Testing",
+                  "Marketing",
                 ]}
               >
                 <EmiJobcard />

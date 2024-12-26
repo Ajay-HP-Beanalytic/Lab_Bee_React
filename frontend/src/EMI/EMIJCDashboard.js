@@ -599,7 +599,8 @@ export default function EMIJCDashboard() {
 
         {(loggedInUserDepartment === "TS2 Testing" ||
           loggedInUserDepartment === "Administration" ||
-          loggedInUserDepartment === "Accounts") && (
+          loggedInUserDepartment === "Accounts" ||
+          loggedInUserDepartment === "Marketing") && (
           <>
             {filteredJcData && filteredJcData.length === 0 ? (
               <EmptyCard message="No JC Found" />
