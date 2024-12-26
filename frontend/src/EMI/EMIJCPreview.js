@@ -65,7 +65,8 @@ const EMIJCPreview = ({
   const isTS2Testing = loggedInUserDepartment === "TS2 Testing";
   const isAdminOrAccounts =
     loggedInUserDepartment === "Administration" ||
-    loggedInUserDepartment === "Accounts";
+    loggedInUserDepartment === "Accounts" ||
+    loggedInUserDepartment === "Marketing";
 
   const eutTableHeaderNames = [
     "Sl No",

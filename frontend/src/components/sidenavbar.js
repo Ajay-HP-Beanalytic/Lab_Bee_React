@@ -510,7 +510,7 @@ export default function SidenavigationBar() {
     } else if (loggedInUserDepartment === "Accounts") {
       return [1, 2, 3, 4, 5, 6, 8].includes(item.i);
     } else if (loggedInUserDepartment === "Marketing") {
-      return [2, 3].includes(item.i);
+      return [2, 3, 8].includes(item.i);
     } else if (
       loggedInUserDepartment === "TS1 Testing" ||
       loggedInUserDepartment === "Reports & Scrutiny"
