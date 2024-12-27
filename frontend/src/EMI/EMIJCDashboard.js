@@ -492,7 +492,8 @@ export default function EMIJCDashboard() {
   if (
     loggedInUserDepartment === "TS2 Testing" ||
     loggedInUserDepartment === "Administration" ||
-    loggedInUserDepartment === "Accounts"
+    loggedInUserDepartment === "Accounts" ||
+    loggedInUserDepartment === "Marketing"
   ) {
     primaryJCDetails = primaryTS2JCDetailsToPreview;
   }
