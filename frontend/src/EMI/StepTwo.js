@@ -74,16 +74,26 @@ export default function EMIJCStepTwo() {
       type: "datePicker",
       width: "100%",
     },
+    // {
+    //   label: "Quotation Reference Number",
+    //   name: "quoteNumber",
+    //   type: "textField",
+    //   width: "100%",
+    // },
+    // {
+    //   label: "PO Reference Number",
+    //   name: "poNumber",
+    //   type: "textField",
+    //   width: "100%",
+    // },
     {
-      label: "Quotation Reference Number",
-      name: "quoteNumber",
-      type: "textField",
-      width: "100%",
-    },
-    {
-      label: "PO Reference Number",
-      name: "poNumber",
-      type: "textField",
+      label: "Slot Duration(Hours)",
+      name: "slotDuration",
+      type: "select",
+      options: [
+        { id: "4", label: "4" },
+        { id: "8", label: "8" },
+      ],
       width: "100%",
     },
   ];
@@ -110,16 +120,7 @@ export default function EMIJCStepTwo() {
       ],
       width: "100%",
     },
-    {
-      label: "Slot Duration(Hours)",
-      name: "slotDuration",
-      type: "select",
-      options: [
-        { id: "4", label: "4" },
-        { id: "8", label: "8" },
-      ],
-      width: "100%",
-    },
+
     {
       label: "JC Incharge",
       name: "jcIncharge",

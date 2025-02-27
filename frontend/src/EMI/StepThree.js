@@ -34,7 +34,7 @@ export default function EMIJCStepThree() {
       name: "jcStatus",
       type: "select",
       options: [
-        { label: "Open", value: "Open" },
+        // { label: "Open", value: "Open" },
         { label: "Running", value: "Running" },
         { label: "Closed", value: "Closed" },
       ],

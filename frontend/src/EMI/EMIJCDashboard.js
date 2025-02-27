@@ -30,7 +30,7 @@ export default function EMIJCDashboard() {
 
   const navigate = useNavigate();
 
-  const { loggedInUserDepartment } = useContext(UserContext);
+  const { loggedInUserDepartment, loggedInUserRole } = useContext(UserContext);
   const {
     initialStepOneFormData,
     initialStepTwoFormData,
@@ -448,8 +448,8 @@ export default function EMIJCDashboard() {
 
   /////JC Preview:
   const primaryTS2JCDetailsToPreview = [
-    { label: `Quotation Number: ${fetchedEMIJCPrimaryData.quoteNumber}` },
-    { label: `PO Number: ${fetchedEMIJCPrimaryData.poNumber}` },
+    // { label: `Quotation Number: ${fetchedEMIJCPrimaryData.quoteNumber}` },
+    // { label: `PO Number: ${fetchedEMIJCPrimaryData.poNumber}` },
 
     { label: `Company Name: ${fetchedEMIJCPrimaryData.companyName}` },
     { label: `Company Address: ${fetchedEMIJCPrimaryData.companyAddress}` },
@@ -493,7 +493,8 @@ export default function EMIJCDashboard() {
     loggedInUserDepartment === "TS2 Testing" ||
     loggedInUserDepartment === "Administration" ||
     loggedInUserDepartment === "Accounts" ||
-    loggedInUserDepartment === "Marketing"
+    loggedInUserDepartment === "Marketing" ||
+    loggedInUserRole === "Quality Engineer"
   ) {
     primaryJCDetails = primaryTS2JCDetailsToPreview;
   }
@@ -601,7 +602,8 @@ export default function EMIJCDashboard() {
         {(loggedInUserDepartment === "TS2 Testing" ||
           loggedInUserDepartment === "Administration" ||
           loggedInUserDepartment === "Accounts" ||
-          loggedInUserDepartment === "Marketing") && (
+          loggedInUserDepartment === "Marketing" ||
+          loggedInUserRole === "Quality Engineer") && (
           <>
             {filteredJcData && filteredJcData.length === 0 ? (
               <EmptyCard message="No JC Found" />

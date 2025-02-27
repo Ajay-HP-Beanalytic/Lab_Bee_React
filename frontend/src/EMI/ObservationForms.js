@@ -443,31 +443,14 @@ const ObservationForms = ({
             >
               Close
             </Button>
-            <Button
-              sx={{
-                borderRadius: 3,
-                mx: 0.5,
-                mb: 1,
-                bgcolor: "orange",
-                color: "white",
-                borderColor: "black",
-              }}
-              variant="contained"
-              onClick={() => setDownloadObservationForm(true)}
-              color="primary"
-            >
-              Download
-            </Button>
+
+            <DownloadObservationForm
+              formType={formType}
+              observationFormData={mergedDataForDownload}
+            />
           </Box>
         </DialogActions>
       </Dialog>
-
-      {downloadObservationForm && (
-        <DownloadObservationForm
-          formType={formType}
-          observationFormData={mergedDataForDownload}
-        />
-      )}
     </>
   );
 };
