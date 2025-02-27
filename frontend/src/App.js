@@ -47,7 +47,8 @@ import EMIJCDashboard from "./EMI/EMIJCDashboard";
 function App() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { loggedInUser, loggedInUserDepartment } = useContext(UserContext);
+  const { loggedInUser, loggedInUserDepartment, loggedInUserRole } =
+    useContext(UserContext);
 
   useEffect(() => {
     const handleRouteChange = () => {
@@ -61,7 +62,7 @@ function App() {
   }, [location]);
 
   useEffect(() => {
-    if (loggedInUserDepartment) {
+    if (loggedInUserDepartment || loggedInUserRole) {
       if (location.pathname === "/" || location.pathname === "/home") {
         if (
           loggedInUserDepartment === "Administration" ||
@@ -75,7 +76,10 @@ function App() {
           loggedInUserDepartment === "Reports & Scrutiny"
         ) {
           navigate("/jobcard_dashboard");
-        } else if (loggedInUserDepartment === "TS2 Testing") {
+        } else if (
+          loggedInUserDepartment === "TS2 Testing" ||
+          loggedInUserRole === "Quality Engineer"
+        ) {
           navigate("/emi_jc_dashboard");
         } else if (
           loggedInUserDepartment === "Reliability" ||
@@ -119,6 +123,7 @@ function App() {
             element={
               <ProtectedRoute
                 allowedDepartments={["Administration", "Accounts"]}
+                allowedRoles={[]}
               >
                 <Home />
               </ProtectedRoute>
@@ -130,6 +135,7 @@ function App() {
             element={
               <ProtectedRoute
                 allowedDepartments={["Administration", "Accounts", "Marketing"]}
+                allowedRoles={[]}
               >
                 <QuotationsDashboard />
               </ProtectedRoute>
@@ -140,6 +146,7 @@ function App() {
             element={
               <ProtectedRoute
                 allowedDepartments={["Administration", "Accounts", "Marketing"]}
+                allowedRoles={[]}
               >
                 <Quotation />
               </ProtectedRoute>
@@ -150,6 +157,7 @@ function App() {
             element={
               <ProtectedRoute
                 allowedDepartments={["Administration", "Accounts", "Marketing"]}
+                allowedRoles={[]}
               >
                 <Quotation />
               </ProtectedRoute>
@@ -160,6 +168,7 @@ function App() {
             element={
               <ProtectedRoute
                 allowedDepartments={["Administration", "Accounts", "Marketing"]}
+                allowedRoles={[]}
               >
                 <QuotationRequirements />
               </ProtectedRoute>
@@ -178,6 +187,7 @@ function App() {
                   "Software",
                   "Reports & Scrutiny",
                 ]}
+                allowedRoles={[]}
               >
                 <JCHome />
               </ProtectedRoute>
@@ -196,6 +206,7 @@ function App() {
                   "Software",
                   "Reports & Scrutiny",
                 ]}
+                allowedRoles={[]}
               >
                 <Jobcard />
               </ProtectedRoute>
@@ -214,6 +225,7 @@ function App() {
                   "Software",
                   "Reports & Scrutiny",
                 ]}
+                allowedRoles={[]}
               >
                 <Jobcard />
               </ProtectedRoute>
@@ -232,6 +244,7 @@ function App() {
                   "Software",
                   "Reports & Scrutiny",
                 ]}
+                allowedRoles={[]}
               >
                 <JobcardRequirements />
               </ProtectedRoute>
@@ -246,6 +259,7 @@ function App() {
                   "TS1 Testing",
                   "Reports & Scrutiny",
                 ]}
+                allowedRoles={[]}
               >
                 <ChamberAndCalibration />
               </ProtectedRoute>
@@ -261,6 +275,7 @@ function App() {
                   "TS1 Testing",
                   "Reports & Scrutiny",
                 ]}
+                allowedRoles={[]}
               >
                 <Slotbooking />
               </ProtectedRoute>
@@ -269,7 +284,10 @@ function App() {
           <Route
             path="user_management"
             element={
-              <ProtectedRoute allowedDepartments={["Administration"]}>
+              <ProtectedRoute
+                allowedDepartments={["Administration"]}
+                allowedRoles={[]}
+              >
                 <UserManagement />
               </ProtectedRoute>
             }
@@ -285,6 +303,7 @@ function App() {
                   "TS2 Testing",
                   "Marketing",
                 ]}
+                allowedRoles={["Quality Engineer"]}
               >
                 <EMIJCDashboard />
               </ProtectedRoute>
@@ -301,6 +320,7 @@ function App() {
                   "TS2 Testing",
                   "Marketing",
                 ]}
+                allowedRoles={["Quality Engineer"]}
               >
                 <EmiJobcard />
               </ProtectedRoute>
@@ -317,6 +337,7 @@ function App() {
                   "TS2 Testing",
                   "Marketing",
                 ]}
+                allowedRoles={["Quality Engineer"]}
               >
                 <EmiJobcard />
               </ProtectedRoute>

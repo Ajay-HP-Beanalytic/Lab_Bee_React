@@ -203,6 +203,21 @@ const CS118Form = ({ formType }) => {
     },
 
     {
+      id: "contactDischarge6p",
+      label: "Contact Discharge (kV) 6P",
+      width: 250,
+      type: "textField",
+      align: "center",
+    },
+    {
+      id: "contactDischarge6n",
+      label: "Contact Discharge (kV) 6N",
+      width: 250,
+      type: "textField",
+      align: "center",
+    },
+
+    {
       id: "contactDischarge8p",
       label: "Contact Discharge (kV) 8P",
       width: 250,
@@ -247,20 +262,20 @@ const CS118Form = ({ formType }) => {
       align: "center",
     },
 
-    {
-      id: "contactDischarge30p",
-      label: "Contact Discharge (kV) 30P",
-      width: 250,
-      type: "textField",
-      align: "center",
-    },
-    {
-      id: "contactDischarge30n",
-      label: "Contact Discharge (kV) 30N",
-      width: 250,
-      type: "textField",
-      align: "center",
-    },
+    // {
+    //   id: "contactDischarge30p",
+    //   label: "Contact Discharge (kV) 30P",
+    //   width: 250,
+    //   type: "textField",
+    //   align: "center",
+    // },
+    // {
+    //   id: "contactDischarge30n",
+    //   label: "Contact Discharge (kV) 30N",
+    //   width: 250,
+    //   type: "textField",
+    //   align: "center",
+    // },
 
     {
       id: "results",
@@ -277,14 +292,16 @@ const CS118Form = ({ formType }) => {
     contactDischarge2n: "",
     contactDischarge4p: "",
     contactDischarge4n: "",
+    contactDischarge6p: "",
+    contactDischarge6n: "",
     contactDischarge8p: "",
     contactDischarge8n: "",
     contactDischarge15p: "",
     contactDischarge15n: "",
     contactDischarge25p: "",
     contactDischarge25n: "",
-    contactDischarge30p: "",
-    contactDischarge30n: "",
+    // contactDischarge30p: "",
+    // contactDischarge30n: "",
     results: "",
   };
 

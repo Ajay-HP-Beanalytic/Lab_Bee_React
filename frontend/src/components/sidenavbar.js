@@ -513,7 +513,7 @@ export default function SidenavigationBar() {
       return [2, 3, 8].includes(item.i);
     } else if (
       loggedInUserDepartment === "TS1 Testing" ||
-      loggedInUserDepartment === "Reports & Scrutiny"
+      loggedInUserRole === "Reports & Scrutiny Manager"
     ) {
       return [4, 6, 7].includes(item.i);
     } else if (
@@ -523,6 +523,8 @@ export default function SidenavigationBar() {
       return [4, 5].includes(item.i);
     } else if (loggedInUserDepartment === "TS2 Testing") {
       return [8].includes(item.i);
+    } else if (loggedInUserRole === "Quality Engineer") {
+      return [4, 6, 7, 8].includes(item.i);
     }
     return false; // Default: Hide the item
   });
