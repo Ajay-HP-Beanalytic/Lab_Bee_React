@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import { useEffect } from "react";
 import Docxtemplater from "docxtemplater";
 import PizZip from "pizzip";
 import { saveAs } from "file-saver";
@@ -78,7 +78,9 @@ const EMIJCDocument = ({ id }) => {
             const endDate = new Date(testDetails.testEndDateTime);
 
             const startDateObj = {
-              date: startDate.toISOString().split("T")[0],
+              date: dayjs(startDate).isValid()
+                ? dayjs(startDate).format("DD-MM-YYYY")
+                : "",
               time: startDate.toLocaleTimeString([], {
                 hour: "2-digit",
                 minute: "2-digit",
@@ -86,7 +88,9 @@ const EMIJCDocument = ({ id }) => {
             };
 
             const endDateObj = {
-              date: endDate.toISOString().split("T")[0],
+              date: dayjs(endDate).isValid()
+                ? dayjs(endDate).format("DD-MM-YYYY")
+                : "",
               time: endDate.toLocaleTimeString([], {
                 hour: "2-digit",
                 minute: "2-digit",
@@ -109,10 +113,10 @@ const EMIJCDocument = ({ id }) => {
           quoteNumber,
           poNumber,
           jcOpenDate: dayjs(jcOpenDate).isValid()
-            ? dayjs(jcOpenDate).format("YYYY-MM-DD")
+            ? dayjs(jcOpenDate).format("DD-MM-YYYY")
             : "",
           itemReceivedDate: dayjs(itemReceivedDate).isValid()
-            ? dayjs(itemReceivedDate).format("YYYY-MM-DD")
+            ? dayjs(itemReceivedDate).format("DD-MM-YYYY")
             : "",
           typeOfRequest,
           sampleCondition,
@@ -126,7 +130,7 @@ const EMIJCDocument = ({ id }) => {
           jcIncharge,
           jcStatus,
           jcClosedDate: dayjs(jcClosedDate).isValid()
-            ? dayjs(jcClosedDate).format("YYYY-MM-DD")
+            ? dayjs(jcClosedDate).format("DD-MM-YYYY")
             : "",
           observations,
           lastUpdatedBy,

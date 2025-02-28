@@ -1,4 +1,4 @@
-import React, { useContext, useEffect } from "react";
+import React, { useCallback, useContext, useEffect } from "react";
 import {
   Box,
   Card,
@@ -32,6 +32,9 @@ export default function EMIJCStepOne() {
   } = useContext(EMIJCContext);
 
   const { control, register, setValue, watch } = useForm();
+  // const { control, register, setValue, watch } = useForm({
+  //   defaultValues: stepOneFormData,
+  // });
 
   const fieldsToBeFilledByCustomerPartOne = [
     { label: "Company", name: "companyName", type: "textField", width: "100%" },
@@ -143,14 +146,6 @@ export default function EMIJCStepOne() {
     }
   }, [stepOneFormData, setValue]);
 
-  // Only update the context if the form data changes
-  useEffect(() => {
-    if (!_.isEqual(stepOneFormValues, stepOneFormData)) {
-      updateStepOneFormData(stepOneFormValues);
-    }
-  }, [stepOneFormValues, stepOneFormData, updateStepOneFormData]);
-
-  // Load the table data from context when the component mounts
   useEffect(() => {
     if (eutTableRows.length === 0) {
       updateEutTableRows([eutTableRowTemplate]);
@@ -160,16 +155,60 @@ export default function EMIJCStepOne() {
     }
   }, [eutTableRows, updateEutTableRows, testsTableRows, updateTestsTableRows]);
 
-  // Watch for changes in testsTableRows and update the context
-  useEffect(() => {
-    if (!_.isEqual(eutTableRows, stepOneFormData.eutTableRows)) {
-      updateEutTableRows(eutTableRows);
-    }
+  const handleUpdateStepOneFormData = useCallback(
+    (values) => {
+      if (!_.isEqual(values, stepOneFormData)) {
+        updateStepOneFormData(values);
+      }
+    },
+    [stepOneFormData, updateStepOneFormData]
+  );
 
-    if (!_.isEqual(testsTableRows, stepOneFormData.testsTableRows)) {
-      updateTestsTableRows(testsTableRows);
+  useEffect(() => {
+    handleUpdateStepOneFormData(stepOneFormValues);
+  }, [stepOneFormValues, handleUpdateStepOneFormData]);
+
+  // Load the table data from context when the component mounts
+  // useEffect(() => {
+  //   if (eutTableRows.length === 0) {
+  //     updateEutTableRows([eutTableRowTemplate]);
+  //   }
+  //   if (testsTableRows.length === 0) {
+  //     updateTestsTableRows([testsTableRowTemplate]); // Add a default row if there's no data
+  //   }
+  // }, [eutTableRows, updateEutTableRows, testsTableRows, updateTestsTableRows]);
+
+  useEffect(() => {
+    // Add a mount check to ensure this only runs once
+    const shouldInitialize = true; // You can replace this with a ref if needed
+
+    if (shouldInitialize) {
+      if (eutTableRows.length === 0) {
+        updateEutTableRows([eutTableRowTemplate]);
+      }
+      if (testsTableRows.length === 0) {
+        updateTestsTableRows([testsTableRowTemplate]); // Add a default row if there's no data
+      }
     }
-  }, [eutTableRows, testsTableRows, updateEutTableRows, updateTestsTableRows]);
+  }, []); // Empty dependency array so it only runs once on mount
+
+  // Only update the context if the form data changes
+  // useEffect(() => {
+  //   if (!_.isEqual(stepOneFormValues, stepOneFormData)) {
+  //     updateStepOneFormData(stepOneFormValues);
+  //   }
+  // }, [stepOneFormValues, stepOneFormData, updateStepOneFormData]);
+
+  // // Watch for changes in testsTableRows and update the context
+  // useEffect(() => {
+  //   if (!_.isEqual(eutTableRows, stepOneFormData.eutTableRows)) {
+  //     updateEutTableRows(eutTableRows);
+  //   }
+
+  //   if (!_.isEqual(testsTableRows, stepOneFormData.testsTableRows)) {
+  //     updateTestsTableRows(testsTableRows);
+  //   }
+  // }, [eutTableRows, testsTableRows, updateEutTableRows, updateTestsTableRows]);
 
   return (
     <>

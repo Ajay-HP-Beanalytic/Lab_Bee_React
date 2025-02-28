@@ -58,16 +58,37 @@ const EMIJCContextProvider = ({ children }) => {
   );
   const [cs118TableRows, setCs118TableRows] = useState(initialCs118TableRows);
 
-  const updateStepOneFormData = (stepData) => {
-    setStepOneFormData((prevData) => ({ ...prevData, ...stepData }));
-  };
+  // const updateStepOneFormData = (stepData) => {
+  //   setStepOneFormData((prevData) => ({ ...prevData, ...stepData }));
+  // };
 
-  const updateStepTwoFormData = (stepData) => {
-    setStepTwoFormData((prevData) => ({ ...prevData, ...stepData }));
-  };
+  // const updateStepTwoFormData = (stepData) => {
+  //   setStepTwoFormData((prevData) => ({ ...prevData, ...stepData }));
+  // };
 
   const updateStepThreeFormData = (stepData) => {
     setStepThreeFormData((prevData) => ({ ...prevData, ...stepData }));
+  };
+
+  // Modify updateStepOneFormData to not overwrite table data
+  const updateStepOneFormData = (newData) => {
+    setStepOneFormData((prevData) => ({
+      ...prevData,
+      ...newData,
+      // Preserve table rows explicitly
+      eutTableRows: prevData.eutTableRows || [],
+      testsTableRows: prevData.testsTableRows || [],
+    }));
+  };
+
+  // Modify updateStepTwoFormData similarly
+  const updateStepTwoFormData = (newData) => {
+    setStepTwoFormData((prevData) => ({
+      ...prevData,
+      ...newData,
+      // Preserve table rows explicitly
+      testPerformedTableRows: prevData.testPerformedTableRows || [],
+    }));
   };
 
   // Function to update EUT Table rows
@@ -84,6 +105,34 @@ const EMIJCContextProvider = ({ children }) => {
   const updateTestPerformedTableRows = (rows) => {
     setTestPerformedTableRows(rows);
   };
+
+  // Make table updates explicitly preserve their data
+  // const updateEutTableRows = (newRows) => {
+  //   setEutTableRows(newRows);
+  //   // Also update in form data to ensure consistency
+  //   setStepOneFormData((prevData) => ({
+  //     ...prevData,
+  //     eutTableRows: newRows,
+  //   }));
+  // };
+
+  // const updateTestsTableRows = (newRows) => {
+  //   setTestsTableRows(newRows);
+  //   // Also update in form data to ensure consistency
+  //   setStepOneFormData((prevData) => ({
+  //     ...prevData,
+  //     testsTableRows: newRows,
+  //   }));
+  // };
+
+  // const updateTestPerformedTableRows = (newRows) => {
+  //   setTestPerformedTableRows(newRows);
+  //   // Also update in form data to ensure consistency
+  //   setStepTwoFormData((prevData) => ({
+  //     ...prevData,
+  //     testPerformedTableRows: newRows,
+  //   }));
+  // };
 
   // Function to update observationFormData
   const updateObservationFormData = (formType, field, value) => {

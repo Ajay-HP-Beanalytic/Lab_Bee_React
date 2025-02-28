@@ -63,6 +63,7 @@ export default function Quotation() {
   let initialCustomerReferance = "";
   let initialKindAttention = "";
   let initialProjectName = "";
+  let initialCustomerEmail = "";
 
   let defTestDescription = "";
   let defSacNo = "";
@@ -96,6 +97,7 @@ export default function Quotation() {
   );
   const [kindAttention, setKindAttention] = useState(initialKindAttention);
   const [customerId, setCustomerId] = useState(initialCustomerID);
+  const [customerEmail, setCustomerEmail] = useState(initialCustomerEmail);
   const [customerReferance, setCustomerreferance] = useState(
     initialCustomerReferance
   );
@@ -663,7 +665,7 @@ export default function Quotation() {
                       fullWidth
                       variant="outlined"
                       multiline={true}
-                      rows={4}
+                      rows={3}
                       autoComplete="on"
                     />
                   </div>
@@ -680,6 +682,20 @@ export default function Quotation() {
                       variant="outlined"
                       autoComplete="on"
                       fullWidth
+                    />
+
+                    <TextField
+                      sx={{
+                        marginBottom: "16px",
+                        marginLeft: "10px",
+                        borderRadius: 3,
+                      }}
+                      value={customerEmail}
+                      onChange={(e) => setCustomerEmail(e.target.value)}
+                      label="Customer Email Id"
+                      fullWidth
+                      variant="outlined"
+                      autoComplete="on"
                     />
                   </div>
                 </Box>

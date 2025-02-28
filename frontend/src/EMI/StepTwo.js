@@ -1,7 +1,7 @@
-import React, { useContext, useEffect, useState } from "react";
+import React, { useCallback, useContext, useEffect, useState } from "react";
 import { EMIJCContext } from "./EMIJCContext";
 import { useForm } from "react-hook-form";
-import { Box, Button, Card, Grid, Typography } from "@mui/material";
+import { Box, Card, Grid, Typography } from "@mui/material";
 import _ from "lodash";
 import RenderComponents from "../functions/RenderComponents";
 import RenderTable from "../functions/RenderTable";
@@ -24,7 +24,18 @@ export default function EMIJCStepTwo() {
 
   const { loggedInUser } = useContext(UserContext);
 
-  const { control, register, setValue, watch } = useForm();
+  // const { control, register, setValue, watch } = useForm();
+  const { control, register, setValue, watch } = useForm({
+    defaultValues: {
+      ...stepTwoFormData,
+      jcOpenDate: stepTwoFormData.jcOpenDate
+        ? dayjs(stepTwoFormData.jcOpenDate)
+        : null,
+      itemReceivedDate: stepTwoFormData.itemReceivedDate
+        ? dayjs(stepTwoFormData.itemReceivedDate)
+        : null,
+    },
+  });
 
   //Fetch TS2 Testing Users List:
   const [emiUsers, setEMIUsers] = useState([]);
@@ -51,15 +62,81 @@ export default function EMIJCStepTwo() {
     }
   }, [stepTwoFormData, setValue]);
 
+  // Populate EUT and Test details from Step One
+  // useEffect(() => {
+  //   if (stepOneFormData) {
+  //     const eutDetails = stepOneFormData.eutTableRows || [];
+  //     const testDetails = stepOneFormData.testsTableRows || [];
+
+  //     updateTestPerformedTableRows((prevRows) => {
+  //       return prevRows.map((row, index) => ({
+  //         ...row,
+  //         eutName: eutDetails[index]?.eutName || row.eutName,
+  //         eutSerialNumber:
+  //           eutDetails[index]?.eutSerialNumber || row.eutSerialNumber,
+  //         testName: testDetails[index]?.testName || row.testName,
+  //         testStandard: testDetails[index]?.testStandard || row.testStandard,
+  //       }));
+  //     });
+  //   }
+  // }, [stepOneFormData, updateTestPerformedTableRows]);
+
+  useEffect(() => {
+    if (stepOneFormData) {
+      const eutDetails = stepOneFormData.eutTableRows || [];
+      const testDetails = stepOneFormData.testsTableRows || [];
+
+      updateTestPerformedTableRows((prevRows) => {
+        return prevRows.map((row, index) => {
+          const updatedRow = { ...row };
+          if (eutDetails[index]) {
+            updatedRow.eutName = eutDetails[index].eutName || row.eutName;
+            updatedRow.eutSerialNumber =
+              eutDetails[index].eutSerialNumber || row.eutSerialNumber;
+          }
+          if (testDetails[index]) {
+            updatedRow.testName = testDetails[index].testName || row.testName;
+            updatedRow.testStandard =
+              testDetails[index].testStandard || row.testStandard;
+          }
+          return updatedRow;
+        });
+      });
+    }
+  }, [stepOneFormData, updateTestPerformedTableRows]);
+
   // Watch form fields and update context on value change
   const stepTwoFormValues = watch();
 
-  // Only update context if form data changes
+  const handleUpdateStepTwoFormData = useCallback(
+    (values) => {
+      if (!_.isEqual(values, stepTwoFormData)) {
+        updateStepTwoFormData(values);
+      }
+    },
+    [stepTwoFormData, updateStepTwoFormData]
+  );
+
   useEffect(() => {
-    if (!_.isEqual(stepTwoFormValues, stepTwoFormData)) {
-      updateStepTwoFormData(stepTwoFormValues);
+    handleUpdateStepTwoFormData(stepTwoFormValues);
+  }, [stepTwoFormValues, handleUpdateStepTwoFormData]);
+
+  // Only update context if form data changes
+  // useEffect(() => {
+  //   if (!_.isEqual(stepTwoFormValues, stepTwoFormData)) {
+  //     updateStepTwoFormData(stepTwoFormValues);
+  //   }
+  // }, [stepTwoFormValues, stepTwoFormData, updateStepTwoFormData]);
+
+  // 1. First, let's create a useEffect that only initializes the table ONCE on component mount
+  // and preserves existing data
+  useEffect(() => {
+    // Only initialize if the table is completely empty
+    if (testPerformedTableRows.length === 0) {
+      updateTestPerformedTableRows([testPerformedTableRowTemplate]);
     }
-  }, [stepTwoFormValues, stepTwoFormData, updateStepTwoFormData]);
+    // Note the empty dependency array - this only runs once when component mounts
+  }, []);
 
   const fieldsToBeFilledByLoggedInUserPartOne = [
     {
@@ -394,10 +471,28 @@ export default function EMIJCStepTwo() {
             Tests Performed Details
           </Typography>
 
-          <RenderTable
+          {/* <RenderTable
             tableColumns={testPerformedTableColumns}
             tableRows={testPerformedTableRows}
             setTableRows={updateTestPerformedTableRows}
+            rowTemplate={testPerformedTableRowTemplate}
+            deletedIds={deletedTestPerformedIds}
+            setDeletedIds={setDeletedTestPerformedIds}
+          /> */}
+
+          <RenderTable
+            tableColumns={testPerformedTableColumns}
+            tableRows={testPerformedTableRows}
+            setTableRows={(updatedRows) => {
+              // First update the local state
+              updateTestPerformedTableRows(updatedRows);
+              // Then update the context with the whole stepTwoFormData
+              // This is done separately from the RenderTable component
+              updateStepTwoFormData({
+                ...stepTwoFormData,
+                testPerformedTableRows: updatedRows,
+              });
+            }}
             rowTemplate={testPerformedTableRowTemplate}
             deletedIds={deletedTestPerformedIds}
             setDeletedIds={setDeletedTestPerformedIds}
