@@ -1,7 +1,7 @@
-import React, { useContext, useEffect } from "react";
+import React, { useCallback, useContext, useEffect } from "react";
 import { EMIJCContext } from "./EMIJCContext";
 import { useForm } from "react-hook-form";
-import { Card, Grid, Typography } from "@mui/material";
+import { Card, Grid } from "@mui/material";
 import _ from "lodash";
 import RenderComponents from "../functions/RenderComponents";
 import dayjs from "dayjs";
@@ -75,12 +75,25 @@ export default function EMIJCStepThree() {
   // Watch form fields and update context on value change
   const stepThreeFormValues = watch();
 
-  // Only update the context if the form data changes
+  const handleUpdateStepThreeFormData = useCallback(
+    (values) => {
+      if (!_.isEqual(values, stepThreeFormData)) {
+        updateStepThreeFormData(values);
+      }
+    },
+    [stepThreeFormData, updateStepThreeFormData]
+  );
+
   useEffect(() => {
-    if (!_.isEqual(stepThreeFormValues, stepThreeFormData)) {
-      updateStepThreeFormData(stepThreeFormValues);
-    }
-  }, [stepThreeFormValues, stepThreeFormData, updateStepThreeFormData]);
+    handleUpdateStepThreeFormData(stepThreeFormValues);
+  }, [stepThreeFormValues, handleUpdateStepThreeFormData]);
+
+  // Only update the context if the form data changes
+  // useEffect(() => {
+  //   if (!_.isEqual(stepThreeFormValues, stepThreeFormData)) {
+  //     updateStepThreeFormData(stepThreeFormValues);
+  //   }
+  // }, [stepThreeFormValues, stepThreeFormData, updateStepThreeFormData]);
 
   return (
     <>

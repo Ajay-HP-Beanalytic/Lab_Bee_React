@@ -47,10 +47,14 @@ const RenderTable = ({
   const [selectedFormType, setSelectedFormType] = useState("");
   const [selectedRowIndex, setSelectedRowIndex] = useState(null);
 
-  const [commonData, setCommonData] = useState([
-    stepOneFormData,
-    testPerformedTableRows,
-  ]);
+  // const [commonData, setCommonData] = useState([
+  //   stepOneFormData,
+  //   testPerformedTableRows,
+  // ]);
+
+  // IMPORTANT CHANGE: Remove the dependency between stepOneFormData and testPerformedTableRows
+  // Instead, pass them separately to components that need them
+  const commonData = [stepOneFormData, testPerformedTableRows];
 
   // Function to add a new row
   const addTableRow = () => {
@@ -69,11 +73,43 @@ const RenderTable = ({
   };
 
   // Function to handle input changes in the table rows
+  // const handleInputChange = (index, field, value) => {
+  //   const updatedRows = [...tableRows];
+  //   updatedRows[index][field] = value;
+
+  //   // // Calculate duration if both start and end times are available
+  //   // Check if we are updating the start or end time
+  //   if (field === "testStartDateTime" || field === "testEndDateTime") {
+  //     const startTime = new Date(updatedRows[index].testStartDateTime);
+  //     const endTime = new Date(updatedRows[index].testEndDateTime);
+
+  //     if (!isNaN(startTime) && !isNaN(endTime)) {
+  //       let durationInMilliSecond = endTime - startTime;
+  //       let durationInMinutes = durationInMilliSecond / (1000 * 60);
+
+  //       // Ensure duration is not negative:
+  //       if (durationInMinutes < 0) {
+  //         durationInMinutes = 0;
+  //       }
+
+  //       // updatedRows[index].testDuration = Math.round(durationInMinutes);
+  //       updatedRows[index].testDuration = durationInMinutes;
+  //     }
+  //   }
+
+  //   setTableRows(updatedRows);
+  //   updateTestPerformedTableRows(updatedRows);
+  // };
+
+  // Function to handle input changes in the table rows
   const handleInputChange = (index, field, value) => {
     const updatedRows = [...tableRows];
-    updatedRows[index][field] = value;
+    updatedRows[index] = {
+      ...updatedRows[index], // Preserve all existing properties
+      [field]: value, // Update only the changed field
+    };
 
-    // // Calculate duration if both start and end times are available
+    // Calculate duration if both start and end times are available
     // Check if we are updating the start or end time
     if (field === "testStartDateTime" || field === "testEndDateTime") {
       const startTime = new Date(updatedRows[index].testStartDateTime);
@@ -88,13 +124,16 @@ const RenderTable = ({
           durationInMinutes = 0;
         }
 
-        // updatedRows[index].testDuration = Math.round(durationInMinutes);
         updatedRows[index].testDuration = durationInMinutes;
       }
     }
 
+    // IMPORTANT CHANGE: Just update the local state through setTableRows
+    // This will be passed back to the parent component
     setTableRows(updatedRows);
-    updateTestPerformedTableRows(updatedRows);
+
+    // REMOVE THIS LINE to prevent automatic updates to the context
+    // updateTestPerformedTableRows(updatedRows);
   };
 
   // Function to handle "Observation Form" changes
