@@ -34,6 +34,8 @@ export default function AddCustomerDetails() {
   const [toCompanyAddress, setToCompanyAddress] = useState("");
   const [kindAttention, setKindAttention] = useState("");
   const [customerId, setCustomerId] = useState("");
+  const [customerEmail, setCustomerEmail] = useState("");
+  const [customerContactNumber, setCustomerContactNumber] = useState("");
   const [customerReferance, setCustomerreferance] = useState("Email");
 
   const [editCustomerDetailsFields, setEditCustomerDetailsFields] =
@@ -66,6 +68,7 @@ export default function AddCustomerDetails() {
       !toCompanyAddress ||
       !kindAttention ||
       !customerId ||
+      !customerEmail ||
       !customerReferance
     ) {
       toast.error("Please enter all the fields..!");
@@ -79,6 +82,8 @@ export default function AddCustomerDetails() {
           companyName,
           toCompanyAddress,
           kindAttention,
+          customerEmail,
+          customerContactNumber,
           customerId,
           customerReferance,
         }
@@ -122,6 +127,8 @@ export default function AddCustomerDetails() {
     setCompanyName("");
     setToCompanyAddress("");
     setKindAttention("");
+    setCustomerEmail("");
+    setCustomerContactNumber("");
     setCustomerId("");
     setCustomerreferance("");
     setEditId("");
@@ -157,13 +164,15 @@ export default function AddCustomerDetails() {
           .slice(1);
 
         // Check if the dataArr has at least one row with two columns (excluding headers)
-        if (dataArr.length > 1 && dataArr[0].length === 5) {
+        if (dataArr.length > 1 && dataArr[0].length === 7) {
           if (dataArr.length > 0) {
             dataArr.forEach(async (row) => {
               const [
                 companyName,
                 toCompanyAddress,
                 kindAttention,
+                customerEmail,
+                customerContactNumber,
                 customerId,
                 customerReferance,
               ] = row;
@@ -175,6 +184,8 @@ export default function AddCustomerDetails() {
                     companyName,
                     toCompanyAddress,
                     kindAttention,
+                    customerEmail,
+                    customerContactNumber,
                     customerId,
                     customerReferance,
                   }
@@ -261,6 +272,8 @@ export default function AddCustomerDetails() {
     setCompanyName(row.company_name);
     setToCompanyAddress(row.company_address);
     setKindAttention(row.contact_person);
+    setCustomerEmail(row.customer_email);
+    setCustomerContactNumber(row.customer_contact_number);
     setCustomerId(row.company_id);
     setCustomerreferance(row.customer_referance);
   };
@@ -315,6 +328,22 @@ export default function AddCustomerDetails() {
     {
       field: "contact_person",
       headerName: "Contact Person",
+      width: 150,
+      align: "center",
+      headerAlign: "center",
+      headerClassName: "custom-header-color",
+    },
+    {
+      field: "customer_email",
+      headerName: "Email",
+      width: 150,
+      align: "center",
+      headerAlign: "center",
+      headerClassName: "custom-header-color",
+    },
+    {
+      field: "customer_contact_number",
+      headerName: "Contact Number",
       width: 150,
       align: "center",
       headerAlign: "center",
@@ -392,7 +421,7 @@ export default function AddCustomerDetails() {
             <DialogContent>
               <TextField
                 sx={{
-                  marginBottom: "16px",
+                  marginBottom: "5px",
                   marginLeft: "10px",
                   borderRadius: 3,
                 }}
@@ -407,7 +436,7 @@ export default function AddCustomerDetails() {
 
               <TextField
                 sx={{
-                  marginBottom: "16px",
+                  marginBottom: "5px",
                   marginLeft: "10px",
                   borderRadius: 3,
                 }}
@@ -417,14 +446,14 @@ export default function AddCustomerDetails() {
                 margin="normal"
                 fullWidth
                 multiline={true}
-                rows={4}
+                rows={3}
                 variant="outlined"
                 autoComplete="on"
               />
 
               <TextField
                 sx={{
-                  marginBottom: "16px",
+                  marginBottom: "5px",
                   marginLeft: "10px",
                   borderRadius: 3,
                 }}
@@ -439,7 +468,37 @@ export default function AddCustomerDetails() {
 
               <TextField
                 sx={{
-                  marginBottom: "16px",
+                  marginBottom: "5px",
+                  marginLeft: "10px",
+                  borderRadius: 3,
+                }}
+                value={customerEmail}
+                onChange={(e) => setCustomerEmail(e.target.value)}
+                label="Customer Email"
+                margin="normal"
+                fullWidth
+                variant="outlined"
+                autoComplete="on"
+              />
+
+              <TextField
+                sx={{
+                  marginBottom: "5px",
+                  marginLeft: "10px",
+                  borderRadius: 3,
+                }}
+                value={customerContactNumber}
+                onChange={(e) => setCustomerContactNumber(e.target.value)}
+                label="Contact Number"
+                margin="normal"
+                fullWidth
+                variant="outlined"
+                autoComplete="on"
+              />
+
+              <TextField
+                sx={{
+                  marginBottom: "5px",
                   marginLeft: "10px",
                   borderRadius: 3,
                 }}
@@ -454,7 +513,7 @@ export default function AddCustomerDetails() {
 
               <TextField
                 sx={{
-                  marginBottom: "16px",
+                  marginBottom: "5px",
                   marginLeft: "10px",
                   borderRadius: 3,
                 }}
@@ -468,10 +527,10 @@ export default function AddCustomerDetails() {
               />
             </DialogContent>
 
-            <DialogActions>
+            <DialogActions align="center">
               <Button
                 sx={{
-                  marginBottom: "16px",
+                  marginBottom: "10px",
                   marginLeft: "10px",
                   borderRadius: 3,
                 }}
@@ -483,7 +542,7 @@ export default function AddCustomerDetails() {
               </Button>
               <Button
                 sx={{
-                  marginBottom: "16px",
+                  marginBottom: "10px",
                   marginLeft: "10px",
                   borderRadius: 3,
                 }}

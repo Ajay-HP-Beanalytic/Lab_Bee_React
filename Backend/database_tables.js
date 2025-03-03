@@ -161,6 +161,8 @@ function createBEAQuotationsTable() {
             company_address VARCHAR(500),
             quote_given_date DATE,
             customer_id VARCHAR(255),
+            customer_email VARCHAR(255),
+            customer_contact_number VARCHAR(255),
             customer_referance VARCHAR(255),
             kind_attention VARCHAR(255),
             project_name VARCHAR(1000),
@@ -218,6 +220,8 @@ function createCustomerDetailsTable() {
         company_name VARCHAR(1000),
         company_address VARCHAR(2000),
         contact_person VARCHAR(1000),
+        customer_email VARCHAR(1000),
+        customer_contact_number VARCHAR(500),
         company_id VARCHAR(500),
         customer_referance VARCHAR(500),
         PRIMARY KEY(id)

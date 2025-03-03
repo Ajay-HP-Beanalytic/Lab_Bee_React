@@ -52,6 +52,8 @@ export default function DocToPdf({ id }) {
   const [toCompanyName, setToCompanyName] = useState("");
   const [toCompanyAddress, setToCompanyAddress] = useState("");
   const [kindAttention, setKindAttention] = useState("");
+  const [customerEmail, setCustomerEmail] = useState("");
+  const [customerContactNumber, setCustomerContactNumber] = useState("");
   const [selectedQuotationId, setSelectedQuotationId] = useState("");
   const [customerIdStr, setCustomerIdStr] = useState("");
   const formattedDate = moment(new Date()).format("DD-MM-YYYY");
@@ -139,6 +141,8 @@ export default function DocToPdf({ id }) {
         toCompanyName: toCompanyName,
         toCompanyAddress: toCompanyAddress,
         kindAttention: kindAttention,
+        customerEmail: customerEmail,
+        customerContactNumber: customerContactNumber,
         customerIdStr: customerIdStr,
         quoteGivenDate: quoteGivenDate,
         customerReferance: customerReferance,
@@ -207,6 +211,8 @@ export default function DocToPdf({ id }) {
         setToCompanyName(result.data[0].company_name);
         setToCompanyAddress(result.data[0].company_address);
         setKindAttention(result.data[0].kind_attention);
+        setCustomerEmail(result.data[0].customer_email);
+        setCustomerContactNumber(result.data[0].customer_contact_number);
         setSelectedQuotationId(result.data[0].quotation_ids);
         setCustomerIdStr(result.data[0].customer_id);
         setQuoteGivenDate(
