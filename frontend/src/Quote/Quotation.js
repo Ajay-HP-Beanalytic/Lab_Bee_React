@@ -11,7 +11,6 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Paper,
   IconButton,
   Tooltip,
   Grid,
@@ -64,6 +63,7 @@ export default function Quotation() {
   let initialKindAttention = "";
   let initialProjectName = "";
   let initialCustomerEmail = "";
+  let initialCustomerContactNumber = "";
 
   let defTestDescription = "";
   let defSacNo = "";
@@ -98,6 +98,9 @@ export default function Quotation() {
   const [kindAttention, setKindAttention] = useState(initialKindAttention);
   const [customerId, setCustomerId] = useState(initialCustomerID);
   const [customerEmail, setCustomerEmail] = useState(initialCustomerEmail);
+  const [customerContactNumber, setCustomerContactNumber] = useState(
+    initialCustomerContactNumber
+  );
   const [customerReferance, setCustomerreferance] = useState(
     initialCustomerReferance
   );
@@ -146,6 +149,8 @@ export default function Quotation() {
         setQuotationIDString(result.data[0].quotation_ids);
         setToCompanyAddress(result.data[0].company_address);
         setCustomerId(result.data[0].customer_id);
+        setCustomerEmail(result.data[0].customer_email);
+        setCustomerContactNumber(result.data[0].customer_contact_number);
         setCustomerreferance(result.data[0].customer_referance);
         setSelectedDate(
           moment(result.data[0].quote_given_date).format("YYYY-MM-DD")
@@ -187,6 +192,8 @@ export default function Quotation() {
           setToCompanyAddress(result.data[0].company_address);
           setKindAttention(result.data[0].contact_person);
           setCustomerId(result.data[0].company_id);
+          setCustomerEmail(result.data[0].customer_email);
+          setCustomerContactNumber(result.data[0].customer_contact_number);
           setCustomerreferance(result.data[0].customer_referance);
           setSelectedDate(formattedDate);
         })
@@ -346,6 +353,7 @@ export default function Quotation() {
       !toCompanyAddress ||
       !selectedDate ||
       !customerId ||
+      !customerEmail ||
       !customerReferance ||
       !kindAttention ||
       !projectName ||
@@ -399,6 +407,8 @@ export default function Quotation() {
         toCompanyAddress,
         selectedDate,
         customerId,
+        customerEmail,
+        customerContactNumber,
         customerReferance,
         kindAttention,
         projectName,
@@ -458,6 +468,8 @@ export default function Quotation() {
     setCompanyName(initialCompanyName);
     setToCompanyAddress(initialToCompanyAddress);
     setCustomerId(initialCustomerID);
+    setCustomerEmail(initialCustomerEmail);
+    setCustomerContactNumber(initialCustomerContactNumber);
     setCustomerreferance(initialCustomerReferance);
     setKindAttention(initialKindAttention);
     setProjectName(initialProjectName);
@@ -665,7 +677,7 @@ export default function Quotation() {
                       fullWidth
                       variant="outlined"
                       multiline={true}
-                      rows={3}
+                      rows={4}
                       autoComplete="on"
                     />
                   </div>
@@ -713,7 +725,21 @@ export default function Quotation() {
                   <div>
                     <TextField
                       sx={{
+                        marginBottom: "16px",
                         marginTop: "16px",
+                        marginRight: "10px",
+                        borderRadius: 3,
+                      }}
+                      value={customerContactNumber}
+                      onChange={(e) => setCustomerContactNumber(e.target.value)}
+                      label="Customer Contact Number"
+                      fullWidth
+                      variant="outlined"
+                      autoComplete="on"
+                    />
+
+                    <TextField
+                      sx={{
                         marginBottom: "16px",
                         marginRight: "10px",
                         borderRadius: 3,

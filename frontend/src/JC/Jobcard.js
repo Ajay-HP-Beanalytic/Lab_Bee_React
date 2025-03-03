@@ -486,7 +486,7 @@ const Jobcard = ({ jobCardData }) => {
 
       let finYear = 0;
 
-      if (currentMonth > 2) {
+      if (currentMonth > 3) {
         finYear = `${currentYear}-${currentYear + 1}/${currentMonth}`;
       } else {
         finYear = `${currentYear - 1}-${currentYear}/${currentMonth}`;

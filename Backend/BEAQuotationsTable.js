@@ -49,6 +49,8 @@ function mainQuotationsTableAPIs(app, io, labbeeUsers) {
       customerId,
       customerReferance,
       kindAttention,
+      customerEmail,
+      customerContactNumber,
       projectName,
       quoteCategory,
       quoteVersion,
@@ -61,7 +63,7 @@ function mainQuotationsTableAPIs(app, io, labbeeUsers) {
     const formattedDate = new Date(selectedDate);
 
     const sql =
-      "INSERT INTO bea_quotations_table(quotation_ids, company_name, company_address, quote_given_date, customer_id, customer_referance, kind_attention, project_name, quote_category, quote_version, total_amount, total_taxable_amount_in_words, quote_created_by, tests) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+      "INSERT INTO bea_quotations_table(quotation_ids, company_name, company_address, quote_given_date, customer_id, customer_email, customer_contact_number, customer_referance, kind_attention, project_name, quote_category, quote_version, total_amount, total_taxable_amount_in_words, quote_created_by, tests) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
 
     db.query(
       sql,
@@ -71,6 +73,8 @@ function mainQuotationsTableAPIs(app, io, labbeeUsers) {
         toCompanyAddress,
         selectedDate,
         customerId,
+        customerEmail,
+        customerContactNumber,
         customerReferance,
         kindAttention,
         projectName,
@@ -532,6 +536,8 @@ function mainQuotationsTableAPIs(app, io, labbeeUsers) {
       toCompanyAddress,
       selectedDate,
       customerId,
+      customerEmail,
+      customerContactNumber,
       customerReferance,
       kindAttention,
       projectName,
@@ -551,6 +557,8 @@ function mainQuotationsTableAPIs(app, io, labbeeUsers) {
                     company_address=?, 
                     kind_attention=?, 
                     customer_id=?, 
+                    customer_email=?, 
+                    customer_contact_number=?,
                     customer_referance=?, 
                     quote_given_date=?, 
                     project_name=?,
@@ -569,6 +577,8 @@ function mainQuotationsTableAPIs(app, io, labbeeUsers) {
         toCompanyAddress,
         kindAttention,
         customerId,
+        customerEmail,
+        customerContactNumber,
         customerReferance,
         selectedDate,
         projectName,
@@ -705,7 +715,7 @@ function mainQuotationsTableAPIs(app, io, labbeeUsers) {
   // //API to fetch the year-month list po and invoice data:
   app.get("/api/getQuoteYearMonth", (req, res) => {
     const sqlQuery = `
-        SELECT 
+        SELECT
             DISTINCT DATE_FORMAT(quote_given_date, '%b') AS month,
             DATE_FORMAT(quote_given_date, '%Y') AS year,
             MONTH(quote_given_date) AS monthNumber
@@ -726,6 +736,41 @@ function mainQuotationsTableAPIs(app, io, labbeeUsers) {
       res.json(formattedData);
     });
   });
+
+  ///////////////////////////////////////////////////////////////
+  // app.get("/api/getQuoteYearMonth", (req, res) => {
+  //   const sqlQuery = `
+  //       SELECT
+  //           month,
+  //           year
+  //       FROM (
+  //           SELECT
+  //               DATE_FORMAT(quote_given_date, '%b') AS month,
+  //               DATE_FORMAT(quote_given_date, '%Y') AS year,
+  //               MONTH(quote_given_date) AS monthNumber
+  //           FROM bea_quotations_table
+  //           GROUP BY year, month
+  //       ) AS subquery
+  //       ORDER BY year ASC, monthNumber ASC`;
+
+  //   db.query(sqlQuery, (error, result) => {
+  //     if (error) {
+  //       return res
+  //         .status(500)
+  //         .json({ error: "An error occurred while fetching data" });
+  //     }
+
+  //     console.log("result", result);
+
+  //     const formattedData = result.map((row) => ({
+  //       month: row.month,
+  //       year: row.year,
+  //     }));
+  //     res.json(formattedData);
+  //   });
+  // });
+
+  ////////////////////////////////////////////////////
 
   // Get the Quotations between two date ranges:
   app.get("/api/getQuotesDataBwTwoDates", (req, res) => {
