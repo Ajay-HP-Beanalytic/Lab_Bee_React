@@ -266,7 +266,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
       // Extract financial year and month part
       const { currentYear, currentMonth } = getCurrentYearAndMonth();
       let finYear =
-        currentMonth > 2
+        currentMonth > 3
           ? `${currentYear}-${currentYear + 1}/${currentMonth}`
           : `${currentYear - 1}-${currentYear}/${currentMonth}`;
 
