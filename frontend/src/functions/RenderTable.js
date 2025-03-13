@@ -101,7 +101,7 @@ const RenderTable = ({
   //   updateTestPerformedTableRows(updatedRows);
   // };
 
-  // Function to handle input changes in the table rows
+  // Function to handle input changes in the table rows (Working Fine)
   const handleInputChange = (index, field, value) => {
     const updatedRows = [...tableRows];
     updatedRows[index] = {
