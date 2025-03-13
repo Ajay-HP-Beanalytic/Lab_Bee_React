@@ -10,7 +10,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import React, { useContext, useState } from "react";
+import React, { useContext, useRef, useState } from "react";
 
 import dayjs from "dayjs";
 import { EMIJCContext } from "./EMIJCContext";
@@ -94,12 +94,11 @@ const ObservationForms = ({
     ...parsedDownloadData,
   };
 
-  // When the component mounts, load existing observation form data if present
+  /////////////////////////////////
+  ///Working Fine:
   // useEffect(() => {
   //   const storedObservationFormData =
   //     testPerformedTableRows[rowIndex]?.observationFormData;
-
-  //   console.log("Stored Observation Form Data:", storedObservationFormData);
 
   //   if (storedObservationFormData) {
   //     // Parse the stored JSON data
@@ -117,39 +116,75 @@ const ObservationForms = ({
   //       ...prevData,
   //       [formType]: parsedStoredObservationFormData,
   //     }));
+
+  //     // Load table rows for the current form type
+  //     if (formType === "CS114") {
+  //       setCs114TableRows(
+  //         parsedStoredObservationFormData.observationFormTableData || []
+  //       );
+  //     } else if (formType === "CS115") {
+  //       setCs115TableRows(
+  //         parsedStoredObservationFormData.observationFormTableData || []
+  //       );
+  //     } else if (formType === "CS116") {
+  //       setCs116TableRows(
+  //         parsedStoredObservationFormData.observationFormTableData || []
+  //       );
+  //     } else if (formType === "RS103") {
+  //       setRs103TableRows(
+  //         parsedStoredObservationFormData.observationFormTableData || []
+  //       );
+  //     } else if (formType === "CS118") {
+  //       setCs118ADTableRows(
+  //         parsedStoredObservationFormData.cs118ADTableRows || []
+  //       );
+  //       setCs118CDTableRows(
+  //         parsedStoredObservationFormData.cs118CDTableRows || []
+  //       );
+  //     }
   //   }
   // }, [
   //   rowIndex,
   //   formType,
   //   // setValue,
-  //   setObservationFormData,
-  //   testPerformedTableRows,
+  //   // setObservationFormData,
+  //   // testPerformedTableRows,
+  //   observationFormData, // include so that the check works as expected
+  //   setCs114TableRows,
+  //   setCs115TableRows,
+  //   setCs116TableRows,
+  //   setRs103TableRows,
+  //   setCs118ADTableRows,
+  //   setCs118CDTableRows,
   // ]);
 
-  /////////////////////////////////
+  /////////////////////////////////////////////////////
+
+  // Use a ref to track if we have loaded data for the current row.
+  const initialLoadDone = useRef({});
 
   useEffect(() => {
+    // If data for this row and formType has been loaded already, do nothing.
+    if (initialLoadDone.current[rowIndex]?.[formType]) return;
+
     const storedObservationFormData =
       testPerformedTableRows[rowIndex]?.observationFormData;
 
     if (storedObservationFormData) {
-      // Parse the stored JSON data
       const parsedStoredObservationFormData = JSON.parse(
         storedObservationFormData
       );
 
-      // Set each field in the observationFormData from the stored data
+      // Map each field from the parsed data into the form using setValue
       Object.keys(parsedStoredObservationFormData).forEach((key) => {
         setValue(key, parsedStoredObservationFormData[key]);
       });
 
-      // Update observationFormData context for the current formType;
       setObservationFormData((prevData) => ({
         ...prevData,
         [formType]: parsedStoredObservationFormData,
       }));
 
-      // Load table rows for the current form type
       if (formType === "CS114") {
         setCs114TableRows(
           parsedStoredObservationFormData.observationFormTableData || []
@@ -174,19 +209,25 @@ const ObservationForms = ({
           parsedStoredObservationFormData.cs118CDTableRows || []
         );
       }
+
+      // Mark this row and formType as loaded
+      initialLoadDone.current = {
+        ...initialLoadDone.current,
+        [rowIndex]: { ...initialLoadDone.current[rowIndex], [formType]: true },
+      };
     }
   }, [
     rowIndex,
     formType,
-    // setValue,
+    setValue,
     setObservationFormData,
-    testPerformedTableRows,
     setCs114TableRows,
     setCs115TableRows,
     setCs116TableRows,
     setRs103TableRows,
     setCs118ADTableRows,
     setCs118CDTableRows,
+    // Notice we removed testPerformedTableRows to prevent continual resets.
   ]);
 
   const BEAADDRESS =

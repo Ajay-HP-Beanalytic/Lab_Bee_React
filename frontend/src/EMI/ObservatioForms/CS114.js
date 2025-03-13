@@ -82,8 +82,6 @@ const CS114Form = ({ formType }) => {
           tableRows={cs114TableRows}
           setTableRows={updateCs114TableRows}
           rowTemplate={cs114TableRowTemplate}
-          // deletedIds={deletedTestPerformedIds}
-          // setDeletedIds={setDeletedTestPerformedIds}
         />
       </Grid>
 

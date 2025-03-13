@@ -58,6 +58,14 @@ const EMIJCContextProvider = ({ children }) => {
   );
   const [cs118TableRows, setCs118TableRows] = useState(initialCs118TableRows);
 
+  // const updateStepOneFormData = (stepData) => {
+  //   setStepOneFormData((prevData) => ({ ...prevData, ...stepData }));
+  // };
+
+  // const updateStepTwoFormData = (stepData) => {
+  //   setStepTwoFormData((prevData) => ({ ...prevData, ...stepData }));
+  // };
+
   const updateStepThreeFormData = (stepData) => {
     setStepThreeFormData((prevData) => ({ ...prevData, ...stepData }));
   };
@@ -143,38 +151,35 @@ const EMIJCContextProvider = ({ children }) => {
     updateObservationFormData("CS114TableData", rows);
   };
 
-  // const updateCs114TableRows = (rows) => {
-  //   const cleanRows = rows.map((row) => {
-  //     const { serialNumberCounter, ...cleanRow } = row;
-  //     return cleanRow;
-  //   });
-
-  //   setCs114TableRows(cleanRows);
-  //   updateObservationFormData("CS114TableData", cleanRows);
+  // const updateCs115TableRows = (rows) => {
+  //   console.log("updateCs115TableRows", rows);
+  //   setCs115TableRows(rows);
+  //   console.log("setCs115TableRows", rows);
+  //   // Update the observationFormData with the new table data
+  //   updateObservationFormData("CS115TableData", rows);
   // };
 
   const updateCs115TableRows = (rows) => {
-    setCs115TableRows(rows);
-    // Update the observationFormData with the new table data
-    updateObservationFormData("CS115TableData", rows);
+    console.log("rows", rows);
+    // Create a clean version of the rows without serialNumberCounter
+    const cleanRows = rows.map((row) => {
+      // Create a new object without the serialNumberCounter property
+      const { serialNumberCounter, ...cleanRow } = row;
+      return cleanRow;
+    });
+
+    console.log("cleanRows", cleanRows);
+
+    // Update state with the clean rows
+    setCs115TableRows(cleanRows);
+
+    // Update the observationFormData with the clean rows
+    updateObservationFormData("CS115TableData", cleanRows);
   };
-
-  // const updateCs115TableRows = (rows) => {
-  //   // Create a clean version of the rows without serialNumberCounter
-  //   const cleanRows = rows.map((row) => {
-  //     // Create a new object without the serialNumberCounter property
-  //     const { serialNumberCounter, ...cleanRow } = row;
-  //     return cleanRow;
-  //   });
-
-  //   // Update state with the clean rows
-  //   setCs115TableRows(cleanRows);
-  //   // Update the observationFormData with the clean rows
-  //   updateObservationFormData("CS115TableData", cleanRows);
-  // };
 
   const updateCs116TableRows = (rows) => {
     setCs116TableRows(rows);
+    console.log("setCs116TableRows", rows);
     // Update the observationFormData with the new table data
     updateObservationFormData("CS116TableData", rows);
   };
@@ -205,6 +210,12 @@ const EMIJCContextProvider = ({ children }) => {
     // Update the observationFormData with the new table data
     updateObservationFormData("CS118TableData", rows);
   };
+
+  // const updateCs118TableRows = (rows) => {
+  //   setCs118TableRows(rows);
+  //   // Update the observationFormData with the new table data
+  //   updateObservationFormData("CS118TableData", rows);
+  // };
 
   return (
     <EMIJCContext.Provider
