@@ -714,6 +714,86 @@ function createEMIJobcardsTestsDetailsTable() {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////
+// Function to create the test category table:
+function createTestCategoryTable() {
+  const createTestCategoryTableQuery = `
+  CREATE TABLE IF NOT EXISTS test_category_table (
+   id INT NOT NULL AUTO_INCREMENT,
+    test_category VARCHAR(2000),
+    PRIMARY KEY(id)
+  ) `;
+
+  db.query(createTestCategoryTableQuery, function (err, result) {
+    if (err) {
+      console.log("Error occured while creating test_category_table", err);
+    } else {
+      // console.log("test_category_table created successfully.");
+    }
+  });
+}
+
+//////////////////////////////////////////////////////////////////////////////////////
+// Function to create test names table:
+function createTestNamesTable() {
+  const createTestNamesTableQuery = `
+  CREATE TABLE IF NOT EXISTS test_names_table (
+   id INT NOT NULL AUTO_INCREMENT,
+    test_name VARCHAR(2000),
+    PRIMARY KEY(id)
+  ) `;
+
+  db.query(createTestNamesTableQuery, function (err, result) {
+    if (err) {
+      console.log("Error occured while creating test_names_table", err);
+    } else {
+      // console.log("test_names_table created successfully.");
+    }
+  });
+}
+
+//////////////////////////////////////////////////////////////////////////////////////
+//Function to create chambers list table:
+function createChambersListTable() {
+  const createChambersListTableQuery = `
+  CREATE TABLE IF NOT EXISTS chambers_list_table (
+   id INT NOT NULL AUTO_INCREMENT,
+    chamber_name VARCHAR(2000),
+    PRIMARY KEY(id)
+  ) `;
+
+  db.query(createChambersListTableQuery, function (err, result) {
+    if (err) {
+      console.log("Error occured while creating chambers_list_table", err);
+    } else {
+      // console.log("chambers_list_table created successfully.");
+    }
+  });
+}
+
+//////////////////////////////////////////////////////////////////////////////////////
+// Function to create the Test and Chmaber Mapping table:
+function createTestAndChamberMappingTable() {
+  const createTestAndChamberMappingTableQuery = `
+  CREATE TABLE IF NOT EXISTS test_and_chamber_mapping_table (
+   id INT NOT NULL AUTO_INCREMENT,
+    test_category VARCHAR(5000),
+    mapped_testname_and_chamber JSON,
+    PRIMARY KEY(id)
+  ) `;
+
+  db.query(createTestAndChamberMappingTableQuery, function (err, result) {
+    if (err) {
+      console.log(
+        "Error occured while creating test_and_chamber_mapping_table",
+        err
+      );
+    } else {
+      // console.log("test_and_chamber_mapping_table created successfully.");
+    }
+  });
+}
+
+////////////////////////////////////////////////////////////////////////////////////////
 
 // Handle the process exiting to gracefully end the connection pool.
 process.on("exit", function () {
@@ -755,4 +835,9 @@ module.exports = {
   createEMIJobcardsEUTTable,
   createEMIJobcardsTestsTable,
   createEMIJobcardsTestsDetailsTable,
+
+  createTestCategoryTable,
+  createTestNamesTable,
+  createChambersListTable,
+  createTestAndChamberMappingTable,
 };
