@@ -131,6 +131,26 @@ function projectManagementAPIs(app, io, labbeeUsers) {
     });
   });
 
+  //API to delete the task:
+  app.delete("/api/deleteTask/:id", (req, res) => {
+    const { id } = req.params;
+    try {
+      const sqlQuery = "DELETE FROM project_tasks_table WHERE id = ?";
+      db.query(sqlQuery, [id], (error, result) => {
+        if (error) {
+          console.error("Error deleting task:", error);
+          return res
+            .status(500)
+            .json({ message: "Internal server error while deleting the task" });
+        } else {
+          res.status(200).json({ message: "Task deleted successfully" });
+        }
+      });
+    } catch (error) {
+      console.error("Error deleting task:", error);
+    }
+  });
+
   //API to fetch all the tasks from 'project_tasks_table'
   //   app.get("/api/getAllTasks", (req, res) => {
   //     const sqlQuery = "SELECT * FROM project_tasks_table";
@@ -172,6 +192,70 @@ function projectManagementAPIs(app, io, labbeeUsers) {
       t.last_updated_by = u2.id -- Match last_updated_by with user ID in labbee_users
   `;
 
+    db.query(sqlQuery, (error, result) => {
+      if (error) {
+        return res
+          .status(500)
+          .json({ error: "An error occurred while fetching data" });
+      }
+      res.send(result);
+    });
+  });
+
+  ///API to patch the task to the sprints:
+  app.post("/api/tasks/:id/move-to-sprint", async (req, res) => {
+    const { id } = req.params;
+    const { sprint_id } = req.body;
+
+    if (!sprint_id) {
+      return res.status(400).json({ message: "Sprint ID is required." });
+    }
+
+    const sql = `UPDATE project_tasks_table SET sprint_id = ? WHERE id = ?`;
+
+    db.query(sql, [sprint_id, id], (err, result) => {
+      if (err) {
+        console.error("Error updating sprint_id:", err);
+        return res.status(500).json({ message: "Failed to update task." });
+      }
+      return res
+        .status(200)
+        .json({ message: "Task moved to sprint successfully." });
+    });
+  });
+
+  app.post("/api/createSprint", (req, res) => {
+    const { sprint_number, goal, start_date, end_date } = req.body;
+
+    if (!sprint_number || !goal || !start_date || !end_date) {
+      return res
+        .status(400)
+        .json({ message: "All sprint fields are required" });
+    }
+
+    const sql = `
+    INSERT INTO project_sprints_table (sprint_number, goal, start_date, end_date)
+    VALUES (?, ?, ?, ?)
+  `;
+
+    db.query(
+      sql,
+      [sprint_number, goal, start_date, end_date],
+      (err, result) => {
+        if (err) {
+          console.error("Error creating sprint:", err);
+          return res.status(500).json({ message: "Failed to create sprint" });
+        }
+        res
+          .status(200)
+          .json({ message: "Sprint created", sprint_id: result.insertId });
+      }
+    );
+  });
+
+  //Api to get all sprints:
+  app.get("/api/getAllSprints", (req, res) => {
+    const sqlQuery = "SELECT * FROM project_sprints_table";
     db.query(sqlQuery, (error, result) => {
       if (error) {
         return res
