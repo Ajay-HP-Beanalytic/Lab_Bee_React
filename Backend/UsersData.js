@@ -129,6 +129,7 @@ function usersDataAPIs(app) {
           { expiresIn: "30d" }
         );
 
+        req.session.user_db_id = user.id;
         req.session.username = user.name;
         req.session.role = user.role;
         req.session.department = user.department;
@@ -160,12 +161,22 @@ function usersDataAPIs(app) {
   app.get("/api/getLoggedInUser", (req, res) => {
     if (req.session.username) {
       // return res.json({ valid: true, user_name: req.session.username, user_role: req.session.role })
-      return res.json({
+      // return res.json({
+      //   valid: true,
+      //   user_id: req.session.id,
+      //   user_name: req.session.username,
+      //   user_role: req.session.role,
+      //   user_department: req.session.department,
+      // });
+
+      const response = {
         valid: true,
+        user_id: req.session.user_db_id,
         user_name: req.session.username,
         user_role: req.session.role,
         user_department: req.session.department,
-      });
+      };
+      return res.json(response);
     } else {
       return res.json({ valid: false });
     }
@@ -238,6 +249,46 @@ function usersDataAPIs(app) {
     const reliabilityUsersList =
       "SELECT name FROM labbee_users WHERE department LIKE '%Reliability%' ";
     db.query(reliabilityUsersList, (error, result) => {
+      res.send(result);
+    });
+  });
+
+  // Fetch the Software department users:
+  app.get("/api/getProjectManagementMembers", (req, res) => {
+    const usersList =
+      "SELECT id, name, department FROM labbee_users WHERE department LIKE '%Software%' OR department LIKE '%Reliability%' OR department LIKE '%Administration%'";
+    db.query(usersList, (error, results) => {
+      if (error) {
+        console.log("Error fetching project management members:", error);
+        return res
+          .status(500)
+          .json({ error: "An error occurred while fetching data" });
+      }
+
+      const softwareMembers = [];
+      const reliabilityMembers = [];
+      const adminMembers = [];
+
+      results.forEach((user) => {
+        const member = {
+          id: user.id,
+          name: user.name,
+          department: user.department,
+        };
+        if (user.department.includes("Software")) {
+          softwareMembers.push(member);
+        } else if (user.department.includes("Reliability")) {
+          reliabilityMembers.push(member);
+        } else if (user.department.includes("Administration")) {
+          adminMembers.push(member);
+        }
+      });
+
+      const result = {
+        softwareMembers,
+        reliabilityMembers,
+        adminMembers,
+      };
       res.send(result);
     });
   });

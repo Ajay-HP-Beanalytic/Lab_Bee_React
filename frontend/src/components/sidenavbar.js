@@ -21,8 +21,9 @@ import MarkChatReadIcon from "@mui/icons-material/MarkChatRead";
 import MarkChatUnreadIcon from "@mui/icons-material/MarkChatUnread";
 import DeleteIcon from "@mui/icons-material/Delete";
 import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
-import { Avatar, Badge, Popover, SvgIcon, Tooltip } from "@mui/material";
 
+import { Avatar, Badge, Popover, SvgIcon, Tooltip } from "@mui/material";
+import EventRepeatIcon from "@mui/icons-material/EventRepeat";
 import HomeIcon from "@mui/icons-material/Home";
 // import EditNoteIcon from "@mui/icons-material/EditNote";
 import CalendarMonthSharpIcon from "@mui/icons-material/CalendarMonthSharp";
@@ -502,6 +503,20 @@ export default function SidenavigationBar() {
       path: "/user_management",
       gradientId: "usersManagementGradient",
     },
+    {
+      i: 10,
+      label: "Project Management",
+      icon: <EventRepeatIcon />,
+      // icon: (
+      //   <img
+      //     src="/images/project-management.png"
+      //     alt="Project Management"
+      //     style={{ width: 24, height: 24 }}
+      //   />
+      // ),
+      path: "/project_management",
+      gradientId: "projectManagementGradient",
+    },
   ];
 
   const filteredItems = items.filter((item) => {
@@ -520,7 +535,7 @@ export default function SidenavigationBar() {
       loggedInUserDepartment === "Reliability" ||
       loggedInUserDepartment === "Software"
     ) {
-      return [4, 5].includes(item.i);
+      return [4, 5, 10].includes(item.i);
     } else if (loggedInUserDepartment === "TS2 Testing") {
       return [8].includes(item.i);
     } else if (loggedInUserRole === "Quality Engineer") {

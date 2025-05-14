@@ -38,6 +38,7 @@ export const UserProvider = ({ children }) => {
   const [loggedInUser, setLoggedInUser] = useState("");
   const [loggedInUserDepartment, setLoggedInUserDepartment] = useState("");
   const [loggedInUserRole, setLoggedInUserRole] = useState("");
+  const [loggedInUserId, setLoggedInUserId] = useState("");
 
   // To set the axios defaults only once
   useEffect(() => {
@@ -49,9 +50,11 @@ export const UserProvider = ({ children }) => {
       .get(`${serverBaseAddress}/api/getLoggedInUser`)
       .then((res) => {
         if (res.data.valid) {
+          console.log("res.data is-->", res.data);
           setLoggedInUser(res.data.user_name);
           setLoggedInUserDepartment(res.data.user_department);
           setLoggedInUserRole(res.data.user_role);
+          setLoggedInUserId(res.data.user_id);
         } else {
           navigate("/");
         }
@@ -72,6 +75,8 @@ export const UserProvider = ({ children }) => {
         setLoggedInUserDepartment,
         loggedInUserRole,
         setLoggedInUserRole,
+        loggedInUserId,
+        setLoggedInUserId,
       }}
     >
       {children}

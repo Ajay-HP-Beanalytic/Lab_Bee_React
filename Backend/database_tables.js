@@ -4,6 +4,7 @@ const { db } = require("./db");
 const dotenv = require("dotenv").config();
 
 const bcrypt = require("bcrypt"); // Import bcrypt package in order to encrypt the password
+const { create } = require("archiver");
 const saltRounds = 10;
 
 //Function to create a users table:
@@ -793,6 +794,108 @@ function createTestAndChamberMappingTable() {
   });
 }
 
+///////////////////////////////////////////////////////////////////////////////////////
+//Database tables for project management
+//assigned_to INT, -- FK to labbee_users.id
+//sprint_id INT, -- FK to project_sprints_table.id
+
+// project_name VARCHAR(1000),
+//   department VARCHAR(1000),
+function createProjectTasksTable() {
+  const createProjectTasksTableQuery = `
+  CREATE TABLE IF NOT EXISTS project_tasks_table (
+  id INT NOT NULL AUTO_INCREMENT,
+  title VARCHAR(2000),
+  description TEXT, 
+  assigned_to INT,
+  story_points INT, 
+  estimated_hours DECIMAL(5,2), 
+  actual_hours DECIMAL(5,2), 
+  priority ENUM('Low', 'Medium', 'High'),
+  status ENUM('To Do', 'In Progress', 'Done', 'Blocked'), 
+  sprint_id INT,
+  last_updated_by VARCHAR(250),
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP, 
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY(id)
+  )`;
+
+  db.query(createProjectTasksTableQuery, function (err, result) {
+    if (err) {
+      console.log("Error occured while creating project_tasks_table", err);
+    } else {
+      console.log("project_tasks_table created successfully.");
+    }
+  });
+}
+
+function createProjectSprintsTable() {
+  const createProjectSprintsTableQuery = `
+    CREATE TABLE IF NOT EXISTS project_sprints_table (
+    id INT NOT NULL AUTO_INCREMENT,
+    sprint_number VARCHAR(1000),
+    goal TEXT, 
+    start_date DATE, 
+    end_date DATE,
+    PRIMARY KEY(id)
+    )`;
+
+  db.query(createProjectSprintsTableQuery, function (err, result) {
+    if (err) {
+      console.log("Error occured while creating project_sprints_table", err);
+    } else {
+      console.log("project_sprints_table created successfully.");
+    }
+  });
+}
+
+//sprint_id INT, -- FK to project_sprints_table.id
+function createProjectRetrospectiveTable() {
+  const createProjectRetrospectiveTableQuery = `
+    CREATE TABLE IF NOT EXISTS project_retrospective_table (
+    id INT NOT NULL AUTO_INCREMENT,
+    sprint_id INT,
+    positive_notes TEXT, 
+    negative_notes TEXT, 
+    action_items TEXT,
+    PRIMARY KEY(id)
+    )`;
+
+  db.query(createProjectRetrospectiveTableQuery, function (err, result) {
+    if (err) {
+      console.log(
+        "Error occured while creating project_retrospective_table",
+        err
+      );
+    } else {
+      console.log("project_retrospective_table created successfully.");
+    }
+  });
+}
+
+//  task_id INT, -- FK to project_tasks_table.id
+//   user_id INT, -- FK to labbee_users.id
+function createProjectTaskLogsTable() {
+  const createProjectTaskLogsTableQuery = `
+    CREATE TABLE IF NOT EXISTS project_task_logs_table (
+    id INT NOT NULL AUTO_INCREMENT,
+    task_id INT,
+    user_id INT,
+    date DATE,
+    hours_spent DECIMAL(4,2),
+    notes TEXT,
+    PRIMARY KEY(id)
+      )`;
+
+  db.query(createProjectTaskLogsTableQuery, function (err, result) {
+    if (err) {
+      console.log("Error occured while creating project_task_logs_table", err);
+    } else {
+      console.log("project_task_logs_table created successfully.");
+    }
+  });
+}
+
 ////////////////////////////////////////////////////////////////////////////////////////
 
 // Handle the process exiting to gracefully end the connection pool.
@@ -840,4 +943,9 @@ module.exports = {
   createTestNamesTable,
   createChambersListTable,
   createTestAndChamberMappingTable,
+
+  createProjectTasksTable,
+  createProjectSprintsTable,
+  createProjectRetrospectiveTable,
+  createProjectTaskLogsTable,
 };
