@@ -10,6 +10,7 @@ import {
   DialogTitle,
   Divider,
   Grid,
+  IconButton,
   Typography,
 } from "@mui/material";
 
@@ -23,9 +24,15 @@ import SearchBar from "../common/SearchBar";
 import { DataGrid } from "@mui/x-data-grid";
 import { addSerialNumbersToRows } from "../functions/UtilityFunctions";
 import EmptyCard from "../common/EmptyCard";
+import DeleteIcon from "@mui/icons-material/Delete";
+import MoveUpIcon from "@mui/icons-material/MoveUp";
+import SprintSelector from "./SprintSelector";
 
 const SprintBacklog = () => {
   const { control, register, setValue, watch, handleSubmit, reset } = useForm();
+
+  const [moveToSprintOpen, setMoveToSprintOpen] = useState(false);
+  const [selectedTaskForSprint, setSelectedTaskForSprint] = useState(null);
 
   const [tasks, setTasks] = useState([]);
   const [open, setOpen] = useState(false);
@@ -124,7 +131,15 @@ const SprintBacklog = () => {
     {
       label: "Story Points",
       name: "story_points",
-      type: "textField",
+      type: "select",
+      options: [
+        { id: "1", label: "1" },
+        { id: "2", label: "2" },
+        { id: "3", label: "3" },
+        { id: "5", label: "5" },
+        { id: "8", label: "8" },
+        { id: "13", label: "13" },
+      ],
       width: "100%",
     },
     {
@@ -169,7 +184,7 @@ const SprintBacklog = () => {
     {
       field: "serialNumbers",
       headerName: "SL No",
-      width: 100,
+      width: 50,
       align: "center",
       headerAlign: "center",
       headerClassName: "custom-header-color",
@@ -185,7 +200,7 @@ const SprintBacklog = () => {
     {
       field: "title",
       headerName: "Title",
-      width: 200,
+      width: 150,
       align: "center",
       headerAlign: "center",
       headerClassName: "custom-header-color",
@@ -225,7 +240,7 @@ const SprintBacklog = () => {
     {
       field: "priority",
       headerName: "Priority",
-      width: 200,
+      width: 150,
       align: "center",
       headerAlign: "center",
       headerClassName: "custom-header-color",
@@ -245,6 +260,35 @@ const SprintBacklog = () => {
       align: "center",
       headerAlign: "center",
       headerClassName: "custom-header-color",
+    },
+    {
+      field: "actions",
+      headerName: "Actions",
+      width: 100,
+      align: "center",
+      headerAlign: "center",
+      headerClassName: "custom-header-color",
+      renderCell: (params) => (
+        <div>
+          <IconButton
+            onClick={(event) => {
+              event.stopPropagation();
+              deleteSelectedTask(params.row);
+            }}
+          >
+            <DeleteIcon />
+          </IconButton>
+          <IconButton
+            onClick={(event) => {
+              event.stopPropagation();
+              setSelectedTaskForSprint(params.row.task_id);
+              setMoveToSprintOpen(true);
+            }}
+          >
+            <MoveUpIcon />
+          </IconButton>
+        </div>
+      ),
     },
   ];
 
@@ -378,6 +422,35 @@ const SprintBacklog = () => {
     handleCloseDialog();
   };
 
+  //Function to delete the task from the database:
+  const deleteSelectedTask = async (row) => {
+    const confirmDeleteTask = window.confirm(
+      "Are you sure you want to delete this task?"
+    );
+
+    if (confirmDeleteTask) {
+      try {
+        const response = await axios.delete(
+          `${serverBaseAddress}/api/deleteTask/${row.task_id}`
+        );
+        if (response.status === 200) {
+          toast.success("Task deleted successfully");
+          fetchTasksFromDatabase();
+        } else {
+          console.log(
+            "Error deleting task from database, status:",
+            response.status
+          );
+          toast.error(
+            `Error deleting task: ${response.statusText || "Server error"}`
+          );
+        }
+      } catch (error) {
+        toast.error(`Error deleting task: ${error.message || "Network error"}`);
+      }
+    }
+  };
+
   return (
     <>
       <Card sx={{ width: "100%", padding: "20px" }}>
@@ -487,6 +560,13 @@ const SprintBacklog = () => {
             </Button>
           </DialogActions>
         </Dialog>
+
+        <SprintSelector
+          open={moveToSprintOpen}
+          onClose={() => setMoveToSprintOpen(false)}
+          taskId={selectedTaskForSprint}
+          onSuccess={fetchTasksFromDatabase}
+        />
 
         <Grid container spacing={2}>
           {tasks.map((task) => (
