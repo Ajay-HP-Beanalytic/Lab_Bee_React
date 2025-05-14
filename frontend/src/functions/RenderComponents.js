@@ -44,6 +44,20 @@ export default function RenderComponents({
               />
             );
 
+          case "number":
+            return (
+              <TextField
+                key={field.name}
+                label={field.label}
+                name={field.name}
+                {...register(field.name)}
+                value={watch(field.name) || ""} // Ensure it's never undefined
+                fullWidth
+                type="number"
+                sx={{ mb: "10px", width: fieldWidth }}
+              />
+            );
+
           case "textArea":
             return (
               <TextField
@@ -155,12 +169,25 @@ export default function RenderComponents({
                       );
                     } else {
                       // For object-based options (with id and label)
+
+                      //Determine the value for the MenuItem
+                      const itemValue =
+                        option.id !== undefined ? option.id : option.id;
+
+                      //Determine the label for the MenuItem
+                      const itemDisplay =
+                        option.label !== undefined ? option.label : option.name;
+
                       return (
                         <MenuItem
-                          key={option.id ? option.id : option.label}
-                          value={option.id ? option.id : option.value}
+                          // key={option.id ? option.id : option.label}
+                          // value={option.id ? option.id : option.value}
+
+                          key={itemValue}
+                          value={itemValue}
                         >
-                          {option.label}
+                          {/* {option.label} */}
+                          {itemDisplay}
                         </MenuItem>
                       );
                     }

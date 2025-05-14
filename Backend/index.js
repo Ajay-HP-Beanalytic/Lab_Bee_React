@@ -157,6 +157,11 @@ const {
   createTestNamesTable,
   createChambersListTable,
   createTestAndChamberMappingTable,
+
+  createProjectTasksTable,
+  createProjectSprintsTable,
+  createProjectRetrospectiveTable,
+  createProjectTaskLogsTable,
 } = require("./database_tables");
 
 //Get db connection from the db.js file
@@ -204,6 +209,11 @@ db.getConnection(function (err, connection) {
   createChambersListTable();
 
   createTestAndChamberMappingTable();
+
+  createProjectTasksTable();
+  createProjectSprintsTable();
+  createProjectRetrospectiveTable();
+  createProjectTaskLogsTable();
 
   connection.release(); // Release the connection back to the pool when done
 });
@@ -259,6 +269,11 @@ notificationsAPIs(app, io, labbeeUsers);
 // backend connection to acess the test category, test names and chambers list:
 const { TestsAndChambersUpdateAPIs } = require("./TestsAndChambersUpdateAPI");
 TestsAndChambersUpdateAPIs(app, io, labbeeUsers);
+
+//backend connection to acess the project tasks:
+const { projectManagementAPIs } = require("./projectManagementAPI");
+projectManagementAPIs(app, io, labbeeUsers);
+
 /// Code to get backup of only database in .sql format:
 ///Data Backup function:
 //Backend API route address to fetch the data backup:

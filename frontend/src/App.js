@@ -43,6 +43,7 @@ import { NotificationContext } from "./Pages/NotificationContext";
 import NotificationsManagement from "./Pages/NotificationsManagement";
 import EmiJobcard from "./EMI/EmiJobcard";
 import EMIJCDashboard from "./EMI/EMIJCDashboard";
+import ProjectManagementDashboard from "./projectManagement/ProjectsDashboard";
 
 function App() {
   const location = useLocation();
@@ -85,7 +86,7 @@ function App() {
           loggedInUserDepartment === "Reliability" ||
           loggedInUserDepartment === "Software"
         ) {
-          navigate("/jobcard_dashboard");
+          navigate("/project_management");
         }
       }
     }
@@ -340,6 +341,22 @@ function App() {
                 allowedRoles={["Quality Engineer"]}
               >
                 <EmiJobcard />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="project_management"
+            element={
+              <ProtectedRoute
+                allowedDepartments={[
+                  "Administration",
+                  "Reliability",
+                  "Software",
+                ]}
+                allowedRoles={[]}
+              >
+                <ProjectManagementDashboard />
               </ProtectedRoute>
             }
           />
