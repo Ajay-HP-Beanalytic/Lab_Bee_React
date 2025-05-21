@@ -1,5 +1,4 @@
 const { db } = require("./db");
-
 function projectManagementAPIs(app, io, labbeeUsers) {
   //API to save the task to 'project_tasks_table'
   app.post("/api/saveNewTask", async (req, res) => {
@@ -10,6 +9,9 @@ function projectManagementAPIs(app, io, labbeeUsers) {
       story_points,
       estimated_hours,
       actual_hours,
+      task_assigned_date,
+      task_due_date,
+      task_completed_date,
       priority,
       status,
       last_updated_by,
@@ -23,7 +25,8 @@ function projectManagementAPIs(app, io, labbeeUsers) {
       !estimated_hours ||
       !priority ||
       !status ||
-      !last_updated_by
+      !last_updated_by ||
+      !task_assigned_date
     ) {
       return res.status(400).json({ message: "All fields are required" });
     }
@@ -31,8 +34,8 @@ function projectManagementAPIs(app, io, labbeeUsers) {
     try {
       const sqlQuery = `
         INSERT INTO project_tasks_table(title, description, assigned_to, story_points,
-        estimated_hours, actual_hours, priority, status, sprint_id, last_updated_by)
-        VALUES(?,?,?,?,?,?,?,?,?,?)`;
+        estimated_hours, actual_hours, task_assigned_date, task_due_date, task_completed_date, priority, status, sprint_id, last_updated_by)
+        VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)`;
 
       let sprint_id = null;
 
@@ -45,6 +48,10 @@ function projectManagementAPIs(app, io, labbeeUsers) {
           ? null
           : estimated_hours,
         actual_hours === "" || actual_hours === undefined ? null : actual_hours,
+
+        task_assigned_date,
+        task_due_date,
+        task_completed_date,
         priority,
         status,
         sprint_id || null,
@@ -80,6 +87,9 @@ function projectManagementAPIs(app, io, labbeeUsers) {
       story_points,
       estimated_hours,
       actual_hours,
+      task_assigned_date,
+      task_due_date,
+      task_completed_date,
       priority,
       status,
       last_updated_by,
@@ -100,7 +110,8 @@ function projectManagementAPIs(app, io, labbeeUsers) {
 
     const sqlQuery = `
       UPDATE project_tasks_table
-      SET title = ?, description = ?, assigned_to = ?, story_points = ?, estimated_hours = ?, actual_hours = ?, priority = ?, status = ?, last_updated_by = ?
+      SET title = ?, description = ?, assigned_to = ?, story_points = ?, estimated_hours = ?, actual_hours = ?, 
+      task_assigned_date = ?, task_due_date = ?, task_completed_date = ?, priority = ?, status = ?, last_updated_by = ?
       WHERE id = ?
     `;
 
@@ -113,6 +124,9 @@ function projectManagementAPIs(app, io, labbeeUsers) {
         ? null
         : estimated_hours,
       actual_hours === "" || actual_hours === undefined ? null : actual_hours,
+      task_assigned_date,
+      task_due_date,
+      task_completed_date,
       priority,
       status,
       last_updated_by,
@@ -176,6 +190,9 @@ function projectManagementAPIs(app, io, labbeeUsers) {
       t.story_points,
       t.estimated_hours,
       t.actual_hours,
+      t.task_assigned_date,
+      t.task_due_date,
+      t.task_completed_date,
       t.priority,
       t.status,
       t.last_updated_by,
@@ -263,6 +280,42 @@ function projectManagementAPIs(app, io, labbeeUsers) {
           .json({ error: "An error occurred while fetching data" });
       }
       res.send(result);
+    });
+  });
+
+  //API to fetch the tasks and display it in the Kanban board:
+  app.get("/api/tasks/by-sprint/:sprintId", (req, res) => {
+    const { sprintId } = req.params;
+    const sql = `SELECT * FROM project_tasks_table WHERE sprint_id = ?`;
+
+    db.query(sql, [sprintId], (err, result) => {
+      if (err) {
+        console.error("Error fetching tasks by sprint:", err);
+        return res.status(500).json({ message: "Failed to fetch tasks" });
+      }
+      res.status(200).json(result);
+    });
+  });
+
+  //API to update the project status from the drag and drop kanban board:
+  app.post("/api/updateTaskStatus", (req, res) => {
+    const { task_id, status } = req.body;
+
+    if (!task_id || !status) {
+      return res
+        .status(400)
+        .json({ message: "Task ID and status are required" });
+    }
+
+    const sql = `UPDATE project_tasks_table SET status = ? WHERE id = ?`;
+    db.query(sql, [status, task_id], (err, result) => {
+      if (err) {
+        console.error("Error updating task status:", err);
+        return res
+          .status(500)
+          .json({ message: "Failed to update task status" });
+      }
+      res.status(200).json({ message: "Task status updated successfully" });
     });
   });
 }

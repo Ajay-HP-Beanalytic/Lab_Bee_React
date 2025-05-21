@@ -27,6 +27,8 @@ import EmptyCard from "../common/EmptyCard";
 import DeleteIcon from "@mui/icons-material/Delete";
 import MoveUpIcon from "@mui/icons-material/MoveUp";
 import SprintSelector from "./SprintSelector";
+import dayjs from "dayjs";
+import useProjectManagementStore from "./ProjectStore";
 
 const SprintBacklog = () => {
   const { control, register, setValue, watch, handleSubmit, reset } = useForm();
@@ -48,11 +50,19 @@ const SprintBacklog = () => {
     loggedInUserId,
   } = useContext(UserContext);
 
+  //Send all tasks data to store in the project management store
+  const setAllTasksData = useProjectManagementStore(
+    (state) => state.setAllTasksData
+  );
+
+  //Fetch and store status of the tasks:
+  const setKanbanSheetData = useProjectManagementStore(
+    (state) => state.setKanbanSheetData
+  );
+
   const [reliabilityMembers, setReliabilityMembers] = useState([]);
   const [softwareMembers, setSoftwareMembers] = useState([]);
   const [administrationMembers, setAdministrationMembers] = useState([]);
-
-  console.log("loggedInUserId", loggedInUserId);
 
   const [searchInputText, setSearchInputText] = useState("");
   const [filteredTasks, setFilteredTasks] = useState(tasks);
@@ -152,6 +162,24 @@ const SprintBacklog = () => {
       label: "Actual Hours",
       name: "actual_hours",
       type: "number",
+      width: "100%",
+    },
+    {
+      label: "Task Assigned Date",
+      name: "task_assigned_date",
+      type: "datePicker",
+      width: "100%",
+    },
+    {
+      label: "Task Due Date",
+      name: "task_due_date",
+      type: "datePicker",
+      width: "100%",
+    },
+    {
+      label: "Completed Date",
+      name: "task_completed_date",
+      type: "datePicker",
       width: "100%",
     },
     {
@@ -352,6 +380,40 @@ const SprintBacklog = () => {
     try {
       const response = await axios.get(`${serverBaseAddress}/api/getAllTasks`);
       setTasks(response.data);
+      // setAllTasksData(response.data.length);
+      console.log("response.data of fetched tasks-->", response.data);
+
+      // const formattedDataForKanbanSheet = response.data.map((task) => ({
+      //   id: task.task_id,
+      //   title: task.title,
+      //   assigned_to: task.assigned_to,
+      //   priority: task.priority,
+      //   task_due_date: task.task_due_date,
+      // }));
+
+      // console.log(
+      //   "formattedDataForKanbanSheet-->",
+      //   formattedDataForKanbanSheet
+      // );
+
+      // setKanbanSheetData(formattedDataForKanbanSheet);
+
+      // Group tasks by status for Kanban
+      const groupedByStatus = {};
+      response.data.forEach((task) => {
+        if (!groupedByStatus[task.status]) groupedByStatus[task.status] = [];
+        groupedByStatus[task.status].push({
+          id: task.task_id,
+          title: task.title,
+          assigned_to: task.assigned_to,
+          priority: task.priority,
+          task_due_date: task.task_due_date,
+        });
+      });
+
+      setKanbanSheetData(groupedByStatus); // Store grouped data in Zustand
+
+      setAllTasksData({ tasksNumber: response.data.length });
     } catch (error) {
       console.log("Error fetching tasks from database:", error);
     }
@@ -368,6 +430,9 @@ const SprintBacklog = () => {
     setValue("story_points", row.story_points);
     setValue("estimated_hours", row.estimated_hours);
     setValue("actual_hours", row.actual_hours);
+    setValue("task_assigned_date", dayjs(row.task_assigned_date));
+    setValue("task_due_date", dayjs(row.task_due_date));
+    setValue("task_completed_date", dayjs(row.task_completed_date));
     setValue("priority", row.priority);
     setValue("status", row.status);
 
@@ -386,7 +451,6 @@ const SprintBacklog = () => {
       setReliabilityMembers(response.data.reliabilityMembers || []);
       setSoftwareMembers(response.data.softwareMembers || []);
       setAdministrationMembers(response.data.adminMembers || []);
-      console.log("Team members fetched from database:", response.data);
     } catch (error) {
       console.log("Error fetching team members from database:", error);
     }
@@ -412,6 +476,13 @@ const SprintBacklog = () => {
   const handleSubmitTaskForm = async (data) => {
     data["task_assigned_by"] = loggedInUser;
     data["last_updated_by"] = loggedInUserId;
+    data["task_assigned_date"] = dayjs(data["task_assigned_date"]).format(
+      "YYYY-MM-DD"
+    );
+    data["task_due_date"] = dayjs(data["task_due_date"]).format("YYYY-MM-DD");
+    data["task_completed_date"] = dayjs(data["task_completed_date"]).format(
+      "YYYY-MM-DD"
+    );
 
     if (isEditMode) {
       await updateTaskInDatabase(data);
@@ -511,7 +582,7 @@ const SprintBacklog = () => {
           </Box>
         )}
 
-        <Dialog open={open} onClose={handleCloseDialog}>
+        <Dialog open={open} onClose={handleCloseDialog} fullWidth maxWidth="md">
           <DialogTitle> {isEditMode ? "Edit Task" : "Add Task"}</DialogTitle>
           <DialogContent>
             <Grid item xs={12} sm={6} md={6}>
@@ -524,6 +595,20 @@ const SprintBacklog = () => {
               />
             </Grid>
           </DialogContent>
+
+          {/* <Grid container spacing={2}>
+            {taskFormDatafields.map((field, idx) => (
+              <Grid item xs={12} sm={4} md={4} key={idx}>
+                <RenderComponents
+                  field={[field]}
+                  register={register}
+                  control={control}
+                  watch={watch}
+                  setValue={setValue}
+                />
+              </Grid>
+            ))}
+          </Grid> */}
 
           <DialogActions sx={{ justifyContent: "center" }}>
             <Button
