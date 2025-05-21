@@ -7,14 +7,11 @@ import {
   RadioGroup,
   TextField,
 } from "@mui/material";
-import React from "react";
 import { Controller } from "react-hook-form";
 import { DatePicker, TimePicker } from "@mui/x-date-pickers";
 import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
-import dayjs from "dayjs";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import { UserContext } from "../Pages/UserContext";
 import SignaturePadComponent from "../common/SignaturePad";
 
 export default function RenderComponents({
