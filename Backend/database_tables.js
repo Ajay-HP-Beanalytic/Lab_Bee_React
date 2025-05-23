@@ -81,7 +81,7 @@ async function addDefaultUser() {
     // Check if the default user already exists
     const [rows] = await db.promise().query(checkUserQuery, [defaultUserEmail]);
     if (rows.length > 0) {
-      console.log("Default user already exists.");
+      // console.log("Default user already exists.");
       return;
     }
 
@@ -799,6 +799,38 @@ function createTestAndChamberMappingTable() {
 //assigned_to INT, -- FK to labbee_users.id
 //sprint_id INT, -- FK to project_sprints_table.id
 
+//Function to create the projects_table:
+function createProjectsTable() {
+  const createProjectsTableQuery = `
+  
+  CREATE TABLE IF NOT EXISTS projects_table (
+  id INT NOT NULL AUTO_INCREMENT,
+  project_name VARCHAR(2000),
+  department VARCHAR(1000),
+  project_manager VARCHAR(1000),
+  project_start_date DATE,
+  total_tasks_count INT,
+  pending_tasks_count INT,
+  in_progress_tasks_count INT,
+  completed_tasks_count INT,
+  project_end_date DATE,
+  project_status VARCHAR(100),
+  remarks VARCHAR(5000),
+  last_updated_by VARCHAR(250),
+  created_at DATETIME DEFAULT CURRENT_TIMESTAMP, 
+  updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY(id)
+  )`;
+
+  db.query(createProjectsTableQuery, function (err, result) {
+    if (err) {
+      console.log("Error occured while creating projects_table", err);
+    } else {
+      // console.log("projects_table created successfully.");
+    }
+  });
+}
+
 // project_name VARCHAR(1000),
 //   department VARCHAR(1000),
 function createProjectTasksTable() {
@@ -827,7 +859,7 @@ function createProjectTasksTable() {
     if (err) {
       console.log("Error occured while creating project_tasks_table", err);
     } else {
-      console.log("project_tasks_table created successfully.");
+      // console.log("project_tasks_table created successfully.");
     }
   });
 }
@@ -847,7 +879,7 @@ function createProjectSprintsTable() {
     if (err) {
       console.log("Error occured while creating project_sprints_table", err);
     } else {
-      console.log("project_sprints_table created successfully.");
+      // console.log("project_sprints_table created successfully.");
     }
   });
 }
@@ -871,7 +903,7 @@ function createProjectRetrospectiveTable() {
         err
       );
     } else {
-      console.log("project_retrospective_table created successfully.");
+      // console.log("project_retrospective_table created successfully.");
     }
   });
 }
@@ -894,7 +926,7 @@ function createProjectTaskLogsTable() {
     if (err) {
       console.log("Error occured while creating project_task_logs_table", err);
     } else {
-      console.log("project_task_logs_table created successfully.");
+      // console.log("project_task_logs_table created successfully.");
     }
   });
 }
@@ -947,6 +979,7 @@ module.exports = {
   createChambersListTable,
   createTestAndChamberMappingTable,
 
+  createProjectsTable,
   createProjectTasksTable,
   createProjectSprintsTable,
   createProjectRetrospectiveTable,

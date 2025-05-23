@@ -1,5 +1,197 @@
 const { db } = require("./db");
 function projectManagementAPIs(app, io, labbeeUsers) {
+  /// API to create the new project:
+  app.post("/api/createProject", (req, res) => {
+    const {
+      project_name,
+      department,
+      project_manager,
+      project_start_date,
+      total_tasks_count,
+      pending_tasks_count,
+      in_progress_tasks_count,
+      completed_tasks_count,
+      project_end_date,
+      project_status,
+      remarks,
+      last_updated_by,
+    } = req.body;
+
+    try {
+      const sqlQuery = `INSERT INTO projects_table(project_name, department, project_manager, project_start_date, total_tasks_count, pending_tasks_count, in_progress_tasks_count, 
+      completed_tasks_count, project_end_date, project_status, remarks, last_updated_by) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)`;
+
+      const values = [
+        project_name,
+        department,
+        project_manager,
+        project_start_date,
+        total_tasks_count,
+        pending_tasks_count,
+        in_progress_tasks_count,
+        completed_tasks_count,
+        project_end_date,
+        project_status,
+        remarks,
+        last_updated_by,
+      ];
+
+      db.query(sqlQuery, values, (error, result) => {
+        if (error) {
+          console.log(error);
+          return res.status(500).json({ message: "Error creating project" });
+        } else {
+          return res
+            .status(200)
+            .json({ message: "Project created successfully" });
+        }
+      });
+    } catch (error) {
+      console.error("Error creating project:", error);
+      return res.status(500).json({ message: "Error creating project" });
+    }
+  });
+
+  ///API to fetch all the projects:
+  app.get("/api/getProjects", (req, res) => {
+    const sqlQuery = `
+    SELECT 
+      t.id AS project_id,
+      t.project_name,
+      t.department,
+      t.project_manager,
+      u1.name AS project_manager_name, -- Fetch the username for assigned_to
+      t.project_start_date,
+      t.total_tasks_count,
+      t.pending_tasks_count,
+      t.in_progress_tasks_count,
+      t.completed_tasks_count,
+      t.project_end_date,
+      t.project_status,
+      t.remarks,
+      t.last_updated_by,
+      u2.name AS last_updated_by_name -- Fetch the username for last_updated_by
+    FROM 
+      projects_table t
+    LEFT JOIN 
+      labbee_users u1
+    ON 
+      t.project_manager = u1.id -- Match project_manager with user ID in labbee_users
+    LEFT JOIN 
+      labbee_users u2
+    ON 
+      t.last_updated_by = u2.id -- Match last_updated_by with user ID in labbee_users
+  `;
+
+    db.query(sqlQuery, (error, result) => {
+      if (error) {
+        console.log(error);
+        return res.status(500).json({ message: "Error fetching projects" });
+      } else {
+        // console.log("Projects fetched successfully");
+        return res.status(200).json(result);
+      }
+    });
+  });
+
+  //API to fetch the selected task data:
+  app.get("/api/getProjectData/:id", (req, res) => {
+    const { id } = req.params;
+    try {
+      const sqlQuery = "SELECT * FROM projects_table WHERE id = ?";
+
+      db.query(sqlQuery, [id], (error, result) => {
+        if (error) {
+          return res
+            .status(500)
+            .json({ error: "An error occurred while fetching data" });
+        }
+        //Return single object instead of an array:
+        if (result.length > 0) {
+          res.status(200).json(result[0]);
+        } else {
+          res.status(404).json({ message: "Project not found" });
+        }
+      });
+    } catch (error) {
+      console.error(
+        `Error While fetching the project data of ${id} project:`,
+        error
+      );
+    }
+  });
+
+  //API to update the project:
+  app.put("/api/updateProject/:id", (req, res) => {
+    const { id } = req.params;
+    const {
+      project_name,
+      department,
+      project_manager,
+      project_start_date,
+      total_tasks_count,
+      pending_tasks_count,
+      in_progress_tasks_count,
+      completed_tasks_count,
+      project_end_date,
+      project_status,
+      remarks,
+      last_updated_by,
+    } = req.body;
+
+    try {
+      const sqlQuery = `
+      UPDATE projects_table
+      SET
+        project_name = ?,
+        department = ?,
+        project_manager = ?,
+        project_start_date = ?,
+        total_tasks_count = ?,
+        pending_tasks_count = ?,
+        in_progress_tasks_count = ?,
+        completed_tasks_count = ?,
+        project_end_date = ?,
+        project_status = ?,
+        remarks = ?,
+        last_updated_by = ?
+      WHERE
+        id = ?
+    `;
+
+      const values = [
+        project_name,
+        department,
+        project_manager,
+        project_start_date,
+        total_tasks_count,
+        pending_tasks_count,
+        in_progress_tasks_count,
+        completed_tasks_count,
+        project_end_date,
+        project_status,
+        remarks,
+        last_updated_by,
+        id,
+      ];
+
+      db.query(sqlQuery, values, (error, result) => {
+        if (error) {
+          console.log(error);
+          return res.status(500).json({ message: "Error updating project" });
+        } else {
+          return res
+            .status(200)
+            .json({ message: "Project updated successfully" });
+        }
+      });
+    } catch (error) {
+      console.error("Error updating project:", error);
+      return res.status(500).json({ message: "Error updating project" });
+    }
+  });
+
+  /////////////////////////////////////////////////////////////////
   //API to save the task to 'project_tasks_table'
   app.post("/api/saveNewTask", async (req, res) => {
     const {
@@ -143,6 +335,59 @@ function projectManagementAPIs(app, io, labbeeUsers) {
         res.status(200).json({ message: "Task updated successfully" });
       }
     });
+  });
+
+  //API to fetch the selected task data:
+  app.get("/api/getTaskData/:id", (req, res) => {
+    const { id } = req.params;
+    try {
+      const sqlQuery = "SELECT * FROM project_tasks_table WHERE id = ?";
+
+      //     const sqlQuery = `
+      //   SELECT
+      //     t.title,
+      //     t.description,
+      //     t.assigned_to,
+      //     u1.name AS assigned_to_name, -- Fetch the username for assigned_to
+      //     t.story_points,
+      //     t.estimated_hours,
+      //     t.actual_hours,
+      //     t.task_assigned_date,
+      //     t.task_due_date,
+      //     t.task_completed_date,
+      //     t.priority,
+      //     t.status,
+      //     t.last_updated_by,
+      //     u2.name AS last_updated_by_name -- Fetch the username for last_updated_by
+      //   FROM
+      //     project_tasks_table t
+      //   LEFT JOIN
+      //     labbee_users u1
+      //   ON
+      //     t.assigned_to = u1.id -- Match assigned_to with user ID in labbee_users
+      //   LEFT JOIN
+      //     labbee_users u2
+      //   ON
+      //     t.last_updated_by = u2.id -- Match last_updated_by with user ID in labbee_users
+      //     WHERE t.id = ?
+      // `;
+
+      db.query(sqlQuery, [id], (error, result) => {
+        if (error) {
+          return res
+            .status(500)
+            .json({ error: "An error occurred while fetching data" });
+        }
+        //Return single object instead of an array:
+        if (result.length > 0) {
+          res.status(200).json(result[0]);
+        } else {
+          res.status(404).json({ message: "Task not found" });
+        }
+      });
+    } catch (error) {
+      console.error(`Error While fetching the task data of ${id} task:`, error);
+    }
   });
 
   //API to delete the task:

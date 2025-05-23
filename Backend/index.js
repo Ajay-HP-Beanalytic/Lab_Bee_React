@@ -158,6 +158,7 @@ const {
   createChambersListTable,
   createTestAndChamberMappingTable,
 
+  createProjectsTable,
   createProjectTasksTable,
   createProjectSprintsTable,
   createProjectRetrospectiveTable,
@@ -210,6 +211,7 @@ db.getConnection(function (err, connection) {
 
   createTestAndChamberMappingTable();
 
+  createProjectsTable();
   createProjectTasksTable();
   createProjectSprintsTable();
   createProjectRetrospectiveTable();
