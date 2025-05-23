@@ -4,12 +4,18 @@ import {
   Button,
   Card,
   CardContent,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   Divider,
   Grid,
   IconButton,
   Typography,
 } from "@mui/material";
 
+import RenderComponents from "../functions/RenderComponents";
+import { useForm } from "react-hook-form";
 import { UserContext } from "../Pages/UserContext";
 import axios from "axios";
 import { serverBaseAddress } from "../Pages/APIPage";
@@ -21,6 +27,7 @@ import EmptyCard from "../common/EmptyCard";
 import DeleteIcon from "@mui/icons-material/Delete";
 import MoveUpIcon from "@mui/icons-material/MoveUp";
 import SprintSelector from "./SprintSelector";
+import dayjs from "dayjs";
 import useProjectManagementStore from "./ProjectStore";
 import TaskDetailCard from "./TaskDetailCard";
 import { useNavigate } from "react-router-dom";
@@ -28,10 +35,15 @@ import { useNavigate } from "react-router-dom";
 const SprintBacklog = () => {
   const navigate = useNavigate();
 
+  const { control, register, setValue, watch, handleSubmit, reset } = useForm();
+
   const [moveToSprintOpen, setMoveToSprintOpen] = useState(false);
   const [selectedTaskForSprint, setSelectedTaskForSprint] = useState(null);
 
   const [tasks, setTasks] = useState([]);
+  const [open, setOpen] = useState(false);
+
+  const [newTaskAdded, setNewTaskAdded] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false); // To track if the dialog is in edit mode
   const [selectedTaskId, setSelectedTaskId] = useState(null); // To store the task_id of the selected task
 
@@ -88,6 +100,120 @@ const SprintBacklog = () => {
     setSearchInputText("");
     setFilteredTasks(tasks);
   };
+
+  //Form fields for the task form:
+  const taskFormDatafields = [
+    // {
+    //   label: "Department",
+    //   name: "department",
+    //   type: "select",
+    //   options: [
+    //     { id: "Reliability", label: "Reliability" },
+    //     { id: "Software", label: "Software" },
+    //     { id: "Administration", label: "Administration" },
+    //     // Change in future according to the requiremnet
+    //   ],
+    //   width: "100%",
+    // },
+
+    { label: "Title", name: "title", type: "textField", width: "100%" },
+    {
+      label: "Description",
+      name: "description",
+      type: "textArea",
+      width: "100%",
+    },
+    {
+      label: "Task Assigned To",
+      name: "assigned_to",
+      type: "select",
+      options: (() => {
+        switch (loggedInUserDepartment) {
+          case "Reliability":
+            return reliabilityMembers;
+          case "Software":
+            return softwareMembers;
+          case "Administration":
+            return [
+              ...reliabilityMembers,
+              ...softwareMembers,
+              ...administrationMembers,
+            ];
+          default:
+            return [];
+        }
+      })(),
+      width: "100%",
+    },
+
+    {
+      label: "Story Points",
+      name: "story_points",
+      type: "select",
+      options: [
+        { id: "1", label: "1" },
+        { id: "2", label: "2" },
+        { id: "3", label: "3" },
+        { id: "5", label: "5" },
+        { id: "8", label: "8" },
+        { id: "13", label: "13" },
+      ],
+      width: "100%",
+    },
+    {
+      label: "Estimated Hours",
+      name: "estimated_hours",
+      type: "number",
+      width: "100%",
+    },
+    {
+      label: "Actual Hours",
+      name: "actual_hours",
+      type: "number",
+      width: "100%",
+    },
+    {
+      label: "Task Assigned Date",
+      name: "task_assigned_date",
+      type: "datePicker",
+      width: "100%",
+    },
+    {
+      label: "Task Due Date",
+      name: "task_due_date",
+      type: "datePicker",
+      width: "100%",
+    },
+    {
+      label: "Completed Date",
+      name: "task_completed_date",
+      type: "datePicker",
+      width: "100%",
+    },
+    {
+      label: "Priority",
+      name: "priority",
+      type: "select",
+      options: [
+        { id: "Low", label: "Low" },
+        { id: "Medium", label: "Medium" },
+        { id: "High", label: "High" },
+      ],
+      width: "100%",
+    },
+    {
+      label: "Status",
+      name: "status",
+      type: "select",
+      options: [
+        { id: "To Do", label: "To Do" },
+        { id: "In Progress", label: "In Progress" },
+        { id: "Done", label: "Done" },
+        { id: "Blocked", label: "Blocked" },
+      ],
+      width: "100%",
+    },
+  ];
 
   //Columns for Tasks Table:
   const tasksTableColumns = [
@@ -204,6 +330,59 @@ const SprintBacklog = () => {
 
   const tasksTableWithSerialNumbers = addSerialNumbersToRows(filteredTasks);
 
+  //Function to save the task to the database:
+  const saveNewTaskToDatabase = async (data) => {
+    try {
+      const response = await axios.post(
+        `${serverBaseAddress}/api/saveNewTask`,
+        data
+      );
+      setNewTaskAdded(true);
+      // Handle success
+      if (response.status === 200) {
+        toast.success("Task saved to database successfully");
+        fetchTasksFromDatabase();
+        return true;
+      } else {
+        console.log("Error saving task to database, status:", response.status);
+        toast.error(
+          `Error saving task: ${response.statusText || "Server error"}`
+        );
+        return false;
+      }
+    } catch (error) {
+      toast.error(`Error saving task: ${error.message || "Network error"}`);
+      return false;
+    }
+  };
+
+  // FUnction to update the task in the database:
+  const updateTaskInDatabase = async (data) => {
+    try {
+      const response = await axios.put(
+        `${serverBaseAddress}/api/updateTask/${selectedTaskId}`,
+        data
+      );
+      if (response.status === 200) {
+        toast.success("Task updated successfully");
+        fetchTasksFromDatabase();
+        return true;
+      } else {
+        console.log(
+          "Error updating task in database, status:",
+          response.status
+        );
+        toast.error(
+          `Error updating task: ${response.statusText || "Server error"}`
+        );
+        return false;
+      }
+    } catch (error) {
+      toast.error(`Error saving task: ${error.message || "Network error"}`);
+      return false;
+    }
+  };
+
   //Function to fetch all the tasks from the database:
   const fetchTasksFromDatabase = async () => {
     try {
@@ -224,6 +403,8 @@ const SprintBacklog = () => {
       });
 
       setKanbanSheetData(groupedByStatus); // Store grouped data in Zustand
+
+      // setAllTasksData({ kanbanSheetData: groupedByStatus });
     } catch (error) {
       console.log("Error fetching tasks from database:", error);
     }
@@ -232,12 +413,26 @@ const SprintBacklog = () => {
   //Function to populate the data to view and update the task data:
   // Function to handle row click in DataGrid
   const openSelectedTask = (row) => {
-    const taskId = row.task_id;
+    navigate("project_management/add_task");
 
-    navigate(`/update_task/${taskId}`);
-    console.log("Navigating to: /update_task/" + taskId);
-    // navigate("update_task/" + taskId);
-    // navigate("/update_task/" + taskId);
+    // Populate the form fields with the selected row's data
+    setValue("title", row.title);
+    setValue("description", row.description);
+    setValue("assigned_to", row.assigned_to);
+    // setValue("assigned_to_name", row.assigned_to_name);
+    setValue("story_points", row.story_points);
+    setValue("estimated_hours", row.estimated_hours);
+    setValue("actual_hours", row.actual_hours);
+    setValue("task_assigned_date", dayjs(row.task_assigned_date));
+    setValue("task_due_date", dayjs(row.task_due_date));
+    setValue("task_completed_date", dayjs(row.task_completed_date));
+    setValue("priority", row.priority);
+    setValue("status", row.status);
+
+    // Set the task_id and open the dialog in edit mode
+    setSelectedTaskId(row.task_id);
+    setIsEditMode(true);
+    setOpen(true);
   };
 
   //Function to fetch software and reliability team members from the database:
@@ -263,6 +458,33 @@ const SprintBacklog = () => {
   useEffect(() => {
     setFilteredTasks(tasks);
   }, [tasks]);
+
+  const handleCloseDialog = () => {
+    setOpen(false);
+    setIsEditMode(false);
+    setSelectedTaskId(null);
+    reset();
+  };
+
+  const handleSubmitTaskForm = async (data) => {
+    data["task_assigned_by"] = loggedInUser;
+    data["last_updated_by"] = loggedInUserId;
+    data["task_assigned_date"] = dayjs(data["task_assigned_date"]).format(
+      "YYYY-MM-DD"
+    );
+    data["task_due_date"] = dayjs(data["task_due_date"]).format("YYYY-MM-DD");
+    data["task_completed_date"] = dayjs(data["task_completed_date"]).format(
+      "YYYY-MM-DD"
+    );
+
+    if (isEditMode) {
+      await updateTaskInDatabase(data);
+    } else {
+      await saveNewTaskToDatabase(data);
+    }
+    // await fetchTasksFromDatabase();
+    handleCloseDialog();
+  };
 
   //Function to delete the task from the database:
   const deleteSelectedTask = async (row) => {
@@ -297,7 +519,7 @@ const SprintBacklog = () => {
     <>
       <Card sx={{ width: "100%", padding: "20px" }}>
         <Box display="flex" justifyContent="space-between" alignItems="center">
-          <h2>Tasks</h2>
+          <h2>Sprint Backlog</h2>
           <Button
             sx={{
               borderRadius: 1,
@@ -310,7 +532,7 @@ const SprintBacklog = () => {
             }}
             variant="contained"
             color="primary"
-            onClick={() => navigate("/add_task")}
+            onClick={() => setOpen(true)}
           >
             Add Task
           </Button>
@@ -346,15 +568,76 @@ const SprintBacklog = () => {
               rows={tasksTableWithSerialNumbers}
               sx={{ "&:hover": { cursor: "pointer" } }}
               getRowId={(row) => row.task_id}
-              // onRowClick={(params) => openSelectedTask(params.row)}
-              onRowClick={(params) =>
-                navigate(`/update_task/${params.row.task_id}`)
-              }
+              onRowClick={(params) => openSelectedTask(params.row)}
               pageSize={5}
               rowsPerPageOptions={[5, 10, 20]}
             />
           </Box>
         )}
+
+        <Dialog open={open} onClose={handleCloseDialog} fullWidth maxWidth="md">
+          <DialogTitle> {isEditMode ? "Edit Task" : "Add Task"}</DialogTitle>
+          <DialogContent>
+            <Grid item xs={12} sm={6} md={6}>
+              <RenderComponents
+                fields={taskFormDatafields}
+                register={register}
+                control={control}
+                watch={watch}
+                setValue={setValue}
+              />
+            </Grid>
+          </DialogContent>
+
+          {/* <Grid container spacing={2}>
+            {taskFormDatafields.map((field, idx) => (
+              <Grid item xs={12} sm={4} md={4} key={idx}>
+                <RenderComponents
+                  field={[field]}
+                  register={register}
+                  control={control}
+                  watch={watch}
+                  setValue={setValue}
+                />
+              </Grid>
+            ))}
+          </Grid> */}
+
+          <DialogActions sx={{ justifyContent: "center" }}>
+            <Button
+              sx={{
+                borderRadius: 1,
+                bgcolor: "orange",
+                color: "white",
+                borderColor: "black",
+                padding: { xs: "8px 16px", md: "6px 12px" },
+                fontSize: { xs: "0.875rem", md: "1rem" },
+                mb: "10px",
+              }}
+              variant="contained"
+              color="primary"
+              onClick={handleSubmit(handleSubmitTaskForm)}
+            >
+              Submit
+            </Button>
+            <Button
+              sx={{
+                borderRadius: 1,
+                bgcolor: "orange",
+                color: "white",
+                borderColor: "black",
+                padding: { xs: "8px 16px", md: "6px 12px" },
+                fontSize: { xs: "0.875rem", md: "1rem" },
+                mb: "10px",
+              }}
+              variant="contained"
+              color="primary"
+              onClick={handleCloseDialog}
+            >
+              Cancel
+            </Button>
+          </DialogActions>
+        </Dialog>
 
         <SprintSelector
           open={moveToSprintOpen}

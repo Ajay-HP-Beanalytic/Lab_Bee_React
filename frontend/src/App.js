@@ -44,6 +44,10 @@ import NotificationsManagement from "./Pages/NotificationsManagement";
 import EmiJobcard from "./EMI/EmiJobcard";
 import EMIJCDashboard from "./EMI/EMIJCDashboard";
 import ProjectManagementDashboard from "./projectManagement/ProjectsDashboard";
+import TaskDetailCard from "./projectManagement/TaskDetailCard";
+import CreateTask from "./projectManagement/CreateTask";
+import CreateProject from "./projectManagement/CreateProject";
+import SprintBacklog from "./projectManagement/SprintBacklog";
 
 function App() {
   const location = useLocation();
@@ -357,6 +361,86 @@ function App() {
                 allowedRoles={[]}
               >
                 <ProjectManagementDashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="create_project"
+            element={
+              <ProtectedRoute
+                allowedDepartments={[
+                  "Administration",
+                  "Reliability",
+                  "Software",
+                ]}
+                allowedRoles={[]}
+              >
+                <CreateProject />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="edit_project/:id"
+            element={
+              <ProtectedRoute
+                allowedDepartments={[
+                  "Administration",
+                  "Reliability",
+                  "Software",
+                ]}
+                allowedRoles={[]}
+              >
+                <CreateProject />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="tasks_list"
+            element={
+              <ProtectedRoute
+                allowedDepartments={[
+                  "Administration",
+                  "Reliability",
+                  "Software",
+                ]}
+                allowedRoles={[]}
+              >
+                <SprintBacklog />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="add_task"
+            element={
+              <ProtectedRoute
+                allowedDepartments={[
+                  "Administration",
+                  "Reliability",
+                  "Software",
+                ]}
+                allowedRoles={[]}
+              >
+                <CreateTask />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="update_task/:id"
+            element={
+              <ProtectedRoute
+                allowedDepartments={[
+                  "Administration",
+                  "Reliability",
+                  "Software",
+                ]}
+                allowedRoles={[]}
+              >
+                <CreateTask />
               </ProtectedRoute>
             }
           />

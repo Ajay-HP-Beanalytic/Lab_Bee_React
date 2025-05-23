@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import axios from "axios";
-import { Box, Button, Paper, Typography } from "@mui/material";
+import { Box, Button, Card, Paper, Typography } from "@mui/material";
 import { serverBaseAddress } from "../Pages/APIPage";
 import useProjectManagementStore from "./ProjectStore";
 import dayjs from "dayjs";
@@ -19,36 +19,12 @@ const columnColors = {
 const cardBackgroundColor = "#ffffff"; // White for cards
 
 const KanbanSheet = () => {
-  const allTasksData = useProjectManagementStore(
-    (state) => state.allTasksData.tasksNumber
-  );
-
   const kanbanSheetData = useProjectManagementStore(
     (state) => state.allTasksData.kanbanSheetData
   );
-
-  console.log("kanbanSheetData", kanbanSheetData);
-
-  const [tasksByStatus, setTasksByStatus] = useState({});
-
-  useEffect(() => {
-    setTasksByStatus(kanbanSheetData || []);
-  }, [kanbanSheetData]);
-
-  // useEffect(() => {
-  //   axios
-  //     .get(`${serverBaseAddress}/api/tasks/by-sprint/${sprintId}`)
-  //     .then((res) => {
-  //       const grouped = {};
-  //       columns.forEach((col) => (grouped[col] = []));
-  //       res.data.forEach((task) => {
-  //         grouped[task.status]?.push(task);
-  //       });
-  //       setTasksByStatus(grouped);
-  //     });
-  // }, [sprintId]);
-
-  console.log("tasksByStatus", tasksByStatus);
+  const setKanbanSheetData = useProjectManagementStore(
+    (state) => state.setKanbanSheetData
+  );
 
   const handleDragEnd = async ({ source, destination }) => {
     if (!destination) return;
@@ -56,44 +32,26 @@ const KanbanSheet = () => {
     const destCol = destination.droppableId;
     if (sourceCol === destCol) return;
 
-    const movedTask = tasksByStatus[sourceCol][source.index];
+    const movedTask = kanbanSheetData[sourceCol][source.index];
+    if (!movedTask) return;
+
     await axios.post(`${serverBaseAddress}/api/updateTaskStatus`, {
       task_id: movedTask.id,
       status: destCol,
     });
 
-    const updated = { ...tasksByStatus };
+    const updated = { ...kanbanSheetData };
+    updated[sourceCol] = [...updated[sourceCol]];
+    updated[destCol] = [...(updated[destCol] || [])];
+
     updated[sourceCol].splice(source.index, 1);
     updated[destCol].splice(destination.index, 0, movedTask);
-    setTasksByStatus(updated);
-    // setTasksStatus(updated);
+    setKanbanSheetData(updated); // If you’re updating Zustand store
   };
 
-  // const handleDragEnd = async ({ source, destination }) => {
-  //   if (!destination) return;
-  //   const sourceCol = source.droppableId;
-  //   const destCol = destination.droppableId;
-  //   if (sourceCol === destCol) return;
-
-  //   // Defensive: ensure both arrays exist
-  //   const updated = { ...tasksByStatus };
-  //   updated[sourceCol] = [...(updated[sourceCol] || [])];
-  //   updated[destCol] = [...(updated[destCol] || [])];
-
-  //   const [movedTask] = updated[sourceCol].splice(source.index, 1);
-  //   updated[destCol].splice(destination.index, 0, movedTask);
-
-  //   // Optionally update backend
-  //   await axios.post(`${serverBaseAddress}/api/updateTaskStatus`, {
-  //     task_id: movedTask.id,
-  //     status: destCol,
-  //   });
-
-  //   setTasksByStatus(updated);
-  //   // setTasksStatus(updated); // If you want to update Zustand store as well
-  // };
   const handleViewTask = (taskId) => {
     alert(`Viewing task with ID: ${taskId}`); // Replace with actual task view logictaskId);
+    TaskDetailsCard(taskId);
   };
 
   return (
@@ -102,7 +60,7 @@ const KanbanSheet = () => {
       <Paper sx={{ padding: "20px" }}>
         <SearchBar placeholder="Search Tasks" />
 
-        {kanbanSheetData?.length > 0 ? (
+        {Object.keys(kanbanSheetData || {}).length === 0 ? (
           <EmptyCard message="No Data Found." />
         ) : (
           <DragDropContext onDragEnd={handleDragEnd}>
@@ -196,7 +154,7 @@ const KanbanSheet = () => {
                                 }}
                               >
                                 <Button
-                                  onClick={() => handleViewTask(task.task_id)}
+                                  onClick={() => handleViewTask(task.id)}
                                   size="medium"
                                   startIcon={<VisibilityIcon />}
                                 >
@@ -221,3 +179,11 @@ const KanbanSheet = () => {
 };
 
 export default KanbanSheet;
+
+const TaskDetailsCard = (taskId) => {
+  return (
+    <Paper>
+      <Card>Entered Task Detail is: {taskId}</Card>
+    </Paper>
+  );
+};
