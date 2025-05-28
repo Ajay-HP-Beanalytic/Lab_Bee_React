@@ -8,7 +8,6 @@ import { serverBaseAddress } from "../Pages/APIPage";
 import { toast } from "react-toastify";
 import dayjs from "dayjs";
 import Button from "@mui/material/Button";
-import BreadCrumbs from "../components/Breadcrumb";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import SprintBacklog from "./SprintBacklog";
 
@@ -34,31 +33,6 @@ const CreateTask = () => {
   const [isEditMode, setIsEditMode] = useState(false); // To track if the dialog is in edit mode
   const [selectedTaskId, setSelectedTaskId] = useState(null); // To store the task_id of the selected task
   const [isLoading, setIsLoading] = useState(false);
-
-  const [
-    projectManagementDynamicBreadcrumbs,
-    setProjectManagementDynamicBreadcrumbs,
-  ] = useState([]);
-
-  // Dynamic breadcrumbs of project management:
-  const addTaskBreadcrumbs = [
-    { label: "Tasks List", link: "/tasks_list" },
-    { label: "Add Task", current: true },
-  ];
-
-  const updateTaskBreadcrumbs = [
-    { label: "Tasks List", link: "/tasks_list" },
-    { label: "Edit Task", current: true },
-    { label: `Task #${taskIdFromParams}`, current: true },
-  ];
-
-  useEffect(() => {
-    if (isEditMode && taskIdFromParams) {
-      setProjectManagementDynamicBreadcrumbs(updateTaskBreadcrumbs);
-    } else {
-      setProjectManagementDynamicBreadcrumbs(addTaskBreadcrumbs);
-    }
-  }, [isEditMode, taskIdFromParams]);
 
   //Function to fetch software and reliability team members from the database:
   const fetchTeamMembersFromDatabase = async () => {
@@ -224,14 +198,14 @@ const CreateTask = () => {
         setValue("status", taskData.status || "");
       } else {
         toast.error("Task not found to update.");
-        navigate("/tasks_list");
+        navigate("/tasks");
       }
     } catch (error) {
       console.error("Error fetching task details:", error);
       toast.error(
         `Error fetching task details: ${error.message || "Server error"}`
       );
-      navigate("/tasks_list");
+      navigate("/tasks");
     } finally {
       setIsLoading(false);
     }
@@ -347,24 +321,19 @@ const CreateTask = () => {
     setIsEditMode(false);
     setSelectedTaskId(null);
     reset();
-    navigate("/tasks_list");
+    navigate("/tasks");
   };
 
   return (
     <>
-      <BreadCrumbs customBreadcrumbs={projectManagementDynamicBreadcrumbs} />
       <Card sx={{ mt: "10px" }}>
-        {/* <Grid item xs={12} sm={4} md={4}> */}
-        <Typography variant="h5">
-          {isEditMode ? "Edit Task" : "Add Task"}
-        </Typography>
         <Grid
           container
           display={"flex"}
           justifyContent={"center"}
           spacing={2}
           gap={2}
-          sx={{ mt: "10px" }}
+          sx={{ mt: "10px", padding: "20px" }}
         >
           <RenderComponents
             fields={taskFormDatafields}

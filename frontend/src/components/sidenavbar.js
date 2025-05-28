@@ -514,7 +514,7 @@ export default function SidenavigationBar() {
       //     style={{ width: 24, height: 24 }}
       //   />
       // ),
-      path: "/project_management",
+      path: "/projects",
       gradientId: "projectManagementGradient",
     },
   ];

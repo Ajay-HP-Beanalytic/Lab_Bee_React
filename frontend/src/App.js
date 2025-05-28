@@ -90,7 +90,7 @@ function App() {
           loggedInUserDepartment === "Reliability" ||
           loggedInUserDepartment === "Software"
         ) {
-          navigate("/project_management");
+          navigate("/projects");
         }
       }
     }
@@ -122,7 +122,6 @@ function App() {
         {/* Protected Routes */}
         <Route path="" element={<SidenavigationBar />}>
           {/* <Route path="home" element={<Home />} /> */}
-
           <Route
             path="home"
             element={
@@ -134,7 +133,6 @@ function App() {
               </ProtectedRoute>
             }
           />
-
           <Route
             path="quotation_dashboard"
             element={
@@ -297,7 +295,6 @@ function App() {
               </ProtectedRoute>
             }
           />
-
           <Route
             path="emi_jc_dashboard"
             element={
@@ -314,7 +311,6 @@ function App() {
               </ProtectedRoute>
             }
           />
-
           <Route
             path="emi_jobcard"
             element={
@@ -331,7 +327,6 @@ function App() {
               </ProtectedRoute>
             }
           />
-
           <Route
             path="emi_jobcard/:id"
             element={
@@ -349,8 +344,9 @@ function App() {
             }
           />
 
+          {/* Project Management Routes - All under the same component */}
           <Route
-            path="project_management"
+            path="projects"
             element={
               <ProtectedRoute
                 allowedDepartments={[
@@ -364,7 +360,6 @@ function App() {
               </ProtectedRoute>
             }
           />
-
           <Route
             path="create_project"
             element={
@@ -376,11 +371,10 @@ function App() {
                 ]}
                 allowedRoles={[]}
               >
-                <CreateProject />
+                <ProjectManagementDashboard />
               </ProtectedRoute>
             }
           />
-
           <Route
             path="edit_project/:id"
             element={
@@ -392,13 +386,12 @@ function App() {
                 ]}
                 allowedRoles={[]}
               >
-                <CreateProject />
+                <ProjectManagementDashboard />
               </ProtectedRoute>
             }
           />
-
           <Route
-            path="tasks_list"
+            path="tasks"
             element={
               <ProtectedRoute
                 allowedDepartments={[
@@ -408,11 +401,10 @@ function App() {
                 ]}
                 allowedRoles={[]}
               >
-                <SprintBacklog />
+                <ProjectManagementDashboard />
               </ProtectedRoute>
             }
           />
-
           <Route
             path="add_task"
             element={
@@ -424,13 +416,12 @@ function App() {
                 ]}
                 allowedRoles={[]}
               >
-                <CreateTask />
+                <ProjectManagementDashboard />
               </ProtectedRoute>
             }
           />
-
           <Route
-            path="update_task/:id"
+            path="edit_task/:id"
             element={
               <ProtectedRoute
                 allowedDepartments={[
@@ -440,11 +431,10 @@ function App() {
                 ]}
                 allowedRoles={[]}
               >
-                <CreateTask />
+                <ProjectManagementDashboard />
               </ProtectedRoute>
             }
           />
-
           <Route path="*" element={<NotFoundPage />} />
         </Route>
       </Routes>

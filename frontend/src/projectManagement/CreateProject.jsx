@@ -1,6 +1,5 @@
 import { useContext, useEffect, useMemo, useState } from "react";
 import { UserContext } from "../Pages/UserContext";
-import BreadCrumbs from "../components/Breadcrumb";
 import { Box, Button, Card, Grid, Typography } from "@mui/material";
 import { useForm } from "react-hook-form";
 import RenderComponents from "../functions/RenderComponents";
@@ -74,6 +73,19 @@ const CreateProject = () => {
     }
   };
 
+  const getDepartmentOptions = () => {
+    switch (loggedInUserDepartment) {
+      case "Reliability":
+        return ["Reliability"];
+      case "Software":
+        return ["Software"];
+      case "Administration":
+        return ["Reliability", "Software", "Administration"];
+      default:
+        return [];
+    }
+  };
+
   //Fields details to render in the form:
   const projectFormDatafields = useMemo(
     () => [
@@ -84,9 +96,17 @@ const CreateProject = () => {
         width: "30%",
       },
       {
+        label: "Company Name",
+        name: "company_name",
+        type: "textField",
+        width: "30%",
+      },
+      {
         label: "Department",
         name: "department",
-        type: "textField",
+        type: "select",
+        options: getDepartmentOptions(),
+        defaultValue: loggedInUserDepartment,
         width: "30%",
       },
       {
@@ -199,15 +219,15 @@ const CreateProject = () => {
         setValue("project_status", projectData.project_status || "");
         setValue("remarks", projectData.remarks || "");
       } else {
-        toast.error("Task not found to update.");
-        navigate("/project_management");
+        toast.error("Project not found to update.");
+        navigate("/projects");
       }
     } catch (error) {
-      console.error("Error fetching task details:", error);
+      console.error("Error fetching project details:", error);
       toast.error(
-        `Error fetching task details: ${error.message || "Server error"}`
+        `Error fetching project details: ${error.message || "Server error"}`
       );
-      navigate("/project_management");
+      navigate("/projects");
     } finally {
       setIsLoading(false);
     }
@@ -319,24 +339,19 @@ const CreateProject = () => {
     setIsEditMode(false);
     setSelectedProjectId(null);
     reset();
-    navigate("/project_management");
+    navigate("/projects");
   };
 
   return (
     <>
-      {/* <BreadCrumbs customBreadcrumbs={projectManagementDynamicBreadcrumbs} /> */}
       <Card sx={{ mt: "10px" }}>
-        {/* <Grid item xs={12} sm={4} md={4}> */}
-        <Typography variant="h5">
-          {isEditMode ? "Edit Project" : "Add Project"}
-        </Typography>
         <Grid
           container
           display={"flex"}
           justifyContent={"center"}
           spacing={2}
           gap={2}
-          sx={{ mt: "10px" }}
+          sx={{ mt: "10px", padding: "20px" }}
         >
           <RenderComponents
             fields={projectFormDatafields}

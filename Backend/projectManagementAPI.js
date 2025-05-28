@@ -1,4 +1,22 @@
 const { db } = require("./db");
+
+//Generate unique project ID:
+const generateUniqueProjectId = (department, company) => {
+  const departmentCode = department.slice(0, 3).toUpperCase();
+  const companyCode = company.slice(0, 3).toUpperCase();
+  const currentDate = new Date();
+  const year = currentDate.getFullYear();
+  const month = String(currentDate.getMonth() + 1).padStart(2, "0"); // Months are 0-indexed
+  const day = String(currentDate.getDate()).padStart(2, "0");
+  const formattedDate = `${year}${month}${day}`;
+  let uniqueId = `${departmentCode}-${companyCode}-${formattedDate}`;
+  console.log("Generated Project ID:", uniqueId);
+  return uniqueId;
+};
+
+generateUniqueProjectId("Software", "TechCorp"); // Example usage
+generateUniqueProjectId("Reliability", "Ametek"); // Example usage
+
 function projectManagementAPIs(app, io, labbeeUsers) {
   /// API to create the new project:
   app.post("/api/createProject", (req, res) => {
@@ -18,8 +36,8 @@ function projectManagementAPIs(app, io, labbeeUsers) {
     } = req.body;
 
     try {
-      const sqlQuery = `INSERT INTO projects_table(project_name, department, project_manager, project_start_date, total_tasks_count, pending_tasks_count, in_progress_tasks_count, 
-      completed_tasks_count, project_end_date, project_status, remarks, last_updated_by) VALUES(?,?,?,?,?,?,?,?,?,?,?,?)`;
+      const sqlQuery = `INSERT INTO projects_table(project_id, department, project_name,  project_manager, project_start_date, total_tasks_count, pending_tasks_count, in_progress_tasks_count, 
+      completed_tasks_count, project_end_date, project_status, remarks, last_updated_by) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)`;
 
       const values = [
         project_name,
