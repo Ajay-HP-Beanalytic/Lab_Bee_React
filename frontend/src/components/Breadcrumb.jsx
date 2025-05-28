@@ -1,80 +1,54 @@
 import { Breadcrumbs, Typography } from "@mui/material";
 import { Link, useLocation } from "react-router-dom";
+import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 
-export default function BreadCrumbs({ customBreadcrumbs = null }) {
+export default function BreadCrumbs({ customBreadcrumbs }) {
   const location = useLocation();
+  const path = location.pathname;
 
-  //Define breadcrumb configurartion for different routes:
-  const getBreadcrumbs = () => {
-    //Fetch the pathname of the current route:
-    const path = location.pathname;
+  const breadcrumbs = customBreadcrumbs || [];
 
-    //If custom breadcrumbs are given then use them:
-    if (customBreadcrumbs) {
-      return customBreadcrumbs;
-    }
-
-    //Default breadcrumb configuration for the project management module:
-
-    const breadcrumbConfigs = {
-      "/project_management": [{ label: "Project Management", current: true }],
-      "/add_task": [
-        { label: "Project Management", link: "/project_management" },
-        { label: "Add Task", current: true },
-      ],
-      "/update_task": [
-        { label: "Project Management", link: "/project_management" },
-        { label: "Edit Task", current: true },
-      ],
-    };
-
-    //Check for dynamic routes such as '/update_task/:id':
-    if (path.startsWith("/update_task/")) {
-      return breadcrumbConfigs["/update_task"];
-    }
-
-    //Return the matching configuration or default:
-    return (
-      breadcrumbConfigs[path] || [
-        { label: "Dashboard", link: "/" },
-        { label: "Current Page", current: true },
-      ]
-    );
-  };
-
-  const breadcrumbs = getBreadcrumbs();
-
-  console.log("Breadcrumbs==>: ", breadcrumbs);
-
-  const handleClick = () => {
-    alert("Div Clicked");
-  };
+  if (!breadcrumbs || breadcrumbs.length === 0) {
+    return null;
+  }
 
   return (
     <div role="project-management-navigation">
-      <Breadcrumbs>
+      <Breadcrumbs
+        separator={<NavigateNextIcon fontSize="small" />}
+        aria-label="breadcrumb"
+      >
         {breadcrumbs.map((crumb, index) => {
-          if (crumb.current) {
-            //return the current page as typography:
+          const isLast = index === breadcrumbs.length - 1 || crumb.current;
+
+          if (isLast) {
             return (
-              <Typography key={index} sx={{ color: "text.primary" }}>
+              <Typography
+                key={index}
+                color="text.primary"
+                sx={{ fontWeight: "bold" }}
+              >
                 {crumb.label}
               </Typography>
             );
-          } else {
-            //Navigation link: render as link:
-            return (
-              <Link
-                key={index}
-                component={Link}
-                to={crumb.link}
-                underline="hover"
-                color="inherit"
-              >
-                {crumb.label}
-              </Link>
-            );
           }
+
+          return (
+            <Link
+              key={index}
+              to={crumb.link}
+              style={{
+                textDecoration: "none",
+                color: "#1976d2",
+              }}
+              onMouseEnter={(e) =>
+                (e.target.style.textDecoration = "underline")
+              }
+              onMouseLeave={(e) => (e.target.style.textDecoration = "none")}
+            >
+              {crumb.label}
+            </Link>
+          );
         })}
       </Breadcrumbs>
     </div>

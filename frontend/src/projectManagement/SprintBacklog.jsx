@@ -99,6 +99,15 @@ const SprintBacklog = () => {
       headerAlign: "center",
       headerClassName: "custom-header-color",
     },
+    {
+      field: "corresponding_project_id",
+      headerName: "Project ID",
+      width: 50,
+      align: "center",
+      headerAlign: "center",
+      headerClassName: "custom-header-color",
+      editable: false,
+    },
     // {
     //   field: "department",
     //   headerName: "Department",
@@ -234,10 +243,10 @@ const SprintBacklog = () => {
   const openSelectedTask = (row) => {
     const taskId = row.task_id;
 
-    navigate(`/update_task/${taskId}`);
-    console.log("Navigating to: /update_task/" + taskId);
-    // navigate("update_task/" + taskId);
-    // navigate("/update_task/" + taskId);
+    navigate(`/edit_task/${taskId}`);
+    console.log("Navigating to: /edit_task/" + taskId);
+    // navigate("edit_task/" + taskId);
+    // navigate("/edit_task/" + taskId);
   };
 
   //Function to fetch software and reliability team members from the database:
@@ -348,7 +357,7 @@ const SprintBacklog = () => {
               getRowId={(row) => row.task_id}
               // onRowClick={(params) => openSelectedTask(params.row)}
               onRowClick={(params) =>
-                navigate(`/update_task/${params.row.task_id}`)
+                navigate(`/edit_task/${params.row.task_id}`)
               }
               pageSize={5}
               rowsPerPageOptions={[5, 10, 20]}

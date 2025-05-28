@@ -10,6 +10,7 @@ import MoveUpIcon from "@mui/icons-material/MoveUp";
 import { DataGrid } from "@mui/x-data-grid";
 import SearchBar from "../common/SearchBar";
 import useProjectManagementStore from "./ProjectStore";
+import BreadCrumbs from "../components/Breadcrumb";
 
 const ProjectsTable = () => {
   const navigate = useNavigate();
@@ -59,7 +60,14 @@ const ProjectsTable = () => {
       headerAlign: "center",
       headerClassName: "custom-header-color",
     },
-
+    {
+      field: "project_id",
+      headerName: "Project ID",
+      width: 150,
+      align: "center",
+      headerAlign: "center",
+      headerClassName: "custom-header-color",
+    },
     {
       field: "project_name",
       headerName: "Project Name",
