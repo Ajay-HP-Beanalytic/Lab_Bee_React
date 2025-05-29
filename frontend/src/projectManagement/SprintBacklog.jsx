@@ -35,16 +35,17 @@ const SprintBacklog = () => {
   const [isEditMode, setIsEditMode] = useState(false); // To track if the dialog is in edit mode
   const [selectedTaskId, setSelectedTaskId] = useState(null); // To store the task_id of the selected task
 
-  const {
-    loggedInUser,
-    loggedInUserDepartment,
-    loggedInUserRole,
-    loggedInUserId,
-  } = useContext(UserContext);
+  const { loggedInUser, loggedInUserDepartment } = useContext(UserContext);
 
   //Send all tasks data to store in the project management store
   const setAllTasksData = useProjectManagementStore(
     (state) => state.setAllTasksData
+  );
+
+  const setTasksList = useProjectManagementStore((state) => state.setTasksList);
+
+  const tasksData = useProjectManagementStore(
+    (state) => state.allTasksData.tasks
   );
 
   //Fetch Kanbansheet data:
@@ -62,6 +63,39 @@ const SprintBacklog = () => {
 
   const [searchInputText, setSearchInputText] = useState("");
   const [filteredTasks, setFilteredTasks] = useState(tasks);
+  const [reliabilityTasks, setReliabilityTasks] = useState([]);
+  const [softwareTasks, setSoftwareTasks] = useState([]);
+  const [baseFilteredTasks, setBaseFilteredTasks] = useState([]);
+
+  //Function to display the department-wise projects:
+  useEffect(() => {
+    if (
+      tasksData &&
+      tasksData.length > 0 &&
+      loggedInUser &&
+      loggedInUserDepartment
+    ) {
+      const reliability = tasksData.filter(
+        (item) => item.department === "Reliability"
+      );
+      const software = tasksData.filter(
+        (item) => item.department === "Software"
+      );
+      setReliabilityTasks(reliability);
+      setSoftwareTasks(software);
+
+      if (loggedInUserDepartment === "Reliability") {
+        setBaseFilteredTasks(reliability);
+        setFilteredTasks(reliability);
+      } else if (loggedInUserDepartment === "Software") {
+        setBaseFilteredTasks(software);
+        setFilteredTasks(software);
+      } else {
+        setBaseFilteredTasks(tasksData);
+        setFilteredTasks(tasksData);
+      }
+    }
+  }, [tasksData, loggedInUser, loggedInUserDepartment]);
 
   const onChangeOfSearchInput = (e) => {
     const searchText = e.target.value;
@@ -72,9 +106,11 @@ const SprintBacklog = () => {
   //Function to filter the table
   const filteredTasksList = (searchValue) => {
     if (!searchValue) {
-      return tasks;
+      // return tasks;
+      setFilteredTasks(baseFilteredTasks); // Use the current department-filtered list
+      return;
     }
-    const filtered = tasks.filter((row) => {
+    const filtered = baseFilteredTasks.filter((row) => {
       return Object.values(row).some(
         (value) =>
           value != null &&
@@ -86,7 +122,7 @@ const SprintBacklog = () => {
 
   const onClearSearchInput = () => {
     setSearchInputText("");
-    setFilteredTasks(tasks);
+    setFilteredTasks(baseFilteredTasks);
   };
 
   //Columns for Tasks Table:
@@ -102,7 +138,7 @@ const SprintBacklog = () => {
     {
       field: "corresponding_project_id",
       headerName: "Project ID",
-      width: 50,
+      width: 150,
       align: "center",
       headerAlign: "center",
       headerClassName: "custom-header-color",
@@ -127,7 +163,7 @@ const SprintBacklog = () => {
     {
       field: "assigned_to_name",
       headerName: "Task Assigned To",
-      width: 200,
+      width: 150,
       align: "center",
       headerAlign: "center",
       headerClassName: "custom-header-color",
@@ -135,7 +171,7 @@ const SprintBacklog = () => {
     {
       field: "story_points",
       headerName: "Story Points",
-      width: 200,
+      width: 100,
       align: "center",
       headerAlign: "center",
       headerClassName: "custom-header-color",
@@ -192,7 +228,7 @@ const SprintBacklog = () => {
           <IconButton
             onClick={(event) => {
               event.stopPropagation();
-              deleteSelectedTask(params.row);
+              deleteSelectedTask(params.row.task_id);
             }}
           >
             <DeleteIcon />
@@ -218,13 +254,18 @@ const SprintBacklog = () => {
     try {
       const response = await axios.get(`${serverBaseAddress}/api/getAllTasks`);
       setTasks(response.data);
+      setTasksList(response.data); // Store tasks in Zustand
+      setFilteredTasks(response.data); // Set initial filtered tasks
 
       // Group tasks by status for Kanban
       const groupedByStatus = {};
       response.data.forEach((task) => {
         if (!groupedByStatus[task.status]) groupedByStatus[task.status] = [];
         groupedByStatus[task.status].push({
-          id: task.task_id,
+          project_id: task.corresponding_project_id,
+          id: task.id,
+          department: task.department,
+          task_id: task.task_id,
           title: task.title,
           assigned_to: task.assigned_to,
           priority: task.priority,
@@ -242,11 +283,7 @@ const SprintBacklog = () => {
   // Function to handle row click in DataGrid
   const openSelectedTask = (row) => {
     const taskId = row.task_id;
-
     navigate(`/edit_task/${taskId}`);
-    console.log("Navigating to: /edit_task/" + taskId);
-    // navigate("edit_task/" + taskId);
-    // navigate("/edit_task/" + taskId);
   };
 
   //Function to fetch software and reliability team members from the database:
@@ -267,11 +304,6 @@ const SprintBacklog = () => {
     fetchTasksFromDatabase();
     fetchTeamMembersFromDatabase();
   }, []);
-
-  //useEffect to filter the table based on the search input
-  useEffect(() => {
-    setFilteredTasks(tasks);
-  }, [tasks]);
 
   //Function to delete the task from the database:
   const deleteSelectedTask = async (row) => {
@@ -371,33 +403,9 @@ const SprintBacklog = () => {
           taskId={selectedTaskForSprint}
           onSuccess={fetchTasksFromDatabase}
         />
-
-        <Grid container spacing={2}>
-          {tasks.map((task) => (
-            <Grid item xs={12} sm={6} md={6} key={task.id}>
-              <TaskCard task={task} />
-            </Grid>
-          ))}
-        </Grid>
       </Card>
     </>
   );
 };
 
 export default SprintBacklog;
-
-function TaskCard({ task }) {
-  return (
-    <Card>
-      <CardContent>
-        <Typography variant="h6">{task.task_name}</Typography>
-        <Typography variant="body2">{task.task_description}</Typography>
-        <Typography variant="body2">
-          Assigned To: {task.task_assigned_to}
-        </Typography>
-        <Typography variant="body2">Priority: {task.priority}</Typography>
-        <Typography variant="body2">Status: {task.status}</Typography>
-      </CardContent>
-    </Card>
-  );
-}

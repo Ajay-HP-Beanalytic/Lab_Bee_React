@@ -50,7 +50,6 @@ export const UserProvider = ({ children }) => {
       .get(`${serverBaseAddress}/api/getLoggedInUser`)
       .then((res) => {
         if (res.data.valid) {
-          console.log("res.data is-->", res.data);
           setLoggedInUser(res.data.user_name);
           setLoggedInUserDepartment(res.data.user_department);
           setLoggedInUserRole(res.data.user_role);
