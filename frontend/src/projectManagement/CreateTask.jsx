@@ -10,6 +10,7 @@ import dayjs from "dayjs";
 import Button from "@mui/material/Button";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import SprintBacklog from "./SprintBacklog";
+import useProjectManagementStore from "./ProjectStore";
 
 const CreateTask = () => {
   const {
@@ -18,6 +19,10 @@ const CreateTask = () => {
     loggedInUserRole,
     loggedInUserId,
   } = useContext(UserContext);
+
+  const projectsData = useProjectManagementStore(
+    (state) => state.allTasksData.projectsList
+  );
 
   const navigate = useNavigate();
   const { id: taskIdFromParams } = useParams();
@@ -34,6 +39,8 @@ const CreateTask = () => {
   const [selectedTaskId, setSelectedTaskId] = useState(null); // To store the task_id of the selected task
   const [isLoading, setIsLoading] = useState(false);
 
+  const [projectIdsForDropdown, setProjectIdsForDropdown] = useState([]);
+
   //Function to fetch software and reliability team members from the database:
   const fetchTeamMembersFromDatabase = async () => {
     try {
@@ -46,6 +53,12 @@ const CreateTask = () => {
     } catch (error) {
       console.log("Error fetching team members from database:", error);
     }
+  };
+
+  const fetchProjectIdsForDropdown = async () => {
+    const projectIds = projectsData.map((project) => project.project_id);
+    setProjectIdsForDropdown(projectIds);
+    return projectIds;
   };
 
   // Function to get options based on logged-in user's department
@@ -66,9 +79,36 @@ const CreateTask = () => {
     }
   };
 
+  const getDepartmentOptions = () => {
+    switch (loggedInUserDepartment) {
+      case "Reliability":
+        return ["Reliability"];
+      case "Software":
+        return ["Software"];
+      case "Administration":
+        return ["Reliability", "Software", "Administration"];
+      default:
+        return [];
+    }
+  };
+
   //Fields details to render in the form:
   const taskFormDatafields = useMemo(
     () => [
+      {
+        label: "Project ID",
+        name: "corresponding_project_id",
+        type: "select",
+        options: projectIdsForDropdown,
+        width: "30%",
+      },
+      {
+        label: "Department",
+        name: "department",
+        type: "select",
+        options: getDepartmentOptions(),
+        width: "30%",
+      },
       { label: "Title", name: "title", type: "textField", width: "30%" },
       {
         label: "Description",
@@ -172,6 +212,11 @@ const CreateTask = () => {
       if (response.data) {
         const taskData = response.data;
         //populate the form fields with the task details:
+        setValue(
+          "corresponding_project_id",
+          taskData.corresponding_project_id || ""
+        );
+        setValue("department", taskData.department || "");
         setValue("title", taskData.title || "");
         setValue("description", taskData.description || "");
         setValue("assigned_to", taskData.assigned_to || "");
@@ -216,6 +261,7 @@ const CreateTask = () => {
     const initializeComponent = async () => {
       // Always fetch team members first
       await fetchTeamMembersFromDatabase();
+      await fetchProjectIdsForDropdown();
 
       if (taskIdFromParams) {
         setIsEditMode(true);

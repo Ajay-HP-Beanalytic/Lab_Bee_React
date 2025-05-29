@@ -805,7 +805,7 @@ function createProjectsTable() {
   
   CREATE TABLE IF NOT EXISTS projects_table (
   id INT NOT NULL AUTO_INCREMENT,
-  project_id VARCHAR(255) UNIQUE NOT NULL,
+  project_id VARCHAR(255) UNIQUE DEFAULT NULL,
   department VARCHAR(1000),
   company_name VARCHAR(1000),
   project_name VARCHAR(2000),
@@ -839,8 +839,9 @@ function createProjectTasksTable() {
   const createProjectTasksTableQuery = `
   CREATE TABLE IF NOT EXISTS project_tasks_table (
   id INT NOT NULL AUTO_INCREMENT,
-  task_id VARCHAR(255) UNIQUE NOT NULL,
+  task_id VARCHAR(255) UNIQUE DEFAULT NULL,
   corresponding_project_id VARCHAR(255), -- FK to projects_table.project_id
+  department VARCHAR(200),
   title VARCHAR(2000),
   description TEXT, 
   assigned_to INT,

@@ -33,21 +33,13 @@ import QuotationRequirements from "./Quote/QuotationRequirements";
 import QuotationsDashboard from "./Quote/QuotationsDashboard";
 import { publish, EVENT_CONSTANTS } from "./common/CustomEvents";
 import UserManagement from "./LoginRegister/UserManagement";
-
 import { UserContext } from "./Pages/UserContext";
 import ProtectedRoute from "./Pages/ProtectedRoute";
 import { Helmet } from "react-helmet";
-
-import { serverBaseAddress } from "./Pages/APIPage";
-import { NotificationContext } from "./Pages/NotificationContext";
 import NotificationsManagement from "./Pages/NotificationsManagement";
 import EmiJobcard from "./EMI/EmiJobcard";
 import EMIJCDashboard from "./EMI/EMIJCDashboard";
 import ProjectManagementDashboard from "./projectManagement/ProjectsDashboard";
-import TaskDetailCard from "./projectManagement/TaskDetailCard";
-import CreateTask from "./projectManagement/CreateTask";
-import CreateProject from "./projectManagement/CreateProject";
-import SprintBacklog from "./projectManagement/SprintBacklog";
 
 function App() {
   const location = useLocation();
@@ -422,6 +414,21 @@ function App() {
           />
           <Route
             path="edit_task/:id"
+            element={
+              <ProtectedRoute
+                allowedDepartments={[
+                  "Administration",
+                  "Reliability",
+                  "Software",
+                ]}
+                allowedRoles={[]}
+              >
+                <ProjectManagementDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="my_tasks"
             element={
               <ProtectedRoute
                 allowedDepartments={[

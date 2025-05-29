@@ -21,8 +21,6 @@ const CreateProject = () => {
   const projectsData = useProjectManagementStore(
     (state) => state.allTasksData.projectsList
   );
-  console.log("projectsData", projectsData);
-
   const navigate = useNavigate();
   const { id: projectIdFromParams } = useParams();
   const location = useLocation();
@@ -106,7 +104,6 @@ const CreateProject = () => {
         name: "department",
         type: "select",
         options: getDepartmentOptions(),
-        defaultValue: loggedInUserDepartment,
         width: "30%",
       },
       {
@@ -191,8 +188,9 @@ const CreateProject = () => {
       if (response.data) {
         const projectData = response.data;
         //populate the form fields with the task details:
-        setValue("project_name", projectData.project_name || "");
         setValue("department", projectData.department || "");
+        setValue("company_name", projectData.company_name || "");
+        setValue("project_name", projectData.project_name || "");
         setValue("project_manager", projectData.project_manager || "");
         setValue("total_tasks_count", projectData.total_tasks_count || "");
         setValue("pending_tasks_count", projectData.pending_tasks_count || "");

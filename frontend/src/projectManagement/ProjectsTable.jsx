@@ -10,19 +10,59 @@ import MoveUpIcon from "@mui/icons-material/MoveUp";
 import { DataGrid } from "@mui/x-data-grid";
 import SearchBar from "../common/SearchBar";
 import useProjectManagementStore from "./ProjectStore";
-import BreadCrumbs from "../components/Breadcrumb";
+import { useContext } from "react";
+import { UserContext } from "../Pages/UserContext";
 
 const ProjectsTable = () => {
   const navigate = useNavigate();
 
+  const { loggedInUser, loggedInUserDepartment } = useContext(UserContext);
+
   const setProjectsList = useProjectManagementStore(
     (state) => state.setProjectsList
+  );
+
+  const projectsData = useProjectManagementStore(
+    (state) => state.allTasksData.projectsList
   );
 
   const [projects, setProjects] = useState([]);
 
   const [searchInputText, setSearchInputText] = useState("");
   const [filteredProjects, setFilteredProjects] = useState(projects);
+  const [reliabilityProjects, setReliabilityProjects] = useState([]);
+  const [softwareProjects, setSoftwareProjects] = useState([]);
+  const [baseFilteredProjects, setBaseFilteredProjects] = useState([]);
+
+  //Function to display the department-wise projects:
+  useEffect(() => {
+    if (
+      projectsData &&
+      projectsData.length > 0 &&
+      loggedInUser &&
+      loggedInUserDepartment
+    ) {
+      const reliability = projectsData.filter(
+        (item) => item.department === "Reliability"
+      );
+      const software = projectsData.filter(
+        (item) => item.department === "Software"
+      );
+      setReliabilityProjects(reliability);
+      setSoftwareProjects(software);
+
+      if (loggedInUserDepartment === "Reliability") {
+        setBaseFilteredProjects(reliability);
+        setFilteredProjects(reliability);
+      } else if (loggedInUserDepartment === "Software") {
+        setBaseFilteredProjects(software);
+        setFilteredProjects(software);
+      } else {
+        setBaseFilteredProjects(projectsData);
+        setFilteredProjects(projectsData);
+      }
+    }
+  }, [projectsData, loggedInUser, loggedInUserDepartment]);
 
   const onChangeOfSearchInput = (e) => {
     const searchText = e.target.value;
@@ -33,9 +73,10 @@ const ProjectsTable = () => {
   //Function to filter the table
   const filteredProjectsList = (searchValue) => {
     if (!searchValue) {
-      return projects;
+      setFilteredProjects(baseFilteredProjects);
+      return;
     }
-    const filtered = projects.filter((row) => {
+    const filtered = baseFilteredProjects.filter((row) => {
       return Object.values(row).some(
         (value) =>
           value != null &&
@@ -47,7 +88,7 @@ const ProjectsTable = () => {
 
   const onClearSearchInput = () => {
     setSearchInputText("");
-    setFilteredProjects(projects);
+    setFilteredProjects(baseFilteredProjects);
   };
 
   //Columns for Tasks Table:

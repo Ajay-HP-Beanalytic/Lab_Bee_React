@@ -13,6 +13,11 @@ const useProjectManagementStore = create((set) => ({
       allTasksData: { ...state.allTasksData, projectsList: data },
     })),
 
+  setTasksList: (data) =>
+    set((state) => ({
+      allTasksData: { ...state.allTasksData, tasks: data },
+    })),
+
   setAllTasksData: (data) =>
     set((state) => ({
       allTasksData: { ...state.allTasksData, ...data },

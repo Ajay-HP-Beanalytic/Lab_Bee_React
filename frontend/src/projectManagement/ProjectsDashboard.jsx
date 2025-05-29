@@ -24,8 +24,6 @@ const ProjectManagementDashboard = () => {
   // Determine which component to show based on the current path
   const getCurrentView = () => {
     const path = location.pathname;
-    console.log("Current path:", path);
-
     if (path === "/create_project" || path.startsWith("/edit_project")) {
       return "create_project";
     } else if (path === "/add_task" || path.startsWith("/edit_task")) {
@@ -43,7 +41,8 @@ const ProjectManagementDashboard = () => {
       path === "/create_project" ||
       path.startsWith("/edit_project/") ||
       path === "/add_task" ||
-      path.startsWith("/edit_task/")
+      path.startsWith("/edit_task/") ||
+      path === "/my_tasks"
     );
   };
 
@@ -60,7 +59,7 @@ const ProjectManagementDashboard = () => {
       const projectId = params.id;
       return [
         { label: "Projects", link: "/projects" },
-        { label: `Edit Project #${projectId}`, current: true },
+        { label: `Edit Project > ${projectId}`, current: true },
       ];
     } else if (path === "/add_task") {
       return [
@@ -73,7 +72,13 @@ const ProjectManagementDashboard = () => {
       return [
         { label: "Projects", link: "/projects" },
         { label: "Tasks", link: "/tasks" },
-        { label: `Edit Task #${taskId}`, current: true },
+        { label: `Edit Task > ${taskId}`, current: true },
+      ];
+    } else if (path === "/my_tasks") {
+      return [
+        { label: "Projects", link: "/projects" },
+        { label: "Tasks", link: "/tasks" },
+        { label: "My Tasks", current: true },
       ];
     }
     return [];
@@ -82,12 +87,14 @@ const ProjectManagementDashboard = () => {
   // Update tab index based on current view
   useEffect(() => {
     const currentView = getCurrentView();
-    console.log("Current view:", currentView);
-
     if (currentView === "create_project") {
       setTabIndex(0); // Projects List
     } else if (currentView === "tasks" || currentView === "create_task") {
       setTabIndex(1); // Tasks List
+    } else if (currentView === "my_tasks") {
+      setTabIndex(4); // My Tasks
+    } else {
+      setTabIndex(0); // Default to Projects List
     }
   }, [location.pathname]);
 
@@ -101,6 +108,9 @@ const ProjectManagementDashboard = () => {
       case 1:
         navigate("/tasks");
         break;
+      // case 2:
+      //   navigate("/my_tasks");
+      //   break;
       default:
         break;
     }
