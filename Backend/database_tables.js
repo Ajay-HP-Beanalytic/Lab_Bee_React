@@ -852,7 +852,7 @@ function createProjectTasksTable() {
   task_due_date DATE, 
   task_completed_date DATE, 
   priority ENUM('Low', 'Medium', 'High'),
-  status ENUM('To Do', 'In Progress', 'Done', 'Hold'), 
+  status ENUM('To Do', 'In Progress', 'Done', 'On Hold'), 
   sprint_id INT,
   last_updated_by VARCHAR(250),
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP, 

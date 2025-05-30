@@ -186,7 +186,7 @@ const CreateTask = () => {
           { id: "To Do", label: "To Do" },
           { id: "In Progress", label: "In Progress" },
           { id: "Done", label: "Done" },
-          { id: "Blocked", label: "Blocked" },
+          { id: "On Hold", label: "On Hold" },
         ],
         width: "30%",
       },

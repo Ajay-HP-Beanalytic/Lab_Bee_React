@@ -1,14 +1,3 @@
-// import { useContext, useEffect, useState } from "react";
-// import { UserContext } from "../Pages/UserContext";
-
-// const MyTasks = () => {
-//   const { loggedInUser, loggedInUserDepartment } = useContext(UserContext);
-
-//   return <> This is Tasks Page of {loggedInUser}</>;
-// };
-
-// export default MyTasks;
-
 import React, { useContext, useEffect, useState } from "react";
 import {
   Box,
@@ -62,7 +51,7 @@ const MyTasks = () => {
     todo: 0,
     inProgress: 0,
     done: 0,
-    blocked: 0,
+    onHold: 0,
   });
 
   // Fetch tasks assigned to the logged-in user
@@ -93,7 +82,7 @@ const MyTasks = () => {
       todo: tasks.filter((task) => task.status === "To Do").length,
       inProgress: tasks.filter((task) => task.status === "In Progress").length,
       done: tasks.filter((task) => task.status === "Done").length,
-      blocked: tasks.filter((task) => task.status === "Blocked").length,
+      onHold: tasks.filter((task) => task.status === "On Hold").length,
     };
     setTaskStats(stats);
   };
@@ -109,7 +98,7 @@ const MyTasks = () => {
   // Handle tab change
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
-    const tabLabels = ["All", "To Do", "In Progress", "Done", "Blocked"];
+    const tabLabels = ["All", "To Do", "In Progress", "Done", "On Hold"];
     const selectedStatus = tabLabels[newValue];
     const filtered = filterTasksByStatus(selectedStatus);
     setFilteredTasks(
@@ -135,7 +124,7 @@ const MyTasks = () => {
     const searchText = e.target.value;
     setSearchInputText(searchText);
 
-    const tabLabels = ["All", "To Do", "In Progress", "Done", "Blocked"];
+    const tabLabels = ["All", "To Do", "In Progress", "Done", "On Hold"];
     const selectedStatus = tabLabels[tabValue];
     const statusFiltered = filterTasksByStatus(selectedStatus);
     const searchFiltered = filterTasksBySearch(statusFiltered, searchText);
@@ -144,7 +133,7 @@ const MyTasks = () => {
 
   const onClearSearchInput = () => {
     setSearchInputText("");
-    const tabLabels = ["All", "To Do", "In Progress", "Done", "Blocked"];
+    const tabLabels = ["All", "To Do", "In Progress", "Done", "On Hold"];
     const selectedStatus = tabLabels[tabValue];
     setFilteredTasks(filterTasksByStatus(selectedStatus));
   };
@@ -172,7 +161,7 @@ const MyTasks = () => {
         return { icon: <PlayArrow />, color: "#ff9800", bgColor: "#fff3e0" };
       case "Done":
         return { icon: <CheckCircle />, color: "#4caf50", bgColor: "#e8f5e8" };
-      case "Blocked":
+      case "On Hold":
         return { icon: <Block />, color: "#f44336", bgColor: "#ffebee" };
       default:
         return { icon: <Assignment />, color: "#9e9e9e", bgColor: "#f5f5f5" };
@@ -272,10 +261,10 @@ const MyTasks = () => {
               variant="h6"
               sx={{ fontWeight: "bold", color: "#d32f2f" }}
             >
-              {taskStats.blocked}
+              {taskStats.onHold}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              Blocked
+              On Hold
             </Typography>
           </Paper>
         </Grid>
@@ -303,7 +292,7 @@ const MyTasks = () => {
           <Tab label={`To Do (${taskStats.todo})`} />
           <Tab label={`In Progress (${taskStats.inProgress})`} />
           <Tab label={`Done (${taskStats.done})`} />
-          <Tab label={`Blocked (${taskStats.blocked})`} />
+          <Tab label={`On Hold (${taskStats.onHold})`} />
         </Tabs>
       </Box>
 
