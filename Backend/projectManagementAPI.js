@@ -309,20 +309,20 @@ function projectManagementAPIs(app, io, labbeeUsers) {
       last_updated_by,
     } = req.body;
 
-    if (
-      !corresponding_project_id ||
-      !title ||
-      !description ||
-      !assigned_to ||
-      !story_points ||
-      !estimated_hours ||
-      !priority ||
-      !status ||
-      !last_updated_by ||
-      !task_assigned_date
-    ) {
-      return res.status(400).json({ message: "All fields are required" });
-    }
+    // if (
+    //   !corresponding_project_id ||
+    //   !title ||
+    //   !description ||
+    //   !assigned_to ||
+    //   !story_points ||
+    //   !estimated_hours ||
+    //   !priority ||
+    //   !status ||
+    //   !last_updated_by ||
+    //   !task_assigned_date
+    // ) {
+    //   return res.status(400).json({ message: "All fields are required" });
+    // }
 
     try {
       const sqlQuery = `
@@ -400,18 +400,18 @@ function projectManagementAPIs(app, io, labbeeUsers) {
       last_updated_by,
     } = req.body;
 
-    if (
-      !title ||
-      !description ||
-      !assigned_to ||
-      !story_points ||
-      !estimated_hours ||
-      !priority ||
-      !status ||
-      !last_updated_by
-    ) {
-      return res.status(400).json({ message: "All fields are required" });
-    }
+    // if (
+    //   !title ||
+    //   !description ||
+    //   !assigned_to ||
+    //   !story_points ||
+    //   !estimated_hours ||
+    //   !priority ||
+    //   !status ||
+    //   !last_updated_by
+    // ) {
+    //   return res.status(400).json({ message: "All fields are required" });
+    // }
 
     const sqlQuery = `
       UPDATE project_tasks_table

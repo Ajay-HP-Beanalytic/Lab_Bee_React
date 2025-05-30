@@ -1,16 +1,11 @@
-const mysql = require("mysql2"); // In order to interact with the mysql database.
 const bcrypt = require("bcrypt"); // Import bcrypt package in order to encrypt the password
 const saltRounds = 10; // Let saltRoulds be '10' for hasing purpose
 const jwt = require("jsonwebtoken"); // Import jsonwebtoken package in order to create tokens
 
 const session = require("express-session"); // Import 'express-session' module to create user session
-const cookieParser = require("cookie-parser"); // Import 'cookie-parser' module to create cookies for a logge in user
 const { db } = require("./db");
 
 const nodemailer = require("nodemailer");
-const dotenv = require("dotenv").config();
-// import * as dotenv from 'dotenv';
-// dotenv.config();
 
 const jwtSecret = "RANDOM-TOKEN"; // To create a random token
 
