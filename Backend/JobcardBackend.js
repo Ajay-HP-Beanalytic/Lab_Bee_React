@@ -1434,6 +1434,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
       unit,
       testEndedBy,
       remarks,
+      testReviewedBy,
       testReportInstructions,
       reportNumber,
       preparedBy,
@@ -1509,6 +1510,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
           unit = ?, 
           testEndedBy = ?, 
           remarks = ?, 
+          testReviewedBy = ?,
           testReportInstructions = ?, 
           reportNumber = ?, 
           preparedBy = ?, 
@@ -1530,13 +1532,14 @@ function jobcardsAPIs(app, io, labbeeUsers) {
           unit, 
           testEndedBy, 
           remarks, 
+          testReviewedBy,
           testReportInstructions, 
           reportNumber, 
           preparedBy, 
           nablUploaded, 
           reportStatus, 
           jc_number
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
       const updateValues = [
         testName || "",
@@ -1551,6 +1554,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
         unit || "",
         testEndedBy || "",
         remarks || "",
+        testReviewedBy || "",
         testReportInstructions || "",
         reportNumber || "",
         preparedBy || "",
@@ -1573,6 +1577,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
         unit || "",
         testEndedBy || "",
         remarks || "",
+        testReviewedBy || "",
         testReportInstructions || "",
         reportNumber || "",
         preparedBy || "",
@@ -1686,7 +1691,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
   //To fetch the data based on the jcnumber from the table 'tests_details'
   app.get("/api/gettestdetailslist/:jc_number", (req, res) => {
     const jcnumber = req.params.jc_number;
-    const sqlQuery = `SELECT  testName,testChamber,eutSerialNo,standard,testStartedBy,startDate,endDate,duration, actualTestDuration, unit,testEndedBy,remarks, testReportInstructions, reportNumber,preparedBy,nablUploaded, reportStatus FROM tests_details  WHERE jc_number = ?`;
+    const sqlQuery = `SELECT  testName,testChamber,eutSerialNo,standard,testStartedBy,startDate,endDate,duration, actualTestDuration, unit,testEndedBy,remarks, testReviewedBy, testReportInstructions, reportNumber,preparedBy,nablUploaded, reportStatus FROM tests_details  WHERE jc_number = ?`;
 
     db.query(sqlQuery, [jcnumber], (error, result) => {
       if (error) {

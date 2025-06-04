@@ -8,6 +8,7 @@ import {
   Grid,
   IconButton,
   Typography,
+  LinearProgress,
 } from "@mui/material";
 
 import { UserContext } from "../Pages/UserContext";
@@ -31,6 +32,7 @@ const SprintBacklog = () => {
   const [moveToSprintOpen, setMoveToSprintOpen] = useState(false);
   const [selectedTaskForSprint, setSelectedTaskForSprint] = useState(null);
 
+  const [loading, setLoading] = useState(true);
   const [tasks, setTasks] = useState([]);
   const [isEditMode, setIsEditMode] = useState(false); // To track if the dialog is in edit mode
   const [selectedTaskId, setSelectedTaskId] = useState(null); // To store the task_id of the selected task
@@ -252,6 +254,7 @@ const SprintBacklog = () => {
   //Function to fetch all the tasks from the database:
   const fetchTasksFromDatabase = async () => {
     try {
+      setLoading(true);
       const response = await axios.get(`${serverBaseAddress}/api/getAllTasks`);
       setTasks(response.data);
       setTasksList(response.data); // Store tasks in Zustand
@@ -267,15 +270,19 @@ const SprintBacklog = () => {
           department: task.department,
           task_id: task.task_id,
           title: task.title,
-          assigned_to: task.assigned_to,
+          description: task.description,
+          assigned_to_name: task.assigned_to_name,
           priority: task.priority,
           task_due_date: task.task_due_date,
+          last_updated_by_name: task.last_updated_by_name,
         });
       });
 
       setKanbanSheetData(groupedByStatus); // Store grouped data in Zustand
     } catch (error) {
       console.log("Error fetching tasks from database:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -333,6 +340,17 @@ const SprintBacklog = () => {
       }
     }
   };
+
+  if (loading) {
+    return (
+      <Box sx={{ p: 3 }}>
+        <Typography variant="h4" sx={{ mb: 3 }}>
+          Tasks Table
+        </Typography>
+        <LinearProgress />
+      </Box>
+    );
+  }
 
   return (
     <>

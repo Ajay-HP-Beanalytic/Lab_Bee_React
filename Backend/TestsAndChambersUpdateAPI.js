@@ -15,7 +15,10 @@ function TestsAndChambersUpdateAPIs(app, io, labbeeUsers) {
           return res.status(500).json({ error: "Failed to add test category" });
         }
         // Send a success response
-        res.status(200).json({ message: "Test category added successfully" });
+        res.status(200).json({
+          message: "Test category added successfully",
+          id: results.insertId,
+        });
       });
     } catch (error) {
       console.error("Error adding test category:".error);
@@ -102,7 +105,10 @@ function TestsAndChambersUpdateAPIs(app, io, labbeeUsers) {
           return res.status(500).json({ error: "Failed to add test name" });
         }
         // Send a success response
-        res.status(200).json({ message: "Test name added successfully" });
+        res.status(200).json({
+          message: "Test name added successfully",
+          id: results.insertId,
+        });
       });
     } catch (error) {
       console.error("Error adding test:", error);
@@ -184,7 +190,10 @@ function TestsAndChambersUpdateAPIs(app, io, labbeeUsers) {
           return res.status(500).json({ error: "Failed to add chamber" });
         }
         // Send a success response
-        res.status(200).json({ message: "Chamber added successfully" });
+        res.status(200).json({
+          message: "Chamber added successfully",
+          id: results.insertId,
+        });
       });
     } catch (error) {
       console.error("Error adding chamber:", error);
@@ -309,6 +318,63 @@ function TestsAndChambersUpdateAPIs(app, io, labbeeUsers) {
       res
         .status(500)
         .json({ error: "Failed to fetch mapped test names and chambers" });
+    }
+  });
+
+  // Add to your API file
+  app.put("/api/updateMappedTestAndChamber/:id", (req, res) => {
+    // Implementation for updating existing mapping
+    const { id } = req.params;
+    const { testType, testNamesAndChambers } = req.body;
+
+    try {
+      const query = `UPDATE test_and_chamber_mapping_table SET test_category = ?, mapped_testname_and_chamber = ? WHERE id = ?`;
+      db.query(
+        query,
+        [testType, JSON.stringify(testNamesAndChambers), id],
+        (error, results) => {
+          if (error) {
+            console.error("Error updating mapped test and chamber:", error);
+            return res
+              .status(500)
+              .json({ error: "Failed to update mapped test and chamber" });
+          }
+          // Send a success response
+          res
+            .status(200)
+            .json({ message: "Mapped test and chamber updated successfully" });
+        }
+      );
+    } catch (error) {
+      console.error("Error updating mapped test and chamber:", error);
+      res
+        .status(500)
+        .json({ error: "Failed to update mapped test and chamber" });
+    }
+  });
+
+  app.delete("/api/deleteMappedTestAndChamber/:id", (req, res) => {
+    // Implementation for deleting mapping
+    const { id } = req.params;
+    try {
+      const query = `DELETE FROM test_and_chamber_mapping_table WHERE id = ?`;
+      db.query(query, [id], (error, results) => {
+        if (error) {
+          console.error("Error deleting mapped test and chamber:", error);
+          return res
+            .status(500)
+            .json({ error: "Failed to delete mapped test and chamber" });
+        }
+        // Send a success response
+        res
+          .status(200)
+          .json({ message: "Mapped test and chamber deleted successfully" });
+      });
+    } catch (error) {
+      console.error("Error deleting mapped test and chamber:", error);
+      res
+        .status(500)
+        .json({ error: "Failed to delete mapped test and chamber" });
     }
   });
 

@@ -14,6 +14,7 @@ import ProjectsTable from "./ProjectsTable";
 import BreadCrumbs from "../components/Breadcrumb";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import CreateTask from "./CreateTask";
+import ManagementDashboard from "./ManagementDashboard";
 
 const ProjectManagementDashboard = () => {
   const navigate = useNavigate();
@@ -127,15 +128,30 @@ const ProjectManagementDashboard = () => {
 
     // Default tab-based rendering
     switch (tabIndex) {
+      // case 0:
+      //   return <ProjectsTable />;
+      // case 1:
+      //   return <SprintBacklog />;
+      // case 2:
+      //   return <KanbanSheet />;
+      // case 3:
+      //   return <VelocityChart />;
+      // case 4:
+      //   return <MyTasks />;
+      // default:
+      //   return <ProjectsTable />;
+
       case 0:
-        return <ProjectsTable />;
+        return <ManagementDashboard />;
       case 1:
-        return <SprintBacklog />;
+        return <ProjectsTable />;
       case 2:
-        return <KanbanSheet />;
+        return <SprintBacklog />;
       case 3:
-        return <VelocityChart />;
+        return <KanbanSheet />;
       case 4:
+        return <VelocityChart />;
+      case 5:
         return <MyTasks />;
       default:
         return <ProjectsTable />;
@@ -156,6 +172,7 @@ const ProjectManagementDashboard = () => {
         mb={2}
       >
         <Tabs value={tabIndex} onChange={handleTabChange}>
+          <Tab label="Dashboard" />
           <Tab label="Projects List" />
           <Tab label="Tasks List" />
           <Tab label="Kanban Board" />

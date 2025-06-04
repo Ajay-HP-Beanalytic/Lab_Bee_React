@@ -101,6 +101,7 @@ export default function JCPreview({
     "Unit",
     "Test Ended By",
     "Remarks",
+    "Test Reviewed By",
     "Test Report Delivery Instructions",
     "Report Number",
     "Report Prepared By",
@@ -295,6 +296,7 @@ export default function JCPreview({
                         <TableCell>{row.unit}</TableCell>
                         <TableCell>{row.testEndedBy}</TableCell>
                         <TableCell>{row.remarks}</TableCell>
+                        <TableCell>{row.testReviewedBy}</TableCell>
                         <TableCell>{row.testReportInstructions}</TableCell>
                         <TableCell>{row.reportNumber}</TableCell>
                         <TableCell>{row.preparedBy}</TableCell>

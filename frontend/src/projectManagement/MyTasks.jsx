@@ -52,6 +52,7 @@ const MyTasks = () => {
     inProgress: 0,
     done: 0,
     onHold: 0,
+    overdue: 0,
   });
 
   // Fetch tasks assigned to the logged-in user
@@ -83,6 +84,7 @@ const MyTasks = () => {
       inProgress: tasks.filter((task) => task.status === "In Progress").length,
       done: tasks.filter((task) => task.status === "Done").length,
       onHold: tasks.filter((task) => task.status === "On Hold").length,
+      overdue: tasks.filter((task) => isOverdue(task.task_due_date)).length,
     };
     setTaskStats(stats);
   };
@@ -98,7 +100,14 @@ const MyTasks = () => {
   // Handle tab change
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
-    const tabLabels = ["All", "To Do", "In Progress", "Done", "On Hold"];
+    const tabLabels = [
+      "All",
+      "To Do",
+      "In Progress",
+      "Done",
+      "On Hold",
+      "Overdue",
+    ];
     const selectedStatus = tabLabels[newValue];
     const filtered = filterTasksByStatus(selectedStatus);
     setFilteredTasks(
@@ -124,7 +133,14 @@ const MyTasks = () => {
     const searchText = e.target.value;
     setSearchInputText(searchText);
 
-    const tabLabels = ["All", "To Do", "In Progress", "Done", "On Hold"];
+    const tabLabels = [
+      "All",
+      "To Do",
+      "In Progress",
+      "Done",
+      "On Hold",
+      "Overdue",
+    ];
     const selectedStatus = tabLabels[tabValue];
     const statusFiltered = filterTasksByStatus(selectedStatus);
     const searchFiltered = filterTasksBySearch(statusFiltered, searchText);
@@ -133,7 +149,14 @@ const MyTasks = () => {
 
   const onClearSearchInput = () => {
     setSearchInputText("");
-    const tabLabels = ["All", "To Do", "In Progress", "Done", "On Hold"];
+    const tabLabels = [
+      "All",
+      "To Do",
+      "In Progress",
+      "Done",
+      "On Hold",
+      "Overdue",
+    ];
     const selectedStatus = tabLabels[tabValue];
     setFilteredTasks(filterTasksByStatus(selectedStatus));
   };
@@ -163,6 +186,8 @@ const MyTasks = () => {
         return { icon: <CheckCircle />, color: "#4caf50", bgColor: "#e8f5e8" };
       case "On Hold":
         return { icon: <Block />, color: "#f44336", bgColor: "#ffebee" };
+      case "Overdue":
+        return { icon: <TrendingUp />, color: "#f44336", bgColor: "#ffebee" };
       default:
         return { icon: <Assignment />, color: "#9e9e9e", bgColor: "#f5f5f5" };
     }
@@ -265,6 +290,19 @@ const MyTasks = () => {
             </Typography>
             <Typography variant="body2" color="text.secondary">
               On Hold
+            </Typography>
+          </Paper>
+        </Grid>
+        <Grid item xs={12} sm={6} md={2.4}>
+          <Paper sx={{ p: 2, textAlign: "center", bgcolor: "#FF2400" }}>
+            <Typography
+              variant="h6"
+              sx={{ fontWeight: "bold", color: "#ffffff" }}
+            >
+              {taskStats.overdue}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Overdue
             </Typography>
           </Paper>
         </Grid>

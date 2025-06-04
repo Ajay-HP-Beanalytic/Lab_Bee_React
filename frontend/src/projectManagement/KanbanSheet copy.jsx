@@ -35,30 +35,22 @@ const KanbanSheet = () => {
 
   const { loggedInUserDepartment } = useContext(UserContext);
 
-  const [departmentWiseTasks, setDepartmentWiseTasks] = useState({});
+  const [departmentWiseTasks, setDepartmentWiseTasks] = useState([]);
 
   const kanbanSheetData = useProjectManagementStore(
     (state) => state.allTasksData.kanbanSheetData
   );
-
-  console.log("kanbanSheetData", kanbanSheetData);
   const setKanbanSheetData = useProjectManagementStore(
     (state) => state.setKanbanSheetData
   );
 
   useEffect(() => {
-    if (!kanbanSheetData || !loggedInUserDepartment) return;
-
-    if (loggedInUserDepartment === "Administration") {
-      setDepartmentWiseTasks(kanbanSheetData);
+    if (loggedInUserDepartment === "Reliability") {
+      setDepartmentWiseTasks(kanbanSheetData["Reliability"]);
+    } else if (loggedInUserDepartment === "Software") {
+      setDepartmentWiseTasks(kanbanSheetData["Software"]);
     } else {
-      const filtered = {};
-      Object.keys(kanbanSheetData).forEach((status) => {
-        filtered[status] = kanbanSheetData[status].filter(
-          (task) => task.department === loggedInUserDepartment
-        );
-      });
-      setDepartmentWiseTasks(filtered);
+      setDepartmentWiseTasks(kanbanSheetData);
     }
   }, [kanbanSheetData, loggedInUserDepartment]);
 
@@ -68,7 +60,7 @@ const KanbanSheet = () => {
     const destCol = destination.droppableId;
     if (sourceCol === destCol) return;
 
-    const movedTask = departmentWiseTasks[sourceCol][source.index];
+    const movedTask = kanbanSheetData[sourceCol][source.index];
     if (!movedTask) return;
 
     await axios.post(`${serverBaseAddress}/api/updateTaskStatus`, {
@@ -76,7 +68,7 @@ const KanbanSheet = () => {
       status: destCol,
     });
 
-    const updated = { ...departmentWiseTasks };
+    const updated = { ...kanbanSheetData };
     updated[sourceCol] = [...updated[sourceCol]];
     updated[destCol] = [...(updated[destCol] || [])];
 
@@ -144,7 +136,7 @@ const KanbanSheet = () => {
                     >
                       {col}
                     </Typography>
-                    {departmentWiseTasks[col]?.map((task, index) => (
+                    {kanbanSheetData[col]?.map((task, index) => (
                       <Draggable
                         draggableId={task.id.toString()}
                         index={index}

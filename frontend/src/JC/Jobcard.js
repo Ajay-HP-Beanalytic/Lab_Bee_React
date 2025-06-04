@@ -50,9 +50,25 @@ import { DatePicker } from "@mui/x-date-pickers";
 import { UserContext } from "../Pages/UserContext";
 
 import "../css/accordion.css";
+import useTestsAndChambersStore from "../Pages/TestsAndChambersZustandStore";
 
 // const Jobcard = () => {
 const Jobcard = ({ jobCardData }) => {
+  //Fetch the mapped tests and chambers data from zustand store:
+  const testNames = useTestsAndChambersStore((state) => state.testNames);
+  const testChambers = useTestsAndChambersStore((state) => state.testChambers);
+  const testCategories = useTestsAndChambersStore(
+    (state) => state.testCategories
+  );
+
+  const mappedTestsAndChambersData = useTestsAndChambersStore(
+    (state) => state.mappedTestsAndChambersData
+  );
+
+  useEffect(() => {
+    console.log("mappedTestsAndChambersData:", mappedTestsAndChambersData);
+  }, []);
+
   const navigate = useNavigate();
 
   const theme = useTheme();
@@ -737,6 +753,7 @@ const Jobcard = ({ jobCardData }) => {
 
             testEndedBy: testdetailsRows[i].testEndedBy,
             remarks: testdetailsRows[i].remarks,
+            testReviewedBy: testdetailsRows[i].testReviewedBy,
 
             testReportInstructions: testdetailsRows[i].testReportInstructions,
 
@@ -1813,7 +1830,15 @@ const Jobcard = ({ jobCardData }) => {
                           sx={{ ...tableCellStyle, minWidth: "150px" }}
                           align="center"
                         >
-                          Test Remarks
+                          {/* Test Remarks */}
+                          Observation
+                        </TableCell>
+
+                        <TableCell
+                          sx={{ ...tableCellStyle, minWidth: "150px" }}
+                          align="center"
+                        >
+                          Test Reviewed By
                         </TableCell>
 
                         <TableCell
@@ -2149,6 +2174,32 @@ const Jobcard = ({ jobCardData }) => {
                               }
                             />
                           </TableCell>
+
+                          <TableCell>
+                            <FormControl
+                              sx={{ width: "100%", borderRadius: 3 }}
+                            >
+                              <InputLabel>Reviewed By</InputLabel>
+                              <Select
+                                label="test-reviewed-by"
+                                value={row.testReviewedBy || ""}
+                                onChange={(e) =>
+                                  handleTestDetailsRowChange(
+                                    index,
+                                    "testReviewedBy",
+                                    e.target.value
+                                  )
+                                }
+                              >
+                                {users.map((item) => (
+                                  <MenuItem key={item.id} value={item.name}>
+                                    {item.name}
+                                  </MenuItem>
+                                ))}
+                              </Select>
+                            </FormControl>
+                          </TableCell>
+
                           <TableCell>
                             <Box display="flex" alignItems="center">
                               <FormControl sx={{ flexGrow: 1 }}>

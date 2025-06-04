@@ -32,6 +32,7 @@ function projectManagementAPIs(app, io, labbeeUsers) {
       project_name,
       project_manager,
       project_start_date,
+      allocated_hours,
       total_tasks_count,
       pending_tasks_count,
       in_progress_tasks_count,
@@ -43,8 +44,8 @@ function projectManagementAPIs(app, io, labbeeUsers) {
     } = req.body;
 
     try {
-      const sqlQuery = `INSERT INTO projects_table(department, company_name, project_name,  project_manager, project_start_date, total_tasks_count, pending_tasks_count, in_progress_tasks_count, 
-      completed_tasks_count, project_end_date, project_status, remarks, last_updated_by) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)`;
+      const sqlQuery = `INSERT INTO projects_table(department, company_name, project_name,  project_manager, project_start_date, allocated_hours, total_tasks_count, pending_tasks_count, in_progress_tasks_count, 
+      completed_tasks_count, project_end_date, project_status, remarks, last_updated_by) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?, ?)`;
 
       const values = [
         department,
@@ -52,6 +53,7 @@ function projectManagementAPIs(app, io, labbeeUsers) {
         project_name,
         project_manager,
         project_start_date,
+        allocated_hours,
         total_tasks_count,
         pending_tasks_count,
         in_progress_tasks_count,
@@ -115,6 +117,7 @@ function projectManagementAPIs(app, io, labbeeUsers) {
       t.project_manager,
       u1.name AS project_manager_name, -- Fetch the username for assigned_to
       t.project_start_date,
+      t.allocated_hours,
       t.total_tasks_count,
       t.pending_tasks_count,
       t.in_progress_tasks_count,
@@ -212,6 +215,7 @@ function projectManagementAPIs(app, io, labbeeUsers) {
       project_name,
       project_manager,
       project_start_date,
+      allocated_hours,
       total_tasks_count,
       pending_tasks_count,
       in_progress_tasks_count,
@@ -231,6 +235,7 @@ function projectManagementAPIs(app, io, labbeeUsers) {
         project_name = ?,
         project_manager = ?,
         project_start_date = ?,
+        allocated_hours = ?,
         total_tasks_count = ?,
         pending_tasks_count = ?,
         in_progress_tasks_count = ?,
@@ -249,6 +254,7 @@ function projectManagementAPIs(app, io, labbeeUsers) {
         project_name,
         project_manager,
         project_start_date,
+        allocated_hours,
         total_tasks_count,
         pending_tasks_count,
         in_progress_tasks_count,
@@ -783,6 +789,421 @@ function projectManagementAPIs(app, io, labbeeUsers) {
         message: "Internal server error",
         error: error.message,
       });
+    }
+  });
+
+  ////////////////////////////////////////////////////////////////////////////////
+  // APIs for project management dashboard:
+  // API to get comprehensive dashboard data
+  app.get("/api/getDashboardData", (req, res) => {
+    try {
+      // Get all necessary data in parallel
+      const queries = {
+        projects: `
+        SELECT 
+          p.*,
+          u.name AS project_manager_name
+        FROM projects_table p
+        LEFT JOIN labbee_users u ON p.project_manager = u.id
+      `,
+        tasks: `
+        SELECT 
+          t.*,
+          u1.name AS assigned_to_name,
+          u2.name AS last_updated_by_name
+        FROM project_tasks_table t
+        LEFT JOIN labbee_users u1 ON t.assigned_to = u1.id
+        LEFT JOIN labbee_users u2 ON t.last_updated_by = u2.id
+      `,
+        members: `
+        SELECT 
+          id, name, department, email
+        FROM labbee_users 
+        WHERE department IN ('Reliability', 'Software', 'Administration')
+      `,
+      };
+
+      // Execute all queries
+      Promise.all([
+        new Promise((resolve, reject) => {
+          db.query(queries.projects, (err, result) => {
+            if (err) reject(err);
+            else resolve(result);
+          });
+        }),
+        new Promise((resolve, reject) => {
+          db.query(queries.tasks, (err, result) => {
+            if (err) reject(err);
+            else resolve(result);
+          });
+        }),
+        new Promise((resolve, reject) => {
+          db.query(queries.members, (err, result) => {
+            if (err) reject(err);
+            else resolve(result);
+          });
+        }),
+      ])
+        .then(([projects, tasks, members]) => {
+          res.status(200).json({
+            projects,
+            tasks,
+            members,
+          });
+        })
+        .catch((error) => {
+          console.error("Error fetching dashboard data:", error);
+          res.status(500).json({ message: "Error fetching dashboard data" });
+        });
+    } catch (error) {
+      console.error("Error in getDashboardData API:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // API to get project analytics
+  app.get("/api/getProjectAnalytics", (req, res) => {
+    try {
+      const analyticsQuery = `
+      SELECT 
+        p.department,
+        p.project_status,
+        COUNT(*) as project_count,
+        AVG(
+          CASE 
+            WHEN p.project_end_date IS NOT NULL 
+            THEN DATEDIFF(COALESCE(p.project_end_date, CURDATE()), p.project_start_date)
+            ELSE NULL 
+          END
+        ) as avg_duration_days,
+        SUM(p.total_tasks_count) as total_tasks,
+        SUM(p.completed_tasks_count) as completed_tasks
+      FROM projects_table p
+      GROUP BY p.department, p.project_status
+      ORDER BY p.department, p.project_status
+    `;
+
+      db.query(analyticsQuery, (error, result) => {
+        if (error) {
+          console.error("Error fetching project analytics:", error);
+          return res
+            .status(500)
+            .json({ message: "Error fetching project analytics" });
+        }
+        res.status(200).json(result);
+      });
+    } catch (error) {
+      console.error("Error in getProjectAnalytics API:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // API to get team productivity metrics
+  app.get("/api/getTeamProductivity", (req, res) => {
+    try {
+      const productivityQuery = `
+      SELECT 
+        u.id,
+        u.name,
+        u.department,
+        COUNT(t.id) as total_tasks,
+        SUM(CASE WHEN t.status = 'Done' THEN 1 ELSE 0 END) as completed_tasks,
+        SUM(CASE WHEN t.status = 'In Progress' THEN 1 ELSE 0 END) as in_progress_tasks,
+        SUM(CASE WHEN t.status = 'Blocked' THEN 1 ELSE 0 END) as blocked_tasks,
+        SUM(CASE WHEN t.task_due_date < CURDATE() AND t.status != 'Done' THEN 1 ELSE 0 END) as overdue_tasks,
+        AVG(t.story_points) as avg_story_points,
+        SUM(t.estimated_hours) as total_estimated_hours,
+        SUM(t.actual_hours) as total_actual_hours,
+        AVG(
+          CASE 
+            WHEN t.status = 'Done' AND t.task_assigned_date IS NOT NULL AND t.task_completed_date IS NOT NULL
+            THEN DATEDIFF(t.task_completed_date, t.task_assigned_date)
+            ELSE NULL 
+          END
+        ) as avg_completion_days
+      FROM labbee_users u
+      LEFT JOIN project_tasks_table t ON u.id = t.assigned_to
+      WHERE u.department IN ('Reliability', 'Software', 'Administration')
+      GROUP BY u.id, u.name, u.department
+      ORDER BY 
+        (SUM(CASE WHEN t.status = 'Done' THEN 1 ELSE 0 END) / NULLIF(COUNT(t.id), 0)) DESC,
+        u.name
+    `;
+
+      db.query(productivityQuery, (error, result) => {
+        if (error) {
+          console.error("Error fetching team productivity:", error);
+          return res
+            .status(500)
+            .json({ message: "Error fetching team productivity" });
+        }
+        res.status(200).json(result);
+      });
+    } catch (error) {
+      console.error("Error in getTeamProductivity API:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // API to get task trends over time
+  app.get("/api/getTaskTrends", (req, res) => {
+    try {
+      const { period = "8weeks" } = req.query;
+
+      let dateRange = "";
+      let groupBy = "";
+
+      switch (period) {
+        case "8weeks":
+          dateRange = "DATE_SUB(CURDATE(), INTERVAL 8 WEEK)";
+          groupBy = "WEEK(t.task_assigned_date)";
+          break;
+        case "6months":
+          dateRange = "DATE_SUB(CURDATE(), INTERVAL 6 MONTH)";
+          groupBy = "MONTH(t.task_assigned_date)";
+          break;
+        case "1year":
+          dateRange = "DATE_SUB(CURDATE(), INTERVAL 1 YEAR)";
+          groupBy = "MONTH(t.task_assigned_date)";
+          break;
+        default:
+          dateRange = "DATE_SUB(CURDATE(), INTERVAL 8 WEEK)";
+          groupBy = "WEEK(t.task_assigned_date)";
+      }
+
+      const trendsQuery = `
+      SELECT 
+        DATE(t.task_assigned_date) as date,
+        COUNT(*) as tasks_created,
+        SUM(CASE WHEN t.status = 'Done' THEN 1 ELSE 0 END) as tasks_completed,
+        SUM(t.story_points) as story_points_created,
+        SUM(CASE WHEN t.status = 'Done' THEN t.story_points ELSE 0 END) as story_points_completed
+      FROM project_tasks_table t
+      WHERE t.task_assigned_date >= ${dateRange}
+      GROUP BY DATE(t.task_assigned_date)
+      ORDER BY t.task_assigned_date
+    `;
+
+      db.query(trendsQuery, (error, result) => {
+        if (error) {
+          console.error("Error fetching task trends:", error);
+          return res
+            .status(500)
+            .json({ message: "Error fetching task trends" });
+        }
+        res.status(200).json(result);
+      });
+    } catch (error) {
+      console.error("Error in getTaskTrends API:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // API to get resource utilization
+  app.get("/api/getResourceUtilization", (req, res) => {
+    try {
+      const utilizationQuery = `
+      SELECT 
+        u.department,
+        COUNT(DISTINCT u.id) as total_members,
+        COUNT(t.id) as total_tasks_assigned,
+        SUM(CASE WHEN t.status = 'In Progress' THEN 1 ELSE 0 END) as active_tasks,
+        SUM(t.estimated_hours) as total_estimated_hours,
+        SUM(t.actual_hours) as total_actual_hours,
+        AVG(
+          CASE 
+            WHEN user_tasks.task_count > 0 
+            THEN user_tasks.task_count 
+            ELSE 0 
+          END
+        ) as avg_tasks_per_member
+      FROM labbee_users u
+      LEFT JOIN project_tasks_table t ON u.id = t.assigned_to
+      LEFT JOIN (
+        SELECT 
+          assigned_to,
+          COUNT(*) as task_count
+        FROM project_tasks_table 
+        WHERE status IN ('To Do', 'In Progress', 'Blocked')
+        GROUP BY assigned_to
+      ) user_tasks ON u.id = user_tasks.assigned_to
+      WHERE u.department IN ('Reliability', 'Software', 'Administration')
+      GROUP BY u.department
+    `;
+
+      db.query(utilizationQuery, (error, result) => {
+        if (error) {
+          console.error("Error fetching resource utilization:", error);
+          return res
+            .status(500)
+            .json({ message: "Error fetching resource utilization" });
+        }
+        res.status(200).json(result);
+      });
+    } catch (error) {
+      console.error("Error in getResourceUtilization API:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // API to get project health indicators
+  app.get("/api/getProjectHealth", (req, res) => {
+    try {
+      const healthQuery = `
+      SELECT 
+        p.project_id,
+        p.project_name,
+        p.department,
+        p.project_status,
+        p.project_start_date,
+        p.project_end_date,
+        COUNT(t.id) as total_tasks,
+        SUM(CASE WHEN t.status = 'Done' THEN 1 ELSE 0 END) as completed_tasks,
+        SUM(CASE WHEN t.status = 'Blocked' THEN 1 ELSE 0 END) as blocked_tasks,
+        SUM(CASE WHEN t.task_due_date < CURDATE() AND t.status != 'Done' THEN 1 ELSE 0 END) as overdue_tasks,
+        CASE 
+          WHEN p.project_end_date < CURDATE() AND p.project_status != 'Done' THEN 'At Risk'
+          WHEN SUM(CASE WHEN t.status = 'Blocked' THEN 1 ELSE 0 END) > 0 THEN 'Blocked'
+          WHEN (SUM(CASE WHEN t.status = 'Done' THEN 1 ELSE 0 END) / NULLIF(COUNT(t.id), 0)) > 0.8 THEN 'On Track'
+          ELSE 'Needs Attention'
+        END as health_status
+      FROM projects_table p
+      LEFT JOIN project_tasks_table t ON p.project_id = t.corresponding_project_id
+      GROUP BY p.project_id, p.project_name, p.department, p.project_status, p.project_start_date, p.project_end_date
+      ORDER BY 
+        CASE 
+          WHEN p.project_end_date < CURDATE() AND p.project_status != 'Done' THEN 1
+          WHEN SUM(CASE WHEN t.status = 'Blocked' THEN 1 ELSE 0 END) > 0 THEN 2
+          ELSE 3
+        END,
+        p.project_end_date
+    `;
+
+      db.query(healthQuery, (error, result) => {
+        if (error) {
+          console.error("Error fetching project health:", error);
+          return res
+            .status(500)
+            .json({ message: "Error fetching project health" });
+        }
+        res.status(200).json(result);
+      });
+    } catch (error) {
+      console.error("Error in getProjectHealth API:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // API to get recent activities
+  app.get("/api/getRecentActivities", (req, res) => {
+    try {
+      const { limit = 10 } = req.query;
+
+      const activitiesQuery = `
+      (
+        SELECT 
+          'task_completed' as activity_type,
+          t.title as activity_title,
+          u.name as user_name,
+          t.task_completed_date as activity_date,
+          t.corresponding_project_id as project_id
+        FROM project_tasks_table t
+        LEFT JOIN labbee_users u ON t.assigned_to = u.id
+        WHERE t.status = 'Done' AND t.task_completed_date IS NOT NULL
+      )
+      UNION ALL
+      (
+        SELECT 
+          'task_created' as activity_type,
+          t.title as activity_title,
+          u.name as user_name,
+          t.task_assigned_date as activity_date,
+          t.corresponding_project_id as project_id
+        FROM project_tasks_table t
+        LEFT JOIN labbee_users u ON t.last_updated_by = u.id
+        WHERE t.task_assigned_date >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+      )
+      ORDER BY activity_date DESC
+      LIMIT ?
+    `;
+
+      db.query(activitiesQuery, [parseInt(limit)], (error, result) => {
+        if (error) {
+          console.error("Error fetching recent activities:", error);
+          return res
+            .status(500)
+            .json({ message: "Error fetching recent activities" });
+        }
+        res.status(200).json(result);
+      });
+    } catch (error) {
+      console.error("Error in getRecentActivities API:", error);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  });
+
+  // API to get critical alerts (overdue tasks, blocked projects, etc.)
+  app.get("/api/getCriticalAlerts", (req, res) => {
+    try {
+      const alertsQuery = `
+      SELECT 
+        'overdue_task' as alert_type,
+        'High' as priority,
+        CONCAT('Task "', t.title, '" is overdue') as message,
+        t.task_due_date as due_date,
+        u.name as assigned_to,
+        t.corresponding_project_id as project_id
+      FROM project_tasks_table t
+      LEFT JOIN labbee_users u ON t.assigned_to = u.id
+      WHERE t.task_due_date < CURDATE() AND t.status != 'Done'
+      
+      UNION ALL
+      
+      SELECT 
+        'blocked_task' as alert_type,
+        'Medium' as priority,
+        CONCAT('Task "', t.title, '" is blocked') as message,
+        t.task_due_date as due_date,
+        u.name as assigned_to,
+        t.corresponding_project_id as project_id
+      FROM project_tasks_table t
+      LEFT JOIN labbee_users u ON t.assigned_to = u.id
+      WHERE t.status = 'Blocked'
+      
+      UNION ALL
+      
+      SELECT 
+        'project_overdue' as alert_type,
+        'High' as priority,
+        CONCAT('Project "', p.project_name, '" is overdue') as message,
+        p.project_end_date as due_date,
+        u.name as assigned_to,
+        p.project_id
+      FROM projects_table p
+      LEFT JOIN labbee_users u ON p.project_manager = u.id
+      WHERE p.project_end_date < CURDATE() AND p.project_status != 'Done'
+      
+      ORDER BY 
+        CASE priority 
+          WHEN 'High' THEN 1 
+          WHEN 'Medium' THEN 2 
+          ELSE 3 
+        END,
+        due_date
+    `;
+
+      db.query(alertsQuery, (error, result) => {
+        if (error) {
+          console.error("Error fetching critical alerts:", error);
+          return res
+            .status(500)
+            .json({ message: "Error fetching critical alerts" });
+        }
+        res.status(200).json(result);
+      });
+    } catch (error) {
+      console.error("Error in getCriticalAlerts API:", error);
+      res.status(500).json({ message: "Internal server error" });
     }
   });
 }

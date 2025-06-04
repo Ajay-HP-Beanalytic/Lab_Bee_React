@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Box, Button, Card, Grid, IconButton, Typography } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -112,11 +112,11 @@ export default function TestsAndChambersList() {
   const [testCategoryRows, setTestCategoryRows] = useState([]);
   const [testListRows, setTestListRows] = useState([]);
   const [chambersListRows, setChambersListRows] = useState([]);
-  const [editTestCategory, setEditTestCategory] = useState(false);
 
   const addTestCategoryToStore = useTestsAndChambersStore(
     (state) => state.addTestCategoryToStore
   );
+
   const addTestNameToStore = useTestsAndChambersStore(
     (state) => state.addTestNameToStore
   );
@@ -124,20 +124,18 @@ export default function TestsAndChambersList() {
     (state) => state.addTestChamberToStore
   );
 
-  // Function to handle submit and save data to the database
-  const handleSubmit = async () => {
-    const dataToSave = {
-      testCategories: testCategoryRows,
-      testList: testListRows,
-      chambersList: chambersListRows,
-    };
-
-    console.log("Data to save:", dataToSave);
-  };
+  const setTestCategories = useTestsAndChambersStore(
+    (state) => state.setTestCategories
+  );
+  const setTestNames = useTestsAndChambersStore((state) => state.setTestNames);
+  const setTestChambers = useTestsAndChambersStore(
+    (state) => state.setTestChambers
+  );
 
   ///////////////////////////////////////////////////////////////////////////////////
+  // TEST CATEGORY FUNCTIONS
 
-  /// Add a new test category to the database:
+  // Add a new test category to the database
   const addTestCategory = async (testCategory) => {
     try {
       const response = await axios.post(
@@ -146,18 +144,20 @@ export default function TestsAndChambersList() {
       );
 
       if (response.status === 200) {
-        const newCategory = { id: response.data.id, testCategory };
-        addTestCategoryToStore(newCategory); // Add to Zustand store
-        getAllTestCategory();
+        // Refresh data after successful addition
+        await getAllTestCategory();
+        return true;
       } else {
-        console.error("Error updating test category:", response.status);
+        console.error("Error adding test category:", response.status);
+        return false;
       }
     } catch (error) {
-      console.error("Error updating test category:", error);
+      console.error("Error adding test category:", error);
+      return false;
     }
   };
 
-  // Update the test category in the database when the cell edit is committed:
+  // Update test category in database
   const updateTestCategory = async (id, testCategory) => {
     try {
       const response = await axios.put(
@@ -166,16 +166,19 @@ export default function TestsAndChambersList() {
       );
 
       if (response.status === 200) {
-        getAllTestCategory();
+        await getAllTestCategory();
+        return true;
       } else {
         console.error("Error updating test category:", response.status);
+        return false;
       }
     } catch (error) {
       console.error("Error updating test category:", error);
+      return false;
     }
   };
 
-  // Get all the Test Category, test names and test chambers from the database:
+  // Get all test categories from database
   const getAllTestCategory = async () => {
     try {
       const response = await axios.get(
@@ -183,12 +186,13 @@ export default function TestsAndChambersList() {
       );
 
       if (response.status === 200) {
-        const data = response.data.map((item, index) => ({
+        const data = response.data.map((item) => ({
           id: item.id,
           testCategory: item.test_category,
         }));
         setTestCategoryRows(data);
-        addTestCategoryToStore(data); // Add to Zustand store
+        // addTestCategoryToStore(data);
+        setTestCategories(data);
       } else {
         console.error("Error fetching test categories:", response.status);
       }
@@ -197,53 +201,76 @@ export default function TestsAndChambersList() {
     }
   };
 
-  // Add a new test category row when the "Add" button is clicked:
+  // Add new test category row
   const handleAddTestCategory = () => {
-    const newRow = { id: testCategoryRows.length + 1, testCategory: "" };
+    const tempId = `temp-${Date.now()}`;
+    const newRow = { id: tempId, testCategory: "" };
     setTestCategoryRows([...testCategoryRows, newRow]);
   };
 
-  // Use processRowUpdate instead of onCellEditStop
+  // Process test category row updates (both new and existing)
   const processTestCategoryRowUpdate = async (newRow, oldRow) => {
-    // Check if this is a new row or editing an existing row
-    const isNewRow = oldRow.testCategory === "";
+    // Check if this is a temporary row (new row)
+    const isNewRow = String(oldRow.id).startsWith("temp-");
 
     try {
       if (isNewRow) {
-        // This is a new row being edited
+        // This is a new row being added
         if (newRow.testCategory && newRow.testCategory.trim() !== "") {
-          await addTestCategory(newRow.testCategory);
+          const success = await addTestCategory(newRow.testCategory);
+          if (!success) {
+            // If failed to add, remove the temporary row
+            setTestCategoryRows((prev) =>
+              prev.filter((row) => row.id !== oldRow.id)
+            );
+            return oldRow;
+          }
         } else {
-          // If empty value, don't process
+          // If empty value, remove the temporary row
+          setTestCategoryRows((prev) =>
+            prev.filter((row) => row.id !== oldRow.id)
+          );
           return oldRow;
         }
       } else {
         // This is an existing row being updated
         if (newRow.testCategory !== oldRow.testCategory) {
-          await updateTestCategory(newRow.id, newRow.testCategory);
+          const success = await updateTestCategory(
+            newRow.id,
+            newRow.testCategory
+          );
+          if (!success) {
+            return oldRow; // Revert to old value if update failed
+          }
         }
       }
       return newRow;
     } catch (error) {
       console.error("Error processing row update:", error);
-      return oldRow; // Return old row if there's an error
+      if (isNewRow) {
+        // Remove temporary row on error
+        setTestCategoryRows((prev) =>
+          prev.filter((row) => row.id !== oldRow.id)
+        );
+      }
+      return oldRow;
     }
   };
 
-  // Delete a test category from the database:
+  // Delete test category
   const handleDeleteTestCategory = async (id) => {
     const confirmDelete = window.confirm(
-      `Are you sure you want to delete the category?`
+      "Are you sure you want to delete this category?"
     );
     if (!confirmDelete) return;
+
     try {
       const response = await axios.delete(
         `${serverBaseAddress}/api/deleteTestCategory/${id}`
       );
 
       if (response.status === 200) {
-        const updatedRows = testCategoryRows.filter((row) => row.id !== id);
-        setTestCategoryRows(updatedRows);
+        setTestCategoryRows((prev) => prev.filter((row) => row.id !== id));
       } else {
         console.error("Error deleting test category:", response.status);
       }
@@ -252,27 +279,17 @@ export default function TestsAndChambersList() {
     }
   };
 
-  // Add serial numbers to the test category rows
-  // This function adds serial numbers to the rows based on their index in the array.
-  const addSerialNumbersToRows = (data) => {
-    return data.map((item, index) => ({
-      ...item,
-      serialNumbers: index + 1,
-    }));
-  };
+  ///////////////////////////////////////////////////////////////////////////////////
+  // TEST NAME FUNCTIONS
 
-  // Add serial numbers to the test category rows
-  const testCategoryRowsWithSerialNumbers =
-    addSerialNumbersToRows(testCategoryRows);
-
-  //////////////////////////////////////////////////////////////
-
-  // Add a new test name row to the table:
+  // Add new test name row
   const handleAddTestNameRow = () => {
-    const newRow = { id: testListRows.length + 1, testName: "" };
+    const tempId = `temp-${Date.now()}`;
+    const newRow = { id: tempId, testName: "" };
     setTestListRows([...testListRows, newRow]);
   };
 
+  // Add test name to database
   const handleAddTestName = async (testName) => {
     try {
       const response = await axios.post(
@@ -281,18 +298,19 @@ export default function TestsAndChambersList() {
       );
 
       if (response.status === 200) {
-        const newTestName = { id: response.data.id.testName };
-        addTestNameToStore(newTestName); // Add to Zustand store
-        getAllTestNames();
-        console.log("Test name added successfully");
+        await getAllTestNames();
+        return true;
       } else {
         console.error("Error adding test name:", response.status);
+        return false;
       }
     } catch (error) {
       console.error("Error adding test name:", error);
+      return false;
     }
   };
 
+  // Update test name in database
   const handleUpdateTestName = async (id, testName) => {
     try {
       const response = await axios.put(
@@ -301,44 +319,58 @@ export default function TestsAndChambersList() {
       );
 
       if (response.status === 200) {
-        getAllTestNames();
-        console.log("Test name updated successfully");
+        await getAllTestNames();
+        return true;
       } else {
         console.error("Error updating test name:", response.status);
+        return false;
       }
     } catch (error) {
       console.error("Error updating test name:", error);
+      return false;
     }
   };
 
-  // Add a new test name to the database:
+  // Process test name row updates
   const processTestNameRowUpdate = async (newRow, oldRow) => {
-    // Check if this is a new row or editing an existing row
-    const isNewRow = oldRow.testName === "";
+    const isNewRow = String(oldRow.id).startsWith("temp-");
 
     try {
       if (isNewRow) {
-        // This is a new row being edited
         if (newRow.testName && newRow.testName.trim() !== "") {
-          await handleAddTestName(newRow.testName);
+          const success = await handleAddTestName(newRow.testName);
+          if (!success) {
+            setTestListRows((prev) =>
+              prev.filter((row) => row.id !== oldRow.id)
+            );
+            return oldRow;
+          }
         } else {
-          // If empty value, don't process
+          setTestListRows((prev) => prev.filter((row) => row.id !== oldRow.id));
           return oldRow;
         }
       } else {
-        // This is an existing row being updated
         if (newRow.testName !== oldRow.testName) {
-          await handleUpdateTestName(newRow.id, newRow.testName);
+          const success = await handleUpdateTestName(
+            newRow.id,
+            newRow.testName
+          );
+          if (!success) {
+            return oldRow;
+          }
         }
       }
       return newRow;
     } catch (error) {
-      console.error("Error processing row update:", error);
+      console.error("Error processing test name row update:", error);
+      if (isNewRow) {
+        setTestListRows((prev) => prev.filter((row) => row.id !== oldRow.id));
+      }
       return oldRow;
     }
   };
 
-  // Get all the test names from the database:
+  // Get all test names
   const getAllTestNames = async () => {
     try {
       const response = await axios.get(
@@ -349,30 +381,29 @@ export default function TestsAndChambersList() {
           id: item.id,
           testName: item.test_name,
         }));
-
         setTestListRows(data);
-        addTestNameToStore(data); // Add to Zustand store
+        // addTestNameToStore(data);
+        setTestNames(data);
       }
     } catch (error) {
       console.error("Error fetching test names:", error);
     }
   };
 
-  // Update the test name in the database when the cell edit is committed:
-
+  // Delete test name
   const handleDeleteTestsList = async (id) => {
     const confirmDelete = window.confirm(
-      `Are you sure you want to delete the test ?`
+      "Are you sure you want to delete this test?"
     );
     if (!confirmDelete) return;
+
     try {
       const response = await axios.delete(
         `${serverBaseAddress}/api/deleteTest/${id}`
       );
 
       if (response.status === 200) {
-        const updatedRows = testListRows.filter((row) => row.id !== id);
-        setTestListRows(updatedRows);
+        setTestListRows((prev) => prev.filter((row) => row.id !== id));
       } else {
         console.error("Error deleting test:", response.status);
       }
@@ -381,17 +412,17 @@ export default function TestsAndChambersList() {
     }
   };
 
-  // Add serial numbers to the test category rows
-  const testNameRowsWithSerialNumbers = addSerialNumbersToRows(testListRows);
+  ///////////////////////////////////////////////////////////////////////////////////
+  // CHAMBER FUNCTIONS
 
-  //////////////////////////////////////////////////////////////
-  // Add a new chamber row to the table:
+  // Add new chamber row
   const handleAddChamberRow = () => {
-    const newRow = { id: chambersListRows.length + 1, chamber: "" };
+    const tempId = `temp-${Date.now()}`;
+    const newRow = { id: tempId, chamber: "" };
     setChambersListRows([...chambersListRows, newRow]);
   };
 
-  // Add a new chamber to the database:
+  // Add chamber to database
   const handleAddChamber = async (chamber) => {
     try {
       const response = await axios.post(`${serverBaseAddress}/api/addChamber`, {
@@ -399,19 +430,19 @@ export default function TestsAndChambersList() {
       });
 
       if (response.status === 200) {
-        const newChamber = { id: response.data.id, chamber };
-        addTestChamberToStore(newChamber); // Add to Zustand store
-        getAllChambersList();
-        console.log("Chamber added successfully");
+        await getAllChambersList();
+        return true;
       } else {
         console.error("Error adding chamber:", response.status);
+        return false;
       }
     } catch (error) {
       console.error("Error adding chamber:", error);
+      return false;
     }
   };
 
-  // Update the chamber in the database when the cell edit is committed:
+  // Update chamber in database
   const handleUpdateChamber = async (id, chamber) => {
     try {
       const response = await axios.put(
@@ -420,64 +451,59 @@ export default function TestsAndChambersList() {
       );
 
       if (response.status === 200) {
-        getAllChambersList();
-        console.log("Chamber updated successfully");
+        await getAllChambersList();
+        return true;
       } else {
         console.error("Error updating chamber:", response.status);
+        return false;
       }
     } catch (error) {
       console.error("Error updating chamber:", error);
+      return false;
     }
   };
 
+  // Process chamber row updates
   const processTestChamberRowUpdate = async (newRow, oldRow) => {
-    // Check if this is a new row or editing an existing row
-    const isNewRow = oldRow.chamber === "";
+    const isNewRow = String(oldRow.id).startsWith("temp-");
+
     try {
       if (isNewRow) {
-        // This is a new row being edited
         if (newRow.chamber && newRow.chamber.trim() !== "") {
-          await handleAddChamber(newRow.chamber);
+          const success = await handleAddChamber(newRow.chamber);
+          if (!success) {
+            setChambersListRows((prev) =>
+              prev.filter((row) => row.id !== oldRow.id)
+            );
+            return oldRow;
+          }
         } else {
-          // If empty value, don't process
+          setChambersListRows((prev) =>
+            prev.filter((row) => row.id !== oldRow.id)
+          );
           return oldRow;
         }
       } else {
-        // This is an existing row being updated
         if (newRow.chamber !== oldRow.chamber) {
-          await handleUpdateChamber(newRow.id, newRow.chamber);
+          const success = await handleUpdateChamber(newRow.id, newRow.chamber);
+          if (!success) {
+            return oldRow;
+          }
         }
       }
       return newRow;
     } catch (error) {
-      console.error("Error processing row update:", error);
+      console.error("Error processing chamber row update:", error);
+      if (isNewRow) {
+        setChambersListRows((prev) =>
+          prev.filter((row) => row.id !== oldRow.id)
+        );
+      }
       return oldRow;
     }
   };
 
-  // Delete a chamber from the database:
-  const handleDeleteChamber = async (id) => {
-    const confirmDelete = window.confirm(
-      `Are you sure you want to delete the chamber?`
-    );
-    if (!confirmDelete) return;
-    try {
-      const response = await axios.delete(
-        `${serverBaseAddress}/api/deleteChamber/${id}`
-      );
-
-      if (response.status === 200) {
-        const updatedRows = chambersListRows.filter((row) => row.id !== id);
-        setChambersListRows(updatedRows);
-      } else {
-        console.error("Error deleting chamber:", response.status);
-      }
-    } catch (error) {
-      console.error("Error deleting chamber:", error);
-    }
-  };
-
-  // Get all the chambers from the database:
+  // Get all chambers
   const getAllChambersList = async () => {
     try {
       const response = await axios.get(
@@ -488,128 +514,126 @@ export default function TestsAndChambersList() {
           id: item.id,
           chamber: item.chamber_name,
         }));
-
         setChambersListRows(data);
-        addTestChamberToStore(data); // Add to Zustand store
+        // addTestChamberToStore(data);
+        setTestChambers(data);
       }
     } catch (error) {
       console.error("Error fetching chambers:", error);
     }
   };
 
-  // Add serial numbers to the chambers list rows
+  // Delete chamber
+  const handleDeleteChamber = async (id) => {
+    const confirmDelete = window.confirm(
+      "Are you sure you want to delete this chamber?"
+    );
+    if (!confirmDelete) return;
+
+    try {
+      const response = await axios.delete(
+        `${serverBaseAddress}/api/deleteChamber/${id}`
+      );
+
+      if (response.status === 200) {
+        setChambersListRows((prev) => prev.filter((row) => row.id !== id));
+      } else {
+        console.error("Error deleting chamber:", response.status);
+      }
+    } catch (error) {
+      console.error("Error deleting chamber:", error);
+    }
+  };
+
+  // Add serial numbers to rows
+  const addSerialNumbersToRows = (data) => {
+    return data.map((item, index) => ({
+      ...item,
+      serialNumbers: index + 1,
+    }));
+  };
+
+  // Generate rows with serial numbers
+  const testCategoryRowsWithSerialNumbers =
+    addSerialNumbersToRows(testCategoryRows);
+  const testNameRowsWithSerialNumbers = addSerialNumbersToRows(testListRows);
   const chambersListRowsWithSerialNumbers =
     addSerialNumbersToRows(chambersListRows);
 
+  // Load data on component mount
   useEffect(() => {
     getAllTestCategory();
     getAllTestNames();
     getAllChambersList();
-  }, [testCategoryRows, testListRows, chambersListRows]);
+  }, []); // Remove dependencies to prevent infinite loops
 
   return (
     <>
-      <Typography variant="h5" sx={{ color: "#003366" }}>
-        {" "}
-        Tests and Chambers
-      </Typography>
-
       <Grid
         container
         spacing={2}
         direction="row"
         justifyContent="space-between"
         alignItems="center"
-        wrap="nowrap" // Prevent wrapping
+        wrap="nowrap"
       >
         <Grid item xs={12} md={6}>
-          <Card
-            sx={{
-              padding: "20px",
-              marginTop: "5px",
-              marginBottom: "20px",
-            }}
+          <Typography variant="h6">Test Category</Typography>
+          <Button
+            variant="contained"
+            color="primary"
+            sx={{ mb: 2 }}
+            onClick={handleAddTestCategory}
           >
-            <Typography variant="h6">Test Category</Typography>
-            <Button
-              variant="contained"
-              color="primary"
-              sx={{ mb: 2 }}
-              onClick={handleAddTestCategory}
-            >
-              Add
-            </Button>
-
-            <DataGrid
-              rows={testCategoryRowsWithSerialNumbers}
-              columns={testCategoryColumns}
-              autoHeight
-              processRowUpdate={processTestCategoryRowUpdate}
-              experimentalFeatures={{ newEditingApi: true }}
-            />
-          </Card>
+            Add
+          </Button>
+          <DataGrid
+            rows={testCategoryRowsWithSerialNumbers}
+            columns={testCategoryColumns}
+            autoHeight
+            processRowUpdate={processTestCategoryRowUpdate}
+            experimentalFeatures={{ newEditingApi: true }}
+          />
         </Grid>
 
         <Grid item xs={12} md={6}>
-          <Card
-            sx={{
-              padding: "20px",
-              marginTop: "5px",
-              marginBottom: "20px",
-            }}
+          <Typography variant="h6">Test Names</Typography>
+          <Button
+            variant="contained"
+            color="primary"
+            sx={{ mb: 2 }}
+            onClick={handleAddTestNameRow}
           >
-            <Typography variant="h6">Test Names</Typography>
-            <Button
-              variant="contained"
-              color="primary"
-              sx={{ mb: 2 }}
-              onClick={handleAddTestNameRow}
-            >
-              Add
-            </Button>
-            <DataGrid
-              rows={testNameRowsWithSerialNumbers}
-              columns={testListColumns}
-              autoHeight
-              processRowUpdate={processTestNameRowUpdate}
-              experimentalFeatures={{ newEditingApi: true }}
-            />
-          </Card>
+            Add
+          </Button>
+          <DataGrid
+            rows={testNameRowsWithSerialNumbers}
+            columns={testListColumns}
+            autoHeight
+            processRowUpdate={processTestNameRowUpdate}
+            experimentalFeatures={{ newEditingApi: true }}
+          />
         </Grid>
 
         <Grid item xs={12} md={6}>
-          <Card
-            sx={{
-              padding: "20px",
-              marginTop: "5px",
-              marginBottom: "20px",
-            }}
+          <Typography variant="h6">Chambers Names</Typography>
+          <Button
+            variant="contained"
+            color="primary"
+            sx={{ mb: 2 }}
+            onClick={handleAddChamberRow}
           >
-            <Typography variant="h6">Chambers Names</Typography>
-            <Button
-              variant="contained"
-              color="primary"
-              sx={{ mb: 2 }}
-              onClick={handleAddChamberRow}
-            >
-              Add
-            </Button>
-            <DataGrid
-              rows={chambersListRowsWithSerialNumbers}
-              columns={chambersListColumns}
-              autoHeight
-              processRowUpdate={processTestChamberRowUpdate}
-              experimentalFeatures={{ newEditingApi: true }}
-            />
-          </Card>
+            Add
+          </Button>
+          <DataGrid
+            rows={chambersListRowsWithSerialNumbers}
+            columns={chambersListColumns}
+            autoHeight
+            processRowUpdate={processTestChamberRowUpdate}
+            experimentalFeatures={{ newEditingApi: true }}
+          />
         </Grid>
       </Grid>
-
-      {/* <Box sx={{ mt: 4, textAlign: "center" }}>
-        <Button variant="contained" color="success" onClick={handleSubmit}>
-          Submit
-        </Button>
-      </Box> */}
     </>
   );
 }
