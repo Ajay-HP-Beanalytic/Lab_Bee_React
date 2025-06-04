@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Box,
   Button,
@@ -8,7 +8,6 @@ import {
   DialogContent,
   DialogTitle,
   FormControl,
-  Grid,
   IconButton,
   InputLabel,
   MenuItem,
@@ -20,13 +19,11 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  TextField,
   Tooltip,
   Typography,
 } from "@mui/material";
 
 import AddIcon from "@mui/icons-material/Add";
-import UploadFileIcon from "@mui/icons-material/UploadFile";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import useTestsAndChambersStore from "./TestsAndChambersZustandStore";
@@ -35,13 +32,15 @@ import axios from "axios";
 import { toast } from "react-toastify";
 
 export default function TestsAndChambersMapping() {
-  const [testType, setTestType] = useState([]);
+  const [testType, setTestType] = useState("");
   const [testName, setTestName] = useState([]);
   const [chambers, setChambers] = useState([]);
   const [mappedTestAndChambers, setMappedTestAndChambers] = useState([]);
   const [editingData, setEditingData] = useState(false);
+  const [editingId, setEditingId] = useState(null);
   const [openEditDialog, setOpenEditDialog] = useState(false);
 
+  // Get data from store
   const testCategoryList = useTestsAndChambersStore(
     (state) => state.testCategories
   );
@@ -50,13 +49,9 @@ export default function TestsAndChambersMapping() {
     (state) => state.testChambers
   );
 
-  console.log("testCategoryList", testCategoryList);
-  console.log("testNamesList", testNamesList);
-  console.log("testChambersList", testChambersList);
-
-  const [testCategoryRows, setTestCategoryRows] = useState([]);
-  const [testListRows, setTestListRows] = useState([]);
-  const [chambersListRows, setChambersListRows] = useState([]);
+  const setMappedTestsAndChambersData = useTestsAndChambersStore(
+    (state) => state.setMappedTestsAndChambersData
+  );
 
   const columns = useMemo(
     () => [
@@ -64,98 +59,100 @@ export default function TestsAndChambersMapping() {
       { id: "testType", headerName: "Test Type", width: 150 },
       { id: "testName", headerName: "Test Names", width: 150 },
       { id: "chambers", headerName: "Chambers List", width: 150 },
-      { id: "action", headerName: "Action", width: 150 },
+      { id: "action", headerName: "Action", width: 150, align: "center" },
     ],
     []
   );
 
-  // Get all the Test Category, test names and test chambers from the database:
-  const getAllTestCategory = async () => {
-    try {
-      const response = await axios.get(
-        `${serverBaseAddress}/api/getAllTestCategories`
-      );
+  // Only fetch store data if it's empty, otherwise use store data
+  useEffect(() => {
+    const initializeData = async () => {
+      // Only fetch from API if store is empty
+      if (
+        testCategoryList.length === 0 ||
+        testNamesList.length === 0 ||
+        testChambersList.length === 0
+      ) {
+        await fetchAllStoreData();
+      }
+    };
 
-      if (response.status === 200) {
-        const data = response.data.map((item, index) => ({
+    initializeData();
+  }, []); // Only run once on mount
+
+  // Separate effect for fetching mapping data
+  useEffect(() => {
+    fetchTestAndChamberMappingData();
+  }, []); // Only run once on mount
+
+  // Function to fetch all data and update store (only when store is empty)
+  const fetchAllStoreData = async () => {
+    try {
+      const [categoriesRes, namesRes, chambersRes] = await Promise.all([
+        axios.get(`${serverBaseAddress}/api/getAllTestCategories`),
+        axios.get(`${serverBaseAddress}/api/getAllTestNames`),
+        axios.get(`${serverBaseAddress}/api/getAllChambers`),
+      ]);
+
+      // Update store with fetched data
+      const addTestCategoryToStore =
+        useTestsAndChambersStore.getState().addTestCategoryToStore;
+      const addTestNameToStore =
+        useTestsAndChambersStore.getState().addTestNameToStore;
+      const addTestChamberToStore =
+        useTestsAndChambersStore.getState().addTestChamberToStore;
+
+      if (categoriesRes.status === 200) {
+        const categoryData = categoriesRes.data.map((item) => ({
           id: item.id,
           testCategory: item.test_category,
         }));
-        setTestCategoryRows(data);
-        // addTestCategoryToStore(data); // Add to Zustand store
-      } else {
-        console.error("Error fetching test categories:", response.status);
+        addTestCategoryToStore(categoryData);
       }
-    } catch (error) {
-      console.error("Error fetching test categories:", error);
-    }
-  };
 
-  // Get all the test names from the database:
-  const getAllTestNames = async () => {
-    try {
-      const response = await axios.get(
-        `${serverBaseAddress}/api/getAllTestNames`
-      );
-      if (response.status === 200) {
-        const data = response.data.map((item) => ({
+      if (namesRes.status === 200) {
+        const nameData = namesRes.data.map((item) => ({
           id: item.id,
           testName: item.test_name,
         }));
-
-        setTestListRows(data);
-        // addTestNameToStore(data); // Add to Zustand store
+        addTestNameToStore(nameData);
       }
-    } catch (error) {
-      console.error("Error fetching test names:", error);
-    }
-  };
 
-  // Get all the chambers from the database:
-  const getAllChambersList = async () => {
-    try {
-      const response = await axios.get(
-        `${serverBaseAddress}/api/getAllChambers`
-      );
-      if (response.status === 200) {
-        const data = response.data.map((item) => ({
+      if (chambersRes.status === 200) {
+        const chamberData = chambersRes.data.map((item) => ({
           id: item.id,
           chamber: item.chamber_name,
         }));
-
-        setChambersListRows(data);
-        // addTestChamberToStore(data); // Add to Zustand store
+        addTestChamberToStore(chamberData);
       }
     } catch (error) {
-      console.error("Error fetching chambers:", error);
+      console.error("Error fetching store data:", error);
     }
   };
 
-  useEffect(() => {
-    getAllTestCategory();
-    getAllTestNames();
-    getAllChambersList();
-  }, [testType, testName, chambers]);
-
+  // Transform mapping data for table display
   const testAndChamberData = useMemo(() => {
-    // Flatten the nested arrays to get a single array of objects
     return mappedTestAndChambers.map((item, index) => {
+      const mappedData = item.mapped_testname_and_chamber;
       return {
         slNo: index + 1,
         id: item.id,
         testType: item.test_category,
-        testName: item.mapped_testname_and_chamber.testName.join(", "),
-        chambers: item.mapped_testname_and_chamber.chambers.join(", "),
+        testName: Array.isArray(mappedData.testName)
+          ? mappedData.testName.join(", ")
+          : mappedData.testName || "",
+        chambers: Array.isArray(mappedData.chambers)
+          ? mappedData.chambers.join(", ")
+          : mappedData.chambers || "",
         action: "Edit",
       };
     });
-  }, [mappedTestAndChambers, testType, testName, chambers]);
+  }, [mappedTestAndChambers]);
 
   const handleSelectMultipleTestName = (event) => {
     const {
       target: { value },
     } = event;
-    // const value = event.target.value;
     setTestName(typeof value === "string" ? value.split(",") : value);
   };
 
@@ -166,69 +163,118 @@ export default function TestsAndChambersMapping() {
     setChambers(typeof value === "string" ? value.split(",") : value);
   };
 
-  //Function to handle the editing of the selected test and chambers:
+  // Handle editing of selected test and chambers
   const editSelectedTestAndChamber = (row, id) => {
-    console.log("Selected row for editing:", row);
     setEditingData(true);
+    setEditingId(id);
     setOpenEditDialog(true);
 
     const selectedRow = mappedTestAndChambers.find((item) => item.id === id);
 
     if (selectedRow) {
-      setTestType(selectedRow.test_category); // Set the test category
-      setTestName(selectedRow.mapped_testname_and_chamber.testName); // Set the test names
-      setChambers(selectedRow.mapped_testname_and_chamber.chambers); // Set the chambers
+      const mappedData = selectedRow.mapped_testname_and_chamber;
+      setTestType(selectedRow.test_category);
+      setTestName(
+        Array.isArray(mappedData.testName) ? mappedData.testName : []
+      );
+      setChambers(
+        Array.isArray(mappedData.chambers) ? mappedData.chambers : []
+      );
     }
   };
 
   const handleCancelEditing = () => {
-    setEditingData(false);
-    setOpenEditDialog(false);
+    resetForm();
   };
 
   const handleOpenEditDialog = () => {
+    resetForm();
     setEditingData(false);
     setOpenEditDialog(true);
   };
 
-  //Function to handle the deletion of the selected test and chambers:
-  const deleteSelectedTestAndChamber = (id) => {
-    alert(`Delete Test and Chamber,  ${id}`);
+  const resetForm = () => {
+    setTestType("");
+    setTestName([]);
+    setChambers([]);
+    setEditingData(false);
+    setEditingId(null);
+    setOpenEditDialog(false);
+  };
+
+  // Handle deletion of selected test and chambers
+  const deleteSelectedTestAndChamber = async (id) => {
+    const confirmDelete = window.confirm(
+      "Are you sure you want to delete this mapping?"
+    );
+    if (!confirmDelete) return;
+
+    try {
+      // You'll need to implement this API endpoint
+      const response = await axios.delete(
+        `${serverBaseAddress}/api/deleteMappedTestAndChamber/${id}`
+      );
+
+      if (response.status === 200) {
+        setMappedTestAndChambers((prev) =>
+          prev.filter((item) => item.id !== id)
+        );
+        setMappedTestsAndChambersData((prev) =>
+          prev.filter((item) => item.id !== id)
+        );
+        toast.success("Mapping deleted successfully!");
+      }
+    } catch (error) {
+      console.error("Error deleting mapping:", error);
+      toast.error("Error deleting mapping!");
+    }
   };
 
   const addTestNameAndChamberMappingData = async () => {
     if (!testType || testName.length === 0 || chambers.length === 0) {
-      alert("Please fill all the fields before saving.");
+      toast.error("Please fill all the fields before saving.");
       return;
     }
 
     try {
-      const response = await axios.post(
-        `${serverBaseAddress}/api/mapTestNameAndChamber`,
-        {
-          testType: testType,
-          testNamesAndChambers: { testName, chambers },
-        }
-      );
+      if (editingData && editingId) {
+        // Update existing mapping
+        const response = await axios.put(
+          `${serverBaseAddress}/api/updateMappedTestAndChamber/${editingId}`,
+          {
+            testType: testType,
+            testNamesAndChambers: { testName, chambers },
+          }
+        );
 
-      if (response.status === 200) {
-        console.log(
-          "Test name and chamber mapping data added successfully:",
-          response.data
+        if (response.status === 200) {
+          toast.success("Test mapping updated successfully!");
+          await fetchTestAndChamberMappingData();
+          resetForm();
+        }
+      } else {
+        // Add new mapping
+        const response = await axios.post(
+          `${serverBaseAddress}/api/mapTestNameAndChamber`,
+          {
+            testType: testType,
+            testNamesAndChambers: { testName, chambers },
+          }
         );
-        toast.success(
-          "Test category, name and chamber mapping data added successfully!"
-        );
-        setEditingData(false);
-        setOpenEditDialog(false);
-        // Optionally, you can update the state or perform any other actions here
+
+        if (response.status === 200) {
+          toast.success("Test mapping added successfully!");
+          await fetchTestAndChamberMappingData();
+          resetForm();
+        }
       }
     } catch (error) {
-      console.error("Error adding test name and chamber mapping data:", error);
+      console.error("Error saving test mapping:", error);
+      toast.error("Error saving test mapping!");
     }
   };
 
-  // Function to fetch the test and chamber mapping data from the database:
+  // Function to fetch the test and chamber mapping data from the database
   const fetchTestAndChamberMappingData = async () => {
     try {
       const response = await axios.get(
@@ -236,30 +282,27 @@ export default function TestsAndChambersMapping() {
       );
       if (response.status === 200) {
         setMappedTestAndChambers(response.data);
-        console.log("fetched mapped data-->", response.data);
+        setMappedTestsAndChambersData(response.data);
       }
     } catch (error) {
       console.error("Error fetching test and chamber mapping data:", error);
     }
   };
 
-  useEffect(() => {
-    fetchTestAndChamberMappingData();
-  }, [testType, testName, chambers, !editingData]);
-
   return (
     <>
       <Typography variant="h5" sx={{ color: "#003366" }}>
-        {" "}
         Environmental Tests and Chambers
       </Typography>
 
-      <Dialog open={openEditDialog} onClose={handleCancelEditing}>
+      <Dialog
+        open={openEditDialog}
+        onClose={handleCancelEditing}
+        maxWidth="md"
+        fullWidth
+      >
         <DialogTitle>
-          {" "}
-          {editingData
-            ? "Edit Test and Chambers"
-            : "Add Test and Chambers"}{" "}
+          {editingData ? "Edit Test and Chambers" : "Add Test and Chambers"}
         </DialogTitle>
 
         <DialogContent>
@@ -267,32 +310,14 @@ export default function TestsAndChambersMapping() {
             <InputLabel>Test Category</InputLabel>
             <Select
               label="Test Category"
-              variant="outlined"
-              type="text"
-              multiple
               value={testType}
               onChange={(e) => setTestType(e.target.value)}
-              input={
-                <OutlinedInput
-                  id="select-multiple-testname-chip"
-                  label="Test Chip"
-                />
-              }
-              renderValue={(selected) => (
-                <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
-                  {selected.map((value) => (
-                    <Chip key={value} label={value} />
-                  ))}
-                </Box>
-              )}
             >
-              {testCategoryRows.map((category, index) => {
-                return (
-                  <MenuItem key={index} value={category.testCategory}>
-                    {category.testCategory}
-                  </MenuItem>
-                );
-              })}
+              {testCategoryList.map((category) => (
+                <MenuItem key={category.id} value={category.testCategory}>
+                  {category.testCategory}
+                </MenuItem>
+              ))}
             </Select>
           </FormControl>
 
@@ -300,15 +325,13 @@ export default function TestsAndChambersMapping() {
             <InputLabel>Test Names</InputLabel>
             <Select
               label="Test Names"
-              variant="outlined"
-              type="text"
               multiple
               value={testName}
               onChange={handleSelectMultipleTestName}
               input={
                 <OutlinedInput
                   id="select-multiple-testname-chip"
-                  label="Test Chip"
+                  label="Test Names"
                 />
               }
               renderValue={(selected) => (
@@ -319,13 +342,11 @@ export default function TestsAndChambersMapping() {
                 </Box>
               )}
             >
-              {testListRows.map((test) => {
-                return (
-                  <MenuItem key={test.id} value={test.testName}>
-                    {test.testName}
-                  </MenuItem>
-                );
-              })}
+              {testNamesList.map((test) => (
+                <MenuItem key={test.id} value={test.testName}>
+                  {test.testName}
+                </MenuItem>
+              ))}
             </Select>
           </FormControl>
 
@@ -333,15 +354,13 @@ export default function TestsAndChambersMapping() {
             <InputLabel>Chamber/Equipment Names</InputLabel>
             <Select
               label="Chambers List"
-              variant="outlined"
-              type="text"
               multiple
               value={chambers}
               onChange={handleSelectMultipleChamberName}
               input={
                 <OutlinedInput
                   id="select-multiple-chambername-chip"
-                  label="Chamber Chip"
+                  label="Chamber Names"
                 />
               }
               renderValue={(selected) => (
@@ -352,38 +371,42 @@ export default function TestsAndChambersMapping() {
                 </Box>
               )}
             >
-              {chambersListRows.map((chamber) => {
-                return (
-                  <MenuItem key={chamber.id} value={chamber.chamber}>
-                    {chamber.chamber}
-                  </MenuItem>
-                );
-              })}
+              {testChambersList.map((chamber) => (
+                <MenuItem key={chamber.id} value={chamber.chamber}>
+                  {chamber.chamber}
+                </MenuItem>
+              ))}
             </Select>
           </FormControl>
         </DialogContent>
 
         <DialogActions>
-          <IconButton
-            variant="outlined"
-            size="small"
-            onClick={handleCancelEditing}
-          >
+          <Button variant="outlined" onClick={handleCancelEditing}>
             Cancel
-          </IconButton>
-
-          <IconButton
-            variant="outlined"
-            size="small"
+          </Button>
+          <Button
+            variant="contained"
             onClick={addTestNameAndChamberMappingData}
+            disabled={
+              !testType || testName.length === 0 || chambers.length === 0
+            }
           >
-            Save
-          </IconButton>
+            {editingData ? "Update" : "Save"}
+          </Button>
         </DialogActions>
       </Dialog>
 
       <Button
-        variant="outlined"
+        sx={{
+          borderRadius: 1,
+          bgcolor: "orange",
+          color: "white",
+          borderColor: "black",
+          mb: 2,
+          mt: 2,
+        }}
+        variant="contained"
+        color="primary"
         size="small"
         startIcon={<AddIcon />}
         onClick={handleOpenEditDialog}
@@ -391,56 +414,66 @@ export default function TestsAndChambersMapping() {
         Add Test and Chamber
       </Button>
 
-      <TableContainer>
-        <Table
-          sx={{ minWidth: 650 }}
-          aria-label="tests-and-chamberstable"
-          size="small"
-        >
-          <TableHead sx={{ backgroundColor: "#476f95", fontWeight: "bold" }}>
-            <TableRow>
-              {columns.map((column) => (
-                <TableCell key={column.id} sx={{ color: "white" }}>
-                  {column.headerName}
-                </TableCell>
-              ))}
-            </TableRow>
-          </TableHead>
-
-          <TableBody>
-            {testAndChamberData.map((row) => (
-              <TableRow key={row.id}>
-                <TableCell>{row.slNo}</TableCell>
-                <TableCell>{row.testType}</TableCell>
-                <TableCell>{row.testName}</TableCell>
-                <TableCell>{row.chambers}</TableCell>
-
-                <TableCell align="center">
-                  <IconButton
-                    variant="outlined"
-                    size="small"
-                    onClick={() => editSelectedTestAndChamber(row, row.id)}
+      {testAndChamberData.length === 0 ? (
+        <Typography variant="body1" sx={{ textAlign: "center", mt: 4 }}>
+          No mappings found. Click "Add Test and Chamber" to create your first
+          mapping.
+        </Typography>
+      ) : (
+        <TableContainer>
+          <Table
+            sx={{ minWidth: 650 }}
+            aria-label="tests-and-chambers-table"
+            size="small"
+          >
+            <TableHead sx={{ backgroundColor: "#476f95" }}>
+              <TableRow>
+                {columns.map((column) => (
+                  <TableCell
+                    key={column.id}
+                    sx={{ color: "white", fontWeight: "bold" }}
+                    align={column.align || "left"}
                   >
-                    <Tooltip title="Edit Test" arrow>
-                      <EditIcon fontSize="inherit" />
-                    </Tooltip>
-                  </IconButton>
-
-                  <IconButton
-                    variant="outlined"
-                    size="small"
-                    onClick={() => deleteSelectedTestAndChamber(row.id)}
-                  >
-                    <Tooltip title="Delete Test" arrow>
-                      <DeleteIcon fontSize="inherit" />
-                    </Tooltip>
-                  </IconButton>
-                </TableCell>
+                    {column.headerName}
+                  </TableCell>
+                ))}
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
+            </TableHead>
+
+            <TableBody>
+              {testAndChamberData.map((row) => (
+                <TableRow key={row.id} hover>
+                  <TableCell>{row.slNo}</TableCell>
+                  <TableCell>{row.testType}</TableCell>
+                  <TableCell>{row.testName}</TableCell>
+                  <TableCell>{row.chambers}</TableCell>
+                  <TableCell align="center">
+                    <IconButton
+                      size="small"
+                      onClick={() => editSelectedTestAndChamber(row, row.id)}
+                      color="primary"
+                    >
+                      <Tooltip title="Edit Test" arrow>
+                        <EditIcon fontSize="inherit" />
+                      </Tooltip>
+                    </IconButton>
+
+                    <IconButton
+                      size="small"
+                      onClick={() => deleteSelectedTestAndChamber(row.id)}
+                      color="error"
+                    >
+                      <Tooltip title="Delete Test" arrow>
+                        <DeleteIcon fontSize="inherit" />
+                      </Tooltip>
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      )}
     </>
   );
 }

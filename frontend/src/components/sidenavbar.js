@@ -530,7 +530,7 @@ export default function SidenavigationBar() {
       loggedInUserDepartment === "TS1 Testing" ||
       loggedInUserRole === "Reports & Scrutiny Manager"
     ) {
-      return [4, 6, 7].includes(item.i);
+      return [4, 5, 6, 7].includes(item.i);
     } else if (
       loggedInUserDepartment === "Reliability" ||
       loggedInUserDepartment === "Software"

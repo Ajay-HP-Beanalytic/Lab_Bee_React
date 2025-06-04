@@ -7,7 +7,6 @@ const useProjectManagementStore = create((set) => ({
     tasks: [],
     kanbanSheetData: [],
   },
-
   setProjectsList: (data) =>
     set((state) => ({
       allTasksData: { ...state.allTasksData, projectsList: data },

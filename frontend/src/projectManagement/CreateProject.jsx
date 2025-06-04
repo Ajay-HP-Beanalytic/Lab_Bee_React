@@ -120,6 +120,12 @@ const CreateProject = () => {
         width: "30%",
       },
       {
+        label: "Allocated Hours",
+        name: "allocated_hours",
+        type: "number",
+        width: "30%",
+      },
+      {
         label: "Total Tasks Count",
         name: "total_tasks_count",
         type: "number",
@@ -155,8 +161,10 @@ const CreateProject = () => {
         name: "project_status",
         type: "select",
         options: [
+          { id: "To Do", label: "To Do" },
           { id: "In Progress", label: "In Progress" },
-          { id: "Done", label: "Done" },
+          { id: "Completed", label: "Completed" },
+          { id: "On Hold", label: "On Hold" },
         ],
         width: "30%",
       },
@@ -192,6 +200,7 @@ const CreateProject = () => {
         setValue("company_name", projectData.company_name || "");
         setValue("project_name", projectData.project_name || "");
         setValue("project_manager", projectData.project_manager || "");
+        setValue("allocated_hours", projectData.allocated_hours || "");
         setValue("total_tasks_count", projectData.total_tasks_count || "");
         setValue("pending_tasks_count", projectData.pending_tasks_count || "");
         setValue(

@@ -3,7 +3,15 @@ import { serverBaseAddress } from "../Pages/APIPage";
 import axios from "axios";
 import { useEffect, useState } from "react";
 import { addSerialNumbersToRows } from "../functions/UtilityFunctions";
-import { Box, Button, Card, Divider, IconButton } from "@mui/material";
+import {
+  Box,
+  Button,
+  Card,
+  Divider,
+  IconButton,
+  LinearProgress,
+  Typography,
+} from "@mui/material";
 import EmptyCard from "../common/EmptyCard";
 import DeleteIcon from "@mui/icons-material/Delete";
 import MoveUpIcon from "@mui/icons-material/MoveUp";
@@ -26,6 +34,7 @@ const ProjectsTable = () => {
     (state) => state.allTasksData.projectsList
   );
 
+  const [loading, setLoading] = useState(true);
   const [projects, setProjects] = useState([]);
 
   const [searchInputText, setSearchInputText] = useState("");
@@ -210,18 +219,32 @@ const ProjectsTable = () => {
   //Function to fetch all the tasks from the database:
   const fetchProjectsFromDatabase = async () => {
     try {
+      setLoading(true);
       const response = await axios.get(`${serverBaseAddress}/api/getProjects`);
       setProjects(response.data);
       setFilteredProjects(response.data);
       setProjectsList(response.data); // Store projects data in Zustand
     } catch (error) {
       console.log("Error fetching tasks from database:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
     fetchProjectsFromDatabase();
   }, []);
+
+  if (loading) {
+    return (
+      <Box sx={{ p: 3 }}>
+        <Typography variant="h4" sx={{ mb: 3 }}>
+          Projects Table
+        </Typography>
+        <LinearProgress />
+      </Box>
+    );
+  }
 
   return (
     <>
