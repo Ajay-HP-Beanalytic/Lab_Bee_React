@@ -15,7 +15,7 @@ import { serverBaseAddress } from "../Pages/APIPage";
 import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
-import DashboardSummaryCards from "./DashboardSummaryCards";
+import DashboardSummaryCards from "./DashboardComponents/DashboardSummaryCards";
 import CriticalAlerts from "./CriticalAlerts";
 import {
   DepartmentProductivityChart,
@@ -23,8 +23,9 @@ import {
   PriorityDistributionChart,
   StatusDistributionChart,
   TaskTrendsChart,
-} from "./DashboardChartsComponent";
-import DashboardProjectsTable from "./DashboardProjectsTable";
+} from "./DashboardComponents/DashboardChartsComponent";
+import DashboardProjectsTable from "./DashboardComponents/DashboardProjectsTable";
+import EmployeePerformanceTable from "./DashboardComponents/EmployeePerformance";
 dayjs.extend(relativeTime);
 
 const ManagementDashboard = () => {
@@ -274,7 +275,7 @@ const ManagementDashboard = () => {
       {/* Tabs for different views */}
       <Box sx={{ mb: 3 }}>
         <Tabs value={tabValue} onChange={handleTabChange}>
-          <Tab label="Overview Charts" />
+          <Tab label="Overview" />
           <Tab label="Project Analytics" />
           <Tab label="Task Analytics" />
           <Tab label="Trends & Forecasting" />
@@ -286,30 +287,19 @@ const ManagementDashboard = () => {
         <Grid container spacing={3}>
           {/* Row 1: Status Distributions */}
           <Grid item xs={12} md={6}>
-            <StatusDistributionChart
-              data={projectStatusData}
-              title="Project Status Distribution"
-            />
-          </Grid>
-          <Grid item xs={12} md={6}>
-            <StatusDistributionChart
-              data={taskStatusData}
-              title="Task Status Distribution"
-            />
+            <Grid container spacing={3}>
+              <Grid item xs={12}>
+                <StatusDistributionChart
+                  data={projectStatusData}
+                  title="Project Status Distribution"
+                />
+              </Grid>
+            </Grid>
           </Grid>
 
           {/* Row 2: Productivity and Priority */}
           <Grid item xs={12} md={6}>
-            <DepartmentProductivityChart
-              data={departmentProductivity}
-              title="Department Productivity"
-            />
-          </Grid>
-          <Grid item xs={12} md={6}>
-            <PriorityDistributionChart
-              data={taskPriorityData}
-              title="Task Priority Distribution"
-            />
+            <EmployeePerformanceTable members={members} tasks={tasks} />
           </Grid>
         </Grid>
       )}

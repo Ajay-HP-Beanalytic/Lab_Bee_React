@@ -4,11 +4,7 @@ import Tab from "@mui/material/Tab";
 import Box from "@mui/material/Box";
 import SprintBacklog from "./SprintBacklog";
 import KanbanSheet from "./KanbanSheet";
-import VelocityChart from "./VelocityChart";
-import RetrospectiveNotes from "./Retrospective";
-import HoursAndStorypoints from "./HoursAndStorypoints";
 import MyTasks from "./MyTasks";
-import SprintSelector from "./SprintSelector";
 import CreateProject from "./CreateProject";
 import ProjectsTable from "./ProjectsTable";
 import BreadCrumbs from "../components/Breadcrumb";
@@ -128,19 +124,6 @@ const ProjectManagementDashboard = () => {
 
     // Default tab-based rendering
     switch (tabIndex) {
-      // case 0:
-      //   return <ProjectsTable />;
-      // case 1:
-      //   return <SprintBacklog />;
-      // case 2:
-      //   return <KanbanSheet />;
-      // case 3:
-      //   return <VelocityChart />;
-      // case 4:
-      //   return <MyTasks />;
-      // default:
-      //   return <ProjectsTable />;
-
       case 0:
         return <ManagementDashboard />;
       case 1:
@@ -150,8 +133,6 @@ const ProjectManagementDashboard = () => {
       case 3:
         return <KanbanSheet />;
       case 4:
-        return <VelocityChart />;
-      case 5:
         return <MyTasks />;
       default:
         return <ProjectsTable />;
@@ -176,12 +157,8 @@ const ProjectManagementDashboard = () => {
           <Tab label="Projects List" />
           <Tab label="Tasks List" />
           <Tab label="Kanban Board" />
-          <Tab label="Velocity Chart" />
           <Tab label="My Tasks" />
         </Tabs>
-
-        {/* Optional Sprint Selector */}
-        <SprintSelector />
       </Box>
 
       {renderContent()}
