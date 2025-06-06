@@ -27,6 +27,7 @@ function projectManagementAPIs(app, io, labbeeUsers) {
   /// API to create the new project:
   app.post("/api/createProject", (req, res) => {
     const {
+      po_number,
       department,
       company_name,
       project_name,
@@ -44,10 +45,11 @@ function projectManagementAPIs(app, io, labbeeUsers) {
     } = req.body;
 
     try {
-      const sqlQuery = `INSERT INTO projects_table(department, company_name, project_name,  project_manager, project_start_date, allocated_hours, total_tasks_count, pending_tasks_count, in_progress_tasks_count, 
-      completed_tasks_count, project_end_date, project_status, remarks, last_updated_by) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?, ?)`;
+      const sqlQuery = `INSERT INTO projects_table(po_number,department, company_name, project_name,  project_manager, project_start_date, allocated_hours, total_tasks_count, pending_tasks_count, in_progress_tasks_count, 
+      completed_tasks_count, project_end_date, project_status, remarks, last_updated_by) VALUES(?, ?,?,?,?,?,?,?,?,?,?,?,?,?, ?)`;
 
       const values = [
+        po_number,
         department,
         company_name,
         project_name,
@@ -111,6 +113,7 @@ function projectManagementAPIs(app, io, labbeeUsers) {
     const sqlQuery = `
     SELECT 
       t.id ,
+      t.po_number,
       t.project_id AS project_id,
       t.project_name,
       t.department,
@@ -210,6 +213,7 @@ function projectManagementAPIs(app, io, labbeeUsers) {
   app.put("/api/updateProject/:project_id", (req, res) => {
     const { project_id } = req.params;
     const {
+      po_number,
       department,
       company_name,
       project_name,
@@ -230,6 +234,7 @@ function projectManagementAPIs(app, io, labbeeUsers) {
       const sqlQuery = `
       UPDATE projects_table
       SET
+      po_number = ?,
       department = ?,
       company_name = ?,
         project_name = ?,
@@ -249,6 +254,7 @@ function projectManagementAPIs(app, io, labbeeUsers) {
     `;
 
       const values = [
+        po_number,
         department,
         company_name,
         project_name,

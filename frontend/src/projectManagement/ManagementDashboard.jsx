@@ -311,12 +311,12 @@ const ManagementDashboard = () => {
           </Grid>
 
           {/* Project-focused analytics */}
-          <Grid item xs={12} md={8}>
+          {/* <Grid item xs={12} md={8}>
             <MonthlyTrendsChart
               data={monthlyProjectTrends}
               title="Monthly Project Initiation Trends"
             />
-          </Grid>
+          </Grid> */}
           <Grid item xs={12} md={4}>
             <StatusDistributionChart
               data={projectStatusData}
@@ -324,30 +324,30 @@ const ManagementDashboard = () => {
             />
           </Grid>
 
-          <Grid item xs={12}>
+          {/* <Grid item xs={12}>
             <DepartmentProductivityChart
               data={departmentProductivity}
               title="Department Performance Comparison"
             />
-          </Grid>
+          </Grid> */}
         </Grid>
       )}
 
       {tabValue === 2 && (
         <Grid container spacing={3}>
           {/* Task-focused analytics */}
-          <Grid item xs={12} md={8}>
+          <Grid item xs={12}>
             <TaskTrendsChart
               data={taskTrends}
               title="Weekly Task Creation vs Completion"
             />
           </Grid>
-          <Grid item xs={12} md={4}>
+          {/* <Grid item xs={12} md={4}>
             <PriorityDistributionChart
               data={taskPriorityData}
               title="Priority Breakdown"
             />
-          </Grid>
+          </Grid> */}
 
           <Grid item xs={12}>
             <StatusDistributionChart
@@ -368,19 +368,19 @@ const ManagementDashboard = () => {
             />
           </Grid>
 
-          <Grid item xs={12} md={6}>
+          {/* <Grid item xs={12} md={6}>
             <MonthlyTrendsChart
               data={monthlyProjectTrends}
               title="Project Initiation Trends (6 Months)"
             />
-          </Grid>
+          </Grid> */}
 
-          <Grid item xs={12} md={6}>
+          {/* <Grid item xs={12} md={6}>
             <DepartmentProductivityChart
               data={departmentProductivity}
               title="Department Efficiency Metrics"
             />
-          </Grid>
+          </Grid> */}
         </Grid>
       )}
     </Box>

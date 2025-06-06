@@ -94,6 +94,12 @@ const CreateProject = () => {
         width: "30%",
       },
       {
+        label: "PO Number",
+        name: "po_number",
+        type: "textField",
+        width: "30%",
+      },
+      {
         label: "Company Name",
         name: "company_name",
         type: "textField",
@@ -196,6 +202,7 @@ const CreateProject = () => {
       if (response.data) {
         const projectData = response.data;
         //populate the form fields with the task details:
+        setValue("po_number", projectData.po_number || "");
         setValue("department", projectData.department || "");
         setValue("company_name", projectData.company_name || "");
         setValue("project_name", projectData.project_name || "");
