@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import Tabs from "@mui/material/Tabs";
 import Tab from "@mui/material/Tab";
 import Box from "@mui/material/Box";
@@ -11,25 +11,31 @@ import BreadCrumbs from "../components/Breadcrumb";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import CreateTask from "./CreateTask";
 import ManagementDashboard from "./ManagementDashboard";
+import { UserContext } from "../Pages/UserContext";
 
 const ProjectManagementDashboard = () => {
+  const { loggedInUserRole } = useContext(UserContext);
+
   const navigate = useNavigate();
   const location = useLocation();
   const params = useParams();
   const [tabIndex, setTabIndex] = useState(0);
 
-  // Determine which component to show based on the current path
-  const getCurrentView = () => {
-    const path = location.pathname;
-    if (path === "/create_project" || path.startsWith("/edit_project")) {
-      return "create_project";
-    } else if (path === "/add_task" || path.startsWith("/edit_task")) {
-      return "create_task";
-    } else if (path === "/tasks") {
-      return "tasks";
-    }
-    return "default";
-  };
+  // Define whether user has dashboard access
+  const hasDashboardAccess =
+    loggedInUserRole === "Managing Director" ||
+    loggedInUserRole === "Reliability Manager" ||
+    loggedInUserRole === "Administrator";
+
+  const tabConfig = [
+    ...(hasDashboardAccess
+      ? [{ label: "Dashboard", component: <ManagementDashboard /> }]
+      : []),
+    { label: "Projects List", component: <ProjectsTable /> },
+    { label: "Tasks List", component: <SprintBacklog /> },
+    { label: "Kanban Sheet", component: <KanbanSheet /> },
+    { label: "My Tasks", component: <MyTasks /> },
+  ];
 
   // Check if breadcrumbs should be shown
   const shouldShowBreadcrumbs = () => {
@@ -81,67 +87,90 @@ const ProjectManagementDashboard = () => {
     return [];
   };
 
-  // Update tab index based on current view
-  useEffect(() => {
-    const currentView = getCurrentView();
-    if (currentView === "create_project") {
-      setTabIndex(0); // Projects List
-    } else if (currentView === "tasks" || currentView === "create_task") {
-      setTabIndex(1); // Tasks List
-    } else if (currentView === "my_tasks") {
-      setTabIndex(4); // My Tasks
-    } else {
-      setTabIndex(0); // Default to Projects List
-    }
-  }, [location.pathname]);
-
-  const handleTabChange = (_, newValue) => {
-    setTabIndex(newValue);
-    // Navigate to the appropriate route when tab changes
-    switch (newValue) {
-      case 0:
-        navigate("/projects");
-        break;
-      case 1:
-        navigate("/tasks");
-        break;
-      // case 2:
-      //   navigate("/my_tasks");
-      //   break;
-      default:
-        break;
-    }
-  };
-
   const renderContent = () => {
-    const view = getCurrentView();
+    const path = location.pathname;
 
-    if (view === "create_project") {
+    // Handle create/edit routes
+    if (path === "/create_project" || path.startsWith("/edit_project/")) {
       return <CreateProject />;
-    } else if (view === "create_task") {
+    }
+    if (path === "/add_task" || path.startsWith("/edit_task/")) {
       return <CreateTask />;
     }
 
-    // Default tab-based rendering
-    switch (tabIndex) {
-      case 0:
-        return <ManagementDashboard />;
-      case 1:
-        return <ProjectsTable />;
-      case 2:
-        return <SprintBacklog />;
-      case 3:
-        return <KanbanSheet />;
-      case 4:
-        return <MyTasks />;
+    // For all other routes, use tab-based rendering
+    const currentTab = tabConfig[tabIndex];
+    return currentTab?.component || <ProjectsTable />;
+  };
+
+  const handleTabChange = (_, newValue) => {
+    setTabIndex(newValue);
+    const selectedTab = tabConfig[newValue]?.label;
+
+    switch (selectedTab) {
+      case "Dashboard":
+      case "Projects List":
+        navigate("/projects");
+        break;
+      case "Tasks List":
+        navigate("/tasks");
+        break;
+      case "My Tasks":
+        navigate("/my_tasks");
+        break;
       default:
-        return <ProjectsTable />;
+        break;
     }
   };
 
+  // Synchronize tab index with current route
+  useEffect(() => {
+    const path = location.pathname;
+
+    // Only update tab index for routes that correspond to navigation
+    // Don't change tab for create/edit routes or Kanban
+    if (
+      path === "/create_project" ||
+      path.startsWith("/edit_project/") ||
+      path === "/add_task" ||
+      path.startsWith("/edit_task/")
+    ) {
+      return; // Don't change tab index for these routes
+    }
+
+    let correctTabIndex = 0;
+
+    if (path === "/projects" || path === "/") {
+      // For /projects route, show Dashboard if user has access, otherwise Projects List
+      if (hasDashboardAccess) {
+        correctTabIndex = 0; // Dashboard
+      } else {
+        correctTabIndex = 0; // Projects List (first tab for non-dashboard users)
+      }
+    } else if (path === "/tasks") {
+      // Find Tasks List tab
+      correctTabIndex = tabConfig.findIndex(
+        (tab) => tab.label === "Tasks List"
+      );
+    } else if (path === "/my_tasks") {
+      // Find My Tasks tab
+      correctTabIndex = tabConfig.findIndex((tab) => tab.label === "My Tasks");
+    }
+
+    // Only update if the index is valid and different
+    if (correctTabIndex >= 0 && correctTabIndex !== tabIndex) {
+      setTabIndex(correctTabIndex);
+    }
+  }, [location.pathname, hasDashboardAccess, tabConfig.length]);
+
+  // Reset tab index when user role changes (and thus tabConfig changes)
+  useEffect(() => {
+    // When user role changes and dashboard access changes, reset to first tab
+    setTabIndex(0);
+  }, [hasDashboardAccess]);
+
   return (
     <Box>
-      {/* <BreadCrumbs /> */}
       {/* Only show breadcrumbs for create/edit pages */}
       {shouldShowBreadcrumbs() && (
         <BreadCrumbs customBreadcrumbs={getCustomBreadcrumbs()} />
@@ -153,14 +182,12 @@ const ProjectManagementDashboard = () => {
         mb={2}
       >
         <Tabs value={tabIndex} onChange={handleTabChange}>
-          <Tab label="Dashboard" />
-          <Tab label="Projects List" />
-          <Tab label="Tasks List" />
-          <Tab label="Kanban Board" />
-          <Tab label="My Tasks" />
+          {tabConfig.map((tab, index) => (
+            <Tab key={`${tab.label}-${index}`} label={tab.label} />
+          ))}
         </Tabs>
       </Box>
-
+      {/* Render the appropriate content */}
       {renderContent()}
     </Box>
   );
