@@ -107,6 +107,11 @@ const ProjectManagementDashboard = () => {
     setTabIndex(newValue);
     const selectedTab = tabConfig[newValue]?.label;
 
+    // Only navigate for routes that exist, and prevent navigation during create/edit
+    if (isCreateEditRoute()) {
+      return; // Don't navigate away from create/edit pages via tabs
+    }
+
     switch (selectedTab) {
       case "Dashboard":
       case "Projects List":
@@ -123,9 +128,25 @@ const ProjectManagementDashboard = () => {
     }
   };
 
+  // Check if current route is create/edit
+  const isCreateEditRoute = () => {
+    const path = location.pathname;
+    return (
+      path === "/create_project" ||
+      path.startsWith("/edit_project/") ||
+      path === "/add_task" ||
+      path.startsWith("/edit_task/")
+    );
+  };
+
   // Synchronize tab index with current route
   useEffect(() => {
     const path = location.pathname;
+
+    // Don't change tab index for create/edit routes
+    if (isCreateEditRoute()) {
+      return;
+    }
 
     // Only update tab index for routes that correspond to navigation
     // Don't change tab for create/edit routes or Kanban
@@ -166,7 +187,13 @@ const ProjectManagementDashboard = () => {
   // Reset tab index when user role changes (and thus tabConfig changes)
   useEffect(() => {
     // When user role changes and dashboard access changes, reset to first tab
-    setTabIndex(0);
+    // setTabIndex(0);
+
+    // When user role changes and dashboard access changes, reset to first tab
+    // But only if we're not on a create/edit route
+    if (!isCreateEditRoute()) {
+      setTabIndex(0);
+    }
   }, [hasDashboardAccess]);
 
   return (

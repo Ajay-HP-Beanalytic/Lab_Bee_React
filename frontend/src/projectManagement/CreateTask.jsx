@@ -1,6 +1,6 @@
 import { useForm } from "react-hook-form";
 import RenderComponents from "../functions/RenderComponents";
-import { Box, Card, Grid, Typography } from "@mui/material";
+import { Box, Card, Grid } from "@mui/material";
 import { useContext, useEffect, useMemo, useState } from "react";
 import { UserContext } from "../Pages/UserContext";
 import axios from "axios";
@@ -9,16 +9,11 @@ import { toast } from "react-toastify";
 import dayjs from "dayjs";
 import Button from "@mui/material/Button";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import SprintBacklog from "./SprintBacklog";
 import useProjectManagementStore from "./ProjectStore";
 
 const CreateTask = () => {
-  const {
-    loggedInUser,
-    loggedInUserDepartment,
-    loggedInUserRole,
-    loggedInUserId,
-  } = useContext(UserContext);
+  const { loggedInUser, loggedInUserDepartment, loggedInUserId } =
+    useContext(UserContext);
 
   const projectsData = useProjectManagementStore(
     (state) => state.allTasksData.projectsList
@@ -33,13 +28,21 @@ const CreateTask = () => {
   const [reliabilityMembers, setReliabilityMembers] = useState([]);
   const [softwareMembers, setSoftwareMembers] = useState([]);
   const [administrationMembers, setAdministrationMembers] = useState([]);
-
-  const [newTaskAdded, setNewTaskAdded] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false); // To track if the dialog is in edit mode
   const [selectedTaskId, setSelectedTaskId] = useState(null); // To store the task_id of the selected task
   const [isLoading, setIsLoading] = useState(false);
 
   const [projectIdsForDropdown, setProjectIdsForDropdown] = useState([]);
+
+  // const storyPointsDescription = [
+  //   `Story points in Agile typically follow the Fibonacci sequence (1, 2, 3, 5, 8, 13, etc.), where each number represents increasing complexity and effort. Here's a general breakdown:
+  //   - 1 Point: A very simple task with minimal effort.
+  //   - 2 Points: Slightly more complex but still straightforward.
+  //   - 3 Points: Requires moderate effort, possibly involving some dependencies.
+  //   - 5 Points: A complex task that needs significant work or coordination.
+  //   - 8 Points: A highly complex task with uncertainties or multiple dependencies.
+  //   - 13+ Points: Extremely challenging, possibly requiring a breakdown into smaller tasks.`,
+  // ];
 
   //Function to fetch software and reliability team members from the database:
   const fetchTeamMembersFromDatabase = async () => {
@@ -56,7 +59,22 @@ const CreateTask = () => {
   };
 
   const fetchProjectIdsForDropdown = async () => {
-    const projectIds = projectsData.map((project) => project.project_id);
+    // const projectIds = projectsData.map((project) => project.project_id);
+
+    let filteredProjects = [];
+    if (loggedInUserDepartment === "Reliability") {
+      filteredProjects = projectsData.filter(
+        (project) => project.department === "Reliability"
+      );
+    } else if (loggedInUserDepartment === "Software") {
+      filteredProjects = projectsData.filter(
+        (project) => project.department === "Software"
+      );
+    } else if (loggedInUserDepartment === "Administration") {
+      filteredProjects = projectsData.map((project) => project.project_id);
+    }
+
+    const projectIds = filteredProjects.map((project) => project.project_id);
     setProjectIdsForDropdown(projectIds);
     return projectIds;
   };
@@ -161,12 +179,7 @@ const CreateTask = () => {
         type: "datePicker",
         width: "30%",
       },
-      {
-        label: "Completed Date",
-        name: "task_completed_date",
-        type: "datePicker",
-        width: "30%",
-      },
+
       {
         label: "Priority",
         name: "priority",
@@ -176,6 +189,12 @@ const CreateTask = () => {
           { id: "Medium", label: "Medium" },
           { id: "High", label: "High" },
         ],
+        width: "30%",
+      },
+      {
+        label: "Completed Date",
+        name: "task_completed_date",
+        type: "datePicker",
         width: "30%",
       },
       {
@@ -243,14 +262,14 @@ const CreateTask = () => {
         setValue("status", taskData.status || "");
       } else {
         toast.error("Task not found to update.");
-        navigate("/tasks");
+        handleNavigateBack();
       }
     } catch (error) {
       console.error("Error fetching task details:", error);
       toast.error(
         `Error fetching task details: ${error.message || "Server error"}`
       );
-      navigate("/tasks");
+      handleNavigateBack();
     } finally {
       setIsLoading(false);
     }
@@ -280,6 +299,28 @@ const CreateTask = () => {
 
   // Function to save the new task to the database:
   const saveNewTaskToDatabase = async (data) => {
+    const requiredFields = [
+      { key: "corresponding_project_id", label: "Project ID" },
+      { key: "assigned_to", label: "Assigned To" },
+      { key: "story_points", label: "Story Points" },
+      { key: "task_assigned_date", label: "Task Assigned Date" },
+      { key: "task_due_date", label: "Task Due Date" },
+      { key: "priority", label: "Priority" },
+    ];
+
+    const missingFields = requiredFields
+      .filter((field) => !data[field.key])
+      .map((field) => field.label);
+
+    if (missingFields.length > 0) {
+      toast.warning(
+        `Please fill in the following required fields: ${missingFields.join(
+          ","
+        )}`
+      );
+      return false;
+    }
+
     try {
       const response = await axios.post(
         `${serverBaseAddress}/api/saveNewTask`,
@@ -288,7 +329,6 @@ const CreateTask = () => {
       // Handle success
       if (response.status === 200) {
         toast.success("Task saved to database successfully");
-        // fetchTasksFromDatabase();
         return true;
       } else {
         console.log("Error saving task to database, status:", response.status);
@@ -300,6 +340,8 @@ const CreateTask = () => {
     } catch (error) {
       toast.error(`Error saving task: ${error.message || "Network error"}`);
       return false;
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -312,7 +354,6 @@ const CreateTask = () => {
       );
       if (response.status === 200) {
         toast.success("Task updated successfully");
-        // fetchTasksFromDatabase();
         return true;
       } else {
         console.log(
@@ -327,6 +368,8 @@ const CreateTask = () => {
     } catch (error) {
       toast.error(`Error saving task: ${error.message || "Network error"}`);
       return false;
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -349,17 +392,25 @@ const CreateTask = () => {
         ? dayjs(data["task_completed_date"]).format("YYYY-MM-DD")
         : null;
 
+    let success = false;
+
     if (isEditMode) {
       if (!selectedTaskId) {
         toast.error("No task selected for update.");
         return;
       }
-      await updateTaskInDatabase(data);
+      success = await updateTaskInDatabase(data);
     } else {
-      await saveNewTaskToDatabase(data);
+      success = await saveNewTaskToDatabase(data);
     }
 
-    handleCloseDialog();
+    // Only navigate if the operation was successful
+    if (success) {
+      // Small delay to allow user to see the success message
+      setTimeout(() => {
+        handleNavigateBack();
+      }, 1500);
+    }
   };
 
   // Function to close the page
@@ -367,7 +418,13 @@ const CreateTask = () => {
     setIsEditMode(false);
     setSelectedTaskId(null);
     reset();
-    navigate("/tasks");
+    handleNavigateBack();
+  };
+
+  // Function to navigate back to tasks list
+  const handleNavigateBack = () => {
+    // Navigate back to tasks list with proper state management
+    navigate("/tasks", { replace: false });
   };
 
   return (
@@ -435,6 +492,12 @@ const CreateTask = () => {
           Cancel
         </Button>
       </Box>
+      {/* <Box sx={{ mt: "10px" }}>
+        <h6>What are story points?</h6>
+        {Array.isArray(storyPointsDescription)
+          ? storyPointsDescription[0]
+          : storyPointsDescription}
+      </Box> */}
     </>
   );
 };

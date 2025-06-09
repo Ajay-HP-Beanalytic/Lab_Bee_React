@@ -30,6 +30,9 @@ const CreateProject = () => {
   const [reliabilityMembers, setReliabilityMembers] = useState([]);
   const [softwareMembers, setSoftwareMembers] = useState([]);
   const [administrationMembers, setAdministrationMembers] = useState([]);
+  const [reliabilityProjectManagers, setReliabilityProjectManagers] = useState(
+    []
+  );
 
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState(null);
@@ -49,9 +52,16 @@ const CreateProject = () => {
     }
   };
 
-  useEffect(() => {
-    fetchTeamMembersFromDatabase();
-  }, []);
+  const fetchReliabilityProjectManagers = async () => {
+    try {
+      const response = await axios.get(
+        `${serverBaseAddress}/api/getReliabilityProjectManagers`
+      );
+      setReliabilityProjectManagers(response.data || []);
+    } catch (error) {
+      console.error("Error fetching reliability project managers:", error);
+    }
+  };
 
   // Function to get options based on logged-in user's department
   const getAssignedToOptions = () => {
@@ -94,17 +104,18 @@ const CreateProject = () => {
         width: "30%",
       },
       {
-        label: "PO Number",
-        name: "po_number",
-        type: "textField",
-        width: "30%",
-      },
-      {
         label: "Company Name",
         name: "company_name",
         type: "textField",
         width: "30%",
       },
+      {
+        label: "PO Number",
+        name: "po_number",
+        type: "textField",
+        width: "30%",
+      },
+
       {
         label: "Department",
         name: "department",
@@ -116,7 +127,10 @@ const CreateProject = () => {
         label: "Project Manager",
         name: "project_manager",
         type: "select",
-        options: getAssignedToOptions(),
+        options:
+          loggedInUserDepartment === "Reliability"
+            ? reliabilityProjectManagers.map((pm) => pm.name)
+            : getAssignedToOptions().map((member) => member.name),
         width: "30%",
       },
       {
@@ -234,14 +248,16 @@ const CreateProject = () => {
         setValue("remarks", projectData.remarks || "");
       } else {
         toast.error("Project not found to update.");
-        navigate("/projects");
+        // navigate("/projects");
+        handleNavigateBack();
       }
     } catch (error) {
       console.error("Error fetching project details:", error);
       toast.error(
         `Error fetching project details: ${error.message || "Server error"}`
       );
-      navigate("/projects");
+      // navigate("/projects");
+      handleNavigateBack();
     } finally {
       setIsLoading(false);
     }
@@ -252,6 +268,7 @@ const CreateProject = () => {
     const initializeComponent = async () => {
       // Always fetch team members first
       await fetchTeamMembersFromDatabase();
+      await fetchReliabilityProjectManagers();
 
       if (projectIdFromParams) {
         setIsEditMode(true);
@@ -268,8 +285,35 @@ const CreateProject = () => {
     initializeComponent();
   }, [projectIdFromParams, location.pathname]);
 
+  // Function to navigate back to projects list
+  const handleNavigateBack = () => {
+    // Navigate back to projects list with proper state management
+    navigate("/projects", { replace: false });
+  };
+
   // Function to save the new task to the database:
   const createNewProjectToDatabase = async (data) => {
+    const requiredFields = [
+      { key: "project_name", label: "Project Name" },
+      { key: "company_name", label: "Company Name" },
+      { key: "project_start_date", label: "Project Start Date" },
+      { key: "department", label: "Department" },
+      { key: "project_manager", label: "Project Manager" },
+    ];
+
+    const missingFields = requiredFields
+      .filter((field) => !data[field.key])
+      .map((field) => field.label);
+
+    if (missingFields.length > 0) {
+      toast.warning(
+        `Please fill in the following required fields: ${missingFields.join(
+          ","
+        )}`
+      );
+      return false;
+    }
+
     try {
       const response = await axios.post(
         `${serverBaseAddress}/api/createProject`,
@@ -292,6 +336,8 @@ const CreateProject = () => {
     } catch (error) {
       toast.error(`Error saving project: ${error.message || "Network error"}`);
       return false;
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -319,6 +365,8 @@ const CreateProject = () => {
     } catch (error) {
       toast.error(`Error saving project: ${error.message || "Network error"}`);
       return false;
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -335,17 +383,28 @@ const CreateProject = () => {
         ? dayjs(data["project_end_date"]).format("YYYY-MM-DD")
         : null;
 
+    let success = false;
+
     if (isEditMode) {
       if (!selectedProjectId) {
         toast.error("No project selected for update.");
         return;
       }
-      await updateProjectInDatabase(data);
+      success = await updateProjectInDatabase(data);
     } else {
-      await createNewProjectToDatabase(data);
+      success = await createNewProjectToDatabase(data);
     }
 
-    handleCloseCreateProjectWindow();
+    // Only navigate if the operation was successful
+    if (success) {
+      // Small delay to allow user to see the success message
+      setTimeout(() => {
+        handleNavigateBack();
+      }, 1500);
+    }
+    // If not successful, stay on the form so user can fix issues
+
+    // await handleCloseCreateProjectWindow();
   };
 
   // Function to close the page
@@ -353,7 +412,8 @@ const CreateProject = () => {
     setIsEditMode(false);
     setSelectedProjectId(null);
     reset();
-    navigate("/projects");
+    // navigate("/projects");
+    handleNavigateBack();
   };
 
   return (
@@ -417,6 +477,7 @@ const CreateProject = () => {
           variant="contained"
           color="primary"
           onClick={handleCloseCreateProjectWindow}
+          disabled={isLoading}
         >
           Cancel
         </Button>

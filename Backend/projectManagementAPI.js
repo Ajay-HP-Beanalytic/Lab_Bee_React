@@ -55,11 +55,11 @@ function projectManagementAPIs(app, io, labbeeUsers) {
         project_name,
         project_manager,
         project_start_date,
-        allocated_hours,
-        total_tasks_count,
-        pending_tasks_count,
-        in_progress_tasks_count,
-        completed_tasks_count,
+        parseInt(allocated_hours || 0),
+        parseInt(total_tasks_count || 0),
+        parseInt(pending_tasks_count || 0),
+        parseInt(in_progress_tasks_count || 0),
+        parseInt(completed_tasks_count || 0),
         project_end_date,
         project_status,
         remarks,
@@ -260,11 +260,11 @@ function projectManagementAPIs(app, io, labbeeUsers) {
         project_name,
         project_manager,
         project_start_date,
-        allocated_hours,
-        total_tasks_count,
-        pending_tasks_count,
-        in_progress_tasks_count,
-        completed_tasks_count,
+        parseInt(allocated_hours || 0),
+        parseInt(total_tasks_count || 0),
+        parseInt(pending_tasks_count || 0),
+        parseInt(in_progress_tasks_count || 0),
+        parseInt(completed_tasks_count || 0),
         project_end_date,
         project_status,
         remarks,
@@ -301,6 +301,28 @@ function projectManagementAPIs(app, io, labbeeUsers) {
     );
   });
 
+  //API to delete the project:
+  app.delete("/api/deleteProject/:project_id", (req, res) => {
+    const { project_id } = req.params;
+    try {
+      const sqlQuery = "DELETE FROM projects_table WHERE project_id = ?";
+      db.query(sqlQuery, [project_id], (error, result) => {
+        if (error) {
+          console.error("Error deleting project:", error);
+          return res
+            .status(500)
+            .json({
+              message: "Internal server error while deleting the project",
+            });
+        } else {
+          res.status(200).json({ message: "project deleted successfully" });
+        }
+      });
+    } catch (error) {
+      console.error("Error deleting project:", error);
+    }
+  });
+
   /////////////////////////////////////////////////////////////////
   //API to save the task to 'project_tasks_table'
   app.post("/api/saveNewTask", async (req, res) => {
@@ -321,21 +343,6 @@ function projectManagementAPIs(app, io, labbeeUsers) {
       last_updated_by,
     } = req.body;
 
-    // if (
-    //   !corresponding_project_id ||
-    //   !title ||
-    //   !description ||
-    //   !assigned_to ||
-    //   !story_points ||
-    //   !estimated_hours ||
-    //   !priority ||
-    //   !status ||
-    //   !last_updated_by ||
-    //   !task_assigned_date
-    // ) {
-    //   return res.status(400).json({ message: "All fields are required" });
-    // }
-
     try {
       const sqlQuery = `
         INSERT INTO project_tasks_table(corresponding_project_id, department, title, description, assigned_to, story_points,
@@ -351,11 +358,8 @@ function projectManagementAPIs(app, io, labbeeUsers) {
         description,
         assigned_to,
         story_points,
-        estimated_hours === "" || estimated_hours === undefined
-          ? null
-          : estimated_hours,
-        actual_hours === "" || actual_hours === undefined ? null : actual_hours,
-
+        parseInt(estimated_hours || 0),
+        parseInt(actual_hours || 0),
         task_assigned_date,
         task_due_date,
         task_completed_date,
@@ -412,19 +416,6 @@ function projectManagementAPIs(app, io, labbeeUsers) {
       last_updated_by,
     } = req.body;
 
-    // if (
-    //   !title ||
-    //   !description ||
-    //   !assigned_to ||
-    //   !story_points ||
-    //   !estimated_hours ||
-    //   !priority ||
-    //   !status ||
-    //   !last_updated_by
-    // ) {
-    //   return res.status(400).json({ message: "All fields are required" });
-    // }
-
     const sqlQuery = `
       UPDATE project_tasks_table
       SET corresponding_project_id = ?, department=?,title = ?, description = ?, assigned_to = ?, story_points = ?, estimated_hours = ?, actual_hours = ?, 
@@ -439,10 +430,8 @@ function projectManagementAPIs(app, io, labbeeUsers) {
       description,
       assigned_to,
       story_points,
-      estimated_hours === "" || estimated_hours === undefined
-        ? null
-        : estimated_hours,
-      actual_hours === "" || actual_hours === undefined ? null : actual_hours,
+      parseInt(estimated_hours || 0),
+      parseInt(actual_hours || 0),
       task_assigned_date,
       task_due_date,
       task_completed_date,
