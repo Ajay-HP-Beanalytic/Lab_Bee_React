@@ -1,10 +1,9 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import axios from "axios";
 import {
   Box,
-  Button,
   Card,
   Dialog,
   DialogActions,
@@ -13,7 +12,6 @@ import {
   Paper,
   Typography,
   Chip,
-  Avatar,
   IconButton,
   Tooltip,
   Badge,
@@ -21,7 +19,9 @@ import {
   Divider,
   CardContent,
   CardActions,
-  AvatarGroup,
+  Snackbar,
+  Alert,
+  Button,
 } from "@mui/material";
 import {
   VisibilityOutlined,
@@ -31,7 +31,6 @@ import {
   FlagOutlined,
   AssignmentOutlined,
   CalendarTodayOutlined,
-  MoreVertOutlined,
   DragIndicatorOutlined,
 } from "@mui/icons-material";
 import { serverBaseAddress } from "../Pages/APIPage";
@@ -43,7 +42,7 @@ import { UserContext } from "../Pages/UserContext";
 
 const columns = ["To Do", "In Progress", "Done", "On Hold"];
 
-// Enhanced column styling with gradients and modern design
+// Column styling configuration
 const columnStyles = {
   "To Do": {
     background: "linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%)",
@@ -76,8 +75,13 @@ const KanbanSheet = () => {
   const { loggedInUserDepartment } = useContext(UserContext);
 
   const [departmentWiseTasks, setDepartmentWiseTasks] = useState({});
-  const [searchInputText, setSearchInputText] = useState("");
   const [filteredTasks, setFilteredTasks] = useState({});
+  const [searchInputText, setSearchInputText] = useState("");
+  const [isDragging, setIsDragging] = useState(false);
+  const [showUpdateError, setShowUpdateError] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [openTaskViewDialog, setOpenTaskViewDialog] = useState(false);
+  const [selectedTaskId, setSelectedTaskId] = useState(null);
 
   const kanbanSheetData = useProjectManagementStore(
     (state) => state.allTasksData.kanbanSheetData
@@ -127,56 +131,103 @@ const KanbanSheet = () => {
     setFilteredTasks(filtered);
   }, [departmentWiseTasks, searchInputText]);
 
-  const handleDragEnd = async ({ source, destination }) => {
-    if (!destination) return;
-    const sourceCol = source.droppableId;
-    const destCol = destination.droppableId;
-    if (sourceCol === destCol) return;
+  // Drag and drop handlers
+  const handleDragStart = useCallback(() => {
+    setIsDragging(true);
+  }, []);
 
-    const movedTask = (filteredTasks[sourceCol] || [])[source.index];
-    if (!movedTask) return;
+  const handleDragEnd = useCallback(
+    async (result) => {
+      setIsDragging(false);
 
-    try {
-      await axios.post(`${serverBaseAddress}/api/updateTaskStatus`, {
-        task_id: movedTask.id,
-        status: destCol,
-      });
+      const { source, destination } = result;
 
-      const updated = { ...filteredTasks };
-      updated[sourceCol] = [...(updated[sourceCol] || [])];
-      updated[destCol] = [...(updated[destCol] || [])];
+      // Return if dropped outside a droppable area
+      if (!destination) return;
 
-      updated[sourceCol].splice(source.index, 1);
-      updated[destCol].splice(destination.index, 0, {
-        ...movedTask,
-        status: destCol,
-      });
+      const sourceCol = source.droppableId;
+      const destCol = destination.droppableId;
+      const sourceIndex = source.index;
+      const destIndex = destination.index;
 
-      setFilteredTasks(updated);
-      setKanbanSheetData(updated);
-    } catch (error) {
-      console.error("Error updating task status:", error);
-    }
-  };
+      // Return if dropped in the same position
+      if (sourceCol === destCol && sourceIndex === destIndex) return;
 
-  const [openTaskViewDialog, setOpenTaskViewDialog] = useState(false);
-  const [selectedTaskId, setSelectedTaskId] = useState(null);
+      // Return if dropped in the same column (no status change needed)
+      if (sourceCol === destCol) return;
 
-  const handleViewTask = (task) => {
+      const movedTask = (filteredTasks[sourceCol] || [])[sourceIndex];
+      if (!movedTask) {
+        console.error("Task not found for drag operation");
+        return;
+      }
+
+      // Create optimistic update
+      const optimisticUpdate = { ...filteredTasks };
+      optimisticUpdate[sourceCol] = [...(optimisticUpdate[sourceCol] || [])];
+      optimisticUpdate[destCol] = [...(optimisticUpdate[destCol] || [])];
+
+      // Remove from source and add to destination
+      const [taskToMove] = optimisticUpdate[sourceCol].splice(sourceIndex, 1);
+      const updatedTask = { ...taskToMove, status: destCol };
+      optimisticUpdate[destCol].splice(destIndex, 0, updatedTask);
+
+      // Apply optimistic update immediately
+      setFilteredTasks(optimisticUpdate);
+
+      try {
+        // Update database
+        const response = await axios.post(
+          `${serverBaseAddress}/api/updateTaskStatus`,
+          {
+            task_id: movedTask.id,
+            status: destCol,
+          }
+        );
+
+        if (response.status === 200) {
+          // Update global state after successful database update
+          setKanbanSheetData(optimisticUpdate);
+        } else {
+          throw new Error(
+            `Failed to update task status: ${response.statusText}`
+          );
+        }
+      } catch (error) {
+        console.error("Error updating task status:", error);
+
+        // Revert optimistic update on error
+        setFilteredTasks(filteredTasks);
+
+        // Show error message
+        setErrorMessage(`Failed to update task: ${error.message}`);
+        setShowUpdateError(true);
+      }
+    },
+    [filteredTasks, setKanbanSheetData]
+  );
+
+  // Event handlers
+  const handleViewTask = useCallback((task) => {
     setSelectedTaskId(task);
     setOpenTaskViewDialog(true);
-  };
+  }, []);
 
-  const onChangeOfSearchInput = (e) => {
+  const onChangeOfSearchInput = useCallback((e) => {
     setSearchInputText(e.target.value);
-  };
+  }, []);
 
-  const onClearSearchInput = () => {
+  const onClearSearchInput = useCallback(() => {
     setSearchInputText("");
-  };
+  }, []);
 
-  // Priority color mapping
-  const getPriorityColor = (priority) => {
+  const handleCloseError = useCallback(() => {
+    setShowUpdateError(false);
+    setErrorMessage("");
+  }, []);
+
+  // Utility functions
+  const getPriorityColor = useCallback((priority) => {
     switch (priority?.toLowerCase()) {
       case "high":
         return "#f44336";
@@ -187,10 +238,9 @@ const KanbanSheet = () => {
       default:
         return "#9e9e9e";
     }
-  };
+  }, []);
 
-  // Calculate task statistics
-  const getColumnStats = (columnTasks) => {
+  const getColumnStats = useCallback((columnTasks) => {
     const totalTasks = columnTasks?.length || 0;
     const highPriority =
       columnTasks?.filter((t) => t.priority === "High").length || 0;
@@ -200,13 +250,12 @@ const KanbanSheet = () => {
       ).length || 0;
 
     return { totalTasks, highPriority, overdue };
-  };
+  }, []);
 
-  // Check if task is overdue
-  const isTaskOverdue = (dueDate, status) => {
+  const isTaskOverdue = useCallback((dueDate, status) => {
     if (status === "Done") return false;
     return dayjs().isAfter(dayjs(dueDate));
-  };
+  }, []);
 
   return (
     <Box sx={{ p: 3 }}>
@@ -230,10 +279,30 @@ const KanbanSheet = () => {
         />
       </Box>
 
+      {/* Error Snackbar */}
+      <Snackbar
+        open={showUpdateError}
+        autoHideDuration={6000}
+        onClose={handleCloseError}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <Alert
+          onClose={handleCloseError}
+          severity="error"
+          sx={{ width: "100%" }}
+          variant="filled"
+        >
+          {errorMessage}
+        </Alert>
+      </Snackbar>
+
       {Object.keys(filteredTasks || {}).length === 0 ? (
         <EmptyCard message="No tasks found. Create your first task to get started!" />
       ) : (
-        <DragDropContext onDragEnd={handleDragEnd}>
+        <DragDropContext
+          onDragStart={handleDragStart}
+          onDragEnd={handleDragEnd}
+        >
           <Box
             sx={{
               display: "flex",
@@ -241,6 +310,7 @@ const KanbanSheet = () => {
               overflowX: "auto",
               minHeight: "70vh",
               pb: 2,
+              userSelect: isDragging ? "none" : "auto",
             }}
           >
             {columns.map((col) => {
@@ -262,7 +332,7 @@ const KanbanSheet = () => {
                         maxWidth: 320,
                         display: "flex",
                         flexDirection: "column",
-                        transition: "all 0.3s ease",
+                        transition: "all 0.2s ease-in-out",
                         border: `2px solid ${
                           snapshot.isDraggingOver
                             ? columnStyle.borderColor
@@ -271,6 +341,7 @@ const KanbanSheet = () => {
                         transform: snapshot.isDraggingOver
                           ? "scale(1.02)"
                           : "scale(1)",
+                        zIndex: snapshot.isDraggingOver ? 10 : 1,
                       }}
                     >
                       {/* Column Header */}
@@ -282,7 +353,7 @@ const KanbanSheet = () => {
                           borderRadius: "12px 12px 0 0",
                           position: "sticky",
                           top: 0,
-                          zIndex: 10,
+                          zIndex: 20,
                         }}
                       >
                         <Box
@@ -357,6 +428,8 @@ const KanbanSheet = () => {
                           display: "flex",
                           flexDirection: "column",
                           gap: 2,
+                          overflowY: "auto",
+                          maxHeight: "calc(70vh - 80px)",
                         }}
                       >
                         {columnTasks.map((task, index) => {
@@ -367,7 +440,7 @@ const KanbanSheet = () => {
 
                           return (
                             <Draggable
-                              draggableId={task.id.toString()}
+                              draggableId={`task-${task.id}`}
                               index={index}
                               key={task.id}
                             >
@@ -375,23 +448,34 @@ const KanbanSheet = () => {
                                 <Card
                                   ref={provided.innerRef}
                                   {...provided.draggableProps}
-                                  elevation={snapshot.isDragging ? 8 : 2}
+                                  elevation={snapshot.isDragging ? 12 : 2}
                                   sx={{
                                     backgroundColor: "white",
                                     borderRadius: 2,
-                                    transition: "all 0.3s ease",
+                                    transition: snapshot.isDragging
+                                      ? "none"
+                                      : "all 0.2s ease-in-out",
                                     transform: snapshot.isDragging
-                                      ? "rotate(5deg)"
-                                      : "rotate(0deg)",
+                                      ? "rotate(3deg) scale(1.05)"
+                                      : "rotate(0deg) scale(1)",
                                     boxShadow: snapshot.isDragging
-                                      ? "0 8px 25px rgba(0,0,0,0.15)"
+                                      ? "0 10px 30px rgba(0,0,0,0.25)"
                                       : "0 2px 8px rgba(0,0,0,0.1)",
                                     border: overdue
                                       ? "2px solid #f44336"
                                       : "1px solid #e0e0e0",
+                                    opacity: snapshot.isDragging ? 0.9 : 1,
+                                    zIndex: snapshot.isDragging ? 1000 : 1,
+                                    cursor: snapshot.isDragging
+                                      ? "grabbing"
+                                      : "grab",
                                     "&:hover": {
-                                      boxShadow: "0 4px 15px rgba(0,0,0,0.12)",
-                                      transform: "translateY(-2px)",
+                                      boxShadow: snapshot.isDragging
+                                        ? "0 10px 30px rgba(0,0,0,0.25)"
+                                        : "0 4px 15px rgba(0,0,0,0.12)",
+                                      transform: snapshot.isDragging
+                                        ? "rotate(3deg) scale(1.05)"
+                                        : "translateY(-2px)",
                                     },
                                   }}
                                 >
@@ -444,7 +528,13 @@ const KanbanSheet = () => {
                                         <IconButton
                                           size="small"
                                           {...provided.dragHandleProps}
-                                          sx={{ color: "text.secondary" }}
+                                          sx={{
+                                            color: "text.secondary",
+                                            cursor: "grab",
+                                            "&:active": {
+                                              cursor: "grabbing",
+                                            },
+                                          }}
                                         >
                                           <DragIndicatorOutlined fontSize="small" />
                                         </IconButton>
@@ -607,10 +697,12 @@ const KanbanSheet = () => {
                                             handleViewTask(task);
                                           }}
                                           sx={{
-                                            backgroundColor: "primary.50",
+                                            backgroundColor:
+                                              "rgba(25, 118, 210, 0.1)",
                                             color: "primary.main",
                                             "&:hover": {
-                                              backgroundColor: "primary.100",
+                                              backgroundColor:
+                                                "rgba(25, 118, 210, 0.2)",
                                             },
                                           }}
                                         >
@@ -628,10 +720,12 @@ const KanbanSheet = () => {
                                             );
                                           }}
                                           sx={{
-                                            backgroundColor: "secondary.50",
+                                            backgroundColor:
+                                              "rgba(156, 39, 176, 0.1)",
                                             color: "secondary.main",
                                             "&:hover": {
-                                              backgroundColor: "secondary.100",
+                                              backgroundColor:
+                                                "rgba(156, 39, 176, 0.2)",
                                             },
                                           }}
                                         >
@@ -686,6 +780,7 @@ const KanbanSheet = () => {
         </DragDropContext>
       )}
 
+      {/* Task Detail Dialog */}
       <TaskDetailDialog
         open={openTaskViewDialog}
         onClose={() => setOpenTaskViewDialog(false)}
@@ -696,7 +791,7 @@ const KanbanSheet = () => {
   );
 };
 
-// Enhanced Task Detail Dialog Component
+// Task Detail Dialog Component
 const TaskDetailDialog = ({ open, onClose, task, onUpdate }) => {
   if (!task) return null;
 
@@ -834,7 +929,7 @@ const TaskDetailDialog = ({ open, onClose, task, onUpdate }) => {
 
           <Divider />
 
-          {/* Assignment and Due Details */}
+          {/* Assignment Details */}
           <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2 }}>
             <Box>
               <Typography
@@ -873,7 +968,7 @@ const TaskDetailDialog = ({ open, onClose, task, onUpdate }) => {
             </Box>
           </Box>
 
-          {/* Assigned To & Last Updated */}
+          {/* Project & Last Updated */}
           <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2 }}>
             <Box>
               <Typography
@@ -908,6 +1003,21 @@ const TaskDetailDialog = ({ open, onClose, task, onUpdate }) => {
                 {task.last_updated_by_name}
               </Typography>
             </Box>
+
+            {/* <Box>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ fontWeight: "bold" }}
+              >
+                LAST UPDATED ON
+              </Typography>
+              <Typography variant="body2" sx={{ mt: 0.5 }}>
+                {task.created_at
+                  ? dayjs(task.created_at).format("MMM DD, YYYY")
+                  : "N/A"}
+              </Typography>
+            </Box> */}
           </Box>
         </Box>
       </DialogContent>

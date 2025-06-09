@@ -3,9 +3,7 @@ import {
   Box,
   Button,
   Card,
-  CardContent,
   Divider,
-  Grid,
   IconButton,
   Typography,
   LinearProgress,
@@ -20,29 +18,18 @@ import { DataGrid } from "@mui/x-data-grid";
 import { addSerialNumbersToRows } from "../functions/UtilityFunctions";
 import EmptyCard from "../common/EmptyCard";
 import DeleteIcon from "@mui/icons-material/Delete";
-import MoveUpIcon from "@mui/icons-material/MoveUp";
-import SprintSelector from "./SprintSelector";
 import useProjectManagementStore from "./ProjectStore";
-import TaskDetailCard from "./TaskDetailCard";
 import { useNavigate } from "react-router-dom";
 
 const SprintBacklog = () => {
   const navigate = useNavigate();
 
-  const [moveToSprintOpen, setMoveToSprintOpen] = useState(false);
-  const [selectedTaskForSprint, setSelectedTaskForSprint] = useState(null);
-
   const [loading, setLoading] = useState(true);
   const [tasks, setTasks] = useState([]);
-  const [isEditMode, setIsEditMode] = useState(false); // To track if the dialog is in edit mode
-  const [selectedTaskId, setSelectedTaskId] = useState(null); // To store the task_id of the selected task
 
   const { loggedInUser, loggedInUserDepartment } = useContext(UserContext);
 
   //Send all tasks data to store in the project management store
-  const setAllTasksData = useProjectManagementStore(
-    (state) => state.setAllTasksData
-  );
 
   const setTasksList = useProjectManagementStore((state) => state.setTasksList);
 
@@ -51,10 +38,6 @@ const SprintBacklog = () => {
   );
 
   //Fetch Kanbansheet data:
-  const kanbanSheetData = useProjectManagementStore(
-    (state) => state.allTasksData.kanbanSheetData
-  );
-  //Fetch and store status of the tasks:
   const setKanbanSheetData = useProjectManagementStore(
     (state) => state.setKanbanSheetData
   );
@@ -235,15 +218,6 @@ const SprintBacklog = () => {
           >
             <DeleteIcon />
           </IconButton>
-          <IconButton
-            onClick={(event) => {
-              event.stopPropagation();
-              setSelectedTaskForSprint(params.row.task_id);
-              setMoveToSprintOpen(true);
-            }}
-          >
-            <MoveUpIcon />
-          </IconButton>
         </div>
       ),
     },
@@ -313,7 +287,7 @@ const SprintBacklog = () => {
   }, []);
 
   //Function to delete the task from the database:
-  const deleteSelectedTask = async (row) => {
+  const deleteSelectedTask = async (task_id) => {
     const confirmDeleteTask = window.confirm(
       "Are you sure you want to delete this task?"
     );
@@ -321,11 +295,11 @@ const SprintBacklog = () => {
     if (confirmDeleteTask) {
       try {
         const response = await axios.delete(
-          `${serverBaseAddress}/api/deleteTask/${row.task_id}`
+          `${serverBaseAddress}/api/deleteTask/${task_id}`
         );
         if (response.status === 200) {
           toast.success("Task deleted successfully");
-          fetchTasksFromDatabase();
+          await fetchTasksFromDatabase();
         } else {
           console.log(
             "Error deleting task from database, status:",
@@ -414,13 +388,6 @@ const SprintBacklog = () => {
             />
           </Box>
         )}
-
-        <SprintSelector
-          open={moveToSprintOpen}
-          onClose={() => setMoveToSprintOpen(false)}
-          taskId={selectedTaskForSprint}
-          onSuccess={fetchTasksFromDatabase}
-        />
       </Card>
     </>
   );

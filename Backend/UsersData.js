@@ -251,7 +251,7 @@ function usersDataAPIs(app) {
   // Fetch the Software department users:
   app.get("/api/getProjectManagementMembers", (req, res) => {
     const usersList =
-      "SELECT id, name, department FROM labbee_users WHERE department LIKE '%Software%' OR department LIKE '%Reliability%' OR department LIKE '%Administration%'";
+      "SELECT id, name, department, role FROM labbee_users WHERE department LIKE '%Software%' OR department LIKE '%Reliability%' OR department LIKE '%Administration%'";
     db.query(usersList, (error, results) => {
       if (error) {
         console.log("Error fetching project management members:", error);
@@ -269,6 +269,7 @@ function usersDataAPIs(app) {
           id: user.id,
           name: user.name,
           department: user.department,
+          role: user.role,
         };
         if (user.department.includes("Software")) {
           softwareMembers.push(member);
@@ -289,10 +290,10 @@ function usersDataAPIs(app) {
   });
 
   // Fetch the Reliability department users:
-  app.get("/api/getReliabilityTaskAssigners", (req, res) => {
-    const reliabilityTaskAssignersList =
+  app.get("/api/getReliabilityProjectManagers", (req, res) => {
+    const reliabilityProjectManagersList =
       "SELECT name FROM labbee_users WHERE role ='Reliability Manager' OR role = 'Managing Director' ";
-    db.query(reliabilityTaskAssignersList, (error, result) => {
+    db.query(reliabilityProjectManagersList, (error, result) => {
       res.send(result);
     });
   });

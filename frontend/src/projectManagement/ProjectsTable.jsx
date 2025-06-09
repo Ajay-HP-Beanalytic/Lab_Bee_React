@@ -14,7 +14,7 @@ import {
 } from "@mui/material";
 import EmptyCard from "../common/EmptyCard";
 import DeleteIcon from "@mui/icons-material/Delete";
-import MoveUpIcon from "@mui/icons-material/MoveUp";
+import { toast } from "react-toastify";
 import { DataGrid } from "@mui/x-data-grid";
 import SearchBar from "../common/SearchBar";
 import useProjectManagementStore from "./ProjectStore";
@@ -177,7 +177,7 @@ const ProjectsTable = () => {
     {
       field: "last_updated_by_name",
       headerName: "Last Updated By",
-      width: 200,
+      width: 180,
       align: "center",
       headerAlign: "center",
       headerClassName: "custom-header-color",
@@ -185,7 +185,7 @@ const ProjectsTable = () => {
     {
       field: "actions",
       headerName: "Actions",
-      width: 100,
+      width: 80,
       align: "center",
       headerAlign: "center",
       headerClassName: "custom-header-color",
@@ -194,19 +194,10 @@ const ProjectsTable = () => {
           <IconButton
             onClick={(event) => {
               event.stopPropagation();
-              // deleteSelectedTask(params.row);
+              deleteSelectedProject(params.row.project_id);
             }}
           >
             <DeleteIcon />
-          </IconButton>
-          <IconButton
-            onClick={(event) => {
-              event.stopPropagation();
-              // setSelectedTaskForSprint(params.row.task_id);
-              // setMoveToSprintOpen(true);
-            }}
-          >
-            <MoveUpIcon />
           </IconButton>
         </div>
       ),
@@ -234,6 +225,37 @@ const ProjectsTable = () => {
   useEffect(() => {
     fetchProjectsFromDatabase();
   }, []);
+
+  //Function to delete the task from the database:
+  const deleteSelectedProject = async (project_id) => {
+    const confirmDeleteProject = window.confirm(
+      "Are you sure you want to delete this project?"
+    );
+
+    if (confirmDeleteProject) {
+      try {
+        const response = await axios.delete(
+          `${serverBaseAddress}/api/deleteProject/${project_id}`
+        );
+        if (response.status === 200) {
+          toast.success("Project deleted successfully");
+          await fetchProjectsFromDatabase();
+        } else {
+          console.log(
+            "Error deleting project from database, status:",
+            response.status
+          );
+          toast.error(
+            `Error deleting project: ${response.statusText || "Server error"}`
+          );
+        }
+      } catch (error) {
+        toast.error(
+          `Error deleting project: ${error.message || "Network error"}`
+        );
+      }
+    }
+  };
 
   if (loading) {
     return (
