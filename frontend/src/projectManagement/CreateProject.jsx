@@ -129,8 +129,8 @@ const CreateProject = () => {
         type: "select",
         options:
           loggedInUserDepartment === "Reliability"
-            ? reliabilityProjectManagers.map((pm) => pm.name)
-            : getAssignedToOptions().map((member) => member.name),
+            ? reliabilityProjectManagers
+            : getAssignedToOptions(),
         width: "30%",
       },
       {
