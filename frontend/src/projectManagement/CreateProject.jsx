@@ -38,6 +38,11 @@ const CreateProject = () => {
   const [selectedProjectId, setSelectedProjectId] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
+  const RELIABILITY_PROJECT_MANAGER_ROLES = [
+    "Managing Director",
+    "Reliability Manager",
+  ];
+
   //Function to fetch software and reliability team members from the database:
   const fetchTeamMembersFromDatabase = async () => {
     try {
@@ -47,19 +52,27 @@ const CreateProject = () => {
       setReliabilityMembers(response.data.reliabilityMembers || []);
       setSoftwareMembers(response.data.softwareMembers || []);
       setAdministrationMembers(response.data.adminMembers || []);
+
+      // Filter reliability managers from reliability members
+      const reliabilityManagers = (
+        response.data.reliabilityMembers || []
+      ).filter((member) =>
+        RELIABILITY_PROJECT_MANAGER_ROLES.includes(member.role)
+      );
+
+      // Add Managing Director from Administration department
+      const adminManagingDirector = (response.data.adminMembers || []).filter(
+        (member) => member.role === "Managing Director"
+      );
+
+      // Combine both arrays
+      const allProjectManagers = [
+        ...reliabilityManagers,
+        ...adminManagingDirector,
+      ];
+      setReliabilityProjectManagers(allProjectManagers);
     } catch (error) {
       console.log("Error fetching team members from database:", error);
-    }
-  };
-
-  const fetchReliabilityProjectManagers = async () => {
-    try {
-      const response = await axios.get(
-        `${serverBaseAddress}/api/getReliabilityProjectManagers`
-      );
-      setReliabilityProjectManagers(response.data || []);
-    } catch (error) {
-      console.error("Error fetching reliability project managers:", error);
     }
   };
 
@@ -199,6 +212,7 @@ const CreateProject = () => {
       reliabilityMembers,
       softwareMembers,
       administrationMembers,
+      reliabilityProjectManagers,
       loggedInUserDepartment,
     ]
   );
@@ -268,7 +282,6 @@ const CreateProject = () => {
     const initializeComponent = async () => {
       // Always fetch team members first
       await fetchTeamMembersFromDatabase();
-      await fetchReliabilityProjectManagers();
 
       if (projectIdFromParams) {
         setIsEditMode(true);
