@@ -292,7 +292,7 @@ function usersDataAPIs(app) {
   // Fetch the Reliability department users:
   app.get("/api/getReliabilityProjectManagers", (req, res) => {
     const reliabilityProjectManagersList =
-      "SELECT name FROM labbee_users WHERE role ='Reliability Manager' OR role = 'Managing Director' ";
+      "SELECT id, name, department, role FROM labbee_users WHERE role ='Reliability Manager' OR role = 'Managing Director' ";
     db.query(reliabilityProjectManagersList, (error, result) => {
       res.send(result);
     });
