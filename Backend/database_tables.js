@@ -940,6 +940,35 @@ function createProjectTaskLogsTable() {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////
+//New Invoice data table:
+function createInvoiceDataTable() {
+  const createInvoiceDataTableQuery = `
+  CREATE TABLE IF NOT EXISTS invoice_data_table (
+    id INT NOT NULL AUTO_INCREMENT,
+    company_name VARCHAR(1000),
+    invoice_number VARCHAR(1000),
+    invoice_date DATE,
+    po_details VARCHAR(1000),
+    jc_details VARCHAR(1000),
+    invoice_amount DECIMAL(12,2),
+    invoice_status VARCHAR(100),
+    department VARCHAR(100),
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP, 
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY(id)
+  )
+  `;
+
+  db.query(createInvoiceDataTableQuery, function (err, result) {
+    if (err) {
+      console.log("Error occured while creating invoice_data_table", err);
+    } else {
+      // console.log("invoice_data_table created successfully.");
+    }
+  });
+}
+
+////////////////////////////////////////////////////////////////////////////////////////
 
 // Handle the process exiting to gracefully end the connection pool.
 process.on("exit", function () {
@@ -992,4 +1021,6 @@ module.exports = {
   createProjectSprintsTable,
   createProjectRetrospectiveTable,
   createProjectTaskLogsTable,
+
+  createInvoiceDataTable,
 };

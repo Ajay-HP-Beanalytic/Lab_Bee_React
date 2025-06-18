@@ -23,17 +23,17 @@ const socketIo = require("socket.io");
 // create an express application::
 const app = express();
 
-const serverOptions = {
-  key: fs.readFileSync(
-    "/etc/letsencrypt/live/labbee.beanalytic.com/privkey.pem"
-  ),
-  cert: fs.readFileSync(
-    "/etc/letsencrypt/live/labbee.beanalytic.com/fullchain.pem"
-  ),
-};
+// const serverOptions = {
+//   key: fs.readFileSync(
+//     "/etc/letsencrypt/live/labbee.beanalytic.com/privkey.pem"
+//   ),
+//   cert: fs.readFileSync(
+//     "/etc/letsencrypt/live/labbee.beanalytic.com/fullchain.pem"
+//   ),
+// };
 
-// const server = http.createServer(app);
-const server = https.createServer(serverOptions, app);
+const server = http.createServer(app);
+// const server = https.createServer(serverOptions, app);
 
 ///Make the app.connection available to the socket.io servers:
 const io = socketIo(server, {
@@ -163,6 +163,8 @@ const {
   createProjectSprintsTable,
   createProjectRetrospectiveTable,
   createProjectTaskLogsTable,
+
+  createInvoiceDataTable,
 } = require("./database_tables");
 
 //Get db connection from the db.js file
@@ -216,6 +218,8 @@ db.getConnection(function (err, connection) {
   createProjectSprintsTable();
   createProjectRetrospectiveTable();
   createProjectTaskLogsTable();
+
+  createInvoiceDataTable();
 
   connection.release(); // Release the connection back to the pool when done
 });
@@ -329,8 +333,8 @@ app.get("/", (req, res) => {
   res.send("Hello Welcome to Labbee...");
 });
 
-const PORT = 4002; //For deploymentt
-// const PORT = 4000;
+// const PORT = 4002; //For deploymentt
+const PORT = 4000;
 
 app.get("/api/testing", (req, res) => {
   res.send("Backend is up and running...");

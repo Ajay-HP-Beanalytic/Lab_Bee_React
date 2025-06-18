@@ -78,7 +78,17 @@ export default function UserManagement() {
       "Operations Manager",
     ],
     Marketing: ["Marketing Manager", "Marketing Executive"],
-    Reliability: ["Reliability Manager", "Reliability Engineer"],
+    Reliability: [
+      "Reliability Manager",
+      "Reliability Engineer",
+      "Senior Reliability Engineer",
+      "Senior RAMS Engineer",
+      "Reliability Engineer 1",
+      "Reliability Engineer 2",
+      "Reliability Engineer 3",
+      "Reliability Engineer 4",
+      "Trainee Reliability Engineer",
+    ],
     Software: ["Software Engineer"],
     "TS1 Testing": [
       "Lab Manager",
