@@ -410,6 +410,79 @@ function poInvoiceBackendAPIs(app) {
       res.send(result);
     });
   });
+
+  ////////////////////////////////////////////////////////////////////////////////////
+  //Add monthwise invoice data to invoice_data_table:
+  app.post("/api/addInvoiceData", (req, res) => {
+    const { invoiceData } = req.body;
+    console.log("invoiceData ==> ", invoiceData);
+
+    const sqlQuery =
+      "INSERT INTO invoice_data_table (company_name, invoice_number, invoice_date, po_details, jc_details, invoice_amount, invoice_status, department) VALUES ?";
+
+    const values = invoiceData.map((item) => [
+      item.company_name,
+      item.invoice_number,
+      item.invoice_date,
+      item.po_details,
+      item.jc_details,
+      item.invoice_amount,
+      item.invoice_status,
+      item.department,
+    ]);
+
+    db.query(sqlQuery, [values], (error, results) => {
+      if (error) {
+        console.error("Error adding invoice data:", error);
+        res.status(500).json({ error: "Failed to add invoice data" });
+      } else {
+        res.status(200).json({ message: "Invoice data added successfully" });
+      }
+    });
+  });
+
+  // API to get all invoice data for dashboard:
+  app.get("/api/getAllInvoiceData", (req, res) => {
+    const { year, month, department, dateFrom, dateTo } = req.query;
+
+    let sqlQuery = "SELECT * FROM invoice_data_table WHERE 1=1"; //-- Returns all records (1=1 is always true)
+    const queryParams = [];
+
+    if (year) {
+      queryParams.push(year);
+      sqlQuery += " AND YEAR(invoice_date) = ?";
+      console.log(sqlQuery);
+    }
+
+    if (month) {
+      queryParams.push(month);
+      sqlQuery += " AND MONTH(invoice_date) = ?";
+    }
+
+    if (department) {
+      queryParams.push(department);
+      sqlQuery += " AND department = ?";
+    }
+
+    if (dateFrom) {
+      queryParams.push(dateFrom);
+      sqlQuery += " AND invoice_date >= ?";
+    }
+
+    if (dateTo) {
+      queryParams.push(dateTo);
+      sqlQuery += " AND invoice_date <= ?";
+    }
+
+    db.query(sqlQuery, queryParams, (error, results) => {
+      if (error) {
+        console.error("Error fetching invoice data:", error);
+        res.status(500).json({ error: "Failed to fetch invoice data" });
+      } else {
+        res.status(200).json(results);
+      }
+    });
+  });
 }
 
 module.exports = { poInvoiceBackendAPIs };

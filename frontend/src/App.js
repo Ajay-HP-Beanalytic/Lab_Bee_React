@@ -40,6 +40,7 @@ import NotificationsManagement from "./Pages/NotificationsManagement";
 import EmiJobcard from "./EMI/EmiJobcard";
 import EMIJCDashboard from "./EMI/EMIJCDashboard";
 import ProjectManagementDashboard from "./projectManagement/ProjectsDashboard";
+import Financials from "./PO/Financials";
 
 function App() {
   const location = useLocation();
@@ -121,7 +122,8 @@ function App() {
                 allowedDepartments={["Administration", "Accounts"]}
                 allowedRoles={[]}
               >
-                <Home />
+                {/* <Home /> */}
+                <Financials />
               </ProtectedRoute>
             }
           />
