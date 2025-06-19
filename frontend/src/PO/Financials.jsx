@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useContext, useRef, useState } from "react";
 import {
   Box,
   Button,
@@ -30,7 +30,8 @@ import {
   FileDownload,
   Refresh,
 } from "@mui/icons-material";
-import FileUploadIcon from "@mui/icons-material/FileUpload";
+import DownloadIcon from "@mui/icons-material/Download";
+import UploadFileIcon from "@mui/icons-material/UploadFile";
 import DateRangeFilter from "../common/DateRangeFilter";
 
 import {
@@ -46,13 +47,15 @@ import {
   Pie,
   Cell,
 } from "recharts";
-import * as XLSX from "xlsx";
+
 import { toast } from "react-toastify";
 import axios from "axios";
 import { serverBaseAddress } from "../Pages/APIPage";
 import InvoiceTable from "./InoviceTable";
+import { UserContext } from "../Pages/UserContext";
 
 const Financials = () => {
+  const { loggedInUser } = useContext(UserContext);
   const [selectedView, setSelectedView] = useState("monthly");
   const [selectedDepartment, setSelectedDepartment] = useState("all");
   const [tabValue, setTabValue] = useState(0);
@@ -102,144 +105,6 @@ const Financials = () => {
     { name: "software", label: "Software" },
     { name: "others", label: "Others" },
   ];
-
-  const readExcelFile = (file) => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-
-      reader.onload = (event) => {
-        try {
-          const data = event.target.result;
-          const workbook = XLSX.read(data, { type: "array" });
-          const sheetName = workbook.SheetNames[0];
-          const workSheet = workbook.Sheets[sheetName];
-          const jsonData = XLSX.utils.sheet_to_json(workSheet, {
-            header: 1,
-            defval: "",
-          });
-          console.log("jsonData ", jsonData);
-
-          if (jsonData.length < 2) {
-            throw new Error(
-              "Excel file appears to be empty or has no data rows"
-            );
-          }
-
-          //First row should be headers:
-          const headers = jsonData[0];
-          const dataRows = jsonData.slice(1);
-
-          // Convert to object format
-          const formattedData = dataRows
-            .map((row, index) => {
-              const rowObject = {
-                _rowindex: index + 2,
-              }; // +2 because Excel starts at 1 and we skip header
-              headers.forEach((header, colIndex) => {
-                rowObject[header] = row[colIndex];
-              });
-              return rowObject;
-            })
-            .filter((row) => {
-              return Object.values(row).some(
-                (value) =>
-                  value !== "" &&
-                  value !== null &&
-                  value !== undefined &&
-                  !String(value).startsWith("_")
-              );
-            });
-
-          resolve({
-            headers,
-            data: formattedData,
-            totalRows: formattedData.length,
-          });
-
-          console.log("formattedData ", formattedData);
-        } catch (error) {
-          reject(error);
-        }
-      };
-      reader.onerror = () => reject(new Error("Failed to read file"));
-      reader.readAsArrayBuffer(file);
-    });
-  };
-
-  const parseExcelDate = (dateValue) => {
-    if (typeof dateValue === "number") {
-      const formattedDate = new Date((dateValue - 25569) * 86400 * 1000);
-      return formattedDate.toISOString().split("T")[0];
-    }
-
-    if (typeof dateValue === "string") {
-      const date = new Date(dateValue);
-      if (!isNaN(date.getTime())) {
-        return date.toISOString().split("T")[0];
-      }
-    }
-
-    return null;
-  };
-
-  const parseAmount = (amountValue) => {
-    if (typeof amountValue === "number") {
-      return amountValue;
-    }
-    if (typeof amountValue === "string") {
-      const cleanAmount = amountValue
-        .replace(/[₹$,\s]/g, "")
-        .replace(/Dr|Cr/gi, "")
-        .trim();
-      return parseFloat(cleanAmount) || 0;
-    }
-
-    return 0;
-  };
-
-  const handleImportExcel = async (e) => {
-    e.preventDefault();
-    // Get the selected Excel file from the input
-    const file = e.target.files[0];
-
-    try {
-      const excelData = await readExcelFile(file);
-      console.log("excelData ", excelData);
-
-      const parsedData = excelData.data?.map((row) => {
-        return {
-          company_name: row["Buyer"] || "",
-          invoice_number: row["Voucher No."] || "",
-          invoice_date: parseExcelDate(row["Date"]),
-          po_details: row["Purchase Order No. & Date"] || "",
-          jc_details: row["JC DETAILS"] || "",
-          invoice_amount: parseAmount(row["TOTAL INVOICE"]),
-          invoice_status: row["Invice raised"] || row["Invoice raised"] || "NO",
-          department: row["DEPARTMENT"],
-          _rowIndex: row._rowindex || 0, // For error tracking
-        };
-      });
-
-      console.log("parsedData ", parsedData);
-
-      const response = await axios.post(
-        `${serverBaseAddress}/api/addInvoiceData`,
-        { invoiceData: parsedData }
-      );
-      if (response.status === 200) {
-        toast.success("Invoice Data added successfully");
-      } else {
-        console.error("Error adding invoice data:", response.status);
-        toast.error("Error adding invoice data");
-        return false;
-      }
-    } catch (error) {
-      console.error("Error reading Excel file:", error);
-    } finally {
-      // Reset the input value
-      e.target.value = null;
-    }
-  };
 
   const pieChartData = [
     { department: "TS1", revenue: 400, color: "#2196f3" },
@@ -312,46 +177,20 @@ const Financials = () => {
         {/* Right group - Buttons */}
         <Box
           sx={{
-            flexShrink: 0,
             display: "flex",
             flexDirection: "row",
-            gap: 2,
-            minWidth: "300px",
-            alignItems: "flex-start",
+            // minWidth: "300px",
+            // alignItems: "flex-end",
+            justifyContent: "flex-end",
           }}
         >
-          <Grid container spacing={2} justifyContent="flex-end">
-            <Grid item xs={12} sm={6} md={4}>
-              <Button
-                variant="contained"
-                sx={{ backgroundColor: "#003366" }}
-                // onClick={handleImportExcel}
-              >
-                Refresh
-              </Button>
-            </Grid>
-
-            <Grid item xs={12} sm={6} md={4}>
-              <input
-                type="file"
-                accept=".xlsx, .xls"
-                ref={fileInputRef}
-                style={{ display: "none" }}
-                onChange={handleImportExcel}
-              />
-
-              {/* <Tooltip title="Import Excel"> */}
-              <Button
-                variant="contained"
-                sx={{ backgroundColor: "#003366" }}
-                onClick={() => fileInputRef.current.click()}
-                startIcon={<FileUploadIcon />}
-              >
-                Import
-              </Button>
-              {/* </Tooltip> */}
-            </Grid>
-          </Grid>
+          <Button
+            variant="contained"
+            sx={{ backgroundColor: "#003366" }}
+            // onClick={handleRefreshData}
+          >
+            Refresh
+          </Button>
         </Box>
       </Box>
 
@@ -375,6 +214,7 @@ const Financials = () => {
         >
           <Tab label="Overview" />
           <Tab label="Department Analysis" />
+          <Tab label="Chamber Run Hours" />
           <Tab label="Invoices Table" />
         </Tabs>
       </Box>
@@ -447,7 +287,9 @@ const Financials = () => {
 
       {tabValue === 1 && <h1>This is Tab 1</h1>}
 
-      {tabValue === 2 && <InvoiceTable />}
+      {tabValue === 2 && <h1>Chamber Run Hours</h1>}
+
+      {tabValue === 3 && <InvoiceTable />}
     </>
   );
 };

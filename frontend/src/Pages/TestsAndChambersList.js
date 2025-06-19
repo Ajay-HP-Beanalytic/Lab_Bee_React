@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Button, Grid, IconButton, Typography } from "@mui/material";
+import { Button, Grid, IconButton, Typography, Box } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import DeleteIcon from "@mui/icons-material/Delete";
 import axios from "axios";
@@ -587,13 +587,28 @@ export default function TestsAndChambersList() {
           >
             Add
           </Button>
-          <DataGrid
-            rows={testCategoryRowsWithSerialNumbers}
-            columns={testCategoryColumns}
-            autoHeight
-            processRowUpdate={processTestCategoryRowUpdate}
-            experimentalFeatures={{ newEditingApi: true }}
-          />
+          <Box
+            sx={{
+              height: 500,
+              width: "100%",
+              "& .custom-header-color": {
+                backgroundColor: "#476f95",
+                color: "whitesmoke",
+                fontWeight: "bold",
+                fontSize: "15px",
+              },
+              mt: 2,
+              mb: 2,
+            }}
+          >
+            <DataGrid
+              rows={testCategoryRowsWithSerialNumbers}
+              columns={testCategoryColumns}
+              autoHeight
+              processRowUpdate={processTestCategoryRowUpdate}
+              experimentalFeatures={{ newEditingApi: true }}
+            />
+          </Box>
         </Grid>
 
         <Grid item xs={12} md={6}>
@@ -606,13 +621,28 @@ export default function TestsAndChambersList() {
           >
             Add
           </Button>
-          <DataGrid
-            rows={testNameRowsWithSerialNumbers}
-            columns={testListColumns}
-            autoHeight
-            processRowUpdate={processTestNameRowUpdate}
-            experimentalFeatures={{ newEditingApi: true }}
-          />
+          <Box
+            sx={{
+              height: 500,
+              width: "100%",
+              "& .custom-header-color": {
+                backgroundColor: "#476f95",
+                color: "whitesmoke",
+                fontWeight: "bold",
+                fontSize: "15px",
+              },
+              mt: 2,
+              mb: 2,
+            }}
+          >
+            <DataGrid
+              rows={testNameRowsWithSerialNumbers}
+              columns={testListColumns}
+              autoHeight
+              processRowUpdate={processTestNameRowUpdate}
+              experimentalFeatures={{ newEditingApi: true }}
+            />
+          </Box>
         </Grid>
 
         <Grid item xs={12} md={6}>
@@ -625,13 +655,28 @@ export default function TestsAndChambersList() {
           >
             Add
           </Button>
-          <DataGrid
-            rows={chambersListRowsWithSerialNumbers}
-            columns={chambersListColumns}
-            autoHeight
-            processRowUpdate={processTestChamberRowUpdate}
-            experimentalFeatures={{ newEditingApi: true }}
-          />
+          <Box
+            sx={{
+              height: 500,
+              width: "100%",
+              "& .custom-header-color": {
+                backgroundColor: "#476f95",
+                color: "whitesmoke",
+                fontWeight: "bold",
+                fontSize: "15px",
+              },
+              mt: 2,
+              mb: 2,
+            }}
+          >
+            <DataGrid
+              rows={chambersListRowsWithSerialNumbers}
+              columns={chambersListColumns}
+              autoHeight
+              processRowUpdate={processTestChamberRowUpdate}
+              experimentalFeatures={{ newEditingApi: true }}
+            />
+          </Box>
         </Grid>
       </Grid>
     </>

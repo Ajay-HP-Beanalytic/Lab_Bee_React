@@ -413,12 +413,11 @@ function poInvoiceBackendAPIs(app) {
 
   ////////////////////////////////////////////////////////////////////////////////////
   //Add monthwise invoice data to invoice_data_table:
-  app.post("/api/addInvoiceData", (req, res) => {
+  app.post("/api/addBulkInvoiceData", (req, res) => {
     const { invoiceData } = req.body;
-    console.log("invoiceData ==> ", invoiceData);
 
     const sqlQuery =
-      "INSERT INTO invoice_data_table (company_name, invoice_number, invoice_date, po_details, jc_details, invoice_amount, invoice_status, department) VALUES ?";
+      "INSERT INTO invoice_data_table (company_name, invoice_number, invoice_date, po_details, jc_details, invoice_amount, invoice_status, department, last_updated_by) VALUES ?";
 
     const values = invoiceData.map((item) => [
       item.company_name,
@@ -429,9 +428,44 @@ function poInvoiceBackendAPIs(app) {
       item.invoice_amount,
       item.invoice_status,
       item.department,
+      item.last_updated_by,
     ]);
 
     db.query(sqlQuery, [values], (error, results) => {
+      if (error) {
+        console.error("Error adding bulk invoice data:", error);
+        res.status(500).json({ error: "Failed to add bulk invoice data" });
+      } else {
+        res
+          .status(200)
+          .json({ message: "Bulk Invoice data added successfully" });
+      }
+    });
+  });
+
+  // BACKEND: Keep original API for single record insert (for manual entry)
+  app.post("/api/addInvoiceData", (req, res) => {
+    const { formData } = req.body;
+
+    const values = [
+      formData.company_name,
+      formData.invoice_number,
+      formData.invoice_date,
+      formData.po_details,
+      formData.jc_details,
+      formData.invoice_amount,
+      formData.invoice_status,
+      formData.department,
+      formData.last_updated_by,
+    ];
+
+    const sqlQuery = `
+    INSERT INTO invoice_data_table 
+    (company_name, invoice_number, invoice_date, po_details, jc_details, invoice_amount, invoice_status, department, last_updated_by) 
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `;
+
+    db.query(sqlQuery, values, (error, results) => {
       if (error) {
         console.error("Error adding invoice data:", error);
         res.status(500).json({ error: "Failed to add invoice data" });
@@ -478,6 +512,113 @@ function poInvoiceBackendAPIs(app) {
       if (error) {
         console.error("Error fetching invoice data:", error);
         res.status(500).json({ error: "Failed to fetch invoice data" });
+      } else {
+        res.status(200).json(results);
+      }
+    });
+  });
+
+  //API to fetch the single invoice data:
+  app.get("/api/getInvoiceData/:id", (req, res) => {
+    const { id: invoiceId } = req.params;
+
+    const sqlQuery = "SELECT * FROM invoice_data_table WHERE id = ?";
+
+    db.query(sqlQuery, [invoiceId], (error, result) => {
+      if (error) {
+        console.error("Error fetching invoice data", error);
+        res.status(500).json({ error: "Failed to fetch invoice data" });
+      } else {
+        res.status(200).json(result);
+      }
+    });
+  });
+
+  // API to update the single invoice data:
+  app.post("/api/updateInvoiceData/:id", (req, res) => {
+    const { id } = req.params;
+    const { formData } = req.body;
+
+    const sqlQuery = `UPDATE invoice_data_table SET 
+                      company_name = ?,
+                      invoice_number = ?,
+                      invoice_date = ?,
+                      po_details = ?,
+                      jc_details = ?,
+                      invoice_amount = ?,
+                      invoice_status = ?,
+                      department = ?,
+                      last_updated_by = ?
+                      WHERE id = ? `;
+
+    const values = [
+      formData.company_name,
+      formData.invoice_number,
+      formData.invoice_date,
+      formData.po_details,
+      formData.jc_details,
+      formData.invoice_amount,
+      formData.invoice_status,
+      formData.department,
+      formData.last_updated_by,
+      id,
+    ];
+
+    db.query(sqlQuery, values, (error, results) => {
+      if (error) {
+        console.error("Error updating invoice data:", error);
+        res.status(500).json({ error: "Failed to update invoice data" });
+      } else {
+        res.status(200).json({ message: "Invoice data updated successfully" });
+      }
+    });
+  });
+
+  // API to delete the single invoice data:
+  app.delete("/api/deleteInvoiceData/:id", (req, res) => {
+    const { id } = req.params;
+
+    const sqlQuery = "DELETE FROM invoice_data_table WHERE id = ?";
+
+    db.query(sqlQuery, [id], (error, results) => {
+      if (error) {
+        console.error("Error deleting invoice data:", error);
+        res.status(500).json({ error: "Failed to delete invoice data" });
+      } else {
+        res.status(200).json({ message: "Invoice data deleted successfully" });
+      }
+    });
+  });
+
+  // BACKEND: API to get dashboard summary
+  app.get("/api/getInvoiceSummary", (req, res) => {
+    const summaryQuery = `
+    SELECT 
+      COUNT(*) as totalInvoices,
+      SUM(invoice_amount) as totalRevenue,
+      AVG(invoice_amount) as averageInvoice,
+      department,
+      COUNT(*) as departmentCount,
+      SUM(invoice_amount) as departmentRevenue
+    FROM invoice_data_table 
+    GROUP BY department
+    
+    UNION ALL
+    
+    SELECT 
+      COUNT(*) as totalInvoices,
+      SUM(invoice_amount) as totalRevenue,
+      AVG(invoice_amount) as averageInvoice,
+      'TOTAL' as department,
+      COUNT(*) as departmentCount,
+      SUM(invoice_amount) as departmentRevenue
+    FROM invoice_data_table
+  `;
+
+    db.query(summaryQuery, (error, results) => {
+      if (error) {
+        console.error("Error fetching invoice summary:", error);
+        res.status(500).json({ error: "Failed to fetch invoice summary" });
       } else {
         res.status(200).json(results);
       }

@@ -953,6 +953,7 @@ function createInvoiceDataTable() {
     invoice_amount DECIMAL(12,2),
     invoice_status VARCHAR(100),
     department VARCHAR(100),
+    last_updated_by VARCHAR(250),
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP, 
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     PRIMARY KEY(id)
