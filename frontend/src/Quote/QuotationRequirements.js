@@ -1,14 +1,14 @@
 // In this page we are importing all the necessary components which are require to create or make a quotation such as 'Customer/Company details', 'Item soft modules', So that all the necessary components will be available in a single page
 
-import React, { useContext } from "react";
+import { useContext } from "react";
 import AddCustomerDetails from "./AddCustomerDetails";
 import AddModulesAndTests from "./AddModulesAndTests";
-import { Box, Card, Divider, Grid, Typography } from "@mui/material";
+import { Card, Typography } from "@mui/material";
 import { UserContext } from "../Pages/UserContext";
 import PaySlipDashboard from "../HR/paySlipDashboard";
 
 export default function QuotationRequirements() {
-  const { loggedInUser, loggedInUserDepartment } = useContext(UserContext);
+  const { loggedInUserDepartment } = useContext(UserContext);
 
   return (
     <>
