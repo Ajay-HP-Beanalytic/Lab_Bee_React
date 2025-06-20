@@ -15,12 +15,17 @@ import {
   CircularProgress,
   Grid,
   Tooltip,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import DownloadIcon from "@mui/icons-material/Download";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
+import FilterAltOffIcon from "@mui/icons-material/FilterAltOff";
 import SearchBar from "../common/SearchBar";
 import EmptyCard from "../common/EmptyCard";
 import { useForm } from "react-hook-form";
@@ -29,6 +34,7 @@ import dayjs from "dayjs";
 import { UserContext } from "../Pages/UserContext";
 import { toast } from "react-toastify";
 import * as XLSX from "xlsx";
+import DateRangeFilter from "../common/DateRangeFilter";
 
 const InvoiceTable = () => {
   const { loggedInUser } = useContext(UserContext);
@@ -49,6 +55,12 @@ const InvoiceTable = () => {
 
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [selectedInvoiceId, setSelectedInvoiceId] = useState(null);
+
+  const [availableYears, setAvailableYears] = useState([]);
+  const [availableMonths, setAvailableMonths] = useState([]);
+  const [selectedMonth, setSelectedMonth] = useState("");
+  const [selectedYear, setSelectedYear] = useState("");
+  const [dateRange, setDateRange] = useState({ dateFrom: null, dateTo: null });
 
   const [refreshInvoiceTable, setRefreshInvoiceTable] = useState(false);
 
@@ -153,8 +165,6 @@ const InvoiceTable = () => {
 
     try {
       const excelData = await readExcelFile(file);
-      console.log("excelData ", excelData);
-
       const parsedData = excelData.data?.map((row) => {
         return {
           company_name: row["Buyer"] || "",
@@ -211,13 +221,61 @@ const InvoiceTable = () => {
   ////////////////////////////////////////////////////////////////////////////////////
   //Implement lazy loading here
 
+  //const fetch date options:
+  const fetchDateOptions = useCallback(async () => {
+    try {
+      const response = await axios.get(
+        `${serverBaseAddress}/api/getInvoiceDateOptions`
+      );
+
+      if (response.status === 200) {
+        setAvailableYears(response.data.years || []);
+        setAvailableMonths(response.data.months || []);
+      }
+    } catch (error) {
+      console.error("Error fetching date options:", error);
+    }
+  }, []);
+
   //Fetch all Invoice data
-  const fetchInvoiceData = async () => {
+  const fetchInvoiceData = useCallback(async () => {
     try {
       setLoading(true);
-      const response = await axios.get(
-        `${serverBaseAddress}/api/getAllInvoiceData`
-      );
+
+      // Build query parameters based on current filter state
+      const params = new URLSearchParams();
+
+      if (selectedYear) {
+        params.append("year", selectedYear);
+      }
+
+      if (selectedMonth) {
+        params.append("month", selectedMonth);
+      }
+
+      // if(selectedDepartment){
+      //   params.append("department", selectedDepartment);
+      // }
+
+      if (dateRange && dateRange.dateFrom) {
+        params.append("dateFrom", dateRange.dateFrom);
+      }
+
+      if (dateRange && dateRange.dateTo) {
+        params.append("dateTo", dateRange.dateTo);
+      }
+
+      const queryString = params.toString();
+
+      // const url = `${serverBaseAddress}/api/getAllInvoiceData${
+      //   queryString ? `?${queryString}` : ""
+      // }`;
+      const url = queryString
+        ? `${serverBaseAddress}/api/getAllInvoiceData?${queryString}`
+        : `${serverBaseAddress}/api/getAllInvoiceData`;
+
+      const response = await axios.get(url);
+
       if (response.status === 200) {
         setInvoiceData(response.data);
         setFilteredInvoiceData(response.data);
@@ -232,7 +290,8 @@ const InvoiceTable = () => {
     } finally {
       setLoading(false);
     }
-  };
+    // }, [selectedYear, selectedMonth, selectedDepartment, dateRange]);
+  }, [selectedYear, selectedMonth, dateRange]);
 
   //Add single Invoice data
   const addSingleInvoiceData = async (newInvoiceData) => {
@@ -627,7 +686,7 @@ const InvoiceTable = () => {
 
   useEffect(() => {
     fetchInvoiceData();
-  }, [refreshInvoiceTable]);
+  }, [fetchInvoiceData, refreshInvoiceTable]);
 
   // Update filtered data when invoice data changes
   useEffect(() => {
@@ -637,6 +696,73 @@ const InvoiceTable = () => {
       filterInvoiceDataTable(searchInputTextOfInvoiceTable);
     }
   }, [invoiceData, searchInputTextOfInvoiceTable, filterInvoiceDataTable]);
+
+  // Call it when component mounts
+  useEffect(() => {
+    fetchDateOptions();
+  }, [fetchDateOptions]);
+
+  //handle filters:
+  const handleYearChange = (event) => {
+    setSelectedYear(event.target.value);
+  };
+
+  const handleMonthChange = (event) => {
+    setSelectedMonth(event.target.value);
+  };
+
+  const handleDateRangeChange = (selectedDateRange) => {
+    if (
+      selectedDateRange &&
+      selectedDateRange.startDate &&
+      selectedDateRange.endDate
+    ) {
+      const startDate = selectedDateRange.startDate;
+      const endDate = selectedDateRange.endDate;
+      const formattedStartDate = dayjs(startDate).format("YYYY-MM-DD");
+      const formattedEndDate = dayjs(endDate).format("YYYY-MM-DD");
+      setDateRange({
+        dateFrom: formattedStartDate,
+        dateTo: formattedEndDate,
+      });
+    }
+  };
+
+  const handleClearDateRange = () => {
+    setDateRange(null);
+    setFilteredInvoiceData(invoiceData);
+  };
+
+  const handleClearFilters = () => {
+    setSelectedYear("");
+    setSelectedMonth("");
+    // setSelectedDepartment("");
+    setDateRange(null);
+    // Clear search as well
+    setSearchInputTextOfInvoiceTable("");
+    setFilteredInvoiceData(invoiceData);
+  };
+
+  // Check if any filters are active
+  const hasActiveFilters = () => {
+    return (
+      selectedYear ||
+      selectedMonth ||
+      (dateRange && dateRange.dateFrom) ||
+      (dateRange && dateRange.dateTo) ||
+      searchInputTextOfInvoiceTable
+    );
+  };
+
+  // Get active filter count
+  const getActiveFilterCount = () => {
+    let count = 0;
+    if (selectedYear) count++;
+    if (selectedMonth) count++;
+    // if (selectedDepartment) count++;
+    if (dateRange && dateRange.dateFrom && dateRange.dateTo) count++;
+    return count;
+  };
 
   if (loading) {
     return (
@@ -653,58 +779,186 @@ const InvoiceTable = () => {
     <>
       <Box
         sx={{
-          flexShrink: 0,
           display: "flex",
           flexDirection: "row",
-          gap: 1,
-          minWidth: "400px",
           alignItems: "center",
-          justifyContent: "flex-end",
-          flexWrap: "wrap", // Optional: allows wrapping on small screens
+          justifyContent: "space-between",
+          flexWrap: "wrap", // allows wrapping on small screens
           mb: 2,
+          gap: 2,
         }}
       >
-        <Tooltip title="Download Excel Template" arrow>
-          <Button
-            variant="contained"
-            sx={{ backgroundColor: "#003366" }}
-            startIcon={<DownloadIcon />}
-            onClick={handleDownloadTemplate}
-          >
-            Template
-          </Button>
-        </Tooltip>
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "row",
+            gap: 1,
+            minWidth: "400px",
+            alignItems: "center",
+            justifyContent: "flex-end",
+            flexWrap: "wrap", // Optional: allows wrapping on small screens
+          }}
+        >
+          <FormControl sx={{ width: "120px" }} size="small">
+            <InputLabel> Year</InputLabel>
+            <Select
+              value={selectedYear}
+              onChange={handleYearChange}
+              label="Year"
+            >
+              {/* <MenuItem value="">All Years</MenuItem> */}
+              {availableYears.map((year) => (
+                <MenuItem key={year} value={year}>
+                  {year}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
 
-        <input
-          type="file"
-          accept=".xlsx, .xls"
-          ref={fileInputRef}
-          style={{ display: "none" }}
-          onChange={handleImportExcel}
-        />
+          <FormControl sx={{ width: "120px" }} size="small">
+            <InputLabel> Month</InputLabel>
+            <Select
+              value={selectedMonth}
+              onChange={handleMonthChange}
+              label="Month"
+            >
+              {/* <MenuItem value="">All Months</MenuItem> */}
+              {availableMonths.map((month) => (
+                <MenuItem key={month.value} value={month.value}>
+                  {month.label}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
 
-        <Tooltip title="Import Excel" arrow>
-          <Button
-            variant="contained"
-            sx={{ backgroundColor: "#003366" }}
-            onClick={() => fileInputRef.current.click()}
-            startIcon={<UploadFileIcon />}
-          >
-            Upload
-          </Button>
-        </Tooltip>
+          <DateRangeFilter
+            onClickDateRangeSelectDoneButton={handleDateRangeChange}
+            onClickDateRangeSelectClearButton={handleClearDateRange}
+          />
 
-        <Tooltip title="Add Single Invoice" arrow>
-          <Button
-            variant="contained"
-            sx={{ backgroundColor: "#003366" }}
-            startIcon={<AddIcon />}
-            onClick={() => handleOpenInvoiceDialog()} // To pass the arguments
-          >
-            Add Invoice
-          </Button>
-        </Tooltip>
+          {/* Clear Filters Button */}
+          {hasActiveFilters() && (
+            <Tooltip title="Clear All Filters">
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<FilterAltOffIcon />}
+                onClick={handleClearFilters}
+                sx={{ height: 40 }}
+              >
+                Clear
+              </Button>
+            </Tooltip>
+          )}
+        </Box>
+
+        <Box
+          sx={{
+            flexShrink: 0,
+            display: "flex",
+            flexDirection: "row",
+            gap: 1,
+            minWidth: "400px",
+            alignItems: "center",
+            justifyContent: "flex-end",
+            flexWrap: "wrap", // Optional: allows wrapping on small screens
+            // mb: 2,
+          }}
+        >
+          <Tooltip title="Download Excel Template" arrow>
+            <Button
+              variant="contained"
+              sx={{ backgroundColor: "#003366" }}
+              startIcon={<DownloadIcon />}
+              onClick={handleDownloadTemplate}
+            >
+              Template
+            </Button>
+          </Tooltip>
+
+          <input
+            type="file"
+            accept=".xlsx, .xls"
+            ref={fileInputRef}
+            style={{ display: "none" }}
+            onChange={handleImportExcel}
+          />
+
+          <Tooltip title="Import Excel" arrow>
+            <Button
+              variant="contained"
+              sx={{ backgroundColor: "#003366" }}
+              onClick={() => fileInputRef.current.click()}
+              startIcon={<UploadFileIcon />}
+            >
+              Upload
+            </Button>
+          </Tooltip>
+
+          <Tooltip title="Add Single Invoice" arrow>
+            <Button
+              variant="contained"
+              sx={{ backgroundColor: "#003366" }}
+              startIcon={<AddIcon />}
+              onClick={() => handleOpenInvoiceDialog()} // To pass the arguments
+            >
+              Add Invoice
+            </Button>
+          </Tooltip>
+        </Box>
       </Box>
+
+      {/* Active Filters Display */}
+      {hasActiveFilters() && (
+        <Box sx={{ mb: 1 }}>
+          {/* <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
+            <FilterListIcon color="primary" />
+            <Typography variant="body2" color="primary" sx={{ fontWeight: "medium" }}>
+              Active Filters ({getActiveFilterCount()}):
+            </Typography>
+            
+            {selectedYear && (
+              <Chip 
+                label={`Year: ${selectedYear}`} 
+                onDelete={() => setSelectedYear("")}
+                size="small"
+                color="primary"
+                variant="outlined"
+              />
+            )}
+            
+            {selectedMonth && (
+              <Chip 
+                label={`Month: ${monthOptions.find(m => m.value === selectedMonth)?.label}`}
+                onDelete={() => setSelectedMonth("")}
+                size="small"
+                color="primary"
+                variant="outlined"
+              />
+            )}
+            
+            {selectedDepartment && (
+              <Chip 
+                label={`Department: ${selectedDepartment}`}
+                onDelete={() => setSelectedDepartment("")}
+                size="small"
+                color="primary"
+                variant="outlined"
+              />
+            )}
+            
+            {dateRange.startDate && dateRange.endDate && (
+              <Chip 
+                label={`Date: ${dayjs(dateRange.startDate).format('DD/MM/YYYY')} - ${dayjs(dateRange.endDate).format('DD/MM/YYYY')}`}
+                onDelete={() => setDateRange({ startDate: null, endDate: null })}
+                size="small"
+                color="primary"
+                variant="outlined"
+              />
+            )}
+          </Box> */}
+        </Box>
+      )}
 
       <SearchBar
         placeholder="Search Invoice"
@@ -714,7 +968,13 @@ const InvoiceTable = () => {
       />
 
       {filteredInvoiceData.length === 0 ? (
-        <EmptyCard message="No Invoices Found" />
+        <EmptyCard
+          message={
+            hasActiveFilters()
+              ? "No invoices found matching the current filters. Try adjusting your search criteria."
+              : "No Invoices Found"
+          }
+        />
       ) : (
         <Box
           sx={{
@@ -737,7 +997,6 @@ const InvoiceTable = () => {
             autoHeight
             pagination
             paginationMode="client"
-            pageSize={10}
             pageSize={10}
             rowsPerPageOptions={[5, 10, 20, 50]}
             disableRowSelectionOnClick

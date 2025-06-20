@@ -14,29 +14,14 @@ export default function EMIJCStepThree() {
   const { control, register, setValue, watch } = useForm();
 
   const jcStatusFieldsPartOne = [
-    // {
-    //   label: "Observation Form",
-    //   name: "observationForm",
-    //   type: "select",
-    //   options: [
-    //     { label: "CS101", value: "CS101" },
-    //     { label: "CS114", value: "CS114" },
-    //     { label: "CS115", value: "CS115" },
-    //     { label: "CS116", value: "CS116" },
-    //     { label: "CS118", value: "CS118" },
-    //     { label: "RS101", value: "CS118" },
-    //     { label: "RS103", value: "RS103" },
-    //   ],
-    //   width: "100%",
-    // },
     {
       label: "JC Status",
       name: "jcStatus",
       type: "select",
       options: [
         // { label: "Open", value: "Open" },
-        { label: "Running", value: "Running" },
-        { label: "Closed", value: "Closed" },
+        { id: "Running", label: "Running" },
+        { id: "Closed", label: "Closed" },
       ],
       width: "100%",
     },
