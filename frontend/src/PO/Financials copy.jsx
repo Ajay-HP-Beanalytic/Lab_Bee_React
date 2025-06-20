@@ -1,28 +1,16 @@
-import React, { useState, useEffect, useMemo } from "react";
+import { useContext, useState, useCallback, useEffect } from "react";
 import {
   Box,
   Button,
   Card,
-  CardContent,
-  Grid,
   FormControl,
+  Grid,
   InputLabel,
   MenuItem,
   Select,
-  Table,
-  TableBody,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TableCell,
-  Paper,
   Typography,
-  Chip,
+  CardContent,
   Avatar,
-  LinearProgress,
-  Divider,
-  IconButton,
-  Tooltip,
   Tab,
   Tabs,
 } from "@mui/material";
@@ -38,192 +26,363 @@ import {
   FileDownload,
   Refresh,
 } from "@mui/icons-material";
+import DateRangeFilter from "../common/DateRangeFilter";
+
 import {
   LineChart,
   Line,
-  BarChart,
-  Bar,
-  PieChart,
-  Pie,
-  Cell,
   XAxis,
   YAxis,
   CartesianGrid,
-  Tooltip as RechartsTooltip,
+  Tooltip,
   Legend,
   ResponsiveContainer,
-  ComposedChart,
-  Area,
-  AreaChart,
+  PieChart,
+  Pie,
+  Cell,
 } from "recharts";
-import DateRangeFilter from "../common/DateRangeFilter";
+
+import { toast } from "react-toastify";
+import axios from "axios";
+import { serverBaseAddress } from "../Pages/APIPage";
+import InvoiceTable from "./InoviceTable";
+import { UserContext } from "../Pages/UserContext";
 
 const Financials = () => {
+  const { loggedInUser } = useContext(UserContext);
   const [selectedView, setSelectedView] = useState("monthly");
-  const [selectedDepartment, setSelectedDepartment] = useState("all");
+  const [selectedDepartment, setSelectedDepartment] = useState("");
+  const [availableYears, setAvailableYears] = useState([]);
+  const [availableMonths, setAvailableMonths] = useState([]);
+  const [selectedMonth, setSelectedMonth] = useState("");
+  const [selectedYear, setSelectedYear] = useState("");
+  const [dateRange, setDateRange] = useState({ dateFrom: null, dateTo: null });
+
   const [tabValue, setTabValue] = useState(0);
-  const [dateRange, setDateRange] = useState({
-    startDate: null,
-    endDate: null,
-  });
 
-  // Sample data based on your invoice structure
-  const [dashboardData, setDashboardData] = useState({
-    summary: {
-      totalRevenue: 2547890,
-      totalInvoices: 156,
-      averageInvoiceValue: 16332,
-      pendingAmount: 234560,
-      collectionRate: 92.1,
-      monthlyGrowth: 8.5,
+  const [dashboardData, setDashboardData] = useState({});
+
+  const departmentOptions = [
+    { id: "all", label: "All Departments" },
+    { id: "TS1", label: "TS1" },
+    { id: "TS1", label: "TS2" },
+    { id: "Reliability", label: "Reliability" },
+    { id: "Software", label: "Software" },
+    { id: "Others", label: "Others" },
+  ];
+
+  const financialKPIs = [
+    {
+      label: "Total Revenue",
+      value: 150,
+      color: "#2196f3",
+      icon: <MonetizationOn />,
     },
-    departmentMetrics: [
-      {
-        department: "TS1",
-        revenue: 1245600,
-        invoices: 67,
-        averageValue: 18590,
-        growth: 12.3,
-        target: 1400000,
-        color: "#2196f3",
-      },
-      {
-        department: "TS2",
-        revenue: 789450,
-        invoices: 34,
-        averageValue: 23220,
-        growth: 5.7,
-        target: 850000,
-        color: "#4caf50",
-      },
-      {
-        department: "Reliability",
-        revenue: 345670,
-        invoices: 28,
-        averageValue: 12345,
-        growth: 15.2,
-        target: 400000,
-        color: "#ff9800",
-      },
-      {
-        department: "Software",
-        revenue: 167170,
-        invoices: 27,
-        averageValue: 6191,
-        growth: -2.1,
-        target: 200000,
-        color: "#9c27b0",
-      },
-    ],
-    monthlyTrends: [
-      {
-        month: "Jan",
-        revenue: 2100000,
-        expenses: 1600000,
-        profit: 500000,
-        invoices: 45,
-      },
-      {
-        month: "Feb",
-        revenue: 2250000,
-        expenses: 1650000,
-        profit: 600000,
-        invoices: 52,
-      },
-      {
-        month: "Mar",
-        revenue: 2400000,
-        expenses: 1700000,
-        profit: 700000,
-        invoices: 48,
-      },
-      {
-        month: "Apr",
-        revenue: 2300000,
-        expenses: 1680000,
-        profit: 620000,
-        invoices: 56,
-      },
-      {
-        month: "May",
-        revenue: 2600000,
-        expenses: 1750000,
-        profit: 850000,
-        invoices: 61,
-      },
-      {
-        month: "Jun",
-        revenue: 2547890,
-        expenses: 1720000,
-        profit: 827890,
-        invoices: 58,
-      },
-    ],
-    topClients: [
-      {
-        name: "Radial India Private Limited",
-        revenue: 456780,
-        invoices: 12,
-        department: "TS1",
-      },
-      {
-        name: "Park Control & Communications",
-        revenue: 387650,
-        invoices: 8,
-        department: "TS2",
-      },
-      {
-        name: "Tech Solutions Ltd",
-        revenue: 298760,
-        invoices: 15,
-        department: "Reliability",
-      },
-      {
-        name: "Advanced Systems",
-        revenue: 234590,
-        invoices: 9,
-        department: "Software",
-      },
-      {
-        name: "Industrial Automation",
-        revenue: 198760,
-        invoices: 7,
-        department: "TS1",
-      },
-    ],
-    recentInvoices: [
-      {
-        id: "BEA/140/25-26",
-        client: "Radial India Private Limited",
-        amount: 14160,
-        date: "2025-06-11",
-        status: "Paid",
-        department: "TS1",
-      },
-      {
-        id: "BEA/141/25-26",
-        client: "Park Control & Communications",
-        amount: 30444,
-        date: "2025-06-11",
-        status: "Pending",
-        department: "TS1",
-      },
-    ],
-  });
+    {
+      label: " Total Invoices",
+      value: 150,
+      color: "#4caf50",
+      icon: <Receipt />,
+    },
+    {
+      label: "Average Invoice Value",
+      value: 150,
+      color: "#ff9800",
+      icon: <Assessment />,
+    },
+  ];
 
-  // Color scheme for charts
-  const COLORS = ["#2196f3", "#4caf50", "#ff9800", "#9c27b0", "#f44336"];
+  const departmentWiseRevenue = [
+    { name: "ts_1_revenue", label: "TS1" },
+    { name: "ts_2_revenue", label: "TS2" },
+    { name: "reliability_revenue", label: "Reliability" },
+    { name: "software_revenue", label: "Software" },
+    { name: "others_revenue", label: "Others" },
+  ];
 
-  // KPI Card Component
-  const KPICard = ({
-    title,
-    value,
-    icon,
-    trend,
-    trendValue,
-    color,
-    subtitle,
-  }) => (
+  const optionsForDashboardView = [
+    { name: "monthly", label: "Monthly" },
+    { name: "quarterly", label: "Quarterly" },
+    { name: "yearly", label: "Yearly" },
+  ];
+
+  const optionsForDepartment = [
+    { name: "all", label: "All" },
+    { name: "ts_1", label: "TS1" },
+    { name: "ts_2", label: "TS2" },
+    { name: "reliability", label: "Reliability" },
+    { name: "software", label: "Software" },
+    { name: "others", label: "Others" },
+  ];
+
+  const pieChartData = [
+    { department: "TS1", revenue: 400, color: "#2196f3" },
+    { department: "TS2", revenue: 300, color: "#4caf50" },
+    { department: "Reliability", revenue: 300, color: "#ff9800" },
+    { department: "Software", revenue: 200, color: "#9c27b0" },
+    { department: "Others", revenue: 200, color: "#f44336" },
+  ];
+
+  const data = [
+    {
+      name: "Page A",
+      uv: 4000,
+      pv: 2400,
+      amt: 2400,
+    },
+    {
+      name: "Page B",
+      uv: 3000,
+      pv: 1398,
+      amt: 2210,
+    },
+  ];
+
+  //const fetch date options:
+  const fetchDateOptions = useCallback(async () => {
+    try {
+      const response = await axios.get(
+        `${serverBaseAddress}/api/getInvoiceDateOptions`
+      );
+
+      if (response.status === 200) {
+        setAvailableYears(response.data.years || []);
+        setAvailableMonths(response.data.months || []);
+      }
+    } catch (error) {
+      console.error("Error fetching date options:", error);
+    }
+  }, []);
+
+  const handleYearChange = (event) => {
+    setSelectedYear(event.target.value);
+  };
+
+  const handleMonthChange = (event) => {
+    setSelectedMonth(event.target.value);
+  };
+
+  const handleDepartmentChange = (event) => {
+    setSelectedDepartment(event.target.value);
+  };
+
+  // Call it when component mounts
+  useEffect(() => {
+    fetchDateOptions();
+  }, [fetchDateOptions]);
+
+  return (
+    <>
+      <Box
+        sx={{
+          width: "100%",
+          display: "flex",
+          flexWrap: "wrap",
+          justifyContent: "space-between",
+          alignItems: "flex-start",
+          gap: 2,
+          mb: "5px",
+        }}
+      >
+        {/* Left group - Filters */}
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "row",
+            gap: 1,
+            minWidth: "400px",
+            alignItems: "center",
+            justifyContent: "flex-start",
+            flexWrap: "wrap", // Optional: allows wrapping on small screens
+          }}
+        >
+          {/* <Grid container spacing={2}>
+            <Grid item xs={12} sm={6} md={4}> */}
+          <FormControl sx={{ width: "120px" }} size="small">
+            <InputLabel> Year</InputLabel>
+            <Select
+              value={selectedYear}
+              onChange={handleYearChange}
+              label="Year"
+            >
+              {/* <MenuItem value="">All Years</MenuItem> */}
+              {availableYears.map((year) => (
+                <MenuItem key={year} value={year}>
+                  {year}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          {/* </Grid> */}
+
+          {/* <Grid item xs={12} sm={6} md={4}> */}
+          <FormControl sx={{ width: "120px" }} size="small">
+            <InputLabel> Month</InputLabel>
+            <Select
+              value={selectedMonth}
+              onChange={handleMonthChange}
+              label="Month"
+            >
+              {/* <MenuItem value="">All Months</MenuItem> */}
+              {availableMonths.map((month) => (
+                <MenuItem key={month.value} value={month.value}>
+                  {month.label}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          {/* </Grid> */}
+
+          {/* <Grid item xs={12} sm={6} md={4}> */}
+          <FormControl sx={{ width: "160px" }} size="small">
+            <InputLabel>Department</InputLabel>
+            <Select
+              value={selectedDepartment}
+              onChange={handleDepartmentChange}
+              label="Department"
+            >
+              {departmentOptions.map((dept) => (
+                <MenuItem key={dept.id} value={dept.id}>
+                  {dept.label}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          {/* </Grid> */}
+
+          {/* <Grid item xs={12} md={4} container justifyContent="flex-start"> */}
+          <DateRangeFilter
+            onClickDateRangeSelectDoneButton={() => {}}
+            onClickDateRangeSelectClearButton={() => {}}
+          />
+          {/* </Grid> */}
+          {/* </Grid> */}
+        </Box>
+
+        {/* Right group - Buttons */}
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "row",
+            // minWidth: "300px",
+            // alignItems: "flex-end",
+            justifyContent: "flex-end",
+          }}
+        >
+          <Button
+            variant="contained"
+            sx={{ backgroundColor: "#003366" }}
+            // onClick={handleRefreshData}
+          >
+            Refresh
+          </Button>
+        </Box>
+      </Box>
+
+      <Grid container spacing={2} sx={{ mb: "5px", mt: "5px" }}>
+        {financialKPIs.map((option) => (
+          <Grid item xs={4} key={option.name}>
+            <FinanceKPICard
+              title={option.label}
+              value={option.value}
+              color={option.color}
+              icon={option.icon}
+            />
+          </Grid>
+        ))}
+      </Grid>
+
+      <Box sx={{ mb: 2 }}>
+        <Tabs
+          value={tabValue}
+          onChange={(e, newValue) => setTabValue(newValue)}
+        >
+          <Tab label="Overview" />
+          <Tab label="Department Analysis" />
+          <Tab label="Chamber Run Hours" />
+          <Tab label="Invoices Table" />
+        </Tabs>
+      </Box>
+
+      {tabValue === 0 && (
+        <Grid container spacing={2}>
+          {/* Revenue Trend Chart */}
+          <Grid item xs={12} lg={8}>
+            <Card sx={{ height: 400 }}>
+              <Typography>Revenue Trend</Typography>
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart
+                  width={500}
+                  height={300}
+                  data={data}
+                  margin={{
+                    top: 5,
+                    right: 30,
+                    left: 20,
+                    bottom: 5,
+                  }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="name" />
+                  <YAxis />
+                  <Tooltip />
+                  <Legend />
+                  <Line
+                    type="monotone"
+                    dataKey="pv"
+                    stroke="#8884d8"
+                    activeDot={{ r: 8 }}
+                  />
+                  <Line type="monotone" dataKey="uv" stroke="#82ca9d" />
+                </LineChart>
+              </ResponsiveContainer>
+            </Card>
+          </Grid>
+
+          <Grid item xs={12} lg={4}>
+            <Card sx={{ height: 400 }}>
+              <CardContent>
+                <Typography variant="h6" sx={{ color: "#003366", mb: 2 }}>
+                  Department Wise Revenue
+                </Typography>
+                <ResponsiveContainer width="100%" height={320}>
+                  <PieChart>
+                    <Pie
+                      data={pieChartData}
+                      dataKey="revenue"
+                      nameKey="department"
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={100}
+                      label={({ department, percent }) =>
+                        `${department}: ${(percent * 100).toFixed(1)}%`
+                      }
+                    >
+                      {pieChartData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                  </PieChart>
+                </ResponsiveContainer>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+      )}
+
+      {tabValue === 1 && <h1>This is Tab 1</h1>}
+
+      {tabValue === 2 && <h1>Chamber Run Hours</h1>}
+
+      {tabValue === 3 && <InvoiceTable />}
+    </>
+  );
+};
+
+export default Financials;
+
+const FinanceKPICard = ({ title, value, icon, trend, trendValue, color }) => {
+  return (
     <Card
       sx={{
         background: `linear-gradient(135deg, ${color}15 0%, ${color}25 100%)`,
@@ -243,39 +402,13 @@ const Financials = () => {
             <Typography variant="body2" color="text.secondary" gutterBottom>
               {title}
             </Typography>
+
             <Typography
               variant="h4"
               sx={{ fontWeight: "bold", color: color, mb: 1 }}
             >
               {typeof value === "number" ? value.toLocaleString() : value}
             </Typography>
-            {subtitle && (
-              <Typography variant="body2" color="text.secondary">
-                {subtitle}
-              </Typography>
-            )}
-            {trend && (
-              <Box sx={{ display: "flex", alignItems: "center", mt: 1 }}>
-                {trend === "up" ? (
-                  <TrendingUp
-                    sx={{ color: "#4caf50", fontSize: 16, mr: 0.5 }}
-                  />
-                ) : (
-                  <TrendingDown
-                    sx={{ color: "#f44336", fontSize: 16, mr: 0.5 }}
-                  />
-                )}
-                <Typography
-                  variant="body2"
-                  sx={{
-                    color: trend === "up" ? "#4caf50" : "#f44336",
-                    fontWeight: "medium",
-                  }}
-                >
-                  {trendValue}% from last month
-                </Typography>
-              </Box>
-            )}
           </Box>
           <Avatar
             sx={{ bgcolor: `${color}20`, color: color, width: 56, height: 56 }}
@@ -286,563 +419,4 @@ const Financials = () => {
       </CardContent>
     </Card>
   );
-
-  // Department Performance Card
-  const DepartmentCard = ({ dept }) => {
-    const progressPercentage = (dept.revenue / dept.target) * 100;
-    const isGrowthPositive = dept.growth > 0;
-
-    return (
-      <Card sx={{ height: "100%" }}>
-        <CardContent>
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              mb: 2,
-            }}
-          >
-            <Typography variant="h6" sx={{ fontWeight: "bold" }}>
-              {dept.department}
-            </Typography>
-            <Chip
-              label={`${isGrowthPositive ? "+" : ""}${dept.growth}%`}
-              color={isGrowthPositive ? "success" : "error"}
-              size="small"
-              icon={isGrowthPositive ? <TrendingUp /> : <TrendingDown />}
-            />
-          </Box>
-
-          <Typography
-            variant="h5"
-            sx={{ fontWeight: "bold", color: dept.color, mb: 1 }}
-          >
-            ₹{dept.revenue.toLocaleString()}
-          </Typography>
-
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            {dept.invoices} invoices • Avg: ₹
-            {dept.averageValue.toLocaleString()}
-          </Typography>
-
-          <Box sx={{ mb: 1 }}>
-            <Box
-              sx={{ display: "flex", justifyContent: "space-between", mb: 0.5 }}
-            >
-              <Typography variant="body2">Target Progress</Typography>
-              <Typography variant="body2">
-                {progressPercentage.toFixed(1)}%
-              </Typography>
-            </Box>
-            <LinearProgress
-              variant="determinate"
-              value={Math.min(progressPercentage, 100)}
-              sx={{
-                height: 8,
-                borderRadius: 4,
-                backgroundColor: `${dept.color}20`,
-                "& .MuiLinearProgress-bar": {
-                  backgroundColor: dept.color,
-                  borderRadius: 4,
-                },
-              }}
-            />
-          </Box>
-
-          <Typography variant="caption" color="text.secondary">
-            Target: ₹{dept.target.toLocaleString()}
-          </Typography>
-        </CardContent>
-      </Card>
-    );
-  };
-
-  // Filter options
-  const optionsForDashboardView = [
-    { name: "monthly", label: "Monthly" },
-    { name: "quarterly", label: "Quarterly" },
-    { name: "yearly", label: "Yearly" },
-  ];
-
-  const optionsForDepartment = [
-    { name: "all", label: "All Departments" },
-    { name: "ts1", label: "TS1" },
-    { name: "ts2", label: "TS2" },
-    { name: "reliability", label: "Reliability" },
-    { name: "software", label: "Software" },
-    { name: "others", label: "Others" },
-  ];
-
-  // Handlers
-  const handleImportExcel = () => {
-    // Implementation for Excel import
-    console.log("Import Excel functionality");
-  };
-
-  const handleExportData = () => {
-    // Implementation for data export
-    console.log("Export data functionality");
-  };
-
-  const handleRefreshData = () => {
-    // Implementation for data refresh
-    console.log("Refresh data functionality");
-  };
-
-  return (
-    <Box sx={{ p: 3 }}>
-      {/* Header */}
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          mb: 3,
-        }}
-      >
-        <Typography variant="h4" sx={{ fontWeight: "bold", color: "#1a1a1a" }}>
-          Financial Dashboard
-        </Typography>
-        <Box sx={{ display: "flex", gap: 1 }}>
-          <Tooltip title="Refresh Data">
-            <IconButton onClick={handleRefreshData} color="primary">
-              <Refresh />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title="Export Data">
-            <IconButton onClick={handleExportData} color="primary">
-              <FileDownload />
-            </IconButton>
-          </Tooltip>
-          <Button
-            variant="contained"
-            startIcon={<FileDownload />}
-            onClick={handleImportExcel}
-            sx={{ bgcolor: "#2196f3" }}
-          >
-            Import Excel
-          </Button>
-        </Box>
-      </Box>
-
-      {/* Filters */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} md={4}>
-          <DateRangeFilter
-            onClickDateRangeSelectDoneButton={(range) => setDateRange(range)}
-            onClickDateRangeSelectClearButton={() =>
-              setDateRange({ startDate: null, endDate: null })
-            }
-          />
-        </Grid>
-        <Grid item xs={12} md={4}>
-          <FormControl fullWidth>
-            <InputLabel>Select View</InputLabel>
-            <Select
-              value={selectedView}
-              label="Select View"
-              onChange={(e) => setSelectedView(e.target.value)}
-            >
-              {optionsForDashboardView.map((option) => (
-                <MenuItem key={option.name} value={option.name}>
-                  {option.label}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Grid>
-        <Grid item xs={12} md={4}>
-          <FormControl fullWidth>
-            <InputLabel>Select Department</InputLabel>
-            <Select
-              value={selectedDepartment}
-              label="Select Department"
-              onChange={(e) => setSelectedDepartment(e.target.value)}
-            >
-              {optionsForDepartment.map((option) => (
-                <MenuItem key={option.name} value={option.name}>
-                  {option.label}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-        </Grid>
-      </Grid>
-
-      {/* KPI Summary Cards */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={6} md={3}>
-          <KPICard
-            title="Total Revenue"
-            value={`₹${dashboardData.summary.totalRevenue.toLocaleString()}`}
-            icon={<MonetizationOn />}
-            trend="up"
-            trendValue={dashboardData.summary.monthlyGrowth}
-            color="#2196f3"
-            subtitle="This Month"
-          />
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <KPICard
-            title="Total Invoices"
-            value={dashboardData.summary.totalInvoices}
-            icon={<Receipt />}
-            trend="up"
-            trendValue="12.5"
-            color="#4caf50"
-            subtitle="Generated"
-          />
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <KPICard
-            title="Avg Invoice Value"
-            value={`₹${dashboardData.summary.averageInvoiceValue.toLocaleString()}`}
-            icon={<Assessment />}
-            trend="up"
-            trendValue="3.2"
-            color="#ff9800"
-            subtitle="Per Invoice"
-          />
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <KPICard
-            title="Collection Rate"
-            value={`${dashboardData.summary.collectionRate}%`}
-            icon={<AccountBalance />}
-            trend="up"
-            trendValue="2.1"
-            color="#9c27b0"
-            subtitle="Payment Received"
-          />
-        </Grid>
-      </Grid>
-
-      {/* Tabs for different views */}
-      <Box sx={{ mb: 3 }}>
-        <Tabs
-          value={tabValue}
-          onChange={(e, newValue) => setTabValue(newValue)}
-        >
-          <Tab label="Overview" />
-          <Tab label="Department Analysis" />
-          <Tab label="Client Performance" />
-          <Tab label="Invoice Details" />
-        </Tabs>
-      </Box>
-
-      {/* Tab Content */}
-      {tabValue === 0 && (
-        <Grid container spacing={3}>
-          {/* Revenue Trend Chart */}
-          <Grid item xs={12} lg={8}>
-            <Card sx={{ height: 400 }}>
-              <CardContent>
-                <Typography variant="h6" sx={{ mb: 2, fontWeight: "bold" }}>
-                  Revenue & Profit Trends
-                </Typography>
-                <ResponsiveContainer width="100%" height={320}>
-                  <ComposedChart data={dashboardData.monthlyTrends}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="month" />
-                    <YAxis yAxisId="left" />
-                    <YAxis yAxisId="right" orientation="right" />
-                    <RechartsTooltip
-                      formatter={(value) => [`₹${value.toLocaleString()}`, ""]}
-                    />
-                    <Legend />
-                    <Bar
-                      yAxisId="left"
-                      dataKey="revenue"
-                      fill="#2196f3"
-                      name="Revenue"
-                    />
-                    <Bar
-                      yAxisId="left"
-                      dataKey="expenses"
-                      fill="#ff9800"
-                      name="Expenses"
-                    />
-                    <Line
-                      yAxisId="right"
-                      type="monotone"
-                      dataKey="profit"
-                      stroke="#4caf50"
-                      strokeWidth={3}
-                      name="Profit"
-                    />
-                  </ComposedChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          {/* Department Revenue Distribution */}
-          <Grid item xs={12} lg={4}>
-            <Card sx={{ height: 400 }}>
-              <CardContent>
-                <Typography variant="h6" sx={{ mb: 2, fontWeight: "bold" }}>
-                  Revenue by Department
-                </Typography>
-                <ResponsiveContainer width="100%" height={320}>
-                  <PieChart>
-                    <Pie
-                      data={dashboardData.departmentMetrics}
-                      dataKey="revenue"
-                      nameKey="department"
-                      cx="50%"
-                      cy="50%"
-                      outerRadius={100}
-                      label={({ department, percent }) =>
-                        `${department}: ${(percent * 100).toFixed(1)}%`
-                      }
-                    >
-                      {dashboardData.departmentMetrics.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <RechartsTooltip
-                      formatter={(value) => [
-                        `₹${value.toLocaleString()}`,
-                        "Revenue",
-                      ]}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          {/* Invoice Volume Trend */}
-          <Grid item xs={12} lg={6}>
-            <Card sx={{ height: 300 }}>
-              <CardContent>
-                <Typography variant="h6" sx={{ mb: 2, fontWeight: "bold" }}>
-                  Monthly Invoice Volume
-                </Typography>
-                <ResponsiveContainer width="100%" height={220}>
-                  <AreaChart data={dashboardData.monthlyTrends}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="month" />
-                    <YAxis />
-                    <RechartsTooltip />
-                    <Area
-                      type="monotone"
-                      dataKey="invoices"
-                      stroke="#8884d8"
-                      fill="#8884d8"
-                      fillOpacity={0.3}
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          {/* Top Clients */}
-          <Grid item xs={12} lg={6}>
-            <Card sx={{ height: 300 }}>
-              <CardContent>
-                <Typography variant="h6" sx={{ mb: 2, fontWeight: "bold" }}>
-                  Top Clients
-                </Typography>
-                <TableContainer sx={{ maxHeight: 220 }}>
-                  <Table size="small">
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>Client</TableCell>
-                        <TableCell align="right">Revenue</TableCell>
-                        <TableCell align="center">Invoices</TableCell>
-                        <TableCell align="center">Department</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {dashboardData.topClients.map((client, index) => (
-                        <TableRow key={index}>
-                          <TableCell>{client.name}</TableCell>
-                          <TableCell align="right">
-                            ₹{client.revenue.toLocaleString()}
-                          </TableCell>
-                          <TableCell align="center">
-                            {client.invoices}
-                          </TableCell>
-                          <TableCell align="center">
-                            <Chip label={client.department} size="small" />
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-      )}
-
-      {tabValue === 1 && (
-        <Grid container spacing={3}>
-          {/* Department Performance Cards */}
-          {dashboardData.departmentMetrics.map((dept, index) => (
-            <Grid item xs={12} sm={6} md={3} key={index}>
-              <DepartmentCard dept={dept} />
-            </Grid>
-          ))}
-
-          {/* Department Comparison Chart */}
-          <Grid item xs={12}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" sx={{ mb: 2, fontWeight: "bold" }}>
-                  Department Performance Comparison
-                </Typography>
-                <ResponsiveContainer width="100%" height={400}>
-                  <BarChart data={dashboardData.departmentMetrics}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="department" />
-                    <YAxis />
-                    <RechartsTooltip
-                      formatter={(value) => [`₹${value.toLocaleString()}`, ""]}
-                    />
-                    <Legend />
-                    <Bar dataKey="revenue" fill="#2196f3" name="Revenue" />
-                    <Bar dataKey="target" fill="#e0e0e0" name="Target" />
-                  </BarChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-      )}
-
-      {tabValue === 2 && (
-        <Grid container spacing={3}>
-          {/* Client Performance Table */}
-          <Grid item xs={12}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" sx={{ mb: 2, fontWeight: "bold" }}>
-                  Client Performance Analysis
-                </Typography>
-                <TableContainer>
-                  <Table>
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>Client Name</TableCell>
-                        <TableCell align="right">Total Revenue</TableCell>
-                        <TableCell align="center">Total Invoices</TableCell>
-                        <TableCell align="right">Avg Invoice Value</TableCell>
-                        <TableCell align="center">Primary Department</TableCell>
-                        <TableCell align="center">Performance</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {dashboardData.topClients.map((client, index) => (
-                        <TableRow key={index}>
-                          <TableCell>{client.name}</TableCell>
-                          <TableCell align="right">
-                            ₹{client.revenue.toLocaleString()}
-                          </TableCell>
-                          <TableCell align="center">
-                            {client.invoices}
-                          </TableCell>
-                          <TableCell align="right">
-                            ₹
-                            {(
-                              client.revenue / client.invoices
-                            ).toLocaleString()}
-                          </TableCell>
-                          <TableCell align="center">
-                            <Chip label={client.department} size="small" />
-                          </TableCell>
-                          <TableCell align="center">
-                            <Chip
-                              label={
-                                index < 2
-                                  ? "Excellent"
-                                  : index < 4
-                                  ? "Good"
-                                  : "Average"
-                              }
-                              color={
-                                index < 2
-                                  ? "success"
-                                  : index < 4
-                                  ? "primary"
-                                  : "default"
-                              }
-                              size="small"
-                            />
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-      )}
-
-      {tabValue === 3 && (
-        <Grid container spacing={3}>
-          {/* Recent Invoices */}
-          <Grid item xs={12}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" sx={{ mb: 2, fontWeight: "bold" }}>
-                  Recent Invoices
-                </Typography>
-                <TableContainer>
-                  <Table>
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>Invoice ID</TableCell>
-                        <TableCell>Client</TableCell>
-                        <TableCell align="right">Amount</TableCell>
-                        <TableCell>Date</TableCell>
-                        <TableCell align="center">Status</TableCell>
-                        <TableCell align="center">Department</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {dashboardData.recentInvoices.map((invoice, index) => (
-                        <TableRow key={index}>
-                          <TableCell>{invoice.id}</TableCell>
-                          <TableCell>{invoice.client}</TableCell>
-                          <TableCell align="right">
-                            ₹{invoice.amount.toLocaleString()}
-                          </TableCell>
-                          <TableCell>
-                            {new Date(invoice.date).toLocaleDateString()}
-                          </TableCell>
-                          <TableCell align="center">
-                            <Chip
-                              label={invoice.status}
-                              color={
-                                invoice.status === "Paid"
-                                  ? "success"
-                                  : "warning"
-                              }
-                              size="small"
-                            />
-                          </TableCell>
-                          <TableCell align="center">
-                            <Chip label={invoice.department} size="small" />
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-      )}
-    </Box>
-  );
 };
-
-export default Financials;
