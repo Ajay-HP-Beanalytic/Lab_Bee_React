@@ -290,47 +290,43 @@ export default function Register() {
                           />
                         </FormControl>
                       </Grid>
+
                       <Grid
-                        item
-                        xs={12}
-                        sm={6}
-                        sx={{ mx: { xs: "1em", sm: "5em" } }}
+                        container
+                        spacing={2}
+                        justifyContent="center"
+                        alignItems="center"
                       >
-                        <Button
-                          type="submit"
-                          variant="contained"
-                          fullWidth
-                          size="large"
-                          sx={{
-                            mt: "15px",
-                            borderRadius: 28,
-                            color: "#ffffff",
-                            backgroundColor: "#ffa31a",
-                          }}
-                        >
-                          Register
-                        </Button>
-                      </Grid>
-                      <Grid
-                        item
-                        xs={12}
-                        sm={6}
-                        sx={{ mx: { xs: "1em", sm: "5em" } }}
-                      >
-                        <Button
-                          variant="contained"
-                          fullWidth
-                          size="large"
-                          sx={{
-                            mt: "15px",
-                            borderRadius: 28,
-                            color: "#ffffff",
-                            backgroundColor: "#ffa31a",
-                          }}
-                          onClick={handleCancelUserRegistration}
-                        >
-                          Clear
-                        </Button>
+                        <Grid item>
+                          <Button
+                            type="submit"
+                            variant="contained"
+                            size="medium"
+                            sx={{
+                              mt: "10px",
+                              borderRadius: 28,
+                              color: "#ffffff",
+                              backgroundColor: "#ffa31a",
+                            }}
+                          >
+                            Register
+                          </Button>
+                        </Grid>
+                        <Grid item>
+                          <Button
+                            variant="contained"
+                            size="medium"
+                            sx={{
+                              mt: "10px",
+                              borderRadius: 28,
+                              color: "#ffffff",
+                              backgroundColor: "#ffa31a",
+                            }}
+                            onClick={handleCancelUserRegistration}
+                          >
+                            Clear
+                          </Button>
+                        </Grid>
                       </Grid>
                       <Grid item xs={12} sx={{ mx: { xs: "1em", sm: "3em" } }}>
                         <Stack

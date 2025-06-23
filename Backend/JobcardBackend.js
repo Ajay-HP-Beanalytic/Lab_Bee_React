@@ -1903,102 +1903,267 @@ function jobcardsAPIs(app, io, labbeeUsers) {
     });
   });
 
+  ///////////////////////////////////////////////////////////////////
+
   //Fetch chambers utilization hours list:
+  // app.get("/api/getChamberUtilization", (req, res) => {
+  //   const chamberUtilizationQuery = `
+  //                   SELECT
+  //                       testChamber,
+  //                       SUM(CASE WHEN MONTH(startDate) = MONTH(DATE_SUB(CURDATE(), INTERVAL 1 MONTH)) THEN actualTestDuration ELSE 0 END) AS prevMonthRunHours,
+  //                       SUM(CASE WHEN MONTH(startDate) = MONTH(CURDATE()) THEN actualTestDuration ELSE 0 END) AS currentMonthRunHours,
+  //                       SUM(actualTestDuration) AS totalRunHours
+  //                   FROM
+  //                       tests_details
+  //                   WHERE testChamber IS NOT NULL AND testChamber <> ''
+  //                   GROUP BY
+  //                       testChamber
+  //                   `;
+  //   db.query(chamberUtilizationQuery, (error, results) => {
+  //     if (error) {
+  //       console.log(
+  //         "An error occurred while fetching the chamber utilization data",
+  //         error
+  //       );
+  //     }
+
+  //     const formattedChamberUtilizationResult = results.map((row, index) => {
+  //       const prevMonthRunHours = parseFloat(row.prevMonthRunHours) || 0;
+  //       const currentMonthRunHours = parseFloat(row.currentMonthRunHours) || 0;
+  //       const totalRunHours = parseFloat(row.totalRunHours) || 0;
+  //       const chamberUtilization =
+  //         currentMonthRunHours > prevMonthRunHours ? "More" : "Less";
+
+  //       return {
+  //         id: index + 1,
+  //         chamberName: row.testChamber,
+  //         prevMonthRunHours: prevMonthRunHours.toString(),
+  //         currentMonthRunHours: currentMonthRunHours.toString(),
+  //         chamberUtilization,
+  //         totalRunHours: totalRunHours.toString(),
+  //       };
+  //     });
+
+  //     res.json(formattedChamberUtilizationResult);
+  //   });
+  // });
+
+  // Enhanced Chamber Utilization APIs
+
+  // Minimal Chamber Utilization API for TS1 Department
   app.get("/api/getChamberUtilization", (req, res) => {
+    const { year, month, dateFrom, dateTo, chamber } = req.query;
+
+    let whereConditions = [
+      "testChamber IS NOT NULL",
+      "testChamber <> ''",
+      "actualTestDuration IS NOT NULL",
+    ];
+    let queryParams = [];
+
+    // Add filters
+    if (year && month) {
+      whereConditions.push("YEAR(startDate) = ? AND MONTH(startDate) = ?");
+      queryParams.push(year, month);
+    } else if (dateFrom && dateTo) {
+      whereConditions.push("startDate BETWEEN ? AND ?");
+      queryParams.push(dateFrom, dateTo);
+    } else {
+      // Default to current month
+      whereConditions.push(
+        "YEAR(startDate) = YEAR(CURDATE()) AND MONTH(startDate) = MONTH(CURDATE())"
+      );
+    }
+
+    if (chamber && chamber !== "all") {
+      whereConditions.push("testChamber = ?");
+      queryParams.push(chamber);
+    }
+
+    const whereClause = `WHERE ${whereConditions.join(" AND ")}`;
+
     const chamberUtilizationQuery = `
-                    SELECT 
-                        testChamber,
-                        SUM(CASE WHEN MONTH(startDate) = MONTH(DATE_SUB(CURDATE(), INTERVAL 1 MONTH)) THEN actualTestDuration ELSE 0 END) AS prevMonthRunHours,
-                        SUM(CASE WHEN MONTH(startDate) = MONTH(CURDATE()) THEN actualTestDuration ELSE 0 END) AS currentMonthRunHours,
-                        SUM(actualTestDuration) AS totalRunHours
-                    FROM 
-                        tests_details
-                    WHERE testChamber IS NOT NULL AND testChamber <> ''
-                    GROUP BY
-                        testChamber
-                    `;
-    db.query(chamberUtilizationQuery, (error, results) => {
-      if (error) {
-        console.log(
-          "An error occurred while fetching the chamber utilization data",
-          error
-        );
-      }
-
-      const formattedChamberUtilizationResult = results.map((row, index) => {
-        const prevMonthRunHours = parseFloat(row.prevMonthRunHours) || 0;
-        const currentMonthRunHours = parseFloat(row.currentMonthRunHours) || 0;
-        const totalRunHours = parseFloat(row.totalRunHours) || 0;
-        const chamberUtilization =
-          currentMonthRunHours > prevMonthRunHours ? "More" : "Less";
-
-        return {
-          id: index + 1,
-          chamberName: row.testChamber,
-          prevMonthRunHours: prevMonthRunHours.toString(),
-          currentMonthRunHours: currentMonthRunHours.toString(),
-          chamberUtilization,
-          totalRunHours: totalRunHours.toString(),
-        };
-      });
-
-      res.json(formattedChamberUtilizationResult);
-    });
-  });
-
-  //////////////////////////////////////////////////////////////////////////////
-  // To get the month-year of the Job-card
-  // To get the last JC number of the previous month
-  app.get("/api/getPreviousMonthJC", (req, res) => {
-    const sqlQuery = `
-      SELECT jc_number 
-      FROM bea_jobcards 
-      WHERE YEAR(jc_open_date) = YEAR(CURRENT_DATE - INTERVAL 1 MONTH)
-      AND MONTH(jc_open_date) = MONTH(CURRENT_DATE - INTERVAL 1 MONTH)
-      ORDER BY id DESC LIMIT 1
-      `;
-
-    db.query(sqlQuery, (error, result) => {
-      if (error) {
-        return res.status(500).json({
-          error:
-            "An error occurred while fetching the last JC number of the previous month",
-        });
-      }
-      res.json(result);
-    });
-  });
-
-  //////////////////////////////////////////////////////////////////////////////
-
-  // Fetch the monthwise number of reports prepared by each user
-  app.get("/api/reportsMadeData", (req, res) => {
-    const sqlQuery = ` 
     SELECT 
-        YEAR(startDate) AS year,
-        MONTH(startDate) AS month,
-        preparedBy,
-        COUNT(reportNumber) AS reportCount
-    FROM
-        tests_details
-    WHERE
-        preparedBy IS NOT NULL AND startDate IS NOT NULL AND reportNumber IS NOT NULL AND preparedBy <> ''
-    GROUP BY
-        YEAR(startDate),
-        MONTH(startDate),
-        preparedBy
-    ORDER BY
-        year,
-        month,
-        preparedBy;
-        `;
-    db.query(sqlQuery, (error, result) => {
+      testChamber,
+      
+      -- Current Period Data
+      COUNT(*) AS totalTests,
+      SUM(actualTestDuration) AS totalRunHours,
+      AVG(actualTestDuration) AS avgTestDuration,
+      MIN(startDate) AS firstTestDate,
+      MAX(startDate) AS lastTestDate,
+      
+      -- Calculate utilization percentage (assuming 176 working hours per month)
+      ROUND((SUM(actualTestDuration) / 176) * 100, 1) AS utilizationPercent
+      
+    FROM tests_details 
+    ${whereClause}
+    GROUP BY testChamber
+    ORDER BY totalRunHours DESC
+  `;
+
+    db.query(chamberUtilizationQuery, queryParams, (error, currentResults) => {
       if (error) {
-        return res.status(500).json({
-          error: "An error occurred while fetching the reports made data",
-        });
+        console.error("Error fetching chamber utilization:", error);
+        return res
+          .status(500)
+          .json({ error: "Failed to fetch chamber utilization data" });
       }
-      res.status(200).json(result);
+
+      // Get previous month data for comparison
+      let prevWhereConditions = [
+        "testChamber IS NOT NULL",
+        "testChamber <> ''",
+        "actualTestDuration IS NOT NULL",
+      ];
+      let prevQueryParams = [];
+
+      if (year && month) {
+        // Previous month of the selected period
+        const prevMonth = month == 1 ? 12 : month - 1;
+        const prevYear = month == 1 ? year - 1 : year;
+        prevWhereConditions.push(
+          "YEAR(startDate) = ? AND MONTH(startDate) = ?"
+        );
+        prevQueryParams.push(prevYear, prevMonth);
+      } else {
+        // Previous month from current
+        prevWhereConditions.push(`
+        YEAR(startDate) = YEAR(DATE_SUB(CURDATE(), INTERVAL 1 MONTH)) 
+        AND MONTH(startDate) = MONTH(DATE_SUB(CURDATE(), INTERVAL 1 MONTH))
+      `);
+      }
+
+      if (chamber && chamber !== "all") {
+        prevWhereConditions.push("testChamber = ?");
+        prevQueryParams.push(chamber);
+      }
+
+      const prevWhereClause = `WHERE ${prevWhereConditions.join(" AND ")}`;
+
+      const previousMonthQuery = `
+      SELECT 
+        testChamber,
+        SUM(actualTestDuration) AS prevTotalRunHours
+      FROM tests_details 
+      ${prevWhereClause}
+      GROUP BY testChamber
+    `;
+
+      db.query(
+        previousMonthQuery,
+        prevQueryParams,
+        (prevError, prevResults) => {
+          if (prevError) {
+            console.error("Error fetching previous month data:", prevError);
+            return res
+              .status(500)
+              .json({ error: "Failed to fetch previous month data" });
+          }
+
+          // Merge current and previous data
+          const mergedData = currentResults.map((current, index) => {
+            const previous = prevResults.find(
+              (prev) => prev.testChamber === current.testChamber
+            );
+            const prevRunHours = previous
+              ? parseFloat(previous.prevTotalRunHours)
+              : 0;
+            const currentRunHours = parseFloat(current.totalRunHours);
+
+            // Calculate month-over-month growth
+            const growthRate =
+              prevRunHours > 0
+                ? (
+                    ((currentRunHours - prevRunHours) / prevRunHours) *
+                    100
+                  ).toFixed(1)
+                : currentRunHours > 0
+                ? 100
+                : 0;
+
+            return {
+              id: index + 1,
+              chamberName: current.testChamber,
+              totalTests: current.totalTests,
+              totalRunHours: currentRunHours.toFixed(1),
+              avgTestDuration: parseFloat(current.avgTestDuration).toFixed(1),
+              utilizationPercent: parseFloat(current.utilizationPercent),
+              growthRate: parseFloat(growthRate),
+              prevRunHours: prevRunHours.toFixed(1),
+              firstTestDate: current.firstTestDate,
+              lastTestDate: current.lastTestDate,
+            };
+          });
+
+          res.json(mergedData);
+        }
+      );
+    });
+  });
+
+  // API to get available chambers for filter dropdown
+  app.get("/api/getChambersList", (req, res) => {
+    const chambersQuery = `
+    SELECT DISTINCT testChamber
+    FROM tests_details 
+    WHERE testChamber IS NOT NULL 
+    AND testChamber <> ''
+    ORDER BY testChamber
+  `;
+
+    db.query(chambersQuery, (error, results) => {
+      if (error) {
+        console.error("Error fetching chambers list:", error);
+        return res.status(500).json({ error: "Failed to fetch chambers list" });
+      }
+
+      const chambers = results.map((row) => ({
+        value: row.testChamber,
+        label: row.testChamber,
+      }));
+
+      res.json(chambers);
+    });
+  });
+
+  // API to get available date options (years and months with data)
+  app.get("/api/getChamberDateOptions", (req, res) => {
+    const dateOptionsQuery = `
+    SELECT DISTINCT 
+      YEAR(startDate) as year,
+      MONTH(startDate) as month,
+      MONTHNAME(startDate) as monthName
+    FROM tests_details 
+    WHERE testChamber IS NOT NULL 
+    AND testChamber <> ''
+    AND startDate IS NOT NULL
+    ORDER BY year DESC, month DESC
+  `;
+
+    db.query(dateOptionsQuery, (error, results) => {
+      if (error) {
+        console.error("Error fetching date options:", error);
+        return res.status(500).json({ error: "Failed to fetch date options" });
+      }
+
+      const years = [...new Set(results.map((row) => row.year))];
+      const months = [
+        { value: "1", label: "January" },
+        { value: "2", label: "February" },
+        { value: "3", label: "March" },
+        { value: "4", label: "April" },
+        { value: "5", label: "May" },
+        { value: "6", label: "June" },
+        { value: "7", label: "July" },
+        { value: "8", label: "August" },
+        { value: "9", label: "September" },
+        { value: "10", label: "October" },
+        { value: "11", label: "November" },
+        { value: "12", label: "December" },
+      ];
+
+      res.json({ years, months });
     });
   });
   //////////////////////////////////////////////////////////////////////////////

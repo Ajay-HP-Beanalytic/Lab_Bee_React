@@ -9,8 +9,8 @@ import Container from "@mui/material/Container";
 import Avatar from "@mui/material/Avatar";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import { ThemeProvider, createTheme } from "@mui/material/styles";
-import Checkbox from "@mui/material/Checkbox";
-import FormControlLabel from "@mui/material/FormControlLabel";
+// import Checkbox from "@mui/material/Checkbox";
+// import FormControlLabel from "@mui/material/FormControlLabel";
 import { useContext, useEffect, useState } from "react";
 import Stack from "@mui/material/Stack";
 import { useNavigate } from "react-router-dom";
@@ -54,7 +54,7 @@ const signInLogoAndText = {
 };
 
 export default function Login() {
-  const { loggedInUser, loggedInUserDepartment } = useContext(UserContext);
+  const { clearUserContext } = useContext(UserContext);
 
   const [remember, setRemember] = useState(false);
 
@@ -262,6 +262,7 @@ export default function Login() {
                             variant="body1"
                             component="span"
                             onClick={() => {
+                              clearUserContext(); // Clear any existing session data
                               navigate("/reset_password");
                             }}
                             style={{ marginTop: "10px", cursor: "pointer" }}
