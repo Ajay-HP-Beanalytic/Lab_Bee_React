@@ -20,7 +20,6 @@ import SidenavigationBar from "./components/sidenavbar";
 import NotFoundPage from "./Pages/NotFoundPage";
 
 import ChamberAndCalibration from "./Pages/ChamberCalibration";
-import Home from "./PO/Home";
 
 import JCHome from "./JC/JCHome";
 import JobcardRequirements from "./JC/JobcardRequirements";
@@ -41,11 +40,12 @@ import EmiJobcard from "./EMI/EmiJobcard";
 import EMIJCDashboard from "./EMI/EMIJCDashboard";
 import ProjectManagementDashboard from "./projectManagement/ProjectsDashboard";
 import Financials from "./PO/Financials";
+import { Box, LinearProgress, Typography } from "@mui/material";
 
 function App() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { loggedInUser, loggedInUserDepartment, loggedInUserRole } =
+  const { loggedInUser, loggedInUserDepartment, loggedInUserRole, isLoading } =
     useContext(UserContext);
 
   useEffect(() => {
@@ -59,9 +59,64 @@ function App() {
     handleRouteChange();
   }, [location]);
 
+  // useEffect(() => {
+  //   if (loggedInUserDepartment || loggedInUserRole) {
+  //     if (
+  //       location.pathname === "/" ||
+  //       location.pathname === "/home" ||
+  //       location.pathname === "/reset_password" ||
+  //       location.pathname === "/register"
+  //     ) {
+  //       // Don't redirect if user is on auth pages
+  //       if (
+  //         location.pathname === "/reset_password" ||
+  //         location.pathname === "/register"
+  //       ) {
+  //         return;
+  //       }
+
+  //       if (
+  //         loggedInUserDepartment === "Administration" ||
+  //         loggedInUserDepartment === "Accounts"
+  //       ) {
+  //         navigate("/home");
+  //       } else if (loggedInUserDepartment === "Marketing") {
+  //         navigate("/quotation_dashboard");
+  //       } else if (
+  //         loggedInUserDepartment === "TS1 Testing" ||
+  //         loggedInUserDepartment === "Reports & Scrutiny"
+  //       ) {
+  //         navigate("/jobcard_dashboard");
+  //       } else if (
+  //         loggedInUserDepartment === "TS2 Testing" ||
+  //         loggedInUserRole === "Quality Engineer"
+  //       ) {
+  //         navigate("/emi_jc_dashboard");
+  //       } else if (
+  //         loggedInUserDepartment === "Reliability" ||
+  //         loggedInUserDepartment === "Software"
+  //       ) {
+  //         navigate("/projects");
+  //       }
+  //     }
+  //   }
+  // }, [loggedInUserDepartment, location.pathname, navigate]);
+
+  // Improved department-based redirect logic
   useEffect(() => {
-    if (loggedInUserDepartment || loggedInUserRole) {
-      if (location.pathname === "/" || location.pathname === "/home") {
+    // Don't redirect if still loading or if user data is not available
+    if (isLoading || !loggedInUserDepartment) {
+      return;
+    }
+
+    // Define public routes that should not trigger redirects
+    const publicRoutes = ["/", "/register", "/reset_password"];
+
+    // Only redirect from root or home routes, not from public auth routes
+    if (location.pathname === "/" || location.pathname === "/home") {
+      // if (publicRoutes.includes(location.pathname)) {
+      // Add a small delay to ensure navigation is stable
+      const redirectTimer = setTimeout(() => {
         if (
           loggedInUserDepartment === "Administration" ||
           loggedInUserDepartment === "Accounts"
@@ -85,9 +140,37 @@ function App() {
         ) {
           navigate("/projects");
         }
-      }
+      }, 100); // Small delay to prevent navigation conflicts
+
+      return () => clearTimeout(redirectTimer);
     }
-  }, [loggedInUserDepartment, location.pathname, navigate]);
+  }, [
+    loggedInUserDepartment,
+    loggedInUserRole,
+    location.pathname,
+    navigate,
+    isLoading,
+  ]);
+
+  // Show loading spinner while checking authentication
+  if (
+    isLoading &&
+    !["/", "/register", "/reset_password"].includes(location.pathname)
+  ) {
+    return (
+      <Box
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh",
+        }}
+      >
+        <LinearProgress />
+        <Typography sx={{ ml: 2 }}>Loading...</Typography>
+      </Box>
+    );
+  }
 
   return (
     <div className="App">
@@ -114,7 +197,6 @@ function App() {
 
         {/* Protected Routes */}
         <Route path="" element={<SidenavigationBar />}>
-          {/* <Route path="home" element={<Home />} /> */}
           <Route
             path="home"
             element={
@@ -122,7 +204,6 @@ function App() {
                 allowedDepartments={["Administration", "Accounts"]}
                 allowedRoles={[]}
               >
-                {/* <Home /> */}
                 <Financials />
               </ProtectedRoute>
             }

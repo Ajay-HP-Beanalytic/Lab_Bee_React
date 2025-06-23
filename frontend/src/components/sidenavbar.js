@@ -1,6 +1,6 @@
 // Here we are using "Mini variant drawer" to create a side navigation bar:
 
-import React, { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { styled, useTheme } from "@mui/material/styles";
 import Box from "@mui/material/Box";
 import MuiDrawer from "@mui/material/Drawer";
@@ -22,7 +22,14 @@ import MarkChatUnreadIcon from "@mui/icons-material/MarkChatUnread";
 import DeleteIcon from "@mui/icons-material/Delete";
 import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
 
-import { Avatar, Badge, Popover, SvgIcon, Tooltip } from "@mui/material";
+import {
+  Avatar,
+  Badge,
+  Button,
+  Popover,
+  SvgIcon,
+  Tooltip,
+} from "@mui/material";
 import EventRepeatIcon from "@mui/icons-material/EventRepeat";
 import HomeIcon from "@mui/icons-material/Home";
 // import EditNoteIcon from "@mui/icons-material/EditNote";
@@ -325,30 +332,9 @@ export default function SidenavigationBar() {
     // fetchUnreadNotificationsCount();
   };
 
-  // const handleDeleteSelectedNotification = (notificationId) => {
-  //   // Delete the notification in the backend
-  //   const deleteNotification = async (notificationId, loggedInUser) => {
-  //     try {
-  //       await axios.delete(
-  //         `${serverBaseAddress}/api/deleteNotification/${notificationId}`,
-  //         {
-  //           data: { userName: loggedInUser },
-  //         }
-  //       );
-  //     } catch (error) {
-  //       console.error("Error deleting the notification", error);
-  //     }
-  //   };
-
-  //   deleteNotification(notificationId, loggedInUser);
-
-  //   // Update the notifications and read status states
-  //   setNotifications((prevNotifications) =>
-  //     prevNotifications.filter(
-  //       (notification) => notification.id !== notificationId
-  //     )
-  //   );
-  // };
+  const handleDeleteAllNotifications = () => {
+    alert("Delete All Notifications");
+  };
 
   // Delete a notification
   const handleDeleteSelectedNotification = async (notificationId) => {
@@ -768,6 +754,13 @@ export default function SidenavigationBar() {
                   })}
                 </List>
               )}
+              {/* <Button
+                onClick={handleDeleteAllNotifications}
+                variant="contained"
+              >
+                {" "}
+                Delete Notifications
+              </Button> */}
             </Box>
           </Popover>
         </AppBar>

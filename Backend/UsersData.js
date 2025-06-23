@@ -9,7 +9,7 @@ const nodemailer = require("nodemailer");
 
 const jwtSecret = "RANDOM-TOKEN"; // To create a random token
 
-const { format, isSameDay, parseISO } = require("date-fns");
+const { isSameDay } = require("date-fns");
 
 // Function to handle the operations of the User Registraion and Login process:
 
@@ -328,8 +328,72 @@ function usersDataAPIs(app) {
     const mailOptions = {
       from: process.env.EMAIL,
       to: email,
-      subject: "Your OTP Code to reset the password",
-      text: `Your OTP code is ${otp}. It is valid for only 2 minutes.`,
+      subject: "Your OTP to reset the password of Labbee",
+      text: `Your OTP is ${otp}. It is valid for only 2 minutes.`,
+      html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f4f4f4;">
+        <div style="background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+
+          <!-- Header -->
+          <div style="text-align: center; margin-bottom: 30px; padding: 20px; background: linear-gradient(135deg, #007acc 0%, #0056b3 100%); border-radius: 8px;">
+            <h1 style="color: white; margin: 0; font-size: 28px;">🔐 Lab Bee</h1>
+            <p style="color: rgba(255,255,255,0.9); margin: 5px 0 0 0; font-size: 16px;">Password Reset Verification</p>
+          </div>
+
+          <!-- Main Content -->
+          <div style="text-align: center; margin-bottom: 30px;">
+            <h2 style="color: #333; margin: 0 0 15px 0;">Your Verification Code</h2>
+            <p style="color: #666; font-size: 16px; margin: 0 0 25px 0;">
+              Please use the following code to reset your password:
+            </p>
+          </div>
+
+          <!-- OTP Display -->
+          <div style="text-align: center; margin: 30px 0;">
+            <div style="background: linear-gradient(135deg, #f0f8ff 0%, #e1f5fe 100%); border: 3px solid #007acc; border-radius: 12px; padding: 25px; display: inline-block; min-width: 200px;">
+              <div style="font-size: 36px; font-weight: bold; color: #007acc; letter-spacing: 8px; font-family: 'Courier New', monospace;">
+                ${otp}
+              </div>
+            </div>
+          </div>
+
+          <!-- Timer Warning -->
+          <div style="background: #fff3e0; border-left: 4px solid #ff9800; padding: 15px 20px; margin: 25px 0; border-radius: 0 8px 8px 0;">
+            <p style="margin: 0; color: #e65100; font-weight: bold;">
+              ⏰ This code expires in 2 minutes
+            </p>
+          </div>
+
+          <!-- Instructions -->
+          <div style="background: #f8f9fa; border-radius: 8px; padding: 20px; margin: 25px 0;">
+            <h3 style="color: #333; margin: 0 0 15px 0; font-size: 18px;">How to use this code:</h3>
+            <ol style="color: #555; padding-left: 20px; line-height: 1.6;">
+              <li>Return to the Lab Bee password reset page</li>
+              <li>Enter this 6-digit verification code</li>
+              <li>Create your new secure password</li>
+            </ol>
+          </div>
+
+          <!-- Security Notice -->
+          <div style="border-top: 2px solid #e0e0e0; padding-top: 20px; margin-top: 30px; text-align: center;">
+            <p style="color: #666; font-size: 14px; margin: 0 0 10px 0;">
+              🔒 For security, never share this code with anyone
+            </p>
+            <p style="color: #999; font-size: 13px; margin: 0;">
+              If you didn't request this reset, please ignore this email
+            </p>
+          </div>
+
+          <!-- Footer -->
+          <div style="text-align: center; margin-top: 25px; padding: 15px; background: #f8f9fa; border-radius: 5px;">
+            <p style="margin: 0; color: #999; font-size: 12px;">
+              This email was sent by Lab Bee Application
+            </p>
+          </div>
+
+        </div>
+      </div>
+    `,
     };
 
     return transporter.sendMail(mailOptions);
@@ -442,30 +506,3 @@ function usersDataAPIs(app) {
 }
 
 module.exports = { usersDataAPIs };
-
-// app.post('/api/checkResetPasswordEmail', async (req, res) => {
-//     const { email } = req.body;
-
-//     try {
-//         const sqlCheckEmail = "SELECT * FROM labbee_users WHERE email=?";
-//         const [result] = await db.promise().query(sqlCheckEmail, [email]);
-
-//         if (result.length > 0) {
-//             const otp = generateOtp();
-//             const otpExpiry = new Date(Date.now() + 2 * 60 * 1000); // OTP valid for 2 minutes
-
-//             // Save OTP and expiry to the OTP table
-//             const sqlSaveOtp = "INSERT INTO otp_codes (email, otp_code, otp_expiry) VALUES (?, ?, ?)";
-//             await db.promise().query(sqlSaveOtp, [email, otp, otpExpiry]);
-
-//             await sendOtpEmail(email, otp);
-
-//             return res.status(200).json({ message: 'OTP Sent Successfully' });
-//         } else {
-//             return res.status(404).json({ message: 'Email not found' });
-//         }
-//     } catch (error) {
-//         console.error('Error sending OTP:', error);
-//         return res.status(500).json({ message: 'Internal server error' });
-//     }
-// });

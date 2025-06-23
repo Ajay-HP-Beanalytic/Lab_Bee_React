@@ -485,14 +485,6 @@ function poInvoiceBackendAPIs(app) {
       dateTo,
       limit = 1000,
     } = req.query;
-    console.log("=== Invoice Filter Request ===");
-    console.log("Filter criteria:", {
-      year,
-      month,
-      department,
-      dateFrom,
-      dateTo,
-    });
 
     let sqlQuery = "SELECT * FROM invoice_data_table WHERE 1=1"; //-- Returns all records (1=1 is always true)
     const queryParams = [];
@@ -706,7 +698,7 @@ function poInvoiceBackendAPIs(app) {
       queryParams.push(month);
     }
 
-    if (department && department !== "all") {
+    if (department && department !== "All") {
       whereConditions.push("department = ?");
       queryParams.push(department);
     }
@@ -772,7 +764,7 @@ function poInvoiceBackendAPIs(app) {
       queryParams.push(year);
     }
 
-    if (department && department !== "all") {
+    if (department && department !== "All") {
       whereConditions.push("department = ?");
       queryParams.push(department);
     }
