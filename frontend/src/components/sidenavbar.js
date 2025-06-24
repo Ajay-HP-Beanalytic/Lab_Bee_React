@@ -482,15 +482,23 @@ export default function SidenavigationBar() {
       path: "/emi_jc_dashboard",
       gradientId: "emiDashboardGradient",
     },
+
     {
       i: 9,
-      label: "Users Management",
-      icon: <ManageAccountsIcon />,
-      path: "/user_management",
-      gradientId: "usersManagementGradient",
+      label: "EMI/EMC Slot Booking",
+      icon: <CalendarMonthSharpIcon />,
+      path: "/emi_slot_booking",
+      gradientId: "emiSlotBookingGradient",
     },
     {
       i: 10,
+      label: "EMI/EMC Calibration",
+      icon: <KitchenIcon />,
+      path: "/emi_calibration",
+      gradientId: "emiChamberCalibrationGradient",
+    },
+    {
+      i: 11,
       label: "Project Management",
       icon: <EventRepeatIcon />,
       // icon: (
@@ -503,15 +511,22 @@ export default function SidenavigationBar() {
       path: "/projects",
       gradientId: "projectManagementGradient",
     },
+    {
+      i: 12,
+      label: "Users Management",
+      icon: <ManageAccountsIcon />,
+      path: "/user_management",
+      gradientId: "usersManagementGradient",
+    },
   ];
 
   const filteredItems = items.filter((item) => {
     if (loggedInUserDepartment === "Administration") {
       return true; // Show all items for Administration
     } else if (loggedInUserDepartment === "Accounts") {
-      return [1, 2, 3, 4, 5, 6, 8].includes(item.i);
+      return [1, 2, 3, 4, 5, 6, 8, 9].includes(item.i);
     } else if (loggedInUserDepartment === "Marketing") {
-      return [2, 3, 8].includes(item.i);
+      return [2, 3, 8, 9].includes(item.i);
     } else if (
       loggedInUserDepartment === "TS1 Testing" ||
       loggedInUserRole === "Reports & Scrutiny Manager"
@@ -521,11 +536,11 @@ export default function SidenavigationBar() {
       loggedInUserDepartment === "Reliability" ||
       loggedInUserDepartment === "Software"
     ) {
-      return [10].includes(item.i);
+      return [11].includes(item.i);
     } else if (loggedInUserDepartment === "TS2 Testing") {
-      return [8].includes(item.i);
+      return [8, 9, 10].includes(item.i);
     } else if (loggedInUserRole === "Quality Engineer") {
-      return [4, 6, 7, 8].includes(item.i);
+      return [4, 6, 7, 8, 9, 10].includes(item.i);
     }
     return false; // Default: Hide the item
   });

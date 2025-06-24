@@ -62,7 +62,6 @@ function slotBookingAPIs(app, io, labbeeUsers) {
   app.get("/api/getChambersList", (req, res) => {
     // const getChambersList = `SELECT id, chamber_name FROM chambers_list `;
     const getChambersList = `SELECT id, chamber_id FROM chamber_calibration WHERE chamber_status = 'Good' AND chamber_id IS NOT NULL `;
-
     db.query(getChambersList, (error, result) => {
       res.send(result);
     });

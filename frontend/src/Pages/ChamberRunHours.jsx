@@ -294,7 +294,7 @@ const ChamberRunHours = () => {
     try {
       const [dateOptionsRes, chambersRes] = await Promise.all([
         axios.get(`${serverBaseAddress}/api/getChamberDateOptions`),
-        axios.get(`${serverBaseAddress}/api/getChambersList`),
+        axios.get(`${serverBaseAddress}/api/getChambersListForFilter`),
       ]);
 
       setAvailableYears(dateOptionsRes.data.years || []);

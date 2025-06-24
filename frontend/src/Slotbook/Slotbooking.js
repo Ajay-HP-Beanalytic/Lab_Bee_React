@@ -1,10 +1,9 @@
-import React, { useContext, useEffect, useRef, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import {
   Box,
   Button,
   Card,
-  ClickAwayListener,
   Dialog,
   DialogActions,
   DialogContent,
@@ -396,6 +395,8 @@ export default function Slotbooking() {
         const response = await axios.get(
           `${serverBaseAddress}/api/getChambersList`
         );
+
+        console.log("Slot booking API Response-->", response);
         if (response.status === 200) {
           // Transform the fetched data to match the expected resource structure
           const resourceData = response.data.map((chamber) => ({
@@ -475,33 +476,6 @@ export default function Slotbooking() {
 
     fetchAllTheBookings();
   }, [newBookingAdded, slotDeleted]);
-
-  // Define a function to get event props based on start date
-  // const eventPropGetter = (event, start, end, isSelected) => {
-  //   // Get the current date
-  //   const currentDate = moment();
-
-  //   // Get the start date of the event
-  //   const eventStartDate = moment(event.start);
-
-  //   // Define colors for different date comparisons
-  //   let backgroundColor = "#00b300"; // Default, 'Green' color
-
-  //   if (eventStartDate.isBefore(currentDate, "day")) {
-  //     backgroundColor = "#ff4d4d"; // Completed Event ,'Red' color
-  //   } else if (eventStartDate.isAfter(currentDate, "day")) {
-  //     backgroundColor = "#00b300"; // Upcoming, 'Green' color
-  //   } else {
-  //     backgroundColor = "#004080"; // Event starts on current date,  'Blue' color
-  //   }
-
-  //   // Return props with background color
-  //   return {
-  //     style: {
-  //       backgroundColor: backgroundColor,
-  //     },
-  //   };
-  // };
 
   const eventPropGetter = (event, start, end, isSelected) => {
     // Get the current date
