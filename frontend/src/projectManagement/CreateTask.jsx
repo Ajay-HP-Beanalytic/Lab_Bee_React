@@ -18,6 +18,7 @@ const CreateTask = () => {
   const projectsData = useProjectManagementStore(
     (state) => state.allTasksData.projectsList
   );
+  console.log("projectsData-->", projectsData);
 
   const navigate = useNavigate();
   const { id: taskIdFromParams } = useParams();
@@ -59,7 +60,8 @@ const CreateTask = () => {
   };
 
   const fetchProjectIdsForDropdown = async () => {
-    // const projectIds = projectsData.map((project) => project.project_id);
+    const projectIdsFetched = projectsData.map((project) => project.project_id);
+    console.log("projectIdsFetched", projectIdsFetched);
 
     let filteredProjects = [];
     if (loggedInUserDepartment === "Reliability") {

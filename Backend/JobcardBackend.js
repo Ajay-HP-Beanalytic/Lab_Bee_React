@@ -2103,7 +2103,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
   });
 
   // API to get available chambers for filter dropdown
-  app.get("/api/getChambersList", (req, res) => {
+  app.get("/api/getChambersListForFilter", (req, res) => {
     const chambersQuery = `
     SELECT DISTINCT testChamber
     FROM tests_details 

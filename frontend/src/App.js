@@ -1,4 +1,4 @@
-import React, { useContext, useEffect } from "react";
+import { useContext, useEffect } from "react";
 import {
   Routes,
   Route,
@@ -6,7 +6,7 @@ import {
   useNavigate,
   Navigate,
 } from "react-router-dom";
-import { toast, ToastContainer } from "react-toastify";
+import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import "react-big-calendar/lib/addons/dragAndDrop/styles.css";
@@ -38,6 +38,8 @@ import { Helmet } from "react-helmet";
 import NotificationsManagement from "./Pages/NotificationsManagement";
 import EmiJobcard from "./EMI/EmiJobcard";
 import EMIJCDashboard from "./EMI/EMIJCDashboard";
+import EMISlotBooking from "./EMI/EMISlotBooking";
+import EMICalibration from "./EMI/EMICalibration";
 import ProjectManagementDashboard from "./projectManagement/ProjectsDashboard";
 import Financials from "./PO/Financials";
 import { Box, LinearProgress, Typography } from "@mui/material";
@@ -415,6 +417,40 @@ function App() {
                 allowedRoles={["Quality Engineer"]}
               >
                 <EmiJobcard />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="emi_slot_booking"
+            element={
+              <ProtectedRoute
+                allowedDepartments={[
+                  "Administration",
+                  "Accounts",
+                  "TS2 Testing",
+                  "Marketing",
+                ]}
+                allowedRoles={["Quality Engineer"]}
+              >
+                <EMISlotBooking />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="emi_calibration"
+            element={
+              <ProtectedRoute
+                allowedDepartments={[
+                  "Administration",
+                  "Accounts",
+                  "TS2 Testing",
+                  "Marketing",
+                ]}
+                allowedRoles={["Quality Engineer"]}
+              >
+                <EMICalibration />
               </ProtectedRoute>
             }
           />

@@ -192,6 +192,110 @@ export default function RenderComponents({
               </TextField>
             );
 
+          // case "select":
+          //   // Comprehensive field identifier handling
+          //   const fieldIdentifier = field.name || field.id;
+
+          //   if (!fieldIdentifier) {
+          //     console.error("Select field missing both name and id:", field);
+          //     return null; // or some error component
+          //   }
+
+          //   const selectedValue = watch(fieldIdentifier);
+
+          //   // Helper function to safely get option value
+          //   const getOptionValue = (option) => {
+          //     if (typeof option === "string") return option;
+
+          //     // Priority order: id > name > value > text > label
+          //     return option.id !== undefined
+          //       ? option.id
+          //       : option.name !== undefined
+          //       ? option.name
+          //       : option.value !== undefined
+          //       ? option.value
+          //       : option.text !== undefined
+          //       ? option.text
+          //       : option.label !== undefined
+          //       ? option.label
+          //       : String(option); // Convert to string as fallback
+          //   };
+
+          //   // Helper function to safely get option display text
+          //   const getOptionDisplay = (option) => {
+          //     if (typeof option === "string") return option;
+
+          //     // Priority order: label > name > title > text > id > value
+          //     return option.label !== undefined
+          //       ? option.label
+          //       : option.name !== undefined
+          //       ? option.name
+          //       : option.title !== undefined
+          //       ? option.title
+          //       : option.text !== undefined
+          //       ? option.text
+          //       : option.id !== undefined
+          //       ? String(option.id)
+          //       : option.value !== undefined
+          //       ? String(option.value)
+          //       : String(option); // Convert to string as fallback
+          //   };
+
+          //   // Debug logging (remove in production)
+          //   // if (process.env.NODE_ENV === "development") {
+          //   //   console.log(`Select field "${fieldIdentifier}":`, {
+          //   //     field,
+          //   //     selectedValue,
+          //   //     optionsCount: field.options?.length || 0,
+          //   //   });
+          //   // }
+
+          //   return (
+          //     <TextField
+          //       key={fieldIdentifier}
+          //       name={fieldIdentifier}
+          //       select
+          //       label={field.label}
+          //       value={selectedValue || ""}
+          //       onChange={(e) => {
+          //         const newValue = e.target.value;
+          //         setValue(fieldIdentifier, newValue);
+
+          //         // // Debug logging (remove in production)
+          //         // if (process.env.NODE_ENV === "development") {
+          //         //   console.log(
+          //         //     `Select "${fieldIdentifier}" changed to:`,
+          //         //     newValue
+          //         //   );
+          //         // }
+          //       }}
+          //       fullWidth
+          //       sx={{ mb: "10px", width: fieldWidth }}
+          //       // Add these for better UX
+          //       error={!!field.error}
+          //       helperText={field.error?.message}
+          //       required={field.required}
+          //     >
+          //       {Array.isArray(field.options) ? (
+          //         field.options.map((option, index) => {
+          //           const itemValue = getOptionValue(option);
+          //           const itemDisplay = getOptionDisplay(option);
+
+          //           // Create unique key (important for React rendering)
+          //           const itemKey = `${fieldIdentifier}_${itemValue}_${index}`;
+
+          //           return (
+          //             <MenuItem key={itemKey} value={itemValue}>
+          //               {itemDisplay}
+          //             </MenuItem>
+          //           );
+          //         })
+          //       ) : (
+          //         <MenuItem disabled>No options available</MenuItem>
+          //       )}
+          //     </TextField>
+          //   );
+
           case "radio":
             return (
               <Box key={field.name} mt="10px">
