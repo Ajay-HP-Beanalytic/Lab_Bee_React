@@ -43,6 +43,7 @@ import EMICalibration from "./EMI/EMICalibration";
 import ProjectManagementDashboard from "./projectManagement/ProjectsDashboard";
 import Financials from "./PO/Financials";
 import { Box, LinearProgress, Typography } from "@mui/material";
+import TestHoursCalculator from "./Quote/TestHoursCalculator";
 
 function App() {
   const location = useLocation();
@@ -361,6 +362,24 @@ function App() {
               </ProtectedRoute>
             }
           />
+
+          <Route
+            path="ts1_utitlity"
+            element={
+              <ProtectedRoute
+                allowedDepartments={[
+                  "Administration",
+                  "Accounts",
+                  "TS1 Testing",
+                  "Reports & Scrutiny",
+                ]}
+                allowedRoles={[]}
+              >
+                <TestHoursCalculator />
+              </ProtectedRoute>
+            }
+          />
+
           <Route
             path="user_management"
             element={

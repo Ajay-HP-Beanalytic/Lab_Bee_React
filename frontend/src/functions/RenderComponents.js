@@ -37,7 +37,7 @@ export default function RenderComponents({
                 {...register(field.name)}
                 value={watch(field.name) || ""} // Ensure it's never undefined
                 fullWidth
-                sx={{ mb: "10px", width: fieldWidth }}
+                sx={{ mb: "10px", padding: "2px", width: fieldWidth }}
               />
             );
 
@@ -51,7 +51,7 @@ export default function RenderComponents({
                 value={watch(field.name) || ""} // Ensure it's never undefined
                 fullWidth
                 type="number"
-                sx={{ mb: "10px", width: fieldWidth }}
+                sx={{ mb: "10px", padding: "2px", width: fieldWidth }}
               />
             );
 
@@ -66,7 +66,7 @@ export default function RenderComponents({
                 fullWidth
                 multiline
                 rows={2}
-                sx={{ mb: "10px", width: field.width }}
+                sx={{ mb: "10px", padding: "2px", width: field.width }}
               />
             );
 
@@ -83,7 +83,7 @@ export default function RenderComponents({
                       value={value || null}
                       onChange={onChange}
                       fullWidth
-                      sx={{ mb: "10px", width: fieldWidth }}
+                      sx={{ mb: "10px", padding: "2px", width: fieldWidth }}
                       renderInput={(params) => <TextField {...params} />}
                       format="DD-MM-YYYY"
                     />
@@ -104,7 +104,7 @@ export default function RenderComponents({
                       label={field.label}
                       value={value || null}
                       onChange={onChange}
-                      sx={{ mb: "10px", width: fieldWidth }}
+                      sx={{ mb: "10px", padding: "2px", width: fieldWidth }}
                       fullWidth
                       renderInput={(params) => <TextField {...params} />}
                       format="DD-MM-YYYY HH:mm"
@@ -126,7 +126,7 @@ export default function RenderComponents({
                       label={field.label}
                       value={value || null}
                       onChange={onChange}
-                      sx={{ mb: "10px", width: fieldWidth }}
+                      sx={{ mb: "10px", padding: "2px", width: fieldWidth }}
                       fullWidth
                       renderInput={(params) => <TextField {...params} />}
                       format="DD-MM-YYYY HH:mm"
@@ -147,7 +147,7 @@ export default function RenderComponents({
                 value={selectedValue || ""} // Set the value to the watched value
                 onChange={(e) => setValue(field.name, e.target.value)} // Set the value when the selection changes
                 fullWidth
-                sx={{ mb: "10px", width: fieldWidth }}
+                sx={{ mb: "10px", padding: "2px", width: fieldWidth }}
               >
                 {/* {field.options.map((option) => (
                   <MenuItem key={option.id} value={option.id}>
@@ -308,7 +308,7 @@ export default function RenderComponents({
                   value={watch(field.name) || ""} // Set value to empty string as fallback
                   onChange={(e) => setValue(field.name, e.target.value)}
                   fullWidth
-                  sx={{ mb: "10px", width: fieldWidth }}
+                  sx={{ mb: "10px", padding: "2px", width: fieldWidth }}
                 >
                   {field.options.map((option) => (
                     <FormControlLabel

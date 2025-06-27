@@ -715,6 +715,39 @@ function createEMIJobcardsTestsDetailsTable() {
   });
 }
 
+//Function to create the EMI_EMC_Slot_Booking table:
+const createEMISLotBookingTable = () => {
+  const createEMISLotBookingTableQuery = `
+  CREATE TABLE IF NOT EXISTS emi_slot_table (
+      id INT NOT NULL AUTO_INCREMENT,
+      booking_id VARCHAR(255),
+      company_name VARCHAR(255),
+      customer_name VARCHAR(255),
+      customer_email VARCHAR(255),
+      customer_phone VARCHAR(255),
+      test_name VARCHAR(255),
+      test_standard VARCHAR(255),
+      chamber_allotted VARCHAR(255),
+      slot_start_datetime DATETIME,
+      slot_end_datetime DATETIME,
+      slot_duration VARCHAR(255),
+      remarks VARCHAR(2500),
+      slot_booked_by VARCHAR(255),
+      lastUpdatedBy VARCHAR(100),
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP, 
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      PRIMARY KEY(id) 
+      );
+  `;
+  db.query(createEMISLotBookingTableQuery, function (err, result) {
+    if (err) {
+      console.error("Error while creating emi_slot_booking", err);
+    } else {
+      //console.log("Users_table created successfully.")
+    }
+  });
+};
+
 ////////////////////////////////////////////////////////////////////////////////////////
 // Function to create the test category table:
 function createTestCategoryTable() {
@@ -1011,6 +1044,7 @@ module.exports = {
   createEMIJobcardsEUTTable,
   createEMIJobcardsTestsTable,
   createEMIJobcardsTestsDetailsTable,
+  createEMISLotBookingTable,
 
   createTestCategoryTable,
   createTestNamesTable,

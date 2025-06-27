@@ -40,13 +40,12 @@ const localizer = momentLocalizer(moment);
 const EMISlotBooking = () => {
   const { loggedInUser } = useContext(UserContext);
 
-  // Resources for calendar
+  // Fixed: Initialize with proper data structure
   const [emiResourcesList, setEmiResourceList] = useState([
-    { resourceId: 1, title: "Main Chamber" },
-    { resourceId: 2, title: "CS Lab 1" },
-    { resourceId: 3, title: "CS Lab 2" },
+    { id: 1, title: "Main Chamber" },
+    { id: 2, title: "CS Lab 1" },
+    { id: 3, title: "CS Lab 2" },
   ]);
-
   const [emiEventsList, setEmiEventsList] = useState([]);
   const [openEMISlotBookingDialog, setOpenEMISlotBookingDialog] =
     useState(false);
@@ -56,7 +55,7 @@ const EMISlotBooking = () => {
   const [slotDeleted, setSlotDeleted] = useState(false);
   const [openDeleteSlotDialog, setOpenDeleteSlotDialog] = useState(false);
 
-  // Dynamic options state
+  // Fixed: State management for dynamic options
   const [selectedChamber, setSelectedChamber] = useState("");
   const [selectedStandard, setSelectedStandard] = useState("");
   const [selectedTest, setSelectedTest] = useState("");
@@ -68,7 +67,7 @@ const EMISlotBooking = () => {
   const [allBookings, setAllBookings] = useState([]);
   const [selectedEvent, setSelectedEvent] = useState(null);
 
-  // Search functionality state
+  // Fixed: Add search functionality state
   const [searchInputTextOfSlot, setSearchInputTextOfSlot] = useState("");
   const [filteredEventsList, setFilteredEventsList] = useState([]);
 
@@ -102,14 +101,13 @@ const EMISlotBooking = () => {
     defaultValues: defaultValues,
   });
 
-  // Fixed chamber options - using consistent structure
   const emiChamberOptions = [
     { id: "Main Chamber", label: "Main Chamber" },
     { id: "CS Lab 1", label: "CS Lab 1" },
     { id: "CS Lab 2", label: "CS Lab 2" },
   ];
 
-  // Fixed standard options
+  // Fixed: Use dynamic standards and tests
   const emiStandardOptions = [
     { id: "MIL STD 461 E/F/G", label: "MIL STD 461 E/F/G" },
     { id: "CISPR 25 / AIS-004", label: "CISPR 25 / AIS-004" },
@@ -127,23 +125,28 @@ const EMISlotBooking = () => {
     { id: "RE103", label: "RE103" },
   ];
 
-  // Initialize chambers on component mount
+  // Fixed: Initialize chambers on component mount
   useEffect(() => {
     try {
       const availableChambers = getAllEMIChambers();
       setChambers(availableChambers);
     } catch (error) {
       console.error("Error loading chambers:", error);
-      setChambers(emiChamberOptions);
+      // Fallback to hardcoded options
+      setChambers([
+        { id: "Main Chamber", label: "Main Chamber" },
+        { id: "CS Lab 1", label: "CS Lab 1" },
+        { id: "CS Lab 2", label: "CS Lab 2" },
+      ]);
     }
   }, []);
 
-  // Update filtered events when search or events change
+  // Fixed: Update filtered events when search or events change
   useEffect(() => {
     filterEvents();
   }, [searchInputTextOfSlot, emiEventsList]);
 
-  // Watch for datetime changes and calculate duration
+  // Fixed: Watch for datetime changes and calculate duration
   // const watchedStartTime = watch("slot_start_datetime");
   // const watchedEndTime = watch("slot_end_datetime");
 
@@ -192,7 +195,8 @@ const EMISlotBooking = () => {
     setFilteredEventsList(filtered);
   };
 
-  // Fixed: Fetch all EMI slot bookings with proper date handling
+  ////////////////////////////////////////////
+  // get all the bookings:
   const fetchAllEMISlotBookings = async () => {
     try {
       const response = await axios.get(
@@ -202,7 +206,6 @@ const EMISlotBooking = () => {
 
       const events = response.data
         .map((booking) => {
-          // Fix: Ensure proper date parsing for calendar views
           const startDate = new Date(booking.slot_start_datetime);
           const endDate = new Date(booking.slot_end_datetime);
 
@@ -212,49 +215,32 @@ const EMISlotBooking = () => {
             return null;
           }
 
-          // Shorten the test name and company name for display
-          const shortTestName =
-            booking.test_name && booking.test_name.length > 4
-              ? `${booking.test_name.slice(0, 4)}..`
-              : booking.test_name || "Test";
-
+          // Shorten the company name to max 4 characters and add "..." if necessary
           const shortCompanyName =
-            booking.company_name && booking.company_name.length > 4
+            booking.company_name.length > 4
               ? `${booking.company_name.slice(0, 4)}..`
-              : booking.company_name || "Company";
+              : booking.company_name;
 
           return {
             id: booking.booking_id,
             title: `${shortCompanyName}`,
-            fullTitle: `${booking.test_name || ""} for ${
-              booking.company_name || ""
-            }`,
+            fullTitle: `${booking.test_name} for ${booking.company_name}`,
             start: startDate,
             end: endDate,
             duration: booking.slot_duration,
+            // resourceId: booking.chamber_allotted,
             resourceId: getResourceIdByChamber(booking.chamber_allotted),
             remarks: booking.remarks,
             slotBookedBy: booking.slot_booked_by,
-            // Include all booking data for editing
-            company_name: booking.company_name,
-            customer_name: booking.customer_name,
-            customer_email: booking.customer_email,
-            customer_phone: booking.customer_phone,
-            test_name: booking.test_name,
-            test_standard: booking.test_standard,
-            chamber_allotted: booking.chamber_allotted,
-            slot_duration: booking.slot_duration,
-            // Fix: Make sure resource assignment works for all views
             resource: booking.chamber_allotted,
           };
         })
         .filter((event) => event !== null); // Remove any null events from invalid dates
-
       setEmiEventsList(events);
       setFilteredEventsList(events);
     } catch (error) {
       console.error("Failed to fetch the bookings", error);
-      toast.error("Failed to load existing bookings");
+      return null;
     }
   };
 
@@ -262,7 +248,9 @@ const EMISlotBooking = () => {
     fetchAllEMISlotBookings();
   }, [newBookingAdded, slotDeleted]);
 
-  // Helper function to get resource ID
+  /////////////////////////////////////////////
+
+  // Fixed: Helper function to get resource ID
   const getResourceIdByChamber = (chamberName) => {
     const resource = emiResourcesList.find((r) => r.title === chamberName);
     return resource ? resource.resourceId : 1;
@@ -286,6 +274,7 @@ const EMISlotBooking = () => {
     setValue("test_name", "");
   };
 
+  // Fixed: When standard changes
   const handleStandardChange = (standardId) => {
     setSelectedStandard(standardId);
     setValue("test_standard", standardId);
@@ -303,14 +292,9 @@ const EMISlotBooking = () => {
   };
 
   const handleOpenEMISlotBookingDialog = () => {
-    reset();
+    reset(); // Reset form when opening
     setIsEditingEMISlot(false);
     setEditId("");
-    setSelectedChamber("");
-    setSelectedStandard("");
-    setSelectedTest("");
-    setStandards([]);
-    setTests([]);
     setOpenEMISlotBookingDialog(true);
   };
 
@@ -318,12 +302,13 @@ const EMISlotBooking = () => {
     setOpenEMISlotBookingDialog(false);
     reset();
     setEditId("");
+    reset();
     setIsEditingEMISlot(false);
     setSelectedChamber("");
     setSelectedStandard("");
     setSelectedTest("");
-    setStandards([]);
-    setTests([]);
+    // setStandards([]);
+    // setTests([]);
   };
 
   const handleEventClick = (event) => {
@@ -360,7 +345,7 @@ const EMISlotBooking = () => {
       setValue("slot_duration", bookingData.slot_duration);
       setValue("remarks", bookingData.remarks);
 
-      setValue("slotBookedBy", bookingData.slot_booked_by);
+      setValue("slot_booked_by", bookingData.slot_booked_by);
 
       setEditId(selectedBookingId);
     } catch (error) {
@@ -393,7 +378,7 @@ const EMISlotBooking = () => {
     }
   };
 
-  // Handle slot selection for new bookings
+  // Fixed: Handle slot selection for new bookings
   const handleSelectSlot = (slotInfo) => {
     if (!slotInfo.start || !slotInfo.end) return;
 
@@ -415,7 +400,7 @@ const EMISlotBooking = () => {
     setOpenEMISlotBookingDialog(true);
   };
 
-  // Fixed form fields
+  // Fixed: Form fields with proper change handlers
   const fieldsForEMISlotBookingForm = [
     {
       label: "Company",
@@ -429,6 +414,7 @@ const EMISlotBooking = () => {
       name: "customer_name",
       type: "textField",
       width: "100%",
+      required: true,
     },
     {
       label: "Customer Email",
@@ -450,6 +436,7 @@ const EMISlotBooking = () => {
       type: "select",
       width: "100%",
       options: emiChamberOptions,
+      // onChange: (value) => handleChamberChange(value),
       required: true,
     },
     {
@@ -458,6 +445,7 @@ const EMISlotBooking = () => {
       type: "select",
       width: "100%",
       options: emiStandardOptions,
+      // onChange: (value) => handleStandardChange(value),
       required: true,
     },
     {
@@ -488,7 +476,7 @@ const EMISlotBooking = () => {
       type: "textField",
       width: "100%",
       inputType: "number",
-      disabled: true,
+      disabled: true, // Auto-calculated
     },
     {
       label: "Notes/Remarks",
@@ -499,27 +487,12 @@ const EMISlotBooking = () => {
     },
   ];
 
-  // Fixed: Form submission with proper error handling and validation
+  // Fixed: Form submission with proper validation
   const onSubmitHandleEMISlotBookingForm = async (data) => {
     try {
       // Validation
       if (!data.company_name?.trim()) {
         toast.error("Company name is required");
-        return;
-      }
-
-      if (!data.chamber_allotted?.trim()) {
-        toast.error("Chamber is required");
-        return;
-      }
-
-      if (!data.test_standard?.trim()) {
-        toast.error("Standard is required");
-        return;
-      }
-
-      if (!data.test_name?.trim()) {
-        toast.error("Test name is required");
         return;
       }
 
@@ -541,55 +514,6 @@ const EMISlotBooking = () => {
         return;
       }
 
-      if (parseFloat(data.slot_duration) < 0) {
-        toast.error("Slot duration should not be negative");
-        return;
-      } else if (parseFloat(data.slot_duration) === 0) {
-        toast.error("Slot duration should not be zero");
-        return;
-      }
-
-      //Check overlap of the chamber and date time with exisiting bookings
-      const selectedSlotStartDate = startTime;
-      const selectedSlotEndDate = endTime;
-
-      const selectedChamber = data.chamber_allotted;
-
-      if (allBookings && allBookings.length > 0) {
-        // Check for overlap with each existing booking
-        for (const booking of allBookings) {
-          // Skip current booking when editing
-          if (editId && booking.booking_id === editId) {
-            continue;
-          }
-
-          const existingStart = dayjs(booking.slot_start_datetime);
-          const existingEnd = dayjs(booking.slot_end_datetime);
-          const existingChamber = booking.chamber_allotted;
-
-          // Only check overlap for the same chamber
-          if (selectedChamber === existingChamber) {
-            // ✅ IMPROVED: More robust overlap detection
-            const hasOverlap =
-              // Case 1: New booking starts before existing ends AND new booking ends after existing starts
-              selectedSlotStartDate.isBefore(existingEnd) &&
-              selectedSlotEndDate.isAfter(existingStart);
-
-            if (hasOverlap) {
-              // ✅ IMPROVED: Better error message formatting
-              toast.error(
-                `${selectedChamber} is already booked for ${booking.company_name}\n` +
-                  `From: ${existingStart.format("DD/MM/YYYY HH:mm")}\n` +
-                  `To: ${existingEnd.format("DD/MM/YYYY HH:mm")}\n` +
-                  `Please select a different time slot.`
-              );
-              return;
-            }
-          }
-        }
-      }
-
-      // Fixed: Generate booking ID properly for new bookings
       let bookingID;
       if (editId) {
         bookingID = editId;
@@ -634,6 +558,7 @@ const EMISlotBooking = () => {
         handleCloseEMISlotBookingDialog();
         handleCloseModal();
         setNewBookingAdded(!newBookingAdded);
+        // await fetchAllEMISlotBookings();
       } else {
         throw new Error("Unexpected response status");
       }
@@ -645,7 +570,7 @@ const EMISlotBooking = () => {
     }
   };
 
-  // Error handling for form validation
+  // Fixed: Error handling
   const onError = (errors) => {
     console.error("Form validation errors:", errors);
     const firstError = Object.values(errors)[0];
@@ -656,7 +581,7 @@ const EMISlotBooking = () => {
     }
   };
 
-  // Event styling with better colors
+  // Fixed: Event styling with better colors
   const eventPropGetter = (event, start, end, isSelected) => {
     const currentDate = moment();
     const eventStartDate = moment(event.start);
@@ -685,7 +610,6 @@ const EMISlotBooking = () => {
         border: "none",
         borderRadius: "4px",
         fontSize: "12px",
-        padding: "2px 4px",
       },
     };
   };
@@ -746,11 +670,6 @@ const EMISlotBooking = () => {
           onSelectEvent={handleEventClick}
           onSelectSlot={handleSelectSlot}
           style={{ height: 600 }}
-          // Fixed: Add proper step and time slot props for week/day views
-          step={30}
-          timeslots={2}
-          // min={new Date(2024, 0, 1, 8, 0)} // 8 AM
-          // max={new Date(2024, 0, 1, 18, 0)} // 6 PM
         />
       </div>
 
@@ -758,7 +677,7 @@ const EMISlotBooking = () => {
         open={openEMISlotBookingDialog}
         onClose={handleCloseEMISlotBookingDialog}
         fullWidth
-        maxWidth="md"
+        // maxWidth="md"
       >
         <form
           onSubmit={handleSubmit(onSubmitHandleEMISlotBookingForm, onError)}
@@ -803,7 +722,7 @@ const EMISlotBooking = () => {
         open={!!selectedEvent}
         onClose={handleCloseModal}
         onDelete={handleOpenDeleteSlotDialog}
-        onUpdate={() => handleUpdateBooking(selectedEvent?.id)}
+        onUpdate={() => handleUpdateBooking(selectedEvent.id)}
         title="Booking Details"
         options={[
           { label: `Booking ID: ${selectedEvent?.id || "N/A"}` },
@@ -825,12 +744,11 @@ const EMISlotBooking = () => {
           {
             label: `Slot Duration (hours): ${selectedEvent?.duration || "N/A"}`,
           },
-          { label: `Allotted Chamber: ${selectedEvent?.resource || "N/A"}` },
+          { label: `Allotted Chamber: ${selectedEvent?.resourceId || "N/A"}` },
           { label: `Remarks: ${selectedEvent?.remarks || "N/A"}` },
           { label: `Slot Booked By: ${selectedEvent?.slotBookedBy || "N/A"}` },
         ]}
       />
-
       <ConfirmationDialog
         open={openDeleteSlotDialog}
         onClose={handleCloseDeleteSlotDialog}
