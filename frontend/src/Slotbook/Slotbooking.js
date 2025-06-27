@@ -33,7 +33,6 @@ import axios from "axios";
 import { serverBaseAddress } from "../Pages/APIPage";
 
 import dayjs from "dayjs";
-
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { DateTimePicker } from "@mui/x-date-pickers/DateTimePicker";
@@ -51,10 +50,6 @@ const localizer = momentLocalizer(moment);
 export default function Slotbooking() {
   const [myResourcesList, setMyResourceList] = useState([]);
   const [myEventsList, setMyEventsList] = useState([]);
-
-  const [contextMenuOpen, setContextMenuOpen] = useState(false);
-  const [xPosition, setXPosition] = useState(0);
-  const [yPosition, setYPosition] = useState(0);
   const [openDialog, setOpenDialog] = useState(false);
   const [slotStartDateTime, setSlotStartDateTime] = useState(null);
   const [slotEndDateTime, setSlotEndDateTime] = useState(null);
@@ -128,31 +123,6 @@ export default function Slotbooking() {
     resolver: yupResolver(slotBookingFormSchema),
   });
 
-  const handleCalendarContextMenu = (e) => {
-    if (calendarRef.current) {
-      e.preventDefault();
-      const rect = calendarRef.current.getBoundingClientRect();
-      const xPosition = e.clientX;
-      const yPosition = e.clientY;
-
-      // Check if the click is within the calendar header
-      const headerHeight = 100; // Adjust this value according to your calendar header height
-      if (yPosition < rect.top + headerHeight) {
-        setContextMenuOpen(false);
-        return;
-      }
-
-      setXPosition(xPosition);
-      setYPosition(yPosition);
-      setContextMenuOpen(true);
-    }
-  };
-
-  // Function to close the context menu
-  const handleCloseContextMenu = () => {
-    setContextMenuOpen(false);
-  };
-
   const handleOpenDialog = () => {
     setOpenDialog(true);
   };
@@ -166,12 +136,6 @@ export default function Slotbooking() {
     setSlotDuration(0);
     setSelectedChamber("");
     setEditId("");
-  };
-
-  // Function to create the new booking:
-  const onClickingNewBooking = (e) => {
-    setContextMenuOpen(false);
-    handleOpenDialog();
   };
 
   const handleEventClick = (event) => {
@@ -189,10 +153,6 @@ export default function Slotbooking() {
   const handleCloseDeleteSlotDialog = () => {
     setOpenDeleteSlotDialog(false);
   };
-
-  // const formatFetchedSlotDateTime = (dateTime) => {
-  //   return moment(dateTime).tz("Asia/Kolkata").format("DD/MM/YYYY HH:mm");
-  // };
 
   /////////////////////////////////////////////////////////////////////////////////////
 
@@ -395,14 +355,13 @@ export default function Slotbooking() {
         const response = await axios.get(
           `${serverBaseAddress}/api/getChambersList`
         );
-
-        console.log("Slot booking API Response-->", response);
         if (response.status === 200) {
           // Transform the fetched data to match the expected resource structure
           const resourceData = response.data.map((chamber) => ({
             id: chamber.chamber_id, // Ensure id is a string
             title: chamber.chamber_id,
           }));
+          console.log("resourceData", resourceData);
           setMyResourceList(resourceData);
         } else {
           console.error(
@@ -631,9 +590,9 @@ export default function Slotbooking() {
           >
             <form onSubmit={handleSubmit(onSubmitForm, onError)}>
               {editBooking ? (
-                <DialogTitle variant="h4">Update Booking</DialogTitle>
+                <DialogTitle variant="h5">Update Booking</DialogTitle>
               ) : (
-                <DialogTitle variant="h4">New Booking</DialogTitle>
+                <DialogTitle variant="h5">New Booking</DialogTitle>
               )}
 
               {/* <DialogTitle variant='h4'>New Booking</DialogTitle> */}

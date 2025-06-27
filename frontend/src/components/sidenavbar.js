@@ -21,6 +21,7 @@ import MarkChatReadIcon from "@mui/icons-material/MarkChatRead";
 import MarkChatUnreadIcon from "@mui/icons-material/MarkChatUnread";
 import DeleteIcon from "@mui/icons-material/Delete";
 import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
+import CalculateIcon from "@mui/icons-material/Calculate";
 
 import {
   Avatar,
@@ -474,9 +475,16 @@ export default function SidenavigationBar() {
       path: "/chamber-calibration",
       gradientId: "chambersCalibrationGradient",
     },
-
     {
       i: 8,
+      label: "Hours Calculation",
+      icon: <CalculateIcon />,
+      path: "/ts1_utitlity",
+      gradientId: "hoursCalculationGradient",
+    },
+
+    {
+      i: 9,
       label: "EMI/EMC JC Dashboard",
       icon: <DashboardIcon />,
       path: "/emi_jc_dashboard",
@@ -484,21 +492,21 @@ export default function SidenavigationBar() {
     },
 
     {
-      i: 9,
+      i: 10,
       label: "EMI/EMC Slot Booking",
       icon: <CalendarMonthSharpIcon />,
       path: "/emi_slot_booking",
       gradientId: "emiSlotBookingGradient",
     },
     {
-      i: 10,
+      i: 11,
       label: "EMI/EMC Calibration",
       icon: <KitchenIcon />,
       path: "/emi_calibration",
       gradientId: "emiChamberCalibrationGradient",
     },
     {
-      i: 11,
+      i: 12,
       label: "Project Management",
       icon: <EventRepeatIcon />,
       // icon: (
@@ -512,7 +520,7 @@ export default function SidenavigationBar() {
       gradientId: "projectManagementGradient",
     },
     {
-      i: 12,
+      i: 13,
       label: "Users Management",
       icon: <ManageAccountsIcon />,
       path: "/user_management",
@@ -524,23 +532,23 @@ export default function SidenavigationBar() {
     if (loggedInUserDepartment === "Administration") {
       return true; // Show all items for Administration
     } else if (loggedInUserDepartment === "Accounts") {
-      return [1, 2, 3, 4, 5, 6, 8, 9].includes(item.i);
+      return [1, 2, 3, 4, 5, 6, 8, 9, 10].includes(item.i);
     } else if (loggedInUserDepartment === "Marketing") {
-      return [2, 3, 8, 9].includes(item.i);
+      return [2, 3, 8, 9, 10].includes(item.i);
     } else if (
       loggedInUserDepartment === "TS1 Testing" ||
       loggedInUserRole === "Reports & Scrutiny Manager"
     ) {
-      return [4, 5, 6, 7].includes(item.i);
+      return [4, 5, 6, 7, 8].includes(item.i);
     } else if (
       loggedInUserDepartment === "Reliability" ||
       loggedInUserDepartment === "Software"
     ) {
-      return [11].includes(item.i);
+      return [12].includes(item.i);
     } else if (loggedInUserDepartment === "TS2 Testing") {
-      return [8, 9, 10].includes(item.i);
+      return [9, 10, 11].includes(item.i);
     } else if (loggedInUserRole === "Quality Engineer") {
-      return [4, 6, 7, 8, 9, 10].includes(item.i);
+      return [4, 6, 7, 8, 9, 10, 11].includes(item.i);
     }
     return false; // Default: Hide the item
   });

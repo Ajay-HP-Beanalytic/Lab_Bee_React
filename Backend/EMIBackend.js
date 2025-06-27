@@ -828,6 +828,173 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
       res.send(result);
     });
   });
+
+  /////////////////////////////////////////////////////////////////////////////////
+  //API to fetch the latest EMI slot booking ID:
+  app.get("/api/getLatestEMISlotBookingID", (req, res) => {
+    const query =
+      "SELECT booking_id FROM emi_slot_table ORDER BY booking_id DESC LIMIT 1";
+    db.query(query, (error, result) => {
+      if (error) {
+        return res.status(500).json({ error: "Database error" });
+      }
+      if (result.length === 0) {
+        const currentDate = moment().format("YYYYMMDD");
+        const firstBookingId = `BEA_TS2_${currentDate}000`;
+        return res.json([{ booking_id: firstBookingId }]);
+      }
+      res.send(result);
+    });
+  });
+
+  //API to book a new slot for EMI-EMC chamber:
+  app.post("/api/bookNewEMISlot", (req, res) => {
+    const { formData } = req.body;
+    console.log("This is formData", formData);
+
+    const sql = `INSERT INTO emi_slot_table(booking_id, company_name, customer_name, customer_email, customer_phone, test_name, test_standard, chamber_allotted, slot_start_datetime, slot_end_datetime, slot_duration, remarks, slot_booked_by, lastUpdatedBy)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+
+    const formattedSlotStartDateTime = moment(
+      formData.slot_start_datetime
+    ).format("YYYY-MM-DD HH:mm");
+    const formattedSlotEndDateTime = moment(formData.slot_end_datetime).format(
+      "YYYY-MM-DD HH:mm"
+    );
+
+    const values = [
+      formData.booking_id,
+      formData.company_name,
+      formData.customer_name,
+      formData.customer_email,
+      formData.customer_phone,
+      formData.test_name,
+      formData.test_standard,
+      formData.chamber_allotted,
+      // formattedSlotStartDateTime,
+      // formattedSlotEndDateTime,
+      formData.slot_start_datetime, // Already formatted in frontend
+      formData.slot_end_datetime, // Already formatted in frontend
+      formData.slot_duration,
+      formData.remarks,
+      formData.slot_booked_by,
+      formData.lastUpdatedBy,
+    ];
+
+    db.query(sql, values, (error, result) => {
+      if (error) {
+        return res.status(500).json({
+          error:
+            "An error occurred while booking a new slot for EMI-EMC chamber",
+        });
+      } else {
+        return res.status(200).json({
+          message: "Slot Booked Successfully",
+        });
+      }
+    });
+  });
+
+  //API to update the slot for EMI-EMC:
+  app.post("/api/updateEMISlot/:booking_id", (req, res) => {
+    const { booking_id } = req.params;
+    const { formData } = req.body;
+    console.log("This is booking_id", booking_id);
+    console.log("This is formData", formData);
+
+    const sql = `UPDATE emi_slot_table SET company_name = ?, customer_name = ?, customer_email = ?, customer_phone = ?, test_name = ?, 
+                test_standard = ?, chamber_allotted = ?, slot_start_datetime = ?, slot_end_datetime = ?, slot_duration = ?, remarks = ?, 
+                slot_booked_by = ?, lastUpdatedBy = ? WHERE booking_id = ?`;
+
+    const formattedSlotStartDateTime = moment(
+      formData.slot_start_datetime
+    ).format("YYYY-MM-DD HH:mm");
+    const formattedSlotEndDateTime = moment(formData.slot_end_datetime).format(
+      "YYYY-MM-DD HH:mm"
+    );
+
+    const values = [
+      formData.company_name,
+      formData.customer_name,
+      formData.customer_email,
+      formData.customer_phone,
+      formData.test_name,
+      formData.test_standard,
+      formData.chamber_allotted,
+      // formattedSlotStartDateTime,
+      // formattedSlotEndDateTime,
+
+      formData.slot_start_datetime, // Already formatted in frontend
+      formData.slot_end_datetime, // Already formatted in frontend
+      formData.slot_duration,
+      formData.remarks,
+      formData.slot_booked_by,
+      formData.lastUpdatedBy,
+      booking_id,
+    ];
+
+    db.query(sql, values, (error, result) => {
+      if (error) {
+        console.error("Database error:", error);
+        return res.status(500).json({
+          error: "An error occurred while updating the slot for EMI-EMC",
+        });
+      } else {
+        return res.status(200).json({
+          message: "Slot Updated Successfully",
+        });
+      }
+    });
+  });
+
+  // API to delete the EMI slot:
+  app.delete("/api/deleteEMISlot/:booking_id", (req, res) => {
+    const { booking_id } = req.params;
+
+    const sql = "DELETE FROM emi_slot_table WHERE booking_id = ?";
+
+    db.query(sql, [booking_id], (error, result) => {
+      if (error) {
+        console.error("Error deleting EMI slot:", error);
+        return res.status(500).json({
+          error: "An error occurred while deleting the EMI slot",
+        });
+      }
+
+      if (result.affectedRows === 0) {
+        return res.status(404).json({
+          error: "Booking not found",
+        });
+      }
+
+      return res.status(200).json({
+        message: "Slot deleted successfully",
+      });
+    });
+  });
+
+  //API to get the EMI slot bookings:
+  app.get("/api/getEMISlotBookings", (req, res) => {
+    const query = "SELECT * FROM emi_slot_table";
+    db.query(query, (error, result) => {
+      if (error) {
+        return res.status(500).json({ error: "Database error" });
+      }
+      res.send(result);
+    });
+  });
+
+  //API to edit or update the selected booking id:
+  app.get("/api/getEMISlotData/:booking_id", (req, res) => {
+    const { booking_id } = req.params;
+    const query = "SELECT * FROM emi_slot_table WHERE booking_id = ?";
+    db.query(query, [booking_id], (error, result) => {
+      if (error) {
+        return res.status(500).json({ error: "Database error" });
+      }
+      res.send(result);
+    });
+  });
 }
 
 module.exports = { emiJobcardsAPIs };

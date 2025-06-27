@@ -6,6 +6,7 @@ import AddModulesAndTests from "./AddModulesAndTests";
 import { Card, Typography } from "@mui/material";
 import { UserContext } from "../Pages/UserContext";
 import PaySlipDashboard from "../HR/paySlipDashboard";
+import TestHoursCalculator from "./TestHoursCalculator";
 
 export default function QuotationRequirements() {
   const { loggedInUserDepartment } = useContext(UserContext);
@@ -26,7 +27,8 @@ export default function QuotationRequirements() {
 
       <br />
 
-      <PaySlipDashboard />
+      {/* <PaySlipDashboard /> */}
+      <TestHoursCalculator />
     </>
   );
 }
