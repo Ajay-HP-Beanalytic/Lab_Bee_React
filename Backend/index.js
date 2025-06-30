@@ -155,6 +155,7 @@ const {
   createEMIJobcardsTestsTable,
   createEMIJobcardsTestsDetailsTable,
   createEMISLotBookingTable,
+  createEMICalibrationsTable,
 
   createTestCategoryTable,
   createTestNamesTable,
@@ -210,6 +211,7 @@ db.getConnection(function (err, connection) {
   createEMIJobcardsTestsTable();
   createEMIJobcardsTestsDetailsTable();
   createEMISLotBookingTable();
+  createEMICalibrationsTable();
 
   createTestCategoryTable();
   createTestNamesTable();
