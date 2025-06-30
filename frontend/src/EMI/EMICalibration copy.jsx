@@ -751,7 +751,6 @@ const EMICalibration = () => {
 
   // Function to handle KPI card click and show equipment list
   const handleKPIClick = (kpi) => {
-    alert(`Clicked on ${kpi.label}`);
     if (kpi.equipments && kpi.equipments.length > 0) {
       setDialogData({
         title: kpi.label,
@@ -895,6 +894,19 @@ const EMICalibration = () => {
           </Box>
         </Box>
 
+        {/* <Grid container spacing={3} sx={{ mb: 3 }}>
+          {emiCalibrationKPIs.map((kpi, index) => (
+            <Grid item xs={12} sm={6} md={4} key={index}>
+              <EMICalibrationKPICard
+                title={kpi.label}
+                value={kpi.value}
+                color={kpi.color}
+                icon={kpi.icon}
+              />
+            </Grid>
+          ))}
+        </Grid> */}
+
         <SearchBar
           placeholder="Search Equipments"
           searchInputText={searchInputTextOfEMICalibrationTable}
@@ -1011,6 +1023,7 @@ const EMICalibration = () => {
         </Dialog>
 
         {/* KPI Dialog openDialog */}
+
         <Dialog
           open={openDialog}
           onClose={() => setOpenDialog(false)}
@@ -1116,7 +1129,58 @@ const EMICalibration = () => {
     );
   };
 
-  // Enhanced KPI Card with click functionality
+  // const EMICalibrationKPICard = ({ title, value, icon, color }) => {
+  //   return (
+  //     <Card
+  //       sx={{
+  //         background: `linear-gradient(135deg, ${color}15 0%, ${color}25 100%)`,
+  //         border: `1px solid ${color}30`,
+  //         height: "100%",
+  //         transition: "transform 0.2s ease-in-out",
+  //         "&:hover": {
+  //           transform: "translateY(-4px)",
+  //           boxShadow: `0 8px 25px ${color}20`,
+  //         },
+  //       }}
+  //     >
+  //       <CardContent>
+  //         <Box
+  //           sx={{
+  //             display: "flex",
+  //             justifyContent: "space-between",
+  //             alignItems: "flex-start",
+  //           }}
+  //         >
+  //           <Box sx={{ flex: 1 }}>
+  //             <Typography variant="body2" color="text.secondary" gutterBottom>
+  //               {title}
+  //             </Typography>
+
+  //             <Typography
+  //               variant="h4"
+  //               sx={{ fontWeight: "bold", color: color, mb: 1 }}
+  //             >
+  //               {value}
+  //             </Typography>
+  //           </Box>
+  //           <Avatar
+  //             sx={{
+  //               bgcolor: `${color}20`,
+  //               color: color,
+  //               width: 56,
+  //               height: 56,
+  //               boxShadow: `0 4px 14px ${color}25`,
+  //             }}
+  //           >
+  //             {icon}
+  //           </Avatar>
+  //         </Box>
+  //       </CardContent>
+  //     </Card>
+  //   );
+  // };
+
+  // ✅ FIXED: Enhanced KPI Card with click functionality
   const EMICalibrationKPICard = ({
     title,
     value,
@@ -1206,6 +1270,71 @@ const EMICalibration = () => {
           </Grid>
         ))}
       </Grid>
+
+      {/* Summary Information */}
+      {/* <Card sx={{ mb: 3 }}>
+        <CardContent>
+          <Typography variant="h6" gutterBottom>
+            Quick Summary
+          </Typography>
+          <Grid container spacing={2}>
+            <Grid item xs={12} sm={6} md={3}>
+              <Box sx={{ textAlign: "center" }}>
+                <Typography variant="h4" color="primary.main" fontWeight="bold">
+                  {emiCalibrationSummaryData.total_equipments || 0}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Total Equipment
+                </Typography>
+              </Box>
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <Box sx={{ textAlign: "center" }}>
+                <Typography variant="h4" color="success.main" fontWeight="bold">
+                  {emiCalibrationSummaryData.up_to_date_count || 0}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Compliant
+                </Typography>
+              </Box>
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <Box sx={{ textAlign: "center" }}>
+                <Typography variant="h4" color="warning.main" fontWeight="bold">
+                  {(emiCalibrationSummaryData.due_next_two_months?.count || 0) +
+                    (emiCalibrationSummaryData.expired_calibrations?.count ||
+                      0)}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Action Required
+                </Typography>
+              </Box>
+            </Grid>
+            <Grid item xs={12} sm={6} md={3}>
+              <Box sx={{ textAlign: "center" }}>
+                <Typography
+                  variant="h4"
+                  color="text.secondary"
+                  fontWeight="bold"
+                >
+                  {Math.round(
+                    emiCalibrationSummaryData.total_equipments > 0
+                      ? ((emiCalibrationSummaryData.up_to_date_count || 0) /
+                          emiCalibrationSummaryData.total_equipments) *
+                          100
+                      : 0
+                  )}
+                  %
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Compliance Rate
+                </Typography>
+              </Box>
+            </Grid>
+          </Grid>
+        </CardContent>
+      </Card> */}
+
       {/* Equipment List Dialog */}
       <EquipmentListDialog />
     </Box>

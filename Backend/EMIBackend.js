@@ -995,6 +995,398 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
       res.send(result);
     });
   });
+
+  ////////////////////////////////////////////////////////
+  //EMI Chambers calibrations APIs:
+
+  //API to add chambers or equipments data for EMI calibration in bulk:
+  app.post("/api/addEMIEquipmentsWithExcel", (req, res) => {
+    const { emiCalibrationsData } = req.body;
+
+    const sql = `INSERT INTO emi_calibrations_table (
+    id, equipment_name, manufacturer, model_number, calibration_date, calibration_due_date, calibration_done_by, equipment_status,remarks, last_updated_by) VALUES ?`;
+
+    const values = emiCalibrationsData.map((item) => [
+      item.equipment_name,
+      item.manufacturer,
+      item.model_number,
+      item.calibration_date,
+      item.calibration_due_date,
+      item.calibration_done_by,
+      item.equipment_status,
+      item.remarks,
+      item.last_updated_by,
+    ]);
+
+    db.query(sql, [values], (error, result) => {
+      if (error) {
+        console.error("Error while inserting data:", error);
+        return res.status(500).json({ error: "Database error" });
+      }
+      res
+        .status(200)
+        .json({ message: "EMI Calibration Excel Data inserted successfully" });
+    });
+  });
+
+  //API to add a single emi equipment for emi_calibrations_table:
+  app.post("/api/addEMIEquipment", (req, res) => {
+    const { formData } = req.body;
+
+    const values = [
+      formData.equipment_name,
+      formData.manufacturer,
+      formData.model_number,
+      formData.calibration_date,
+      formData.calibration_due_date,
+      formData.calibration_done_by,
+      formData.equipment_status,
+      formData.remarks,
+      formData.last_updated_by,
+    ];
+
+    const sql = `INSERT INTO emi_calibrations_table (equipment_name, manufacturer, model_number, calibration_date, calibration_due_date, calibration_done_by, equipment_status, remarks, last_updated_by) 
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+
+    db.query(sql, values, (error, result) => {
+      if (error) {
+        console.error("Error while inserting data:", error);
+        return res.status(500).json({ error: "Database error" });
+      }
+      res
+        .status(200)
+        .json({ message: "EMI Calibration Data inserted successfully" });
+    });
+  });
+
+  //API to get emi_calibrations_table data:
+  // app.get("/api/getAllEMIEquipmentsData", (req, res) => {
+  //   const { month, dateFrom, dateTo, limit = 1000 } = req.query;
+
+  //   let sqlQuery = "SELECT * FROM emi_calibrations_table WHERE 1=1";
+
+  //   const queryParams = [];
+
+  //   if (dateFrom && dateTo) {
+  //     queryParams.push(dateFrom, dateTo);
+  //     sqlQuery += " AND calibration_date >= ? AND calibration_date <= ?";
+  //   } else {
+  //     if (month) {
+  //       queryParams.push(month);
+  //       sqlQuery += " AND MONTH(calibration_date) = ?";
+  //     }
+  //   }
+
+  //   //ADD Order By:
+  //   sqlQuery += " ORDER BY calibration_date DESC, id DESC";
+
+  //   //Add Limit:
+  //   if (limit) {
+  //     queryParams.push(parseInt(limit));
+  //     sqlQuery += " LIMIT ?";
+  //   }
+
+  //   db.query(sqlQuery, queryParams, (error, result) => {
+  //     if (error) {
+  //       console.error("Error while fetching EMI Calibration data:", error);
+  //       return res
+  //         .status(500)
+  //         .json({ error: "Failed to fetch EMI calibration data" });
+  //     } else {
+  //       console.log("EMI Equipments Data:", result);
+  //       res.status(200).json(result);
+  //     }
+  //   });
+  // });
+
+  // Updated API with auto-calculated calibration status
+  app.get("/api/getAllEMIEquipmentsData", (req, res) => {
+    const { month, dateFrom, dateTo, limit = 1000 } = req.query;
+
+    // Enhanced query with calculated calibration status and additional useful fields
+    let sqlQuery = `
+    SELECT 
+      id,
+      equipment_name,
+      manufacturer,
+      model_number,
+      calibration_date,
+      calibration_due_date,
+      calibration_done_by,
+      equipment_status,
+      remarks,
+      last_updated_by,
+      -- Auto-calculated calibration status based on due date
+      CASE 
+        WHEN calibration_due_date < CURDATE() THEN 'Expired'
+        WHEN calibration_due_date >= CURDATE() THEN 'Up to Date'
+        ELSE 'Unknown'
+      END AS calibration_status,
+      -- Days until due (negative means overdue)
+      DATEDIFF(calibration_due_date, CURDATE()) AS days_until_due,
+      -- Categorize urgency
+      CASE 
+        WHEN calibration_due_date < CURDATE() THEN 'Overdue'
+        WHEN DATEDIFF(calibration_due_date, CURDATE()) <= 30 THEN 'Due Soon'
+        WHEN DATEDIFF(calibration_due_date, CURDATE()) <= 60 THEN 'Due This Month'
+        ELSE 'Good'
+      END AS urgency_status,
+      -- Calculate how long since last calibration
+      DATEDIFF(CURDATE(), calibration_date) AS days_since_calibration
+    FROM emi_calibrations_table 
+    WHERE 1=1
+  `;
+
+    const queryParams = [];
+
+    // Date filtering logic
+    if (dateFrom && dateTo) {
+      queryParams.push(dateFrom, dateTo);
+      sqlQuery += " AND calibration_date >= ? AND calibration_date <= ?";
+    } else {
+      if (month) {
+        queryParams.push(month);
+        sqlQuery += " AND MONTH(calibration_date) = ?";
+      }
+    }
+
+    // Order by calibration due date (most urgent first), then by calibration date
+    sqlQuery +=
+      " ORDER BY calibration_due_date ASC, calibration_date DESC, id DESC";
+
+    // Add limit
+    if (limit) {
+      queryParams.push(parseInt(limit));
+      sqlQuery += " LIMIT ?";
+    }
+
+    db.query(sqlQuery, queryParams, (error, result) => {
+      if (error) {
+        console.error("Error while fetching EMI Calibration data:", error);
+        return res.status(500).json({
+          error: "Failed to fetch EMI calibration data",
+          details: error.message,
+        });
+      } else {
+        // Calculate summary statistics from the results
+        const summary = {
+          total_count: result.length,
+          expired_count: result.filter(
+            (item) => item.calibration_status === "Expired"
+          ).length,
+          up_to_date_count: result.filter(
+            (item) => item.calibration_status === "Up to Date"
+          ).length,
+          due_soon_count: result.filter(
+            (item) => item.days_until_due > 0 && item.days_until_due <= 30
+          ).length,
+          overdue_count: result.filter(
+            (item) => item.urgency_status === "Overdue"
+          ).length,
+          active_equipment: result.filter(
+            (item) => item.equipment_status === "Active"
+          ).length,
+          inactive_equipment: result.filter(
+            (item) => item.equipment_status === "Inactive"
+          ).length,
+        };
+
+        console.log("EMI Equipments Data:", result);
+        console.log("Summary:", summary);
+        res.status(200).json({
+          equipments: result,
+          summary: summary,
+        });
+      }
+    });
+  });
+
+  //API to fetch single EMI equipment data:
+  app.get("/api/getSingleEMIEquipmentData/:id", (req, res) => {
+    const { id } = req.params;
+    const query = "SELECT * FROM emi_calibrations_table WHERE id = ?";
+    db.query(query, [id], (error, result) => {
+      if (error) {
+        console.error("Error fetching single EMI Equipment data", error);
+        return res
+          .status(500)
+          .json({ error: "Error while fetching single EMI Equipment data" });
+      }
+      res.status(200).json(result);
+    });
+  });
+
+  //API to update the EMI equipments:
+  app.post("/api/updateEMIEquipment/:id", (req, res) => {
+    const { formData } = req.body;
+    console.log("Data:", formData);
+
+    const values = [
+      formData.equipment_name,
+      formData.manufacturer,
+      formData.model_number,
+      formData.calibration_date,
+      formData.calibration_due_date,
+      formData.calibration_done_by,
+      formData.equipment_status,
+      formData.remarks,
+      formData.last_updated_by,
+      formData.id,
+    ];
+
+    const sql = `UPDATE emi_calibrations_table SET 
+    equipment_name = ?,
+    manufacturer = ?,
+    model_number = ?,
+    calibration_date = ?,
+    calibration_due_date = ?,
+    calibration_done_by = ?,
+    equipment_status = ?,
+    remarks = ?,
+    last_updated_by = ?
+    WHERE id = ?`;
+
+    db.query(sql, values, (error, result) => {
+      if (error) {
+        console.error("Error while updating data:", error);
+        return res.status(500).json({ error: "Database error" });
+      }
+      res
+        .status(200)
+        .json({ message: "EMI Calibration Data updated successfully" });
+    });
+  });
+
+  //API to delete the emi equipments:
+  app.delete("/api/deleteEMIEquipment/:id", (req, res) => {
+    const { id } = req.params;
+    const sql = "DELETE FROM emi_calibrations_table WHERE id = ?";
+    db.query(sql, [id], (error, result) => {
+      if (error) {
+        console.error("Error while deleting data:", error);
+        return res.status(500).json({ error: "Database error" });
+      }
+      res
+        .status(200)
+        .json({ message: "EMI Calibration Data deleted successfully" });
+    });
+  });
+
+  // Updated API for simple EMI Calibration Summary
+  app.get("/api/getEMICalibrationSummary", (req, res) => {
+    try {
+      // Calculate dates
+      const currentDate = new Date();
+      const twoMonthsFromNow = new Date();
+      twoMonthsFromNow.setMonth(currentDate.getMonth() + 2);
+
+      const currentDateStr = currentDate.toISOString().split("T")[0];
+      const twoMonthsFromNowStr = twoMonthsFromNow.toISOString().split("T")[0];
+
+      // Single query to get all data at once
+      const mainQuery = `
+      SELECT 
+        equipment_name,
+        manufacturer,
+        model_number,
+        calibration_due_date,
+        equipment_status,
+        -- Auto-calculated calibration status
+        CASE 
+          WHEN calibration_due_date < ? THEN 'Expired'
+          ELSE 'Up to Date'
+        END AS calibration_status,
+        -- Check if due in next 2 months
+        CASE 
+          WHEN calibration_due_date BETWEEN ? AND ? THEN 1
+          ELSE 0
+        END AS is_due_soon,
+        -- Days until due
+        DATEDIFF(calibration_due_date, ?) AS days_until_due
+      FROM emi_calibration_table
+      ORDER BY calibration_due_date ASC
+    `;
+
+      const queryParams = [
+        currentDateStr, // For expired check
+        currentDateStr, // For due soon start
+        twoMonthsFromNowStr, // For due soon end
+        currentDateStr, // For days calculation
+      ];
+
+      db.query(mainQuery, queryParams, (error, result) => {
+        if (error) {
+          console.error("Error fetching EMI calibration summary:", error);
+          return res.status(500).json({
+            error: "Failed to fetch EMI calibration summary",
+          });
+        }
+
+        // Process results to get counts and arrays
+        const expiredEquipments = result.filter(
+          (item) => item.calibration_status === "Expired"
+        );
+        const dueSoonEquipments = result.filter(
+          (item) => item.is_due_soon === 1
+        );
+        const upToDateCount = result.filter(
+          (item) => item.calibration_status === "Up to Date"
+        ).length;
+        const inactiveEquipments = result.filter(
+          (item) => item.equipment_status === "Inactive"
+        );
+
+        // Simple response structure with arrays
+        const response = {
+          // 1. Expired calibrations with names
+          expired_calibrations: {
+            count: expiredEquipments.length,
+            equipments: expiredEquipments.map((item) => ({
+              equipment_name: item.equipment_name,
+              manufacturer: item.manufacturer,
+              model_number: item.model_number,
+              calibration_due_date: item.calibration_due_date,
+              days_overdue: Math.abs(item.days_until_due),
+            })),
+          },
+
+          // 2. Due in next 2 months with names
+          due_next_two_months: {
+            count: dueSoonEquipments.length,
+            equipments: dueSoonEquipments.map((item) => ({
+              equipment_name: item.equipment_name,
+              manufacturer: item.manufacturer,
+              model_number: item.model_number,
+              calibration_due_date: item.calibration_due_date,
+              days_until_due: item.days_until_due,
+            })),
+          },
+
+          // 3. Up to date count (just number)
+          up_to_date_count: upToDateCount,
+
+          // 4. Inactive equipment with names
+          inactive_equipments: {
+            count: inactiveEquipments.length,
+            equipments: inactiveEquipments.map((item) => ({
+              equipment_name: item.equipment_name,
+              manufacturer: item.manufacturer,
+              model_number: item.model_number,
+              equipment_status: item.equipment_status,
+            })),
+          },
+
+          // Total count for reference
+          total_equipments: result.length,
+        };
+
+        res.status(200).json(response);
+      });
+    } catch (error) {
+      console.error("Unexpected error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
 }
 
 module.exports = { emiJobcardsAPIs };

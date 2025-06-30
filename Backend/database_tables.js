@@ -748,6 +748,33 @@ const createEMISLotBookingTable = () => {
   });
 };
 
+///Table to store the EMI related chambers and equipments data:
+const createEMICalibrationsTable = () => {
+  const createEMICalibrationsTableQuery = `
+    CREATE TABLE IF NOT EXISTS emi_calibrations_table (
+     id INT NOT NULL AUTO_INCREMENT,
+     equipment_name VARCHAR(1000),
+     manufacturer VARCHAR(1000),
+     model_number VARCHAR(1000),
+     calibration_date DATE,
+     calibration_due_date DATE,
+     calibration_done_by VARCHAR(1000),
+     equipment_status VARCHAR(255),
+     remarks VARCHAR(2000),
+     last_updated_by VARCHAR(100),
+     PRIMARY KEY(id)
+     );
+  `;
+
+  db.query(createEMICalibrationsTableQuery, function (err, result) {
+    if (err) {
+      console.error("Error while creating emi_calibrations_table", err);
+    } else {
+      //console.log("emi_calibrations_table created successfully.");
+    }
+  });
+};
+
 ////////////////////////////////////////////////////////////////////////////////////////
 // Function to create the test category table:
 function createTestCategoryTable() {
@@ -1045,6 +1072,7 @@ module.exports = {
   createEMIJobcardsTestsTable,
   createEMIJobcardsTestsDetailsTable,
   createEMISLotBookingTable,
+  createEMICalibrationsTable,
 
   createTestCategoryTable,
   createTestNamesTable,
