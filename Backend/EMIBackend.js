@@ -850,7 +850,6 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
   //API to book a new slot for EMI-EMC chamber:
   app.post("/api/bookNewEMISlot", (req, res) => {
     const { formData } = req.body;
-    console.log("This is formData", formData);
 
     const sql = `INSERT INTO emi_slot_table(booking_id, company_name, customer_name, customer_email, customer_phone, test_name, test_standard, chamber_allotted, slot_start_datetime, slot_end_datetime, slot_duration, remarks, slot_booked_by, lastUpdatedBy)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
@@ -899,8 +898,6 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
   app.post("/api/updateEMISlot/:booking_id", (req, res) => {
     const { booking_id } = req.params;
     const { formData } = req.body;
-    console.log("This is booking_id", booking_id);
-    console.log("This is formData", formData);
 
     const sql = `UPDATE emi_slot_table SET company_name = ?, customer_name = ?, customer_email = ?, customer_phone = ?, test_name = ?, 
                 test_standard = ?, chamber_allotted = ?, slot_start_datetime = ?, slot_end_datetime = ?, slot_duration = ?, remarks = ?, 
@@ -1191,8 +1188,6 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
           ).length,
         };
 
-        console.log("EMI Equipments Data:", result);
-        console.log("Summary:", summary);
         res.status(200).json({
           equipments: result,
           summary: summary,
@@ -1219,7 +1214,6 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
   //API to update the EMI equipments:
   app.post("/api/updateEMIEquipment/:id", (req, res) => {
     const { formData } = req.body;
-    console.log("Data:", formData);
 
     const values = [
       formData.equipment_name,
@@ -1303,7 +1297,7 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
         END AS is_due_soon,
         -- Days until due
         DATEDIFF(calibration_due_date, ?) AS days_until_due
-      FROM emi_calibration_table
+      FROM emi_calibrations_table
       ORDER BY calibration_due_date ASC
     `;
 
