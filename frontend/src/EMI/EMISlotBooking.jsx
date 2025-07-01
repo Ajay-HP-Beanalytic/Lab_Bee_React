@@ -749,8 +749,6 @@ const EMISlotBooking = () => {
           // Fixed: Add proper step and time slot props for week/day views
           step={30}
           timeslots={2}
-          // min={new Date(2024, 0, 1, 8, 0)} // 8 AM
-          // max={new Date(2024, 0, 1, 18, 0)} // 6 PM
         />
       </div>
 

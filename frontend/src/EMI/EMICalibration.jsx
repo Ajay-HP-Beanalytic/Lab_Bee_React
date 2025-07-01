@@ -308,9 +308,6 @@ const EMICalibration = () => {
   // };
 
   const addSerialNumbersToRows = (data) => {
-    console.log("Original data:", data);
-    console.log("Type of data:", typeof data);
-
     // FIX: Handle different data structures properly
     let equipmentArray = [];
 
@@ -333,9 +330,6 @@ const EMICalibration = () => {
       return [];
     }
 
-    console.log("Processed equipment array:", equipmentArray);
-    console.log("Array length:", equipmentArray.length);
-
     // FIX: Ensure each item has a valid structure
     const formattedData = equipmentArray
       .filter((item) => item && typeof item === "object") // Filter out invalid items
@@ -353,7 +347,6 @@ const EMICalibration = () => {
           : "N/A",
       }));
 
-    console.log("Final formatted data:", formattedData);
     return formattedData;
   };
 
@@ -473,7 +466,6 @@ const EMICalibration = () => {
       const response = await axios.get(url);
 
       if (response.status === 200) {
-        console.log("Fetched EMI Calibration data:", response.data);
         setEMICalibrationData(response.data);
         setFilteredEMICalibrationData(response.data);
       } else {
@@ -613,7 +605,6 @@ const EMICalibration = () => {
   };
 
   const handleSubmitEMICalibrationForm = async (data) => {
-    console.log(data);
     if (data.calibration_date) {
       data.calibration_date = dayjs(data.calibration_date).isValid()
         ? dayjs(data.calibration_date).format("YYYY-MM-DD")
@@ -697,8 +688,6 @@ const EMICalibration = () => {
           inactiveCount,
           inactiveNames,
         });
-
-        console.log("EMICalibrationSummaryData", response.data);
       }
     } catch (error) {
       console.error("Error fetching EMI calibration summary data:", error);
@@ -812,12 +801,17 @@ const EMICalibration = () => {
       <>
         <Box
           sx={{
-            width: "100%",
+            // width: "100%",
+            // display: "flex",
+            // justifyContent: "space-between",
+            // alignItems: "flex-start",
+            // gap: 2,
+            // mb: "5px",
+
             display: "flex",
             justifyContent: "space-between",
-            alignItems: "flex-start",
-            gap: 2,
-            mb: "5px",
+            alignItems: "center",
+            mb: 2,
           }}
         >
           <Box
@@ -829,7 +823,7 @@ const EMICalibration = () => {
               alignItems: "center",
             }}
           >
-            <FormControl>
+            <FormControl sx={{ width: "180px" }} size="small">
               <InputLabel>Month</InputLabel>
               <Select
                 label="Month"
@@ -1187,7 +1181,7 @@ const EMICalibration = () => {
 
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h5" sx={{ mb: 3, fontWeight: "bold" }}>
+      <Typography variant="h4" sx={{ color: "#003366" }}>
         EMI Calibration Dashboard
       </Typography>
 

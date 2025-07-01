@@ -13,7 +13,6 @@ import {
   DialogActions,
   Button,
   CircularProgress,
-  Grid,
   Tooltip,
   FormControl,
   InputLabel,
@@ -195,6 +194,7 @@ const InvoiceTable = () => {
       if (response.status === 200) {
         toast.success("Invoice Data added successfully");
         setRefreshInvoiceTable(!refreshInvoiceTable);
+        await fetchInvoiceData();
       } else {
         console.error("Error adding invoice data:", response.status);
         toast.error("Error adding invoice data");
@@ -585,6 +585,7 @@ const InvoiceTable = () => {
         { id: "TS2", label: "TS2" },
         { id: "Reliability", label: "Reliability" },
         { id: "Software", label: "Software" },
+        { id: "ITEM", label: "Item" },
         { id: "Others", label: "Others" },
       ],
     },
@@ -754,16 +755,6 @@ const InvoiceTable = () => {
     );
   };
 
-  // Get active filter count
-  const getActiveFilterCount = () => {
-    let count = 0;
-    if (selectedYear) count++;
-    if (selectedMonth) count++;
-    // if (selectedDepartment) count++;
-    if (dateRange && dateRange.dateFrom && dateRange.dateTo) count++;
-    return count;
-  };
-
   if (loading) {
     return (
       <Box sx={{ p: 3 }}>
@@ -907,58 +898,6 @@ const InvoiceTable = () => {
           </Tooltip>
         </Box>
       </Box>
-
-      {/* Active Filters Display */}
-      {hasActiveFilters() && (
-        <Box sx={{ mb: 1 }}>
-          {/* <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
-            <FilterListIcon color="primary" />
-            <Typography variant="body2" color="primary" sx={{ fontWeight: "medium" }}>
-              Active Filters ({getActiveFilterCount()}):
-            </Typography>
-            
-            {selectedYear && (
-              <Chip 
-                label={`Year: ${selectedYear}`} 
-                onDelete={() => setSelectedYear("")}
-                size="small"
-                color="primary"
-                variant="outlined"
-              />
-            )}
-            
-            {selectedMonth && (
-              <Chip 
-                label={`Month: ${monthOptions.find(m => m.value === selectedMonth)?.label}`}
-                onDelete={() => setSelectedMonth("")}
-                size="small"
-                color="primary"
-                variant="outlined"
-              />
-            )}
-            
-            {selectedDepartment && (
-              <Chip 
-                label={`Department: ${selectedDepartment}`}
-                onDelete={() => setSelectedDepartment("")}
-                size="small"
-                color="primary"
-                variant="outlined"
-              />
-            )}
-            
-            {dateRange.startDate && dateRange.endDate && (
-              <Chip 
-                label={`Date: ${dayjs(dateRange.startDate).format('DD/MM/YYYY')} - ${dayjs(dateRange.endDate).format('DD/MM/YYYY')}`}
-                onDelete={() => setDateRange({ startDate: null, endDate: null })}
-                size="small"
-                color="primary"
-                variant="outlined"
-              />
-            )}
-          </Box> */}
-        </Box>
-      )}
 
       <SearchBar
         placeholder="Search Invoice"

@@ -644,68 +644,140 @@ function poInvoiceBackendAPIs(app) {
     });
   });
 
-  // BACKEND: API to get dashboard summary
+  // 2. Add API to get months for selected year
+  app.get("/api/getAvailableMonthsForYear", (req, res) => {
+    const { year } = req.query;
+
+    if (!year) {
+      return res.status(400).json({ error: "Year parameter is required" });
+    }
+
+    const monthsQuery = `
+    SELECT DISTINCT 
+      MONTH(invoice_date) as month_number,
+      MONTHNAME(invoice_date) as month_name
+    FROM invoice_data_table 
+    WHERE YEAR(invoice_date) = ? AND invoice_date IS NOT NULL
+    ORDER BY month_number ASC
+  `;
+
+    db.query(monthsQuery, [year], (error, results) => {
+      if (error) {
+        console.error("Error fetching months for year:", error);
+        return res.status(500).json({ error: "Failed to fetch months" });
+      }
+
+      const formattedMonths = results.map((row) => ({
+        value: row.month_number,
+        label: row.month_name,
+      }));
+
+      res.status(200).json(formattedMonths);
+    });
+  });
+
+  ////////////////////////////////////////////////////////////////////////////////////
+  //Dashboard API's:
   // app.get("/api/getInvoiceSummary", (req, res) => {
+  //   const { year, month, department, dateFrom, dateTo } = req.query;
+
+  //   let whereConditions = [];
+  //   let queryParams = [];
+
+  //   // Build dynamic WHERE clause based on filters
+  //   if (year) {
+  //     whereConditions.push("YEAR(invoice_date) = ?");
+  //     queryParams.push(year);
+  //   }
+
+  //   if (month) {
+  //     whereConditions.push("MONTH(invoice_date) = ?");
+  //     queryParams.push(month);
+  //   }
+
+  //   if (department && department !== "All") {
+  //     whereConditions.push("department = ?");
+  //     queryParams.push(department);
+  //   }
+
+  //   if (dateFrom && dateTo) {
+  //     whereConditions.push("invoice_date BETWEEN ? AND ?");
+  //     queryParams.push(dateFrom, dateTo);
+  //   }
+
+  //   const whereClause =
+  //     whereConditions.length > 0
+  //       ? `WHERE ${whereConditions.join(" AND ")}`
+  //       : "";
+
   //   const summaryQuery = `
   //   SELECT
   //     COUNT(*) as totalInvoices,
-  //     SUM(invoice_amount) as totalRevenue,
-  //     AVG(invoice_amount) as averageInvoice,
+  //     COALESCE(SUM(invoice_amount), 0) as totalRevenue,
+  //     COALESCE(AVG(invoice_amount), 0) as averageInvoice,
   //     department,
   //     COUNT(*) as departmentCount,
-  //     SUM(invoice_amount) as departmentRevenue
+  //     COALESCE(SUM(invoice_amount), 0) as departmentRevenue
   //   FROM invoice_data_table
+  //   ${whereClause}
   //   GROUP BY department
 
   //   UNION ALL
 
   //   SELECT
   //     COUNT(*) as totalInvoices,
-  //     SUM(invoice_amount) as totalRevenue,
-  //     AVG(invoice_amount) as averageInvoice,
+  //     COALESCE(SUM(invoice_amount), 0) as totalRevenue,
+  //     COALESCE(AVG(invoice_amount), 0) as averageInvoice,
   //     'TOTAL' as department,
   //     COUNT(*) as departmentCount,
-  //     SUM(invoice_amount) as departmentRevenue
+  //     COALESCE(SUM(invoice_amount), 0) as departmentRevenue
   //   FROM invoice_data_table
+  //   ${whereClause}
   // `;
 
-  //   db.query(summaryQuery, (error, results) => {
-  //     if (error) {
-  //       console.error("Error fetching invoice summary:", error);
-  //       res.status(500).json({ error: "Failed to fetch invoice summary" });
-  //     } else {
-  //       res.status(200).json(results);
+  //   db.query(
+  //     summaryQuery,
+  //     [...queryParams, ...queryParams],
+  //     (error, results) => {
+  //       if (error) {
+  //         console.error("Error fetching invoice summary:", error);
+  //         res.status(500).json({ error: "Failed to fetch invoice summary" });
+  //       } else {
+  //         res.status(200).json(results);
+  //       }
   //     }
-  //   });
+  //   );
   // });
 
-  ////////////////////////////////////////////////////////////////////////////////////
-  //Dashboard API's:
   app.get("/api/getInvoiceSummary", (req, res) => {
-    const { year, month, department, dateFrom, dateTo } = req.query;
+    const { year, month, department, dateFrom, dateTo, timeframe } = req.query;
 
     let whereConditions = [];
     let queryParams = [];
 
-    // Build dynamic WHERE clause based on filters
-    if (year) {
-      whereConditions.push("YEAR(invoice_date) = ?");
-      queryParams.push(year);
-    }
-
-    if (month) {
-      whereConditions.push("MONTH(invoice_date) = ?");
-      queryParams.push(month);
+    // Check if "All Time" is selected
+    if (timeframe === "all-time") {
+      // Don't add any date filters for all-time data
+    } else {
+      // Apply date filters as usual
+      if (dateFrom && dateTo) {
+        whereConditions.push("invoice_date BETWEEN ? AND ?");
+        queryParams.push(dateFrom, dateTo);
+      } else {
+        if (year) {
+          whereConditions.push("YEAR(invoice_date) = ?");
+          queryParams.push(year);
+        }
+        if (month) {
+          whereConditions.push("MONTH(invoice_date) = ?");
+          queryParams.push(month);
+        }
+      }
     }
 
     if (department && department !== "All") {
       whereConditions.push("department = ?");
       queryParams.push(department);
-    }
-
-    if (dateFrom && dateTo) {
-      whereConditions.push("invoice_date BETWEEN ? AND ?");
-      queryParams.push(dateFrom, dateTo);
     }
 
     const whereClause =
@@ -753,25 +825,92 @@ function poInvoiceBackendAPIs(app) {
   });
 
   // 2. Invoice Trend API for charts
+  // app.get("/api/getInvoiceTrend", (req, res) => {
+  //   const { year, department, dateFrom, dateTo } = req.query;
+
+  //   let whereConditions = [];
+  //   let queryParams = [];
+
+  //   if (year) {
+  //     whereConditions.push("YEAR(invoice_date) = ?");
+  //     queryParams.push(year);
+  //   }
+
+  //   if (department && department !== "All") {
+  //     whereConditions.push("department = ?");
+  //     queryParams.push(department);
+  //   }
+
+  //   if (dateFrom && dateTo) {
+  //     whereConditions.push("invoice_date BETWEEN ? AND ?");
+  //     queryParams.push(dateFrom, dateTo);
+  //   }
+
+  //   const whereClause =
+  //     whereConditions.length > 0
+  //       ? `WHERE ${whereConditions.join(" AND ")}`
+  //       : "";
+
+  //   const trendQuery = `
+  //   SELECT
+  //     DATE_FORMAT(invoice_date, '%Y-%m') as month,
+  //     MONTHNAME(invoice_date) as monthName,
+  //     YEAR(invoice_date) as year,
+  //     COUNT(*) as invoiceCount,
+  //     COALESCE(SUM(invoice_amount), 0) as revenue,
+  //     COALESCE(AVG(invoice_amount), 0) as avgInvoice
+  //   FROM invoice_data_table
+  //   ${whereClause}
+  //   GROUP BY DATE_FORMAT(invoice_date, '%Y-%m'), MONTHNAME(invoice_date), YEAR(invoice_date)
+  //   ORDER BY month DESC
+  //   LIMIT 12
+  // `;
+
+  //   db.query(trendQuery, queryParams, (error, results) => {
+  //     if (error) {
+  //       console.error("Error fetching invoice trend:", error);
+  //       res.status(500).json({ error: "Failed to fetch invoice trend" });
+  //     } else {
+  //       // Format the results for better chart display
+  //       const formattedResults = results
+  //         .map((row) => ({
+  //           ...row,
+  //           month: `${row.monthName} ${row.year}`,
+  //           revenue: parseFloat(row.revenue),
+  //           avgInvoice: parseFloat(row.avgInvoice),
+  //         }))
+  //         .reverse(); // Reverse to show chronological order
+
+  //       res.status(200).json(formattedResults);
+  //     }
+  //   });
+  // });
+
   app.get("/api/getInvoiceTrend", (req, res) => {
-    const { year, department, dateFrom, dateTo } = req.query;
+    const { year, department, dateFrom, dateTo, timeframe } = req.query;
 
     let whereConditions = [];
     let queryParams = [];
+    let limitClause = "LIMIT 12"; // Default to last 12 months
 
-    if (year) {
-      whereConditions.push("YEAR(invoice_date) = ?");
-      queryParams.push(year);
+    if (timeframe === "all-time") {
+      // For all-time, don't limit and don't add date filters
+      limitClause = "";
+    } else {
+      if (dateFrom && dateTo) {
+        whereConditions.push("invoice_date BETWEEN ? AND ?");
+        queryParams.push(dateFrom, dateTo);
+        limitClause = ""; // Don't limit when custom date range is provided
+      } else if (year) {
+        whereConditions.push("YEAR(invoice_date) = ?");
+        queryParams.push(year);
+        limitClause = ""; // Don't limit when specific year is selected
+      }
     }
 
     if (department && department !== "All") {
       whereConditions.push("department = ?");
       queryParams.push(department);
-    }
-
-    if (dateFrom && dateTo) {
-      whereConditions.push("invoice_date BETWEEN ? AND ?");
-      queryParams.push(dateFrom, dateTo);
     }
 
     const whereClause =
@@ -781,17 +920,18 @@ function poInvoiceBackendAPIs(app) {
 
     const trendQuery = `
     SELECT 
-      DATE_FORMAT(invoice_date, '%Y-%m') as month,
+      DATE_FORMAT(invoice_date, '%Y-%m') as period,
       MONTHNAME(invoice_date) as monthName,
       YEAR(invoice_date) as year,
+      MONTH(invoice_date) as monthNumber,
       COUNT(*) as invoiceCount,
       COALESCE(SUM(invoice_amount), 0) as revenue,
       COALESCE(AVG(invoice_amount), 0) as avgInvoice
     FROM invoice_data_table 
     ${whereClause}
-    GROUP BY DATE_FORMAT(invoice_date, '%Y-%m'), MONTHNAME(invoice_date), YEAR(invoice_date)
-    ORDER BY month DESC
-    LIMIT 12
+    GROUP BY DATE_FORMAT(invoice_date, '%Y-%m'), MONTHNAME(invoice_date), YEAR(invoice_date), MONTH(invoice_date)
+    ORDER BY year ASC, monthNumber ASC
+    ${limitClause}
   `;
 
     db.query(trendQuery, queryParams, (error, results) => {
@@ -799,15 +939,37 @@ function poInvoiceBackendAPIs(app) {
         console.error("Error fetching invoice trend:", error);
         res.status(500).json({ error: "Failed to fetch invoice trend" });
       } else {
-        // Format the results for better chart display
-        const formattedResults = results
-          .map((row) => ({
-            ...row,
-            month: `${row.monthName} ${row.year}`,
-            revenue: parseFloat(row.revenue),
-            avgInvoice: parseFloat(row.avgInvoice),
-          }))
-          .reverse(); // Reverse to show chronological order
+        // Calculate trendline data using linear regression
+        const calculateTrendline = (data) => {
+          const n = data.length;
+          if (n < 2) return data.map(() => 0);
+
+          const sumX = data.reduce((sum, _, index) => sum + index, 0);
+          const sumY = data.reduce(
+            (sum, item) => sum + parseFloat(item.revenue),
+            0
+          );
+          const sumXY = data.reduce(
+            (sum, item, index) => sum + index * parseFloat(item.revenue),
+            0
+          );
+          const sumXX = data.reduce((sum, _, index) => sum + index * index, 0);
+
+          const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+          const intercept = (sumY - slope * sumX) / n;
+
+          return data.map((_, index) => slope * index + intercept);
+        };
+
+        const trendlineData = calculateTrendline(results);
+
+        const formattedResults = results.map((row, index) => ({
+          ...row,
+          month: `${row.monthName} ${row.year}`,
+          revenue: parseFloat(row.revenue),
+          avgInvoice: parseFloat(row.avgInvoice),
+          trendValue: Math.max(0, trendlineData[index]), // Ensure non-negative values
+        }));
 
         res.status(200).json(formattedResults);
       }
