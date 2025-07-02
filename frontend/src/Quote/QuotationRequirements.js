@@ -28,7 +28,7 @@ export default function QuotationRequirements() {
       <br />
 
       {/* <PaySlipDashboard /> */}
-      <TestHoursCalculator />
+      {/* <TestHoursCalculator /> */}
     </>
   );
 }
