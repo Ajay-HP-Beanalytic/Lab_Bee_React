@@ -92,7 +92,7 @@ const getAllEMIChambers = () => {
 // 2. Get standards based on selected chamber
 const getEMIStandardsByChamber = (chamberId) => {
   const chamber = emiChamberTestData.find((c) => c.id === chamberId);
-  console.log("chamber", chamber);
+  // console.log("chamber", chamber);
   if (!chamber) return [];
 
   return chamber.standards.map((standard) => ({
@@ -166,7 +166,7 @@ const searchTests = (searchTerm) => {
 // Example usage functions
 
 // Usage Example 1: Basic dropdown population
-console.log("All Chambers:", getAllEMIChambers());
+// console.log("All Chambers:", getAllEMIChambers());
 // Output: [
 //   { id: 1, name: "Main Chamber" },
 //   { id: 2, name: "CS LAB1" },
@@ -174,7 +174,7 @@ console.log("All Chambers:", getAllEMIChambers());
 // ]
 
 // Usage Example 2: Get standards for Main Chamber
-console.log("Standards for Main Chamber:", getEMIStandardsByChamber(1));
+// console.log("Standards for Main Chamber:", getEMIStandardsByChamber(1));
 // Output: [
 //   { id: 1, name: "MIL STD 461 E/F/G" },
 //   { id: 2, name: "CISPR 25 / AIS-004" },
@@ -183,7 +183,7 @@ console.log("Standards for Main Chamber:", getEMIStandardsByChamber(1));
 // ]
 
 // Usage Example 3: Get tests for Main Chamber + MIL STD 461 E/F/G
-console.log("Tests for Main Chamber - MIL STD:", getTestsByStandard(1, 1));
+// console.log("Tests for Main Chamber - MIL STD:", getTestsByStandard(1, 1));
 // Output: [
 //   { id: 1, name: "CE101" },
 //   { id: 2, name: "CE102" },
@@ -194,7 +194,7 @@ console.log("Tests for Main Chamber - MIL STD:", getTestsByStandard(1, 1));
 // ]
 
 // Usage Example 4: Search for specific test
-console.log("Search 'ESD':", searchTests("ESD"));
+// console.log("Search 'ESD':", searchTests("ESD"));
 // Output: [
 //   { chamber: "CS LAB2", standard: "ISO 10605", test: "ESD", ... },
 //   { chamber: "CS LAB2", standard: "IEC 61000-4-2", test: "ESD", ... }

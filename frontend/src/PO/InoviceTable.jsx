@@ -68,6 +68,15 @@ const InvoiceTable = () => {
   ////Excel import and adding excel data to the database:
   const readExcelFile = (file) => {
     return new Promise((resolve, reject) => {
+      const actualHeaders = [
+        "Date",
+        "Buyer",
+        "Voucher No.",
+        "Purchase Order No. & Date",
+        "JC Details",
+        "Total Invoice",
+        "Department",
+      ];
       const reader = new FileReader();
 
       reader.onload = (event) => {
@@ -82,13 +91,28 @@ const InvoiceTable = () => {
           });
 
           if (jsonData.length < 2) {
-            throw new Error(
-              "Excel file appears to be empty or has no data rows"
-            );
+            toast.error("Excel file appears to be empty or has no data rows");
+            return false;
           }
 
           //First row should be headers:
           const headers = jsonData[0];
+
+          const misMatchedHeaders = [];
+
+          headers.forEach((header, index) => {
+            if (header !== actualHeaders[index]) {
+              misMatchedHeaders.push(header);
+            }
+          });
+
+          if (misMatchedHeaders.length > 0) {
+            toast.error(`Uploaded Excel file headers do not match expected headers 
+              \n Expected headers: ${actualHeaders.join(", ")}
+              \n Mismatched headers: ${misMatchedHeaders.join(", ")}`);
+            return false;
+          }
+
           const dataRows = jsonData.slice(1);
 
           // Convert to object format
@@ -221,6 +245,43 @@ const InvoiceTable = () => {
   ////////////////////////////////////////////////////////////////////////////////////
   //Implement lazy loading here
 
+  // Fetch available months for selected year
+  const fetchAvailableMonthsForYear = useCallback(async (year) => {
+    if (!year) {
+      setAvailableMonths([]);
+      return;
+    }
+
+    try {
+      const response = await axios.get(
+        `${serverBaseAddress}/api/getAvailableMonthsForYear?year=${year}`
+      );
+
+      if (response.status === 200) {
+        setAvailableMonths(response.data);
+
+        // Auto-select current month if available, otherwise select the latest month
+        const currentMonth = dayjs().month() + 1;
+        const hasCurrentMonth = response.data.some(
+          (month) => month.value === currentMonth
+        );
+
+        if (hasCurrentMonth) {
+          setSelectedMonth(currentMonth.toString());
+        } else if (response.data.length > 0) {
+          // Select the latest available month
+          const latestMonth = response.data[response.data.length - 1];
+          setSelectedMonth(latestMonth.value.toString());
+        } else {
+          setSelectedMonth("");
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching months for year:", error);
+      setAvailableMonths([]);
+    }
+  }, []);
+
   //const fetch date options:
   const fetchDateOptions = useCallback(async () => {
     try {
@@ -230,12 +291,23 @@ const InvoiceTable = () => {
 
       if (response.status === 200) {
         setAvailableYears(response.data.years || []);
-        setAvailableMonths(response.data.months || []);
+
+        // Set current year by default
+        const currentYear = dayjs().year();
+        if (response.data.years?.includes(currentYear)) {
+          setSelectedYear(currentYear.toString());
+          fetchAvailableMonthsForYear(currentYear);
+        } else if (response.data.years?.length > 0) {
+          // Select the latest available year
+          const latestYear = response.data.years[0];
+          setSelectedYear(latestYear.toString());
+          fetchAvailableMonthsForYear(latestYear);
+        }
       }
     } catch (error) {
       console.error("Error fetching date options:", error);
     }
-  }, []);
+  }, [fetchAvailableMonthsForYear]);
 
   //Fetch all Invoice data
   const fetchInvoiceData = useCallback(async () => {
@@ -705,7 +777,10 @@ const InvoiceTable = () => {
 
   //handle filters:
   const handleYearChange = (event) => {
-    setSelectedYear(event.target.value);
+    const year = event.target.value;
+    setSelectedYear(year);
+    setSelectedMonth(""); // Reset month when year changes
+    fetchAvailableMonthsForYear(year);
   };
 
   const handleMonthChange = (event) => {

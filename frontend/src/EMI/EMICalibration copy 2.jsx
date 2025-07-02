@@ -4,7 +4,7 @@ import React, {
   useCallback,
   useEffect,
   useRef,
-  useMemo,
+  memo,
 } from "react";
 import { UserContext } from "../Pages/UserContext";
 import {
@@ -33,7 +33,6 @@ import {
   ListItemText,
   Divider,
 } from "@mui/material";
-import DateRangeFilter from "../common/DateRangeFilter";
 import { useForm } from "react-hook-form";
 import FileUploadIcon from "@mui/icons-material/FileUpload";
 import AddIcon from "@mui/icons-material/Add";
@@ -57,6 +56,150 @@ import {
   Business,
 } from "@mui/icons-material";
 import * as XLSX from "xlsx";
+
+//EMI Calibration table columns:
+const EMI_CALIBRATION_TABLE_COLUMNS = [
+  {
+    field: "serialNumbers",
+    headerName: "Sl No",
+    width: 100,
+    align: "center",
+    headerAlign: "center",
+    headerClassName: "custom-header-color",
+  },
+  {
+    field: "equipment_name",
+    headerName: "Equipment Name",
+    width: 200,
+    align: "center",
+    headerAlign: "center",
+    headerClassName: "custom-header-color",
+  },
+  {
+    field: "calibration_date",
+    headerName: "Calibration Date",
+    width: 150,
+    align: "center",
+    headerAlign: "center",
+    headerClassName: "custom-header-color",
+    renderCell: (params) => {
+      if (!params.value) return "-";
+      const date = dayjs(params.value).format("DD-MM-YYYY");
+      return date;
+    },
+  },
+  {
+    field: "calibration_due_date",
+    headerName: "Calibration Due Date",
+    width: 200,
+    align: "center",
+    headerAlign: "center",
+    headerClassName: "custom-header-color",
+    renderCell: (params) => {
+      if (!params.value) return "-";
+      const date = dayjs(params.value).format("DD-MM-YYYY");
+      return date;
+    },
+  },
+  {
+    field: "calibration_done_by",
+    headerName: "Calibration Done By",
+    width: 200,
+    align: "center",
+    headerAlign: "center",
+    headerClassName: "custom-header-color",
+  },
+  {
+    field: "calibration_status",
+    headerName: "Calibration Status",
+    width: 200,
+    align: "center",
+    headerAlign: "center",
+    headerClassName: "custom-header-color",
+  },
+
+  {
+    field: "equipment_status",
+    headerName: "Equipment Status",
+    width: 150,
+    align: "center",
+    headerAlign: "center",
+    headerClassName: "custom-header-color",
+  },
+
+  {
+    field: "action",
+    headerName: "Action",
+    width: 150,
+    align: "center",
+    headerAlign: "center",
+    headerClassName: "custom-header-color",
+    renderCell: (params) => (
+      <div>
+        <IconButton
+          onClick={(e) => {
+            e.stopPropagation();
+            handleOpenEquimentDialog(params.row);
+          }}
+        >
+          <EditIcon />
+        </IconButton>
+        <IconButton
+          onClick={(e) => {
+            e.stopPropagation();
+            handleOpenDeleteEqipmentDialog(params.row.id);
+          }}
+        >
+          <DeleteIcon />
+        </IconButton>
+      </div>
+    ),
+  },
+];
+
+// STEP 3: Create KPI icons as constants outside component
+const KPI_ICONS = {
+  up_to_date: <CheckCircle />,
+  due_soon: <Schedule />,
+  expired: <Error />,
+  inactive: <PowerOff />,
+};
+
+// STEP 4: Memoize the KPI configuration function
+const createEmiCalibrationKPIs = (summaryData) => [
+  {
+    label: "Calibration Up to Date",
+    value: summaryData.upToDateCount || 0,
+    color: "#2196f3",
+    icon: KPI_ICONS.up_to_date,
+    type: "up_to_date",
+    equipments: [],
+  },
+  {
+    label: "Due Next 2 Months",
+    value: summaryData.dueSoonCount || 0,
+    color: "#ff9800",
+    icon: KPI_ICONS.due_soon,
+    type: "due_soon",
+    equipments: summaryData.dueSoonNames || [],
+  },
+  {
+    label: "Calibration Expired",
+    value: summaryData.expiredCount || 0,
+    color: "#f44336",
+    icon: KPI_ICONS.expired,
+    type: "expired",
+    equipments: summaryData.expiredNames || [],
+  },
+  {
+    label: "Inactive Equipment",
+    value: summaryData.inactiveCount || 0,
+    color: "#757575",
+    icon: KPI_ICONS.inactive,
+    type: "inactive",
+    equipments: summaryData.inactiveNames || [],
+  },
+];
 
 const EMICalibration = () => {
   const { loggedInUser } = useContext(UserContext);
@@ -97,136 +240,6 @@ const EMICalibration = () => {
   const [dialogLoading, setDialogLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
-  //EMI Calibration table columns: (FIXED: Memoized to prevent recreation)
-  const emiCalibrationTableColumns = useMemo(
-    () => [
-      {
-        field: "serialNumbers",
-        headerName: "Sl No",
-        width: 100,
-        align: "center",
-        headerAlign: "center",
-        headerClassName: "custom-header-color",
-      },
-      {
-        field: "equipment_name",
-        headerName: "Equipment Name",
-        width: 200,
-        align: "center",
-        headerAlign: "center",
-        headerClassName: "custom-header-color",
-      },
-      // {
-      //   field: "manufacturer",
-      //   headerName: "Manufacturer",
-      //   width: 200,
-      //   align: "center",
-      //   headerAlign: "center",
-      //   headerClassName: "custom-header-color",
-      // },
-      // {
-      //   field: "model_number",
-      //   headerName: "Model Number",
-      //   width: 200,
-      //   align: "center",
-      //   headerAlign: "center",
-      //   headerClassName: "custom-header-color",
-      // },
-      {
-        field: "calibration_date",
-        headerName: "Calibration Date",
-        width: 150,
-        align: "center",
-        headerAlign: "center",
-        headerClassName: "custom-header-color",
-        renderCell: (params) => {
-          if (!params.value) return "-";
-          const date = dayjs(params.value).format("DD-MM-YYYY");
-          return date;
-        },
-      },
-      {
-        field: "calibration_due_date",
-        headerName: "Calibration Due Date",
-        width: 200,
-        align: "center",
-        headerAlign: "center",
-        headerClassName: "custom-header-color",
-        renderCell: (params) => {
-          if (!params.value) return "-";
-          const date = dayjs(params.value).format("DD-MM-YYYY");
-          return date;
-        },
-      },
-      {
-        field: "calibration_done_by",
-        headerName: "Calibration Done By",
-        width: 200,
-        align: "center",
-        headerAlign: "center",
-        headerClassName: "custom-header-color",
-      },
-      {
-        field: "calibration_status",
-        headerName: "Calibration Status",
-        width: 200,
-        align: "center",
-        headerAlign: "center",
-        headerClassName: "custom-header-color",
-      },
-
-      {
-        field: "equipment_status",
-        headerName: "Equipment Status",
-        width: 150,
-        align: "center",
-        headerAlign: "center",
-        headerClassName: "custom-header-color",
-      },
-      // {
-      //   field: "remarks",
-      //   headerName: "Remarks",
-      //   width: 200,
-      //   align: "center",
-      //   headerAlign: "center",
-      //   headerClassName: "custom-header-color",
-      // },
-      // {
-      //   field: "last_updated_by",
-      //   headerName: "Last Updated By",
-      //   width: 200,
-      //   align: "center",
-      //   headerAlign: "center",
-      //   headerClassName: "custom-header-color",
-      // },
-      {
-        field: "action",
-        headerName: "Action",
-        width: 150,
-        align: "center",
-        headerAlign: "center",
-        headerClassName: "custom-header-color",
-        renderCell: (params) => (
-          <div>
-            <IconButton
-              onClick={() => handleOpenEquimentDialog(params.row)}
-              size="small"
-            >
-              <EditIcon />
-            </IconButton>
-            <IconButton
-              onClick={() => handleOpenDeleteEqipmentDialog(params.row.id)}
-              size="small"
-            >
-              <DeleteIcon />
-            </IconButton>
-          </div>
-        ),
-      },
-    ],
-    []
-  ); // Empty dependency array since this doesn't depend on any changing values
 
   //EMI Calibration form fields:
   const emiCalibrationFormFields = [
@@ -300,7 +313,10 @@ const EMICalibration = () => {
     },
   ];
 
+  // 2. Improved addSerialNumbersToRows function
   const addSerialNumbersToRows = (data) => {
+    console.log("addSerialNumbersToRows input:", data);
+
     // Handle different data structures properly
     let equipmentArray = [];
 
@@ -319,6 +335,8 @@ const EMICalibration = () => {
       return [];
     }
 
+    console.log("Equipment array:", equipmentArray);
+
     // Ensure each item has a valid structure
     const formattedData = equipmentArray
       .filter((item) => item && typeof item === "object")
@@ -332,6 +350,7 @@ const EMICalibration = () => {
         calibration_due_date: item.calibration_due_date || "N/A",
       }));
 
+    console.log("Formatted data:", formattedData);
     return formattedData;
   };
 
@@ -375,6 +394,7 @@ const EMICalibration = () => {
 
   const onChangeOfSearchInputOfEMICalibrationTable = (event) => {
     const searchText = event.target.value;
+    console.log("Search input changed:", searchText);
 
     // Update search text state immediately
     setSearchInputTextOfEMICalibrationTable(searchText);
@@ -387,6 +407,7 @@ const EMICalibration = () => {
     }
 
     if (!searchText.trim()) {
+      console.log("Empty search, showing all data");
       setFilteredEMICalibrationData(emiCalibrationData);
       return;
     }
@@ -404,11 +425,13 @@ const EMICalibration = () => {
       });
     });
 
+    console.log("Filtered results:", filtered);
     setFilteredEMICalibrationData(filtered);
   };
 
   // Fixed clear search function
   const onClearSearchInputOfEMICalibrationTable = () => {
+    console.log("Clearing search");
     setSearchInputTextOfEMICalibrationTable("");
     setFilteredEMICalibrationData(emiCalibrationData);
   };
@@ -555,7 +578,6 @@ const EMICalibration = () => {
       if (response.status === 200) {
         toast.success("Calibrations Data added successfully");
         await fetchEMIEquipmentData();
-        await getEMIClaibrationSummaryData();
       } else {
         console.error("Error adding calibrations data:", response.status);
         toast.error("Error adding calibrations data");
@@ -594,9 +616,13 @@ const EMICalibration = () => {
         ? `${serverBaseAddress}/api/getAllEMIEquipmentsData?${queryString}`
         : `${serverBaseAddress}/api/getAllEMIEquipmentsData`;
 
+      console.log("Fetching EMI data from:", url);
+
       const response = await axios.get(url);
 
       if (response.status === 200) {
+        console.log("Raw API response:", response.data);
+
         let equipmentsData = [];
 
         // Handle different response formats
@@ -615,12 +641,18 @@ const EMICalibration = () => {
           equipmentsData = [];
         }
 
+        console.log("Extracted equipments data:", equipmentsData);
+
         // Process the data with serial numbers
         const dataWithSerialNumbers = addSerialNumbersToRows(equipmentsData);
+
+        console.log("Data with serial numbers:", dataWithSerialNumbers);
 
         // Set the state - THIS WAS MISSING!
         setEMICalibrationData(dataWithSerialNumbers);
         setFilteredEMICalibrationData(dataWithSerialNumbers);
+
+        console.log("State set successfully");
       } else {
         console.error("Failed to fetch data, status:", response.status);
         setEMICalibrationData([]);
@@ -713,7 +745,6 @@ const EMICalibration = () => {
       if (response.status === 200) {
         toast.success("Equipmet added successfully");
         await fetchEMIEquipmentData();
-        await getEMIClaibrationSummaryData();
         return true;
       } else {
         console.error("Error adding Equipmet data:", response.status);
@@ -745,7 +776,6 @@ const EMICalibration = () => {
       if (response.status === 200) {
         toast.success("EMI Equipment data updated successfully");
         await fetchEMIEquipmentData();
-        await getEMIClaibrationSummaryData();
         setEditDialogOpen(false);
         setEditCalibrationId(null);
         reset();
@@ -800,7 +830,6 @@ const EMICalibration = () => {
       if (response.status === 200) {
         toast.success("Equipment data deleted successfully");
         await fetchEMIEquipmentData();
-        await getEMIClaibrationSummaryData();
 
         setDeleteDialogOpen(false);
         setEditCalibrationId(null);
@@ -819,7 +848,7 @@ const EMICalibration = () => {
     if (selectedCalibrationId) {
       deleteSelectedEMICalibrationData(selectedCalibrationId);
     }
-  }, [selectedCalibrationId]);
+  }, [selectedCalibrationId, deleteSelectedEMICalibrationData]);
 
   //Function to fetch the EMI calibration summary data:
   const getEMIClaibrationSummaryData = async () => {
@@ -860,7 +889,6 @@ const EMICalibration = () => {
     }
   }, [emiCalibrationData]); // Only depend on data changes
 
-  // FIXED: Updated initialization useEffect - removed fetchEMIEquipmentData dependency
   useEffect(() => {
     const initializeData = async () => {
       try {
@@ -900,44 +928,47 @@ const EMICalibration = () => {
     initializeData();
   }, [selectedMonth, dateRange]); // Only depend on actual values, not functions!
 
-  // FIXED: Memoized KPI configuration to prevent recreation
+  // const emiCalibrationKPIs = [
+  //   {
+  //     label: "Calibration Up to  Date",
+  //     value: emiCalibrationSummaryData.upToDateCount || 0,
+  //     color: "#2196f3",
+  //     icon: <CheckCircle />,
+  //     type: "up_to_date",
+  //     equipments: [], // No need to show details for up-to-date
+  //   },
+  //   {
+  //     label: "Due Next 2 Months",
+  //     value: emiCalibrationSummaryData.dueSoonCount || 0,
+  //     color: "#ff9800",
+  //     icon: <Schedule />,
+  //     type: "due_soon",
+  //     equipments: emiCalibrationSummaryData.dueSoonNames || [],
+  //   },
+  //   {
+  //     label: "Calibration Expired",
+  //     value: emiCalibrationSummaryData.expiredCount || 0,
+  //     color: "#f44336",
+  //     icon: <Error />,
+  //     type: "expired",
+  //     equipments: emiCalibrationSummaryData.expiredNames || [],
+  //   },
+  //   {
+  //     label: "Inactive Equipment",
+  //     value: emiCalibrationSummaryData.inactiveCount || 0,
+  //     color: "#757575",
+  //     icon: <PowerOff />,
+  //     type: "inactive",
+  //     equipments: emiCalibrationSummaryData.inactiveNames || [],
+  //   },
+  // ];
+
   const emiCalibrationKPIs = useMemo(
-    () => [
-      {
-        label: "Calibration Up to  Date",
-        value: emiCalibrationSummaryData.upToDateCount || 0,
-        color: "#2196f3",
-        icon: <CheckCircle />,
-        type: "up_to_date",
-        equipments: [], // No need to show details for up-to-date
-      },
-      {
-        label: "Due Next 2 Months",
-        value: emiCalibrationSummaryData.dueSoonCount || 0,
-        color: "#ff9800",
-        icon: <Schedule />,
-        type: "due_soon",
-        equipments: emiCalibrationSummaryData.dueSoonNames || [],
-      },
-      {
-        label: "Calibration Expired",
-        value: emiCalibrationSummaryData.expiredCount || 0,
-        color: "#f44336",
-        icon: <Error />,
-        type: "expired",
-        equipments: emiCalibrationSummaryData.expiredNames || [],
-      },
-      {
-        label: "Inactive Equipment",
-        value: emiCalibrationSummaryData.inactiveCount || 0,
-        color: "#757575",
-        icon: <PowerOff />,
-        type: "inactive",
-        equipments: emiCalibrationSummaryData.inactiveNames || [],
-      },
-    ],
+    () => createEmiCalibrationKPIs(emiCalibrationSummaryData),
     [emiCalibrationSummaryData]
   );
+
+  const emiCalibrationTableColumns = EMI_CALIBRATION_TABLE_COLUMNS;
 
   // Function to handle KPI card click and show equipment list
   const handleKPIClick = (kpi) => {
@@ -951,131 +982,6 @@ const EMICalibration = () => {
       setOpenDialog(true);
     }
   };
-
-  // Equipment List Dialog Component (FIXED: Memoized to prevent recreation)
-  const EquipmentListDialog = useMemo(() => {
-    const getStatusChip = (equipment, type) => {
-      switch (type) {
-        case "expired":
-          return (
-            <Chip
-              label={`${equipment.days_overdue} days overdue`}
-              color="error"
-              size="small"
-            />
-          );
-        case "due_soon":
-          return (
-            <Chip
-              label={`Due in ${equipment.days_until_due} days`}
-              color="warning"
-              size="small"
-            />
-          );
-        case "inactive":
-          return <Chip label="Inactive" color="default" size="small" />;
-        default:
-          return null;
-      }
-    };
-
-    if (loading) {
-      return (
-        <Box
-          sx={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            height: "400px",
-          }}
-        >
-          <LinearProgress />
-          <Typography sx={{ ml: 2 }}>
-            Loading EMI Calibration data...
-          </Typography>
-        </Box>
-      );
-    }
-
-    return (
-      <Dialog
-        open={openDialog}
-        onClose={() => setOpenDialog(false)}
-        maxWidth="md"
-        fullWidth
-      >
-        <DialogTitle>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <Typography variant="h6">{dialogData.title}</Typography>
-            <Chip
-              label={dialogData.equipments?.length || 0}
-              size="small"
-              sx={{ bgcolor: dialogData.color, color: "white" }}
-            />
-            <IconButton
-              sx={{ ml: "auto" }}
-              onClick={() => setOpenDialog(false)}
-            >
-              <Close />
-            </IconButton>
-          </Box>
-        </DialogTitle>
-        <DialogContent>
-          {dialogData.equipments && dialogData.equipments.length > 0 ? (
-            <List>
-              {dialogData.equipments.map((equipment, index) => (
-                <React.Fragment key={index}>
-                  <ListItem>
-                    <ListItemIcon>
-                      <Business sx={{ color: dialogData.color }} />
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={equipment.equipment_name}
-                      secondary={
-                        <Box
-                          sx={{
-                            display: "flex",
-                            flexDirection: "column",
-                            gap: 0.5,
-                          }}
-                        >
-                          <Typography variant="body2">
-                            Manufacturer: {equipment.manufacturer}
-                          </Typography>
-                          <Typography variant="body2">
-                            Model: {equipment.model_number}
-                          </Typography>
-                          <Typography variant="body2">
-                            Due Date:{" "}
-                            {dayjs(equipment.calibration_due_date).format(
-                              "DD-MM-YYYY"
-                            )}
-                          </Typography>
-                          {getStatusChip(equipment, dialogData.type)}
-                        </Box>
-                      }
-                    />
-                  </ListItem>
-                  {index < dialogData.equipments.length - 1 && <Divider />}
-                </React.Fragment>
-              ))}
-            </List>
-          ) : (
-            <Typography
-              variant="body2"
-              color="text.secondary"
-              sx={{ textAlign: "center", py: 2 }}
-            >
-              No equipment details available.
-            </Typography>
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenDialog(false)}>Close</Button>
-        </DialogActions>
-      </Dialog>
-    );
-  }, [openDialog, dialogData, loading]);
 
   if (loading) {
     return (
@@ -1095,74 +1001,14 @@ const EMICalibration = () => {
 
   return (
     <>
-      {/* KPI Cards Grid */}
-      <Box>
-        <Typography variant="h4" sx={{ color: "#003366", mb: "10px" }}>
-          EMI-EMC Calibration Dashboard
-        </Typography>
-
-        <Grid container spacing={3} sx={{ mb: 3 }}>
-          {emiCalibrationKPIs.map((kpi, index) => (
-            <Grid item xs={12} sm={6} md={3} key={index}>
-              <EMICalibrationKPICard
-                title={kpi.label}
-                value={kpi.value}
-                color={kpi.color}
-                icon={kpi.icon}
-                hasDetails={kpi.equipments && kpi.equipments.length > 0}
-                onClick={() => handleKPIClick(kpi)}
-              />
-            </Grid>
-          ))}
-        </Grid>
-      </Box>
-
       <Box
         sx={{
-          // width: "100%",
-          // display: "flex",
-          // justifyContent: "space-between",
-          // alignItems: "flex-start",
-          // gap: 2,
-          // mb: "5px",
-
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
           mb: 2,
         }}
       >
-        {/* <Box
-            sx={{
-              display: "flex",
-              flexDirection: "row",
-              gap: 1,
-              minWidth: "400px",
-              alignItems: "center",
-            }}
-          >
-            <FormControl sx={{ width: "180px" }} size="small">
-              <InputLabel>Month</InputLabel>
-              <Select
-                label="Month"
-                value={selectedMonth}
-                onChange={handleMonthChange}
-              >
-                {availableMonths.map((month) => (
-                  <MenuItem key={month.value} value={month.value}>
-                    {month.name}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-
-            <DateRangeFilter
-              onClickDateRangeSelectDoneButton={handleDateRangeChange}
-              onClickDateRangeSelectClearButton={handleClearDateRange}
-            />
-          </Box> */}
-        <Box></Box>
-
         <Box
           sx={{
             display: "flex",
@@ -1215,15 +1061,17 @@ const EMICalibration = () => {
         </Box>
       </Box>
 
-      <SearchBar
-        placeholder="Search Equipments"
-        searchInputText={searchInputTextOfEMICalibrationTable}
-        onChangeOfSearchInput={onChangeOfSearchInputOfEMICalibrationTable}
-        onClearSearchInput={onClearSearchInputOfEMICalibrationTable}
-      />
+      <Box sx={{ mb: "5px" }}>
+        <SearchBar
+          placeholder="Search Equipments"
+          searchInputText={searchInputTextOfEMICalibrationTable}
+          onChangeOfSearchInput={onChangeOfSearchInputOfEMICalibrationTable}
+          onClearSearchInput={onClearSearchInputOfEMICalibrationTable}
+        />
+      </Box>
 
       {filteredEMICalibrationData && filteredEMICalibrationData.length === 0 ? (
-        <EmptyCard message="No EMI Calibration data found" />
+        <EmptyCard message="EMI Calibration Data not found" />
       ) : (
         <Box
           sx={{
@@ -1239,7 +1087,6 @@ const EMICalibration = () => {
             mb: 2,
           }}
         >
-          {/* Data Grid */}
           <DataGrid
             rows={emiCalibrationDataWithSerialNumbers}
             columns={emiCalibrationTableColumns}
@@ -1258,10 +1105,7 @@ const EMICalibration = () => {
         </Box>
       )}
 
-      {/* Equipment List Dialog */}
-      {EquipmentListDialog}
-
-      {/* Add/Edit Equipment Dialog */}
+      {/* Edit/Add Dialog */}
       <Dialog
         open={editDialogOpen}
         onClose={handleCloseEditDialog}
@@ -1269,33 +1113,44 @@ const EMICalibration = () => {
         fullWidth
       >
         <DialogTitle>
-          {editCalibrationId ? "Edit Equipment" : "Add Equipment"}
+          {editCalibrationId ? "Edit Equipment Details" : "Add Equipment"}
         </DialogTitle>
         <DialogContent>
-          {dialogLoading ? (
-            <Box sx={{ display: "flex", justifyContent: "center", p: 3 }}>
-              <CircularProgress />
-            </Box>
-          ) : (
-            <Box sx={{ pt: 2 }}>
-              <RenderComponents
-                fields={emiCalibrationFormFields}
-                register={register}
-                control={control}
-                watch={watch}
-                setValue={setValue}
-              />
-            </Box>
-          )}
+          <RenderComponents
+            fields={emiCalibrationFormFields}
+            register={register}
+            control={control}
+            watch={watch}
+            setValue={setValue}
+          />
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseEditDialog}>Cancel</Button>
+          <Button onClick={handleCloseEditDialog} disabled={dialogLoading}>
+            Cancel
+          </Button>
           <Button
+            sx={{
+              borderRadius: 1,
+              bgcolor: "orange",
+              color: "white",
+              borderColor: "black",
+              padding: { xs: "8px 16px", md: "6px 12px" },
+              fontSize: { xs: "0.875rem", md: "1rem" },
+              mt: "10px",
+              mb: "10px",
+            }}
             onClick={handleSubmit(handleSubmitEMICalibrationForm)}
+            color="primary"
             variant="contained"
-            disabled={dialogLoading}
+            disabled={loading}
           >
-            {editCalibrationId ? "Update" : "Add"}
+            {dialogLoading ? (
+              <CircularProgress size={20} color="inherit" />
+            ) : editCalibrationId ? (
+              "Update"
+            ) : (
+              "Save"
+            )}
           </Button>
         </DialogActions>
       </Dialog>
@@ -1304,28 +1159,226 @@ const EMICalibration = () => {
       <Dialog open={deleteDialogOpen} onClose={handleCancelDelete}>
         <DialogTitle>Confirm Delete</DialogTitle>
         <DialogContent>
-          <Typography>
-            Are you sure you want to delete this equipment? This action cannot
-            be undone.
-          </Typography>
+          Are you sure you want to delete this equipment? This action cannot be
+          undone.
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCancelDelete}>Cancel</Button>
+          <Button onClick={handleCancelDelete} disabled={dialogLoading}>
+            Cancel
+          </Button>
           <Button
             onClick={handleConfirmDelete}
             color="error"
             variant="contained"
             disabled={dialogLoading}
           >
-            Delete
+            {dialogLoading ? <CircularProgress size={20} /> : "Delete"}
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* KPI Dialog openDialog */}
+      <EquipmentListDialog
+        dialogData={dialogData}
+        openDialog={openDialog}
+        setOpenDialog={setOpenDialog}
+      />
+
+      {/* <Dialog
+          open={openDialog}
+          onClose={() => setOpenDialog(false)}
+          maxWidth="md"
+          fullWidth
+        >
+          <DialogTitle
+            sx={{
+              bgcolor: dialogData.color,
+              color: "white",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <Typography variant="h6">
+              {dialogData.title} - {dialogData.equipments.length} Equipment(s)
+            </Typography>
+            <IconButton
+              onClick={() => setOpenDialog(false)}
+              sx={{ color: "white" }}
+            >
+              <Close />
+            </IconButton>
+          </DialogTitle>
+          <DialogContent sx={{ p: 0 }}>
+            <List>
+              {dialogData.equipments.map((equipment, index) => (
+                <React.Fragment key={index}>
+                  <ListItem sx={{ py: 2 }}>
+                    <ListItemIcon>
+                      <Business sx={{ color: dialogData.color }} />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={
+                        <Box
+                          sx={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                          }}
+                        >
+                          <Typography variant="subtitle1" fontWeight="bold">
+                            {equipment.equipment_name}
+                          </Typography>
+                          {getStatusChip(equipment, dialogData.type)}
+                        </Box>
+                      }
+                      secondary={
+                        <Box sx={{ mt: 1 }}>
+                          <Typography variant="body2" color="text.secondary">
+                            <strong>Manufacturer:</strong>{" "}
+                            {equipment.manufacturer || "N/A"}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            <strong>Model:</strong>{" "}
+                            {equipment.model_number || "N/A"}
+                          </Typography>
+                          {equipment.calibration_due_date && (
+                            <Box
+                              sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                mt: 1,
+                              }}
+                            >
+                              <CalendarToday
+                                sx={{
+                                  fontSize: 16,
+                                  mr: 1,
+                                  color: "text.secondary",
+                                }}
+                              />
+                              <Typography
+                                variant="body2"
+                                color="text.secondary"
+                              >
+                                Due:{" "}
+                                {new Date(
+                                  equipment.calibration_due_date
+                                ).toLocaleDateString()}
+                              </Typography>
+                            </Box>
+                          )}
+                        </Box>
+                      }
+                    />
+                  </ListItem>
+                  {index < dialogData.equipments.length - 1 && <Divider />}
+                </React.Fragment>
+              ))}
+            </List>
+            {dialogData.equipments.length === 0 && (
+              <Box sx={{ p: 3, textAlign: "center" }}>
+                <Typography color="text.secondary">
+                  No equipment found in this category.
+                </Typography>
+              </Box>
+            )}
+          </DialogContent>
+        </Dialog> */}
     </>
   );
 };
 
 export default EMICalibration;
+
+// Enhanced KPI Card with click functionality
+
+const EquipmentListDialog = ({ dialogData, openDialog, setOpenDialog }) => {
+  const getStatusChip = (equipment, type) => {
+    switch (type) {
+      case "expired":
+        return (
+          <Chip
+            label={`${equipment.days_overdue} days overdue`}
+            color="error"
+            size="small"
+          />
+        );
+      case "due_soon":
+        return (
+          <Chip
+            label={`Due in ${equipment.days_until_due} days`}
+            color="warning"
+            size="small"
+          />
+        );
+      case "inactive":
+        return <Chip label="Inactive" color="default" size="small" />;
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <Dialog
+      open={openDialog}
+      onClose={() => setOpenDialog(false)}
+      maxWidth="md"
+      fullWidth
+    >
+      <DialogTitle>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <Typography variant="h6">{dialogData.title}</Typography>
+          <Chip
+            label={dialogData.equipments?.length || 0}
+            size="small"
+            sx={{ bgcolor: dialogData.color, color: "white" }}
+          />
+        </Box>
+      </DialogTitle>
+      <DialogContent>
+        <List>
+          {dialogData.equipments?.map((equipment, index) => (
+            <React.Fragment key={index}>
+              <ListItem>
+                <ListItemIcon>
+                  <Business sx={{ color: dialogData.color }} />
+                </ListItemIcon>
+                <ListItemText
+                  primary={equipment.equipment_name}
+                  secondary={
+                    <Box
+                      sx={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 0.5,
+                      }}
+                    >
+                      <Typography variant="body2">
+                        Manufacturer: {equipment.manufacturer}
+                      </Typography>
+                      <Typography variant="body2">
+                        Model: {equipment.model_number}
+                      </Typography>
+                      <Typography variant="body2">
+                        Due Date: {equipment.calibration_due_date}
+                      </Typography>
+                      {getStatusChip(equipment, dialogData.type)}
+                    </Box>
+                  }
+                />
+              </ListItem>
+              {index < dialogData.equipments.length - 1 && <Divider />}
+            </React.Fragment>
+          ))}
+        </List>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={() => setOpenDialog(false)}>Close</Button>
+      </DialogActions>
+    </Dialog>
+  );
+};
 
 const EMICalibrationKPICard = ({
   title,
@@ -1392,5 +1445,31 @@ const EMICalibrationKPICard = ({
         </Box>
       </CardContent>
     </Card>
+  );
+
+  return (
+    <Box sx={{ p: 1 }}>
+      <Typography variant="h4" sx={{ color: "#003366", mb: "5px" }}>
+        EMI Calibration Dashboard
+      </Typography>
+
+      {/* KPI Cards */}
+      <Grid container spacing={3} sx={{ mb: 3 }}>
+        {emiCalibrationKPIs.map((kpi, index) => (
+          <Grid item xs={12} sm={6} md={3} key={index}>
+            <EMICalibrationKPICard
+              title={kpi.label}
+              value={kpi.value}
+              color={kpi.color}
+              icon={kpi.icon}
+              hasDetails={kpi.equipments && kpi.equipments.length > 0}
+              onClick={() => handleKPIClick(kpi)}
+            />
+          </Grid>
+        ))}
+      </Grid>
+      {/* Equipment List Dialog */}
+      <EquipmentListDialog />
+    </Box>
   );
 };

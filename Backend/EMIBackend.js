@@ -1001,7 +1001,7 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
     const { emiCalibrationsData } = req.body;
 
     const sql = `INSERT INTO emi_calibrations_table (
-    id, equipment_name, manufacturer, model_number, calibration_date, calibration_due_date, calibration_done_by, equipment_status,remarks, last_updated_by) VALUES ?`;
+    equipment_name, manufacturer, model_number, calibration_date, calibration_due_date, calibration_done_by, equipment_status,remarks, last_updated_by) VALUES ?`;
 
     const values = emiCalibrationsData.map((item) => [
       item.equipment_name,
@@ -1017,7 +1017,7 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
 
     db.query(sql, [values], (error, result) => {
       if (error) {
-        console.error("Error while inserting data:", error);
+        console.error("Error while inserting EMI Calibrations data:", error);
         return res.status(500).json({ error: "Database error" });
       }
       res
@@ -1187,6 +1187,8 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
             (item) => item.equipment_status === "Inactive"
           ).length,
         };
+
+        // res.status(200).json(result);
 
         res.status(200).json({
           equipments: result,
