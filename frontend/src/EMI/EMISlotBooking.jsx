@@ -7,6 +7,7 @@ import {
   DialogTitle,
   Grid,
   Typography,
+  Checkbox,
 } from "@mui/material";
 import { useContext, useRef, useState, useEffect } from "react";
 
@@ -34,6 +35,7 @@ import axios from "axios";
 import { serverBaseAddress } from "../Pages/APIPage";
 import ConfirmationDialog from "../common/ConfirmationDialog";
 import CustomModal from "../common/CustomModalWithTable";
+import { is } from "date-fns/locale";
 
 const localizer = momentLocalizer(moment);
 
@@ -72,6 +74,10 @@ const EMISlotBooking = () => {
   const [searchInputTextOfSlot, setSearchInputTextOfSlot] = useState("");
   const [filteredEventsList, setFilteredEventsList] = useState([]);
 
+  const [isCustomStandard, setIsCustomStandard] = useState(false);
+  const [isCustomTest, setIsCustomTest] = useState(false);
+  // const [manualSlotDuration, setManualSlotDuration] = useState(false);
+
   // Initialize useRef hook
   const emiCalendarRef = useRef(null);
 
@@ -80,6 +86,8 @@ const EMISlotBooking = () => {
     customer_name: "",
     customer_email: "",
     customer_phone: "",
+    test_type: "",
+    slot_type: "",
     test_name: "",
     chamber_allotted: "",
     test_standard: "",
@@ -117,6 +125,7 @@ const EMISlotBooking = () => {
     { id: "ISO 11452-4", label: "ISO 11452-4" },
     { id: "ISO 10605", label: "ISO 10605" },
     { id: "IEC 61000-4-2", label: "IEC 61000-4-2" },
+    { id: "custom_standard", label: "Custom Standard" },
   ];
 
   const emiTestOptions = [
@@ -125,6 +134,147 @@ const EMISlotBooking = () => {
     { id: "CE114", label: "CE114" },
     { id: "RE102", label: "RE102" },
     { id: "RE103", label: "RE103" },
+    { id: "custom_test_name", label: "Custom Test Name" },
+  ];
+
+  // Fixed form fields
+  const fieldsForEMISlotBookingForm = [
+    {
+      label: "Company",
+      name: "company_name",
+      type: "textField",
+      width: "50%",
+      required: true,
+    },
+    {
+      label: "Customer Name",
+      name: "customer_name",
+      type: "textField",
+      width: "50%",
+    },
+    {
+      label: "Customer Email",
+      name: "customer_email",
+      type: "textField",
+      width: "50%",
+      inputType: "email",
+    },
+    {
+      label: "Customer Phone",
+      name: "customer_phone",
+      type: "textField",
+      width: "50%",
+      inputType: "tel",
+    },
+    {
+      label: "Slot Type",
+      name: "slot_type",
+      type: "select",
+      width: "50%",
+      options: [
+        { id: "Pre-Compliance", label: "Pre-Compliance" },
+        { id: "Compliance", label: "Compliance" },
+      ],
+      required: true,
+    },
+    {
+      label: "Test Type",
+      name: "test_type",
+      type: "select",
+      width: "50%",
+      options: [
+        { id: "NABL", label: "NABL" },
+        { id: "NON-NABL", label: "NON-NABL" },
+        { id: "NABL/NON-NABL", label: "NABL & NON-NABL" },
+      ],
+      required: true,
+    },
+    {
+      label: "Chamber",
+      name: "chamber_allotted",
+      type: "select",
+      width: "100%",
+      options: emiChamberOptions,
+      required: true,
+    },
+    {
+      label: "Standard",
+      name: "test_standard",
+      type: "select",
+      width: isCustomStandard ? "50%" : "100%",
+      options: emiStandardOptions,
+      required: true,
+      onChange: (e) => handleStandardChange(e.target.value),
+    },
+
+    ...(isCustomStandard
+      ? [
+          {
+            label: "Custom Standard",
+            name: "custom_standard",
+            type: "textField",
+            width: "50%",
+          },
+        ]
+      : []),
+
+    {
+      label: "Test Name",
+      name: "test_name",
+      type: "select",
+      width: isCustomTest ? "50%" : "100%",
+      options: emiTestOptions,
+      required: true,
+      onChange: (e) => handleTestChange(e.target.value),
+    },
+
+    ...(isCustomTest
+      ? [
+          {
+            label: "Custom Test Name",
+            name: "custom_test_name",
+            type: "textField",
+            width: "50%",
+          },
+        ]
+      : []),
+
+    {
+      label: "Slot Start Date & Time",
+      name: "slot_start_datetime",
+      type: "dateTimePicker",
+      width: "50%",
+      required: true,
+    },
+    {
+      label: "Slot End Date & Time",
+      name: "slot_end_datetime",
+      type: "dateTimePicker",
+      width: "50%",
+      required: true,
+    },
+    // {
+    //   label: "Enter Slot Duration Manually",
+    //   name: "manualSlotDuration",
+    //   type: "checkbox",
+    //   width: "30%",
+    // },
+    {
+      label: "Slot Duration (Hours)",
+      name: "slot_duration",
+      type: "textField",
+      // width: manualSlotDuration ? "70%" : "100%",
+      width: "100%",
+      inputType: "number",
+      // disabled: !manualSlotDuration, // Disable if duration is automatically calculated,
+    },
+    {
+      label: "Notes/Remarks",
+      name: "remarks",
+      type: "textArea",
+      width: "100%",
+      rows: 3,
+    },
   ];
 
   // Initialize chambers on component mount
@@ -144,23 +294,26 @@ const EMISlotBooking = () => {
   }, [searchInputTextOfSlot, emiEventsList]);
 
   // Watch for datetime changes and calculate duration
-  // const watchedStartTime = watch("slot_start_datetime");
-  // const watchedEndTime = watch("slot_end_datetime");
+  // const watchManualSlotDuration = watch("manualSlotDuration");
+  const watchedStartTime = watch("slot_start_datetime");
+  const watchedEndTime = watch("slot_end_datetime");
 
-  // useEffect(() => {
-  //   if (watchedStartTime && watchedEndTime) {
-  //     const start = dayjs(watchedStartTime);
-  //     const end = dayjs(watchedEndTime);
+  useEffect(() => {
+    // if (!manualSlotDuration && watchedStartTime && watchedEndTime) {
+    if (watchedStartTime && watchedEndTime) {
+      const start = dayjs(watchedStartTime);
+      const end = dayjs(watchedEndTime);
 
-  //     if (end.isAfter(start)) {
-  //       const duration = end.diff(start, "hour", true);
-  //       setValue("slot_duration", duration.toFixed(2));
-  //     } else if (end.isBefore(start)) {
-  //       toast.warning("End time should be after start time");
-  //       setValue("slot_duration", "");
-  //     }
-  //   }
-  // }, [watchedStartTime, watchedEndTime, setValue]);
+      if (end.isAfter(start)) {
+        const duration = end.diff(start, "hour", true);
+        setValue("slot_duration", duration.toFixed(3));
+      } else if (end.isBefore(start)) {
+        toast.warning("End time should be after start time");
+        setValue("slot_duration", "");
+      }
+    }
+  }, [watchedStartTime, watchedEndTime, setValue]);
+  // }, [watchedStartTime, watchedEndTime, watchManualSlotDuration, setValue]);
 
   // Fixed: Implement search functionality
   const handleSearchChange = (e) => {
@@ -223,12 +376,17 @@ const EMISlotBooking = () => {
               ? `${booking.company_name.slice(0, 4)}..`
               : booking.company_name || "Company";
 
+          const customTestName = booking.custom_test_name
+            ? booking.custom_test_name
+            : booking.test_name;
+          const customStandard = booking.custom_standard
+            ? booking.custom_standard
+            : booking.test_standard;
+
           return {
             id: booking.booking_id,
             title: `${shortCompanyName}`,
-            fullTitle: `${booking.test_name || ""} for ${
-              booking.company_name || ""
-            }`,
+            fullTitle: `${customTestName} for ${booking.company_name || ""}`,
             start: startDate,
             end: endDate,
             duration: booking.slot_duration,
@@ -288,6 +446,7 @@ const EMISlotBooking = () => {
 
   const handleStandardChange = (standardId) => {
     setSelectedStandard(standardId);
+    setIsCustomStandard(standardId === "custom_standard");
     setValue("test_standard", standardId);
 
     try {
@@ -300,6 +459,12 @@ const EMISlotBooking = () => {
 
     setSelectedTest("");
     setValue("test_name", "");
+  };
+
+  const handleTestChange = (testId) => {
+    setSelectedTest(testId);
+    setIsCustomTest(testId === "custom_test_name");
+    setValue("test_name", testId);
   };
 
   const handleOpenEMISlotBookingDialog = () => {
@@ -324,6 +489,8 @@ const EMISlotBooking = () => {
     setSelectedTest("");
     setStandards([]);
     setTests([]);
+    setIsCustomTest(false);
+    setIsCustomStandard(false);
   };
 
   const handleEventClick = (event) => {
@@ -353,14 +520,21 @@ const EMISlotBooking = () => {
       setValue("customer_email", bookingData.customer_email);
       setValue("customer_phone", bookingData.customer_phone);
       setValue("test_name", bookingData.test_name);
+      setValue("custom_test_name", bookingData.custom_test_name);
       setValue("test_standard", bookingData.test_standard);
+      setValue("custom_standard", bookingData.custom_standard);
+      setValue("slot_type", bookingData.slot_type);
+      setValue("test_type", bookingData.test_type);
       setValue("chamber_allotted", bookingData.chamber_allotted);
       setValue("slot_start_datetime", dayjs(bookingData.slot_start_datetime));
       setValue("slot_end_datetime", dayjs(bookingData.slot_end_datetime));
       setValue("slot_duration", bookingData.slot_duration);
       setValue("remarks", bookingData.remarks);
-
       setValue("slotBookedBy", bookingData.slot_booked_by);
+
+      // Add these lines:
+      setIsCustomStandard(bookingData.test_standard === "custom_standard");
+      setIsCustomTest(bookingData.test_name === "custom_test_name");
 
       setEditId(selectedBookingId);
     } catch (error) {
@@ -415,90 +589,6 @@ const EMISlotBooking = () => {
     setOpenEMISlotBookingDialog(true);
   };
 
-  // Fixed form fields
-  const fieldsForEMISlotBookingForm = [
-    {
-      label: "Company",
-      name: "company_name",
-      type: "textField",
-      width: "100%",
-      required: true,
-    },
-    {
-      label: "Customer Name",
-      name: "customer_name",
-      type: "textField",
-      width: "100%",
-    },
-    {
-      label: "Customer Email",
-      name: "customer_email",
-      type: "textField",
-      width: "50%",
-      inputType: "email",
-    },
-    {
-      label: "Customer Phone",
-      name: "customer_phone",
-      type: "textField",
-      width: "50%",
-      inputType: "tel",
-    },
-    {
-      label: "Chamber",
-      name: "chamber_allotted",
-      type: "select",
-      width: "100%",
-      options: emiChamberOptions,
-      required: true,
-    },
-    {
-      label: "Standard",
-      name: "test_standard",
-      type: "select",
-      width: "100%",
-      options: emiStandardOptions,
-      required: true,
-    },
-    {
-      label: "Test Name",
-      name: "test_name",
-      type: "select",
-      width: "100%",
-      options: emiTestOptions,
-      required: true,
-    },
-    {
-      label: "Slot Start Date & Time",
-      name: "slot_start_datetime",
-      type: "dateTimePicker",
-      width: "50%",
-      required: true,
-    },
-    {
-      label: "Slot End Date & Time",
-      name: "slot_end_datetime",
-      type: "dateTimePicker",
-      width: "50%",
-      required: true,
-    },
-    {
-      label: "Slot Duration (Hours)",
-      name: "slot_duration",
-      type: "textField",
-      width: "100%",
-      inputType: "number",
-      disabled: true,
-    },
-    {
-      label: "Notes/Remarks",
-      name: "remarks",
-      type: "textArea",
-      width: "100%",
-      rows: 3,
-    },
-  ];
-
   // Fixed: Form submission with proper error handling and validation
   const onSubmitHandleEMISlotBookingForm = async (data) => {
     try {
@@ -518,8 +608,24 @@ const EMISlotBooking = () => {
         return;
       }
 
+      if (
+        data.test_standard === "custom_standard" &&
+        !data.custom_standard?.trim()
+      ) {
+        toast.error("Please enter a custom standard.");
+        return;
+      }
+
       if (!data.test_name?.trim()) {
         toast.error("Test name is required");
+        return;
+      }
+
+      if (
+        data.test_name === "custom_test_name" &&
+        !data.custom_test_name?.trim()
+      ) {
+        toast.error("Please enter a custom test name.");
         return;
       }
 

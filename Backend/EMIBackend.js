@@ -851,15 +851,15 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
   app.post("/api/bookNewEMISlot", (req, res) => {
     const { formData } = req.body;
 
-    const sql = `INSERT INTO emi_slot_table(booking_id, company_name, customer_name, customer_email, customer_phone, test_name, test_standard, chamber_allotted, slot_start_datetime, slot_end_datetime, slot_duration, remarks, slot_booked_by, lastUpdatedBy)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    const sql = `INSERT INTO emi_slot_table(booking_id, company_name, customer_name, customer_email, customer_phone, slot_type, test_type, test_name, custom_test_name, test_standard, custom_standard, chamber_allotted, slot_start_datetime, slot_end_datetime, slot_duration, remarks, slot_booked_by, lastUpdatedBy)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
-    const formattedSlotStartDateTime = moment(
-      formData.slot_start_datetime
-    ).format("YYYY-MM-DD HH:mm");
-    const formattedSlotEndDateTime = moment(formData.slot_end_datetime).format(
-      "YYYY-MM-DD HH:mm"
-    );
+    // const formattedSlotStartDateTime = moment(
+    //   formData.slot_start_datetime
+    // ).format("YYYY-MM-DD HH:mm");
+    // const formattedSlotEndDateTime = moment(formData.slot_end_datetime).format(
+    //   "YYYY-MM-DD HH:mm"
+    // );
 
     const values = [
       formData.booking_id,
@@ -867,8 +867,12 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
       formData.customer_name,
       formData.customer_email,
       formData.customer_phone,
+      formData.slot_type,
+      formData.test_type,
       formData.test_name,
+      formData.custom_test_name,
       formData.test_standard,
+      formData.custom_standard,
       formData.chamber_allotted,
       // formattedSlotStartDateTime,
       // formattedSlotEndDateTime,
@@ -899,24 +903,29 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
     const { booking_id } = req.params;
     const { formData } = req.body;
 
-    const sql = `UPDATE emi_slot_table SET company_name = ?, customer_name = ?, customer_email = ?, customer_phone = ?, test_name = ?, 
-                test_standard = ?, chamber_allotted = ?, slot_start_datetime = ?, slot_end_datetime = ?, slot_duration = ?, remarks = ?, 
+    const sql = `UPDATE emi_slot_table SET company_name = ?, customer_name = ?, customer_email = ?, customer_phone = ?,
+                slot_type = ?, test_type = ?, test_name = ?, custom_test_name = ?,
+                test_standard = ?, custom_standard = ?, chamber_allotted = ?, slot_start_datetime = ?, slot_end_datetime = ?, slot_duration = ?, remarks = ?, 
                 slot_booked_by = ?, lastUpdatedBy = ? WHERE booking_id = ?`;
 
-    const formattedSlotStartDateTime = moment(
-      formData.slot_start_datetime
-    ).format("YYYY-MM-DD HH:mm");
-    const formattedSlotEndDateTime = moment(formData.slot_end_datetime).format(
-      "YYYY-MM-DD HH:mm"
-    );
+    // const formattedSlotStartDateTime = moment(
+    //   formData.slot_start_datetime
+    // ).format("YYYY-MM-DD HH:mm");
+    // const formattedSlotEndDateTime = moment(formData.slot_end_datetime).format(
+    //   "YYYY-MM-DD HH:mm"
+    // );
 
     const values = [
       formData.company_name,
       formData.customer_name,
       formData.customer_email,
       formData.customer_phone,
+      formData.slot_type,
+      formData.test_type,
       formData.test_name,
+      formData.custom_test_name,
       formData.test_standard,
+      formData.custom_standard,
       formData.chamber_allotted,
       // formattedSlotStartDateTime,
       // formattedSlotEndDateTime,
