@@ -726,7 +726,7 @@ const createEMISLotBookingTable = () => {
       customer_email VARCHAR(255),
       customer_phone VARCHAR(255),
       slot_type VARCHAR(255),
-       test_type VARCHAR(255),
+      test_type VARCHAR(255),
       test_name VARCHAR(255),
       custom_test_name VARCHAR(255),
       test_standard VARCHAR(255),
@@ -1034,6 +1034,64 @@ function createInvoiceDataTable() {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////
+// Files storage in Hostinger VPS
+
+//File access logging for audit trail:
+const createFileAccessLogTable = () => {
+  const createFileAccessLogTableQuery = `
+  CREATE TABLE IF NOT EXISTS file_access_log (
+      id INT NOT NULL AUTO_INCREMENT,
+      user_id INT NOT NULL,
+      file_name VARCHAR(500) NOT NULL,
+      file_path VARCHAR(500) NOT NULL,
+      action ENUM('view', 'list', 'download', 'upload', 'delete', 'search', 'mkdir') NOT NULL,
+      accessed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (user_id) REFERENCES labbee_users(id),
+      INDEX idx_user_access (user_id, accessed_at),
+      INDEX idx_file_path (file_path),
+      INDEX idx_file_name (file_name),
+      INDEX idx_action (action),
+      PRIMARY KEY(id)
+  )`;
+
+  db.query(createFileAccessLogTableQuery, function (err, result) {
+    if (err) {
+      console.log("Error occured while creating file_access_log table", err);
+    } else {
+      // console.log("file_access_log table created successfully.");
+    }
+  });
+};
+
+//File metadata cache for faster searches:
+const createFileMetaDataTable = () => {
+  const createFileMetaDataTableQuery = `
+    CREATE TABLE IF NOT EXISTS file_meta_data (
+      id INT NOT NULL AUTO_INCREMENT,
+      file_name VARCHAR(500) NOT NULL,
+      file_path VARCHAR(500) NOT NULL UNIQUE,
+      file_size BIGINT,
+      mime_type VARCHAR(500),
+      last_modified DATETIME,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      PRIMARY KEY(id),
+      INDEX idx_file_name (file_name),
+      INDEX idx_mime_type (mime_type),
+      INDEX idx_last_modified (last_modified)
+    ) `;
+
+  db.query(createFileMetaDataTableQuery, function (err, result) {
+    if (err) {
+      console.log("Error occured while creating file_meta_data table", err);
+    } else {
+      // console.log("file_meta_data table created successfully.");
+    }
+  });
+};
+////////////////////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////////////////////////////
 
 // Handle the process exiting to gracefully end the connection pool.
 process.on("exit", function () {
@@ -1090,4 +1148,7 @@ module.exports = {
   createProjectTaskLogsTable,
 
   createInvoiceDataTable,
+
+  createFileAccessLogTable,
+  createFileMetaDataTable,
 };

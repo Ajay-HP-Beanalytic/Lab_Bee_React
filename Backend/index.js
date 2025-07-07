@@ -23,17 +23,17 @@ const socketIo = require("socket.io");
 // create an express application::
 const app = express();
 
-const serverOptions = {
-  key: fs.readFileSync(
-    "/etc/letsencrypt/live/labbee.beanalytic.com/privkey.pem"
-  ),
-  cert: fs.readFileSync(
-    "/etc/letsencrypt/live/labbee.beanalytic.com/fullchain.pem"
-  ),
-};
+// const serverOptions = {
+//   key: fs.readFileSync(
+//     "/etc/letsencrypt/live/labbee.beanalytic.com/privkey.pem"
+//   ),
+//   cert: fs.readFileSync(
+//     "/etc/letsencrypt/live/labbee.beanalytic.com/fullchain.pem"
+//   ),
+// };
 
-// const server = http.createServer(app);
-const server = https.createServer(serverOptions, app);
+const server = http.createServer(app);
+// const server = https.createServer(serverOptions, app);
 
 ///Make the app.connection available to the socket.io servers:
 const io = socketIo(server, {
@@ -169,6 +169,9 @@ const {
   createProjectTaskLogsTable,
 
   createInvoiceDataTable,
+
+  createFileAccessLogTable,
+  createFileMetaDataTable,
 } = require("./database_tables");
 
 //Get db connection from the db.js file
@@ -226,6 +229,9 @@ db.getConnection(function (err, connection) {
   createProjectTaskLogsTable();
 
   createInvoiceDataTable();
+
+  createFileAccessLogTable();
+  createFileMetaDataTable();
 
   connection.release(); // Release the connection back to the pool when done
 });
@@ -286,6 +292,10 @@ TestsAndChambersUpdateAPIs(app, io, labbeeUsers);
 const { projectManagementAPIs } = require("./projectManagementAPI");
 projectManagementAPIs(app, io, labbeeUsers);
 
+//backend connection to access files from the server:
+const { fileStorageAPIs } = require("./fileStorageAPIs");
+fileStorageAPIs(app, io, labbeeUsers);
+
 /// Code to get backup of only database in .sql format:
 ///Data Backup function:
 //Backend API route address to fetch the data backup:
@@ -339,8 +349,8 @@ app.get("/", (req, res) => {
   res.send("Hello Welcome to Labbee...");
 });
 
-const PORT = 4002; //For deploymentt
-// const PORT = 4000;
+// const PORT = 4002; //For deploymentt
+const PORT = 4000;
 
 app.get("/api/testing", (req, res) => {
   res.send("Backend is up and running...");
