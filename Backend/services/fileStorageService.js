@@ -4,32 +4,273 @@ const mime = require("mime-types");
 
 class FileStorageService {
   constructor() {
+    // This is correct for Backend/services/fileStorageService.js
     this.baseDir = path.join(__dirname, "../../shared-files");
-    this.ensureDirectoriesExist();
+
+    // Debug logs
+    console.log("FileStorage baseDir:", this.baseDir);
+    console.log("Directory exists:", fs.existsSync(this.baseDir));
+
+    // Initialize directories
+    this.initializeStorage();
   }
 
-  //Ensure directories exist
-  async ensureDirectoriesExist() {
-    const directories = [
-      "Quotaion-files",
-      "TS1-standards",
-      "TS2-standards",
-      "uploads ",
-    ];
-
-    for (const dir of directories) {
-      await fs.ensureDir(path.join(this.baseDir, dir));
+  async initializeStorage() {
+    try {
+      await this.ensureDirectoriesExist();
+      await this.createDefaultStructure();
+      console.log("✅ File storage system initialized successfully!");
+    } catch (error) {
+      console.error("❌ Failed to initialize file storage:", error);
+      throw error;
     }
   }
 
-  // List files and folders
+  async ensureDirectoriesExist() {
+    // Create the main shared-files directory if it doesn't exist
+    if (!fs.existsSync(this.baseDir)) {
+      try {
+        await fs.ensureDir(this.baseDir);
+        console.log(`✓ Main directory created: ${this.baseDir}`);
+      } catch (error) {
+        console.error(`❌ Failed to create main directory: ${error.message}`);
+        throw error;
+      }
+    } else {
+      console.log(`✓ Main directory already exists: ${this.baseDir}`);
+    }
+
+    // Define all subdirectories to create
+    const directories = [
+      {
+        name: "Quotation-files",
+        description: "Store quotation documents and related files",
+      },
+      {
+        name: "TS1-standards",
+        description: "TS1 testing standards and procedures",
+      },
+      {
+        name: "TS2-standards",
+        description: "TS2 testing standards and procedures",
+      },
+      {
+        name: "uploads",
+        description: "General file uploads from users",
+      },
+      {
+        name: "temp",
+        description: "Temporary files (auto-cleanup)",
+      },
+      {
+        name: "archived",
+        description: "Archived files and documents",
+      },
+    ];
+
+    // Create each directory
+    for (const dir of directories) {
+      // const dirPath = path.join(this.baseDir, dir);
+      // await fs.ensureDir(dirPath);
+      // console.log(`✓ Directory ensured: ${dirPath}`);
+
+      try {
+        const dirPath = path.join(this.baseDir, dir.name);
+        if (!fs.existsSync(dirPath)) {
+          await fs.ensureDir(dirPath);
+          console.log(`✓ Directory created: ${dir.name} - ${dir.description}`);
+        } else {
+          console.log(`✓ Directory exists: ${dir.name}`);
+        }
+      } catch (error) {
+        console.error(`❌ Failed to create directory: ${error.message}`);
+      }
+    }
+  }
+
+  async createDefaultStructure() {
+    try {
+      const directoryInfo = {
+        "Quotation-files": {
+          subdirs: ["drafts", "approved", "archived"],
+        },
+
+        "TS1-standards": {
+          subdirs: ["procedures", "templates", "compliance"],
+        },
+
+        "TS2-standards": {
+          subdirs: ["procedures", "templates", "compliance"],
+        },
+
+        uploads: {
+          subdirs: [new Date().getFullYear().toString()], // Create current year folder
+        },
+
+        temp: {
+          subdirs: [],
+        },
+
+        archived: {
+          subdirs: [new Date().getFullYear().toString()],
+        },
+      };
+
+      // Create README files and subdirectories
+      for (const [dirName, info] of Object.entries(directoryInfo)) {
+        const mainDirPath = path.join(this.baseDir, dirName);
+
+        // Create subdirectories
+        for (const subdir of info.subdirs) {
+          const subdirPath = path.join(mainDirPath, subdir);
+          if (!fs.existsSync(subdirPath)) {
+            await fs.ensureDir(subdirPath);
+            console.log(`📁 Created subdirectory: ${dirName}/${subdir}`);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("❌ Error creating default structure:", error);
+      // Don't throw here, as this is optional
+    }
+  }
+
+  // Method to verify directory structure
+  async verifyDirectoryStructure() {
+    const requiredDirs = [
+      "Quotation-files",
+      "TS1-standards",
+      "TS2-standards",
+      "uploads",
+      "temp",
+      "archived",
+    ];
+
+    const results = {
+      allExist: true,
+      missing: [],
+      existing: [],
+    };
+
+    for (const dir of requiredDirs) {
+      const dirPath = path.join(this.baseDir, dir);
+      if (fs.existsSync(dirPath)) {
+        results.existing.push(dir);
+      } else {
+        results.missing.push(dir);
+        results.allExist = false;
+      }
+    }
+
+    console.log("🔍 Directory Structure Verification:");
+    console.log(`✅ Existing directories: ${results.existing.join(", ")}`);
+    if (results.missing.length > 0) {
+      console.log(`❌ Missing directories: ${results.missing.join(", ")}`);
+    }
+
+    return results;
+  }
+
+  // Add method to create new directories on demand
+  async createCustomDirectory(dirPath, description = "") {
+    try {
+      const fullPath = path.join(this.baseDir, dirPath);
+
+      if (!fullPath.startsWith(this.baseDir)) {
+        throw new Error("Invalid path");
+      }
+
+      await fs.ensureDir(fullPath);
+
+      // Create a README for the new directory
+      if (description) {
+        const readmePath = path.join(fullPath, "README.md");
+        const readmeContent = `# ${path.basename(dirPath)} Directory
+
+${description}
+
+Created: ${new Date().toISOString()}
+`;
+        await fs.writeFile(readmePath, readmeContent);
+      }
+
+      console.log(`📁 Created custom directory: ${dirPath}`);
+      return true;
+    } catch (error) {
+      console.error(`❌ Error creating directory ${dirPath}:`, error);
+      throw error;
+    }
+  }
+
+  // Cleanup method for temporary files
+  async cleanupTempFiles() {
+    try {
+      const tempDir = path.join(this.baseDir, "temp");
+      if (!fs.existsSync(tempDir)) return;
+
+      const files = await fs.readdir(tempDir);
+      const now = Date.now();
+      const maxAge = 24 * 60 * 60 * 1000; // 24 hours
+
+      let cleanedCount = 0;
+      for (const file of files) {
+        const filePath = path.join(tempDir, file);
+        const stats = await fs.stat(filePath);
+
+        if (now - stats.mtime.getTime() > maxAge) {
+          await fs.remove(filePath);
+          cleanedCount++;
+        }
+      }
+
+      if (cleanedCount > 0) {
+        console.log(`🧹 Cleaned up ${cleanedCount} temporary files`);
+      }
+
+      return cleanedCount;
+    } catch (error) {
+      console.error("Error cleaning temp files:", error);
+      return 0;
+    }
+  }
+
+  // Method to get storage statistics
+  async getStorageInfo() {
+    try {
+      const stats = await fs.stat(this.baseDir);
+      const infoPath = path.join(this.baseDir, "storage-info.json");
+
+      let systemInfo = {};
+      if (fs.existsSync(infoPath)) {
+        systemInfo = await fs.readJSON(infoPath);
+      }
+
+      return {
+        baseDirectory: this.baseDir,
+        created: stats.birthtime,
+        lastModified: stats.mtime,
+        systemInfo,
+        directoryStructure: await this.verifyDirectoryStructure(),
+      };
+    } catch (error) {
+      console.error("Error getting storage info:", error);
+      throw error;
+    }
+  }
+
+  // Method to list files
   async listFiles(folderPath = "") {
     try {
       const fullPath = path.join(this.baseDir, folderPath);
+      console.log(`📂 Listing files in: ${fullPath}`);
 
-      // Security check - prevent directory traversal
       if (!fullPath.startsWith(this.baseDir)) {
         throw new Error("Invalid path");
+      }
+
+      if (!(await fs.pathExists(fullPath))) {
+        await fs.ensureDir(fullPath);
+        return [];
       }
 
       const items = await fs.readdir(fullPath, { withFileTypes: true });
@@ -40,49 +281,26 @@ class FileStorageService {
           const stats = await fs.stat(itemPath);
 
           return {
-            id: path.join(folderPath, item.name),
+            id: path.join(folderPath, item.name).replace(/\\/g, "/"),
             name: item.name,
             type: item.isDirectory() ? "folder" : "file",
             size: item.isFile() ? stats.size : null,
             mimeType: item.isFile() ? mime.lookup(item.name) : null,
             lastModified: stats.mtime,
-            path: path.join(folderPath, item.name),
+            path: path.join(folderPath, item.name).replace(/\\/g, "/"),
           };
         })
       );
 
+      console.log(`📁 Found ${files.length} items`);
       return files;
     } catch (error) {
-      console.error("Error listing files:", error);
+      console.error("❌ Error listing files:", error);
       throw error;
     }
   }
 
-  // Get file information
-  async getFileInfo(filePath) {
-    try {
-      const fullPath = path.join(this.baseDir, filePath);
-
-      if (!fullPath.startsWith(this.baseDir)) {
-        throw new Error("Invalid path");
-      }
-
-      const stats = await fs.stat(fullPath);
-
-      return {
-        name: path.basename(filePath),
-        size: stats.size,
-        mimeType: mime.lookup(filePath),
-        lastModified: stats.mtime,
-        fullPath: fullPath,
-      };
-    } catch (error) {
-      console.error("Error getting file info:", error);
-      throw error;
-    }
-  }
-
-  // Upload file
+  // Method to upload a file
   async uploadFile(file, destinationPath, originalName) {
     try {
       const fullDestPath = path.join(
@@ -90,6 +308,7 @@ class FileStorageService {
         destinationPath,
         originalName
       );
+      console.log("📤 Uploading file to:", fullDestPath);
 
       if (!fullDestPath.startsWith(this.baseDir)) {
         throw new Error("Invalid destination path");
@@ -98,19 +317,136 @@ class FileStorageService {
       await fs.ensureDir(path.dirname(fullDestPath));
       await fs.move(file.path, fullDestPath);
 
+      console.log("✅ File uploaded successfully");
       return {
         name: originalName,
-        path: path.join(destinationPath, originalName),
+        path: path.join(destinationPath, originalName).replace(/\\/g, "/"),
         size: file.size,
         mimeType: mime.lookup(originalName),
       };
     } catch (error) {
-      console.error("Error uploading file:", error);
+      console.error("❌ Error uploading file:", error);
       throw error;
     }
   }
 
-  // Delete file
+  //Method to view a file:
+  async viewFile(filePath) {
+    try {
+      const fullPath = path.join(this.baseDir, filePath);
+
+      if (!fullPath.startsWith(this.baseDir)) {
+        throw new Error("Invalid path");
+      }
+
+      if (!(await fs.pathExists(fullPath))) {
+        throw new Error("File not found");
+      }
+
+      const stats = await fs.stat(fullPath);
+      const mimeType = mime.lookup(fullPath);
+
+      console.log(`👁️ Viewing file: ${filePath}, Type: ${mimeType}`);
+
+      return {
+        name: path.basename(fullPath),
+        path: filePath,
+        fullPath: fullPath,
+        size: stats.size,
+        mimeType: mimeType,
+        lastModified: stats.mtime,
+        isViewable: this.isViewableFile(mimeType),
+        viewType: this.getViewType(mimeType),
+      };
+    } catch (error) {
+      console.error("❌ Error viewing file:", error);
+      throw error;
+    }
+  }
+
+  // Check if file can be viewed in browser:
+  isViewableFile(mimeType) {
+    const viewableTypes = [
+      "application/pdf",
+      "text/plain",
+      "text/csv",
+      "text/html",
+      "text/css",
+      "text/javascript",
+      "application/json",
+      "image/jpg",
+      "image/jpeg",
+      "image/png",
+      "image/gif",
+      "image/svg+xml",
+      "image/webp",
+      "video/mp4",
+      "video/webm",
+      "audio/mp3",
+      "audio/wav",
+      "audio/ogg",
+    ];
+
+    return viewableTypes.includes(mimeType) || mimeType.startsWith("text/");
+  }
+
+  // Get view type for different file formats
+  getViewType(mimeType) {
+    if (mimeType?.startsWith("image/")) return "image";
+    if (mimeType?.startsWith("video/")) return "video";
+    if (mimeType?.startsWith("audio/")) return "audio";
+    if (mimeType === "application/pdf") return "pdf";
+    if (mimeType?.startsWith("text/") || mimeType === "application/json")
+      return "text";
+    return "download";
+  }
+
+  // Get file content for text files
+  async getFileContent(filePath, encoding = "utf8") {
+    try {
+      const fullPath = path.join(this.baseDir, filePath);
+
+      if (!fullPath.startsWith(this.baseDir)) {
+        throw new Error("Invalid path");
+      }
+
+      const mimeType = mime.lookup(filePath);
+
+      // Only read content for text files
+      if (!this.isTextFile(mimeType)) {
+        throw new Error("File is not a text file");
+      }
+
+      const content = await fs.readFile(fullPath, encoding);
+
+      return {
+        content,
+        mimeType,
+        encoding,
+      };
+    } catch (error) {
+      console.error("❌ Error reading file content:", error);
+      throw error;
+    }
+  }
+
+  // Check if file is text-based
+  isTextFile(mimeType) {
+    const textTypes = [
+      "text/plain",
+      "text/csv",
+      "text/html",
+      "text/css",
+      "text/javascript",
+      "application/json",
+      "application/xml",
+      "text/xml",
+    ];
+
+    return textTypes.includes(mimeType) || mimeType?.startsWith("text/");
+  }
+
+  // Method to delete a file:
   async deleteFile(filePath) {
     try {
       const fullPath = path.join(this.baseDir, filePath);
@@ -120,32 +456,51 @@ class FileStorageService {
       }
 
       await fs.remove(fullPath);
+      console.log("🗑️ File deleted:", filePath);
       return true;
     } catch (error) {
-      console.error("Error deleting file:", error);
+      console.error("❌ Error deleting file:", error);
       throw error;
     }
   }
 
-  // Search files
+  async createDirectory(dirPath) {
+    try {
+      const fullPath = path.join(this.baseDir, dirPath);
+
+      if (!fullPath.startsWith(this.baseDir)) {
+        throw new Error("Invalid path");
+      }
+
+      await fs.ensureDir(fullPath);
+      console.log("📁 Directory created:", dirPath);
+      return true;
+    } catch (error) {
+      console.error("❌ Error creating directory:", error);
+      throw error;
+    }
+  }
+
   async searchFiles(query) {
     try {
       const results = [];
       await this.searchInDirectory(this.baseDir, query.toLowerCase(), results);
+      console.log(`🔍 Search for "${query}" found ${results.length} results`);
       return results;
     } catch (error) {
-      console.error("Error searching files:", error);
+      console.error("❌ Error searching files:", error);
       throw error;
     }
   }
 
-  // Helper method for recursive search
   async searchInDirectory(dirPath, query, results, relativePath = "") {
     const items = await fs.readdir(dirPath, { withFileTypes: true });
 
     for (const item of items) {
       const itemPath = path.join(dirPath, item.name);
-      const itemRelativePath = path.join(relativePath, item.name);
+      const itemRelativePath = path
+        .join(relativePath, item.name)
+        .replace(/\\/g, "/");
 
       if (item.name.toLowerCase().includes(query)) {
         const stats = await fs.stat(itemPath);
@@ -168,23 +523,6 @@ class FileStorageService {
           itemRelativePath
         );
       }
-    }
-  }
-
-  // Create directory
-  async createDirectory(dirPath) {
-    try {
-      const fullPath = path.join(this.baseDir, dirPath);
-
-      if (!fullPath.startsWith(this.baseDir)) {
-        throw new Error("Invalid path");
-      }
-
-      await fs.ensureDir(fullPath);
-      return true;
-    } catch (error) {
-      console.error("Error creating directory:", error);
-      throw error;
     }
   }
 }

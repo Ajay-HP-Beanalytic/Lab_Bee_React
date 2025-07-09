@@ -296,6 +296,10 @@ projectManagementAPIs(app, io, labbeeUsers);
 const { fileStorageAPIs } = require("./fileStorageAPIs");
 fileStorageAPIs(app, io, labbeeUsers);
 
+//backend connection to access the openai APIs:
+const { openaiAPIs } = require("./OpenaiAPI");
+openaiAPIs(app, io, labbeeUsers);
+
 /// Code to get backup of only database in .sql format:
 ///Data Backup function:
 //Backend API route address to fetch the data backup:

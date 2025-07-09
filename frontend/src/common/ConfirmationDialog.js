@@ -1,28 +1,31 @@
-import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle } from '@mui/material';
-import React from 'react'
+import {
+  Button,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+} from "@mui/material";
 
 const ConfirmationDialog = ({
   open,
   onClose,
   onConfirm,
-  dialogTitle = 'Confirmation',
-  contentText = 'Are you sure?',
-  confirmButtonText = 'Confirm',
-  cancelButtonText = 'Cancel'
+  dialogTitle = "Confirmation",
+  contentText = "Are you sure?",
+  confirmButtonText = "Confirm",
+  cancelButtonText = "Cancel",
 }) => {
   return (
     <>
       <Dialog open={open} onClose={onClose}>
-        <DialogTitle>
-          {dialogTitle}
-        </DialogTitle>
+        <DialogTitle>{dialogTitle}</DialogTitle>
 
         <DialogContent>
           <DialogContentText>{contentText}</DialogContentText>
         </DialogContent>
 
         <DialogActions>
-
           <Button
             sx={{ marginBottom: "16px", marginLeft: "10px", borderRadius: 3 }}
             variant="contained"
@@ -41,13 +44,10 @@ const ConfirmationDialog = ({
           >
             {cancelButtonText}
           </Button>
-
-
         </DialogActions>
       </Dialog>
     </>
-  )
-}
-
+  );
+};
 
 export default ConfirmationDialog;

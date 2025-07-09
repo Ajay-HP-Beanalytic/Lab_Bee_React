@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { serverBaseAddress } from "./APIPage";
+import { serverBaseAddress } from "../Pages/APIPage";
 import axios from "axios";
 
 const useFileStorage = () => {
@@ -53,10 +53,11 @@ const useFileStorage = () => {
   };
 
   //Upload File:
-  const uploadFile = async (files, folder) => {
+  // const uploadFile = async (files, folder) => {
+  const uploadFile = async (file, folder = "uploads") => {
     try {
       const formData = new FormData();
-      formData.append("file", files);
+      formData.append("file", file);
       formData.append("folder", folder);
 
       const response = await axios.post(
@@ -66,8 +67,11 @@ const useFileStorage = () => {
           headers: {
             "Content-Type": "multipart/form-data",
           },
+          withCredentials: true,
         }
       );
+
+      console.log("Uploaded file-->", response.data.file);
 
       return response.data.file;
     } catch (error) {
@@ -119,7 +123,77 @@ const useFileStorage = () => {
     }
   };
 
-  return (
+  // NEW: View file - Get file information for viewing
+  const viewFile = async (filePath) => {
+    try {
+      const response = await axios.get(
+        `${serverBaseAddress}/api/files/view/${filePath}`,
+        {
+          withCredentials: true,
+        }
+      );
+
+      return response.data.file;
+    } catch (error) {
+      setError("Failed to view file");
+      console.error("Error viewing file:", error);
+      throw error;
+    }
+  };
+
+  // NEW: Get file content for text files
+  const getFileContent = async (filePath) => {
+    try {
+      const response = await axios.get(
+        `${serverBaseAddress}/api/files/content/${filePath}`,
+        {
+          withCredentials: true,
+        }
+      );
+
+      return response.data;
+    } catch (error) {
+      setError("Failed to get file content");
+      console.error("Error getting file content:", error);
+      throw error;
+    }
+  };
+
+  // NEW: Get file URL for direct viewing/serving
+  const getFileUrl = (filePath) => {
+    return `${serverBaseAddress}/api/files/serve/${filePath}`;
+  };
+
+  // NEW: Check if file can be viewed in browser
+  const isViewableFile = (file) => {
+    if (file.type === "folder") return false;
+
+    const viewableExtensions = [
+      "pdf",
+      "txt",
+      "csv",
+      "json",
+      "html",
+      "css",
+      "js",
+      "jpg",
+      "jpeg",
+      "png",
+      "gif",
+      "svg",
+      "webp",
+      "mp4",
+      "webm",
+      "mp3",
+      "wav",
+      "ogg",
+    ];
+
+    const ext = file.name.split(".").pop()?.toLowerCase();
+    return viewableExtensions.includes(ext);
+  };
+
+  return {
     files,
     loading,
     error,
@@ -128,8 +202,12 @@ const useFileStorage = () => {
     uploadFile,
     searchFiles,
     deleteFile,
-    createDirectory
-  );
+    createDirectory,
+    viewFile,
+    getFileContent,
+    getFileUrl,
+    isViewableFile,
+  };
 };
 
 export default useFileStorage;

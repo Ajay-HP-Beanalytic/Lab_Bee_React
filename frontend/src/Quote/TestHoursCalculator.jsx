@@ -16,7 +16,8 @@ import {
 } from "@mui/material";
 import { useState } from "react";
 import { toast } from "react-toastify";
-import FileBrowser from "../Pages/FileBrowser";
+import FileBrowser from "../FilesStorage/FileBrowser";
+import StorageManager from "../FilesStorage/StorageManager";
 
 const TestHoursCalculator = () => {
   const [testType, setTestType] = useState("");
@@ -662,7 +663,12 @@ const TestHoursCalculator = () => {
         </form>
       </Paper>
 
-      {/* <FileBrowser /> */}
+      <br />
+      <FileBrowser />
+
+      <br />
+
+      <StorageManager />
     </>
   );
 };
