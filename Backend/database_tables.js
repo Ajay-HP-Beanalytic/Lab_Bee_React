@@ -779,6 +779,81 @@ const createEMICalibrationsTable = () => {
   });
 };
 
+//Function to create EMI Test names table:
+function createEMITestsTable() {
+  const createEMITestsTableQuery = `
+  CREATE TABLE IF NOT EXISTS emi_test_names_table (
+      id INT NOT NULL AUTO_INCREMENT,
+      test_name VARCHAR(1000),
+      PRIMARY KEY(id)
+  )`;
+
+  db.query(createEMITestsTableQuery, function (err, result) {
+    if (err) {
+      console.log("Error occured while creating emi_test_names_table", err);
+    } else {
+      // console.log("emi_test_names_table created successfully.");
+    }
+  });
+}
+
+//Function to create emi standards table:
+function createEMITestStandardsTable() {
+  const createEMITestStandardsTableQuery = `
+  CREATE TABLE IF NOT EXISTS emi_test_standards_table (
+      id INT NOT NULL AUTO_INCREMENT,
+      standard_name VARCHAR(1000),
+      PRIMARY KEY(id)
+  )`;
+
+  db.query(createEMITestStandardsTableQuery, function (err, result) {
+    if (err) {
+      console.log("Error occured while creating emi_test_standards_table", err);
+    } else {
+      // console.log("emi_test_standards_table created successfully.");
+    }
+  });
+}
+
+//API to map the standards and test names:
+const createEMIStandardAndTestMappingTable = () => {
+  // const createEMIStandardAndTestMappingTableQuery = `
+  // CREATE TABLE IF NOT EXISTS emi_test_standard_mapping_table (
+  //   id INT NOT NULL AUTO_INCREMENT,
+  //   mapped_standard_and_testname JSON,
+  //   PRIMARY KEY(id)
+  // ) `;
+
+  const createEMIStandardAndTestMappingTableQuery = `
+    CREATE TABLE IF NOT EXISTS emi_test_standard_mapping_table (
+      id INT NOT NULL AUTO_INCREMENT,
+      standard VARCHAR(255) NOT NULL,
+      test_names JSON NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      created_by VARCHAR(100),
+      updated_by VARCHAR(100),
+      is_active BOOLEAN DEFAULT TRUE,
+      PRIMARY KEY(id),
+      UNIQUE KEY unique_standard (standard),
+      INDEX idx_standard (standard),
+      INDEX idx_created_at (created_at),
+      INDEX idx_is_active (is_active)
+    )
+  `;
+
+  db.query(createEMIStandardAndTestMappingTableQuery, function (err, result) {
+    if (err) {
+      console.log(
+        "Error occured while creating emi_test_standard_mapping_table",
+        err
+      );
+    } else {
+      // console.log("emi_test_standard_mapping_table created successfully.");
+    }
+  });
+};
+
 ////////////////////////////////////////////////////////////////////////////////////////
 // Function to create the test category table:
 function createTestCategoryTable() {
@@ -1135,6 +1210,9 @@ module.exports = {
   createEMIJobcardsTestsDetailsTable,
   createEMISLotBookingTable,
   createEMICalibrationsTable,
+  createEMITestsTable,
+  createEMITestStandardsTable,
+  createEMIStandardAndTestMappingTable,
 
   createTestCategoryTable,
   createTestNamesTable,

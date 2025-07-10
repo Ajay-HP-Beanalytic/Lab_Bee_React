@@ -18,7 +18,7 @@ class FileStorageService {
   async initializeStorage() {
     try {
       await this.ensureDirectoriesExist();
-      await this.createDefaultStructure();
+      // await this.createDefaultStructure();  // To  create default sub folders:
       console.log("✅ File storage system initialized successfully!");
     } catch (error) {
       console.error("❌ Failed to initialize file storage:", error);
@@ -43,37 +43,33 @@ class FileStorageService {
     // Define all subdirectories to create
     const directories = [
       {
-        name: "Quotation-files",
+        name: "Quotation",
         description: "Store quotation documents and related files",
       },
       {
-        name: "TS1-standards",
-        description: "TS1 testing standards and procedures",
+        name: "TS1",
+        description: "TS1 testing related files and documents",
       },
       {
-        name: "TS2-standards",
-        description: "TS2 testing standards and procedures",
+        name: "TS2",
+        description: "TS2 testing related files and documents",
       },
-      {
-        name: "uploads",
-        description: "General file uploads from users",
-      },
-      {
-        name: "temp",
-        description: "Temporary files (auto-cleanup)",
-      },
-      {
-        name: "archived",
-        description: "Archived files and documents",
-      },
+      // {
+      //   name: "uploads",
+      //   description: "General file uploads from users",
+      // },
+      // {
+      //   name: "temp",
+      //   description: "Temporary files (auto-cleanup)",
+      // },
+      // {
+      //   name: "archived",
+      //   description: "Archived files and documents",
+      // },
     ];
 
     // Create each directory
     for (const dir of directories) {
-      // const dirPath = path.join(this.baseDir, dir);
-      // await fs.ensureDir(dirPath);
-      // console.log(`✓ Directory ensured: ${dirPath}`);
-
       try {
         const dirPath = path.join(this.baseDir, dir.name);
         if (!fs.existsSync(dirPath)) {
@@ -91,15 +87,15 @@ class FileStorageService {
   async createDefaultStructure() {
     try {
       const directoryInfo = {
-        "Quotation-files": {
+        Quotation: {
           subdirs: ["drafts", "approved", "archived"],
         },
 
-        "TS1-standards": {
+        TS1: {
           subdirs: ["procedures", "templates", "compliance"],
         },
 
-        "TS2-standards": {
+        TS2: {
           subdirs: ["procedures", "templates", "compliance"],
         },
 
@@ -185,15 +181,11 @@ class FileStorageService {
       // Create a README for the new directory
       if (description) {
         const readmePath = path.join(fullPath, "README.md");
-        const readmeContent = `# ${path.basename(dirPath)} Directory
-
-${description}
-
-Created: ${new Date().toISOString()}
-`;
+        const readmeContent = `# ${path.basename(
+          dirPath
+        )} Directory ${description} Created: ${new Date().toISOString()}`;
         await fs.writeFile(readmePath, readmeContent);
       }
-
       console.log(`📁 Created custom directory: ${dirPath}`);
       return true;
     } catch (error) {

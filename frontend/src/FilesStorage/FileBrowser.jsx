@@ -20,6 +20,7 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  InputAdornment,
 } from "@mui/material";
 import {
   InsertDriveFile,
@@ -32,6 +33,7 @@ import {
   Add,
   Refresh,
   CreateNewFolder,
+  Clear,
 } from "@mui/icons-material";
 import useFileStorage from "./useFileStorage";
 import FileViewer from "./FileViewer";
@@ -99,6 +101,12 @@ const FileBrowser = () => {
       setIsSearching(true);
       searchFiles(searchQuery);
     }
+  };
+
+  const handleClearSearch = () => {
+    setSearchQuery("");
+    setIsSearching(false);
+    listFiles(currentPath);
   };
 
   const handleDownload = async (file) => {
@@ -262,6 +270,15 @@ const FileBrowser = () => {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyPress={(e) => e.key === "Enter" && handleSearch()}
                 size="small"
+                InputProps={{
+                  endAdornment: searchQuery && (
+                    <InputAdornment position="end">
+                      <IconButton onClick={handleClearSearch}>
+                        <Clear />
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
               />
               <Button
                 sx={{
@@ -284,31 +301,40 @@ const FileBrowser = () => {
 
             {/* Breadcrumbs */}
             {!isSearching && (
-              <Breadcrumbs sx={{ mb: 2 }}>
+              <Breadcrumbs sx={{ mb: 1 }}>
                 <Link
                   component="button"
                   variant="body2"
-                  onClick={() => handleBreadcrumbClick(-1)}
+                  onClick={() => {
+                    setCurrentPath("");
+                    setPathHistory([]);
+                  }}
                   underline="hover"
                 >
                   Home
                 </Link>
-                {pathHistory.map((path, index) => (
-                  <Link
-                    key={index}
-                    component="button"
-                    variant="body2"
-                    onClick={() => handleBreadcrumbClick(index)}
-                    underline="hover"
-                  >
-                    {path.split("/").pop()}
-                  </Link>
-                ))}
-                {currentPath && (
-                  <Typography color="text.primary">
-                    {currentPath.split("/").pop()}
-                  </Typography>
-                )}
+                {currentPath
+                  .split("/")
+                  .filter(Boolean)
+                  .map((segment, idx, arr) => {
+                    const path = arr.slice(0, idx + 1).join("/");
+                    const isLast = idx === arr.length - 1;
+                    return isLast ? (
+                      <Typography color="text.primary" key={path}>
+                        {segment}
+                      </Typography>
+                    ) : (
+                      <Link
+                        key={path}
+                        component="button"
+                        variant="body2"
+                        onClick={() => setCurrentPath(path)}
+                        underline="hover"
+                      >
+                        {segment}
+                      </Link>
+                    );
+                  })}
               </Breadcrumbs>
             )}
 
@@ -415,7 +441,12 @@ const FileBrowser = () => {
           open={newFolderDialogOpen}
           onClose={() => setNewFolderDialogOpen(false)}
         >
-          <DialogTitle>Create New Folder</DialogTitle>
+          <DialogTitle>
+            {" "}
+            {currentPath
+              ? `Create New Folder at ${currentPath}`
+              : "Create New Folder"}
+          </DialogTitle>
           <DialogContent>
             <TextField
               autoFocus

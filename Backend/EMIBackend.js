@@ -1066,44 +1066,6 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
   });
 
   //API to get emi_calibrations_table data:
-  // app.get("/api/getAllEMIEquipmentsData", (req, res) => {
-  //   const { month, dateFrom, dateTo, limit = 1000 } = req.query;
-
-  //   let sqlQuery = "SELECT * FROM emi_calibrations_table WHERE 1=1";
-
-  //   const queryParams = [];
-
-  //   if (dateFrom && dateTo) {
-  //     queryParams.push(dateFrom, dateTo);
-  //     sqlQuery += " AND calibration_date >= ? AND calibration_date <= ?";
-  //   } else {
-  //     if (month) {
-  //       queryParams.push(month);
-  //       sqlQuery += " AND MONTH(calibration_date) = ?";
-  //     }
-  //   }
-
-  //   //ADD Order By:
-  //   sqlQuery += " ORDER BY calibration_date DESC, id DESC";
-
-  //   //Add Limit:
-  //   if (limit) {
-  //     queryParams.push(parseInt(limit));
-  //     sqlQuery += " LIMIT ?";
-  //   }
-
-  //   db.query(sqlQuery, queryParams, (error, result) => {
-  //     if (error) {
-  //       console.error("Error while fetching EMI Calibration data:", error);
-  //       return res
-  //         .status(500)
-  //         .json({ error: "Failed to fetch EMI calibration data" });
-  //     } else {
-  //       console.log("EMI Equipments Data:", result);
-  //       res.status(200).json(result);
-  //     }
-  //   });
-  // });
 
   // Updated API with auto-calculated calibration status
   app.get("/api/getAllEMIEquipmentsData", (req, res) => {
@@ -1392,6 +1354,139 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
       res.status(500).json({ error: "Internal server error" });
     }
   });
+
+  // ///////////////////////////////////////////////////////////////////////////
+  // //API to add new EMI Test name:
+  // app.post("/api/addNewEMITestName", (req, res) => {
+  //   const { testName } = req.body;
+
+  //   const sqlInsertTestName =
+  //     "INSERT INTO emi_test_names_table (test_name) VALUES (?)";
+
+  //   db.query(sqlInsertTestName, [testName], (error, result) => {
+  //     if (error) {
+  //       console.log(error);
+  //       return res.status(500).json({ message: "Internal server error" });
+  //     } else {
+  //       res.status(200).json({ message: "Test name added successfully" });
+  //     }
+  //   });
+  // });
+
+  // //API to update the EMI Test name:
+  // app.post("/api/updateEMITestName/:id", (req, res) => {
+  //   const { id } = req.params;
+  //   const { testName } = req.body;
+
+  //   const sqlUpdateTestName =
+  //     "UPDATE emi_test_names_table SET test_name = ? WHERE id = ?";
+
+  //   db.query(sqlUpdateTestName, [testName, id], (error, result) => {
+  //     if (error) {
+  //       console.log(error);
+  //       return res.status(500).json({ message: "Internal server error" });
+  //     } else {
+  //       res.status(200).json({ message: "Test name updated successfully" });
+  //     }
+  //   });
+  // });
+
+  // //API to delete the EMI Test name:
+  // app.delete("/api/deleteEMITestName/:id", (req, res) => {
+  //   const { id } = req.params;
+
+  //   const sqlDeleteTestName = "DELETE FROM emi_test_names_table WHERE id = ?";
+
+  //   db.query(sqlDeleteTestName, [id], (error, result) => {
+  //     if (error) {
+  //       console.log(error);
+  //       return res.status(500).json({ message: "Internal server error" });
+  //     } else {
+  //       res.status(200).json({ message: "Test name deleted successfully" });
+  //     }
+  //   });
+  // });
+
+  // //API to fetch all the emi test names:
+  // app.get("/api/getAllEMITestNames", (req, res) => {
+  //   const sqlGetAllTestNames = "SELECT id, test_name FROM emi_test_names_table";
+
+  //   db.query(sqlGetAllTestNames, (error, result) => {
+  //     if (error) {
+  //       return res
+  //         .status(500)
+  //         .json({ error: "An error occurred while fetching data" });
+  //     }
+  //     res.send(result);
+  //   });
+  // });
+
+  // //API to add a new EMI Standard:
+  // app.post("/api/addNewEMIStandard", (req, res) => {
+  //   const { standard } = req.body;
+
+  //   const sqlInsertStandard =
+  //     "INSERT INTO emi_test_standards_table (standard_name) VALUES (?)";
+
+  //   db.query(sqlInsertStandard, [standard], (error, result) => {
+  //     if (error) {
+  //       console.log(error);
+  //       return res.status(500).json({ message: "Internal server error" });
+  //     } else {
+  //       res.status(200).json({ message: "Standard added successfully" });
+  //     }
+  //   });
+  // });
+
+  // //API to update the EMI Standard:
+  // app.post("/api/updateEMIStandard/:id", (req, res) => {
+  //   const { id } = req.params;
+  //   const { standard } = req.body;
+
+  //   const sqlUpdateStandard =
+  //     "UPDATE emi_test_standards_table SET standard_name = ? WHERE id = ?";
+
+  //   db.query(sqlUpdateStandard, [standard, id], (error, result) => {
+  //     if (error) {
+  //       console.log(error);
+  //       return res.status(500).json({ message: "Internal server error" });
+  //     } else {
+  //       res.status(200).json({ message: "Standard updated successfully" });
+  //     }
+  //   });
+  // });
+
+  // //API to delete the EMI Standard:
+  // app.delete("/api/deleteEMIStandard/:id", (req, res) => {
+  //   const { id } = req.params;
+
+  //   const sqlDeleteStandard =
+  //     "DELETE FROM emi_test_standards_table WHERE id = ?";
+
+  //   db.query(sqlDeleteStandard, [id], (error, result) => {
+  //     if (error) {
+  //       console.log(error);
+  //       return res.status(500).json({ message: "Internal server error" });
+  //     } else {
+  //       res.status(200).json({ message: "Standard deleted successfully" });
+  //     }
+  //   });
+  // });
+
+  // //API to fetch all the emi standards:
+  // app.get("/api/getAllEMIStandards", (req, res) => {
+  //   const sqlGetAllStandards =
+  //     "SELECT id, standard_name FROM emi_test_standards_table";
+
+  //   db.query(sqlGetAllStandards, (error, result) => {
+  //     if (error) {
+  //       return res
+  //         .status(500)
+  //         .json({ error: "An error occurred while fetching data" });
+  //     }
+  //     res.send(result);
+  //   });
+  // });
 }
 
 module.exports = { emiJobcardsAPIs };

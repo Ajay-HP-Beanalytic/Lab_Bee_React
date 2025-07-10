@@ -156,6 +156,9 @@ const {
   createEMIJobcardsTestsDetailsTable,
   createEMISLotBookingTable,
   createEMICalibrationsTable,
+  createEMITestsTable,
+  createEMITestStandardsTable,
+  createEMIStandardAndTestMappingTable,
 
   createTestCategoryTable,
   createTestNamesTable,
@@ -215,6 +218,9 @@ db.getConnection(function (err, connection) {
   createEMIJobcardsTestsDetailsTable();
   createEMISLotBookingTable();
   createEMICalibrationsTable();
+  createEMITestsTable();
+  createEMITestStandardsTable();
+  createEMIStandardAndTestMappingTable();
 
   createTestCategoryTable();
   createTestNamesTable();
@@ -279,6 +285,9 @@ poInvoiceBackendAPIs(app);
 //Backend connection of EMI/EMC jobcards API's from 'EMIBackend' page
 const { emiJobcardsAPIs } = require("./EMIBackend");
 emiJobcardsAPIs(app, io, labbeeUsers);
+
+const { emiTestNamesAndStandardsAPIs } = require("./EMITestAndStandardsAPI");
+emiTestNamesAndStandardsAPIs(app, io, labbeeUsers);
 
 // backend connection to acess the notifications:
 const { notificationsAPIs } = require("./notifications");

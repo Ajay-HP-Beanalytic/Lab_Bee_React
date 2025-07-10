@@ -1,6 +1,4 @@
 import { useState, useEffect } from "react";
-import useFileStorage from "./useFileStorage";
-import axios from "axios";
 
 const FileViewer = ({ filePath, onClose, serverBaseAddress }) => {
   const [fileInfo, setFileInfo] = useState(null);

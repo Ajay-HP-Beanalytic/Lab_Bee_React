@@ -35,12 +35,15 @@ import axios from "axios";
 import { serverBaseAddress } from "../Pages/APIPage";
 import ConfirmationDialog from "../common/ConfirmationDialog";
 import CustomModal from "../common/CustomModalWithTable";
-import { is } from "date-fns/locale";
+import useEMIStore from "./EMIStore";
 
 const localizer = momentLocalizer(moment);
 
 const EMISlotBooking = () => {
   const { loggedInUser } = useContext(UserContext);
+
+  const { getStandardsAsOptions, getTestNamesAsOptions, loadAllEMIData } =
+    useEMIStore();
 
   // Resources for calendar
   const [emiResourcesList, setEmiResourceList] = useState([
@@ -119,21 +122,12 @@ const EMISlotBooking = () => {
 
   // Fixed standard options
   const emiStandardOptions = [
-    { id: "MIL STD 461 E/F/G", label: "MIL STD 461 E/F/G" },
-    { id: "CISPR 25 / AIS-004", label: "CISPR 25 / AIS-004" },
-    { id: "ISO 11452-2", label: "ISO 11452-2" },
-    { id: "ISO 11452-4", label: "ISO 11452-4" },
-    { id: "ISO 10605", label: "ISO 10605" },
-    { id: "IEC 61000-4-2", label: "IEC 61000-4-2" },
+    ...getStandardsAsOptions(),
     { id: "custom_standard", label: "Custom Standard" },
   ];
 
   const emiTestOptions = [
-    { id: "CE101", label: "CE101" },
-    { id: "CE102", label: "CE102" },
-    { id: "CE114", label: "CE114" },
-    { id: "RE102", label: "RE102" },
-    { id: "RE103", label: "RE103" },
+    ...getTestNamesAsOptions(),
     { id: "custom_test_name", label: "Custom Test Name" },
   ];
 

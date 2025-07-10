@@ -313,6 +313,7 @@ function fileStorageAPIs(app, io, labbeeUsers) {
       console.log("👁️ GET /api/files/view:", filePath);
 
       const fileInfo = await fileStorageService.viewFile(filePath);
+      console.log("✅ File info:", fileInfo);
       res.json({ file: fileInfo });
     } catch (error) {
       console.error("❌ Error in view endpoint:", error);
