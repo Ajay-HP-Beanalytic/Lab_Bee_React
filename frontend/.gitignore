@@ -6,6 +6,9 @@
 .pnp.js
 node_modules/
 
+# Exclude shared files
+.shared-files
+
 # testing
 /coverage
 

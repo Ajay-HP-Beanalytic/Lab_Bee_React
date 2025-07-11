@@ -1,4 +1,9 @@
+# Ignore depend
 node_modules/
 
+# Backend/.gitignore
 .env
 Backend/.env
+
+# Exclude shared files
+.shared-files
