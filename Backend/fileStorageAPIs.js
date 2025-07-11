@@ -38,35 +38,126 @@ const upload = multer({
 });
 
 function fileStorageAPIs(app, io, labbeeUsers) {
-  // Simplified auth for testing - REPLACE WITH YOUR ACTUAL AUTH
+  // Middleware to authenticate user via sessions to authenticate files
   const authenticateUser = (req, res, next) => {
-    console.log(
-      "🔐 Auth check - Session:",
-      req.session?.userId,
-      "User:",
-      req.user?.id
-    );
+    // console.log("🔐 File Storage Auth Check:");
+    // console.log("  Session ID:", req.sessionID);
+    // console.log("  Session:", req.session);
+    // console.log("  Session user_id:", req.session?.user_id);
 
-    // For testing only - remove in production
-    req.userId = req.user?.id || req.session?.userId || 1;
+    //check if the user is logged in via session:
+    const userId = req.session?.user_id;
 
-    if (!req.userId) {
-      console.log("❌ Authentication failed");
-      return res.status(401).json({ error: "User not authenticated" });
+    if (!userId) {
+      return res.status(401).json({
+        error: "User not authenticated",
+        details: "Please log in to access files",
+      });
     }
 
-    console.log("✅ User authenticated:", req.userId);
-    next();
+    // Verify user exists in database:
+    verifyUserInDatabase(userId)
+      .then((userExists) => {
+        if (!userExists) {
+          return res.status(401).json({
+            error: "Invalid user session",
+            details: "Please log in to access files",
+          });
+        }
+
+        // Set userId for use in file operations
+        req.userId = userId;
+
+        next();
+      })
+      .catch((error) => {
+        console.error("❌ Database error during authentication:", error);
+        return res.status(500).json({
+          error: "Authentication error",
+          details: "Database verification failed",
+        });
+      });
+  };
+
+  // Helper function to verify user exists in database
+  const verifyUserInDatabase = async (userId) => {
+    return new Promise((resolve, reject) => {
+      const query =
+        "SELECT id, name, department, user_status FROM labbee_users WHERE id = ?";
+
+      db.query(query, [userId], (error, results) => {
+        if (error) {
+          console.error("Database error:", error);
+          reject(error);
+          return;
+        }
+
+        if (results.length === 0) {
+          resolve(false);
+          return;
+        }
+
+        const user = results[0];
+
+        //check if user status is enabled or not:
+        if (user.user_status !== "Enable") {
+          console.log("User account disabled:", userId, "Status:", user.status);
+          resolve(false);
+          return;
+        }
+
+        //If user is enabled, return true
+        resolve(true);
+      });
+    });
+  };
+
+  // Enhanced logging function with user details:
+  const logFileAccess = (userId, filePath, action) => {
+    return new Promise((resolve, reject) => {
+      // Get user details for better logging
+      const query = "SELECT name, department FROM labbee_users WHERE id = ?";
+
+      db.query(query, [userId], (userError, userResults) => {
+        if (userError) {
+          console.error("Database error:", userError);
+          reject(userError);
+          return;
+        }
+
+        const userName = userResults[0]?.name || "Unknown User";
+        const userDepartment =
+          userResults[0]?.department || "Unknown Department";
+
+        // Log the file access
+        const logQuery = `
+        INSERT INTO file_access_log (user_id, file_path, action, accessed_at, user_name, user_department)
+        VALUES (?, ?, ?, NOW(), ?, ?)
+      `;
+
+        db.query(
+          logQuery,
+          [userId, filePath, action, userName, userDepartment],
+          (error, results) => {
+            if (error) {
+              console.error("Error logging file access:", error);
+              reject(error);
+            } else {
+              // If the log was successful, resolve the promise
+              resolve(results);
+            }
+          }
+        );
+      });
+    });
   };
 
   // List files endpoint
   app.get("/api/files", authenticateUser, async (req, res) => {
     try {
-      console.log("📋 GET /api/files - folder:", req.query.folder);
       const { folder = "" } = req.query;
       const files = await fileStorageService.listFiles(folder);
 
-      console.log("✅ Sending files response:", files.length, "items");
       res.json({ files });
     } catch (error) {
       console.error("❌ Error in /api/files:", error);
@@ -83,18 +174,20 @@ function fileStorageAPIs(app, io, labbeeUsers) {
     upload.single("file"),
     async (req, res) => {
       try {
-        console.log("📤 POST /api/files/upload");
-
         if (!req.file) {
           return res.status(400).json({ error: "No file uploaded" });
         }
 
         const { folder = "uploads" } = req.body;
+
         const uploadedFile = await fileStorageService.uploadFile(
           req.file,
           folder,
           req.file.originalname
         );
+
+        // Log upload
+        await logFileAccess(req.userId, uploadedFile.path, "upload");
 
         res.json({
           message: "File uploaded successfully",
@@ -115,9 +208,13 @@ function fileStorageAPIs(app, io, labbeeUsers) {
     authenticateUser,
     async (req, res) => {
       try {
-        console.log("📥 GET /api/files/download:", req.params.path);
         const filePath = req.params.path;
-        const fileInfo = await fileStorageService.getFileInfo(filePath);
+
+        const fileInfo = await fileStorageService.downloadFile(filePath);
+
+        // Log download
+        await logFileAccess(req.userId, filePath, "download");
+
         res.download(fileInfo.fullPath, fileInfo.name);
       } catch (error) {
         console.error("❌ Error in download:", error);
@@ -129,7 +226,6 @@ function fileStorageAPIs(app, io, labbeeUsers) {
   // Search endpoint
   app.get("/api/files/search", authenticateUser, async (req, res) => {
     try {
-      console.log("🔍 GET /api/files/search:", req.query.q);
       const { q } = req.query;
 
       if (!q) {
@@ -137,6 +233,9 @@ function fileStorageAPIs(app, io, labbeeUsers) {
       }
 
       const files = await fileStorageService.searchFiles(q);
+      // Log search
+      await logFileAccess(req.userId, `search:${q}`, "search");
+
       res.json({ files, query: q });
     } catch (error) {
       console.error("❌ Error in search:", error);
@@ -147,9 +246,13 @@ function fileStorageAPIs(app, io, labbeeUsers) {
   // Delete endpoint
   app.delete("/api/files/:path(*)", authenticateUser, async (req, res) => {
     try {
-      console.log("🗑️ DELETE /api/files:", req.params.path);
       const filePath = req.params.path;
+
       await fileStorageService.deleteFile(filePath);
+
+      // Log deletion
+      await logFileAccess(req.userId, filePath, "delete");
+
       res.json({ message: "File deleted successfully" });
     } catch (error) {
       console.error("❌ Error in delete:", error);
@@ -160,7 +263,6 @@ function fileStorageAPIs(app, io, labbeeUsers) {
   // Create directory endpoint
   app.post("/api/files/mkdir", authenticateUser, async (req, res) => {
     try {
-      console.log("📁 POST /api/files/mkdir:", req.body.path);
       const { path: dirPath } = req.body;
 
       if (!dirPath) {
@@ -168,6 +270,10 @@ function fileStorageAPIs(app, io, labbeeUsers) {
       }
 
       await fileStorageService.createDirectory(dirPath);
+
+      // Log directory creation
+      await logFileAccess(req.userId, dirPath, "mkdir");
+
       res.json({ message: "Directory created successfully" });
     } catch (error) {
       console.error("❌ Error in mkdir:", error);
@@ -175,13 +281,13 @@ function fileStorageAPIs(app, io, labbeeUsers) {
     }
   });
 
-  console.log("🚀 File storage APIs registered successfully");
-
   // Get storage system information
   app.get("/api/files/storage-info", authenticateUser, async (req, res) => {
     try {
-      console.log("📊 GET /api/files/storage-info");
       const storageInfo = await fileStorageService.getStorageInfo();
+      // Log storage info
+      await logFileAccess(req.userId, "storage-info", "info");
+
       res.json(storageInfo);
     } catch (error) {
       console.error("❌ Error getting storage info:", error);
@@ -193,8 +299,11 @@ function fileStorageAPIs(app, io, labbeeUsers) {
   // Verify directory structure
   app.get("/api/files/verify-structure", authenticateUser, async (req, res) => {
     try {
-      console.log("🔍 GET /api/files/verify-structure");
       const verification = await fileStorageService.verifyDirectoryStructure();
+
+      // Log structure verification
+      await logFileAccess(req.userId, "verify-structure", "verify");
+
       res.json(verification);
     } catch (error) {
       console.error("❌ Error verifying structure:", error);
@@ -208,12 +317,15 @@ function fileStorageAPIs(app, io, labbeeUsers) {
     authenticateUser,
     async (req, res) => {
       try {
-        console.log("🔧 POST /api/files/recreate-structure");
         await fileStorageService.ensureDirectoriesExist();
         await fileStorageService.createDefaultStructure();
 
         const verification =
           await fileStorageService.verifyDirectoryStructure();
+
+        // Log structure recreation
+        await logFileAccess(req.userId, "recreate-structure", "recreate");
+
         res.json({
           message: "Directory structure recreated successfully",
           verification,
@@ -230,8 +342,10 @@ function fileStorageAPIs(app, io, labbeeUsers) {
   // Clean up temporary files
   app.post("/api/files/cleanup-temp", authenticateUser, async (req, res) => {
     try {
-      console.log("🧹 POST /api/files/cleanup-temp");
       const cleanedCount = await fileStorageService.cleanupTempFiles();
+
+      await logFileAccess(req.userId, "temp-cleanup", "cleanup");
+
       res.json({
         message: `Cleaned up ${cleanedCount} temporary files`,
         cleanedCount,
@@ -248,12 +362,13 @@ function fileStorageAPIs(app, io, labbeeUsers) {
     authenticateUser,
     async (req, res) => {
       try {
-        console.log("📁 POST /api/files/create-directory");
         const { path: dirPath, description } = req.body;
 
         if (!dirPath) {
           return res.status(400).json({ error: "Directory path required" });
         }
+
+        await logFileAccess(req.userId, dirPath, "create-directory");
 
         await fileStorageService.createCustomDirectory(dirPath, description);
         res.json({
@@ -271,9 +386,10 @@ function fileStorageAPIs(app, io, labbeeUsers) {
   app.get("/api/files/stats/:path(*)?", authenticateUser, async (req, res) => {
     try {
       const folderPath = req.params.path || "";
-      console.log(`📈 GET /api/files/stats/${folderPath}`);
 
       const fullPath = path.join(fileStorageService.baseDir, folderPath);
+
+      await logFileAccess(req.userId, fullPath, "stats");
 
       if (!fullPath.startsWith(fileStorageService.baseDir)) {
         return res.status(400).json({ error: "Invalid path" });
@@ -310,10 +426,11 @@ function fileStorageAPIs(app, io, labbeeUsers) {
   app.get("/api/files/view/:path(*)", authenticateUser, async (req, res) => {
     try {
       const filePath = req.params.path;
-      console.log("👁️ GET /api/files/view:", filePath);
 
       const fileInfo = await fileStorageService.viewFile(filePath);
-      console.log("✅ File info:", fileInfo);
+
+      // await logFileAccess(req.userId, filePath, "View");
+
       res.json({ file: fileInfo });
     } catch (error) {
       console.error("❌ Error in view endpoint:", error);
@@ -325,9 +442,11 @@ function fileStorageAPIs(app, io, labbeeUsers) {
   app.get("/api/files/content/:path(*)", authenticateUser, async (req, res) => {
     try {
       const filePath = req.params.path;
-      console.log("📄 GET /api/files/content:", filePath);
 
       const fileContent = await fileStorageService.getFileContent(filePath);
+
+      await logFileAccess(req.userId, filePath, "Text Content ");
+
       res.json(fileContent);
     } catch (error) {
       console.error("❌ Error getting file content:", error);
@@ -339,7 +458,6 @@ function fileStorageAPIs(app, io, labbeeUsers) {
   app.get("/api/files/serve/:path(*)", authenticateUser, async (req, res) => {
     try {
       const filePath = req.params.path;
-      console.log("🔗 GET /api/files/serve:", filePath);
 
       const fileInfo = await fileStorageService.viewFile(filePath);
 
@@ -353,8 +471,11 @@ function fileStorageAPIs(app, io, labbeeUsers) {
         `inline; filename="${fileInfo.name}"`
       );
 
+      await logFileAccess(req.userId, filePath, "View");
+
       // Stream the file
       const fileStream = fs.createReadStream(fileInfo.fullPath);
+
       fileStream.pipe(res);
     } catch (error) {
       console.error("❌ Error serving file:", error);

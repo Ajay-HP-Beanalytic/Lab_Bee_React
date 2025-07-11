@@ -174,7 +174,6 @@ const {
   createInvoiceDataTable,
 
   createFileAccessLogTable,
-  createFileMetaDataTable,
 } = require("./database_tables");
 
 //Get db connection from the db.js file
@@ -237,7 +236,6 @@ db.getConnection(function (err, connection) {
   createInvoiceDataTable();
 
   createFileAccessLogTable();
-  createFileMetaDataTable();
 
   connection.release(); // Release the connection back to the pool when done
 });

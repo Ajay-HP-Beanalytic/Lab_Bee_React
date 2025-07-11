@@ -5,6 +5,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import axios from "axios";
 import { serverBaseAddress } from "../Pages/APIPage";
 import useEMIStore from "./EMIStore";
+import { toast } from "react-toastify";
 
 const EMIStandardsManager = () => {
   // State for component data
@@ -91,6 +92,20 @@ const EMIStandardsManager = () => {
 
   // Add a new standard to the database
   const addEMIStandard = async (standardName) => {
+    if (standardName.trim() === "") {
+      toast.error("Standard name cannot be empty");
+      return;
+    }
+
+    const existingStandard = standards.find(
+      (standard) => standard.standardName === standardName
+    );
+    if (existingStandard) {
+      toast.error("Standard name already exists");
+      await getAllEMIStandards();
+      return;
+    }
+
     try {
       const response = await axios.post(
         `${serverBaseAddress}/api/addNewEMIStandard`,
@@ -102,11 +117,13 @@ const EMIStandardsManager = () => {
           id: response.data.id,
           standardName,
         };
-        setStandards([...standards, newStandard]);
-        setStoreStandards([...standards, newStandard]); // Update store
-        console.log("Standard added successfully");
+        // setStandards([...standards, newStandard]);
+        await getAllEMIStandards();
+        toast.success("Standard added successfully");
+        // setStoreStandards([...standards, newStandard]); // Update store
       } else {
         console.error("Error adding standard:", response.status);
+        toast.error(`Error adding standard: ${response.status}`);
       }
     } catch (error) {
       console.error("Error adding standard:", error);
@@ -123,9 +140,10 @@ const EMIStandardsManager = () => {
 
       if (response.status === 200) {
         await getAllEMIStandards();
-        console.log("Standard updated successfully");
+        toast.success("Standard updated successfully");
       } else {
         console.error("Error updating standard:", response.status);
+        toast.error(`Error updating standard: ${response.status}`);
       }
     } catch (error) {
       console.error("Error updating standard:", error);
@@ -180,8 +198,9 @@ const EMIStandardsManager = () => {
         const updatedStandards = standards.filter((row) => row.id !== id);
         setStandards(updatedStandards);
         setStoreStandards(updatedStandards); // Update store
-        console.log("Standard deleted successfully");
+        toast.success("Standard deleted successfully");
       } else {
+        toast.error("Error deleting standard");
         console.error("Error deleting standard:", response.status);
       }
     } catch (error) {

@@ -27,6 +27,8 @@ import { serverBaseAddress } from "../Pages/APIPage";
 import useEMIStore from "./EMIStore";
 import useFileStorage from "../FilesStorage/useFileStorage";
 import FileViewer from "../FilesStorage/FileViewer";
+import { toast } from "react-toastify";
+import FileSelectionModal from "../common/FileSelectionModal";
 
 const EMITestNamesAndStandards = () => {
   const { files, searchFiles } = useFileStorage();
@@ -41,6 +43,11 @@ const EMITestNamesAndStandards = () => {
   const [isAddingMapping, setIsAddingMapping] = useState(false);
   const [editingMappingId, setEditingMappingId] = useState(null);
   const [loading, setLoading] = useState(false);
+
+  const [isMultipleFilesFound, setIsMultipleFilesFound] = useState(false);
+  const [foundMultipleFiles, setFoundMultipleFiles] = useState([]);
+  const [filesForModal, setFilesForModal] = useState([]);
+  const [modalMessage, setModalMessage] = useState("");
 
   // Get data from Zustand store
   const { testNames, standards, setTestNames, setStandards } = useEMIStore();
@@ -199,7 +206,7 @@ const EMITestNamesAndStandards = () => {
   // Save mapping (add or update)
   const saveMapping = async () => {
     if (!selectedStandard || selectedTestNames.length === 0) {
-      alert("Please select a standard and at least one test name");
+      toast.warning("Please select a standard and at least one test name");
       return;
     }
 
@@ -217,13 +224,12 @@ const EMITestNamesAndStandards = () => {
       );
 
       if (response.status === 200) {
-        console.log("Mapping saved successfully");
         resetForm();
         loadAllMappings(); // Refresh the list
       }
     } catch (error) {
       console.error("Error saving mapping:", error);
-      alert("Error saving mapping. Please try again.");
+      toast.error("Error saving mapping. Please try again.");
     }
   };
 
@@ -241,7 +247,6 @@ const EMITestNamesAndStandards = () => {
       );
 
       if (response.status === 200) {
-        console.log("Mapping deleted successfully");
         loadAllMappings(); // Refresh the list
       }
     } catch (error) {
@@ -290,8 +295,6 @@ const EMITestNamesAndStandards = () => {
   //Preview the standard
   const handlePreviewStandard = async (mapping) => {
     try {
-      console.log("🔍 Searching for standard:", mapping.standard);
-
       // Method 1: Direct search API call
       const searchResponse = await axios.get(
         `${serverBaseAddress}/api/files/search`,
@@ -313,7 +316,7 @@ const EMITestNamesAndStandards = () => {
 
         if (files.length === 1) {
           // Only one file found, open it directly
-          console.log("✅ Found single file:", files[0]);
+          // console.log("✅ Found single file:", files[0]);
           setViewingFilePath(files[0].path);
           setViewerOpen(true);
           return;
@@ -323,26 +326,42 @@ const EMITestNamesAndStandards = () => {
             .map((file, index) => `${index + 1}. ${file.name} (${file.path})`)
             .join("\n");
 
-          const choice = prompt(
-            `Found ${files.length} files for "${mapping.standard}":\n\n${fileList}\n\nEnter the number of the file you want to view:`
-          );
+          const modalMessage = `Found ${files.length} files for "${mapping.standard}":\n\n${fileList}\n\n Select the file you want to view:`;
+          setModalMessage(modalMessage);
+          setFilesForModal(files); // Pass actual file objects
+          setIsMultipleFilesFound(true);
 
-          if (choice && !isNaN(choice)) {
-            const selectedIndex = parseInt(choice) - 1;
-            if (selectedIndex >= 0 && selectedIndex < files.length) {
-              const selectedFile = files[selectedIndex];
-              console.log("✅ User selected file:", selectedFile);
-              setViewingFilePath(selectedFile.path);
-              setViewerOpen(true);
-              return;
-            }
-          }
+          // const choice = prompt(modalMessage);
+
+          // const choice = prompt(
+          //   `Found ${files.length} files for "${mapping.standard}":\n\n${fileList}\n\nEnter the number of the file you want to view:`
+          // );
+
+          // if (choice && !isNaN(choice)) {
+          //   const selectedIndex = parseInt(choice) - 1;
+          //   if (selectedIndex >= 0 && selectedIndex < files.length) {
+          //     const selectedFile = files[selectedIndex];
+          //     console.log("✅ User selected file:", selectedFile);
+          //     setViewingFilePath(selectedFile.path);
+          //     setViewerOpen(true);
+          //     return;
+          //   }
+          // }
         }
+      } else {
+        // console.log("❌ No files found for standard:", mapping.standard);
+        toast.warning(`No files found for standard "${mapping.standard}".`);
       }
     } catch (error) {
       console.error("Error searching for standard:", error);
       alert("Error searching for standard. Please try again.");
     }
+  };
+
+  const handleFileSelect = (file, idx) => {
+    setViewingFilePath(file.path);
+    setViewerOpen(true);
+    setIsMultipleFilesFound(false);
   };
 
   // Refresh all data
@@ -358,39 +377,40 @@ const EMITestNamesAndStandards = () => {
   }, []);
 
   return (
-    <Box sx={{ width: "100%", p: 2 }}>
-      {/* Header */}
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          mb: 3,
-        }}
-      >
-        <Typography variant="h5">EMI Standard-Test Name Mappings</Typography>
-        <Box>
-          <Button
-            variant="outlined"
-            startIcon={<RefreshIcon />}
-            onClick={handleRefreshData}
-            sx={{ mr: 2 }}
-          >
-            Refresh Data
-          </Button>
-          <Button
-            variant="contained"
-            startIcon={<AddIcon />}
-            onClick={handleAddMapping}
-            disabled={isAddingMapping}
-          >
-            Add Mapping
-          </Button>
+    <>
+      <Box sx={{ width: "100%", p: 2 }}>
+        {/* Header */}
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            mb: 3,
+          }}
+        >
+          <Typography variant="h5">EMI Standard-Test Name Mappings</Typography>
+          <Box>
+            <Button
+              variant="outlined"
+              startIcon={<RefreshIcon />}
+              onClick={handleRefreshData}
+              sx={{ mr: 2 }}
+            >
+              Refresh Data
+            </Button>
+            <Button
+              variant="contained"
+              startIcon={<AddIcon />}
+              onClick={handleAddMapping}
+              disabled={isAddingMapping}
+            >
+              Add Mapping
+            </Button>
+          </Box>
         </Box>
-      </Box>
 
-      {/* Info Alert */}
-      {/* <Alert severity="info" sx={{ mb: 3 }}>
+        {/* Info Alert */}
+        {/* <Alert severity="info" sx={{ mb: 3 }}>
         <Typography variant="body2">
           Manage mappings between EMI standards and test names. Test names and
           standards are managed separately. Changes here only affect which test
@@ -398,180 +418,185 @@ const EMITestNamesAndStandards = () => {
         </Typography>
       </Alert> */}
 
-      {/* Add/Edit Mapping Form */}
-      {isAddingMapping && (
-        <Paper sx={{ p: 3, mb: 3, bgcolor: "grey.50" }}>
-          <Typography variant="h6" gutterBottom>
-            {editingMappingId ? "Edit Mapping" : "Add New Mapping"}
-          </Typography>
+        {/* Add/Edit Mapping Form */}
+        {isAddingMapping && (
+          <Paper sx={{ p: 3, mb: 3, bgcolor: "grey.50" }}>
+            <Typography variant="h6" gutterBottom>
+              {editingMappingId ? "Edit Mapping" : "Add New Mapping"}
+            </Typography>
 
-          <Grid container spacing={3}>
-            {/* Standard Selection */}
-            <Grid item xs={12} md={4}>
-              <FormControl fullWidth>
-                <InputLabel>Select EMI Standard</InputLabel>
-                <Select
-                  value={selectedStandard}
-                  onChange={(e) => setSelectedStandard(e.target.value)}
-                  label="Select EMI Standard"
+            <Grid container spacing={3}>
+              {/* Standard Selection */}
+              <Grid item xs={12} md={4}>
+                <FormControl fullWidth>
+                  <InputLabel>Select EMI Standard</InputLabel>
+                  <Select
+                    value={selectedStandard}
+                    onChange={(e) => setSelectedStandard(e.target.value)}
+                    label="Select EMI Standard"
+                  >
+                    {standards.map((standard) => (
+                      <MenuItem key={standard.id} value={standard.standardName}>
+                        {standard.standardName}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+
+              {/* Test Names Selection */}
+              <Grid item xs={12} md={6}>
+                <FormControl fullWidth>
+                  <InputLabel>Select Test Names</InputLabel>
+                  <Select
+                    multiple
+                    value={selectedTestNames}
+                    onChange={handleTestNamesChange}
+                    label="Select Test Names"
+                    renderValue={(selected) => (
+                      <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
+                        {selected.map((value) => (
+                          <Chip
+                            key={value}
+                            label={value}
+                            size="small"
+                            onDelete={() => handleRemoveTestName(value)}
+                            onMouseDown={(event) => {
+                              event.stopPropagation();
+                            }}
+                          />
+                        ))}
+                      </Box>
+                    )}
+                  >
+                    {testNames.map((testName) => (
+                      <MenuItem key={testName.id} value={testName.testName}>
+                        {testName.testName}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+
+              {/* Action Buttons */}
+              <Grid item xs={12} md={2}>
+                <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                  <Button
+                    variant="contained"
+                    onClick={saveMapping}
+                    disabled={
+                      !selectedStandard || selectedTestNames.length === 0
+                    }
+                    fullWidth
+                  >
+                    {editingMappingId ? "Update" : "Save"}
+                  </Button>
+                  <Button variant="outlined" onClick={resetForm} fullWidth>
+                    Cancel
+                  </Button>
+                </Box>
+              </Grid>
+            </Grid>
+
+            {/* Preview */}
+            {selectedStandard && selectedTestNames.length > 0 && (
+              <Box sx={{ mt: 2, p: 2, bgcolor: "white", borderRadius: 1 }}>
+                <Typography variant="subtitle2" gutterBottom>
+                  Mapping Preview:
+                </Typography>
+                <Typography variant="body2">
+                  <strong>Standard:</strong> {selectedStandard}
+                </Typography>
+                <Typography variant="body2" sx={{ mt: 1 }}>
+                  <strong>Test Names ({selectedTestNames.length}):</strong>
+                </Typography>
+                <Box
+                  sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, mt: 1 }}
                 >
-                  {standards.map((standard) => (
-                    <MenuItem key={standard.id} value={standard.standardName}>
-                      {standard.standardName}
-                    </MenuItem>
+                  {selectedTestNames.map((testName, index) => (
+                    <Chip key={index} label={testName} size="small" />
                   ))}
-                </Select>
-              </FormControl>
-            </Grid>
-
-            {/* Test Names Selection */}
-            <Grid item xs={12} md={6}>
-              <FormControl fullWidth>
-                <InputLabel>Select Test Names</InputLabel>
-                <Select
-                  multiple
-                  value={selectedTestNames}
-                  onChange={handleTestNamesChange}
-                  label="Select Test Names"
-                  renderValue={(selected) => (
-                    <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
-                      {selected.map((value) => (
-                        <Chip
-                          key={value}
-                          label={value}
-                          size="small"
-                          onDelete={() => handleRemoveTestName(value)}
-                          onMouseDown={(event) => {
-                            event.stopPropagation();
-                          }}
-                        />
-                      ))}
-                    </Box>
-                  )}
-                >
-                  {testNames.map((testName) => (
-                    <MenuItem key={testName.id} value={testName.testName}>
-                      {testName.testName}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-
-            {/* Action Buttons */}
-            <Grid item xs={12} md={2}>
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-                <Button
-                  variant="contained"
-                  onClick={saveMapping}
-                  disabled={!selectedStandard || selectedTestNames.length === 0}
-                  fullWidth
-                >
-                  {editingMappingId ? "Update" : "Save"}
-                </Button>
-                <Button variant="outlined" onClick={resetForm} fullWidth>
-                  Cancel
-                </Button>
+                </Box>
               </Box>
-            </Grid>
-          </Grid>
+            )}
+          </Paper>
+        )}
 
-          {/* Preview */}
-          {selectedStandard && selectedTestNames.length > 0 && (
-            <Box sx={{ mt: 2, p: 2, bgcolor: "white", borderRadius: 1 }}>
-              <Typography variant="subtitle2" gutterBottom>
-                Mapping Preview:
-              </Typography>
-              <Typography variant="body2">
-                <strong>Standard:</strong> {selectedStandard}
-              </Typography>
-              <Typography variant="body2" sx={{ mt: 1 }}>
-                <strong>Test Names ({selectedTestNames.length}):</strong>
-              </Typography>
-              <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, mt: 1 }}>
-                {selectedTestNames.map((testName, index) => (
-                  <Chip key={index} label={testName} size="small" />
-                ))}
-              </Box>
-            </Box>
-          )}
-        </Paper>
-      )}
+        <Divider sx={{ my: 3 }} />
 
-      <Divider sx={{ my: 3 }} />
-
-      {/* Mappings Table */}
-      {/* <Typography variant="h6" gutterBottom>
+        {/* Mappings Table */}
+        {/* <Typography variant="h6" gutterBottom>
         Current Mappings ({mappings.length})
       </Typography> */}
 
-      {loading ? (
-        <Typography>Loading mappings...</Typography>
-      ) : mappings.length === 0 ? (
-        <Alert severity="info">
-          No mappings found. Click "Add Mapping" to create a standard-test
-          relationship.
-        </Alert>
-      ) : (
-        <Box
-          sx={{
-            height: 400,
-            width: "100%",
-            "& .custom-header-color": {
-              backgroundColor: "#476f95",
-              color: "whitesmoke",
-              fontWeight: "bold",
-              fontSize: "15px",
-            },
-            "& .MuiDataGrid-row": {
-              minHeight: "60px !important",
-            },
-            "& .MuiDataGrid-cell": {
-              display: "flex",
-              alignItems: "center",
-            },
-          }}
-        >
-          <DataGrid
-            rows={mappingsWithSerialNumbers}
-            columns={mappingsTableColumns}
-            pageSize={10}
-            rowsPerPageOptions={[10, 25, 50]}
-            disableSelectionOnClick
-            getRowHeight={() => "auto"}
-          />
-        </Box>
-      )}
+        {loading ? (
+          <Typography>Loading mappings...</Typography>
+        ) : mappings.length === 0 ? (
+          <Alert severity="info">
+            No mappings found. Click "Add Mapping" to create a standard-test
+            relationship.
+          </Alert>
+        ) : (
+          <Box
+            sx={{
+              height: 400,
+              width: "100%",
+              "& .custom-header-color": {
+                backgroundColor: "#476f95",
+                color: "whitesmoke",
+                fontWeight: "bold",
+                fontSize: "15px",
+              },
+              "& .MuiDataGrid-row": {
+                minHeight: "60px !important",
+              },
+              "& .MuiDataGrid-cell": {
+                display: "flex",
+                alignItems: "center",
+              },
+            }}
+          >
+            <DataGrid
+              rows={mappingsWithSerialNumbers}
+              columns={mappingsTableColumns}
+              pageSize={10}
+              rowsPerPageOptions={[10, 25, 50]}
+              disableSelectionOnClick
+              getRowHeight={() => "auto"}
+            />
+          </Box>
+        )}
 
-      {/* Summary Stats */}
-      <Paper sx={{ mt: 3, p: 2, bgcolor: "grey.50" }}>
-        <Typography variant="h6" gutterBottom>
-          Summary
-        </Typography>
-        <Grid container spacing={2}>
-          <Grid item xs={12} md={3}>
-            <Typography variant="body2">
-              <strong>Total Standards:</strong> {standards.length}
-            </Typography>
+        {/* Summary Stats */}
+        <Paper sx={{ mt: 3, p: 2, bgcolor: "grey.50" }}>
+          <Typography variant="h6" gutterBottom>
+            Summary
+          </Typography>
+          <Grid container spacing={2}>
+            <Grid item xs={12} md={3}>
+              <Typography variant="body2">
+                <strong>Total Standards:</strong> {standards.length}
+              </Typography>
+            </Grid>
+            <Grid item xs={12} md={3}>
+              <Typography variant="body2">
+                <strong>Total Test Names:</strong> {testNames.length}
+              </Typography>
+            </Grid>
+            <Grid item xs={12} md={3}>
+              <Typography variant="body2">
+                <strong>Total Mappings:</strong> {mappings.length}
+              </Typography>
+            </Grid>
+            <Grid item xs={12} md={3}>
+              <Typography variant="body2">
+                <strong>Unmapped Standards:</strong>{" "}
+                {standards.length - mappings.length}
+              </Typography>
+            </Grid>
           </Grid>
-          <Grid item xs={12} md={3}>
-            <Typography variant="body2">
-              <strong>Total Test Names:</strong> {testNames.length}
-            </Typography>
-          </Grid>
-          <Grid item xs={12} md={3}>
-            <Typography variant="body2">
-              <strong>Total Mappings:</strong> {mappings.length}
-            </Typography>
-          </Grid>
-          <Grid item xs={12} md={3}>
-            <Typography variant="body2">
-              <strong>Unmapped Standards:</strong>{" "}
-              {standards.length - mappings.length}
-            </Typography>
-          </Grid>
-        </Grid>
-      </Paper>
+        </Paper>
+      </Box>
 
       {/* File Viewer Dialog */}
       {viewerOpen && (
@@ -584,7 +609,19 @@ const EMITestNamesAndStandards = () => {
           }}
         />
       )}
-    </Box>
+
+      {/* Custom Dialog to select the file to view */}
+      {isMultipleFilesFound && (
+        <FileSelectionModal
+          open={isMultipleFilesFound}
+          onClose={() => setIsMultipleFilesFound(false)}
+          title="Multiple Files Found"
+          options={filesForModal}
+          onSelect={handleFileSelect}
+          message={modalMessage}
+        />
+      )}
+    </>
   );
 };
 

@@ -835,7 +835,6 @@ const createEMIStandardAndTestMappingTable = () => {
       updated_by VARCHAR(100),
       is_active BOOLEAN DEFAULT TRUE,
       PRIMARY KEY(id),
-      UNIQUE KEY unique_standard (standard),
       INDEX idx_standard (standard),
       INDEX idx_created_at (created_at),
       INDEX idx_is_active (is_active)
@@ -1115,18 +1114,18 @@ function createInvoiceDataTable() {
 const createFileAccessLogTable = () => {
   const createFileAccessLogTableQuery = `
   CREATE TABLE IF NOT EXISTS file_access_log (
-      id INT NOT NULL AUTO_INCREMENT,
+      id INT AUTO_INCREMENT PRIMARY KEY,
       user_id INT NOT NULL,
-      file_name VARCHAR(500) NOT NULL,
       file_path VARCHAR(500) NOT NULL,
-      action ENUM('view', 'list', 'download', 'upload', 'delete', 'search', 'mkdir') NOT NULL,
+      action VARCHAR(50) NOT NULL,
       accessed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      FOREIGN KEY (user_id) REFERENCES labbee_users(id),
-      INDEX idx_user_access (user_id, accessed_at),
-      INDEX idx_file_path (file_path),
-      INDEX idx_file_name (file_name),
+      user_name VARCHAR(100),
+      user_department VARCHAR(100),
+      INDEX idx_user_id (user_id),
+      INDEX idx_accessed_at (accessed_at),
       INDEX idx_action (action),
-      PRIMARY KEY(id)
+      INDEX idx_file_path (file_path),
+      FOREIGN KEY (user_id) REFERENCES labbee_users(id) ON DELETE CASCADE
   )`;
 
   db.query(createFileAccessLogTableQuery, function (err, result) {
@@ -1138,32 +1137,6 @@ const createFileAccessLogTable = () => {
   });
 };
 
-//File metadata cache for faster searches:
-const createFileMetaDataTable = () => {
-  const createFileMetaDataTableQuery = `
-    CREATE TABLE IF NOT EXISTS file_meta_data (
-      id INT NOT NULL AUTO_INCREMENT,
-      file_name VARCHAR(500) NOT NULL,
-      file_path VARCHAR(500) NOT NULL UNIQUE,
-      file_size BIGINT,
-      mime_type VARCHAR(500),
-      last_modified DATETIME,
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-      PRIMARY KEY(id),
-      INDEX idx_file_name (file_name),
-      INDEX idx_mime_type (mime_type),
-      INDEX idx_last_modified (last_modified)
-    ) `;
-
-  db.query(createFileMetaDataTableQuery, function (err, result) {
-    if (err) {
-      console.log("Error occured while creating file_meta_data table", err);
-    } else {
-      // console.log("file_meta_data table created successfully.");
-    }
-  });
-};
 ////////////////////////////////////////////////////////////////////////////////////////
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -1228,5 +1201,4 @@ module.exports = {
   createInvoiceDataTable,
 
   createFileAccessLogTable,
-  createFileMetaDataTable,
 };

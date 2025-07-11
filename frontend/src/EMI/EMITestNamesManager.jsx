@@ -5,6 +5,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import axios from "axios";
 import { serverBaseAddress } from "../Pages/APIPage";
 import useEMIStore from "./EMIStore";
+import { toast } from "react-toastify";
 
 const EMITestNamesManager = () => {
   // State for component data
@@ -65,6 +66,20 @@ const EMITestNamesManager = () => {
 
   // Add a new test name to the database
   const addEMITestName = async (testName) => {
+    if (testName.trim() === "") {
+      toast.error("Test name cannot be empty");
+      return;
+    }
+
+    const existingTestName = testNames.find(
+      (name) => name.testName === testName
+    );
+    if (existingTestName) {
+      toast.error("Test name already exists");
+      await getAllEMITestNames();
+      return;
+    }
+
     try {
       const response = await axios.post(
         `${serverBaseAddress}/api/addNewEMITestName`,
@@ -76,9 +91,12 @@ const EMITestNamesManager = () => {
           id: response.data.id,
           testName,
         };
-        setTestNames([...testNames, newTestName]);
-        setStoreTestNames([...testNames, newTestName]); // Update store
+        await getAllEMITestNames();
+        toast.success("Test name added successfully");
+        // setTestNames([...testNames, newTestName]);
+        // setStoreTestNames([...testNames, newTestName]); // Update store
       } else {
+        toast.error("Error adding test name");
         console.error("Error adding test name:", response.status);
       }
     } catch (error) {
@@ -96,8 +114,9 @@ const EMITestNamesManager = () => {
 
       if (response.status === 200) {
         await getAllEMITestNames();
-        console.log("Test name updated successfully");
+        toast.success("Test name updated successfully");
       } else {
+        toast.error("Error updating test name");
         console.error("Error updating test name:", response.status);
       }
     } catch (error) {
@@ -150,8 +169,9 @@ const EMITestNamesManager = () => {
         const updatedTestNames = testNames.filter((row) => row.id !== id);
         setTestNames(updatedTestNames);
         setStoreTestNames(updatedTestNames); // Update store
-        console.log("Test name deleted successfully");
+        toast.success("Test name deleted successfully");
       } else {
+        toast.error("Error deleting test name");
         console.error("Error deleting test name:", response.status);
       }
     } catch (error) {

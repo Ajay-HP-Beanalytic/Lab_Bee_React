@@ -7,10 +7,6 @@ class FileStorageService {
     // This is correct for Backend/services/fileStorageService.js
     this.baseDir = path.join(__dirname, "../../shared-files");
 
-    // Debug logs
-    console.log("FileStorage baseDir:", this.baseDir);
-    console.log("Directory exists:", fs.existsSync(this.baseDir));
-
     // Initialize directories
     this.initializeStorage();
   }
@@ -19,7 +15,6 @@ class FileStorageService {
     try {
       await this.ensureDirectoriesExist();
       // await this.createDefaultStructure();  // To  create default sub folders:
-      console.log("✅ File storage system initialized successfully!");
     } catch (error) {
       console.error("❌ Failed to initialize file storage:", error);
       throw error;
@@ -31,13 +26,12 @@ class FileStorageService {
     if (!fs.existsSync(this.baseDir)) {
       try {
         await fs.ensureDir(this.baseDir);
-        console.log(`✓ Main directory created: ${this.baseDir}`);
       } catch (error) {
         console.error(`❌ Failed to create main directory: ${error.message}`);
         throw error;
       }
     } else {
-      console.log(`✓ Main directory already exists: ${this.baseDir}`);
+      // console.log(`✓ Main directory already exists: ${this.baseDir}`);
     }
 
     // Define all subdirectories to create
@@ -54,18 +48,6 @@ class FileStorageService {
         name: "TS2",
         description: "TS2 testing related files and documents",
       },
-      // {
-      //   name: "uploads",
-      //   description: "General file uploads from users",
-      // },
-      // {
-      //   name: "temp",
-      //   description: "Temporary files (auto-cleanup)",
-      // },
-      // {
-      //   name: "archived",
-      //   description: "Archived files and documents",
-      // },
     ];
 
     // Create each directory
@@ -74,9 +56,8 @@ class FileStorageService {
         const dirPath = path.join(this.baseDir, dir.name);
         if (!fs.existsSync(dirPath)) {
           await fs.ensureDir(dirPath);
-          console.log(`✓ Directory created: ${dir.name} - ${dir.description}`);
         } else {
-          console.log(`✓ Directory exists: ${dir.name}`);
+          // console.log(`✓ Directory exists: ${dir.name}`);
         }
       } catch (error) {
         console.error(`❌ Failed to create directory: ${error.message}`);
@@ -121,7 +102,6 @@ class FileStorageService {
           const subdirPath = path.join(mainDirPath, subdir);
           if (!fs.existsSync(subdirPath)) {
             await fs.ensureDir(subdirPath);
-            console.log(`📁 Created subdirectory: ${dirName}/${subdir}`);
           }
         }
       }
@@ -133,14 +113,7 @@ class FileStorageService {
 
   // Method to verify directory structure
   async verifyDirectoryStructure() {
-    const requiredDirs = [
-      "Quotation-files",
-      "TS1-standards",
-      "TS2-standards",
-      "uploads",
-      "temp",
-      "archived",
-    ];
+    const requiredDirs = ["Quotation-files", "TS1-standards", "TS2-standards"];
 
     const results = {
       allExist: true,
@@ -158,8 +131,6 @@ class FileStorageService {
       }
     }
 
-    console.log("🔍 Directory Structure Verification:");
-    console.log(`✅ Existing directories: ${results.existing.join(", ")}`);
     if (results.missing.length > 0) {
       console.log(`❌ Missing directories: ${results.missing.join(", ")}`);
     }
@@ -254,7 +225,6 @@ class FileStorageService {
   async listFiles(folderPath = "") {
     try {
       const fullPath = path.join(this.baseDir, folderPath);
-      console.log(`📂 Listing files in: ${fullPath}`);
 
       if (!fullPath.startsWith(this.baseDir)) {
         throw new Error("Invalid path");
@@ -284,7 +254,6 @@ class FileStorageService {
         })
       );
 
-      console.log(`📁 Found ${files.length} items`);
       return files;
     } catch (error) {
       console.error("❌ Error listing files:", error);
@@ -300,7 +269,6 @@ class FileStorageService {
         destinationPath,
         originalName
       );
-      console.log("📤 Uploading file to:", fullDestPath);
 
       if (!fullDestPath.startsWith(this.baseDir)) {
         throw new Error("Invalid destination path");
@@ -309,7 +277,6 @@ class FileStorageService {
       await fs.ensureDir(path.dirname(fullDestPath));
       await fs.move(file.path, fullDestPath);
 
-      console.log("✅ File uploaded successfully");
       return {
         name: originalName,
         path: path.join(destinationPath, originalName).replace(/\\/g, "/"),
@@ -337,8 +304,6 @@ class FileStorageService {
 
       const stats = await fs.stat(fullPath);
       const mimeType = mime.lookup(fullPath);
-
-      console.log(`👁️ Viewing file: ${filePath}, Type: ${mimeType}`);
 
       return {
         name: path.basename(fullPath),
@@ -391,6 +356,51 @@ class FileStorageService {
     if (mimeType?.startsWith("text/") || mimeType === "application/json")
       return "text";
     return "download";
+  }
+
+  //Method to download the file:
+  // Alternative: Direct download stream method
+  async downloadFile(filePath) {
+    try {
+      const fullPath = path.join(this.baseDir, filePath);
+
+      // Security check - prevent directory traversal
+      if (!fullPath.startsWith(this.baseDir)) {
+        throw new Error("Invalid file path - security violation");
+      }
+
+      // Check if file exists
+      if (!(await fs.pathExists(fullPath))) {
+        throw new Error(`File not found: ${filePath}`);
+      }
+
+      // Get file stats
+      const stats = await fs.stat(fullPath);
+
+      // Check if it's a file (not a directory)
+      if (!stats.isFile()) {
+        throw new Error(`Path is not a file: ${filePath}`);
+      }
+
+      return {
+        success: true,
+        name: path.basename(filePath),
+        path: filePath,
+        fullPath: fullPath,
+        size: stats.size,
+        mimeType: mime.lookup(filePath),
+        lastModified: stats.mtime,
+        downloadInfo: {
+          originalPath: filePath,
+          fileName: path.basename(filePath),
+          fileSize: stats.size,
+          contentType: mime.lookup(filePath) || "application/octet-stream",
+        },
+      };
+    } catch (error) {
+      console.error("❌ Error preparing file download:", error);
+      throw error;
+    }
   }
 
   // Get file content for text files
@@ -448,7 +458,6 @@ class FileStorageService {
       }
 
       await fs.remove(fullPath);
-      console.log("🗑️ File deleted:", filePath);
       return true;
     } catch (error) {
       console.error("❌ Error deleting file:", error);
@@ -465,7 +474,6 @@ class FileStorageService {
       }
 
       await fs.ensureDir(fullPath);
-      console.log("📁 Directory created:", dirPath);
       return true;
     } catch (error) {
       console.error("❌ Error creating directory:", error);
@@ -477,7 +485,6 @@ class FileStorageService {
     try {
       const results = [];
       await this.searchInDirectory(this.baseDir, query.toLowerCase(), results);
-      console.log(`🔍 Search for "${query}" found ${results.length} results`);
       return results;
     } catch (error) {
       console.error("❌ Error searching files:", error);

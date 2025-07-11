@@ -124,7 +124,7 @@ function usersDataAPIs(app) {
           { expiresIn: "30d" }
         );
 
-        req.session.user_db_id = user.id;
+        req.session.user_id = user.id;
         req.session.username = user.name;
         req.session.role = user.role;
         req.session.department = user.department;
@@ -166,7 +166,7 @@ function usersDataAPIs(app) {
 
       const response = {
         valid: true,
-        user_id: req.session.user_db_id,
+        user_id: req.session.user_id,
         user_name: req.session.username,
         user_role: req.session.role,
         user_department: req.session.department,
