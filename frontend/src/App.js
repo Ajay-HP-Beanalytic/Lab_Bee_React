@@ -44,6 +44,7 @@ import ProjectManagementDashboard from "./projectManagement/ProjectsDashboard";
 import Financials from "./PO/Financials";
 import { Box, LinearProgress, Typography } from "@mui/material";
 import TestHoursCalculator from "./Quote/TestHoursCalculator";
+import FileBrowser from "./FilesStorage/FileBrowser";
 
 function App() {
   const location = useLocation();
@@ -580,6 +581,20 @@ function App() {
               </ProtectedRoute>
             }
           />
+
+          {/* Route configuration for organisation documents */}
+          <Route
+            path="org_docs"
+            element={
+              <ProtectedRoute
+                allowedDepartments={["Administration"]}
+                allowedRoles={["Quality Engineer"]}
+              >
+                <FileBrowser />
+              </ProtectedRoute>
+            }
+          />
+
           <Route path="*" element={<NotFoundPage />} />
         </Route>
       </Routes>

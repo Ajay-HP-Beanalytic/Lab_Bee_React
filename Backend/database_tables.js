@@ -726,7 +726,11 @@ const createEMISLotBookingTable = () => {
       customer_email VARCHAR(255),
       customer_phone VARCHAR(255),
       slot_type VARCHAR(255),
+<<<<<<< HEAD
        test_type VARCHAR(255),
+=======
+      test_type VARCHAR(255),
+>>>>>>> onedriveLinking
       test_name VARCHAR(255),
       custom_test_name VARCHAR(255),
       test_standard VARCHAR(255),
@@ -775,6 +779,80 @@ const createEMICalibrationsTable = () => {
       console.error("Error while creating emi_calibrations_table", err);
     } else {
       //console.log("emi_calibrations_table created successfully.");
+    }
+  });
+};
+
+//Function to create EMI Test names table:
+function createEMITestsTable() {
+  const createEMITestsTableQuery = `
+  CREATE TABLE IF NOT EXISTS emi_test_names_table (
+      id INT NOT NULL AUTO_INCREMENT,
+      test_name VARCHAR(1000),
+      PRIMARY KEY(id)
+  )`;
+
+  db.query(createEMITestsTableQuery, function (err, result) {
+    if (err) {
+      console.log("Error occured while creating emi_test_names_table", err);
+    } else {
+      // console.log("emi_test_names_table created successfully.");
+    }
+  });
+}
+
+//Function to create emi standards table:
+function createEMITestStandardsTable() {
+  const createEMITestStandardsTableQuery = `
+  CREATE TABLE IF NOT EXISTS emi_test_standards_table (
+      id INT NOT NULL AUTO_INCREMENT,
+      standard_name VARCHAR(1000),
+      PRIMARY KEY(id)
+  )`;
+
+  db.query(createEMITestStandardsTableQuery, function (err, result) {
+    if (err) {
+      console.log("Error occured while creating emi_test_standards_table", err);
+    } else {
+      // console.log("emi_test_standards_table created successfully.");
+    }
+  });
+}
+
+//API to map the standards and test names:
+const createEMIStandardAndTestMappingTable = () => {
+  // const createEMIStandardAndTestMappingTableQuery = `
+  // CREATE TABLE IF NOT EXISTS emi_test_standard_mapping_table (
+  //   id INT NOT NULL AUTO_INCREMENT,
+  //   mapped_standard_and_testname JSON,
+  //   PRIMARY KEY(id)
+  // ) `;
+
+  const createEMIStandardAndTestMappingTableQuery = `
+    CREATE TABLE IF NOT EXISTS emi_test_standard_mapping_table (
+      id INT NOT NULL AUTO_INCREMENT,
+      standard VARCHAR(255) NOT NULL,
+      test_names JSON NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      created_by VARCHAR(100),
+      updated_by VARCHAR(100),
+      is_active BOOLEAN DEFAULT TRUE,
+      PRIMARY KEY(id),
+      INDEX idx_standard (standard),
+      INDEX idx_created_at (created_at),
+      INDEX idx_is_active (is_active)
+    )
+  `;
+
+  db.query(createEMIStandardAndTestMappingTableQuery, function (err, result) {
+    if (err) {
+      console.log(
+        "Error occured while creating emi_test_standard_mapping_table",
+        err
+      );
+    } else {
+      // console.log("emi_test_standard_mapping_table created successfully.");
     }
   });
 };
@@ -1034,6 +1112,38 @@ function createInvoiceDataTable() {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////
+// Files storage in Hostinger VPS
+
+//File access logging for audit trail:
+const createFileAccessLogTable = () => {
+  const createFileAccessLogTableQuery = `
+  CREATE TABLE IF NOT EXISTS file_access_log (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id INT NOT NULL,
+      file_path VARCHAR(500) NOT NULL,
+      action VARCHAR(50) NOT NULL,
+      accessed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      user_name VARCHAR(100),
+      user_department VARCHAR(100),
+      INDEX idx_user_id (user_id),
+      INDEX idx_accessed_at (accessed_at),
+      INDEX idx_action (action),
+      INDEX idx_file_path (file_path),
+      FOREIGN KEY (user_id) REFERENCES labbee_users(id) ON DELETE CASCADE
+  )`;
+
+  db.query(createFileAccessLogTableQuery, function (err, result) {
+    if (err) {
+      console.log("Error occured while creating file_access_log table", err);
+    } else {
+      // console.log("file_access_log table created successfully.");
+    }
+  });
+};
+
+////////////////////////////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////////////////////////////
 
 // Handle the process exiting to gracefully end the connection pool.
 process.on("exit", function () {
@@ -1077,6 +1187,9 @@ module.exports = {
   createEMIJobcardsTestsDetailsTable,
   createEMISLotBookingTable,
   createEMICalibrationsTable,
+  createEMITestsTable,
+  createEMITestStandardsTable,
+  createEMIStandardAndTestMappingTable,
 
   createTestCategoryTable,
   createTestNamesTable,
@@ -1090,4 +1203,6 @@ module.exports = {
   createProjectTaskLogsTable,
 
   createInvoiceDataTable,
+
+  createFileAccessLogTable,
 };

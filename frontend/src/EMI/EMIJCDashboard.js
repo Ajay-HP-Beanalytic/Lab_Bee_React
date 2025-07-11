@@ -24,6 +24,9 @@ import dayjs from "dayjs";
 import EMIJCPreview from "./EMIJCPreview";
 import { CreatePieChart } from "../functions/DashboardFunctions";
 import { EMIJCContext } from "./EMIJCContext";
+import EMITestNamesAndStandards from "./EMITestNamesAndStandards";
+import EMIStandardsManager from "./EMIStandardsManager";
+import EMITestNamesManager from "./EMITestNamesManager";
 
 export default function EMIJCDashboard() {
   const location = useLocation();
@@ -637,7 +640,7 @@ export default function EMIJCDashboard() {
               </Box>
             )}
 
-            <Grid container spacing={4} sx={{ mt: 2 }}>
+            {/* <Grid container spacing={4} sx={{ mt: 2 }}>
               <Grid item xs={12} sm={6} md={6}>
                 <Box
                   sx={{
@@ -653,7 +656,7 @@ export default function EMIJCDashboard() {
                   />
                 </Box>
               </Grid>
-            </Grid>
+            </Grid> */}
           </>
         )}
 
@@ -671,6 +674,23 @@ export default function EMIJCDashboard() {
             jcId={jcId}
           />
         )}
+      </Card>
+
+      <Card sx={{ width: "100%", padding: "20px", mt: "10px" }}>
+        <Grid item xs={12}>
+          <EMITestNamesAndStandards />
+        </Grid>
+
+        <br />
+        <Grid container spacing={2}>
+          <Grid item xs={12} md={6}>
+            <EMIStandardsManager />
+          </Grid>
+
+          <Grid item xs={12} md={6}>
+            <EMITestNamesManager />
+          </Grid>
+        </Grid>
       </Card>
     </>
   );

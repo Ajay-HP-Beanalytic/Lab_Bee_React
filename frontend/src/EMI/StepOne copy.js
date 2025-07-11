@@ -1,4 +1,4 @@
-import { useCallback, useContext, useEffect } from "react";
+import { useCallback, useContext, useEffect, useState } from "react";
 import {
   Box,
   Card,
@@ -19,8 +19,16 @@ export default function EMIJCStepOne() {
   const theme = useTheme();
   const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
 
-  const { getStandardsAsOptions, getTestNamesAsOptions, loadAllEMIData } =
-    useEMIStore();
+  // State for managing dynamic test names per row
+  const [testNamesForRows, setTestNamesForRows] = useState({});
+
+  const {
+    standards,
+    testNames,
+    getStandardsAsOptions,
+    loadTestNamesByStandard,
+    loadAllEMIData,
+  } = useEMIStore();
 
   const {
     stepOneFormData,
@@ -36,6 +44,9 @@ export default function EMIJCStepOne() {
   } = useContext(EMIJCContext);
 
   const { control, register, setValue, watch } = useForm();
+  // const { control, register, setValue, watch } = useForm({
+  //   defaultValues: stepOneFormData,
+  // });
 
   const fieldsToBeFilledByCustomerPartOne = [
     { label: "Company", name: "companyName", type: "textField", width: "100%" },
@@ -121,6 +132,69 @@ export default function EMIJCStepOne() {
     eutSerialNumber: "",
   };
 
+  // Handle standard selection change for a specific row
+  const handleStandardChange = async (rowIndex, standardValue) => {
+    // Update the selected standard for this row
+    setSelectedStandardForRow((prev) => ({
+      ...prev,
+      [rowIndex]: standardValue,
+    }));
+
+    // Load test names for the selected standard
+    if (standardValue) {
+      try {
+        const testNamesForStandard = await loadTestNamesByStandard(
+          standardValue
+        );
+
+        // Convert to options format for the dropdown
+        const testNameOptions = testNamesForStandard.map((testName) => ({
+          id: testName.id || testName.name,
+          label: testName.name,
+          value: testName.name,
+        }));
+
+        console.log("testNameOptions", testNameOptions);
+
+        setAvailableTestNamesForRow((prev) => ({
+          ...prev,
+          [rowIndex]: testNameOptions,
+        }));
+
+        // Clear the test name selection for this row when standard changes
+        const updatedRows = testsTableRows.map((row, index) => {
+          if (index === rowIndex) {
+            return { ...row, testName: "" };
+          }
+          return row;
+        });
+        updateTestsTableRows(updatedRows);
+      } catch (error) {
+        console.error("Error loading test names for standard:", error);
+        setAvailableTestNamesForRow((prev) => ({
+          ...prev,
+          [rowIndex]: [],
+        }));
+      }
+    } else {
+      // Clear test names if no standard selected
+      setAvailableTestNamesForRow((prev) => ({
+        ...prev,
+        [rowIndex]: [],
+      }));
+    }
+  };
+
+  // Function to get test names for a specific row based on selected standard
+  const getTestNamesForRow = (rowIndex) => {
+    const row = testsTableRows[rowIndex];
+    if (!row || !row.testStandard) {
+      return []; // Return empty if no standard selected
+    }
+
+    return testNamesForRows[rowIndex] || [];
+  };
+
   //Fields to create a Tests details table:
   const testsTableColumns = [
     { id: "serialNumber", label: "SL No", width: 20 },
@@ -136,7 +210,7 @@ export default function EMIJCStepOne() {
       label: "Test Name",
       width: 300,
       type: "select",
-      options: getTestNamesAsOptions(), // This will be populated dynamically
+      options: [], // This will be populated dynamically
     },
     { id: "testProfile", label: "Limit", width: 300, type: "textField" },
   ];
@@ -202,6 +276,7 @@ export default function EMIJCStepOne() {
     const initializeEMIData = async () => {
       try {
         await loadAllEMIData();
+        console.log("EMI data loaded successfully");
       } catch (error) {
         console.error("Error loading EMI data:", error);
       }
@@ -217,6 +292,41 @@ export default function EMIJCStepOne() {
       updateTestsTableRows([testsTableRowTemplate]);
     }
   }, []); // Empty dependency array so it only runs once on mount
+
+  // Effect to restore test names when testsTableRows change (for edit mode)
+  useEffect(() => {
+    testsTableRows.forEach(async (row, index) => {
+      if (
+        row.testStandard &&
+        row.testStandard !== selectedStandardForRow[index]
+      ) {
+        // Restore the standard selection
+        setSelectedStandardForRow((prev) => ({
+          ...prev,
+          [index]: row.testStandard,
+        }));
+
+        // Load test names for the standard
+        try {
+          const testNamesForStandard = await loadTestNamesByStandard(
+            row.testStandard
+          );
+          const testNameOptions = testNamesForStandard.map((testName) => ({
+            id: testName.id || testName.name,
+            label: testName.name,
+            value: testName.name,
+          }));
+
+          setAvailableTestNamesForRow((prev) => ({
+            ...prev,
+            [index]: testNameOptions,
+          }));
+        } catch (error) {
+          console.error("Error restoring test names for standard:", error);
+        }
+      }
+    });
+  }, [testsTableRows]);
 
   return (
     <>

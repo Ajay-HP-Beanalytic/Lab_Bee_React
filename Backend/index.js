@@ -156,6 +156,9 @@ const {
   createEMIJobcardsTestsDetailsTable,
   createEMISLotBookingTable,
   createEMICalibrationsTable,
+  createEMITestsTable,
+  createEMITestStandardsTable,
+  createEMIStandardAndTestMappingTable,
 
   createTestCategoryTable,
   createTestNamesTable,
@@ -169,6 +172,8 @@ const {
   createProjectTaskLogsTable,
 
   createInvoiceDataTable,
+
+  createFileAccessLogTable,
 } = require("./database_tables");
 
 //Get db connection from the db.js file
@@ -212,6 +217,9 @@ db.getConnection(function (err, connection) {
   createEMIJobcardsTestsDetailsTable();
   createEMISLotBookingTable();
   createEMICalibrationsTable();
+  createEMITestsTable();
+  createEMITestStandardsTable();
+  createEMIStandardAndTestMappingTable();
 
   createTestCategoryTable();
   createTestNamesTable();
@@ -226,6 +234,8 @@ db.getConnection(function (err, connection) {
   createProjectTaskLogsTable();
 
   createInvoiceDataTable();
+
+  createFileAccessLogTable();
 
   connection.release(); // Release the connection back to the pool when done
 });
@@ -274,6 +284,9 @@ poInvoiceBackendAPIs(app);
 const { emiJobcardsAPIs } = require("./EMIBackend");
 emiJobcardsAPIs(app, io, labbeeUsers);
 
+const { emiTestNamesAndStandardsAPIs } = require("./EMITestAndStandardsAPI");
+emiTestNamesAndStandardsAPIs(app, io, labbeeUsers);
+
 // backend connection to acess the notifications:
 const { notificationsAPIs } = require("./notifications");
 notificationsAPIs(app, io, labbeeUsers);
@@ -285,6 +298,14 @@ TestsAndChambersUpdateAPIs(app, io, labbeeUsers);
 //backend connection to acess the project tasks:
 const { projectManagementAPIs } = require("./projectManagementAPI");
 projectManagementAPIs(app, io, labbeeUsers);
+
+//backend connection to access files from the server:
+const { fileStorageAPIs } = require("./fileStorageAPIs");
+fileStorageAPIs(app, io, labbeeUsers);
+
+//backend connection to access the openai APIs:
+const { openaiAPIs } = require("./OpenaiAPI");
+openaiAPIs(app, io, labbeeUsers);
 
 /// Code to get backup of only database in .sql format:
 ///Data Backup function:

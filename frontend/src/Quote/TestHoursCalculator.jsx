@@ -16,6 +16,8 @@ import {
 } from "@mui/material";
 import { useState } from "react";
 import { toast } from "react-toastify";
+// import FileBrowser from "../FilesStorage/FileBrowser";
+// import StorageManager from "../FilesStorage/StorageManager";
 
 const TestHoursCalculator = () => {
   const [testType, setTestType] = useState("");
@@ -170,482 +172,500 @@ const TestHoursCalculator = () => {
   };
 
   return (
-    <Paper elevation={3} sx={{ p: 4, maxWidth: 800, margin: "auto", mt: 4 }}>
-      <Typography variant="h5" align="center" gutterBottom mb={3}>
-        Environmental Test Duration Calculator
-      </Typography>
+    <>
+      <Paper elevation={3} sx={{ p: 4, maxWidth: 800, margin: "auto", mt: 4 }}>
+        <Typography variant="h5" align="center" gutterBottom mb={3}>
+          Environmental Test Duration Calculator
+        </Typography>
 
-      <form onSubmit={handleCalculateHours}>
-        <Grid container spacing={2}>
-          {/* Test Type Selection */}
-          <Grid item xs={12}>
-            <FormControl fullWidth required>
-              <InputLabel>Select Test Type</InputLabel>
-              <Select
-                value={testType}
-                label="Select Test Type"
-                onChange={handleTestTypeChange}
-              >
-                {testTypeOptions.map((item) => (
-                  <MenuItem key={item.value} value={item.value}>
-                    {item.label}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-          </Grid>
-
-          {/* Information Alert */}
-          {(isCyclingOrShockTest || isVibrationTest) && (
+        <form onSubmit={handleCalculateHours}>
+          <Grid container spacing={2}>
+            {/* Test Type Selection */}
             <Grid item xs={12}>
-              <Alert severity="info" sx={{ mb: 1 }}>
-                <Typography variant="body2">
-                  <strong>
-                    {isShockTest
-                      ? "Thermal Shock"
-                      : isCyclingTest
-                      ? "Thermal Cycling"
-                      : "Vibration Test"}
-                    :
-                  </strong>{" "}
-                  {isShockTest
-                    ? "Uses fixed transition times between temperatures (rapid temperature changes)"
-                    : isCyclingTest
-                    ? "Uses ramp rates for gradual temperature changes"
-                    : "Test duration calculated per axis and per unit"}
-                </Typography>
-              </Alert>
+              <FormControl fullWidth required>
+                <InputLabel>Select Test Type</InputLabel>
+                <Select
+                  value={testType}
+                  label="Select Test Type"
+                  onChange={handleTestTypeChange}
+                >
+                  {testTypeOptions.map((item) => (
+                    <MenuItem key={item.value} value={item.value}>
+                      {item.label}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
             </Grid>
-          )}
 
-          {/* Start Temperature */}
-          {!isVibrationTest && (
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                required
-                label="Start Temperature (°C)"
-                variant="outlined"
-                type="number"
-                value={startTemp}
-                onChange={(e) => setStartTemp(Number(e.target.value))}
-                helperText="Usually ambient temperature (25°C)"
-              />
-            </Grid>
-          )}
-
-          {/* Target Temperature for High/Low Tests */}
-          {isHighOrLowTempTest && (
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                required
-                label="Target Temperature (°C)"
-                variant="outlined"
-                type="number"
-                value={targetTemp}
-                onChange={(e) => setTargetTemp(Number(e.target.value))}
-              />
-            </Grid>
-          )}
-
-          {/* Separate Ramp Rates Checkbox */}
-          {!isVibrationTest && (
-            <Grid item xs={12}>
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={useSeparateRampRates}
-                    onChange={(e) => setUseSeparateRampRates(e.target.checked)}
-                  />
-                }
-                label="Use different Ramp Up and Ramp Down rates"
-                disabled={isHighOrLowTempTest || isShockTest}
-              />
-            </Grid>
-          )}
-
-          {/* Cycling/Shock Specific Fields */}
-          {isCyclingOrShockTest && (
-            <>
+            {/* Information Alert */}
+            {(isCyclingOrShockTest || isVibrationTest) && (
               <Grid item xs={12}>
-                <FormControl fullWidth required>
-                  <InputLabel>Test Start Direction</InputLabel>
-                  <Select
-                    value={testStartFrom}
-                    label="Test Start Direction"
-                    onChange={(e) => setTestStartFrom(e.target.value)}
-                  >
-                    {testStartFromOptions.map((item) => (
-                      <MenuItem key={item.value} value={item.value}>
-                        {item.label}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
+                <Alert severity="info" sx={{ mb: 1 }}>
+                  <Typography variant="body2">
+                    <strong>
+                      {isShockTest
+                        ? "Thermal Shock"
+                        : isCyclingTest
+                        ? "Thermal Cycling"
+                        : "Vibration Test"}
+                      :
+                    </strong>{" "}
+                    {isShockTest
+                      ? "Uses fixed transition times between temperatures (rapid temperature changes)"
+                      : isCyclingTest
+                      ? "Uses ramp rates for gradual temperature changes"
+                      : "Test duration calculated per axis and per unit"}
+                  </Typography>
+                </Alert>
               </Grid>
+            )}
 
+            {/* Start Temperature */}
+            {!isVibrationTest && (
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
                   required
-                  label="Target High Temperature (°C)"
+                  label="Start Temperature (°C)"
                   variant="outlined"
                   type="number"
-                  value={targetHighTemp}
-                  onChange={(e) => setTargetHighTemp(Number(e.target.value))}
+                  value={startTemp}
+                  onChange={(e) => setStartTemp(Number(e.target.value))}
+                  helperText="Usually ambient temperature (25°C)"
                 />
               </Grid>
+            )}
 
+            {/* Target Temperature for High/Low Tests */}
+            {isHighOrLowTempTest && (
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
                   required
-                  label="Target Low Temperature (°C)"
+                  label="Target Temperature (°C)"
                   variant="outlined"
                   type="number"
-                  value={targetLowTemp}
-                  onChange={(e) => setTargetLowTemp(Number(e.target.value))}
+                  value={targetTemp}
+                  onChange={(e) => setTargetTemp(Number(e.target.value))}
                 />
               </Grid>
-            </>
-          )}
+            )}
 
-          {/* Ramp Rate Fields - Fixed Logic */}
-          {!isVibrationTest && (
-            <>
-              {useSeparateRampRates ? (
-                <>
-                  <Grid item xs={12} sm={6}>
-                    <TextField
-                      fullWidth
-                      required
-                      label="Ramp Up Rate (°C/min)"
-                      variant="outlined"
-                      type="number"
-                      value={rampUpRate}
-                      onChange={(e) => setRampUpRate(Number(e.target.value))}
+            {/* Separate Ramp Rates Checkbox */}
+            {!isVibrationTest && (
+              <Grid item xs={12}>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={useSeparateRampRates}
+                      onChange={(e) =>
+                        setUseSeparateRampRates(e.target.checked)
+                      }
                     />
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <TextField
-                      fullWidth
-                      required
-                      label="Ramp Down Rate (°C/min)"
-                      variant="outlined"
-                      type="number"
-                      value={rampDownRate}
-                      onChange={(e) => setRampDownRate(Number(e.target.value))}
-                    />
-                  </Grid>
-                </>
-              ) : (
-                <>
-                  {/* Ramp Rate for Non-Shock Tests */}
-                  {!isShockTest && (
-                    <Grid item xs={12}>
+                  }
+                  label="Use different Ramp Up and Ramp Down rates"
+                  disabled={isHighOrLowTempTest || isShockTest}
+                />
+              </Grid>
+            )}
+
+            {/* Cycling/Shock Specific Fields */}
+            {isCyclingOrShockTest && (
+              <>
+                <Grid item xs={12}>
+                  <FormControl fullWidth required>
+                    <InputLabel>Test Start Direction</InputLabel>
+                    <Select
+                      value={testStartFrom}
+                      label="Test Start Direction"
+                      onChange={(e) => setTestStartFrom(e.target.value)}
+                    >
+                      {testStartFromOptions.map((item) => (
+                        <MenuItem key={item.value} value={item.value}>
+                          {item.label}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    required
+                    label="Target High Temperature (°C)"
+                    variant="outlined"
+                    type="number"
+                    value={targetHighTemp}
+                    onChange={(e) => setTargetHighTemp(Number(e.target.value))}
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={6}>
+                  <TextField
+                    fullWidth
+                    required
+                    label="Target Low Temperature (°C)"
+                    variant="outlined"
+                    type="number"
+                    value={targetLowTemp}
+                    onChange={(e) => setTargetLowTemp(Number(e.target.value))}
+                  />
+                </Grid>
+              </>
+            )}
+
+            {/* Ramp Rate Fields - Fixed Logic */}
+            {!isVibrationTest && (
+              <>
+                {useSeparateRampRates ? (
+                  <>
+                    <Grid item xs={12} sm={6}>
                       <TextField
                         fullWidth
                         required
-                        label="Ramp Rate (°C/min)"
+                        label="Ramp Up Rate (°C/min)"
                         variant="outlined"
                         type="number"
-                        value={rampRate}
-                        onChange={(e) => setRampRate(Number(e.target.value))}
-                        helperText="Rate of temperature change per minute"
+                        value={rampUpRate}
+                        onChange={(e) => setRampUpRate(Number(e.target.value))}
                       />
                     </Grid>
-                  )}
-
-                  {/* Transition Time for Shock Tests */}
-                  {isShockTest && (
-                    <>
+                    <Grid item xs={12} sm={6}>
+                      <TextField
+                        fullWidth
+                        required
+                        label="Ramp Down Rate (°C/min)"
+                        variant="outlined"
+                        type="number"
+                        value={rampDownRate}
+                        onChange={(e) =>
+                          setRampDownRate(Number(e.target.value))
+                        }
+                      />
+                    </Grid>
+                  </>
+                ) : (
+                  <>
+                    {/* Ramp Rate for Non-Shock Tests */}
+                    {!isShockTest && (
                       <Grid item xs={12}>
                         <TextField
                           fullWidth
                           required
-                          label="Transition Time (Seconds)"
+                          label="Ramp Rate (°C/min)"
                           variant="outlined"
                           type="number"
-                          value={transitionTime}
-                          onChange={(e) =>
-                            setTransitionTime(Number(e.target.value))
-                          }
-                          helperText="Base transition time between temperatures in seconds"
+                          value={rampRate}
+                          onChange={(e) => setRampRate(Number(e.target.value))}
+                          helperText="Rate of temperature change per minute"
                         />
                       </Grid>
+                    )}
 
-                      <Grid item xs={12} sm={6}>
-                        <TextField
-                          fullWidth
-                          label="Time to Attain High Temp (min)"
-                          variant="outlined"
-                          type="number"
-                          value={timeToAttainPositiveTemp}
-                          onChange={(e) =>
-                            setTimeToAttainPositiveTemp(Number(e.target.value))
-                          }
-                          helperText="Additional time to reach high temperature"
-                        />
-                      </Grid>
+                    {/* Transition Time for Shock Tests */}
+                    {isShockTest && (
+                      <>
+                        <Grid item xs={12}>
+                          <TextField
+                            fullWidth
+                            required
+                            label="Transition Time (Seconds)"
+                            variant="outlined"
+                            type="number"
+                            value={transitionTime}
+                            onChange={(e) =>
+                              setTransitionTime(Number(e.target.value))
+                            }
+                            helperText="Base transition time between temperatures in seconds"
+                          />
+                        </Grid>
 
-                      <Grid item xs={12} sm={6}>
-                        <TextField
-                          fullWidth
-                          label="Time to Attain Low Temp (min)"
-                          variant="outlined"
-                          type="number"
-                          value={timeToAttainNegativeTemp}
-                          onChange={(e) =>
-                            setTimeToAttainNegativeTemp(Number(e.target.value))
-                          }
-                          helperText="Additional time to reach low temperature"
-                        />
-                      </Grid>
-                    </>
-                  )}
-                </>
-              )}
-            </>
-          )}
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            fullWidth
+                            label="Time to Attain High Temp (min)"
+                            variant="outlined"
+                            type="number"
+                            value={timeToAttainPositiveTemp}
+                            onChange={(e) =>
+                              setTimeToAttainPositiveTemp(
+                                Number(e.target.value)
+                              )
+                            }
+                            helperText="Additional time to reach high temperature"
+                          />
+                        </Grid>
 
-          {/* Dwell Time */}
-          {!isVibrationTest && (
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                required
-                label="Dwell Time per Temperature (min)"
-                variant="outlined"
-                type="number"
-                value={dwellTime}
-                onChange={(e) => setDwellTime(Number(e.target.value))}
-                helperText={
-                  isCyclingOrShockTest
-                    ? "Time spent at each target temperature"
-                    : "Time spent at target temperature"
-                }
-              />
-            </Grid>
-          )}
+                        <Grid item xs={12} sm={6}>
+                          <TextField
+                            fullWidth
+                            label="Time to Attain Low Temp (min)"
+                            variant="outlined"
+                            type="number"
+                            value={timeToAttainNegativeTemp}
+                            onChange={(e) =>
+                              setTimeToAttainNegativeTemp(
+                                Number(e.target.value)
+                              )
+                            }
+                            helperText="Additional time to reach low temperature"
+                          />
+                        </Grid>
+                      </>
+                    )}
+                  </>
+                )}
+              </>
+            )}
 
-          {/* Vibration Test Fields */}
-          {isVibrationTest && (
-            <>
-              <Grid item xs={12} sm={4}>
-                <FormControl fullWidth required>
-                  <InputLabel>Number of Axes</InputLabel>
-                  <Select
-                    value={numberOfAxes}
-                    label="Number of Axes"
-                    onChange={(e) => setNumberOfAxes(e.target.value)}
-                  >
-                    {numberOfAxesOptions.map((item) => (
-                      <MenuItem key={item.value} value={item.value}>
-                        {item.label}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
-
-              <Grid item xs={12} sm={4}>
+            {/* Dwell Time */}
+            {!isVibrationTest && (
+              <Grid item xs={12}>
                 <TextField
                   fullWidth
                   required
-                  label="Test Duration Per Axis (min)"
+                  label="Dwell Time per Temperature (min)"
                   variant="outlined"
                   type="number"
-                  value={testDurationPerAxis}
-                  // onChange={(e) =>
-                  //   setTestDurationPerAxis(Number(e.target.value))
-                  // }
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    setTestDurationPerAxis(val === "" ? "" : Number(val));
-                  }}
-                  helperText="Duration for each axis"
-                />
-              </Grid>
-
-              <Grid item xs={12} sm={4}>
-                <TextField
-                  fullWidth
-                  required
-                  label="Number of Units/Batches"
-                  variant="outlined"
-                  type="number"
-                  value={numberOfUnits}
-                  onChange={(e) => setNumberOfUnits(Number(e.target.value))}
+                  value={dwellTime}
+                  onChange={(e) => setDwellTime(Number(e.target.value))}
                   helperText={
-                    vibrationUnitType === "Batches"
-                      ? "Number of batches to test"
-                      : "Number of individual units to test"
+                    isCyclingOrShockTest
+                      ? "Time spent at each target temperature"
+                      : "Time spent at target temperature"
                   }
                 />
               </Grid>
+            )}
 
-              <Grid item xs={12} sm={4}>
-                <FormControl fullWidth required>
-                  <InputLabel>Select Unit Type</InputLabel>
-                  <Select
-                    value={vibrationUnitType}
-                    label="Select Unit Type"
-                    onChange={(e) => setVibrationUnitType(e.target.value)}
-                  >
-                    {unitTypeOptions.map((item) => (
-                      <MenuItem key={item.value} value={item.value}>
-                        {item.label}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Grid>
-            </>
-          )}
+            {/* Vibration Test Fields */}
+            {isVibrationTest && (
+              <>
+                <Grid item xs={12} sm={4}>
+                  <FormControl fullWidth required>
+                    <InputLabel>Number of Axes</InputLabel>
+                    <Select
+                      value={numberOfAxes}
+                      label="Number of Axes"
+                      onChange={(e) => setNumberOfAxes(e.target.value)}
+                    >
+                      {numberOfAxesOptions.map((item) => (
+                        <MenuItem key={item.value} value={item.value}>
+                          {item.label}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
 
-          {/* Calculate Button */}
-          <Grid
-            item
-            xs={12}
-            sx={{ display: "flex", justifyContent: "center", gap: 2 }}
-          >
-            <Button
-              type="submit"
-              variant="contained"
-              color="primary"
-              size="large"
-            >
-              {isVibrationTest
-                ? "Calculate Test Duration"
-                : "Calculate Cycle Duration"}
-            </Button>
-            <Button
-              variant="outlined"
-              color="secondary"
-              onClick={handleClearCalculation}
-              size="large"
-            >
-              Clear All
-            </Button>
-          </Grid>
-        </Grid>
-
-        {/* Per Cycle Result */}
-        {oneCycleDuration > 0 && (
-          <Box mt={3} mb={2} textAlign="center">
-            <Alert severity="success" sx={{ mb: 2 }}>
-              <Typography variant="h6">
-                {isVibrationTest ? "Total Test Duration" : "Duration Per Cycle"}
-                :<strong> {oneCycleDuration.toFixed(2)} minutes</strong>
-              </Typography>
-              <Typography variant="body2" sx={{ mt: 1 }}>
-                {isShockTest
-                  ? `Each cycle includes ${(transitionTime / 60).toFixed(
-                      1
-                    )} min base transitions plus attainment times and ${dwellTime} min dwells`
-                  : isCyclingTest
-                  ? `Each cycle includes temperature ramping at ${rampRate}°C/min and ${dwellTime} min dwells`
-                  : isVibrationTest
-                  ? `Includes testing ${numberOfAxes} axes for ${testDurationPerAxis} min each on ${numberOfUnits} units, plus 60 min buffer`
-                  : `Includes ramp up, ${dwellTime} min dwell, and ramp down`}
-              </Typography>
-            </Alert>
-          </Box>
-        )}
-
-        {!isVibrationTest && (
-          <>
-            <Divider sx={{ my: 3 }} />
-
-            {/* Total Duration Calculation */}
-            <Box textAlign="center">
-              <Typography variant="h6" gutterBottom>
-                Calculate Total Test Duration
-              </Typography>
-
-              <Grid
-                container
-                spacing={2}
-                justifyContent="center"
-                alignItems="center"
-              >
                 <Grid item xs={12} sm={4}>
                   <TextField
                     fullWidth
-                    label="Number of Cycles"
+                    required
+                    label="Test Duration Per Axis (min)"
                     variant="outlined"
                     type="number"
-                    value={numberOfCycles}
-                    onChange={(e) => setNumberOfCycles(Number(e.target.value))}
-                    inputProps={{ min: 1 }}
+                    value={testDurationPerAxis}
+                    // onChange={(e) =>
+                    //   setTestDurationPerAxis(Number(e.target.value))
+                    // }
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setTestDurationPerAxis(val === "" ? "" : Number(val));
+                    }}
+                    helperText="Duration for each axis"
                   />
                 </Grid>
 
                 <Grid item xs={12} sm={4}>
-                  <Button
-                    type="submit"
-                    variant="contained"
-                    color="primary"
-                    size="large"
+                  <TextField
                     fullWidth
-                  >
-                    Calculate Total Duration
-                  </Button>
+                    required
+                    label="Number of Units/Batches"
+                    variant="outlined"
+                    type="number"
+                    value={numberOfUnits}
+                    onChange={(e) => setNumberOfUnits(Number(e.target.value))}
+                    helperText={
+                      vibrationUnitType === "Batches"
+                        ? "Number of batches to test"
+                        : "Number of individual units to test"
+                    }
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={4}>
+                  <FormControl fullWidth required>
+                    <InputLabel>Select Unit Type</InputLabel>
+                    <Select
+                      value={vibrationUnitType}
+                      label="Select Unit Type"
+                      onChange={(e) => setVibrationUnitType(e.target.value)}
+                    >
+                      {unitTypeOptions.map((item) => (
+                        <MenuItem key={item.value} value={item.value}>
+                          {item.label}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
+              </>
+            )}
+
+            {/* Calculate Button */}
+            <Grid
+              item
+              xs={12}
+              sx={{ display: "flex", justifyContent: "center", gap: 2 }}
+            >
+              <Button
+                type="submit"
+                variant="contained"
+                color="primary"
+                size="large"
+              >
+                {isVibrationTest
+                  ? "Calculate Test Duration"
+                  : "Calculate Cycle Duration"}
+              </Button>
+              <Button
+                variant="outlined"
+                color="secondary"
+                onClick={handleClearCalculation}
+                size="large"
+              >
+                Clear All
+              </Button>
+            </Grid>
+          </Grid>
+
+          {/* Per Cycle Result */}
+          {oneCycleDuration > 0 && (
+            <Box mt={3} mb={2} textAlign="center">
+              <Alert severity="success" sx={{ mb: 2 }}>
+                <Typography variant="h6">
+                  {isVibrationTest
+                    ? "Total Test Duration"
+                    : "Duration Per Cycle"}
+                  :<strong> {oneCycleDuration.toFixed(2)} minutes</strong>
+                </Typography>
+                <Typography variant="body2" sx={{ mt: 1 }}>
+                  {isShockTest
+                    ? `Each cycle includes ${(transitionTime / 60).toFixed(
+                        1
+                      )} min base transitions plus attainment times and ${dwellTime} min dwells`
+                    : isCyclingTest
+                    ? `Each cycle includes temperature ramping at ${rampRate}°C/min and ${dwellTime} min dwells`
+                    : isVibrationTest
+                    ? `Includes testing ${numberOfAxes} axes for ${testDurationPerAxis} min each on ${numberOfUnits} units, plus 60 min buffer`
+                    : `Includes ramp up, ${dwellTime} min dwell, and ramp down`}
+                </Typography>
+              </Alert>
+            </Box>
+          )}
+
+          {!isVibrationTest && (
+            <>
+              <Divider sx={{ my: 3 }} />
+
+              {/* Total Duration Calculation */}
+              <Box textAlign="center">
+                <Typography variant="h6" gutterBottom>
+                  Calculate Total Test Duration
+                </Typography>
+
+                <Grid
+                  container
+                  spacing={2}
+                  justifyContent="center"
+                  alignItems="center"
+                >
+                  <Grid item xs={12} sm={4}>
+                    <TextField
+                      fullWidth
+                      label="Number of Cycles"
+                      variant="outlined"
+                      type="number"
+                      value={numberOfCycles}
+                      onChange={(e) =>
+                        setNumberOfCycles(Number(e.target.value))
+                      }
+                      inputProps={{ min: 1 }}
+                    />
+                  </Grid>
+
+                  <Grid item xs={12} sm={4}>
+                    <Button
+                      type="submit"
+                      variant="contained"
+                      color="primary"
+                      size="large"
+                      fullWidth
+                    >
+                      Calculate Total Duration
+                    </Button>
+                  </Grid>
+                </Grid>
+              </Box>
+            </>
+          )}
+
+          {/* Total Results */}
+          {estimatedMinutes > 0 && (
+            <Box mt={3}>
+              <Grid container spacing={2} justifyContent="center">
+                <Grid item xs={12} sm={4}>
+                  <Paper elevation={2} sx={{ p: 2, bgcolor: "primary.50" }}>
+                    <Typography variant="h6" color="primary">
+                      Total Minutes
+                    </Typography>
+                    <Typography variant="h4" color="primary.main">
+                      {estimatedMinutes.toFixed(0)}
+                    </Typography>
+                    {isVibrationTest && (
+                      <Typography variant="body2" sx={{ mt: 1 }}>
+                        Testing {numberOfUnits}{" "}
+                        {vibrationUnitType.toLowerCase()} across {numberOfAxes}{" "}
+                        axes ({testDurationPerAxis} min per axis) + 60 min
+                        buffer
+                      </Typography>
+                    )}
+                  </Paper>
+                </Grid>
+
+                <Grid item xs={12} sm={4}>
+                  <Paper elevation={2} sx={{ p: 2, bgcolor: "success.50" }}>
+                    <Typography variant="h6" color="success.main">
+                      Total Hours
+                    </Typography>
+                    <Typography variant="h4" color="success.main">
+                      {estimatedHours.toFixed(2)}
+                    </Typography>
+                  </Paper>
+                </Grid>
+
+                <Grid item xs={12} sm={4}>
+                  <Paper elevation={2} sx={{ p: 2, bgcolor: "info.50" }}>
+                    <Typography variant="h6" color="info.main">
+                      Total Days
+                    </Typography>
+                    <Typography variant="h4" color="info.main">
+                      {(estimatedHours / 24).toFixed(1)}
+                    </Typography>
+                  </Paper>
                 </Grid>
               </Grid>
             </Box>
-          </>
-        )}
+          )}
+        </form>
+      </Paper>
 
-        {/* Total Results */}
-        {estimatedMinutes > 0 && (
-          <Box mt={3}>
-            <Grid container spacing={2} justifyContent="center">
-              <Grid item xs={12} sm={4}>
-                <Paper elevation={2} sx={{ p: 2, bgcolor: "primary.50" }}>
-                  <Typography variant="h6" color="primary">
-                    Total Minutes
-                  </Typography>
-                  <Typography variant="h4" color="primary.main">
-                    {estimatedMinutes.toFixed(0)}
-                  </Typography>
-                  {isVibrationTest && (
-                    <Typography variant="body2" sx={{ mt: 1 }}>
-                      Testing {numberOfUnits} {vibrationUnitType.toLowerCase()}{" "}
-                      across {numberOfAxes} axes ({testDurationPerAxis} min per
-                      axis) + 60 min buffer
-                    </Typography>
-                  )}
-                </Paper>
-              </Grid>
-
-              <Grid item xs={12} sm={4}>
-                <Paper elevation={2} sx={{ p: 2, bgcolor: "success.50" }}>
-                  <Typography variant="h6" color="success.main">
-                    Total Hours
-                  </Typography>
-                  <Typography variant="h4" color="success.main">
-                    {estimatedHours.toFixed(2)}
-                  </Typography>
-                </Paper>
-              </Grid>
-
-              <Grid item xs={12} sm={4}>
-                <Paper elevation={2} sx={{ p: 2, bgcolor: "info.50" }}>
-                  <Typography variant="h6" color="info.main">
-                    Total Days
-                  </Typography>
-                  <Typography variant="h4" color="info.main">
-                    {(estimatedHours / 24).toFixed(1)}
-                  </Typography>
-                </Paper>
-              </Grid>
-            </Grid>
-          </Box>
-        )}
-      </form>
-    </Paper>
+      <br />
+      {/* <FileBrowser /> */}
+    </>
   );
 };
 

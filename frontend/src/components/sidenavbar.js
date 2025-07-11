@@ -55,6 +55,7 @@ import { UserContext } from "../Pages/UserContext";
 import { NotificationContext } from "../Pages/NotificationContext";
 import axios from "axios";
 import { serverBaseAddress } from "../Pages/APIPage";
+import { Source } from "@mui/icons-material";
 
 const drawerWidth = 200;
 
@@ -521,6 +522,13 @@ export default function SidenavigationBar() {
     },
     {
       i: 13,
+      label: "Organisation Documents",
+      icon: <Source />,
+      path: "/org_docs",
+      gradientId: "orgDocsGradient",
+    },
+    {
+      i: 14,
       label: "Users Management",
       icon: <ManageAccountsIcon />,
       path: "/user_management",
@@ -548,7 +556,7 @@ export default function SidenavigationBar() {
     } else if (loggedInUserDepartment === "TS2 Testing") {
       return [9, 10, 11].includes(item.i);
     } else if (loggedInUserRole === "Quality Engineer") {
-      return [4, 6, 7, 8, 9, 10, 11].includes(item.i);
+      return [4, 6, 7, 8, 9, 10, 11, 13].includes(item.i);
     }
     return false; // Default: Hide the item
   });
