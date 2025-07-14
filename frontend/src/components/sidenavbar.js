@@ -1,12 +1,11 @@
 // Here we are using "Mini variant drawer" to create a side navigation bar:
 
-import { useContext, useEffect, useState } from "react";
+import { useContext, useState } from "react";
 import { styled, useTheme } from "@mui/material/styles";
 import Box from "@mui/material/Box";
 import MuiDrawer from "@mui/material/Drawer";
 import MuiAppBar from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
-import List from "@mui/material/List";
 import CssBaseline from "@mui/material/CssBaseline";
 import Typography from "@mui/material/Typography";
 import IconButton from "@mui/material/IconButton";
@@ -17,45 +16,27 @@ import ListItem from "@mui/material/ListItem";
 import ListItemButton from "@mui/material/ListItemButton";
 import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
-import MarkChatReadIcon from "@mui/icons-material/MarkChatRead";
-import MarkChatUnreadIcon from "@mui/icons-material/MarkChatUnread";
-import DeleteIcon from "@mui/icons-material/Delete";
-import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
 import CalculateIcon from "@mui/icons-material/Calculate";
 
-import {
-  Avatar,
-  Badge,
-  Button,
-  Popover,
-  SvgIcon,
-  Tooltip,
-} from "@mui/material";
+import { Avatar, Popover, SvgIcon, Tooltip } from "@mui/material";
 import EventRepeatIcon from "@mui/icons-material/EventRepeat";
 import HomeIcon from "@mui/icons-material/Home";
-// import EditNoteIcon from "@mui/icons-material/EditNote";
 import CalendarMonthSharpIcon from "@mui/icons-material/CalendarMonthSharp";
 import ArticleIcon from "@mui/icons-material/Article";
-// import SettingsIcon from "@mui/icons-material/Settings";
 import NoteAddIcon from "@mui/icons-material/NoteAdd";
 import KitchenIcon from "@mui/icons-material/Kitchen";
-import NotificationsIcon from "@mui/icons-material/Notifications";
 import ManageAccountsIcon from "@mui/icons-material/ManageAccounts";
 import CurrencyRupeeIcon from "@mui/icons-material/CurrencyRupee";
 import DashboardIcon from "@mui/icons-material/Dashboard";
-import TrackChangesIcon from "@mui/icons-material/TrackChanges";
 import { Link, Outlet } from "react-router-dom";
-// import axios from "axios";
 
 import RobotoBoldFont from "../fonts/Roboto-Bold.ttf";
 import UserProfile from "../LoginRegister/UserProfile";
 
 // import { serverBaseAddress } from "../Pages/APIPage";
 import { UserContext } from "../Pages/UserContext";
-import { NotificationContext } from "../Pages/NotificationContext";
-import axios from "axios";
-import { serverBaseAddress } from "../Pages/APIPage";
 import { Source } from "@mui/icons-material";
+import NotificationDialog from "./NotificationDialog";
 
 const drawerWidth = 200;
 
@@ -129,25 +110,11 @@ export default function SidenavigationBar() {
 
   const { loggedInUser, loggedInUserDepartment, loggedInUserRole } =
     useContext(UserContext);
-  const { notifications, setNotifications, newNotificationReceived } =
-    useContext(NotificationContext);
 
   const [open, setOpen] = useState(false); // "true" to keep open, and "false" is for keep it closed
 
   //States and functions to handle the onclick events on Avatar:
   const [anchorEl, setAnchorEl] = useState(null);
-  const [notificationAnchorEl, setNotificationAnchorEl] = useState(null);
-
-  //State to mark all the notifications as default unread:
-  // const [readStatus, setReadStatus] = useState([]);
-  const [readStatus, setReadStatus] = useState({});
-
-  // const [searchNotificationText, setSearchNotificationText] = useState("");
-  // const [filteredNotifications, setFilteredNotifications] =
-  //   useState(notifications);
-
-  const [numberOfUnreadNotifications, setNumberOfUnreadNotifications] =
-    useState(0);
 
   const handleClickAvatar = (event) => {
     setAnchorEl(event.currentTarget);
@@ -157,242 +124,10 @@ export default function SidenavigationBar() {
     setAnchorEl(null);
   };
 
-  //Function to open the notification bar:
-  const handleClickNotification = (event) => {
-    setNotificationAnchorEl(event.currentTarget);
-  };
-
-  //Function to close the notification bar:
-  // const handleClearNotifications = () => {
-  //   notifications.length = 0;
-  //   setNotificationAnchorEl(null);
-  // };
-
-  //Function to close the notification bar:
-  const handleCloseNotification = () => {
-    setNotificationAnchorEl(null);
-  };
-
   const isOpenUserProfileWindow = Boolean(anchorEl);
   const userProfileWindowId = isOpenUserProfileWindow
     ? "user-profile-window-popover"
     : undefined;
-
-  const isOpenNotificationWindow = Boolean(notificationAnchorEl);
-  const notificationWindowId = isOpenNotificationWindow
-    ? "notification-window-popover"
-    : undefined;
-
-  // const onChangeSearchNotificationText = (event) => {
-  //   const searchText = event.target.value;
-  //   setSearchNotificationText(searchText);
-  // };
-
-  // const onClearSearchNotificationText = () => {
-  //   setSearchNotificationText("");
-  // };
-
-  //Fetch the number of un-read notifictions:
-  const fetchUnreadNotificationsCount = async () => {
-    try {
-      const response = await axios.get(
-        `${serverBaseAddress}/api/getUnreadNotificationsCount`,
-        {
-          params: {
-            userName: loggedInUser,
-            userRole: loggedInUserRole,
-          },
-        }
-      );
-      const fetchedUnreadCount = response.data?.count;
-      setNumberOfUnreadNotifications(fetchedUnreadCount);
-    } catch (error) {
-      console.error("Error fetching unread notifications count:", error);
-    }
-  };
-
-  //Fetch all the notifications which are recieved by the logged in users:
-  useEffect(() => {
-    const fetchNotifications = async () => {
-      try {
-        const response = await axios.get(
-          `${serverBaseAddress}/api/getAllNotifications`,
-          {
-            params: {
-              userRole: loggedInUserRole,
-            },
-          }
-        );
-
-        const fetchedNotifications = response.data;
-
-        // Filter out notifications marked as deleted by the user
-        const filteredNotifications = fetchedNotifications.filter(
-          (notification) =>
-            !notification.isDeletedBy ||
-            !notification.isDeletedBy.split(",").includes(loggedInUser)
-        );
-        // Update readStatus array based on isReadBy field
-        const newReadStatus = filteredNotifications.map((notification) => {
-          const isRead = notification.isReadBy
-            ? notification.isReadBy.split(",").includes(loggedInUser)
-            : false;
-
-          return isRead;
-        });
-
-        setNotifications(filteredNotifications);
-        setReadStatus(newReadStatus);
-      } catch (error) {
-        console.error("Error fetching notifications:", error);
-      }
-    };
-
-    //Call and initiate the function to fetch the notifications:
-    fetchNotifications();
-
-    //Call and initiate the function:
-    fetchUnreadNotificationsCount();
-  }, [loggedInUserRole, loggedInUser, newNotificationReceived]);
-
-  //Function to mark the newly recieved notification as read:
-  useEffect(() => {
-    if (notifications.length > 0) {
-      const newReadStatus = notifications.reduce((status, notification) => {
-        // Ensure every notification has a valid ID
-        if (!notification.id) {
-          // console.error("Notification with missing ID:", notification);
-          return status;
-        }
-
-        // Preserve existing readStatus or initialize it
-        const isRead = readStatus.hasOwnProperty(notification.id)
-          ? readStatus[notification.id]
-          : notification.isReadBy
-          ? notification.isReadBy.split(",").includes(loggedInUser)
-          : false;
-
-        status[notification.id] = isRead;
-        return status;
-      }, {});
-
-      setReadStatus(newReadStatus);
-    }
-  }, [notifications, loggedInUser, newNotificationReceived]);
-
-  ///////////////////////////////////////////////////////////////////////////////////////////
-  //Function to make the notification as read:
-  const handleReadSelectedNotification = (notificationId) => {
-    // Mark the notification as read in the backend
-    const markNotificationAsRead = async (notificationId, loggedInUser) => {
-      try {
-        const response = await axios.post(
-          `${serverBaseAddress}/api/notifications/markAsRead/${notificationId}`,
-          { userName: loggedInUser }
-        );
-
-        if (response.status === 200) {
-          // Update the read status based on the notification id
-          setReadStatus((prevReadStatus) => ({
-            ...prevReadStatus,
-            [notificationId]: true,
-          }));
-          await fetchUnreadNotificationsCount();
-        }
-      } catch (error) {
-        console.error("Error marking notification as read:", error);
-      }
-    };
-
-    markNotificationAsRead(notificationId, loggedInUser);
-    // fetchUnreadNotificationsCount();
-  };
-
-  //Function to make the notification as unread:
-  const handleUnreadSelectedNotification = (notificationId) => {
-    // Mark the notification as unread in the backend
-    const markNotificationAsUnRead = async (notificationId, loggedInUser) => {
-      try {
-        const response = await axios.post(
-          `${serverBaseAddress}/api/notifications/markAsUnRead/${notificationId}`,
-          { userName: loggedInUser }
-        );
-
-        if (response.status === 200) {
-          setReadStatus((prevReadStatus) => ({
-            ...prevReadStatus,
-            [notificationId]: false,
-          }));
-          await fetchUnreadNotificationsCount();
-        }
-      } catch (error) {
-        console.error("Error marking notification as un-read:", error);
-      }
-    };
-
-    markNotificationAsUnRead(notificationId, loggedInUser);
-    // fetchUnreadNotificationsCount();
-  };
-
-  const handleDeleteAllNotifications = () => {
-    alert("Delete All Notifications");
-  };
-
-  // Delete a notification
-  const handleDeleteSelectedNotification = async (notificationId) => {
-    try {
-      await axios.delete(
-        `${serverBaseAddress}/api/deleteNotification/${notificationId}`,
-        {
-          data: { userName: loggedInUser },
-        }
-      );
-
-      // Update the notifications and read status, then fetch the updated unread count
-      setNotifications((prevNotifications) =>
-        prevNotifications.filter(
-          (notification) => notification.id !== notificationId
-        )
-      );
-      setReadStatus((prevReadStatus) => {
-        const updatedStatus = { ...prevReadStatus };
-        delete updatedStatus[notificationId];
-        return updatedStatus;
-      });
-
-      await fetchUnreadNotificationsCount();
-    } catch (error) {
-      console.error("Error deleting the notification", error);
-    }
-  };
-
-  // Function to format the received date or time
-  const formatDateOrTime = (receivedAt) => {
-    if (!receivedAt) return "";
-
-    const now = new Date();
-    const notificationDate = new Date(receivedAt);
-
-    const isToday = now.toDateString() === notificationDate.toDateString();
-
-    if (isToday) {
-      return notificationDate.toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      });
-    } else {
-      const day = notificationDate.getDate();
-
-      const dayString = day.toString().padStart(2, "0");
-      const month = notificationDate.getMonth() + 1;
-      const monthString = month.toString().padStart(2, "0");
-      const year = notificationDate.getFullYear();
-
-      const formattedNotificationDate = `${dayString}-${monthString}-${year}`;
-
-      return formattedNotificationDate;
-    }
-  };
 
   // To highlight the selected or clicked buton
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -652,20 +387,10 @@ export default function SidenavigationBar() {
             {/* Add the box with flexGrow which will acts as a spacer item */}
             <Box sx={{ flexGrow: 1 }} />
 
-            <IconButton
-              title="Notifications"
-              onClick={handleClickNotification}
-              size="large"
-            >
-              <Badge
-                showZero
-                badgeContent={numberOfUnreadNotifications}
-                color="error"
-              >
-                <NotificationsIcon sx={{ color: "white" }} size="large" />
-              </Badge>
-            </IconButton>
+            {/* Notifications component */}
+            <NotificationDialog />
 
+            {/* Avatar/Profile component */}
             <IconButton onClick={handleClickAvatar}>
               <Avatar sx={{ backgroundColor: "#ff3333" }}>{userAvatar}</Avatar>
             </IconButton>
@@ -687,113 +412,6 @@ export default function SidenavigationBar() {
               <UserProfile userAvatar={userAvatar} userName={loggedInUser} />
             </Popover>
           </Toolbar>
-
-          <Popover
-            id={notificationWindowId}
-            open={isOpenNotificationWindow}
-            anchorEl={notificationAnchorEl}
-            onClose={handleCloseNotification}
-            anchorOrigin={{
-              vertical: "bottom",
-              horizontal: "center",
-            }}
-            transformOrigin={{
-              vertical: "top",
-              horizontal: "center",
-            }}
-          >
-            <Box sx={{ padding: 2 }}>
-              <Typography variant="h6">Notifications</Typography>
-              {notifications.length === 0 ? (
-                <Typography variant="body1">No notifications found.</Typography>
-              ) : (
-                <List>
-                  {notifications.map((notification) => {
-                    const isRead = readStatus[notification.id]; // Access readStatus by notification ID
-
-                    return (
-                      <ListItem
-                        key={notification.id}
-                        sx={{
-                          backgroundColor: isRead ? "white" : "#c3ddf8",
-                          borderBottom: "1px solid #e0e0e0",
-                          transition: "background-color 0.3s",
-                          display: "flex", // Aligns items horizontally
-                          justifyContent: "space-between", // Space between dot-message and buttons
-                          alignItems: "center", // Aligns items vertically centered
-                          "&:hover": {
-                            backgroundColor: isRead ? "#e0e0e0" : "#c3ddf8",
-                          },
-                        }}
-                      >
-                        <Box sx={{ display: "flex", alignItems: "center" }}>
-                          {!isRead && (
-                            <FiberManualRecordIcon
-                              sx={{
-                                fontSize: 10, // Size of the dot
-                                color: "blue", // Color of the dot, adjust as needed
-                                marginRight: 1, // Space between dot and message
-                              }}
-                            />
-                          )}
-
-                          <ListItemText
-                            primary={notification.message} // Message text
-                            secondary={formatDateOrTime(
-                              notification.receivedAt
-                            )} // Format the receivedAt date/time
-                          />
-                        </Box>
-
-                        <Box sx={{ display: "flex", alignItems: "center" }}>
-                          <Tooltip
-                            title={isRead ? "Mark as Un-Read" : "Mark as Read"}
-                          >
-                            <IconButton
-                              onClick={() =>
-                                isRead
-                                  ? handleUnreadSelectedNotification(
-                                      notification.id
-                                    )
-                                  : handleReadSelectedNotification(
-                                      notification.id
-                                    )
-                              }
-                            >
-                              {isRead ? (
-                                <MarkChatUnreadIcon />
-                              ) : (
-                                <MarkChatReadIcon />
-                              )}
-                            </IconButton>
-                          </Tooltip>
-
-                          <Tooltip title="Delete Notification">
-                            <IconButton
-                              onClick={() =>
-                                handleDeleteSelectedNotification(
-                                  notification.id
-                                )
-                              }
-                            >
-                              <DeleteIcon />
-                            </IconButton>
-                          </Tooltip>
-                        </Box>
-                      </ListItem>
-                    );
-                  })}
-                </List>
-              )}
-              {/* <Button
-                onClick={handleDeleteAllNotifications}
-                variant="contained"
-              >
-                {" "}
-                Delete Notifications
-              </Button> */}
-            </Box>
-          </Popover>
         </AppBar>
 
         <Drawer variant="permanent" open={open}>

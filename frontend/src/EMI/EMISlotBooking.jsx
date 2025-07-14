@@ -7,7 +7,10 @@ import {
   DialogTitle,
   Grid,
   Typography,
-  Checkbox,
+  IconButton,
+  Alert,
+  Stack,
+  Tooltip,
 } from "@mui/material";
 import { useContext, useRef, useState, useEffect } from "react";
 
@@ -36,6 +39,7 @@ import { serverBaseAddress } from "../Pages/APIPage";
 import ConfirmationDialog from "../common/ConfirmationDialog";
 import CustomModal from "../common/CustomModalWithTable";
 import useEMIStore from "./EMIStore";
+import HelpCenterIcon from "@mui/icons-material/HelpCenter";
 
 const localizer = momentLocalizer(moment);
 
@@ -80,6 +84,7 @@ const EMISlotBooking = () => {
   const [isCustomStandard, setIsCustomStandard] = useState(false);
   const [isCustomTest, setIsCustomTest] = useState(false);
   // const [manualSlotDuration, setManualSlotDuration] = useState(false);
+  const [openColorCodeInfoDialog, setOpenColorCodeInfoDialog] = useState(false);
 
   // Initialize useRef hook
   const emiCalendarRef = useRef(null);
@@ -300,7 +305,7 @@ const EMISlotBooking = () => {
 
       if (end.isAfter(start)) {
         const duration = end.diff(start, "hour", true);
-        setValue("slot_duration", duration.toFixed(3));
+        setValue("slot_duration", duration.toFixed(2));
       } else if (end.isBefore(start)) {
         toast.warning("End time should be after start time");
         setValue("slot_duration", "");
@@ -790,6 +795,21 @@ const EMISlotBooking = () => {
     };
   };
 
+  const colorCodeInfoOptions = [
+    { colorCode: "#2196f3", description: "Upcoming Tests" },
+    { colorCode: "#4caf50", description: "Ongoing Tests" },
+    { colorCode: "#ff9800", description: "Todays Tests" },
+    { colorCode: "#757575", description: "Completed Tests" },
+  ];
+
+  const handleOpenSlotBookingColorCodeInfoDialog = () => {
+    setOpenColorCodeInfoDialog(true);
+  };
+
+  const handleCloseSlotBookingColorCodeInfoDialog = () => {
+    setOpenColorCodeInfoDialog(false);
+  };
+
   return (
     <>
       <Box
@@ -818,7 +838,11 @@ const EMISlotBooking = () => {
         </Button>
       </Box>
 
-      <Grid container sx={{ mb: 2 }} spacing={2}>
+      <Grid
+        container
+        sx={{ mb: 2, justifyContent: "space-between" }}
+        spacing={2}
+      >
         <Grid item xs={12} sm={6} md={4}>
           <SearchBar
             placeholder="Search bookings..."
@@ -826,6 +850,18 @@ const EMISlotBooking = () => {
             onChangeOfSearchInput={handleSearchChange}
             onClearSearchInput={handleClearSearch}
           />
+        </Grid>
+
+        <Grid item xs={12} sm={6} md={4} sx={{ textAlign: "right" }}>
+          <Tooltip title="Info" arrow>
+            <IconButton
+              color="primary"
+              aria-label="filter"
+              onClick={handleOpenSlotBookingColorCodeInfoDialog}
+            >
+              <HelpCenterIcon />
+            </IconButton>
+          </Tooltip>
         </Grid>
       </Grid>
 
@@ -938,6 +974,56 @@ const EMISlotBooking = () => {
         confirmButtonText="Delete"
         cancelButtonText="Cancel"
       />
+
+      {openColorCodeInfoDialog && (
+        <Dialog
+          open={openColorCodeInfoDialog}
+          onClose={handleCloseSlotBookingColorCodeInfoDialog}
+          fullWidth
+          maxWidth="sm"
+        >
+          <DialogTitle sx={{ fontWeight: 600, color: "#003366" }}>
+            Slot Color Code Info
+          </DialogTitle>
+          <DialogContent>
+            <Stack spacing={2} sx={{ mt: "5px" }}>
+              {colorCodeInfoOptions.map((item, index) => (
+                <Alert
+                  key={index}
+                  icon={false}
+                  variant="filled"
+                  sx={{
+                    backgroundColor: item.colorCode,
+                    color: "#fff",
+                    fontWeight: 500,
+                    boxShadow: 1,
+                    borderRadius: 2,
+                    display: "flex",
+                    alignItems: "center",
+                    fontSize: "1rem",
+                    minHeight: 40,
+                  }}
+                >
+                  <Box sx={{ display: "flex", alignItems: "center" }}>
+                    <Box
+                      sx={{
+                        width: 18,
+                        height: 18,
+                        borderRadius: "50%",
+                        backgroundColor: item.colorCode,
+                        border: "2px solid #fff",
+                        mr: 2,
+                        boxShadow: 1,
+                      }}
+                    />
+                    {item.description}
+                  </Box>
+                </Alert>
+              ))}
+            </Stack>
+          </DialogContent>
+        </Dialog>
+      )}
     </>
   );
 };

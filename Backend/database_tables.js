@@ -32,39 +32,6 @@ async function createUsersTable() {
 }
 
 // Function to add the default admin user:
-// async function addDefaultUser() {
-
-//     const defaultUserName = 'Admin';
-//     const defaultUserEmail = 'admin@gmail.com';
-//     const defaultUserPassword = `12345@Admin`;
-//     const defaultUserDepartment = 'All';
-//     const defaultUserRole = 'Admin';
-//     const defaultUserStatus = 'Enable';
-
-// const checkUserQuery = `SELECT * FROM labbee_users WHERE email = ?`;
-// const insertQuery = `INSERT INTO labbee_users(name, email, password, department, role, user_status) VALUES (?, ?, ?, ?, ?, ?)`;
-
-// try {
-//     // Check if the default user already exists
-//     const [rows] = await db.promise().query(checkUserQuery, [defaultUserEmail]);
-//     if (rows.length > 0) {
-//         console.log("Default user already exists.");
-//         return;
-//     }
-
-//     // Hash the default password
-//     const hashedDefaultPassword = await bcrypt.hash(defaultUserPassword, saltRounds);
-
-//     // Insert the default user
-//     await db.promise().query(insertQuery, [defaultUserName, defaultUserEmail, hashedDefaultPassword, defaultUserDepartment, defaultUserRole, defaultUserStatus]);
-
-//     console.log("Default user inserted successfully.");
-
-// } catch (error) {
-//      console.error("Error while inserting default user", error);
-// }
-
-// }
 
 async function addDefaultUser() {
   const defaultUserName = process.env.ADMIN_NAME;
@@ -726,11 +693,7 @@ const createEMISLotBookingTable = () => {
       customer_email VARCHAR(255),
       customer_phone VARCHAR(255),
       slot_type VARCHAR(255),
-<<<<<<< HEAD
-       test_type VARCHAR(255),
-=======
       test_type VARCHAR(255),
->>>>>>> onedriveLinking
       test_name VARCHAR(255),
       custom_test_name VARCHAR(255),
       test_standard VARCHAR(255),

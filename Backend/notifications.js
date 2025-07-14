@@ -228,6 +228,33 @@ function notificationsAPIs(app, io, labbeeUsers) {
     );
   });
 
+  //API to delete all notifications for a user :
+  app.delete("/api/deleteAllNotifications", (req, res) => {
+    const { userName } = req.body;
+    if (!userName) {
+      return res.status(400).json({
+        message: "Invalid request: userName is missing",
+      });
+    }
+
+    const sqlQuery = `
+    UPDATE notifications_table SET isDeletedBy = CASE WHEN isDeletedBy IS NULL THEN ? ELSE CONCAT_WS(',', isDeletedBy, ?) END
+    `;
+
+    db.query(sqlQuery, [userName, userName], (error, result) => {
+      if (error) {
+        console.error("Error deleting notifications for user:", error.message);
+        return res.status(500).json({
+          message: "Internal server error",
+          error: error.message,
+        });
+      }
+      res.status(200).json({
+        message: "All notifications deleted for user",
+      });
+    });
+  });
+
   //API to fetch the count of un-read notifications based on logged in user role:
   app.get("/api/getUnreadNotificationsCount", (req, res) => {
     const { userRole, userName } = req.query;

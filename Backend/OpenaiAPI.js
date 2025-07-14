@@ -3,13 +3,10 @@ require("dotenv").config();
 
 function openaiAPIs(app, io, labbeeUsers) {
   // Initialize OpenAI client
-
-  const openai = new OpenAI({
-    apiKey: process.env.OPEN_AI_API_KEY,
-  });
-
+  // const openai = new OpenAI({
+  //   apiKey: process.env.OPEN_AI_API_KEY,
+  // });
   //   console.log("openai", openai);
-
   //   const completion = openai.chat.completions.create({
   //     model: "gpt-4o-mini",
   //     store: true,
@@ -21,7 +18,6 @@ function openaiAPIs(app, io, labbeeUsers) {
   //       },
   //     ],
   //   });
-
   //   completion.then((result) => console.log(result.choices[0].message));
 }
 
