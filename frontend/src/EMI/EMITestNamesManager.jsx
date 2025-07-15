@@ -208,19 +208,17 @@ const EMITestNamesManager = () => {
   }, []);
 
   return (
-    <Box sx={{ width: "100%", p: 2 }}>
-      {/* <Typography variant="h6" gutterBottom>
-        EMI Test Names Management
-      </Typography> */}
-
-      <Button
-        variant="contained"
-        color="primary"
-        sx={{ mb: 2 }}
-        onClick={handleAddTestName}
-      >
-        Add Test Name
-      </Button>
+    <>
+      <Box sx={{ width: "100%", p: 2 }}>
+        <Button
+          variant="contained"
+          color="primary"
+          sx={{ mb: 2 }}
+          onClick={handleAddTestName}
+        >
+          Add Test Name
+        </Button>
+      </Box>
 
       <Box
         sx={{
@@ -237,13 +235,14 @@ const EMITestNamesManager = () => {
         <DataGrid
           rows={testNamesWithSerialNumbers}
           columns={testNamesTableColumns}
-          autoHeight
           processRowUpdate={processTestNameRowUpdate}
           experimentalFeatures={{ newEditingApi: true }}
           disableSelectionOnClick
+          pageSize={5}
+          rowsPerPageOptions={[5, 10, 20]}
         />
       </Box>
-    </Box>
+    </>
   );
 };
 

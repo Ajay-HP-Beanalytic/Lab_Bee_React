@@ -53,7 +53,6 @@ import {
   PowerOff,
   Error,
   Close,
-  CalendarToday,
   Business,
 } from "@mui/icons-material";
 import * as XLSX from "xlsx";
@@ -133,6 +132,22 @@ const EMICalibration = () => {
       //   headerAlign: "center",
       //   headerClassName: "custom-header-color",
       // },
+      {
+        field: "equipment_serial_number",
+        headerName: "Equipment Serial Number",
+        width: 200,
+        align: "center",
+        headerAlign: "center",
+        headerClassName: "custom-header-color",
+      },
+      {
+        field: "uid_number",
+        headerName: "UID Number",
+        width: 200,
+        align: "center",
+        headerAlign: "center",
+        headerClassName: "custom-header-color",
+      },
       {
         field: "calibration_date",
         headerName: "Calibration Date",
@@ -241,13 +256,25 @@ const EMICalibration = () => {
       name: "manufacturer",
       label: "Manufacturer",
       type: "textField",
-      width: "100%",
+      width: "50%",
     },
     {
       name: "model_number",
       label: "Model Number",
       type: "textField",
-      width: "100%",
+      width: "50%",
+    },
+    {
+      name: "equipment_serial_number",
+      label: "Equipment Serial Number",
+      type: "textField",
+      width: "50%",
+    },
+    {
+      name: "uid_number",
+      label: "UID Number",
+      type: "textField",
+      width: "50%",
     },
     {
       name: "calibration_date",
@@ -270,17 +297,6 @@ const EMICalibration = () => {
       width: "100%",
       required: true,
     },
-    // {
-    //   name: "calibration_status",
-    //   label: "Calibration Status",
-    //   type: "select",
-    //   width: "50%",
-    //   options: [
-    //     { id: "Up to Date", name: "Up to Date" },
-    //     { id: "Expired", name: "Expired" },
-    //   ],
-    //   required: true,
-    // },
     {
       name: "equipment_status",
       label: "Equipment Status",
@@ -420,6 +436,8 @@ const EMICalibration = () => {
         "Brief Description",
         "Maufacturer",
         "Model Number",
+        "Equipment Serial Number",
+        "UID Number",
         "Calibration Date",
         "Calibration Due Date",
         "Calibrated By",
@@ -529,6 +547,8 @@ const EMICalibration = () => {
           equipment_name: row["Brief Description"] || "",
           manufacturer: row["Maufacturer"] || "",
           model_number: row["Model Number"],
+          equipment_serial_number: row["Equipment Serial Number"] || "",
+          uid_number: row["UID Number"] || "",
           calibration_date: parseExcelDate(row["Calibration Date"]) || "",
           calibration_due_date:
             parseExcelDate(row["Calibration Due Date"]) || "",
@@ -655,6 +675,11 @@ const EMICalibration = () => {
           setValue("equipment_name", fetchedEquipmentData.equipment_name || "");
           setValue("manufacturer", fetchedEquipmentData.manufacturer || "");
           setValue("model_number", fetchedEquipmentData.model_number || "");
+          setValue(
+            "equipment_serial_number",
+            fetchedEquipmentData.equipment_serial_number || ""
+          );
+          setValue("uid_number", fetchedEquipmentData.uid_number || "");
           setValue(
             "calibration_date",
             fetchedEquipmentData.calibration_date

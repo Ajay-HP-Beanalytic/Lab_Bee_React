@@ -1010,12 +1010,14 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
     const { emiCalibrationsData } = req.body;
 
     const sql = `INSERT INTO emi_calibrations_table (
-    equipment_name, manufacturer, model_number, calibration_date, calibration_due_date, calibration_done_by, equipment_status,remarks, last_updated_by) VALUES ?`;
+    equipment_name, manufacturer, model_number, equipment_serial_number, uid_number, calibration_date, calibration_due_date, calibration_done_by, equipment_status,remarks, last_updated_by) VALUES ?`;
 
     const values = emiCalibrationsData.map((item) => [
       item.equipment_name,
       item.manufacturer,
       item.model_number,
+      item.equipment_serial_number,
+      item.uid_number,
       item.calibration_date,
       item.calibration_due_date,
       item.calibration_done_by,
@@ -1043,6 +1045,8 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
       formData.equipment_name,
       formData.manufacturer,
       formData.model_number,
+      formData.equipment_serial_number,
+      formData.uid_number,
       formData.calibration_date,
       formData.calibration_due_date,
       formData.calibration_done_by,
@@ -1051,8 +1055,8 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
       formData.last_updated_by,
     ];
 
-    const sql = `INSERT INTO emi_calibrations_table (equipment_name, manufacturer, model_number, calibration_date, calibration_due_date, calibration_done_by, equipment_status, remarks, last_updated_by) 
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    const sql = `INSERT INTO emi_calibrations_table (equipment_name, manufacturer, model_number, equipment_serial_number, uid_number, calibration_date, calibration_due_date, calibration_done_by, equipment_status, remarks, last_updated_by) 
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
     db.query(sql, values, (error, result) => {
       if (error) {
@@ -1078,6 +1082,8 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
       equipment_name,
       manufacturer,
       model_number,
+      equipment_serial_number,
+      uid_number,
       calibration_date,
       calibration_due_date,
       calibration_done_by,
@@ -1192,6 +1198,8 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
       formData.equipment_name,
       formData.manufacturer,
       formData.model_number,
+      formData.equipment_serial_number,
+      formData.uid_number,
       formData.calibration_date,
       formData.calibration_due_date,
       formData.calibration_done_by,
@@ -1205,6 +1213,8 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
     equipment_name = ?,
     manufacturer = ?,
     model_number = ?,
+    equipment_serial_number = ?,
+    uid_number = ?,
     calibration_date = ?,
     calibration_due_date = ?,
     calibration_done_by = ?,
@@ -1256,6 +1266,8 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
         equipment_name,
         manufacturer,
         model_number,
+        equipment_serial_number,
+        uid_number,
         calibration_due_date,
         equipment_status,
         -- Auto-calculated calibration status
@@ -1312,6 +1324,8 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
               equipment_name: item.equipment_name,
               manufacturer: item.manufacturer,
               model_number: item.model_number,
+              equipment_serial_number: item.equipment_serial_number,
+              uid_number: item.uid_number,
               calibration_due_date: item.calibration_due_date,
               days_overdue: Math.abs(item.days_until_due),
             })),
@@ -1324,6 +1338,8 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
               equipment_name: item.equipment_name,
               manufacturer: item.manufacturer,
               model_number: item.model_number,
+              equipment_serial_number: item.equipment_serial_number,
+              uid_number: item.uid_number,
               calibration_due_date: item.calibration_due_date,
               days_until_due: item.days_until_due,
             })),
@@ -1339,6 +1355,8 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
               equipment_name: item.equipment_name,
               manufacturer: item.manufacturer,
               model_number: item.model_number,
+              equipment_serial_number: item.equipment_serial_number,
+              uid_number: item.uid_number,
               equipment_status: item.equipment_status,
             })),
           },
@@ -1354,139 +1372,6 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
       res.status(500).json({ error: "Internal server error" });
     }
   });
-
-  // ///////////////////////////////////////////////////////////////////////////
-  // //API to add new EMI Test name:
-  // app.post("/api/addNewEMITestName", (req, res) => {
-  //   const { testName } = req.body;
-
-  //   const sqlInsertTestName =
-  //     "INSERT INTO emi_test_names_table (test_name) VALUES (?)";
-
-  //   db.query(sqlInsertTestName, [testName], (error, result) => {
-  //     if (error) {
-  //       console.log(error);
-  //       return res.status(500).json({ message: "Internal server error" });
-  //     } else {
-  //       res.status(200).json({ message: "Test name added successfully" });
-  //     }
-  //   });
-  // });
-
-  // //API to update the EMI Test name:
-  // app.post("/api/updateEMITestName/:id", (req, res) => {
-  //   const { id } = req.params;
-  //   const { testName } = req.body;
-
-  //   const sqlUpdateTestName =
-  //     "UPDATE emi_test_names_table SET test_name = ? WHERE id = ?";
-
-  //   db.query(sqlUpdateTestName, [testName, id], (error, result) => {
-  //     if (error) {
-  //       console.log(error);
-  //       return res.status(500).json({ message: "Internal server error" });
-  //     } else {
-  //       res.status(200).json({ message: "Test name updated successfully" });
-  //     }
-  //   });
-  // });
-
-  // //API to delete the EMI Test name:
-  // app.delete("/api/deleteEMITestName/:id", (req, res) => {
-  //   const { id } = req.params;
-
-  //   const sqlDeleteTestName = "DELETE FROM emi_test_names_table WHERE id = ?";
-
-  //   db.query(sqlDeleteTestName, [id], (error, result) => {
-  //     if (error) {
-  //       console.log(error);
-  //       return res.status(500).json({ message: "Internal server error" });
-  //     } else {
-  //       res.status(200).json({ message: "Test name deleted successfully" });
-  //     }
-  //   });
-  // });
-
-  // //API to fetch all the emi test names:
-  // app.get("/api/getAllEMITestNames", (req, res) => {
-  //   const sqlGetAllTestNames = "SELECT id, test_name FROM emi_test_names_table";
-
-  //   db.query(sqlGetAllTestNames, (error, result) => {
-  //     if (error) {
-  //       return res
-  //         .status(500)
-  //         .json({ error: "An error occurred while fetching data" });
-  //     }
-  //     res.send(result);
-  //   });
-  // });
-
-  // //API to add a new EMI Standard:
-  // app.post("/api/addNewEMIStandard", (req, res) => {
-  //   const { standard } = req.body;
-
-  //   const sqlInsertStandard =
-  //     "INSERT INTO emi_test_standards_table (standard_name) VALUES (?)";
-
-  //   db.query(sqlInsertStandard, [standard], (error, result) => {
-  //     if (error) {
-  //       console.log(error);
-  //       return res.status(500).json({ message: "Internal server error" });
-  //     } else {
-  //       res.status(200).json({ message: "Standard added successfully" });
-  //     }
-  //   });
-  // });
-
-  // //API to update the EMI Standard:
-  // app.post("/api/updateEMIStandard/:id", (req, res) => {
-  //   const { id } = req.params;
-  //   const { standard } = req.body;
-
-  //   const sqlUpdateStandard =
-  //     "UPDATE emi_test_standards_table SET standard_name = ? WHERE id = ?";
-
-  //   db.query(sqlUpdateStandard, [standard, id], (error, result) => {
-  //     if (error) {
-  //       console.log(error);
-  //       return res.status(500).json({ message: "Internal server error" });
-  //     } else {
-  //       res.status(200).json({ message: "Standard updated successfully" });
-  //     }
-  //   });
-  // });
-
-  // //API to delete the EMI Standard:
-  // app.delete("/api/deleteEMIStandard/:id", (req, res) => {
-  //   const { id } = req.params;
-
-  //   const sqlDeleteStandard =
-  //     "DELETE FROM emi_test_standards_table WHERE id = ?";
-
-  //   db.query(sqlDeleteStandard, [id], (error, result) => {
-  //     if (error) {
-  //       console.log(error);
-  //       return res.status(500).json({ message: "Internal server error" });
-  //     } else {
-  //       res.status(200).json({ message: "Standard deleted successfully" });
-  //     }
-  //   });
-  // });
-
-  // //API to fetch all the emi standards:
-  // app.get("/api/getAllEMIStandards", (req, res) => {
-  //   const sqlGetAllStandards =
-  //     "SELECT id, standard_name FROM emi_test_standards_table";
-
-  //   db.query(sqlGetAllStandards, (error, result) => {
-  //     if (error) {
-  //       return res
-  //         .status(500)
-  //         .json({ error: "An error occurred while fetching data" });
-  //     }
-  //     res.send(result);
-  //   });
-  // });
 }
 
 module.exports = { emiJobcardsAPIs };

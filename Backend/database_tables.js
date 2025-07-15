@@ -727,6 +727,8 @@ const createEMICalibrationsTable = () => {
      equipment_name VARCHAR(1000),
      manufacturer VARCHAR(1000),
      model_number VARCHAR(1000),
+     equipment_serial_number VARCHAR(500),
+     uid_number VARCHAR(500),
      calibration_date DATE,
      calibration_due_date DATE,
      calibration_done_by VARCHAR(1000),

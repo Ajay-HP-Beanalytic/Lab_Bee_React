@@ -237,19 +237,17 @@ const EMIStandardsManager = () => {
   }, []);
 
   return (
-    <Box sx={{ width: "100%", p: 2 }}>
-      {/* <Typography variant="h6" gutterBottom>
-        EMI Standards Management
-      </Typography> */}
-
-      <Button
-        variant="contained"
-        color="primary"
-        sx={{ mb: 2 }}
-        onClick={handleAddStandard}
-      >
-        Add Standard
-      </Button>
+    <>
+      <Box sx={{ width: "100%", p: 2 }}>
+        <Button
+          variant="contained"
+          color="primary"
+          sx={{ mb: 2 }}
+          onClick={handleAddStandard}
+        >
+          Add Standard
+        </Button>
+      </Box>
 
       <Box
         sx={{
@@ -266,13 +264,14 @@ const EMIStandardsManager = () => {
         <DataGrid
           rows={standardsWithSerialNumbers}
           columns={standardsTableColumns}
-          autoHeight
           processRowUpdate={processStandardRowUpdate}
           experimentalFeatures={{ newEditingApi: true }}
           disableSelectionOnClick
+          pageSize={5}
+          rowsPerPageOptions={[5, 10, 20]}
         />
       </Box>
-    </Box>
+    </>
   );
 };
 
