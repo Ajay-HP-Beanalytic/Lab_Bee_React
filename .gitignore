@@ -7,3 +7,7 @@ Backend/.env
 
 # Exclude shared files
 .shared-files
+
+# Claude Code files
+.claude/
+CLAUDE.md
