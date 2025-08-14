@@ -21,7 +21,13 @@ import {
   Autocomplete,
   Divider,
   Card,
+  CardContent,
+  Paper,
+  Chip,
+  Stack,
+  CircularProgress,
 } from "@mui/material";
+// LoadingButton removed - using manual implementation instead
 import axios from "axios";
 import moment from "moment"; // To convert the date into desired format
 import { sum, toWords } from "number-to-words"; // To convert number to words
@@ -332,7 +338,7 @@ export default function Quotation() {
         }
       }
 
-      const newQuoteId = `BEA/${catCode}/${customerId}/${newQuoteDate}-${newQuoteNumberStr}`;
+      const newQuoteId = `BEA/${catCode}/${customerId.toUpperCase()}/${newQuoteDate}-${newQuoteNumberStr}`;
 
       // Set the quotation ID after fetching the last ID
       setQuotationIDString(newQuoteId);
@@ -343,9 +349,80 @@ export default function Quotation() {
     generateDynamicQuotationIdString();
   }, [quoteCategory, customerId]);
 
+  // Function to create quotation with retry logic for duplicate ID handling
+  const createQuotationWithRetry = async (formData, maxRetries = 3) => {
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        // Generate fresh quotation ID for each attempt
+        let freshQuotationId;
+
+        // Fetch latest ID and generate new one
+        const response = await axios.get(
+          `${serverBaseAddress}/api/getLatestQuotationID`
+        );
+        const lastQuotationID =
+          response.data[0]?.quotation_ids || "BEA/TS//-000";
+
+        const currentDate = new Date();
+        const newQuoteDate = currentDate
+          .toISOString()
+          .split("T")[0]
+          .replace(/-/g, "")
+          .slice(2);
+
+        let newQuoteNumber = 1;
+        if (lastQuotationID && lastQuotationID !== "BEA/TS//-000") {
+          const lastDate = lastQuotationID.split("-")[0].split("/")[3];
+          const lastNumber = parseInt(lastQuotationID.split("-")[1]);
+
+          if (lastDate === newQuoteDate) {
+            newQuoteNumber = lastNumber + 1;
+          }
+        }
+
+        const newQuoteNumberStr = newQuoteNumber.toString().padStart(3, "0");
+        freshQuotationId = `BEA/${catCode}/${customerId.toUpperCase()}/${newQuoteDate}-${newQuoteNumberStr}`;
+
+        const submitResponse = await axios.post(
+          `${serverBaseAddress}/api/quotation/` + editId,
+          {
+            ...formData,
+            quotationIdString: freshQuotationId,
+          }
+        );
+
+        // Update the state with successful ID
+        setQuotationIDString(freshQuotationId);
+        return submitResponse; // Success!
+      } catch (error) {
+        // Check if it's a duplicate ID error
+        if (
+          error.response?.status === 409 ||
+          error.response?.data?.code === "DUPLICATE_ID" ||
+          (error.response?.status === 500 &&
+            error.response?.data?.sqlMessage?.includes("quotation_ids"))
+        ) {
+          console.log(
+            `Attempt ${attempt + 1}: Duplicate ID detected, retrying...`
+          );
+          // Small random delay to reduce collision probability
+          await new Promise((resolve) =>
+            setTimeout(resolve, 100 + Math.random() * 200)
+          );
+          continue; // Try again with new ID
+        }
+        throw error; // Other errors, don't retry
+      }
+    }
+    throw new Error(
+      "Failed to create quotation after multiple attempts due to ID conflicts"
+    );
+  };
+
   // To submit the data and store it in a database:
   const handleSubmitETQuotation = async (e) => {
     e.preventDefault();
+    setIsSubmitting(true);
 
     if (
       !quotationIdString ||
@@ -362,6 +439,7 @@ export default function Quotation() {
       !tableData
     ) {
       toast.error("Please enter all the fields..!");
+      setIsSubmitting(false);
       return;
     }
     let isAtLeastOneRowIsFilled = false;
@@ -397,11 +475,12 @@ export default function Quotation() {
 
     if (!isAtLeastOneRowIsFilled) {
       toast.error("Please enter atleast one row of the table.");
+      setIsSubmitting(false);
       return;
     }
 
-    axios
-      .post(`${serverBaseAddress}/api/quotation/` + editId, {
+    try {
+      const formData = {
         quotationIdString,
         companyName,
         toCompanyAddress,
@@ -419,18 +498,47 @@ export default function Quotation() {
         quotationCreatedBy,
         tableData,
         loggedInUser,
-      })
-      .then((res) => {
-        if (res.status === 200)
-          toast.success(editId ? "Changes Saved" : "Quotation Added");
-        if (res.status === 500) toast.error("Failed to create the quotation");
-      });
+      };
+
+      let response;
+
+      if (editId) {
+        // Update existing quotation - no retry needed
+        response = await axios.post(
+          `${serverBaseAddress}/api/quotation/` + editId,
+          formData
+        );
+      } else {
+        // Create new quotation - use retry logic
+        response = await createQuotationWithRetry(formData);
+      }
+
+      if (response.status === 200) {
+        toast.success(editId ? "Changes Saved" : "Quotation Added");
+      }
+    } catch (error) {
+      console.error("Error submitting quotation:", error);
+      if (error.message.includes("multiple attempts")) {
+        toast.error(
+          "Unable to create quotation due to system busy. Please try again."
+        );
+      } else {
+        toast.error("Failed to create the quotation");
+      }
+      setIsSubmitting(false);
+      return; // Don't navigate or clear form on error
+    }
+
+    setIsSubmitting(false);
 
     if (!editId) {
       handleCancelBtnIsClicked();
     }
 
-    navigate("/quotation_dashboard");
+    // Delay navigation to allow toast to display
+    setTimeout(() => {
+      navigate(-1); // Go back to previous page maintaining state
+    }, 1500);
   };
 
   // To update the amount cells based on the hours and unit per charge cells:
@@ -531,21 +639,54 @@ export default function Quotation() {
     },
   });
 
-  // Custom style for the table header
+  // Enhanced modern table styles
   const tableHeaderStyle = {
-    backgroundColor: "#006699",
-    fontWeight: "bold",
+    "background": "linear-gradient(135deg, #1976d2 0%, #1565c0 100%)",
+    "fontWeight": "bold",
+    "& .MuiTableCell-root": {
+      color: "white",
+      fontWeight: 600,
+      fontSize: "0.95rem",
+      borderBottom: "2px solid rgba(255,255,255,0.1)",
+      textAlign: "center",
+    },
   };
 
-  const tableCellStyle = { color: "white", minWidth: "150px", padding: "8px" };
+  const tableCellStyle = {
+    color: "white",
+    minWidth: "150px",
+    padding: "12px 16px",
+    fontSize: "0.95rem",
+    fontWeight: 500,
+  };
+
   const tableSerialNumberCellStyle = {
     color: "white",
+    fontWeight: 600,
+    textAlign: "center",
   };
+
   const tableContainerStyle = {
-    overflowX: "auto", // Enable horizontal scrolling
+    "overflowX": "auto",
+    "borderRadius": 3,
+    "border": "1px solid #e0e0e0",
+    "boxShadow": "0 4px 12px rgba(0,0,0,0.1)",
+    "& .MuiTable-root": {
+      "& .MuiTableBody-root .MuiTableRow-root": {
+        "&:hover": {
+          backgroundColor: "#f5f5f5",
+          cursor: "pointer",
+        },
+        "& .MuiTableCell-root": {
+          borderBottom: "1px solid #e0e0e0",
+          padding: "12px 16px",
+        },
+      },
+    },
   };
 
   const [showPdfDialog, setShowPdfDialog] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Function to handle download action
   const handleDownloadQuote = () => {
@@ -566,17 +707,33 @@ export default function Quotation() {
         }}
       >
         <Box sx={{ width: "100%" }}>
-          <Divider>
-            <Typography variant="h4" sx={{ color: "#003366" }}>
-              {" "}
-              {editId ? "Update Quotation" : "Add New Quotation"}
+          <Divider sx={{ borderColor: "#e0e0e0", mb: 1 }}>
+            <Typography
+              variant="h4"
+              sx={{
+                color: "#003366",
+                textAlign: "center",
+              }}
+            >
+              {editId ? "Update Quotation" : "Create New Quotation"}
             </Typography>
           </Divider>
         </Box>
       </Grid>
 
       <form onSubmit={handleSubmitETQuotation}>
-        <Card sx={{ width: "100%", padding: "20px", overflow: "visible" }}>
+        <Card
+          elevation={6}
+          sx={{
+            width: "100%",
+            padding: "24px",
+            overflow: "visible",
+            borderRadius: 4,
+            background: "linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)",
+            border: "1px solid #e3f2fd",
+            mb: 3,
+          }}
+        >
           <Grid container alignItems="center">
             <Grid
               item
@@ -618,27 +775,69 @@ export default function Quotation() {
               md={6}
               sx={{ display: "flex", justifyContent: "flex-end" }}
             >
-              <Typography
-                variant="h5"
+              <Card
+                elevation={4}
                 sx={{
-                  fontWeight: "bold",
-                  fontStyle: "italic",
-                  color: "#003399",
+                  background:
+                    "linear-gradient(135deg, #1976d2 0%, #0d47a1 100%)",
+                  color: "white",
+                  p: 2,
+                  borderRadius: 3,
+                  textAlign: "center",
+                  minWidth: { xs: "100%", md: "300px" },
+                  boxShadow: "0 8px 32px rgba(25, 118, 210, 0.3)",
                 }}
               >
-                Quotation ID: {quotationIdString}
-                {/* Quotation ID: {editId ? existingQuoteId : quotationIdString} */}
-              </Typography>
+                <Typography
+                  variant="subtitle1"
+                  sx={{
+                    fontWeight: 300,
+                    opacity: 0.9,
+                    mb: 0.5,
+                  }}
+                >
+                  {editId ? "Updating Quotation" : "New Quotation ID"}
+                </Typography>
+                <Typography
+                  variant="h5"
+                  sx={{
+                    fontWeight: "bold",
+                    letterSpacing: "0.5px",
+                  }}
+                >
+                  {quotationIdString || "Generating..."}
+                </Typography>
+                {!editId && (
+                  <Chip
+                    label="NEW"
+                    size="small"
+                    sx={{
+                      mt: 1,
+                      backgroundColor: "#4caf50",
+                      color: "white",
+                      fontWeight: "bold",
+                    }}
+                  />
+                )}
+              </Card>
             </Grid>
           </Grid>
         </Card>
 
         <Card
+          elevation={4}
           sx={{
-            paddingTop: "5px",
-            marginTop: "10px",
-            marginBottom: "5px",
-            elevation: 2,
+            "paddingTop": "24px",
+            "paddingBottom": "24px",
+            "marginTop": "16px",
+            "marginBottom": "16px",
+            "borderRadius": 3,
+            "background": "#ffffff",
+            "border": "1px solid #f0f0f0",
+            "&:hover": {
+              elevation: 6,
+              boxShadow: "0 8px 25px rgba(0,0,0,0.1)",
+            },
           }}
         >
           <Grid container justifyContent="center" spacing={2}>
@@ -652,10 +851,23 @@ export default function Quotation() {
                 <Box>
                   <TextField
                     sx={{
-                      marginTop: "16px",
-                      marginBottom: "16px",
-                      marginLeft: "10px",
-                      borderRadius: 3,
+                      "marginTop": "16px",
+                      "marginBottom": "16px",
+                      "marginLeft": "10px",
+                      "& .MuiOutlinedInput-root": {
+                        "borderRadius": 2,
+                        "&:hover fieldset": {
+                          borderColor: "#1976d2",
+                        },
+                        "&.Mui-focused fieldset": {
+                          borderColor: "#1976d2",
+                          borderWidth: "2px",
+                        },
+                      },
+                      "& .MuiInputLabel-root.Mui-focused": {
+                        color: "#1976d2",
+                        fontWeight: 600,
+                      },
                     }}
                     value={companyName}
                     onChange={(e) => setCompanyName(e.target.value)}
@@ -745,7 +957,7 @@ export default function Quotation() {
                         borderRadius: 3,
                       }}
                       label="Company ID"
-                      value={customerId}
+                      value={customerId.toUpperCase()}
                       onChange={handleCompanyNameChange}
                       variant="outlined"
                       fullWidth
@@ -818,13 +1030,28 @@ export default function Quotation() {
                     {!editId && (
                       <FormControl
                         sx={{
-                          width: "50%",
-                          marginBottom: "16px",
-                          marginRight: "10px",
-                          borderRadius: 3,
+                          "width": "50%",
+                          "marginBottom": "16px",
+                          "marginRight": "10px",
+                          "& .MuiOutlinedInput-root": {
+                            "borderRadius": 2,
+                            "&:hover .MuiOutlinedInput-notchedOutline": {
+                              borderColor: "#1976d2",
+                            },
+                            "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
+                              borderColor: "#1976d2",
+                              borderWidth: "2px",
+                            },
+                          },
+                          "& .MuiInputLabel-root.Mui-focused": {
+                            color: "#1976d2",
+                            fontWeight: 600,
+                          },
                         }}
                       >
-                        <InputLabel>Quote Type</InputLabel>
+                        <InputLabel sx={{ fontWeight: 500 }}>
+                          Quote Type
+                        </InputLabel>
                         <Select
                           value={quoteCategory}
                           onChange={(e) => {
@@ -845,14 +1072,84 @@ export default function Quotation() {
                           }}
                           label="Quote Type"
                         >
-                          <MenuItem value="Environmental Testing">
-                            Environmental Testing
+                          <MenuItem
+                            value="Environmental Testing"
+                            sx={{
+                              "&:hover": { backgroundColor: "#e3f2fd" },
+                              "&.Mui-selected": {
+                                "backgroundColor": "#1976d2",
+                                "color": "white",
+                                "&:hover": { backgroundColor: "#1565c0" },
+                              },
+                            }}
+                          >
+                            🌡️ Environmental Testing
                           </MenuItem>
-                          <MenuItem value="Reliability">Reliability</MenuItem>
-                          <MenuItem value="EMI & EMC">EMI & EMC</MenuItem>
-                          <MenuItem value="Item Soft">Item Soft</MenuItem>
-                          <MenuItem value="Software">Software</MenuItem>
-                          <MenuItem value="Others">Others</MenuItem>
+                          <MenuItem
+                            value="Reliability"
+                            sx={{
+                              "&:hover": { backgroundColor: "#e3f2fd" },
+                              "&.Mui-selected": {
+                                "backgroundColor": "#1976d2",
+                                "color": "white",
+                                "&:hover": { backgroundColor: "#1565c0" },
+                              },
+                            }}
+                          >
+                            🔧 Reliability
+                          </MenuItem>
+                          <MenuItem
+                            value="EMI & EMC"
+                            sx={{
+                              "&:hover": { backgroundColor: "#e3f2fd" },
+                              "&.Mui-selected": {
+                                "backgroundColor": "#1976d2",
+                                "color": "white",
+                                "&:hover": { backgroundColor: "#1565c0" },
+                              },
+                            }}
+                          >
+                            ⚡ EMI & EMC
+                          </MenuItem>
+                          <MenuItem
+                            value="Item Soft"
+                            sx={{
+                              "&:hover": { backgroundColor: "#e3f2fd" },
+                              "&.Mui-selected": {
+                                "backgroundColor": "#1976d2",
+                                "color": "white",
+                                "&:hover": { backgroundColor: "#1565c0" },
+                              },
+                            }}
+                          >
+                            📦 Item Soft
+                          </MenuItem>
+                          <MenuItem
+                            value="Software"
+                            sx={{
+                              "&:hover": { backgroundColor: "#e3f2fd" },
+                              "&.Mui-selected": {
+                                "backgroundColor": "#1976d2",
+                                "color": "white",
+                                "&:hover": { backgroundColor: "#1565c0" },
+                              },
+                            }}
+                          >
+                            💻 Software
+                          </MenuItem>
+                          <MenuItem
+                            value="Others"
+                            sx={{
+                              "&:hover": { backgroundColor: "#e3f2fd" },
+                              "&.Mui-selected": {
+                                "backgroundColor": "#1976d2",
+                                "color": "white",
+                                "&:hover": { backgroundColor: "#1565c0" },
+                              },
+                            }}
+                          >
+                            📋 Others
+                          </MenuItem>
                         </Select>
                       </FormControl>
                     )}
@@ -1177,19 +1474,54 @@ export default function Quotation() {
           </Button>
 
           <Button
+            startIcon={
+              isSubmitting ? (
+                <CircularProgress size={20} color="inherit" />
+              ) : editId ? (
+                <FileDownloadIcon />
+              ) : (
+                <AddIcon />
+              )
+            }
             sx={{
-              borderRadius: 3,
-              mx: 0.5,
-              mb: 1,
-              bgcolor: "orange",
-              color: "white",
-              borderColor: "black",
+              "borderRadius": 2,
+              "mx": 0.5,
+              "mb": 1,
+              "background": isSubmitting
+                ? "#cccccc"
+                : "linear-gradient(45deg, #ff6b35 30%, #f7931e 90%)",
+              "color": "white",
+              "px": 4,
+              "py": 1.5,
+              "fontSize": "1rem",
+              "fontWeight": 600,
+              "boxShadow": isSubmitting
+                ? "none"
+                : "0 4px 15px rgba(255, 107, 53, 0.3)",
+              "&:hover": {
+                background: isSubmitting
+                  ? "#cccccc"
+                  : "linear-gradient(45deg, #e55a2b 30%, #e08112 90%)",
+                boxShadow: isSubmitting
+                  ? "none"
+                  : "0 6px 20px rgba(255, 107, 53, 0.4)",
+              },
+              "&:disabled": {
+                background: "#cccccc",
+                color: "#666666",
+              },
             }}
             variant="contained"
-            color="primary"
             type="submit"
+            disabled={isSubmitting}
           >
-            {editId ? "Update" : "Submit"}
+            {isSubmitting
+              ? editId
+                ? "Updating..."
+                : "Creating..."
+              : editId
+              ? "Update Quotation"
+              : "Create Quotation"}
           </Button>
 
           {editId && (
