@@ -31,6 +31,16 @@ import { DataGrid } from "@mui/x-data-grid";
 import dayjs from "dayjs";
 import Loader from "../common/Loader";
 import EmptyCard from "../common/EmptyCard";
+import EnhancedKpiCard from "../components/EnhancedKpiCard";
+import {
+  TrendingUp,
+  AttachMoney,
+  Assessment,
+  Groups,
+  CheckCircle,
+  PendingActions,
+  Cancel,
+} from "@mui/icons-material";
 
 export default function QuotationsDashboard() {
   // State variables to hold the data fetched from the database:
@@ -43,23 +53,24 @@ export default function QuotationsDashboard() {
 
   const [loading, setLoading] = useState(false); //To show loading label
 
-  const [msg, setMsg] = useState(
-    <Typography variant="h4"> Loading...</Typography>
-  );
-
   const [error, setError] = useState(null); //To show error label
 
   const [filterRow, setFilterRow] = useState([]); //To filter out the table based on search
 
   const [refresh, setRefresh] = useState(false);
 
+  // Pagination state for DataGrid
+  const [paginationModel, setPaginationModel] = useState({
+    page: 0,
+    pageSize: 50,
+  });
+
   const { month, year } = getCurrentMonthYear();
 
-  const [quoteYear, setQuoteYear] = useState(year);
-  const [quoteMonth, setQuoteMonth] = useState(month);
-
-  const [years, setYears] = useState([]);
-  const [months, setMonths] = useState([]);
+  const [availableYears, setAvailableYears] = useState([]);
+  const [availableMonths, setAvailableMonths] = useState([]);
+  const [selectedYear, setSelectedYear] = useState(year);
+  const [selectedMonth, setSelectedMonth] = useState(month);
 
   const [selectedQuoteDateRange, setSelectedQuoteDateRange] = useState(null);
 
@@ -67,9 +78,55 @@ export default function QuotationsDashboard() {
 
   const [filteredQuoteData, setFilteredQuoteData] = useState(quotesTableData);
 
+  // Enhanced KPI states
+  const [totalRevenue, setTotalRevenue] = useState(0);
+  const [averageQuoteValue, setAverageQuoteValue] = useState(0);
+  const [quotesStatusCounts, setQuotesStatusCounts] = useState({
+    pending: 0,
+    approved: 0,
+    rejected: 0,
+  });
+  const [conversionRate, setConversionRate] = useState(0);
+  const [monthlyGrowth, setMonthlyGrowth] = useState(0);
+
   const isSmallScreen = useMediaQuery((theme) => theme.breakpoints.down("sm"));
 
   const navigate = useNavigate();
+
+  // Calculate enhanced KPI metrics
+  const calculateEnhancedMetrics = (data) => {
+    if (!data || data.length === 0) return;
+
+    // Calculate total revenue
+    const revenue = data.reduce((sum, quote) => {
+      const amount = parseFloat(quote.totalAmount) || 0;
+      return sum + amount;
+    }, 0);
+    setTotalRevenue(revenue);
+
+    // Calculate average quote value
+    const avgValue = data.length > 0 ? revenue / data.length : 0;
+    setAverageQuoteValue(avgValue);
+
+    // Calculate status counts (assuming quote_status field exists)
+    const statusCounts = data.reduce(
+      (counts, quote) => {
+        const status = quote.quote_status || "pending";
+        counts[status.toLowerCase()] = (counts[status.toLowerCase()] || 0) + 1;
+        return counts;
+      },
+      { pending: 0, approved: 0, rejected: 0 }
+    );
+    setQuotesStatusCounts(statusCounts);
+
+    // Calculate conversion rate (approved / total)
+    const convRate =
+      data.length > 0 ? (statusCounts.approved / data.length) * 100 : 0;
+    setConversionRate(convRate);
+
+    // Calculate monthly growth (mock calculation - would need historical data)
+    setMonthlyGrowth(Math.floor(Math.random() * 20) - 10); // Random between -10 to 10
+  };
 
   useEffect(() => {
     const fetchMonthwiseQuotesCount = async () => {
@@ -94,11 +151,34 @@ export default function QuotationsDashboard() {
 
   // Simulate fetching data from the database
   useEffect(() => {
+    // Don't fetch data until months are loaded or if no valid month is selected
+    if (availableMonths.length === 0 || !selectedMonth || !selectedYear) return;
+
+    // Convert month number to short month name format expected by API
+    const monthNames = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+    ];
+    const monthName = monthNames[selectedMonth - 1];
+
+    // Safety check for valid month name
+    if (!monthName) return;
+
     let requiredAPIdata = {
       _fields:
         "quotation_ids, company_name, formatted_quote_given_date, quote_category, quote_created_by",
-      year: quoteYear,
-      month: quoteMonth,
+      year: selectedYear,
+      month: monthName,
     };
 
     const urlParameters = new URLSearchParams(requiredAPIdata).toString();
@@ -114,6 +194,7 @@ export default function QuotationsDashboard() {
           );
           setQuotesTableData(response.data);
           setOriginalQuoteTableData(response.data);
+          calculateEnhancedMetrics(response.data);
         } catch (error) {
           console.error("Failed to fetch the data", error);
           setError(error);
@@ -124,37 +205,62 @@ export default function QuotationsDashboard() {
 
       fetchQuotesDataFromDatabase();
     }
-  }, [filterRow, refresh, quoteYear, quoteMonth]);
+  }, [filterRow, refresh, selectedYear, selectedMonth, availableMonths]);
 
+  // Initial data fetching - get all years only
   useEffect(() => {
-    const getMonthYearListOfQuote = async () => {
+    const fetchYears = async () => {
       try {
         const response = await axios.get(
-          `${serverBaseAddress}/api/getQuoteYearMonth`
+          `${serverBaseAddress}/api/getQuoteDateOptions`
         );
+
         if (response.status === 200) {
-          const yearSet = new Set();
-          const monthSet = new Set();
+          setAvailableYears(response.data.years);
 
-          response.data.forEach((item) => {
-            yearSet.add(item.year);
-            monthSet.add(item.month);
-          });
-
-          setYears([...yearSet]);
-          setMonths([...monthSet]);
-        } else {
-          console.error(
-            "Failed to fetch PO Month-Year list. Status:",
-            response.status
-          );
+          // Set the most recent year (first in DESC order) as default
+          if (response.data.years.length > 0) {
+            const mostRecentYear = response.data.years[0]; // Years come in DESC order
+            setSelectedYear(mostRecentYear);
+          }
         }
       } catch (error) {
-        console.error("Failed to fetch the data", error);
+        console.error("Failed to fetch years", error);
       }
     };
-    getMonthYearListOfQuote();
+
+    fetchYears();
   }, []);
+
+  // Cascading fetch - get months when year changes
+  useEffect(() => {
+    const fetchMonthsForYear = async () => {
+      if (selectedYear) {
+        try {
+          const response = await axios.get(
+            `${serverBaseAddress}/api/getAvailableQuoteMonthsForYear?year=${selectedYear}`
+          );
+
+          if (response.status === 200) {
+            setAvailableMonths(response.data);
+
+            // Always set the most recent month for better UX
+            if (response.data.length > 0) {
+              // Select the most recent month (highest month number)
+              const mostRecentMonth = response.data.reduce((latest, current) =>
+                current.value > latest.value ? current : latest
+              );
+              setSelectedMonth(mostRecentMonth.value);
+            }
+          }
+        } catch (error) {
+          console.error("Failed to fetch months for year", error);
+        }
+      }
+    };
+
+    fetchMonthsForYear();
+  }, [selectedYear]);
 
   //useEffect to filter the table based on the search input
   useEffect(() => {
@@ -453,12 +559,14 @@ export default function QuotationsDashboard() {
     },
   };
 
-  const handleYearOfQuote = (event) => {
-    setQuoteYear(event.target.value);
+  const handleYearChange = (event) => {
+    const newYear = event.target.value;
+    setSelectedYear(newYear);
+    // Month update will be handled by useEffect above
   };
 
-  const handleMonthOfQuote = (event) => {
-    setQuoteMonth(event.target.value);
+  const handleMonthChange = (event) => {
+    setSelectedMonth(event.target.value);
   };
 
   //Function to get the selected date range
@@ -491,6 +599,7 @@ export default function QuotationsDashboard() {
         }
       );
       setQuotesTableData(response.data);
+      calculateEnhancedMetrics(response.data);
     } catch (error) {
       console.error("Error fetching Quotes data:", error);
     }
@@ -577,207 +686,353 @@ export default function QuotationsDashboard() {
         </Button>
       </Box>
 
-      <Card sx={{ width: "100%", padding: "20px" }}>
-        <Grid
-          item
-          xs={12}
-          md={6}
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: { xs: "center", md: "center" },
-            mb: 2,
-          }}
-        >
-          <Box sx={{ width: "100%" }}>
-            <Divider>
-              <Typography variant="h4" sx={{ color: "#003366" }}>
-                {" "}
-                Quotation Dashboard{" "}
-              </Typography>
-            </Divider>
-          </Box>
-        </Grid>
-
-        <Grid container spacing={2} alignItems="center">
-          <Grid item xs={12} md={8} container alignItems="center" spacing={2}>
-            <Grid item xs={12} sm={6} md={4}>
-              <FormControl fullWidth>
-                <InputLabel>Year</InputLabel>
-                <Select
-                  label="Year"
-                  value={quoteYear}
-                  onChange={handleYearOfQuote}
-                >
-                  {years.map((year, index) => (
-                    <MenuItem key={index} value={year}>
-                      {year}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-
-            <Grid item xs={12} sm={6} md={4}>
-              <FormControl fullWidth>
-                <InputLabel>Month</InputLabel>
-                <Select
-                  label="Month"
-                  value={quoteMonth}
-                  onChange={handleMonthOfQuote}
-                >
-                  {months.map((month, index) => (
-                    <MenuItem key={index} value={month}>
-                      {month}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-
-            <Grid item xs={12} md={4} container justifyContent="flex-start">
-              <DateRangeFilter
-                onClickDateRangeSelectDoneButton={handleQuoteDateRangeChange}
-                onClickDateRangeSelectClearButton={handleQuoteDateRangeClear}
-              />
-            </Grid>
-          </Grid>
-
-          <Grid item xs={12} md={4} container justifyContent="flex-end">
-            <SearchBar
-              placeholder="Search Quote"
-              searchInputText={searchInputTextOfQuote}
-              onChangeOfSearchInput={onChangeOfSearchInputOfQuote}
-              onClearSearchInput={onClearSearchInputOfQuote}
-            />
-          </Grid>
-        </Grid>
-
-        <Box
-          sx={{
-            height: 500,
-            width: "100%",
-            minWidth: isSmallScreen ? "100%" : "auto",
-            "& .custom-header-color": {
-              backgroundColor: "#476f95",
-              color: "whitesmoke",
-              fontWeight: "bold",
-              fontSize: "15px",
-            },
-            mt: 2,
-          }}
-        >
-          {filteredQuoteData && filteredQuoteData.length === 0 ? (
-            <EmptyCard message="No Quote Found" />
-          ) : (
-            <DataGrid
-              rows={quotationTableWithSerialNumbers}
-              columns={columns}
-              sx={{
-                "&:hover": { cursor: "pointer" },
-                "& .MuiDataGrid-columnHeader": {
-                  whiteSpace: "normal",
-                  wordWrap: "break-word",
-                },
-                "& .MuiDataGrid-cell": {
-                  whiteSpace: "normal",
-                  wordWrap: "break-word",
-                },
-              }}
-              onRowClick={(params) => editSelectedRowData(params.row)}
-              pageSize={5}
-              rowsPerPageOptions={[5, 10, 20]}
-            />
-          )}
-        </Box>
-
+      {/* <Card sx={{ width: "100%", padding: "20px" }}> */}
+      <Grid
+        item
+        xs={12}
+        md={6}
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: { xs: "center", md: "center" },
+          mb: 2,
+        }}
+      >
         <Box sx={{ width: "100%" }}>
-          <Grid container spacing={3} sx={{ mt: 3, mb: 1 }}>
-            <Grid item xs={12}>
-              <Box
-                display="flex"
-                justifyContent="space-between"
-                sx={{ mb: 2, width: "100%" }}
-              >
-                <Card
-                  elevation={3}
-                  sx={{ backgroundColor: "#66cc99", flex: 1, mx: 2 }}
-                >
-                  <CreateKpiCard
-                    kpiTitle="Total Number Of Quotes"
-                    kpiValue={
-                      <CountUp
-                        start={0}
-                        end={monthWiseTotalQuotesCount}
-                        delay={1}
-                      />
-                    }
-                    kpiColor="#3f51b5"
-                    accordianTitleString={accordianTitleString}
-                  />
-                </Card>
+          <Divider>
+            <Typography variant="h4" sx={{ color: "#003366" }}>
+              {" "}
+              Quotation Dashboard{" "}
+            </Typography>
+          </Divider>
+        </Box>
+      </Grid>
 
-                {labelsForQuotePieChart.map((label, index) => (
-                  <Card
-                    key={label}
-                    elevation={3}
-                    sx={{
-                      backgroundColor: kpiColors[index + 1],
-                      flex: 1,
-                      mx: 2,
-                    }}
-                  >
-                    <CreateKpiCard
-                      kpiTitle={label}
-                      kpiValue={
-                        <CountUp
-                          start={0}
-                          end={quoteCategoryCountsForQuotePieChart[index]}
-                          delay={1}
-                        />
-                      }
-                      kpiColor="#3f51b5"
-                      accordianTitleString={accordianTitleString}
-                    />
-                  </Card>
+      <Grid container spacing={2} alignItems="center">
+        <Grid item xs={12} md={8} container alignItems="center" spacing={2}>
+          <Grid item xs={12} sm={6} md={4}>
+            <FormControl fullWidth>
+              <InputLabel>Year</InputLabel>
+              <Select
+                label="Year"
+                value={selectedYear}
+                onChange={handleYearChange}
+              >
+                {availableYears.map((year) => (
+                  <MenuItem key={year} value={year}>
+                    {year}
+                  </MenuItem>
                 ))}
-              </Box>
-            </Grid>
+              </Select>
+            </FormControl>
+          </Grid>
 
-            <Grid item xs={12} sm={6} md={6}>
-              <Box
-                sx={{
-                  backgroundColor: "#ebf0fa",
-                  padding: 2,
-                  borderRadius: 5,
-                  boxShadow: 2,
-                }}
+          <Grid item xs={12} sm={6} md={4}>
+            <FormControl fullWidth>
+              <InputLabel>Month</InputLabel>
+              <Select
+                label="Month"
+                value={selectedMonth}
+                onChange={handleMonthChange}
+                disabled={!selectedYear}
               >
-                <CreatePieChart
-                  data={categorywiseQuotesPieChart}
-                  options={optionsForQuotesPieChart}
-                />
-              </Box>
-            </Grid>
+                {availableMonths.map((month) => (
+                  <MenuItem key={month.value} value={month.value}>
+                    {month.label}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          </Grid>
 
-            <Grid item xs={12} sm={6} md={6}>
-              <Box
-                sx={{
-                  backgroundColor: "#ebf0fa",
-                  padding: 2,
-                  borderRadius: 5,
-                  boxShadow: 2,
-                }}
-              >
-                <CreateBarChart
-                  data={barChartData}
-                  options={optionsForBarChart}
-                />
-              </Box>
+          <Grid item xs={12} md={4} container justifyContent="flex-start">
+            <DateRangeFilter
+              onClickDateRangeSelectDoneButton={handleQuoteDateRangeChange}
+              onClickDateRangeSelectClearButton={handleQuoteDateRangeClear}
+            />
+          </Grid>
+        </Grid>
+
+        <Grid item xs={12} md={4} container justifyContent="flex-end">
+          <SearchBar
+            placeholder="Search Quote"
+            searchInputText={searchInputTextOfQuote}
+            onChangeOfSearchInput={onChangeOfSearchInputOfQuote}
+            onClearSearchInput={onClearSearchInputOfQuote}
+          />
+        </Grid>
+      </Grid>
+
+      <Box
+        sx={{
+          "height": 500,
+          "width": "100%",
+          "minWidth": isSmallScreen ? "100%" : "auto",
+          "& .custom-header-color": {
+            backgroundColor: "#476f95",
+            color: "whitesmoke",
+            fontWeight: "bold",
+            fontSize: "15px",
+          },
+          "mt": 2,
+        }}
+      >
+        {filteredQuoteData && filteredQuoteData.length === 0 ? (
+          <EmptyCard message="No Quote Found" />
+        ) : (
+          <DataGrid
+            rows={quotationTableWithSerialNumbers}
+            columns={columns}
+            sx={{
+              "&:hover": { cursor: "pointer" },
+              "& .MuiDataGrid-columnHeader": {
+                whiteSpace: "normal",
+                wordWrap: "break-word",
+              },
+              "& .MuiDataGrid-cell": {
+                whiteSpace: "normal",
+                wordWrap: "break-word",
+              },
+            }}
+            onRowClick={(params) => editSelectedRowData(params.row)}
+            paginationModel={paginationModel}
+            onPaginationModelChange={setPaginationModel}
+            pageSizeOptions={[25, 50, 100]}
+            disableRowSelectionOnClick
+          />
+        )}
+      </Box>
+
+      <Box sx={{ width: "100%" }}>
+        <Grid container spacing={3} sx={{ mt: 3, mb: 1 }}>
+          {/* Enhanced KPI Cards Section */}
+          <Grid item xs={12}>
+            {/* <Typography variant="h5" gutterBottom sx={{ mb: 3, color: '#1976d2', fontWeight: 600 }}>
+                📊 Key Performance Indicators
+              </Typography>
+              <Grid container spacing={3} sx={{ mb: 4 }}>
+                <Grid item xs={12} sm={6} md={3}>
+                  <EnhancedKpiCard
+                    title="Total Revenue"
+                    value={totalRevenue}
+                    subtitle="Current month revenue"
+                    icon={<AttachMoney />}
+                    color="#4caf50"
+                    bgColor="#f1f8e9"
+                    prefix="₹"
+                    decimals={0}
+                    trend={monthlyGrowth > 0 ? 'up' : monthlyGrowth < 0 ? 'down' : 'flat'}
+                    trendValue={`${monthlyGrowth > 0 ? '+' : ''}${monthlyGrowth}%`}
+                    tooltip="Total revenue from all quotations in selected period"
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={6} md={3}>
+                  <EnhancedKpiCard
+                    title="Avg Quote Value"
+                    value={averageQuoteValue}
+                    subtitle="Per quotation average"
+                    icon={<Assessment />}
+                    color="#ff9800"
+                    bgColor="#fff3e0"
+                    prefix="₹"
+                    decimals={0}
+                    tooltip="Average value per quotation"
+                  />
+                </Grid>
+
+
+                <Grid item xs={12} sm={6} md={3}>
+                  <EnhancedKpiCard
+                    title="Total Quotes"
+                    value={monthWiseTotalQuotesCount}
+                    subtitle="This month"
+                    icon={<Groups />}
+                    color="#2196f3"
+                    bgColor="#e3f2fd"
+                    tooltip="Total number of quotations created"
+                  />
+                </Grid>
+
+                <Grid item xs={12} sm={6} md={3}>
+                  <EnhancedKpiCard
+                    title="Conversion Rate"
+                    value={conversionRate}
+                    subtitle="Approved quotes"
+                    icon={<CheckCircle />}
+                    color="#9c27b0"
+                    bgColor="#f3e5f5"
+                    suffix="%"
+                    decimals={1}
+                    progress={conversionRate}
+                    tooltip="Percentage of approved quotations"
+                  />
+                </Grid>
+              </Grid> */}
+
+            {/* Status Distribution KPIs */}
+            {/* <Typography variant="h6" gutterBottom sx={{ mb: 2, color: '#666', fontWeight: 500 }}>
+                📈 Quote Status Overview
+              </Typography>
+              <Grid container spacing={2} sx={{ mb: 4 }}>
+                <Grid item xs={12} sm={4}>
+                  <EnhancedKpiCard
+                    title="Pending Quotes"
+                    value={quotesStatusCounts.pending}
+                    subtitle="Awaiting approval"
+                    icon={<PendingActions />}
+                    color="#ff9800"
+                    bgColor="#fff8e1"
+                    chips={[{ label: 'Action Required', color: '#ff9800' }]}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                  <EnhancedKpiCard
+                    title="Approved Quotes"
+                    value={quotesStatusCounts.approved}
+                    subtitle="Successfully approved"
+                    icon={<CheckCircle />}
+                    color="#4caf50"
+                    bgColor="#e8f5e8"
+                    chips={[{ label: 'Completed', color: '#4caf50' }]}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                  <EnhancedKpiCard
+                    title="Rejected Quotes"
+                    value={quotesStatusCounts.rejected}
+                    subtitle="Requires attention"
+                    icon={<Cancel />}
+                    color="#f44336"
+                    bgColor="#ffebee"
+                    chips={[{ label: 'Review Needed', color: '#f44336' }]}
+                  />
+                </Grid>
+              </Grid> */}
+
+            {/* Category-wise breakdown */}
+            <Typography
+              variant="h5"
+              gutterBottom
+              sx={{ mb: 2, color: "#1976d2", fontWeight: 600 }}
+            >
+              🏷️ Category Breakdown
+            </Typography>
+            <Grid container spacing={2} sx={{ mb: 4 }}>
+              {labelsForQuotePieChart.map((label, index) => (
+                <Grid key={label} item xs={12} sm={6} md={4} lg={3}>
+                  <EnhancedKpiCard
+                    title={label}
+                    value={quoteCategoryCountsForQuotePieChart[index]}
+                    subtitle="Quotes in category"
+                    color={kpiColors[index + 1] || "#1976d2"}
+                    bgColor={`${kpiColors[index + 1]}10` || "#e3f2fd"}
+                    tooltip={`Total ${label} quotations`}
+                  />
+                </Grid>
+              ))}
             </Grid>
           </Grid>
-        </Box>
-      </Card>
+
+          {/* Charts Section */}
+          <Grid item xs={12}>
+            <Typography
+              variant="h5"
+              gutterBottom
+              sx={{ mb: 3, color: "#1976d2", fontWeight: 600 }}
+            >
+              📈 Analytics & Trends
+            </Typography>
+
+            <Grid container spacing={4}>
+              {/* Category Distribution Pie Chart */}
+              <Grid item xs={12} lg={6}>
+                <Card
+                  elevation={4}
+                  sx={{
+                    "background":
+                      "linear-gradient(135deg, #e3f2fd 0%, #ffffff 100%)",
+                    "borderRadius": 4,
+                    "border": "1px solid #e3f2fd",
+                    "height": "100%",
+                    "transition": "all 0.3s ease",
+                    "&:hover": {
+                      transform: "translateY(-4px)",
+                      boxShadow: "0 8px 25px rgba(25, 118, 210, 0.15)",
+                    },
+                  }}
+                >
+                  <Box sx={{ p: 3 }}>
+                    <Typography
+                      variant="h6"
+                      gutterBottom
+                      sx={{
+                        color: "#1976d2",
+                        fontWeight: 600,
+                        mb: 2,
+                        display: "flex",
+                        alignItems: "center",
+                      }}
+                    >
+                      🥧 Category Distribution
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: "#666", mb: 3 }}>
+                      Breakdown of quotations by service category
+                    </Typography>
+                    <CreatePieChart
+                      data={categorywiseQuotesPieChart}
+                      options={optionsForQuotesPieChart}
+                    />
+                  </Box>
+                </Card>
+              </Grid>
+
+              {/* Monthly Trends Bar Chart */}
+              <Grid item xs={12} lg={6}>
+                <Card
+                  elevation={4}
+                  sx={{
+                    "background":
+                      "linear-gradient(135deg, #f1f8e9 0%, #ffffff 100%)",
+                    "borderRadius": 4,
+                    "border": "1px solid #e8f5e8",
+                    "height": "100%",
+                    "transition": "all 0.3s ease",
+                    "&:hover": {
+                      transform: "translateY(-4px)",
+                      boxShadow: "0 8px 25px rgba(76, 175, 80, 0.15)",
+                    },
+                  }}
+                >
+                  <Box sx={{ p: 3 }}>
+                    <Typography
+                      variant="h6"
+                      gutterBottom
+                      sx={{
+                        color: "#4caf50",
+                        fontWeight: 600,
+                        mb: 2,
+                        display: "flex",
+                        alignItems: "center",
+                      }}
+                    >
+                      📊 Monthly Trends
+                    </Typography>
+                    <Typography variant="body2" sx={{ color: "#666", mb: 3 }}>
+                      Quote volume over the past six months
+                    </Typography>
+                    <CreateBarChart
+                      data={barChartData}
+                      options={optionsForBarChart}
+                    />
+                  </Box>
+                </Card>
+              </Grid>
+            </Grid>
+          </Grid>
+        </Grid>
+      </Box>
+      {/* </Card> */}
     </>
   );
 }
