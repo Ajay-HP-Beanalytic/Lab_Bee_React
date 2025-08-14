@@ -230,13 +230,11 @@ const AddModulesAndTests = () => {
 
   return (
     <>
-      {/* <h2>Add Item Soft Modules And Tests</h2> */}
-
       <Box>
         <Divider>
           <Typography variant="h5" sx={{ color: "#003366" }}>
             {" "}
-            Add Item Soft Modules And Tests{" "}
+            Item Soft Modules List{" "}
           </Typography>
         </Divider>
 

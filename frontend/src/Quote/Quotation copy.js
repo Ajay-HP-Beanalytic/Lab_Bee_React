@@ -11,7 +11,6 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Paper,
   IconButton,
   Tooltip,
   Grid,
@@ -63,6 +62,8 @@ export default function Quotation() {
   let initialCustomerReferance = "";
   let initialKindAttention = "";
   let initialProjectName = "";
+  let initialCustomerEmail = "";
+  let initialCustomerContactNumber = "";
 
   let defTestDescription = "";
   let defSacNo = "";
@@ -96,6 +97,10 @@ export default function Quotation() {
   );
   const [kindAttention, setKindAttention] = useState(initialKindAttention);
   const [customerId, setCustomerId] = useState(initialCustomerID);
+  const [customerEmail, setCustomerEmail] = useState(initialCustomerEmail);
+  const [customerContactNumber, setCustomerContactNumber] = useState(
+    initialCustomerContactNumber
+  );
   const [customerReferance, setCustomerreferance] = useState(
     initialCustomerReferance
   );
@@ -106,6 +111,9 @@ export default function Quotation() {
   const [editId, setEditId] = useState("");
   const formattedDate = moment(new Date()).format("YYYY-MM-DD");
   const [selectedDate, setSelectedDate] = useState(formattedDate);
+  const [catCode, setCatCode] = useState("TS1");
+  const [updatingQuote, setUpdatingQuote] = useState(false);
+  const [existingQuoteId, setExistingQuoteId] = useState("");
 
   // State variable to set the user name:
 
@@ -135,11 +143,14 @@ export default function Quotation() {
   // UseEffect to set the quotation data during update of the quotation:
   useEffect(() => {
     if (id) {
+      setUpdatingQuote(true);
       axios.get(`${serverBaseAddress}/api/quotation/` + id).then((result) => {
         setCompanyName(result.data[0].company_name);
         setQuotationIDString(result.data[0].quotation_ids);
         setToCompanyAddress(result.data[0].company_address);
         setCustomerId(result.data[0].customer_id);
+        setCustomerEmail(result.data[0].customer_email);
+        setCustomerContactNumber(result.data[0].customer_contact_number);
         setCustomerreferance(result.data[0].customer_referance);
         setSelectedDate(
           moment(result.data[0].quote_given_date).format("YYYY-MM-DD")
@@ -151,6 +162,8 @@ export default function Quotation() {
         setQuoteCategory(result.data[0].quote_category);
         setQuoteVersion(result.data[0].quote_version);
         setTableData(JSON.parse(result.data[0].tests));
+
+        setExistingQuoteId(result.data[0].quotation_ids);
       });
     }
 
@@ -167,10 +180,7 @@ export default function Quotation() {
 
     // Set initial quotation ID when the component mounts
     setInitialQuotationId(initialCompanyName);
-
-    // Fetch the last Booking ID when the component mounts
-    fetchLatestQuotationId();
-  }, []);
+  }, [id]);
 
   // To prefill the primary company details on selecting company name:
   const prefillTextFields = (selectedCompanyId) => {
@@ -182,9 +192,10 @@ export default function Quotation() {
           setToCompanyAddress(result.data[0].company_address);
           setKindAttention(result.data[0].contact_person);
           setCustomerId(result.data[0].company_id);
+          setCustomerEmail(result.data[0].customer_email);
+          setCustomerContactNumber(result.data[0].customer_contact_number);
           setCustomerreferance(result.data[0].customer_referance);
           setSelectedDate(formattedDate);
-          generateDynamicQuotationIdString(result.data[0].company_id);
         })
         .catch((error) => {
           console.log(error);
@@ -230,9 +241,22 @@ export default function Quotation() {
 
   // To handle company names field:
   const handleCompanyNameChange = (e) => {
+    if (id) {
+      const arrayOfQuoteId = existingQuoteId.split("/");
+
+      let updatedArrayOfQuoteId = [];
+
+      updatedArrayOfQuoteId.push(arrayOfQuoteId[0]);
+      updatedArrayOfQuoteId.push(arrayOfQuoteId[1]);
+      updatedArrayOfQuoteId.push(e.target.value.toUpperCase());
+      updatedArrayOfQuoteId.push(arrayOfQuoteId.at(-1));
+
+      let result = updatedArrayOfQuoteId.join("/");
+
+      setExistingQuoteId(result);
+    }
     const newCompanyName = e.target.value.toUpperCase();
     setCustomerId(newCompanyName);
-    generateDynamicQuotationIdString(newCompanyName);
   };
 
   // To get the selected date and Time
@@ -260,104 +284,133 @@ export default function Quotation() {
   };
 
   // To generate quotation ID dynamically based on the last saved quoataion ID:
-  const generateDynamicQuotationIdString = async (
-    newCompanyName,
-    catCodefromTarget = ""
-  ) => {
-    let final_date = "";
-    let newIncrementedNumber = "";
+  const generateDynamicQuotationIdString = async () => {
     if (id) {
-      const currentDate = new Date(selectedDate);
-      final_date = selectedDate.replaceAll("-", "");
-      final_date =
-        final_date.substring(6, 8) +
-        final_date.substring(2, 4) +
-        final_date.substring(0, 2);
-      newIncrementedNumber = quotationIdString.split("-")[1];
+      setQuotationIDString(existingQuoteId);
     } else {
       const currentDate = new Date();
-      const currentYear = currentDate.getFullYear().toString().slice(-2);
-      const currentMonth = (currentDate.getMonth() + 1)
-        .toString()
-        .padStart(2, "0");
-      const currentDay = currentDate.getDate().toString();
-      final_date = `${currentYear}${currentMonth}${currentDay}`;
+
+      const newQuoteDate = currentDate
+        .toISOString()
+        .split("T")[0]
+        .replace(/-/g, "")
+        .slice(2);
+      let lastQuotationID = "";
+
       try {
         const response = await axios.get(
           `${serverBaseAddress}/api/getLatestQuotationID`
         );
 
         if (response.status === 200) {
-          // Assign the last fetched quotation ID to the variable:
-          const lastQuotationID = response.data[0]?.quotation_ids;
-
-          // Extract the existing incremented number and convert it to a number
-          //const existingIncrementedNumber = parseInt(lastQuotationID.split('-')[1]);
-          const existingIncrementedNumber = !isNaN(
-            parseInt(lastQuotationID.split("-")[1])
-          )
-            ? parseInt(lastQuotationID.split("-")[1])
-            : 1;
-          newIncrementedNumber = existingIncrementedNumber + 1;
-        } else {
-          console.error("Failed to fetch the last incrementedNumber.");
+          lastQuotationID = response.data[0]?.quotation_ids;
         }
       } catch (error) {
-        console.error(
-          "An error occurred while fetching the last incrementedNumber: " +
-            error
-        );
+        return;
       }
-    }
-    const formattedIncrementedNumber = newIncrementedNumber
-      .toString()
-      .padStart(3, "0");
-    let x = "";
-    if (catCodefromTarget) {
-      x = catCodefromTarget;
-    } else {
-      x = quoteCategory;
-    }
-    let catCode = "";
-    if (x === "Item Soft") catCode = "IT";
-    if (x === "Reliability") catCode = "RE";
-    if (x === "Environmental Testing") catCode = "TS1";
-    if (x === "EMI & EMC") catCode = "TS2";
+      let previousQuoteNumber = "";
+      let newQuoteNumber = "";
+      let newQuoteNumberStr = "";
+      if (lastQuotationID) {
+        const lastYearStr = lastQuotationID.slice(-10, -8);
+        const lastMonthStr = lastQuotationID.slice(-8, -6);
 
-    // Create a quotation string as per the requirement:
-    const dynamicQuotationIdString = `BEA/${catCode}/${newCompanyName}/${final_date}-${formattedIncrementedNumber}`;
+        const currentYear = currentDate.getFullYear();
+        const currentYearStr = currentYear.toString().slice(-2);
+        const currentMonth = currentDate.getMonth() + 1;
+        const currentMonthStr = currentMonth.toString().padStart(2, "0");
 
-    // Set the quotation ID after fetching the last ID
-    setQuotationIDString(dynamicQuotationIdString);
+        if (
+          lastYearStr === currentYearStr &&
+          lastMonthStr === currentMonthStr
+        ) {
+          previousQuoteNumber = parseInt(lastQuotationID.slice(-3));
+          newQuoteNumber = parseInt(previousQuoteNumber) + 1;
+          newQuoteNumberStr = newQuoteNumber.toString().padStart(3, "0");
+        } else {
+          newQuoteNumberStr = "001";
+        }
+      }
+
+      const newQuoteId = `BEA/${catCode}/${customerId}/${newQuoteDate}-${newQuoteNumberStr}`;
+
+      // Set the quotation ID after fetching the last ID
+      setQuotationIDString(newQuoteId);
+    }
   };
 
-  // Fetch the last saved quotaion_id:
-  const fetchLatestQuotationId = async () => {
-    try {
-      // Make an API call to fetch the last quotation ID from your database
-      const response = await axios.get(
-        `${serverBaseAddress}/api/getLatestQuotationID`
-      );
+  useEffect(() => {
+    generateDynamicQuotationIdString();
+  }, [quoteCategory, customerId]);
 
-      if (response.status === 200) {
-        //const latestQuotationID = response.data; // Assuming your backend sends the latest Quotation ID in the response data
-        const latestQuotationID = response.data[0]?.quotation_ids; // Access the specific property containing the ID
+  // Function to create quotation with retry logic for duplicate ID handling
+  const createQuotationWithRetry = async (formData, maxRetries = 3) => {
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        // Generate fresh quotation ID for each attempt
+        let freshQuotationId;
 
-        if (latestQuotationID) {
-          if (!id) {
-            setQuotationIDString(latestQuotationID);
+        // Fetch latest ID and generate new one
+        const response = await axios.get(
+          `${serverBaseAddress}/api/getLatestQuotationID`
+        );
+        const lastQuotationID =
+          response.data[0]?.quotation_ids || "BEA/TS//-000";
+
+        const currentDate = new Date();
+        const newQuoteDate = currentDate
+          .toISOString()
+          .split("T")[0]
+          .replace(/-/g, "")
+          .slice(2);
+
+        let newQuoteNumber = 1;
+        if (lastQuotationID && lastQuotationID !== "BEA/TS//-000") {
+          const lastDate = lastQuotationID.split("-")[0].split("/")[3];
+          const lastNumber = parseInt(lastQuotationID.split("-")[1]);
+
+          if (lastDate === newQuoteDate) {
+            newQuoteNumber = lastNumber + 1;
           }
-        } else {
-          setInitialQuotationId(companyName);
         }
-      } else {
-        console.error("Failed to fetch the latest Quotation ID.");
+
+        const newQuoteNumberStr = newQuoteNumber.toString().padStart(3, "0");
+        freshQuotationId = `BEA/${catCode}/${customerId}/${newQuoteDate}-${newQuoteNumberStr}`;
+
+        const submitResponse = await axios.post(
+          `${serverBaseAddress}/api/quotation/` + editId,
+          {
+            ...formData,
+            quotationIdString: freshQuotationId,
+          }
+        );
+
+        // Update the state with successful ID
+        setQuotationIDString(freshQuotationId);
+        return submitResponse; // Success!
+      } catch (error) {
+        // Check if it's a duplicate ID error
+        if (
+          error.response?.status === 409 ||
+          error.response?.data?.code === "DUPLICATE_ID" ||
+          (error.response?.status === 500 &&
+            error.response?.data?.sqlMessage?.includes("quotation_ids"))
+        ) {
+          console.log(
+            `Attempt ${attempt + 1}: Duplicate ID detected, retrying...`
+          );
+          // Small random delay to reduce collision probability
+          await new Promise((resolve) =>
+            setTimeout(resolve, 100 + Math.random() * 200)
+          );
+          continue; // Try again with new ID
+        }
+        throw error; // Other errors, don't retry
       }
-    } catch {
-      console.error(
-        "An error occurred while fetching the latest Quotation ID."
-      );
     }
+    throw new Error(
+      "Failed to create quotation after multiple attempts due to ID conflicts"
+    );
   };
 
   // To submit the data and store it in a database:
@@ -370,6 +423,7 @@ export default function Quotation() {
       !toCompanyAddress ||
       !selectedDate ||
       !customerId ||
+      !customerEmail ||
       !customerReferance ||
       !kindAttention ||
       !projectName ||
@@ -387,7 +441,11 @@ export default function Quotation() {
         (row) => row.module_id && row.amount
       );
     }
-    if (quoteCategory === "Reliability") {
+    if (
+      quoteCategory === "Reliability" ||
+      quoteCategory === "Software" ||
+      quoteCategory === "Others"
+    ) {
       isAtLeastOneRowIsFilled = tableData.some(
         (row) => row.testDescription && row.amount
       );
@@ -412,13 +470,15 @@ export default function Quotation() {
       return;
     }
 
-    axios
-      .post(`${serverBaseAddress}/api/quotation/` + editId, {
+    try {
+      const formData = {
         quotationIdString,
         companyName,
         toCompanyAddress,
         selectedDate,
         customerId,
+        customerEmail,
+        customerContactNumber,
         customerReferance,
         kindAttention,
         projectName,
@@ -429,12 +489,35 @@ export default function Quotation() {
         quotationCreatedBy,
         tableData,
         loggedInUser,
-      })
-      .then((res) => {
-        if (res.status === 200)
-          toast.success(editId ? "Changes Saved" : "Quotation Added");
-        if (res.status === 500) toast.error("Failed to create the quotation");
-      });
+      };
+
+      let response;
+
+      if (editId) {
+        // Update existing quotation - no retry needed
+        response = await axios.post(
+          `${serverBaseAddress}/api/quotation/` + editId,
+          formData
+        );
+      } else {
+        // Create new quotation - use retry logic
+        response = await createQuotationWithRetry(formData);
+      }
+
+      if (response.status === 200) {
+        toast.success(editId ? "Changes Saved" : "Quotation Added");
+      }
+    } catch (error) {
+      console.error("Error submitting quotation:", error);
+      if (error.message.includes("multiple attempts")) {
+        toast.error(
+          "Unable to create quotation due to system busy. Please try again."
+        );
+      } else {
+        toast.error("Failed to create the quotation");
+      }
+      return; // Don't navigate or clear form on error
+    }
 
     if (!editId) {
       handleCancelBtnIsClicked();
@@ -478,14 +561,13 @@ export default function Quotation() {
     setCompanyName(initialCompanyName);
     setToCompanyAddress(initialToCompanyAddress);
     setCustomerId(initialCustomerID);
+    setCustomerEmail(initialCustomerEmail);
+    setCustomerContactNumber(initialCustomerContactNumber);
     setCustomerreferance(initialCustomerReferance);
     setKindAttention(initialKindAttention);
     setProjectName(initialProjectName);
     setTableData(initialTableData);
 
-    if (!id) {
-      fetchLatestQuotationId(); // Call the function here to which will fetch the latest quotation id
-    }
     //setQuotationIDString(quotationIdString);
     setIsTotalDiscountVisible(false);
     setTaxableAmount(0);
@@ -587,7 +669,7 @@ export default function Quotation() {
       </Grid>
 
       <form onSubmit={handleSubmitETQuotation}>
-        <Box sx={{ mb: 1 }}>
+        <Card sx={{ width: "100%", padding: "20px", overflow: "visible" }}>
           <Grid container alignItems="center">
             <Grid
               item
@@ -638,18 +720,18 @@ export default function Quotation() {
                 }}
               >
                 Quotation ID: {quotationIdString}
+                {/* Quotation ID: {editId ? existingQuoteId : quotationIdString} */}
               </Typography>
             </Grid>
           </Grid>
-        </Box>
+        </Card>
 
         <Card
           sx={{
-            paddingTop: "5",
-            paddingBottom: "5",
-            marginTop: "5",
-            marginBottom: "5",
-            elevation: 3,
+            paddingTop: "5px",
+            marginTop: "10px",
+            marginBottom: "5px",
+            elevation: 2,
           }}
         >
           <Grid container justifyContent="center" spacing={2}>
@@ -706,6 +788,20 @@ export default function Quotation() {
                       autoComplete="on"
                       fullWidth
                     />
+
+                    <TextField
+                      sx={{
+                        marginBottom: "16px",
+                        marginLeft: "10px",
+                        borderRadius: 3,
+                      }}
+                      value={customerEmail}
+                      onChange={(e) => setCustomerEmail(e.target.value)}
+                      label="Customer Email Id"
+                      fullWidth
+                      variant="outlined"
+                      autoComplete="on"
+                    />
                   </div>
                 </Box>
               </Container>
@@ -722,7 +818,21 @@ export default function Quotation() {
                   <div>
                     <TextField
                       sx={{
+                        marginBottom: "16px",
                         marginTop: "16px",
+                        marginRight: "10px",
+                        borderRadius: 3,
+                      }}
+                      value={customerContactNumber}
+                      onChange={(e) => setCustomerContactNumber(e.target.value)}
+                      label="Customer Contact Number"
+                      fullWidth
+                      variant="outlined"
+                      autoComplete="on"
+                    />
+
+                    <TextField
+                      sx={{
                         marginBottom: "16px",
                         marginRight: "10px",
                         borderRadius: 3,
@@ -812,10 +922,19 @@ export default function Quotation() {
                           value={quoteCategory}
                           onChange={(e) => {
                             setQuoteCategory(e.target.value);
-                            generateDynamicQuotationIdString(
-                              customerId,
-                              e.target.value
-                            );
+                            if (e.target.value === "Environmental Testing") {
+                              setCatCode("TS1");
+                            } else if (e.target.value === "EMI & EMC") {
+                              setCatCode("TS2");
+                            } else if (e.target.value === "Reliability") {
+                              setCatCode("RE");
+                            } else if (e.target.value === "Item Soft") {
+                              setCatCode("IT");
+                            } else if (e.target.value === "Software") {
+                              setCatCode("SOFTWARE");
+                            } else if (e.target.value === "Others") {
+                              setCatCode("Others");
+                            }
                           }}
                           label="Quote Type"
                         >
@@ -825,6 +944,8 @@ export default function Quotation() {
                           <MenuItem value="Reliability">Reliability</MenuItem>
                           <MenuItem value="EMI & EMC">EMI & EMC</MenuItem>
                           <MenuItem value="Item Soft">Item Soft</MenuItem>
+                          <MenuItem value="Software">Software</MenuItem>
+                          <MenuItem value="Others">Others</MenuItem>
                         </Select>
                       </FormControl>
                     )}
@@ -851,20 +972,23 @@ export default function Quotation() {
           </Grid>
         </Card>
 
-        <Box>
+        <Grid item xs={12} textAlign="center">
+          <Typography
+            sx={{ marginTop: "10px", marginBottom: "10px" }}
+            variant="h5"
+          >
+            Test Details
+          </Typography>
+        </Grid>
+
+        <Card sx={{ width: "100%", padding: "20px" }}>
           <Grid
             container
             justifyContent="center"
             sx={{ marginTop: "10", paddingBottom: "3" }}
           >
-            <Grid item xs={12} textAlign="center">
-              <Typography sx={{ paddingBottom: 3, paddingTop: 5 }} variant="h5">
-                Test Details
-              </Typography>
-            </Grid>
-
             <Grid item xs={12}>
-              <TableContainer component={Paper} sx={tableContainerStyle}>
+              <TableContainer sx={tableContainerStyle}>
                 <Table sx={{ minWidth: "100%" }} aria-label="simple table">
                   <TableHead sx={tableHeaderStyle}>
                     <TableRow>
@@ -874,7 +998,9 @@ export default function Quotation() {
                       </TableCell>
                       {(quoteCategory === "Environmental Testing" ||
                         quoteCategory === "EMI & EMC" ||
-                        quoteCategory === "Reliability") && (
+                        quoteCategory === "Reliability" ||
+                        quoteCategory === "Software" ||
+                        quoteCategory === "Others") && (
                         <TableCell align="center" sx={tableCellStyle}>
                           Test Description
                         </TableCell>
@@ -935,7 +1061,9 @@ export default function Quotation() {
                         </TableCell>
                         {(quoteCategory === "Environmental Testing" ||
                           quoteCategory === "EMI & EMC" ||
-                          quoteCategory === "Reliability") && (
+                          quoteCategory === "Reliability" ||
+                          quoteCategory === "Software" ||
+                          quoteCategory === "Others") && (
                           <TableCell align="center">
                             <TextField
                               value={row.testDescription}
@@ -1122,65 +1250,65 @@ export default function Quotation() {
               </TableContainer>
             </Grid>
           </Grid>
+        </Card>
 
-          <Box sx={{ marginTop: 3, marginBottom: 0.5, alignContent: "center" }}>
-            <Button
-              sx={{
-                borderRadius: 3,
-                mx: 0.5,
-                mb: 1,
-                bgcolor: "orange",
-                color: "white",
-                borderColor: "black",
-              }}
-              variant="contained"
-              color="primary"
-              onClick={() => navigate("/quotation_dashboard")}
-            >
-              Close
-            </Button>
+        <Box sx={{ marginTop: 3, marginBottom: 0.5, alignContent: "center" }}>
+          <Button
+            sx={{
+              borderRadius: 3,
+              mx: 0.5,
+              mb: 1,
+              bgcolor: "orange",
+              color: "white",
+              borderColor: "black",
+            }}
+            variant="contained"
+            color="primary"
+            onClick={() => navigate("/quotation_dashboard")}
+          >
+            Close
+          </Button>
 
-            <Button
-              sx={{
-                borderRadius: 3,
-                mx: 0.5,
-                mb: 1,
-                bgcolor: "orange",
-                color: "white",
-                borderColor: "black",
-              }}
-              variant="contained"
-              color="primary"
-              type="submit"
-            >
-              {editId ? "Update" : "Submit"}
-            </Button>
+          <Button
+            sx={{
+              borderRadius: 3,
+              mx: 0.5,
+              mb: 1,
+              bgcolor: "orange",
+              color: "white",
+              borderColor: "black",
+            }}
+            variant="contained"
+            color="primary"
+            type="submit"
+          >
+            {editId ? "Update" : "Submit"}
+          </Button>
 
-            {editId && (
-              <Tooltip title="Download quotation" arrow>
-                <Button
-                  variant="contained"
-                  startIcon={<FileDownloadIcon />}
-                  sx={{
-                    borderRadius: 3,
-                    mx: 0.5,
-                    mb: 1,
-                    bgcolor: "orange",
-                    color: "white",
-                    borderColor: "black",
-                  }}
-                  onClick={handleDownloadQuote}
-                >
-                  Download
-                </Button>
-              </Tooltip>
-            )}
+          {editId && (
+            <Tooltip title="Download quotation" arrow>
+              <Button
+                variant="contained"
+                startIcon={<FileDownloadIcon />}
+                sx={{
+                  borderRadius: 3,
+                  mx: 0.5,
+                  mb: 1,
+                  bgcolor: "orange",
+                  color: "white",
+                  borderColor: "black",
+                }}
+                onClick={handleDownloadQuote}
+              >
+                Download
+              </Button>
+            </Tooltip>
+          )}
 
-            {/* Dialog for PDF generation */}
-            {showPdfDialog && (
-              <DocToPdf id={editId} onClose={() => setShowPdfDialog(false)} />
-            )}
-          </Box>
+          {/* Dialog for PDF generation */}
+          {showPdfDialog && (
+            <DocToPdf id={editId} onClose={() => setShowPdfDialog(false)} />
+          )}
         </Box>
       </form>
     </div>

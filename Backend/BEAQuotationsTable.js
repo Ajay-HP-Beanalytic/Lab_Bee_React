@@ -72,7 +72,7 @@ function mainQuotationsTableAPIs(app, io, labbeeUsers) {
         companyName,
         toCompanyAddress,
         selectedDate,
-        customerId,
+        customerId.toUpperCase(),
         customerEmail,
         customerContactNumber,
         customerReferance,
@@ -87,6 +87,16 @@ function mainQuotationsTableAPIs(app, io, labbeeUsers) {
       ],
       (error, result) => {
         if (error) {
+          // Handle duplicate key error specifically
+          if (
+            error.code === "ER_DUP_ENTRY" &&
+            error.sqlMessage.includes("quotation_ids")
+          ) {
+            return res.status(409).json({
+              error: "Quotation ID already exists. Please try again.",
+              code: "DUPLICATE_ID",
+            });
+          }
           return res.status(500).json(error);
         }
 
@@ -146,350 +156,6 @@ function mainQuotationsTableAPIs(app, io, labbeeUsers) {
     );
   });
 
-  ///////////////////////////////////////////////////////////////////////////////////////////
-
-  // Code which will just increment the quotation sequence number:
-  // app.post("/api/quotation", async (req, res) => {
-  //   const {
-  //     quotationIdString,
-  //     companyName,
-  //     toCompanyAddress,
-  //     selectedDate,
-  //     customerId,
-  //     customerReferance,
-  //     kindAttention,
-  //     projectName,
-  //     quoteCategory,
-  //     quoteVersion,
-  //     taxableAmount,
-  //     totalAmountWords,
-  //     tableData,
-  //     quotationCreatedBy,
-  //     loggedInUser,
-  //   } = req.body;
-
-  //   const formattedDate = new Date(selectedDate);
-
-  //   try {
-  //     // Fetch the most recent quotation_id to get the last numeric part
-  //     const [recentQuotations] = await db
-  //       .promise()
-  //       .query(
-  //         `SELECT quotation_ids FROM bea_quotations_table ORDER BY CAST(SUBSTRING_INDEX(quotation_ids, '-', -1) AS UNSIGNED) DESC LIMIT 1`
-  //       );
-
-  //     let newSequenceNumber;
-
-  //     if (recentQuotations.length > 0) {
-  //       // Extract the last sequence number and increment it
-  //       const lastQuotationId = recentQuotations[0].quotation_ids;
-  //       const lastSequenceNumber = parseInt(
-  //         lastQuotationId.split("-").pop(),
-  //         10
-  //       );
-
-  //       newSequenceNumber = lastSequenceNumber + 1;
-  //     } else {
-  //       // Start with 001 if no previous quotations found
-  //       newSequenceNumber = 1;
-  //     }
-
-  //     // Generate the new quotation_id with zero-padded sequence number
-  //     const newQuotationId = `${quotationIdString
-  //       .split("-")
-  //       .slice(0, -1)
-  //       .join("-")}-${newSequenceNumber.toString().padStart(3, "0")}`;
-
-  //     const sql = `
-  //       INSERT INTO bea_quotations_table(
-  //         quotation_ids, company_name, company_address, quote_given_date, customer_id,
-  //         customer_referance, kind_attention, project_name, quote_category, quote_version,
-  //         total_amount, total_taxable_amount_in_words, quote_created_by, tests
-  //       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  //     `;
-
-  //     const values = [
-  //       newQuotationId,
-  //       companyName,
-  //       toCompanyAddress,
-  //       formattedDate,
-  //       customerId,
-  //       customerReferance,
-  //       kindAttention,
-  //       projectName,
-  //       quoteCategory,
-  //       quoteVersion,
-  //       taxableAmount,
-  //       totalAmountWords,
-  //       quotationCreatedBy,
-  //       JSON.stringify(tableData),
-  //     ];
-
-  //     await db.promise().query(sql, values);
-
-  //     // Notify relevant departments
-  //     const departmentsToNotify = ["Administration", "Accounts", "Marketing"];
-
-  //     for (let socketId in labbeeUsers) {
-  //       if (
-  //         departmentsToNotify.includes(labbeeUsers[socketId].department) &&
-  //         labbeeUsers[socketId].username !== loggedInUser
-  //       ) {
-  //         let message = `New Quotation: ${newQuotationId} created, by ${loggedInUser}`;
-
-  //         io.to(socketId).emit("new_quote_created_notification", {
-  //           message: message,
-  //           sender: loggedInUser,
-  //         });
-  //       }
-  //     }
-
-  //     return res.status(200).json({
-  //       message: "Quotation added successfully",
-  //       quotationId: newQuotationId,
-  //     });
-  //   } catch (error) {
-  //     console.error("Error processing quotation:", error);
-  //     return res.status(500).json({ message: "Internal server error", error });
-  //   }
-  // });
-
-  //Code which will increment the quotation sequence number also reseet the sequence to 001 on every new month:
-  // app.post("/api/quotation", async (req, res) => {
-  //   const {
-  //     quotationIdString,
-  //     companyName,
-  //     toCompanyAddress,
-  //     selectedDate,
-  //     customerId,
-  //     customerReferance,
-  //     kindAttention,
-  //     projectName,
-  //     quoteCategory,
-  //     quoteVersion,
-  //     taxableAmount,
-  //     totalAmountWords,
-  //     tableData,
-  //     quotationCreatedBy,
-  //     loggedInUser,
-  //   } = req.body;
-
-  //   const formattedDate = new Date(selectedDate);
-
-  //   // const newOne = "BEA/RE/BOSCH/240901-001";
-  //   // Extract the date part from the provided quotationIdString
-  //   const datePart = quotationIdString.split("/").pop().split("-")[0];
-
-  //   try {
-  //     // Fetch the most recent quotation_id that matches the same date part
-  //     const [recentQuotations] = await db
-  //       .promise()
-  //       .query(
-  //         `SELECT quotation_ids FROM bea_quotations_table WHERE quotation_ids LIKE ? ORDER BY quotation_ids DESC LIMIT 1`,
-  //         [`%/${datePart}-%`]
-  //       );
-
-  //     let newSequenceNumber;
-  //     if (recentQuotations.length > 0) {
-  //       const lastQuotationId = recentQuotations[0].quotation_ids;
-
-  //       // Extract the date part and sequence number from the lastQuotationId
-  //       const lastDatePart = lastQuotationId.split("/").pop().split("-")[0];
-  //       const lastSequenceNumber = parseInt(
-  //         lastQuotationId.split("-").pop(),
-  //         10
-  //       );
-
-  //       // Check if the month is the same
-  //       if (lastDatePart === datePart) {
-  //         // Increment the sequence number
-  //         newSequenceNumber = lastSequenceNumber + 1;
-  //       } else {
-  //         // Reset to 001 if a new month
-  //         newSequenceNumber = 1;
-  //       }
-  //     } else {
-  //       // Start with 001 if no previous quotations found
-  //       newSequenceNumber = 1;
-  //     }
-
-  //     // Generate the new quotation_id with zero-padded sequence number
-  //     const newQuotationId = `${
-  //       quotationIdString.split("-")[0]
-  //     }-${newSequenceNumber.toString().padStart(3, "0")}`;
-
-  //     const sql = `
-  //           INSERT INTO bea_quotations_table(
-  //             quotation_ids, company_name, company_address, quote_given_date, customer_id,
-  //             customer_referance, kind_attention, project_name, quote_category, quote_version,
-  //             total_amount, total_taxable_amount_in_words, quote_created_by, tests
-  //           ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  //       `;
-
-  //     const values = [
-  //       newQuotationId,
-  //       companyName,
-  //       toCompanyAddress,
-  //       formattedDate,
-  //       customerId,
-  //       customerReferance,
-  //       kindAttention,
-  //       projectName,
-  //       quoteCategory,
-  //       quoteVersion,
-  //       taxableAmount,
-  //       totalAmountWords,
-  //       quotationCreatedBy,
-  //       JSON.stringify(tableData),
-  //     ];
-
-  //     await db.promise().query(sql, values);
-
-  //     // Notify relevant departments
-  //     const departmentsToNotify = ["Administration", "Accounts", "Marketing"];
-
-  //     for (let socketId in labbeeUsers) {
-  //       if (
-  //         departmentsToNotify.includes(labbeeUsers[socketId].department) &&
-  //         labbeeUsers[socketId].username !== loggedInUser
-  //       ) {
-  //         let message = `New Quotation: ${newQuotationId} created, by ${loggedInUser}`;
-
-  //         io.to(socketId).emit("new_quote_created_notification", {
-  //           message: message,
-  //           sender: loggedInUser,
-  //         });
-  //       }
-  //     }
-
-  //     return res.status(200).json({
-  //       message: "Quotation added successfully",
-  //       quotationId: newQuotationId,
-  //     });
-  //   } catch (error) {
-  //     console.error("Error processing quotation:", error);
-  //     return res.status(500).json({ message: "Internal server error", error });
-  //   }
-  // });
-
-  // app.post("/api/quotation", async (req, res) => {
-  //   const {
-  //     quotationIdString,
-  //     companyName,
-  //     toCompanyAddress,
-  //     selectedDate,
-  //     customerId,
-  //     customerReferance,
-  //     kindAttention,
-  //     projectName,
-  //     quoteCategory,
-  //     quoteVersion,
-  //     taxableAmount,
-  //     totalAmountWords,
-  //     tableData,
-  //     quotationCreatedBy,
-  //     loggedInUser,
-  //   } = req.body;
-
-  //   const formattedDate = new Date(selectedDate);
-
-  //   // Extract the base part of the quotationIdString up to the date (e.g., "BEA/IT/MISTRAL/240823")
-  //   const parts = quotationIdString.split("-");
-  //   const baseQuotationId = parts[0]; // "BEA/IT/MISTRAL/240823"
-  //   const currentMonthYear = baseQuotationId.split("/").pop(); // "240823"
-
-  //   console.log("parts", parts);
-  //   console.log("baseQuotationId", baseQuotationId);
-  //   console.log("currentMonthYear", currentMonthYear);
-
-  //   try {
-  //     // Fetch the most recent quotation_id that matches the date part
-  //     const [recentQuotations] = await db.promise().query(
-  //       `SELECT quotation_ids FROM bea_quotations_table
-  //        WHERE quotation_ids LIKE ?
-  //        ORDER BY quotation_ids DESC LIMIT 1`,
-  //       [`%-${currentMonthYear}-%`]
-  //     );
-
-  //     let newSequenceNumber;
-
-  //     if (recentQuotations.length > 0) {
-  //       const lastQuotationId = recentQuotations[0].quotation_ids;
-
-  //       // Extract the sequence number from the lastQuotationId
-  //       const lastSequenceNumber = parseInt(
-  //         lastQuotationId.split("-").pop(),
-  //         10
-  //       );
-
-  //       // Increment the sequence number
-  //       newSequenceNumber = lastSequenceNumber + 1;
-  //     } else {
-  //       // Start with 001 if no previous quotations found for the same date part
-  //       newSequenceNumber = 1;
-  //     }
-
-  //     // Generate the new quotation_id with zero-padded sequence number
-  //     const newQuotationId = `${baseQuotationId}-${newSequenceNumber
-  //       .toString()
-  //       .padStart(3, "0")}`;
-
-  //     const sql = `
-  //       INSERT INTO bea_quotations_table(
-  //         quotation_ids, company_name, company_address, quote_given_date, customer_id,
-  //         customer_referance, kind_attention, project_name, quote_category, quote_version,
-  //         total_amount, total_taxable_amount_in_words, quote_created_by, tests
-  //       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-  //     `;
-
-  //     const values = [
-  //       newQuotationId,
-  //       companyName,
-  //       toCompanyAddress,
-  //       formattedDate,
-  //       customerId,
-  //       customerReferance,
-  //       kindAttention,
-  //       projectName,
-  //       quoteCategory,
-  //       quoteVersion,
-  //       taxableAmount,
-  //       totalAmountWords,
-  //       quotationCreatedBy,
-  //       JSON.stringify(tableData),
-  //     ];
-
-  //     await db.promise().query(sql, values);
-
-  //     // Notify relevant departments
-  //     const departmentsToNotify = ["Administration", "Accounts", "Marketing"];
-
-  //     for (let socketId in labbeeUsers) {
-  //       if (
-  //         departmentsToNotify.includes(labbeeUsers[socketId].department) &&
-  //         labbeeUsers[socketId].username !== loggedInUser
-  //       ) {
-  //         let message = `New Quotation: ${newQuotationId} created, by ${loggedInUser}`;
-
-  //         io.to(socketId).emit("new_quote_created_notification", {
-  //           message: message,
-  //           sender: loggedInUser,
-  //         });
-  //       }
-  //     }
-
-  //     return res.status(200).json({
-  //       message: "Quotation added successfully",
-  //       quotationId: newQuotationId,
-  //     });
-  //   } catch (error) {
-  //     console.error("Error processing quotation:", error);
-  //     return res.status(500).json({ message: "Internal server error", error });
-  //   }
-  // });
-
-  ///////////////////////////////////////////////////////////////////////////////////////////
-
   // To fetch the quoatation data from the 'bea_quotations_table' based on the quoatation id:
   app.get("/api/quotation/:id", (req, res) => {
     const id = req.params.id;
@@ -518,6 +184,7 @@ function mainQuotationsTableAPIs(app, io, labbeeUsers) {
 
     db.query(sql, [id], (error, result) => {
       if (error) return res.status(500).json(error);
+
       return res.status(200).json(result);
     });
   });
@@ -576,7 +243,7 @@ function mainQuotationsTableAPIs(app, io, labbeeUsers) {
         companyName,
         toCompanyAddress,
         kindAttention,
-        customerId,
+        customerId.toUpperCase(),
         customerEmail,
         customerContactNumber,
         customerReferance,
@@ -712,10 +379,10 @@ function mainQuotationsTableAPIs(app, io, labbeeUsers) {
     });
   });
 
-  // //API to fetch the year-month list po and invoice data:
+  ///////////////////////////////////////////////////////////////
   app.get("/api/getQuoteYearMonth", (req, res) => {
     const sqlQuery = `
-        SELECT
+        SELECT 
             DISTINCT DATE_FORMAT(quote_given_date, '%b') AS month,
             DATE_FORMAT(quote_given_date, '%Y') AS year,
             MONTH(quote_given_date) AS monthNumber
@@ -729,46 +396,91 @@ function mainQuotationsTableAPIs(app, io, labbeeUsers) {
           .json({ error: "An error occurred while fetching data" });
       }
 
+      console.log("quote year and month data fetched-->", result);
+
       const formattedData = result.map((row) => ({
         month: row.month,
         year: row.year,
       }));
       res.json(formattedData);
+      console.log("formattedData-->", formattedData);
     });
   });
 
-  ///////////////////////////////////////////////////////////////
-  // app.get("/api/getQuoteYearMonth", (req, res) => {
-  //   const sqlQuery = `
-  //       SELECT
-  //           month,
-  //           year
-  //       FROM (
-  //           SELECT
-  //               DATE_FORMAT(quote_given_date, '%b') AS month,
-  //               DATE_FORMAT(quote_given_date, '%Y') AS year,
-  //               MONTH(quote_given_date) AS monthNumber
-  //           FROM bea_quotations_table
-  //           GROUP BY year, month
-  //       ) AS subquery
-  //       ORDER BY year ASC, monthNumber ASC`;
+  // Add this new API endpoint
+  app.get("/api/getQuoteDateOptions", (req, res) => {
+    const yearsQuery = `
+      SELECT DISTINCT YEAR(quote_given_date) as year 
+      FROM bea_quotations_table 
+      WHERE quote_given_date IS NOT NULL 
+      ORDER BY year DESC
+    `;
 
-  //   db.query(sqlQuery, (error, result) => {
-  //     if (error) {
-  //       return res
-  //         .status(500)
-  //         .json({ error: "An error occurred while fetching data" });
-  //     }
+    const monthsQuery = `
+      SELECT DISTINCT MONTH(quote_given_date) as month,
+                     MONTHNAME(quote_given_date) as month_name
+      FROM bea_quotations_table 
+      WHERE quote_given_date IS NOT NULL 
+      ORDER BY month ASC
+    `;
 
-  //     console.log("result", result);
+    // Execute both queries
+    db.query(yearsQuery, (yearError, yearResults) => {
+      if (yearError) {
+        console.error("Error fetching years:", yearError);
+        return res.status(500).json({ error: "Failed to fetch date options" });
+      }
 
-  //     const formattedData = result.map((row) => ({
-  //       month: row.month,
-  //       year: row.year,
-  //     }));
-  //     res.json(formattedData);
-  //   });
-  // });
+      db.query(monthsQuery, (monthError, monthResults) => {
+        if (monthError) {
+          console.error("Error fetching months:", monthError);
+          return res
+            .status(500)
+            .json({ error: "Failed to fetch date options" });
+        }
+
+        res.status(200).json({
+          years: yearResults.map((row) => row.year),
+          months: monthResults.map((row) => ({
+            value: row.month,
+            label: row.month_name,
+          })),
+        });
+      });
+    });
+  });
+
+  // 2. Add API to get months for selected year
+  app.get("/api/getAvailableQuoteMonthsForYear", (req, res) => {
+    const { year } = req.query;
+
+    if (!year) {
+      return res.status(400).json({ error: "Year parameter is required" });
+    }
+
+    const monthsQuery = `
+      SELECT DISTINCT 
+        MONTH(quote_given_date) as month_number,
+        MONTHNAME(quote_given_date) as month_name
+      FROM bea_quotations_table 
+      WHERE YEAR(quote_given_date) = ? AND quote_given_date IS NOT NULL
+      ORDER BY month_number ASC
+    `;
+
+    db.query(monthsQuery, [year], (error, results) => {
+      if (error) {
+        console.error("Error fetching months for year:", error);
+        return res.status(500).json({ error: "Failed to fetch months" });
+      }
+
+      const formattedMonths = results.map((row) => ({
+        value: row.month_number,
+        label: row.month_name,
+      }));
+
+      res.status(200).json(formattedMonths);
+    });
+  });
 
   ////////////////////////////////////////////////////
 

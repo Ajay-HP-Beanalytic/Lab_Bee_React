@@ -327,7 +327,7 @@ export default function AddCustomerDetails() {
     },
     {
       field: "contact_person",
-      headerName: "Contact Person",
+      headerName: "Contact Person Name",
       width: 150,
       align: "center",
       headerAlign: "center",
@@ -404,7 +404,7 @@ export default function AddCustomerDetails() {
         <Divider>
           <Typography variant="h5" sx={{ color: "#003366" }}>
             {" "}
-            Add Company Details{" "}
+            Company / Customer Details{" "}
           </Typography>
         </Divider>
 
@@ -623,16 +623,16 @@ export default function AddCustomerDetails() {
         ) : (
           <Box
             sx={{
-              height: 500,
-              width: "100%",
+              "height": 500,
+              "width": "100%",
               "& .custom-header-color": {
                 backgroundColor: "#476f95",
                 color: "whitesmoke",
                 fontWeight: "bold",
                 fontSize: "15px",
               },
-              mt: 2,
-              mb: 2,
+              "mt": 2,
+              "mb": 2,
             }}
           >
             <DataGrid
