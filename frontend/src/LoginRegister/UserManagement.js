@@ -95,6 +95,7 @@ export default function UserManagement() {
       "Lab Manager",
       "Lab Engineer",
       "Lab Technician",
+      "Testing Engineer",
       "Lab Assistant",
       "Trainee Engineer",
       "Quality Manager",
