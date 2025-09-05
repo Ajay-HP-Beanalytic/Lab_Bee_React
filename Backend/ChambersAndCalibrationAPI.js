@@ -23,12 +23,39 @@ function chambersAndCalibrationAPIs(app) {
     })
 
 
-    // To fetch chamber and calibration data from the table:
+    // To fetch chamber and calibration data from the table with auto-calculated status:
     app.get("/api/getChamberData", (req, res) => {
-        const chamberAndCalibrationList = "SELECT id, chamber_name, chamber_id, calibration_done_date, calibration_due_date, calibration_done_by, calibration_status, chamber_status, remarks FROM chamber_calibration";
+        const chamberAndCalibrationList = `
+            SELECT 
+                id, 
+                chamber_name, 
+                chamber_id, 
+                calibration_done_date, 
+                calibration_due_date, 
+                calibration_done_by, 
+                -- Auto-calculated calibration status based on due date
+                CASE 
+                    WHEN calibration_due_date < CURDATE() THEN 'Expired'
+                    WHEN calibration_due_date >= CURDATE() THEN 'Up to Date'
+                    ELSE 'Unknown'
+                END AS calibration_status,
+                chamber_status, 
+                remarks,
+                -- Days until due (negative means overdue)
+                DATEDIFF(calibration_due_date, CURDATE()) AS days_until_due,
+                -- Categorize urgency
+                CASE 
+                    WHEN calibration_due_date < CURDATE() THEN 'Overdue'
+                    WHEN DATEDIFF(calibration_due_date, CURDATE()) <= 45 THEN 'Due Soon'
+                    ELSE 'Up to Date'
+                END AS urgency_category
+            FROM chamber_calibration
+            ORDER BY calibration_due_date ASC
+        `;
 
         db.query(chamberAndCalibrationList, (error, result) => {
             if (error) {
+                console.error("Database error:", error);
                 return res.status(500).json({ error: "An error occurred while fetching data" })
             }
 
@@ -37,10 +64,12 @@ function chambersAndCalibrationAPIs(app) {
                 ...item,
                 calibration_done_date: moment(item.calibration_done_date).format('YYYY-MM-DD'),
                 calibration_due_date: moment(item.calibration_due_date).format('YYYY-MM-DD'),
+                // Calculate absolute days overdue for easier frontend processing
+                days_overdue: item.days_until_due < 0 ? Math.abs(item.days_until_due) : 0,
+                days_until_due: item.days_until_due > 0 ? item.days_until_due : 0,
             }));
 
             res.send(formattedResult);
-            //res.send(result);
         });
     })
 

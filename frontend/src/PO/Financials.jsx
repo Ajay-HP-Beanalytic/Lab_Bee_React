@@ -779,8 +779,7 @@ const Financials = () => {
         </Grid>
       )}
 
-      {/* {tabValue === 2 && <ChamberRunHours />} */}
-      {tabValue === 2 && <h1>Chamber Run Hours Will Coming Soon </h1>}
+      {tabValue === 2 && <ChamberRunHours />}
 
       {tabValue === 3 && <InvoiceTable />}
     </>
@@ -794,10 +793,10 @@ const FinanceKPICard = ({ title, value, icon, color, timeframe }) => {
   return (
     <Card
       sx={{
-        background: `linear-gradient(135deg, ${color}15 0%, ${color}25 100%)`,
-        border: `1px solid ${color}30`,
-        height: "100%",
-        transition: "transform 0.2s ease-in-out",
+        "background": `linear-gradient(135deg, ${color}15 0%, ${color}25 100%)`,
+        "border": `1px solid ${color}30`,
+        "height": "100%",
+        "transition": "transform 0.2s ease-in-out",
         "&:hover": {
           transform: "translateY(-4px)",
           boxShadow: `0 8px 25px ${color}20`,

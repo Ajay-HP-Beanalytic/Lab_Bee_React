@@ -1903,202 +1903,623 @@ function jobcardsAPIs(app, io, labbeeUsers) {
     });
   });
 
-  ///////////////////////////////////////////////////////////////////
+  // Get all available years for JC date options (similar to quotations)
+  app.get("/api/getJCDateOptions", (req, res) => {
+    const sqlQuery = `
+        SELECT DISTINCT YEAR(jc_open_date) AS year
+        FROM bea_jobcards
+        WHERE jc_open_date IS NOT NULL
+        ORDER BY year DESC`;
 
-  //Fetch chambers utilization hours list:
-  // app.get("/api/getChamberUtilization", (req, res) => {
-  //   const chamberUtilizationQuery = `
-  //                   SELECT
-  //                       testChamber,
-  //                       SUM(CASE WHEN MONTH(startDate) = MONTH(DATE_SUB(CURDATE(), INTERVAL 1 MONTH)) THEN actualTestDuration ELSE 0 END) AS prevMonthRunHours,
-  //                       SUM(CASE WHEN MONTH(startDate) = MONTH(CURDATE()) THEN actualTestDuration ELSE 0 END) AS currentMonthRunHours,
-  //                       SUM(actualTestDuration) AS totalRunHours
-  //                   FROM
-  //                       tests_details
-  //                   WHERE testChamber IS NOT NULL AND testChamber <> ''
-  //                   GROUP BY
-  //                       testChamber
-  //                   `;
-  //   db.query(chamberUtilizationQuery, (error, results) => {
-  //     if (error) {
-  //       console.log(
-  //         "An error occurred while fetching the chamber utilization data",
-  //         error
-  //       );
-  //     }
+    db.query(sqlQuery, (error, result) => {
+      if (error) {
+        return res.status(500).json({
+          error: "An error occurred while fetching JC years data",
+        });
+      }
 
-  //     const formattedChamberUtilizationResult = results.map((row, index) => {
-  //       const prevMonthRunHours = parseFloat(row.prevMonthRunHours) || 0;
-  //       const currentMonthRunHours = parseFloat(row.currentMonthRunHours) || 0;
-  //       const totalRunHours = parseFloat(row.totalRunHours) || 0;
-  //       const chamberUtilization =
-  //         currentMonthRunHours > prevMonthRunHours ? "More" : "Less";
+      const years = result.map((row) => row.year);
+      res.json({ years });
+    });
+  });
 
-  //       return {
-  //         id: index + 1,
-  //         chamberName: row.testChamber,
-  //         prevMonthRunHours: prevMonthRunHours.toString(),
-  //         currentMonthRunHours: currentMonthRunHours.toString(),
-  //         chamberUtilization,
-  //         totalRunHours: totalRunHours.toString(),
-  //       };
-  //     });
+  // Get available months for a specific year (similar to quotations)
+  app.get("/api/getAvailableJCMonthsForYear", (req, res) => {
+    const { year } = req.query;
 
-  //     res.json(formattedChamberUtilizationResult);
-  //   });
-  // });
+    if (!year) {
+      return res.status(400).json({ error: "Year parameter is required" });
+    }
+
+    const sqlQuery = `
+        SELECT 
+            DISTINCT MONTH(jc_open_date) AS value,
+            DATE_FORMAT(jc_open_date, '%M') AS label,
+            MONTH(jc_open_date) AS monthNumber
+        FROM bea_jobcards
+        WHERE YEAR(jc_open_date) = ? AND jc_open_date IS NOT NULL
+        ORDER BY monthNumber DESC`;
+
+    db.query(sqlQuery, [year], (error, result) => {
+      if (error) {
+        return res.status(500).json({
+          error: "An error occurred while fetching JC months data",
+        });
+      }
+
+      const months = result.map((row) => ({
+        value: row.value,
+        label: row.label,
+      }));
+      res.json(months);
+    });
+  });
 
   // Enhanced Chamber Utilization APIs
 
-  // Minimal Chamber Utilization API for TS1 Department
+  // New Simplified Chamber Utilization API - Clean, efficient, and easy to use
+  app.get("/api/chamber-utilization", (req, res) => {
+    const { period = 'last_3_months', chamber } = req.query;
+    
+    // Calculate date range based on period
+    let startDate, endDate;
+    let periodDescription = '';
+    
+    const now = new Date();
+    endDate = now.toISOString().split('T')[0];
+    
+    switch (period) {
+      case 'last_3_months':
+        startDate = new Date(now.getFullYear(), now.getMonth() - 2, 1).toISOString().split('T')[0];
+        periodDescription = 'Last 3 Months';
+        break;
+      case 'current_month':
+        startDate = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+        periodDescription = 'Current Month';
+        break;
+      case 'last_month':
+        const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+        startDate = lastMonth.toISOString().split('T')[0];
+        endDate = new Date(now.getFullYear(), now.getMonth(), 0).toISOString().split('T')[0];
+        periodDescription = 'Last Month';
+        break;
+      case 'last_6_months':
+        startDate = new Date(now.getFullYear(), now.getMonth() - 5, 1).toISOString().split('T')[0];
+        periodDescription = 'Last 6 Months';
+        break;
+      case 'current_year':
+        startDate = new Date(now.getFullYear(), 0, 1).toISOString().split('T')[0];
+        periodDescription = 'Current Year';
+        break;
+      case 'all_time':
+        startDate = '2020-01-01'; // Far back enough to capture all data
+        periodDescription = 'All Time';
+        break;
+      default:
+        startDate = new Date(now.getFullYear(), now.getMonth() - 2, 1).toISOString().split('T')[0];
+        periodDescription = 'Last 3 Months';
+    }
+
+    // Calculate actual available hours for utilization percentage
+    const startDateObj = new Date(startDate);
+    const endDateObj = new Date(endDate);
+    const daysDiff = Math.ceil((endDateObj - startDateObj) / (1000 * 60 * 60 * 24));
+    const availableHours = daysDiff * 24; // 24/7 operation
+
+    // Main query for chamber data
+    const query = `
+      SELECT 
+        td.testChamber as name,
+        -- Period-specific data
+        COUNT(*) as totalTests,
+        SUM(COALESCE(CAST(td.actualTestDuration AS DECIMAL(10,2)), 0)) as totalRunHours,
+        ROUND(AVG(COALESCE(CAST(td.actualTestDuration AS DECIMAL(10,2)), 0)), 1) as avgTestDuration,
+        ROUND((SUM(COALESCE(CAST(td.actualTestDuration AS DECIMAL(10,2)), 0)) / ?) * 100, 1) as utilizationPercent,
+        -- Lifetime stats
+        (SELECT COUNT(*) FROM tests_details lt WHERE lt.testChamber = td.testChamber AND lt.actualTestDuration IS NOT NULL AND lt.actualTestDuration != '') as lifetimeTotalTests,
+        (SELECT SUM(COALESCE(CAST(lt.actualTestDuration AS DECIMAL(10,2)), 0)) FROM tests_details lt WHERE lt.testChamber = td.testChamber) as lifetimeTotalRunHours,
+        (SELECT MIN(lt.startDate) FROM tests_details lt WHERE lt.testChamber = td.testChamber) as firstTestDate
+      FROM tests_details td
+      WHERE td.testChamber IS NOT NULL 
+        AND td.testChamber != ''
+        AND td.actualTestDuration IS NOT NULL
+        AND td.actualTestDuration != ''
+        AND td.startDate >= ?
+        AND td.startDate <= ?
+        ${chamber && chamber !== 'all' ? 'AND td.testChamber = ?' : ''}
+      GROUP BY td.testChamber
+      ORDER BY totalRunHours DESC
+    `;
+
+    // Monthly breakdown query
+    const monthlyQuery = `
+      SELECT 
+        testChamber,
+        DATE_FORMAT(startDate, '%Y-%m') as month,
+        DATE_FORMAT(MIN(startDate), '%M %Y') as monthName,
+        COUNT(*) as tests,
+        SUM(COALESCE(CAST(actualTestDuration AS DECIMAL(10,2)), 0)) as runHours
+      FROM tests_details
+      WHERE testChamber IS NOT NULL 
+        AND testChamber != ''
+        AND actualTestDuration IS NOT NULL
+        AND actualTestDuration != ''
+        AND startDate >= ?
+        AND startDate <= ?
+        ${chamber && chamber !== 'all' ? 'AND testChamber = ?' : ''}
+      GROUP BY testChamber, DATE_FORMAT(startDate, '%Y-%m')
+      ORDER BY testChamber, month DESC
+    `;
+
+    const params = [availableHours, startDate, endDate];
+    if (chamber && chamber !== 'all') {
+      params.push(chamber);
+    }
+
+    // Execute main query first
+    db.query(query, params, (error, results) => {
+      if (error) {
+        console.error("Error fetching chamber utilization:", error);
+        return res.status(500).json({ error: "Failed to fetch chamber utilization data" });
+      }
+
+      // Execute monthly breakdown query
+      const monthlyParams = [startDate, endDate];
+      if (chamber && chamber !== 'all') {
+        monthlyParams.push(chamber);
+      }
+
+      db.query(monthlyQuery, monthlyParams, (monthlyError, monthlyResults) => {
+        if (monthlyError) {
+          console.error("Error fetching monthly breakdown:", monthlyError);
+          return res.status(500).json({ error: "Failed to fetch monthly breakdown data" });
+        }
+
+        // Group monthly data by chamber
+        const monthlyDataByCompany = {};
+        monthlyResults.forEach(row => {
+          if (!monthlyDataByCompany[row.testChamber]) {
+            monthlyDataByCompany[row.testChamber] = [];
+          }
+          monthlyDataByCompany[row.testChamber].push({
+            month: row.month,
+            monthName: row.monthName,
+            tests: parseInt(row.tests) || 0,
+            runHours: parseFloat(row.runHours) || 0
+          });
+        });
+
+        // Process results into clean format
+        const chambers = results.map(row => {
+          // Determine utilization level
+          let utilizationLevel;
+          if (row.utilizationPercent >= 85) utilizationLevel = 'OVER';
+          else if (row.utilizationPercent >= 70) utilizationLevel = 'HIGH';
+          else if (row.utilizationPercent >= 50) utilizationLevel = 'GOOD';
+          else if (row.utilizationPercent >= 30) utilizationLevel = 'MOD';
+          else utilizationLevel = 'LOW';
+
+          // Get monthly breakdown for this chamber
+          const monthlyBreakdown = monthlyDataByCompany[row.name] || [];
+          
+          // Calculate growth rate (latest vs previous month)
+          let growthRate = 0;
+          if (monthlyBreakdown.length >= 2) {
+            const latest = monthlyBreakdown[0]?.runHours || 0;
+            const previous = monthlyBreakdown[1]?.runHours || 0;
+            if (previous > 0) {
+              growthRate = Math.round(((latest - previous) / previous) * 100 * 10) / 10;
+            } else if (latest > 0) {
+              growthRate = 100;
+            }
+          }
+
+          return {
+            id: row.name,
+            name: row.name,
+            totalRunHours: parseFloat(row.totalRunHours) || 0,
+            totalTests: row.totalTests || 0,
+            avgTestDuration: row.avgTestDuration || 0,
+            utilizationPercent: row.utilizationPercent || 0,
+            utilizationLevel,
+            monthlyBreakdown: monthlyBreakdown.slice(0, 3), // Last 3 months max
+            growthRate,
+            lifetimeStats: {
+              totalRunHours: parseFloat(row.lifetimeTotalRunHours) || 0,
+              totalTests: row.lifetimeTotalTests || 0,
+              firstTestDate: row.firstTestDate
+            }
+          };
+        });
+
+        // Calculate summary statistics
+        const totalChambers = chambers.length;
+        const avgUtilization = chambers.length > 0 
+          ? Math.round((chambers.reduce((sum, c) => sum + c.utilizationPercent, 0) / chambers.length) * 10) / 10
+          : 0;
+        const totalRunHours = chambers.reduce((sum, c) => sum + c.totalRunHours, 0);
+        const peakChamber = chambers.length > 0 ? chambers[0] : null;
+
+        const response = {
+          summary: {
+            totalChambers,
+            avgUtilization,
+            totalRunHours: Math.round(totalRunHours * 10) / 10,
+            period: {
+              type: period,
+              start: startDate,
+              end: endDate,
+              description: periodDescription,
+              availableHours
+            },
+            peakChamber: peakChamber ? {
+              name: peakChamber.name,
+              utilizationPercent: peakChamber.utilizationPercent
+            } : null
+          },
+          chambers
+        };
+
+        res.json(response);
+      });
+    });
+  });
+
+  // API endpoint for lifetime chamber totals with utilization calculations and date range filtering
+  app.get("/api/chamber-lifetime-totals", (req, res) => {
+    const { chamber, startDate, endDate } = req.query;
+    
+    // Date validation helper function
+    const isValidDate = (dateString) => {
+      if (!dateString) return true; // Optional parameters
+      const date = new Date(dateString);
+      return !isNaN(date.getTime()) && /^\d{4}-\d{2}-\d{2}$/.test(dateString);
+    };
+
+    // Validate date formats
+    if (!isValidDate(startDate)) {
+      return res.status(400).json({ error: "Invalid startDate format. Use YYYY-MM-DD format." });
+    }
+    if (!isValidDate(endDate)) {
+      return res.status(400).json({ error: "Invalid endDate format. Use YYYY-MM-DD format." });
+    }
+
+    // Validate date range
+    if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
+      return res.status(400).json({ error: "startDate cannot be after endDate." });
+    }
+
+    // Build date filtering conditions
+    let dateFilter = '';
+    const params = [];
+
+    if (startDate && endDate) {
+      dateFilter = 'AND td.startDate >= ? AND td.startDate <= ?';
+      params.push(startDate, endDate);
+    } else if (startDate) {
+      dateFilter = 'AND td.startDate >= ?';
+      params.push(startDate);
+    } else if (endDate) {
+      dateFilter = 'AND td.startDate <= ?';
+      params.push(endDate);
+    }
+
+    // Add chamber filter if provided
+    if (chamber && chamber !== 'all') {
+      dateFilter += ' AND td.testChamber = ?';
+      params.push(chamber);
+    }
+    
+    const query = `
+      SELECT 
+        td.testChamber as name,
+        COUNT(*) as totalTests,
+        SUM(COALESCE(CAST(td.actualTestDuration AS DECIMAL(10,2)), 0)) as totalRunHours,
+        ROUND(AVG(COALESCE(CAST(td.actualTestDuration AS DECIMAL(10,2)), 0)), 1) as avgTestDuration,
+        MIN(td.startDate) as firstTestDate,
+        MAX(td.startDate) as lastTestDate,
+        DATE_FORMAT(MIN(td.startDate), '%M %Y') as firstTestMonth,
+        DATE_FORMAT(MAX(td.startDate), '%M %Y') as lastTestMonth
+      FROM tests_details td
+      WHERE td.testChamber IS NOT NULL 
+        AND td.testChamber != ''
+        AND td.actualTestDuration IS NOT NULL
+        AND td.actualTestDuration != ''
+        ${dateFilter}
+      GROUP BY td.testChamber
+      ORDER BY totalRunHours DESC
+    `;
+
+    db.query(query, params, (error, results) => {
+      if (error) {
+        console.error("Error fetching chamber lifetime totals:", error);
+        return res.status(500).json({ error: "Failed to fetch chamber lifetime totals" });
+      }
+
+      if (results.length === 0) {
+        return res.json({
+          summary: {
+            totalChambers: 0,
+            totalRunHours: 0,
+            totalTests: 0,
+            avgRunHoursPerChamber: 0,
+            avgUtilization: 0,
+            dateRange: {
+              start: startDate || null,
+              end: endDate || null,
+              totalDays: 0,
+              availableHours: 0
+            }
+          },
+          chambers: []
+        });
+      }
+
+      // Calculate overall date range for utilization
+      const overallFirstDate = new Date(Math.min(...results.map(r => new Date(r.firstTestDate))));
+      const overallLastDate = new Date(Math.max(...results.map(r => new Date(r.lastTestDate))));
+      
+      // Determine actual date range used for calculations
+      let actualStartDate, actualEndDate;
+      
+      if (startDate && endDate) {
+        actualStartDate = new Date(startDate);
+        actualEndDate = new Date(endDate);
+      } else if (startDate) {
+        actualStartDate = new Date(startDate);
+        actualEndDate = new Date(); // Current date
+      } else if (endDate) {
+        actualStartDate = overallFirstDate;
+        actualEndDate = new Date(endDate);
+      } else {
+        actualStartDate = overallFirstDate;
+        actualEndDate = overallLastDate;
+      }
+
+      const totalDays = Math.ceil((actualEndDate - actualStartDate) / (1000 * 60 * 60 * 24)) + 1;
+      const totalAvailableHours = totalDays * 24; // 24/7 operation assumption
+
+      // Function to get utilization level
+      const getUtilizationLevel = (percent) => {
+        if (percent >= 85) return 'OVER';
+        if (percent >= 70) return 'HIGH';
+        if (percent >= 50) return 'GOOD';
+        if (percent >= 30) return 'MOD';
+        return 'LOW';
+      };
+
+      const chambers = results.map(row => {
+        const totalRunHours = parseFloat(row.totalRunHours) || 0;
+        const utilizationPercent = totalAvailableHours > 0 
+          ? Math.round((totalRunHours / totalAvailableHours) * 100 * 10) / 10
+          : 0;
+
+        return {
+          id: row.name,
+          name: row.name,
+          totalTests: row.totalTests || 0,
+          totalRunHours,
+          avgTestDuration: row.avgTestDuration || 0,
+          firstTestDate: row.firstTestDate,
+          lastTestDate: row.lastTestDate,
+          firstTestMonth: row.firstTestMonth,
+          lastTestMonth: row.lastTestMonth,
+          utilizationPercent,
+          utilizationLevel: getUtilizationLevel(utilizationPercent),
+          avgRunHoursPerMonth: totalDays > 30 
+            ? Math.round((totalRunHours / (totalDays / 30)) * 10) / 10
+            : totalRunHours
+        };
+      });
+
+      const totalChambers = chambers.length;
+      const totalRunHours = chambers.reduce((sum, c) => sum + c.totalRunHours, 0);
+      const totalTests = chambers.reduce((sum, c) => sum + c.totalTests, 0);
+      const avgUtilization = chambers.length > 0 
+        ? Math.round((chambers.reduce((sum, c) => sum + c.utilizationPercent, 0) / chambers.length) * 10) / 10
+        : 0;
+
+      const response = {
+        summary: {
+          totalChambers,
+          totalRunHours: Math.round(totalRunHours * 10) / 10,
+          totalTests,
+          avgRunHoursPerChamber: totalChambers > 0 
+            ? Math.round((totalRunHours / totalChambers) * 10) / 10 
+            : 0,
+          avgUtilization,
+          dateRange: {
+            start: actualStartDate.toISOString().split('T')[0],
+            end: actualEndDate.toISOString().split('T')[0],
+            totalDays,
+            availableHours: totalAvailableHours
+          }
+        },
+        chambers
+      };
+
+      res.json(response);
+    });
+  });
+
+  // Old complex endpoint removed - using new simplified /api/chamber-utilization instead
   app.get("/api/getChamberUtilization", (req, res) => {
     const { year, month, dateFrom, dateTo, chamber } = req.query;
 
-    let whereConditions = [
-      "testChamber IS NOT NULL",
-      "testChamber <> ''",
-      "actualTestDuration IS NOT NULL",
-    ];
-    let queryParams = [];
-
-    // Add filters
-    if (year && month) {
-      whereConditions.push("YEAR(startDate) = ? AND MONTH(startDate) = ?");
-      queryParams.push(year, month);
-    } else if (dateFrom && dateTo) {
-      whereConditions.push("startDate BETWEEN ? AND ?");
-      queryParams.push(dateFrom, dateTo);
-    } else {
-      // Default to current month
-      whereConditions.push(
-        "YEAR(startDate) = YEAR(CURDATE()) AND MONTH(startDate) = MONTH(CURDATE())"
-      );
-    }
-
-    if (chamber && chamber !== "all") {
-      whereConditions.push("testChamber = ?");
-      queryParams.push(chamber);
-    }
-
-    const whereClause = `WHERE ${whereConditions.join(" AND ")}`;
-
-    const chamberUtilizationQuery = `
-    SELECT 
-      testChamber,
-      
-      -- Current Period Data
-      COUNT(*) AS totalTests,
-      SUM(actualTestDuration) AS totalRunHours,
-      AVG(actualTestDuration) AS avgTestDuration,
-      MIN(startDate) AS firstTestDate,
-      MAX(startDate) AS lastTestDate,
-      
-      -- Calculate utilization percentage (assuming 176 working hours per month)
-      ROUND((SUM(actualTestDuration) / 176) * 100, 1) AS utilizationPercent
-      
-    FROM tests_details 
-    ${whereClause}
-    GROUP BY testChamber
-    ORDER BY totalRunHours DESC
-  `;
-
-    db.query(chamberUtilizationQuery, queryParams, (error, currentResults) => {
-      if (error) {
-        console.error("Error fetching chamber utilization:", error);
-        return res
-          .status(500)
-          .json({ error: "Failed to fetch chamber utilization data" });
-      }
-
-      // Get previous month data for comparison
-      let prevWhereConditions = [
-        "testChamber IS NOT NULL",
-        "testChamber <> ''",
-        "actualTestDuration IS NOT NULL",
-      ];
-      let prevQueryParams = [];
-
-      if (year && month) {
-        // Previous month of the selected period
-        const prevMonth = month == 1 ? 12 : month - 1;
-        const prevYear = month == 1 ? year - 1 : year;
-        prevWhereConditions.push(
-          "YEAR(startDate) = ? AND MONTH(startDate) = ?"
-        );
-        prevQueryParams.push(prevYear, prevMonth);
-      } else {
-        // Previous month from current
-        prevWhereConditions.push(`
-        YEAR(startDate) = YEAR(DATE_SUB(CURDATE(), INTERVAL 1 MONTH)) 
-        AND MONTH(startDate) = MONTH(DATE_SUB(CURDATE(), INTERVAL 1 MONTH))
-      `);
-      }
-
-      if (chamber && chamber !== "all") {
-        prevWhereConditions.push("testChamber = ?");
-        prevQueryParams.push(chamber);
-      }
-
-      const prevWhereClause = `WHERE ${prevWhereConditions.join(" AND ")}`;
-
-      const previousMonthQuery = `
+    // Main query to get comprehensive chamber data
+    const comprehensiveQuery = `
+      WITH TotalLifetimeData AS (
+        -- Get total run hours from start to till date for each chamber
+        SELECT 
+          testChamber,
+          COUNT(*) AS totalTestsTillDate,
+          SUM(actualTestDuration) AS totalRunHoursTillDate,
+          MIN(startDate) AS firstTestDate,
+          MAX(startDate) AS lastTestDate
+        FROM tests_details 
+        WHERE testChamber IS NOT NULL 
+          AND testChamber <> ''
+          AND actualTestDuration IS NOT NULL
+          ${chamber && chamber !== "all" ? "AND testChamber = ?" : ""}
+        GROUP BY testChamber
+      ),
+      Last3MonthsData AS (
+        -- Get last 3 months data for utilization calculation
+        SELECT 
+          testChamber,
+          YEAR(startDate) as year,
+          MONTH(startDate) as month,
+          MONTHNAME(startDate) as monthName,
+          COUNT(*) AS testsCount,
+          SUM(actualTestDuration) AS runHours
+        FROM tests_details 
+        WHERE testChamber IS NOT NULL 
+          AND testChamber <> ''
+          AND actualTestDuration IS NOT NULL
+          AND startDate >= DATE_SUB(CURDATE(), INTERVAL 3 MONTH)
+          ${chamber && chamber !== "all" ? "AND testChamber = ?" : ""}
+        GROUP BY testChamber, YEAR(startDate), MONTH(startDate)
+      ),
+      Last3MonthsSummary AS (
+        -- Summary of last 3 months - Fixed for GROUP BY compatibility
+        SELECT 
+          testChamber,
+          SUM(testsCount) as totalTestsLast3Months,
+          SUM(runHours) as totalRunHoursLast3Months,
+          AVG(runHours) as avgMonthlyRunHours
+        FROM Last3MonthsData
+        GROUP BY testChamber
+      )
       SELECT 
-        testChamber,
-        SUM(actualTestDuration) AS prevTotalRunHours
-      FROM tests_details 
-      ${prevWhereClause}
-      GROUP BY testChamber
+        tld.testChamber as chamberName,
+        -- Total lifetime data
+        tld.totalTestsTillDate,
+        tld.totalRunHoursTillDate,
+        tld.firstTestDate,
+        tld.lastTestDate,
+        -- Last 3 months summary
+        COALESCE(l3ms.totalTestsLast3Months, 0) as totalTestsLast3Months,
+        COALESCE(l3ms.totalRunHoursLast3Months, 0) as totalRunHoursLast3Months,
+        COALESCE(l3ms.avgMonthlyRunHours, 0) as avgMonthlyRunHours,
+        -- Calculate utilization based on last 3 months (24/7 operation = 2160 hours in 3 months)
+        ROUND(
+          (COALESCE(l3ms.totalRunHoursLast3Months, 0) / 2160) * 100, 1
+        ) AS utilizationPercentLast3Months,
+        -- Average test duration
+        ROUND(
+          CASE 
+            WHEN COALESCE(l3ms.totalTestsLast3Months, 0) > 0 
+            THEN l3ms.totalRunHoursLast3Months / l3ms.totalTestsLast3Months
+            ELSE 0 
+          END, 1
+        ) as avgTestDurationLast3Months
+      FROM TotalLifetimeData tld
+      LEFT JOIN Last3MonthsSummary l3ms ON tld.testChamber = l3ms.testChamber
+      ORDER BY tld.totalRunHoursTillDate DESC
     `;
 
-      db.query(
-        previousMonthQuery,
-        prevQueryParams,
-        (prevError, prevResults) => {
-          if (prevError) {
-            console.error("Error fetching previous month data:", prevError);
-            return res
-              .status(500)
-              .json({ error: "Failed to fetch previous month data" });
+    const params = [];
+    if (chamber && chamber !== "all") {
+      params.push(chamber, chamber);
+    }
+
+    db.query(comprehensiveQuery, params, (error, results) => {
+      if (error) {
+        console.error("Error fetching chamber utilization:", error);
+        return res.status(500).json({ error: "Failed to fetch chamber utilization data" });
+      }
+
+      // Get monthly breakdown for the last 3 months
+      const monthlyBreakdownQuery = `
+        SELECT 
+          testChamber,
+          YEAR(startDate) as year,
+          MONTH(startDate) as month,
+          MONTHNAME(startDate) as monthName,
+          COUNT(*) AS testsCount,
+          SUM(actualTestDuration) AS runHours
+        FROM tests_details 
+        WHERE testChamber IS NOT NULL 
+          AND testChamber <> ''
+          AND actualTestDuration IS NOT NULL
+          AND startDate >= DATE_SUB(CURDATE(), INTERVAL 3 MONTH)
+          ${chamber && chamber !== "all" ? "AND testChamber = ?" : ""}
+        GROUP BY testChamber, YEAR(startDate), MONTH(startDate)
+        ORDER BY testChamber, year DESC, month DESC
+      `;
+
+      db.query(monthlyBreakdownQuery, params, (monthlyError, monthlyResults) => {
+        if (monthlyError) {
+          console.error("Error fetching monthly breakdown:", monthlyError);
+          return res.status(500).json({ error: "Failed to fetch monthly breakdown" });
+        }
+
+        // Group monthly data by chamber
+        const monthlyDataByCompany = {};
+        monthlyResults.forEach(row => {
+          if (!monthlyDataByCompany[row.testChamber]) {
+            monthlyDataByCompany[row.testChamber] = [];
+          }
+          monthlyDataByCompany[row.testChamber].push({
+            year: row.year,
+            month: row.month,
+            monthName: row.monthName,
+            testsCount: row.testsCount,
+            runHours: parseFloat(row.runHours || 0),
+          });
+        });
+
+        // Merge the data and calculate growth rates
+        const processedData = results.map((chamber, index) => {
+          const monthlyData = monthlyDataByCompany[chamber.chamberName] || [];
+          
+          // Sort monthly data by date (newest first)
+          monthlyData.sort((a, b) => 
+            new Date(b.year, b.month - 1) - new Date(a.year, a.month - 1)
+          );
+
+          // Calculate growth rate (compare latest month vs previous month)
+          let growthRate = 0;
+          if (monthlyData.length >= 2) {
+            const latestMonth = monthlyData[0].runHours;
+            const previousMonth = monthlyData[1].runHours;
+            if (previousMonth > 0) {
+              growthRate = ((latestMonth - previousMonth) / previousMonth) * 100;
+            } else if (latestMonth > 0) {
+              growthRate = 100;
+            }
           }
 
-          // Merge current and previous data
-          const mergedData = currentResults.map((current, index) => {
-            const previous = prevResults.find(
-              (prev) => prev.testChamber === current.testChamber
-            );
-            const prevRunHours = previous
-              ? parseFloat(previous.prevTotalRunHours)
-              : 0;
-            const currentRunHours = parseFloat(current.totalRunHours);
+          return {
+            id: index + 1,
+            chamberName: chamber.chamberName,
+            // Lifetime totals (for record keeping)
+            totalTestsTillDate: chamber.totalTestsTillDate,
+            totalRunHoursTillDate: parseFloat(chamber.totalRunHoursTillDate || 0).toFixed(1),
+            firstTestDate: chamber.firstTestDate,
+            lastTestDate: chamber.lastTestDate,
+            // Last 3 months data (for table display)
+            totalTests: chamber.totalTestsLast3Months,
+            totalRunHours: parseFloat(chamber.totalRunHoursLast3Months || 0).toFixed(1),
+            avgTestDuration: parseFloat(chamber.avgTestDurationLast3Months || 0).toFixed(1),
+            utilizationPercent: Math.min(100, parseFloat(chamber.utilizationPercentLast3Months || 0)),
+            growthRate: parseFloat(growthRate.toFixed(1)),
+            // Monthly breakdown for last 3 months
+            month1Hours: monthlyData[0] ? monthlyData[0].runHours.toFixed(1) : '0.0',
+            month2Hours: monthlyData[1] ? monthlyData[1].runHours.toFixed(1) : '0.0',
+            month3Hours: monthlyData[2] ? monthlyData[2].runHours.toFixed(1) : '0.0',
+            month1Tests: monthlyData[0] ? monthlyData[0].testsCount : 0,
+            month2Tests: monthlyData[1] ? monthlyData[1].testsCount : 0,
+            month3Tests: monthlyData[2] ? monthlyData[2].testsCount : 0,
+            month1Name: monthlyData[0] ? monthlyData[0].monthName : '',
+            month2Name: monthlyData[1] ? monthlyData[1].monthName : '',
+            month3Name: monthlyData[2] ? monthlyData[2].monthName : '',
+            monthlyData: monthlyData,
+          };
+        });
 
-            // Calculate month-over-month growth
-            const growthRate =
-              prevRunHours > 0
-                ? (
-                    ((currentRunHours - prevRunHours) / prevRunHours) *
-                    100
-                  ).toFixed(1)
-                : currentRunHours > 0
-                ? 100
-                : 0;
-
-            return {
-              id: index + 1,
-              chamberName: current.testChamber,
-              totalTests: current.totalTests,
-              totalRunHours: currentRunHours.toFixed(1),
-              avgTestDuration: parseFloat(current.avgTestDuration).toFixed(1),
-              utilizationPercent: parseFloat(current.utilizationPercent),
-              growthRate: parseFloat(growthRate),
-              prevRunHours: prevRunHours.toFixed(1),
-              firstTestDate: current.firstTestDate,
-              lastTestDate: current.lastTestDate,
-            };
-          });
-
-          res.json(mergedData);
-        }
-      );
+        res.json(processedData);
+      });
     });
   });
 
@@ -2131,14 +2552,12 @@ function jobcardsAPIs(app, io, labbeeUsers) {
   app.get("/api/getChamberDateOptions", (req, res) => {
     const dateOptionsQuery = `
     SELECT DISTINCT 
-      YEAR(startDate) as year,
-      MONTH(startDate) as month,
-      MONTHNAME(startDate) as monthName
+      YEAR(startDate) as year
     FROM tests_details 
     WHERE testChamber IS NOT NULL 
     AND testChamber <> ''
     AND startDate IS NOT NULL
-    ORDER BY year DESC, month DESC
+    ORDER BY year DESC
   `;
 
     db.query(dateOptionsQuery, (error, results) => {
@@ -2147,23 +2566,43 @@ function jobcardsAPIs(app, io, labbeeUsers) {
         return res.status(500).json({ error: "Failed to fetch date options" });
       }
 
-      const years = [...new Set(results.map((row) => row.year))];
-      const months = [
-        { value: "1", label: "January" },
-        { value: "2", label: "February" },
-        { value: "3", label: "March" },
-        { value: "4", label: "April" },
-        { value: "5", label: "May" },
-        { value: "6", label: "June" },
-        { value: "7", label: "July" },
-        { value: "8", label: "August" },
-        { value: "9", label: "September" },
-        { value: "10", label: "October" },
-        { value: "11", label: "November" },
-        { value: "12", label: "December" },
-      ];
+      const years = results.map((row) => row.year);
+      res.json({ years });
+    });
+  });
 
-      res.json({ years, months });
+  // API to get available months for a specific year
+  app.get("/api/getChamberMonthsForYear", (req, res) => {
+    const { year } = req.query;
+
+    if (!year) {
+      return res.status(400).json({ error: "Year parameter is required" });
+    }
+
+    const monthsQuery = `
+    SELECT DISTINCT 
+      MONTH(startDate) as month,
+      MONTHNAME(startDate) as monthName
+    FROM tests_details 
+    WHERE testChamber IS NOT NULL 
+    AND testChamber <> ''
+    AND startDate IS NOT NULL
+    AND YEAR(startDate) = ?
+    ORDER BY month ASC
+  `;
+
+    db.query(monthsQuery, [year], (error, results) => {
+      if (error) {
+        console.error("Error fetching months for year:", error);
+        return res.status(500).json({ error: "Failed to fetch months" });
+      }
+
+      const months = results.map((row) => ({
+        value: row.month.toString(),
+        label: row.monthName,
+      }));
+
+      res.json(months);
     });
   });
   //////////////////////////////////////////////////////////////////////////////

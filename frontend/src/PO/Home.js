@@ -27,7 +27,6 @@ import axios from "axios";
 import { toast } from "react-toastify";
 import { useParams } from "react-router-dom";
 import { getCurrentMonthYear } from "../functions/UtilityFunctions";
-import ChamberRunHours from "../Pages/ChamberRunHours";
 
 export default function Home() {
   //Initialize useForm Hook:
@@ -534,10 +533,6 @@ export default function Home() {
           onRowClick={handleRowClick}
         />
       </Card>
-
-      <br />
-
-      <ChamberRunHours />
     </>
   );
 }

@@ -4,6 +4,7 @@ import axios from "axios";
 import {
   Box,
   Card,
+  CardContent,
   Button,
   Typography,
   FormControl,
@@ -13,6 +14,8 @@ import {
   InputLabel,
   Select,
   useMediaQuery,
+  Avatar,
+  Chip,
 } from "@mui/material";
 
 import { serverBaseAddress } from "../Pages/APIPage";
@@ -420,41 +423,23 @@ export default function QuotationsDashboard() {
   };
 
   const optionsForQuotesPieChart = {
-    backgroundColor: "#e6ffe6",
     responsive: true,
-    //maintainAspectRatio: false,   // False will keep the size small. If it's true then we can define the size using aspectRatio
-    aspectRatio: 2,
+    maintainAspectRatio: false,
     plugins: {
       legend: {
-        position: "top",
+        position: "bottom",
         display: true,
-      },
-      title: {
-        display: true,
-        text: `Quotation Category`,
-        font: {
-          family: "Roboto-Bold",
-          size: 25,
-          weight: "bold",
-        },
-      },
-      subtitle: {
-        display: true,
-        text: "Categorywise quotations count",
-        font: {
-          family: "Roboto-Regular",
-          size: 15,
-          weight: "bold",
+        labels: {
+          fontSize: 12,
+          fontWeight: "500",
         },
       },
       datalabels: {
         display: true,
-        color: "black",
-        fontWeight: "bold",
+        color: "#333",
+        fontWeight: "500",
         font: {
-          family: "Roboto-Regular",
-          size: 15,
-          weight: "bold",
+          size: 12,
         },
       },
     },
@@ -494,65 +479,37 @@ export default function QuotationsDashboard() {
 
   const optionsForBarChart = {
     responsive: true,
-    //maintainAspectRatio: false,   // False will keep the size small. If it's true then we can define the size using aspectRatio
-    aspectRatio: 2,
+    maintainAspectRatio: false,
     plugins: {
-      title: {
+      legend: {
         display: true,
-        text: "Monthwise Total Quotations",
-        font: {
-          family: "Roboto-Bold",
-          size: 25,
-          weight: "bold",
-        },
-      },
-      subtitle: {
-        display: true,
-        text: "Total quotations created in each month",
-        font: {
-          family: "Roboto-Regular",
-          size: 15,
-          weight: "bold",
+        labels: {
+          fontSize: 12,
+          fontWeight: "500",
         },
       },
       datalabels: {
         display: true,
-        color: "black",
-        fontWeight: "bold",
+        color: "#333",
+        fontWeight: "500",
         align: "end",
         anchor: "end",
         font: {
-          family: "Roboto-Regular",
-          size: 13,
-          weight: "bold",
+          size: 12,
         },
       },
     },
     scales: {
       x: {
-        title: {
-          display: true,
-          text: "Year-Month",
-          font: {
-            family: "Roboto-Regular",
-            size: 15,
-          },
-        },
         ticks: {
-          beginAtZero: true, // Optional: start ticks at 0
+          fontSize: 12,
+          beginAtZero: true,
         },
       },
       y: {
-        title: {
-          display: true,
-          text: "Number of Quotes",
-          font: {
-            family: "Roboto-Regular",
-            size: 15,
-          },
-        },
         ticks: {
-          beginAtZero: true, // Optional: start ticks at 0
+          fontSize: 12,
+          beginAtZero: true,
         },
         grace: 1,
       },
@@ -808,107 +765,76 @@ export default function QuotationsDashboard() {
           {/* Enhanced KPI Cards Section */}
           <Grid item xs={12}>
             {/* <Typography variant="h5" gutterBottom sx={{ mb: 3, color: '#1976d2', fontWeight: 600 }}>
-                📊 Key Performance Indicators
-              </Typography>
-              <Grid container spacing={3} sx={{ mb: 4 }}>
-                <Grid item xs={12} sm={6} md={3}>
-                  <EnhancedKpiCard
-                    title="Total Revenue"
-                    value={totalRevenue}
-                    subtitle="Current month revenue"
-                    icon={<AttachMoney />}
-                    color="#4caf50"
-                    bgColor="#f1f8e9"
-                    prefix="₹"
-                    decimals={0}
-                    trend={monthlyGrowth > 0 ? 'up' : monthlyGrowth < 0 ? 'down' : 'flat'}
-                    trendValue={`${monthlyGrowth > 0 ? '+' : ''}${monthlyGrowth}%`}
-                    tooltip="Total revenue from all quotations in selected period"
-                  />
-                </Grid>
+              📊 Key Performance Indicators
+            </Typography>
+            <Grid container spacing={3} sx={{ mb: 4 }}>
+              <Grid item xs={12} sm={6} md={3}>
+                <QuotationKPICard
+                  title="Total Revenue"
+                  value={`₹${totalRevenue.toLocaleString()}`}
+                  icon={<AttachMoney />}
+                  color="#4caf50"
+                />
+              </Grid>
 
-                <Grid item xs={12} sm={6} md={3}>
-                  <EnhancedKpiCard
-                    title="Avg Quote Value"
-                    value={averageQuoteValue}
-                    subtitle="Per quotation average"
-                    icon={<Assessment />}
-                    color="#ff9800"
-                    bgColor="#fff3e0"
-                    prefix="₹"
-                    decimals={0}
-                    tooltip="Average value per quotation"
-                  />
-                </Grid>
+              <Grid item xs={12} sm={6} md={3}>
+                <QuotationKPICard
+                  title="Avg Quote Value"
+                  value={`₹${averageQuoteValue.toLocaleString()}`}
+                  icon={<Assessment />}
+                  color="#ff9800"
+                />
+              </Grid>
 
+              <Grid item xs={12} sm={6} md={3}>
+                <QuotationKPICard
+                  title="Total Quotes"
+                  value={monthWiseTotalQuotesCount}
+                  icon={<Groups />}
+                  color="#2196f3"
+                />
+              </Grid>
 
-                <Grid item xs={12} sm={6} md={3}>
-                  <EnhancedKpiCard
-                    title="Total Quotes"
-                    value={monthWiseTotalQuotesCount}
-                    subtitle="This month"
-                    icon={<Groups />}
-                    color="#2196f3"
-                    bgColor="#e3f2fd"
-                    tooltip="Total number of quotations created"
-                  />
-                </Grid>
-
-                <Grid item xs={12} sm={6} md={3}>
-                  <EnhancedKpiCard
-                    title="Conversion Rate"
-                    value={conversionRate}
-                    subtitle="Approved quotes"
-                    icon={<CheckCircle />}
-                    color="#9c27b0"
-                    bgColor="#f3e5f5"
-                    suffix="%"
-                    decimals={1}
-                    progress={conversionRate}
-                    tooltip="Percentage of approved quotations"
-                  />
-                </Grid>
-              </Grid> */}
+              <Grid item xs={12} sm={6} md={3}>
+                <QuotationKPICard
+                  title="Conversion Rate"
+                  value={`${conversionRate.toFixed(1)}%`}
+                  icon={<CheckCircle />}
+                  color="#9c27b0"
+                />
+              </Grid>
+            </Grid> */}
 
             {/* Status Distribution KPIs */}
             {/* <Typography variant="h6" gutterBottom sx={{ mb: 2, color: '#666', fontWeight: 500 }}>
-                📈 Quote Status Overview
-              </Typography>
-              <Grid container spacing={2} sx={{ mb: 4 }}>
-                <Grid item xs={12} sm={4}>
-                  <EnhancedKpiCard
-                    title="Pending Quotes"
-                    value={quotesStatusCounts.pending}
-                    subtitle="Awaiting approval"
-                    icon={<PendingActions />}
-                    color="#ff9800"
-                    bgColor="#fff8e1"
-                    chips={[{ label: 'Action Required', color: '#ff9800' }]}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={4}>
-                  <EnhancedKpiCard
-                    title="Approved Quotes"
-                    value={quotesStatusCounts.approved}
-                    subtitle="Successfully approved"
-                    icon={<CheckCircle />}
-                    color="#4caf50"
-                    bgColor="#e8f5e8"
-                    chips={[{ label: 'Completed', color: '#4caf50' }]}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={4}>
-                  <EnhancedKpiCard
-                    title="Rejected Quotes"
-                    value={quotesStatusCounts.rejected}
-                    subtitle="Requires attention"
-                    icon={<Cancel />}
-                    color="#f44336"
-                    bgColor="#ffebee"
-                    chips={[{ label: 'Review Needed', color: '#f44336' }]}
-                  />
-                </Grid>
-              </Grid> */}
+              📈 Quote Status Overview
+            </Typography>
+            <Grid container spacing={2} sx={{ mb: 4 }}>
+              <Grid item xs={12} sm={4}>
+                <QuotationKPICard
+                  title="Pending Quotes"
+                  value={quotesStatusCounts.pending}
+                  icon={<PendingActions />}
+                  color="#ff9800"
+                />
+              </Grid>
+              <Grid item xs={12} sm={4}>
+                <QuotationKPICard
+                  title="Approved Quotes"
+                  value={quotesStatusCounts.approved}
+                  icon={<CheckCircle />}
+                  color="#4caf50"
+                />
+              </Grid>
+              <Grid item xs={12} sm={4}>
+                <QuotationKPICard
+                  title="Rejected Quotes"
+                  value={quotesStatusCounts.rejected}
+                  icon={<Cancel />}
+                  color="#f44336"
+                />
+              </Grid>
+            </Grid> */}
 
             {/* Category-wise breakdown */}
             <Typography
@@ -921,13 +847,10 @@ export default function QuotationsDashboard() {
             <Grid container spacing={2} sx={{ mb: 4 }}>
               {labelsForQuotePieChart.map((label, index) => (
                 <Grid key={label} item xs={12} sm={6} md={4} lg={3}>
-                  <EnhancedKpiCard
+                  <QuotationKPICard
                     title={label}
                     value={quoteCategoryCountsForQuotePieChart[index]}
-                    subtitle="Quotes in category"
                     color={kpiColors[index + 1] || "#1976d2"}
-                    bgColor={`${kpiColors[index + 1]}10` || "#e3f2fd"}
-                    tooltip={`Total ${label} quotations`}
                   />
                 </Grid>
               ))}
@@ -947,85 +870,27 @@ export default function QuotationsDashboard() {
             <Grid container spacing={4}>
               {/* Category Distribution Pie Chart */}
               <Grid item xs={12} lg={6}>
-                <Card
-                  elevation={4}
-                  sx={{
-                    "background":
-                      "linear-gradient(135deg, #e3f2fd 0%, #ffffff 100%)",
-                    "borderRadius": 4,
-                    "border": "1px solid #e3f2fd",
-                    "height": "100%",
-                    "transition": "all 0.3s ease",
-                    "&:hover": {
-                      transform: "translateY(-4px)",
-                      boxShadow: "0 8px 25px rgba(25, 118, 210, 0.15)",
-                    },
-                  }}
-                >
-                  <Box sx={{ p: 3 }}>
-                    <Typography
-                      variant="h6"
-                      gutterBottom
-                      sx={{
-                        color: "#1976d2",
-                        fontWeight: 600,
-                        mb: 2,
-                        display: "flex",
-                        alignItems: "center",
-                      }}
-                    >
-                      🥧 Category Distribution
-                    </Typography>
-                    <Typography variant="body2" sx={{ color: "#666", mb: 3 }}>
-                      Breakdown of quotations by service category
-                    </Typography>
-                    <CreatePieChart
-                      data={categorywiseQuotesPieChart}
-                      options={optionsForQuotesPieChart}
-                    />
-                  </Box>
+                <Card sx={{ height: 400, padding: "5px" }}>
+                  <Typography variant="h6" sx={{ color: "#003366", mb: 1 }}>
+                    Category Distribution
+                  </Typography>
+                  <CreatePieChart
+                    data={categorywiseQuotesPieChart}
+                    options={optionsForQuotesPieChart}
+                  />
                 </Card>
               </Grid>
 
               {/* Monthly Trends Bar Chart */}
               <Grid item xs={12} lg={6}>
-                <Card
-                  elevation={4}
-                  sx={{
-                    "background":
-                      "linear-gradient(135deg, #f1f8e9 0%, #ffffff 100%)",
-                    "borderRadius": 4,
-                    "border": "1px solid #e8f5e8",
-                    "height": "100%",
-                    "transition": "all 0.3s ease",
-                    "&:hover": {
-                      transform: "translateY(-4px)",
-                      boxShadow: "0 8px 25px rgba(76, 175, 80, 0.15)",
-                    },
-                  }}
-                >
-                  <Box sx={{ p: 3 }}>
-                    <Typography
-                      variant="h6"
-                      gutterBottom
-                      sx={{
-                        color: "#4caf50",
-                        fontWeight: 600,
-                        mb: 2,
-                        display: "flex",
-                        alignItems: "center",
-                      }}
-                    >
-                      📊 Monthly Trends
-                    </Typography>
-                    <Typography variant="body2" sx={{ color: "#666", mb: 3 }}>
-                      Quote volume over the past six months
-                    </Typography>
-                    <CreateBarChart
-                      data={barChartData}
-                      options={optionsForBarChart}
-                    />
-                  </Box>
+                <Card sx={{ height: 400, padding: "5px" }}>
+                  <Typography variant="h6" sx={{ color: "#003366", mb: 1 }}>
+                    Monthwise Quotation Trend
+                  </Typography>
+                  <CreateBarChart
+                    data={barChartData}
+                    options={optionsForBarChart}
+                  />
                 </Card>
               </Grid>
             </Grid>
@@ -1036,3 +901,45 @@ export default function QuotationsDashboard() {
     </>
   );
 }
+
+// QuotationKPICard component following Financials.jsx pattern
+const QuotationKPICard = ({ title, value, icon, color }) => {
+  return (
+    <Card
+      sx={{
+        "background": `linear-gradient(135deg, ${color}15 0%, ${color}25 100%)`,
+        "border": `1px solid ${color}30`,
+        "height": "100%",
+        "transition": "transform 0.2s ease-in-out",
+        "&:hover": {
+          transform: "translateY(-4px)",
+          boxShadow: `0 8px 25px ${color}20`,
+        },
+      }}
+    >
+      <CardContent>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+          }}
+        >
+          <Box sx={{ flex: 1 }}>
+            <Typography variant="body2" color="text.secondary">
+              {title}
+            </Typography>
+            <Typography variant="h4" sx={{ fontWeight: "bold", color: color }}>
+              {value}
+            </Typography>
+          </Box>
+          <Avatar
+            sx={{ bgcolor: `${color}20`, color: color, width: 56, height: 56 }}
+          >
+            {icon}
+          </Avatar>
+        </Box>
+      </CardContent>
+    </Card>
+  );
+};

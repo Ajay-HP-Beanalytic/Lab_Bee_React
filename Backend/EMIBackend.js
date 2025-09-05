@@ -797,6 +797,58 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
     });
   });
 
+  // Get all available years for TS2/EMI JC date options (similar to quotations)
+  app.get("/api/getTS2JCDateOptions", (req, res) => {
+    const sqlQuery = `
+        SELECT DISTINCT YEAR(jcOpenDate) AS year
+        FROM emi_jobcards
+        WHERE jcOpenDate IS NOT NULL
+        ORDER BY year DESC`;
+
+    db.query(sqlQuery, (error, result) => {
+      if (error) {
+        return res.status(500).json({
+          error: "An error occurred while fetching TS2 JC years data",
+        });
+      }
+
+      const years = result.map((row) => row.year);
+      res.json({ years });
+    });
+  });
+
+  // Get available months for a specific year for TS2/EMI JCs (similar to quotations)
+  app.get("/api/getAvailableTS2JCMonthsForYear", (req, res) => {
+    const { year } = req.query;
+
+    if (!year) {
+      return res.status(400).json({ error: "Year parameter is required" });
+    }
+
+    const sqlQuery = `
+        SELECT 
+            DISTINCT MONTH(jcOpenDate) AS value,
+            DATE_FORMAT(jcOpenDate, '%M') AS label,
+            MONTH(jcOpenDate) AS monthNumber
+        FROM emi_jobcards
+        WHERE YEAR(jcOpenDate) = ? AND jcOpenDate IS NOT NULL
+        ORDER BY monthNumber DESC`;
+
+    db.query(sqlQuery, [year], (error, result) => {
+      if (error) {
+        return res.status(500).json({
+          error: "An error occurred while fetching TS2 JC months data",
+        });
+      }
+
+      const months = result.map((row) => ({
+        value: row.value,
+        label: row.label,
+      }));
+      res.json(months);
+    });
+  });
+
   /////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   // Get the JC's between two date ranges:

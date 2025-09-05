@@ -71,36 +71,47 @@ export default function UserManagement() {
   ];
 
   const userDepartmentAndRoles = {
-    Accounts: ["Accounts Admin", "Accounts Executive"],
-    Administration: [
+    "Accounts": ["Accounts Admin", "Accounts Executive"],
+    "Administration": [
       "Administrator",
       "Managing Director",
       "Operations Manager",
     ],
-    Marketing: ["Marketing Manager", "Marketing Executive"],
-    Reliability: [
+    "Marketing": ["Marketing Manager", "Marketing Executive"],
+    "Reliability": [
       "Reliability Manager",
-      "Reliability Engineer",
+      "Lead Reliability Engineer",
       "Senior Reliability Engineer",
       "Senior RAMS Engineer",
+      "Reliability Engineer",
       "Reliability Engineer 1",
       "Reliability Engineer 2",
       "Reliability Engineer 3",
       "Reliability Engineer 4",
       "Trainee Reliability Engineer",
     ],
-    Software: ["Software Engineer"],
+    "Software": ["Software Engineer", "Trainee Engineer"],
     "TS1 Testing": [
       "Lab Manager",
       "Lab Engineer",
       "Lab Technician",
       "Lab Assistant",
+      "Trainee Engineer",
       "Quality Manager",
       "Deputy Quality Manager",
       "Reports & Scrutiny Manager",
     ],
-    "TS2 Testing": ["Lab Manager(EMI)", "Test Engineer"],
-    "Reports & Scrutiny": ["Reports & Scrutiny Manager", "Quality Engineer"],
+    "TS2 Testing": [
+      "Lab Manager(EMI)",
+      "Lab Incharge",
+      "Test Engineer",
+      "Trainee Engineer",
+    ],
+    "Reports & Scrutiny": [
+      "Reports & Scrutiny Manager",
+      "Technical Support Writer",
+      "Quality Engineer",
+    ],
   };
 
   const userStatusOptions = ["Enable", "Disable"];
