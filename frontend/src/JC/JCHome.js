@@ -56,8 +56,8 @@ export default function JCHome() {
   const [jcYear, setJCYear] = useState(year);
   const [jcMonth, setJCMonth] = useState(month);
 
-  const [years, setYears] = useState([]);
-  const [months, setMonths] = useState([]);
+  const [availableYears, setAvailableYears] = useState([]);
+  const [availableMonths, setAvailableMonths] = useState([]);
 
   const [selectedJCDateRange, setSelectedJCDateRange] = useState(null);
 
@@ -253,13 +253,36 @@ export default function JCHome() {
 
   // Simulate fetching jc data from the database
   useEffect(() => {
+    // Don't fetch data until months are loaded or if no valid month is selected
+    if (availableMonths.length === 0 || !jcMonth || !jcYear) return;
+
     const jcTableDataRefresh = location.state?.updated;
+
+    // Convert month number to short month name format expected by API (if needed)
+    const monthNames = [
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
+    ];
+    const monthName = monthNames[jcMonth - 1];
+
+    // Safety check for valid month name
+    if (!monthName) return;
 
     let requiredAPIdata = {
       _fields:
         "jc_number,  jc_open_date, company_name,  jc_status, jc_closed_date, last_updated_by",
       year: jcYear,
-      month: jcMonth,
+      month: monthName,
     };
 
     const urlParameters = new URLSearchParams(requiredAPIdata).toString();
@@ -272,7 +295,7 @@ export default function JCHome() {
       _fields:
         "jc_number,  jc_open_date, company_name, project_name, reliability_report_status,  jc_status, jc_closed_date, last_updated_by",
       year: jcYear,
-      month: jcMonth,
+      month: monthName,
     };
 
     const urlParametersForReliability = new URLSearchParams(
@@ -309,38 +332,62 @@ export default function JCHome() {
       };
       fetchJCDataFromDatabase();
     }
-  }, [jcMonthYear, jcYear, jcMonth, filterRow, refresh, location.state]);
+  }, [jcYear, jcMonth, availableMonths, filterRow, refresh, location.state]);
 
-  // Function to fetch the months and years list:
+  // Initial data fetching - get all years only
   useEffect(() => {
-    const getMonthYearListOfJC = async () => {
+    const fetchYears = async () => {
       try {
         const response = await axios.get(
-          `${serverBaseAddress}/api/getJCYearMonth`
+          `${serverBaseAddress}/api/getJCDateOptions`
         );
+
         if (response.status === 200) {
-          const yearSet = new Set();
-          const monthSet = new Set();
+          setAvailableYears(response.data.years);
 
-          response.data.forEach((item) => {
-            yearSet.add(item.year);
-            monthSet.add(item.month);
-          });
-
-          setYears([...yearSet]);
-          setMonths([...monthSet]);
-        } else {
-          console.error(
-            "Failed to fetch JC Month-Year list. Status:",
-            response.status
-          );
+          // Set the most recent year (first in DESC order) as default
+          if (response.data.years.length > 0) {
+            const mostRecentYear = response.data.years[0]; // Years come in DESC order
+            setJCYear(mostRecentYear);
+          }
         }
       } catch (error) {
-        console.error("Failed to fetch the data", error);
+        console.error("Failed to fetch years", error);
       }
     };
-    getMonthYearListOfJC();
-  }, [jcMonthYear, jcYear, jcMonth, jcMonthYearList, refresh, location.state]);
+
+    fetchYears();
+  }, []);
+
+  // Cascading fetch - get months when year changes
+  useEffect(() => {
+    const fetchMonthsForYear = async () => {
+      if (jcYear) {
+        try {
+          const response = await axios.get(
+            `${serverBaseAddress}/api/getAvailableJCMonthsForYear?year=${jcYear}`
+          );
+
+          if (response.status === 200) {
+            setAvailableMonths(response.data);
+
+            // Always set the most recent month for better UX
+            if (response.data.length > 0) {
+              // Select the most recent month (highest month number)
+              const mostRecentMonth = response.data.reduce((latest, current) =>
+                current.value > latest.value ? current : latest
+              );
+              setJCMonth(mostRecentMonth.value);
+            }
+          }
+        } catch (error) {
+          console.error("Failed to fetch months for year", error);
+        }
+      }
+    };
+
+    fetchMonthsForYear();
+  }, [jcYear]);
 
   //useEffect to filter the table based on the search input
   useEffect(() => {
@@ -510,7 +557,9 @@ export default function JCHome() {
 
   // on changing the month-year selection:
   const handleYearOfJC = (event) => {
-    setJCYear(event.target.value);
+    const newYear = event.target.value;
+    setJCYear(newYear);
+    // Month update will be handled by useEffect above
   };
 
   const handleMonthOfJC = (event) => {
@@ -784,8 +833,8 @@ export default function JCHome() {
                   value={jcYear}
                   onChange={handleYearOfJC}
                 >
-                  {years.map((year, index) => (
-                    <MenuItem key={index} value={year}>
+                  {availableYears.map((year) => (
+                    <MenuItem key={year} value={year}>
                       {year}
                     </MenuItem>
                   ))}
@@ -801,10 +850,11 @@ export default function JCHome() {
                   type="text"
                   value={jcMonth}
                   onChange={handleMonthOfJC}
+                  disabled={!jcYear}
                 >
-                  {months.map((month, index) => (
-                    <MenuItem key={index} value={month}>
-                      {month}
+                  {availableMonths.map((month) => (
+                    <MenuItem key={month.value} value={month.value}>
+                      {month.label}
                     </MenuItem>
                   ))}
                 </Select>

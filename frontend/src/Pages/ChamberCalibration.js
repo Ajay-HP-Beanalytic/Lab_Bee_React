@@ -5,22 +5,23 @@ import { toast } from "react-toastify";
 import moment from "moment";
 import CountUp from "react-countup";
 import { format } from "date-fns";
+import dayjs from "dayjs";
 
 import { FcOvertime } from "react-icons/fc";
 import { FcApproval } from "react-icons/fc";
 import { FcHighPriority } from "react-icons/fc";
 import { FcExpired } from "react-icons/fc";
 
-import { CreateKpiCard, CreatePieChart } from "../functions/DashboardFunctions";
-
 import AddIcon from "@mui/icons-material/Add";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
+import { Close, Business } from "@mui/icons-material";
 import {
   Box,
   Button,
   Card,
+  CardContent,
   Dialog,
   DialogActions,
   DialogContent,
@@ -33,8 +34,13 @@ import {
   MenuItem,
   Select,
   TextField,
-  Tooltip,
   Typography,
+  Avatar,
+  Chip,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
 } from "@mui/material";
 import { serverBaseAddress } from "./APIPage";
 import ConfirmationDialog from "../common/ConfirmationDialog";
@@ -53,10 +59,8 @@ export default function ChamberAndCalibration() {
   const [chamberStatus, setChamberStatus] = useState("");
   const [remarks, setRemarks] = useState("");
 
-  const calibrationStatusOptions = [
-    { id: 1, label: "Up to Date" },
-    { id: 2, label: "Expired" },
-  ];
+  // Calibration status is now auto-calculated by backend
+
   const chamberStatusOptions = [
     { id: 1, label: "Good" },
     { id: 2, label: "Under Maintenance" },
@@ -82,6 +86,15 @@ export default function ChamberAndCalibration() {
   const [deleteItemId, setDeleteItemId] = useState(null);
   const [editFields, setEditFields] = useState(false);
 
+  // Dialog states for KPI card clicks
+  const [openDialog, setOpenDialog] = useState(false);
+  const [dialogData, setDialogData] = useState({
+    title: "",
+    chambers: [],
+    type: "",
+    color: "",
+  });
+
   // Function to handle the submit process.
   const onSubmitChambersButton = async (e) => {
     const formattedCalibrationDoneDate = calibrationDoneDate
@@ -97,12 +110,16 @@ export default function ChamberAndCalibration() {
       !formattedCalibrationDoneDate ||
       !formattedCalibrationDueDate ||
       !calibratedBy ||
-      !calibrationStatus ||
       !chamberStatus
     ) {
-      toast.error("Please enter all the fields..!");
+      toast.error("Please enter all the required fields..!");
       return;
     }
+
+    // Auto-calculate calibration status based on due date
+    const today = new Date();
+    const dueDate = new Date(formattedCalibrationDueDate);
+    const autoCalibrationStatus = dueDate < today ? "Expired" : "Up to Date";
 
     try {
       const addChamberRequest = await axios.post(
@@ -113,7 +130,7 @@ export default function ChamberAndCalibration() {
           formattedCalibrationDoneDate,
           formattedCalibrationDueDate,
           calibratedBy,
-          calibrationStatus,
+          calibrationStatus: autoCalibrationStatus, // Use auto-calculated status
           chamberStatus,
           remarks,
         }
@@ -287,43 +304,60 @@ export default function ChamberAndCalibration() {
   const nextDate = new Date(currentDate);
   nextDate.setDate(currentDate.getDate() + 45);
 
-  // List to store the calibration dues in the next 45 days
-  const calibrationsPendingNext45Days = [];
+  // Use backend-calculated data for calibrations due in next 45 days
+  const calibrationsPendingNext45DaysDetails = [];
 
-  // Iterate through the chambersList and filter based on the condition
   chambersList.forEach((item) => {
-    const dueDate = new Date(item.calibration_due_date);
-
-    // Check if the due date is within the next 45 days
-    if (dueDate >= currentDate && dueDate <= nextDate) {
+    // Backend already calculated urgency_category, use 'Due Soon' category
+    if (item.urgency_category === "Due Soon" && item.days_until_due > 0) {
       calibration_due_counts++;
-      calibrationsPendingNext45Days.push(
-        `${item.chamber_name} is due on ${item.calibration_due_date}`
-      );
+      calibrationsPendingNext45DaysDetails.push({
+        chamber_name: item.chamber_name,
+        calibration_due_date: item.calibration_due_date,
+        days_until_due: item.days_until_due, // From backend calculation
+        chamber_id: item.chamber_id,
+        calibration_status: item.calibration_status,
+        urgency_category: item.urgency_category,
+      });
     }
   });
 
-  // Calibration status count/KPI:
+  // Keep the old array for backward compatibility
+  const calibrationsPendingNext45Days =
+    calibrationsPendingNext45DaysDetails.map(
+      (item) => `${item.chamber_name} is due on ${item.calibration_due_date}`
+    );
+
+  // Use backend-calculated calibration status data:
   let upToDate_CalibrationCount = 0;
   let expired_CalibrationCount = 0;
-  let calibration_expiredChamberNames = [];
+  let calibration_expiredChamberDetails = [];
 
   chambersList.forEach((item) => {
-    const todaysDate = new Date();
-    const dueDate = new Date(item.calibration_due_date);
-
-    if (dueDate < todaysDate) {
+    if (item.calibration_status === "Expired") {
       expired_CalibrationCount++;
-      calibration_expiredChamberNames.push(item.chamber_name);
-    } else {
+      calibration_expiredChamberDetails.push({
+        chamber_name: item.chamber_name,
+        calibration_due_date: item.calibration_due_date,
+        days_overdue: item.days_overdue, // From backend calculation
+        chamber_id: item.chamber_id,
+        calibration_status: item.calibration_status,
+        urgency_category: item.urgency_category,
+      });
+    } else if (item.calibration_status === "Up to Date") {
       upToDate_CalibrationCount++;
     }
   });
 
-  // Chamber status KPI or Count:
+  // Keep the old array for backward compatibility
+  const calibration_expiredChamberNames = calibration_expiredChamberDetails.map(
+    (item) => item.chamber_name
+  );
+
+  // Chamber status KPI or Count with detailed information:
   let good_ChamberCount = 0;
   let underMaintenance_ChamberCount = 0;
-  let chamber_underMaintenanceNames = [];
+  let chamber_underMaintenanceDetails = [];
 
   chambersList.forEach((item) => {
     // Assuming 'item.chamber_status' contains either 'Good ' or 'Under Maintenance'
@@ -332,7 +366,13 @@ export default function ChamberAndCalibration() {
       good_ChamberCount++;
     } else if (item.chamber_status === "Under Maintenance") {
       underMaintenance_ChamberCount++;
-      chamber_underMaintenanceNames.push(item.chamber_name);
+      chamber_underMaintenanceDetails.push({
+        chamber_name: item.chamber_name,
+        chamber_id: item.chamber_id,
+        chamber_status: item.chamber_status,
+        calibration_due_date: item.calibration_due_date,
+        remarks: item.remarks || "Under maintenance",
+      });
     } else {
       // Handle other cases (optional)
       console.warn(
@@ -341,95 +381,10 @@ export default function ChamberAndCalibration() {
     }
   });
 
-  //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-  // Title for the KPI Card dropdown  list:
-  const accordianTitleString = "Click here to see the list";
-
-  // Creating a pie chart for calibration status for chambers and equipments:
-  const calibrationStatusPieChart = {
-    labels: ["Up to Date", "Expired"],
-    datasets: [
-      {
-        data: [upToDate_CalibrationCount, expired_CalibrationCount],
-        backgroundColor: ["#67a353", "#fe6e73"],
-      },
-    ],
-  };
-
-  const optionsForCalibrationStatusPieChart = {
-    responsive: true,
-    //maintainAspectRatio: false,   // False will keep the size small. If it's true then we can define the size using aspectRatio
-    aspectRatio: 2,
-    plugins: {
-      legend: {
-        position: "top",
-        display: true,
-      },
-      title: {
-        display: true,
-        text: "Calibration Status",
-        font: {
-          family: "Roboto-Bold",
-          size: 25,
-          weight: "bold",
-        },
-      },
-
-      datalabels: {
-        display: true,
-        color: "black",
-        fontWeight: "bold",
-        font: {
-          family: "Roboto-Regular",
-          size: 15,
-          weight: "bold",
-        },
-      },
-    },
-  };
-
-  // Creating a pie chart for chamber and equipments status:
-  const chamberStatusPieChart = {
-    labels: ["Good", "Under Maintenance"],
-    datasets: [
-      {
-        data: [good_ChamberCount, underMaintenance_ChamberCount],
-        backgroundColor: ["#67a353", "#fe6e73"],
-      },
-    ],
-  };
-
-  const optionsForChamberStatusPieChart = {
-    responsive: true,
-    //maintainAspectRatio: false,   // False will keep the size small. If it's true then we can define the size using aspectRatio
-    aspectRatio: 2,
-    plugins: {
-      legend: {
-        position: "top",
-        display: true,
-      },
-      title: {
-        display: true,
-        text: "Chambers Status",
-        font: {
-          family: "Roboto-Bold",
-          size: 25,
-          weight: "bold",
-        },
-      },
-      datalabels: {
-        display: true,
-        color: "black",
-        fontWeight: "bold",
-        font: {
-          family: "Roboto-Regular",
-          size: 15,
-          weight: "bold",
-        },
-      },
-    },
-  };
+  // Keep the old array for backward compatibility
+  const chamber_underMaintenanceNames = chamber_underMaintenanceDetails.map(
+    (item) => item.chamber_name
+  );
 
   // Function to open the dialog:
   const addNewChamberButton = () => {
@@ -451,7 +406,6 @@ export default function ChamberAndCalibration() {
       moment(row.calibration_due_date).format("YYYY-MM-DD")
     );
     setCalibratedBy(row.calibration_done_by);
-    setCalibrationStatus(row.calibration_status);
     setChamberStatus(row.chamber_status);
     setRemarks(row.remarks);
   };
@@ -463,7 +417,6 @@ export default function ChamberAndCalibration() {
     setCalibrationDoneDate("");
     setCalibrationDueDate("");
     setCalibratedBy("");
-    setCalibrationStatus("");
     setChamberStatus("");
     setRemarks("");
 
@@ -628,6 +581,19 @@ export default function ChamberAndCalibration() {
     },
   ];
 
+  // Function to handle KPI card click and show chamber list
+  const handleKPIClick = (kpi) => {
+    if (kpi.chambers && kpi.chambers.length > 0) {
+      setDialogData({
+        title: kpi.title,
+        chambers: kpi.chambers,
+        type: kpi.type,
+        color: kpi.color,
+      });
+      setOpenDialog(true);
+    }
+  };
+
   const addSerialNumbersToRows = (data) => {
     return data.map((item, index) => ({
       ...item,
@@ -643,138 +609,143 @@ export default function ChamberAndCalibration() {
   return (
     <>
       <Box>
-        <Grid
-          item
-          xs={12}
-          md={6}
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: { xs: "center", md: "center" },
-            mb: "10px",
-          }}
-        >
-          <Box sx={{ width: "100%" }}>
-            <Divider>
-              <Typography variant="h4" sx={{ color: "#003366" }}>
-                {" "}
-                Chambers and Calibration Data{" "}
-              </Typography>
-            </Divider>
-          </Box>
+        <Typography variant="h4" sx={{ color: "#003366", mb: "10px" }}>
+          Chambers and Calibration Dashboard
+        </Typography>
+
+        <Grid container spacing={3} sx={{ mb: 3 }}>
+          <Grid item xs={12} sm={6} md={3}>
+            <ChamberCalibrationKPICard
+              title={`Calibrations Due (Next 45 Days)`}
+              value={calibration_due_counts}
+              color="#ff9800"
+              icon={<FcOvertime />}
+              hasDetails={calibrationsPendingNext45Days.length > 0}
+              onClick={() =>
+                handleKPIClick({
+                  title: "Calibrations Due (Next 45 Days)",
+                  chambers: calibrationsPendingNext45DaysDetails,
+                  type: "due_soon",
+                  color: "#ff9800",
+                })
+              }
+            />
+          </Grid>
+
+          <Grid item xs={12} sm={6} md={3}>
+            <ChamberCalibrationKPICard
+              title="Calibration Up to Date"
+              value={upToDate_CalibrationCount}
+              color="#2196f3"
+              icon={<FcApproval />}
+              hasDetails={false}
+            />
+          </Grid>
+
+          <Grid item xs={12} sm={6} md={3}>
+            <ChamberCalibrationKPICard
+              title="Calibration Expired"
+              value={expired_CalibrationCount}
+              color="#f44336"
+              icon={<FcExpired />}
+              hasDetails={calibration_expiredChamberNames.length > 0}
+              onClick={() =>
+                handleKPIClick({
+                  title: "Calibration Expired",
+                  chambers: calibration_expiredChamberDetails,
+                  type: "expired",
+                  color: "#f44336",
+                })
+              }
+            />
+          </Grid>
+
+          <Grid item xs={12} sm={6} md={3}>
+            <ChamberCalibrationKPICard
+              title="Under Maintenance"
+              value={underMaintenance_ChamberCount}
+              color="#757575"
+              icon={<FcHighPriority />}
+              hasDetails={chamber_underMaintenanceNames.length > 0}
+              onClick={() =>
+                handleKPIClick({
+                  title: "Chambers Under Maintenance",
+                  chambers: chamber_underMaintenanceDetails,
+                  type: "maintenance",
+                  color: "#757575",
+                })
+              }
+            />
+          </Grid>
         </Grid>
 
-        <Box>
-          <Grid container spacing={4}>
-            <Grid item xs={12} md={3}>
-              <Card elevation={5} sx={{ backgroundColor: "#e6e6ff" }}>
-                <CreateKpiCard
-                  kpiTitle={`Calibrations pending in ${currentYearAndMonth}:`}
-                  kpiValue={
-                    <CountUp start={0} end={calibration_due_counts} delay={1} />
-                  }
-                  kpiColor="#3f51b5"
-                  // kpiNames={calibrationsPendingThisMonth}
-                  kpiNames={calibrationsPendingNext45Days}
-                  accordianTitleString={accordianTitleString}
-                  kpiIcon={<FcOvertime size="100px" />}
-                />
-              </Card>
-            </Grid>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            mb: 2,
+          }}
+        >
+          <Box></Box>
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "row",
+              justifyContent: "flex-end",
+            }}
+          >
+            <input
+              type="file"
+              accept=".xls, .xlsx"
+              onChange={handleFileChange}
+              style={{ display: "none" }}
+              ref={fileInputRef}
+            />
+            <Button
+              sx={{
+                borderRadius: 1,
+                bgcolor: "orange",
+                color: "white",
+                borderColor: "black",
+                padding: { xs: "8px 16px", md: "6px 12px" },
+                fontSize: { xs: "0.875rem", md: "1rem" },
+                mr: 1,
+              }}
+              variant="contained"
+              color="primary"
+              onClick={() => fileInputRef.current.click()}
+              startIcon={<UploadFileIcon />}
+            >
+              Import Excel
+            </Button>
 
-            <Grid item xs={12} md={3}>
-              <Card elevation={5} sx={{ backgroundColor: "#f9fbe7" }}>
-                <CreateKpiCard
-                  kpiTitle="Calibration Up to date:"
-                  kpiValue={
-                    <CountUp
-                      start={0}
-                      end={upToDate_CalibrationCount}
-                      delay={1}
-                    />
-                  }
-                  kpiColor="#c0ca33"
-                  accordianTitleString={accordianTitleString}
-                  kpiIcon={<FcApproval size="130px" />}
-                />
-              </Card>
-            </Grid>
-
-            <Grid item xs={12} md={3}>
-              <Card elevation={5} sx={{ backgroundColor: "#b3b3cc" }}>
-                <CreateKpiCard
-                  kpiTitle="Calibration Expired:"
-                  kpiValue={
-                    <CountUp
-                      start={0}
-                      end={expired_CalibrationCount}
-                      delay={1}
-                    />
-                  }
-                  kpiColor="#f44336"
-                  kpiNames={calibration_expiredChamberNames}
-                  accordianTitleString={accordianTitleString}
-                  kpiIcon={<FcExpired size="130px" />}
-                />
-              </Card>
-            </Grid>
-
-            <Grid item xs={12} md={3}>
-              <Card elevation={5} sx={{ backgroundColor: "#f9ecef" }}>
-                <CreateKpiCard
-                  kpiTitle="Chambers Under Maintenance:"
-                  kpiValue={
-                    <CountUp
-                      start={0}
-                      end={underMaintenance_ChamberCount}
-                      delay={1}
-                    />
-                  }
-                  kpiColor="#f44336"
-                  kpiNames={chamber_underMaintenanceNames}
-                  accordianTitleString={accordianTitleString}
-                  kpiIcon={<FcHighPriority size="130px" />}
-                />
-              </Card>
-            </Grid>
-          </Grid>
+            <Button
+              sx={{
+                borderRadius: 1,
+                bgcolor: "orange",
+                color: "white",
+                borderColor: "black",
+                padding: { xs: "8px 16px", md: "6px 12px" },
+                fontSize: { xs: "0.875rem", md: "1rem" },
+                mr: 1,
+              }}
+              variant="contained"
+              color="primary"
+              onClick={addNewChamberButton}
+              startIcon={<AddIcon />}
+            >
+              Add Chamber
+            </Button>
+          </Box>
         </Box>
 
-        <Box>
-          <Grid container spacing={2} justifyContent="center" sx={{ mt: 2 }}>
-            <Grid item xs={12} md={6}>
-              <Box
-                sx={{
-                  backgroundColor: "#ebf0fa",
-                  padding: 2,
-                  borderRadius: 5,
-                  boxShadow: 2,
-                }}
-              >
-                <CreatePieChart
-                  data={calibrationStatusPieChart}
-                  options={optionsForCalibrationStatusPieChart}
-                />
-              </Box>
-            </Grid>
-
-            <Grid item xs={12} md={6}>
-              <Box
-                sx={{
-                  backgroundColor: "#ebf0fa",
-                  padding: 2,
-                  borderRadius: 5,
-                  boxShadow: 2,
-                }}
-              >
-                <CreatePieChart
-                  data={chamberStatusPieChart}
-                  options={optionsForChamberStatusPieChart}
-                />
-              </Box>
-            </Grid>
-          </Grid>
-        </Box>
+        <SearchBar
+          placeholder="Search Chambers"
+          searchInputText={searchInputTextOfCal}
+          onChangeOfSearchInput={onChangeOfSearchInputOfCal}
+          onClearSearchInput={onClearSearchInputOfCal}
+        />
 
         {editChamberCalibrationFields && (
           <Dialog
@@ -864,21 +835,17 @@ export default function ChamberAndCalibration() {
                 autoComplete="on"
               />
 
-              <FormControl fullWidth sx={{ mt: 2, pl: 1 }}>
-                <InputLabel>Calibration Status</InputLabel>
-                <Select
-                  label="Calibration Status"
-                  type="text"
-                  value={calibrationStatus}
-                  onChange={(e) => setCalibrationStatus(e.target.value)}
-                >
-                  {calibrationStatusOptions.map((calStatus) => (
-                    <MenuItem key={calStatus.id} value={calStatus.label}>
-                      {calStatus.label}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+              {/* Calibration Status is now auto-calculated by backend based on due date */}
+              <Typography
+                variant="body2"
+                sx={{ mt: 2, pl: 1, color: "text.secondary" }}
+              >
+                <strong>Note:</strong> Calibration status is automatically
+                calculated based on calibration due date
+                <br />
+                • "Up to Date" - Due date is in the future
+                <br />• "Expired" - Due date has passed
+              </Typography>
 
               <FormControl fullWidth sx={{ mt: 2, pl: 1 }}>
                 <InputLabel>Chamber Status</InputLabel>
@@ -956,85 +923,209 @@ export default function ChamberAndCalibration() {
           cancelButtonText="Cancel"
         />
 
-        {/* Box to keep the searchbar and the action buttons in a single row */}
-        <Card sx={{ width: "100%", mt: "20px", padding: "20px" }}>
-          <Grid
-            container
-            spacing={2}
-            alignItems="center"
-            justifyContent="flex-end"
+        {chamberCalibrationDataWithSerialNumbers &&
+        chamberCalibrationDataWithSerialNumbers.length === 0 ? (
+          <EmptyCard message="Chamber Calibration Data not found" />
+        ) : (
+          <Box
+            sx={{
+              "height": 500,
+              "width": "100%",
+              "& .custom-header-color": {
+                backgroundColor: "#476f95",
+                color: "whitesmoke",
+                fontWeight: "bold",
+                fontSize: "15px",
+              },
+              "mt": 1,
+              "mb": 2,
+            }}
           >
-            {!editChamberCalibrationFields && (
-              <>
-                <Grid item>
-                  <IconButton variant="contained" size="large">
-                    <Tooltip title="Add Chamber" arrow type="submit">
-                      <AddIcon
-                        fontSize="inherit"
-                        onClick={addNewChamberButton}
-                      />
-                    </Tooltip>
-                  </IconButton>
-                </Grid>
-
-                <Grid item>
-                  <input
-                    type="file"
-                    accept=".xls, .xlsx" // Limit file selection to Excel files
-                    onChange={handleFileChange}
-                    style={{ display: "none" }} // Hide the input element
-                    ref={fileInputRef}
-                  />
-                  <IconButton variant="contained" size="large">
-                    <Tooltip title="Upload Excel" arrow>
-                      <UploadFileIcon
-                        fontSize="inherit"
-                        onClick={() => fileInputRef.current.click()}
-                      />
-                    </Tooltip>
-                  </IconButton>
-                </Grid>
-              </>
-            )}
-
-            <Grid item xs={12} md={4} container justifyContent="flex-end">
-              <SearchBar
-                placeholder="Search"
-                searchInputText={searchInputTextOfCal}
-                onChangeOfSearchInput={onChangeOfSearchInputOfCal}
-                onClearSearchInput={onClearSearchInputOfCal}
-              />
-            </Grid>
-          </Grid>
-
-          {chamberCalibrationDataWithSerialNumbers &&
-          chamberCalibrationDataWithSerialNumbers.length === 0 ? (
-            <EmptyCard message="Chamber Calibration Data not found" />
-          ) : (
-            <Box
+            <DataGrid
+              rows={chamberCalibrationDataWithSerialNumbers}
+              columns={columns}
+              autoHeight
+              pageSize={10}
+              rowsPerPageOptions={[5, 10, 20, 50]}
+              disableRowSelectionOnClick
               sx={{
-                height: 500,
-                width: "100%",
-                "& .custom-header-color": {
-                  backgroundColor: "#476f95",
-                  color: "whitesmoke",
-                  fontWeight: "bold",
-                  fontSize: "15px",
+                "& .MuiDataGrid-row:hover": {
+                  backgroundColor: "rgba(0, 0, 0, 0.04)",
                 },
-                mt: 2,
-                mb: 2,
               }}
-            >
-              <DataGrid
-                rows={chamberCalibrationDataWithSerialNumbers}
-                columns={columns}
-                pageSize={5}
-                rowsPerPageOptions={[5, 10, 20]}
+            />
+          </Box>
+        )}
+
+        {/* Chamber List Dialog */}
+        <Dialog
+          open={openDialog}
+          onClose={() => setOpenDialog(false)}
+          maxWidth="md"
+          fullWidth
+        >
+          <DialogTitle>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+              <Typography variant="h6">{dialogData.title}</Typography>
+              <Chip
+                label={dialogData.chambers?.length || 0}
+                size="small"
+                sx={{ bgcolor: dialogData.color, color: "white" }}
               />
+              <IconButton
+                sx={{ ml: "auto" }}
+                onClick={() => setOpenDialog(false)}
+              >
+                <Close />
+              </IconButton>
             </Box>
-          )}
-        </Card>
+          </DialogTitle>
+          <DialogContent>
+            {dialogData.chambers && dialogData.chambers.length > 0 ? (
+              <List>
+                {dialogData.chambers.map((chamber, index) => (
+                  <React.Fragment key={index}>
+                    <ListItem>
+                      <ListItemIcon>
+                        <Business sx={{ color: dialogData.color }} />
+                      </ListItemIcon>
+                      <ListItemText
+                        primary={chamber.chamber_name || chamber}
+                        secondary={
+                          <Box
+                            sx={{
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: 0.5,
+                            }}
+                          >
+                            {chamber.chamber_id && (
+                              <Typography variant="body2">
+                                ID: {chamber.chamber_id}
+                              </Typography>
+                            )}
+                            {chamber.calibration_due_date && (
+                              <Typography variant="body2">
+                                Due Date:{" "}
+                                {dayjs(chamber.calibration_due_date).format(
+                                  "DD-MM-YYYY"
+                                )}
+                              </Typography>
+                            )}
+                            {dialogData.type === "due_soon" &&
+                              chamber.days_until_due && (
+                                <Chip
+                                  label={`Due in ${chamber.days_until_due} days`}
+                                  color="warning"
+                                  size="small"
+                                />
+                              )}
+                            {dialogData.type === "expired" &&
+                              chamber.days_overdue && (
+                                <Chip
+                                  label={`${chamber.days_overdue} days overdue`}
+                                  color="error"
+                                  size="small"
+                                />
+                              )}
+                            {dialogData.type === "maintenance" && (
+                              <Chip
+                                label="Under Maintenance"
+                                color="default"
+                                size="small"
+                              />
+                            )}
+                          </Box>
+                        }
+                      />
+                    </ListItem>
+                    {index < dialogData.chambers.length - 1 && <Divider />}
+                  </React.Fragment>
+                ))}
+              </List>
+            ) : (
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ textAlign: "center", py: 2 }}
+              >
+                No chamber details available.
+              </Typography>
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setOpenDialog(false)}>Close</Button>
+          </DialogActions>
+        </Dialog>
       </Box>
     </>
   );
 }
+
+const ChamberCalibrationKPICard = ({
+  title,
+  value,
+  icon,
+  color,
+  onClick,
+  hasDetails,
+}) => {
+  return (
+    <Card
+      sx={{
+        "background": `linear-gradient(135deg, ${color}15 0%, ${color}25 100%)`,
+        "border": `1px solid ${color}30`,
+        "height": "100%",
+        "transition": "all 0.3s ease-in-out",
+        "cursor": hasDetails ? "pointer" : "default",
+        "&:hover": hasDetails
+          ? {
+              transform: "translateY(-4px)",
+              boxShadow: `0 8px 25px ${color}20`,
+            }
+          : {},
+      }}
+      onClick={onClick}
+    >
+      <CardContent>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "flex-start",
+          }}
+        >
+          <Box sx={{ flex: 1 }}>
+            <Typography variant="body2" color="text.secondary" gutterBottom>
+              {title}
+            </Typography>
+
+            <Typography
+              variant="h3"
+              sx={{ fontWeight: "bold", color: color, mb: 1 }}
+            >
+              <CountUp start={0} end={value || 0} delay={0.5} />
+            </Typography>
+
+            {hasDetails && (
+              <Typography variant="caption" color="text.secondary">
+                Click to view details
+              </Typography>
+            )}
+          </Box>
+          <Avatar
+            sx={{
+              bgcolor: `${color}20`,
+              color: color,
+              width: 56,
+              height: 56,
+              boxShadow: `0 4px 14px ${color}25`,
+            }}
+          >
+            {icon}
+          </Avatar>
+        </Box>
+      </CardContent>
+    </Card>
+  );
+};
