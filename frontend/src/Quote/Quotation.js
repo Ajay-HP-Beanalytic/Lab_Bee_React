@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from "react";
+import { useState, useEffect, useContext } from "react";
 import {
   Box,
   Typography,
@@ -21,17 +21,12 @@ import {
   Autocomplete,
   Divider,
   Card,
-  CardContent,
-  Paper,
   Chip,
-  Stack,
   CircularProgress,
 } from "@mui/material";
 // LoadingButton removed - using manual implementation instead
 import axios from "axios";
 import moment from "moment"; // To convert the date into desired format
-import { sum, toWords } from "number-to-words"; // To convert number to words
-import numberToWords from "number-to-words";
 import { ToWords } from "to-words";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
@@ -95,8 +90,6 @@ export default function Quotation() {
   const [modules, setModules] = useState([]);
   const [tableData, setTableData] = useState(initialTableData);
 
-  const [counter, setCounter] = useState(tableData.length + 1);
-
   const [companyName, setCompanyName] = useState(initialCompanyName);
   const [toCompanyAddress, setToCompanyAddress] = useState(
     initialToCompanyAddress
@@ -136,7 +129,7 @@ export default function Quotation() {
   const [companyIdList, setCompanyIdList] = useState([]);
   const [selectedCompanyId, setSelectedCompanyId] = useState("");
 
-  const { loggedInUser, loggedInUserDepartment } = useContext(UserContext);
+  const { loggedInUser } = useContext(UserContext);
   const [quotationCreatedBy, setQuotationCreatedBy] = useState("");
 
   //Use effect to set the quote created by:
@@ -285,7 +278,7 @@ export default function Quotation() {
       .toString()
       .padStart(2, "0");
     const currentDay = currentDate.getDate().toString();
-    const dynamicQuotationIdString = `BEA/TS1/${newCompanyName}/${currentYear}${currentMonth}${currentDay}-001`;
+    // const dynamicQuotationIdString = `BEA/TS1/${newCompanyName}/${currentYear}${currentMonth}${currentDay}-001`;
     // setQuotationIDString(dynamicQuotationIdString);
   };
 
@@ -318,24 +311,32 @@ export default function Quotation() {
       let newQuoteNumber = "";
       let newQuoteNumberStr = "";
       if (lastQuotationID) {
-        const lastYearStr = lastQuotationID.slice(-10, -8);
-        const lastMonthStr = lastQuotationID.slice(-8, -6);
+        // Extract year and month from the last quotation ID
+        const lastDatePart = lastQuotationID.split("/")[3].split("-")[0]; // Get YYMMDD part
+        const lastYearStr = lastDatePart.slice(0, 2); // First 2 digits (YY)
+        const lastMonthStr = lastDatePart.slice(2, 4); // Next 2 digits (MM)
 
         const currentYear = currentDate.getFullYear();
         const currentYearStr = currentYear.toString().slice(-2);
         const currentMonth = currentDate.getMonth() + 1;
         const currentMonthStr = currentMonth.toString().padStart(2, "0");
 
+        // Reset quotation number only if year or month changes
         if (
           lastYearStr === currentYearStr &&
           lastMonthStr === currentMonthStr
         ) {
+          // Same month and year - continue sequence
           previousQuoteNumber = parseInt(lastQuotationID.slice(-3));
           newQuoteNumber = parseInt(previousQuoteNumber) + 1;
           newQuoteNumberStr = newQuoteNumber.toString().padStart(3, "0");
         } else {
+          // Different month or year - reset to 001
           newQuoteNumberStr = "001";
         }
+      } else {
+        // No previous quotation - start with 001
+        newQuoteNumberStr = "001";
       }
 
       const newQuoteId = `BEA/${catCode}/${customerId.toUpperCase()}/${newQuoteDate}-${newQuoteNumberStr}`;
@@ -372,10 +373,21 @@ export default function Quotation() {
 
         let newQuoteNumber = 1;
         if (lastQuotationID && lastQuotationID !== "BEA/TS//-000") {
-          const lastDate = lastQuotationID.split("-")[0].split("/")[3];
+          const lastDatePart = lastQuotationID.split("/")[3].split("-")[0]; // Get YYMMDD part
+          const lastYearStr = lastDatePart.slice(0, 2); // First 2 digits (YY)
+          const lastMonthStr = lastDatePart.slice(2, 4); // Next 2 digits (MM)
+
+          const currentYearStr = currentDate.getFullYear().toString().slice(-2);
+          const currentMonthStr = (currentDate.getMonth() + 1)
+            .toString()
+            .padStart(2, "0");
           const lastNumber = parseInt(lastQuotationID.split("-")[1]);
 
-          if (lastDate === newQuoteDate) {
+          // Continue sequence only if same month and year
+          if (
+            lastYearStr === currentYearStr &&
+            lastMonthStr === currentMonthStr
+          ) {
             newQuoteNumber = lastNumber + 1;
           }
         }
@@ -610,10 +622,7 @@ export default function Quotation() {
     }
 
     setTaxableAmount(subtotal);
-    setTotalAmountWords(
-      // numberToWords.toWords(subTotalAfterDiscount).toUpperCase()
-      toWords.convert(subTotalAfterDiscount).toUpperCase()
-    );
+    setTotalAmountWords(toWords.convert(subTotalAfterDiscount).toUpperCase());
     setTotalAmountAfterDiscount(subTotalAfterDiscount);
   }, [tableData, originalTaxableAmount]);
 
