@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useRef, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import {
   Box,
   Button,
@@ -32,7 +32,6 @@ import "react-toastify/dist/ReactToastify.css";
 
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
-import PasswordIcon from "@mui/icons-material/Password";
 
 import { serverBaseAddress } from "../Pages/APIPage";
 import { useNavigate } from "react-router-dom";
@@ -58,6 +57,8 @@ export default function UserManagement() {
 
   const [searchInputTextOfUserManagement, setSearchInputTextOfUserManagement] =
     useState("");
+  const [selectedDepartmentFilter, setSelectedDepartmentFilter] =
+    useState("Administration");
 
   const userDepartmentOptions = [
     "Accounts",
@@ -248,20 +249,22 @@ export default function UserManagement() {
   };
 
   // Function to edit the user data:
-  const editUserButton = (index, id) => {
+  const editUserButton = (id) => {
     setEditUserDetailsFields(true);
     setEditId(id);
-    const rowData = usersList[index];
-    setUserName(rowData.name);
-    setUserEmail(rowData.email);
-    setUserDepartment(rowData.department);
+    // Find user data by ID instead of using index
+    const rowData = usersList.find(user => user.id === id);
+    if (rowData) {
+      setUserName(rowData.name);
+      setUserEmail(rowData.email);
+      setUserDepartment(rowData.department);
 
-    const roles = userDepartmentAndRoles[rowData.department] || [];
-    setUserRoleOptions(roles);
+      const roles = userDepartmentAndRoles[rowData.department] || [];
+      setUserRoleOptions(roles);
 
-    setUserRole(rowData.role);
-
-    setUserStatus(rowData.user_status);
+      setUserRole(rowData.role);
+      setUserStatus(rowData.user_status);
+    }
   };
 
   // State variable to handle the delete user confirmation dialog:
@@ -344,25 +347,49 @@ export default function UserManagement() {
     filterUserManagementTable(searchText);
   };
 
-  //Function to filter the table
-  const filterUserManagementTable = (searchValue) => {
-    const filtered = usersList.filter((row) => {
-      return Object.values(row).some((value) =>
-        value.toString().toLowerCase().includes(searchValue.toLowerCase())
-      );
-    });
+  //Function to filter the table based on search and department
+  const filterUserManagementTable = (
+    searchValue,
+    departmentFilter = selectedDepartmentFilter
+  ) => {
+    let filtered = usersList;
+
+    // Filter by department first
+    if (departmentFilter) {
+      filtered = filtered.filter((row) => row.department === departmentFilter);
+    }
+
+    // Then filter by search text
+    if (searchValue) {
+      filtered = filtered.filter((row) => {
+        return Object.values(row).some((value) =>
+          value.toString().toLowerCase().includes(searchValue.toLowerCase())
+        );
+      });
+    }
+
     setFilteredUsersList(filtered);
   };
 
   //Function to clear the search bar and filter the table
   const onClearSearchInputOfUserManagement = () => {
     setSearchInputTextOfUserManagement("");
-    setFilteredUsersList(usersList);
+    filterUserManagementTable("", selectedDepartmentFilter);
   };
 
-  //useEffect to filter the table based on the search input
+  //Function to handle department filter change
+  const handleDepartmentFilterChange = (e) => {
+    const selectedDept = e.target.value;
+    setSelectedDepartmentFilter(selectedDept);
+    filterUserManagementTable(searchInputTextOfUserManagement, selectedDept);
+  };
+
+  //useEffect to filter the table based on the search input and department
   useEffect(() => {
-    setFilteredUsersList(usersList);
+    filterUserManagementTable(
+      searchInputTextOfUserManagement,
+      selectedDepartmentFilter
+    );
   }, [usersList]);
 
   return (
@@ -395,8 +422,7 @@ export default function UserManagement() {
           variant="h4"
           sx={{ color: "#003366", mb: "10px", mt: "10px" }}
         >
-          {" "}
-          Users
+          {selectedDepartmentFilter}
         </Typography>
       </Divider>
       <Card sx={{ width: "100%", padding: "20px" }}>
@@ -604,8 +630,25 @@ export default function UserManagement() {
               </Dialog>
             )}
 
-            <Box sx={{ mb: 1 }}>
-              <Grid container spacing={2} justifyContent="flex-end">
+            <Box sx={{ mb: 2 }}>
+              <Grid container spacing={2} alignItems="center">
+                <Grid item xs={12} md={4}>
+                  <FormControl fullWidth sx={{ mb: { xs: 1, md: 0 } }}>
+                    <InputLabel>Department Filter</InputLabel>
+                    <Select
+                      value={selectedDepartmentFilter}
+                      onChange={handleDepartmentFilterChange}
+                      label="Department Filter"
+                      size="small"
+                    >
+                      {userDepartmentOptions.map((dept, index) => (
+                        <MenuItem key={index} value={dept}>
+                          {dept}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                </Grid>
                 <Grid item xs={12} md={4}>
                   <SearchBar
                     placeholder="Search User"
@@ -660,7 +703,7 @@ export default function UserManagement() {
                           <IconButton
                             variant="outlined"
                             size="small"
-                            onClick={() => editUserButton(index, item.id)}
+                            onClick={() => editUserButton(item.id)}
                           >
                             <Tooltip title="Edit" arrow>
                               <EditIcon fontSize="inherit" />
@@ -676,14 +719,6 @@ export default function UserManagement() {
                               <DeleteIcon fontSize="inherit" />
                             </Tooltip>
                           </IconButton>
-
-                          {/* <IconButton variant='outlined' size='small'
-                          onClick={() => resetUserPasswordButton(item.id)}
-                        >
-                          <Tooltip title='Reset Password' arrow>
-                            <PasswordIcon fontSize="inherit" />
-                          </Tooltip>
-                        </IconButton> */}
                         </TableCell>
                       </TableRow>
                     ))}
