@@ -327,8 +327,15 @@ export default function Quotation() {
           lastMonthStr === currentMonthStr
         ) {
           // Same month and year - continue sequence
-          previousQuoteNumber = parseInt(lastQuotationID.slice(-3));
-          newQuoteNumber = parseInt(previousQuoteNumber) + 1;
+          // Split from the end to get the last part after the final dash
+          const lastDashIndex = lastQuotationID.lastIndexOf('-');
+          const serialNumberStr = lastQuotationID.substring(lastDashIndex + 1);
+          previousQuoteNumber = parseInt(serialNumberStr);
+          // Check if parseInt returned NaN and provide fallback
+          if (isNaN(previousQuoteNumber)) {
+            previousQuoteNumber = 0;
+          }
+          newQuoteNumber = previousQuoteNumber + 1;
           newQuoteNumberStr = newQuoteNumber.toString().padStart(3, "0");
         } else {
           // Different month or year - reset to 001
@@ -381,12 +388,16 @@ export default function Quotation() {
           const currentMonthStr = (currentDate.getMonth() + 1)
             .toString()
             .padStart(2, "0");
-          const lastNumber = parseInt(lastQuotationID.split("-")[1]);
+          // Split from the end to get the last part after the final dash
+          const lastDashIndex = lastQuotationID.lastIndexOf('-');
+          const serialNumberStr = lastQuotationID.substring(lastDashIndex + 1);
+          const lastNumber = parseInt(serialNumberStr);
 
           // Continue sequence only if same month and year
           if (
             lastYearStr === currentYearStr &&
-            lastMonthStr === currentMonthStr
+            lastMonthStr === currentMonthStr &&
+            !isNaN(lastNumber)
           ) {
             newQuoteNumber = lastNumber + 1;
           }
