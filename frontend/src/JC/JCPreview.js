@@ -1,4 +1,4 @@
-import React, { forwardRef, useContext } from "react";
+import { forwardRef, useContext } from "react";
 import {
   TableContainer,
   Paper,
@@ -163,12 +163,11 @@ export default function JCPreview({
       </IconButton>
       <Divider />
 
-      <Grid container spacing={2} sx={{ padding: 2, mb: 2 }}>
+      <Grid container spacing={2} sx={{ padding: 2, mb: 1 }}>
         {primaryJCDetails.map((option, index) => (
           <Grid item xs={12} sm={6} key={index}>
             <Typography variant="body1">
-              <strong>{option.label.split(": ")[0]}:</strong>{" "}
-              {option.label.split(": ")[1]}
+              <strong>{option.label.split(": ")[0]}:</strong> {option.value}
             </Typography>
           </Grid>
         ))}

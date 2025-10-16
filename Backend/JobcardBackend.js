@@ -76,138 +76,6 @@ function jobcardsAPIs(app, io, labbeeUsers) {
 
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-  // Add primary details of the jobcard to the 'bea_jobcards' table:
-  // app.post("/api/jobcard", (req, res) => {
-  //   const {
-  //     jcNumber,
-  //     srfNumber,
-  //     srfDate,
-  //     dcNumber,
-  //     jcOpenDate,
-  //     itemReceivedDate,
-  //     poNumber,
-  //     testCategory,
-  //     testDiscipline,
-  //     sampleCondition,
-  //     typeOfRequest,
-  //     reportType,
-  //     testInchargeName,
-  //     jcCategory,
-  //     companyName,
-  //     companyAddress,
-  //     customerName,
-  //     customerEmail,
-  //     customerNumber,
-  //     projectName,
-  //     testInstructions,
-  //     jcStatus,
-  //     reliabilityReportStatus,
-  //     jcCloseDate,
-  //     observations,
-  //     jcLastModifiedBy,
-  //     loggedInUser,
-  //     loggedInUserDepartment,
-  //   } = req.body;
-
-  //   console.log("jcNumber: ", jcNumber);
-  //   console.log("srfNumber: ", srfNumber);
-
-  //   // Extract the sequence number from jcNumber and srfNumber
-  //   const jcNumberParts = jcNumber.split("-");
-  //   const srfNumberParts = srfNumber.split("/");
-
-  //   console.log("------------------------------------------");
-  //   console.log("jcNumberParts: ", jcNumberParts);
-  //   console.log("srfNumberParts: ", srfNumberParts);
-
-  //   const formattedSrfDate = srfDate
-  //     ? dayjs(srfDate).format("YYYY-MM-DD")
-  //     : null;
-
-  //   const formattedItemReceivedDate = itemReceivedDate
-  //     ? dayjs(itemReceivedDate).format("YYYY-MM-DD")
-  //     : null;
-  //   const formattedOpenDate = jcOpenDate
-  //     ? dayjs(jcOpenDate).format("YYYY-MM-DD")
-  //     : null;
-  //   const formattedCloseDate = jcCloseDate
-  //     ? dayjs(jcCloseDate).format("YYYY-MM-DD")
-  //     : null;
-
-  //   const sql = `INSERT INTO bea_jobcards(
-  //       jc_number, srf_number, srf_date, dcform_number, jc_open_date, item_received_date, po_number,
-  //       test_category, test_discipline, sample_condition, type_of_request, report_type, test_incharge, jc_category, company_name, company_address,
-  //       customer_name, customer_email, customer_number, project_name, test_instructions,
-  //        jc_status, reliability_report_status, jc_closed_date, observations, last_updated_by
-  //   ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-
-  //   const values = [
-  //     jcNumber,
-  //     srfNumber,
-  //     formattedSrfDate,
-  //     dcNumber,
-  //     formattedOpenDate || null,
-  //     formattedItemReceivedDate || null,
-  //     poNumber || "",
-  //     testCategory || "",
-  //     testDiscipline || "",
-  //     sampleCondition || "",
-  //     typeOfRequest || "",
-  //     reportType || "",
-  //     testInchargeName || "",
-  //     jcCategory || "",
-  //     companyName || "",
-  //     companyAddress || "",
-  //     customerName || "",
-  //     customerEmail || "",
-  //     customerNumber || "",
-  //     projectName || "",
-  //     testInstructions || "",
-  //     jcStatus || "",
-  //     reliabilityReportStatus || "",
-  //     formattedCloseDate || null,
-  //     observations || "",
-  //     jcLastModifiedBy || loggedInUser,
-  //   ];
-
-  //   db.query(sql, values, (error, result) => {
-  //     if (error) {
-  //       console.log(error);
-  //       return res.status(500).json({ message: "Internal server error" });
-  //     } else {
-  //       const departmentsToNotify = [
-  //         // "Accounts",
-  //         "TS1 Testing",
-  //         "Reliability",
-  //         "Reports & Scrutiny",
-  //       ];
-
-  //       for (let socketId in labbeeUsers) {
-  //         if (
-  //           departmentsToNotify.includes(labbeeUsers[socketId].department) &&
-  //           labbeeUsers[socketId].username !== loggedInUser
-  //         ) {
-  //           let message = "";
-
-  //           if (jcCategory === "TS1") {
-  //             message = `New TS1 ${jcNumber} created by ${loggedInUser}`;
-  //           } else if (jcCategory === "Reliability") {
-  //             message = `New Reliability ${jcNumber} created by ${loggedInUser}`;
-  //           } else if (jcCategory === "TS2") {
-  //             message = `New TS2 ${jcNumber} created by ${loggedInUser}`;
-  //           }
-
-  //           io.to(socketId).emit("jobcard_submit_notification", {
-  //             message: message,
-  //             sender: loggedInUser,
-  //           });
-  //         }
-  //       }
-  //       return res.status(200).json({ message: "Jobcards added successfully" });
-  //     }
-  //   });
-  // });
-
   const usersToNotifyJcCreation = JSON.parse(
     process.env.USERS_TO_BE_NOTIFY_ABOUT_TS1_JC_CREATION
   );
@@ -536,183 +404,6 @@ function jobcardsAPIs(app, io, labbeeUsers) {
   //         res.status(200).json({ message: "jobcards data deleted successfully" });
   //     });
   // });
-
-  // To Edit the selected jobcards:
-  // app.post("/api/jobcard/:id", (req, res) => {
-  //   const {
-  //     jcNumber,
-  //     srfNumber,
-  //     srfDate,
-  //     dcNumber,
-  //     jcOpenDate,
-  //     itemReceivedDate,
-  //     poNumber,
-  //     testCategory,
-  //     testDiscipline,
-  //     sampleCondition,
-  //     typeOfRequest,
-  //     reportType,
-  //     testInchargeName,
-  //     jcCategory,
-  //     companyName,
-  //     companyAddress,
-  //     customerName,
-  //     customerEmail,
-  //     customerNumber,
-  //     projectName,
-  //     testInstructions,
-  //     jcStatus,
-  //     reliabilityReportStatus,
-  //     jcCloseDate,
-  //     observations,
-  //     jcLastModifiedBy,
-  //     loggedInUser,
-  //     loggedInUserDepartment,
-  //   } = req.body;
-
-  //   const formattedSrfDate = srfDate ? convertDateTime(srfDate) : null;
-  //   const formattedItemReceivedDate = itemReceivedDate
-  //     ? dayjs(itemReceivedDate).format("YYYY-MM-DD")
-  //     : null;
-  //   // const referanceDocsSerialized = JSON.stringify(referanceDocs);
-  //   const formattedOpenDate = jcOpenDate ? convertDateTime(jcOpenDate) : null;
-  //   const formattedCloseDate = jcCloseDate
-  //     ? convertDateTime(jcCloseDate)
-  //     : null;
-
-  //   const sqlQuery = `
-  //       UPDATE bea_jobcards SET
-  //           srf_number = ?,
-  //           srf_date = ?,
-  //           dcform_number = ?,
-  //           jc_open_date = ?,
-  //           item_received_date = ?,
-  //           po_number = ?,
-  //           test_category = ?,
-  //           test_discipline = ?,
-  //           sample_condition = ?,
-  //           type_of_request = ?,
-  //           report_type = ?,
-  //           test_incharge = ?,
-  //           jc_category = ?,
-  //           company_name = ?,
-  //           company_address = ?,
-  //           customer_name = ?,
-  //           customer_email = ?,
-  //           customer_number = ?,
-  //           project_name = ?,
-  //           test_instructions = ?,
-  //           jc_status = ?,
-  //           reliability_report_status = ?,
-  //           jc_closed_date = ?,
-  //           observations = ?,
-  //           last_updated_by = ?
-  //       WHERE jc_number = ?
-  //   `;
-
-  //   const values = [
-  //     srfNumber,
-  //     formattedSrfDate,
-  //     dcNumber,
-  //     formattedOpenDate,
-  //     formattedItemReceivedDate,
-  //     poNumber,
-  //     testCategory,
-  //     testDiscipline,
-  //     sampleCondition,
-  //     typeOfRequest,
-  //     reportType,
-  //     testInchargeName,
-  //     jcCategory,
-  //     companyName,
-  //     companyAddress,
-  //     customerName,
-  //     customerEmail,
-  //     customerNumber,
-  //     projectName,
-  //     testInstructions,
-  //     jcStatus,
-  //     reliabilityReportStatus,
-  //     formattedCloseDate,
-  //     observations,
-  //     loggedInUser,
-  //     jcNumber,
-  //   ];
-
-  //   db.query(sqlQuery, values, (error, result) => {
-  //     if (error) {
-  //       console.error("Error executing query:", error.message);
-  //       return res
-  //         .status(500)
-  //         .json({ message: "Internal server error", error: error.message });
-  //     }
-  //     if (result.affectedRows === 0) {
-  //       console.warn("No rows updated. Check if the jc_number exists.");
-  //       return res.status(404).json({ message: "Jobcard not found" });
-  //     }
-
-  //     const testCompletedToNotify = ["Lab Manager"];
-  //     const jcClosedToNotify = ["Accounts Admin", "Accounts Executive"];
-
-  //     for (let socketId in labbeeUsers) {
-  //       const user = labbeeUsers[socketId];
-  //       let message = "";
-
-  //       if (
-  //         testCompletedToNotify.includes(user.role) &&
-  //         user.name !== loggedInUser
-  //       ) {
-  //         // Notification for "Test Completed" status
-  //         if (jcCategory === "TS1" && jcStatus === "Test Completed") {
-  //           message = `TS1 JC ${jcNumber} Test Completed, by ${loggedInUser}`;
-  //           io.to(socketId).emit("jobcard_status_test_completed_notification", {
-  //             message: message,
-  //             sender: loggedInUser,
-  //           });
-  //         }
-  //       }
-
-  //       if (
-  //         jcClosedToNotify.includes(user.role) &&
-  //         user.name !== loggedInUser
-  //       ) {
-  //         // Notification for "Closed" status in TS1
-  //         if (
-  //           jcCategory === "TS1" &&
-  //           (jcStatus === "Closed" || jcStatus === "Close")
-  //         ) {
-  //           message = `TS1 JC ${jcNumber} Closed, by ${loggedInUser}`;
-  //           io.to(socketId).emit("jobcard_status_closed_notification", {
-  //             message: message,
-  //             sender: loggedInUser,
-  //           });
-  //         }
-  //       }
-
-  //       if (
-  //         jcClosedToNotify.includes(user.role) &&
-  //         user.name !== loggedInUser
-  //       ) {
-  //         // Notification for "Closed" status in Reliability
-  //         if (
-  //           jcCategory === "Reliability" &&
-  //           (jcStatus === "Closed" || jcStatus === "Close")
-  //         ) {
-  //           message = `Reliability JC ${jcNumber} Closed, by ${loggedInUser}`;
-  //           io.to(socketId).emit("jobcard_status_closed_notification", {
-  //             message: message,
-  //             sender: loggedInUser,
-  //           });
-  //         }
-  //       }
-  //     }
-
-  //     res.status(200).json({
-  //       message: "Jobcard updated successfully",
-  //     });
-  //   });
-  // });
-
   //////////////////////////////////////////////////////////////////////////////////////////
 
   app.post("/api/jobcard/:id", (req, res) => {
@@ -945,34 +636,6 @@ function jobcardsAPIs(app, io, labbeeUsers) {
 
   //////////////////////////////////////////////////////////////////////////////////////////
 
-  // To fetch the jcnumber from the table 'jobcards'
-  app.get("/api/getjobcard", (req, res) => {
-    const sqlQuery = `SELECT jc_number FROM bea_jobcards`;
-    db.query(sqlQuery, (error, result) => {
-      if (error) {
-        return res
-          .status(500)
-          .json({ error: "An error occurred while fetching data" });
-      }
-      res.send(result);
-    });
-  });
-
-  // To fetch the data based on the jcnumber from the table 'jobcards'
-  app.get("/api/getjobcardlist/:jc_number", (req, res) => {
-    const jcnumber = req.params.jc_number;
-    const sqlQuery = `SELECT dcform_number, jc_opendate, po_number, category, test_inchargename, company_name, customer_number, customer_signature, project_name, sample_condition, referance_document FROM bea_jobcards WHERE jc_number = ?`;
-
-    db.query(sqlQuery, [jcnumber], (error, result) => {
-      if (error) {
-        return res
-          .status(500)
-          .json({ error: "An error occurred while fetching data" });
-      }
-      res.send(result);
-    });
-  });
-
   // To fetch the last saved jcnumber  from the table jobcards data table:
   app.get("/api/getLatestjcnumber", (req, res) => {
     const latestjcnumberJT =
@@ -993,12 +656,19 @@ function jobcardsAPIs(app, io, labbeeUsers) {
   app.post("/api/getJCCount", (req, res) => {
     const { finYear } = req.body;
 
-    let sql = `SELECT COUNT(*) FROM bea_jobcards WHERE jc_number LIKE '${finYear}%'`;
+    //Input validation:
+    if (!finYear || typeof finYear !== "string") {
+      return res
+        .status(400)
+        .json({ Message: "Valid Financial Year is required" });
+    }
 
-    db.query(sql, (error, result) => {
+    let sql = `SELECT COUNT(*) FROM bea_jobcards WHERE jc_number LIKE ?`;
+
+    db.query(sql, [`${finYear}%`], (error, result) => {
       if (error) {
         console.log(error);
-        return res.status(500).json(error);
+        return res.status(500).json({ message: "Database Error" });
       } else {
         return res.status(200).json(result[0]["COUNT(*)"]);
       }
@@ -1019,7 +689,10 @@ function jobcardsAPIs(app, io, labbeeUsers) {
 
     let sqlQuery = "SELECT id FROM eut_details WHERE jc_number=?";
     db.query(sqlQuery, [jcNumberString], async (error, result) => {
-      if (error) return res.status(500).json(error.message);
+      if (error) {
+        console.error("Error fetching existing EUT IDs:", error);
+        return res.status(500).json(error.message);
+      }
 
       let existingIds = result.map((item) => item.id);
       let toDelete = existingIds.filter((id) => !eutRowIds.includes(id));
@@ -1039,7 +712,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
           })
         );
 
-        // Add new rows
+        // Add new rows only if needed
         const newIds = [];
         for (let i = 0; i < toAddCount; i++) {
           await new Promise((resolve, reject) => {
@@ -1056,8 +729,10 @@ function jobcardsAPIs(app, io, labbeeUsers) {
           message: "eut_details synced successfully",
           toDelete,
           newIds,
+          existingIds: eutRowIds.filter((id) => existingIds.includes(id)), // Return existing IDs
         });
       } catch (error) {
+        console.error("Error during EUT sync:", error);
         res.status(500).json({ message: "Internal server error", error });
       }
     });
@@ -1243,6 +918,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
           message: "tests synced successfully",
           toDelete,
           newIds,
+          existingIds: testRowIds.filter((id) => existingIds.includes(id)),
         });
       } catch (error) {
         res.status(500).json({ message: "Internal server error", error });
@@ -1409,6 +1085,9 @@ function jobcardsAPIs(app, io, labbeeUsers) {
           message: "test details synced successfully",
           toDelete,
           newIds,
+          existingIds: testDetailsRowIds.filter((id) =>
+            existingIds.includes(id)
+          ),
         });
       } catch (error) {
         res.status(500).json({ message: "Internal server error", error });
@@ -1422,6 +1101,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
   app.post("/api/testdetails/", (req, res) => {
     const {
       testDetailRowId,
+      testCategory,
       testName,
       testChamber,
       eutSerialNo,
@@ -1497,51 +1177,54 @@ function jobcardsAPIs(app, io, labbeeUsers) {
 
       const sqlUpdateQuery = `
         UPDATE tests_details
-        SET 
+        SET
+          testCategory = ?,
           testName = ?,
-          testChamber = ?, 
-          eutSerialNo = ?, 
-          standard = ?, 
-          testStartedBy = ?, 
-          startDate = ?, 
-          endDate = ?, 
-          duration = ?, 
-          actualTestDuration = ?, 
-          unit = ?, 
-          testEndedBy = ?, 
-          remarks = ?, 
+          testChamber = ?,
+          eutSerialNo = ?,
+          standard = ?,
+          testStartedBy = ?,
+          startDate = ?,
+          endDate = ?,
+          duration = ?,
+          actualTestDuration = ?,
+          unit = ?,
+          testEndedBy = ?,
+          remarks = ?,
           testReviewedBy = ?,
-          testReportInstructions = ?, 
-          reportNumber = ?, 
-          preparedBy = ?, 
-          nablUploaded = ?, 
-          reportStatus = ? 
+          testReportInstructions = ?,
+          reportNumber = ?,
+          preparedBy = ?,
+          nablUploaded = ?,
+          reportStatus = ?
         WHERE jc_number = ? AND id = ?`;
 
       const sqlInsertQuery = `
         INSERT INTO tests_details (
+          testCategory,
           testName,
-          testChamber, 
-          eutSerialNo, 
-          standard, 
-          testStartedBy, 
-          startDate, 
-          endDate, 
-          duration, 
-          actualTestDuration, 
-          unit, 
-          testEndedBy, 
-          remarks, 
+          testChamber,
+          eutSerialNo,
+          standard,
+          testStartedBy,
+          startDate,
+          endDate,
+          duration,
+          actualTestDuration,
+          unit,
+          testEndedBy,
+          remarks,
           testReviewedBy,
-          testReportInstructions, 
-          reportNumber, 
-          preparedBy, 
-          nablUploaded, 
-          reportStatus, 
+          testReportInstructions,
+          reportNumber,
+          preparedBy,
+          nablUploaded,
+          reportStatus,
           jc_number
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
       const updateValues = [
+        testCategory || "",
         testName || "",
         testChamber || "",
         eutSerialNo || "",
@@ -1565,6 +1248,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
       ];
 
       const insertValues = [
+        testCategory || "",
         testName || "",
         testChamber || "",
         eutSerialNo || "",
@@ -1913,12 +1597,16 @@ function jobcardsAPIs(app, io, labbeeUsers) {
 
     db.query(sqlQuery, (error, result) => {
       if (error) {
+        console.error("Error fetching JC years:", error);
         return res.status(500).json({
           error: "An error occurred while fetching JC years data",
+          details: error.message,
         });
       }
 
-      const years = result.map((row) => row.year);
+      // Return empty array if no data exists
+      const years =
+        result && result.length > 0 ? result.map((row) => row.year) : [];
       res.json({ years });
     });
   });
@@ -1932,7 +1620,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
     }
 
     const sqlQuery = `
-        SELECT 
+        SELECT
             DISTINCT MONTH(jc_open_date) AS value,
             DATE_FORMAT(jc_open_date, '%M') AS label,
             MONTH(jc_open_date) AS monthNumber
@@ -1942,15 +1630,21 @@ function jobcardsAPIs(app, io, labbeeUsers) {
 
     db.query(sqlQuery, [year], (error, result) => {
       if (error) {
+        console.error("Error fetching JC months:", error);
         return res.status(500).json({
           error: "An error occurred while fetching JC months data",
+          details: error.message,
         });
       }
 
-      const months = result.map((row) => ({
-        value: row.value,
-        label: row.label,
-      }));
+      // Return empty array if no data exists
+      const months =
+        result && result.length > 0
+          ? result.map((row) => ({
+              value: row.value,
+              label: row.label,
+            }))
+          : [];
       res.json(months);
     });
   });
@@ -1959,51 +1653,65 @@ function jobcardsAPIs(app, io, labbeeUsers) {
 
   // New Simplified Chamber Utilization API - Clean, efficient, and easy to use
   app.get("/api/chamber-utilization", (req, res) => {
-    const { period = 'last_3_months', chamber } = req.query;
-    
+    const { period = "last_3_months", chamber } = req.query;
+
     // Calculate date range based on period
     let startDate, endDate;
-    let periodDescription = '';
-    
+    let periodDescription = "";
+
     const now = new Date();
-    endDate = now.toISOString().split('T')[0];
-    
+    endDate = now.toISOString().split("T")[0];
+
     switch (period) {
-      case 'last_3_months':
-        startDate = new Date(now.getFullYear(), now.getMonth() - 2, 1).toISOString().split('T')[0];
-        periodDescription = 'Last 3 Months';
+      case "last_3_months":
+        startDate = new Date(now.getFullYear(), now.getMonth() - 2, 1)
+          .toISOString()
+          .split("T")[0];
+        periodDescription = "Last 3 Months";
         break;
-      case 'current_month':
-        startDate = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
-        periodDescription = 'Current Month';
+      case "current_month":
+        startDate = new Date(now.getFullYear(), now.getMonth(), 1)
+          .toISOString()
+          .split("T")[0];
+        periodDescription = "Current Month";
         break;
-      case 'last_month':
+      case "last_month":
         const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-        startDate = lastMonth.toISOString().split('T')[0];
-        endDate = new Date(now.getFullYear(), now.getMonth(), 0).toISOString().split('T')[0];
-        periodDescription = 'Last Month';
+        startDate = lastMonth.toISOString().split("T")[0];
+        endDate = new Date(now.getFullYear(), now.getMonth(), 0)
+          .toISOString()
+          .split("T")[0];
+        periodDescription = "Last Month";
         break;
-      case 'last_6_months':
-        startDate = new Date(now.getFullYear(), now.getMonth() - 5, 1).toISOString().split('T')[0];
-        periodDescription = 'Last 6 Months';
+      case "last_6_months":
+        startDate = new Date(now.getFullYear(), now.getMonth() - 5, 1)
+          .toISOString()
+          .split("T")[0];
+        periodDescription = "Last 6 Months";
         break;
-      case 'current_year':
-        startDate = new Date(now.getFullYear(), 0, 1).toISOString().split('T')[0];
-        periodDescription = 'Current Year';
+      case "current_year":
+        startDate = new Date(now.getFullYear(), 0, 1)
+          .toISOString()
+          .split("T")[0];
+        periodDescription = "Current Year";
         break;
-      case 'all_time':
-        startDate = '2020-01-01'; // Far back enough to capture all data
-        periodDescription = 'All Time';
+      case "all_time":
+        startDate = "2020-01-01"; // Far back enough to capture all data
+        periodDescription = "All Time";
         break;
       default:
-        startDate = new Date(now.getFullYear(), now.getMonth() - 2, 1).toISOString().split('T')[0];
-        periodDescription = 'Last 3 Months';
+        startDate = new Date(now.getFullYear(), now.getMonth() - 2, 1)
+          .toISOString()
+          .split("T")[0];
+        periodDescription = "Last 3 Months";
     }
 
     // Calculate actual available hours for utilization percentage
     const startDateObj = new Date(startDate);
     const endDateObj = new Date(endDate);
-    const daysDiff = Math.ceil((endDateObj - startDateObj) / (1000 * 60 * 60 * 24));
+    const daysDiff = Math.ceil(
+      (endDateObj - startDateObj) / (1000 * 60 * 60 * 24)
+    );
     const availableHours = daysDiff * 24; // 24/7 operation
 
     // Main query for chamber data
@@ -2026,7 +1734,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
         AND td.actualTestDuration != ''
         AND td.startDate >= ?
         AND td.startDate <= ?
-        ${chamber && chamber !== 'all' ? 'AND td.testChamber = ?' : ''}
+        ${chamber && chamber !== "all" ? "AND td.testChamber = ?" : ""}
       GROUP BY td.testChamber
       ORDER BY totalRunHours DESC
     `;
@@ -2046,13 +1754,13 @@ function jobcardsAPIs(app, io, labbeeUsers) {
         AND actualTestDuration != ''
         AND startDate >= ?
         AND startDate <= ?
-        ${chamber && chamber !== 'all' ? 'AND testChamber = ?' : ''}
+        ${chamber && chamber !== "all" ? "AND testChamber = ?" : ""}
       GROUP BY testChamber, DATE_FORMAT(startDate, '%Y-%m')
       ORDER BY testChamber, month DESC
     `;
 
     const params = [availableHours, startDate, endDate];
-    if (chamber && chamber !== 'all') {
+    if (chamber && chamber !== "all") {
       params.push(chamber);
     }
 
@@ -2060,24 +1768,28 @@ function jobcardsAPIs(app, io, labbeeUsers) {
     db.query(query, params, (error, results) => {
       if (error) {
         console.error("Error fetching chamber utilization:", error);
-        return res.status(500).json({ error: "Failed to fetch chamber utilization data" });
+        return res
+          .status(500)
+          .json({ error: "Failed to fetch chamber utilization data" });
       }
 
       // Execute monthly breakdown query
       const monthlyParams = [startDate, endDate];
-      if (chamber && chamber !== 'all') {
+      if (chamber && chamber !== "all") {
         monthlyParams.push(chamber);
       }
 
       db.query(monthlyQuery, monthlyParams, (monthlyError, monthlyResults) => {
         if (monthlyError) {
           console.error("Error fetching monthly breakdown:", monthlyError);
-          return res.status(500).json({ error: "Failed to fetch monthly breakdown data" });
+          return res
+            .status(500)
+            .json({ error: "Failed to fetch monthly breakdown data" });
         }
 
         // Group monthly data by chamber
         const monthlyDataByCompany = {};
-        monthlyResults.forEach(row => {
+        monthlyResults.forEach((row) => {
           if (!monthlyDataByCompany[row.testChamber]) {
             monthlyDataByCompany[row.testChamber] = [];
           }
@@ -2085,30 +1797,31 @@ function jobcardsAPIs(app, io, labbeeUsers) {
             month: row.month,
             monthName: row.monthName,
             tests: parseInt(row.tests) || 0,
-            runHours: parseFloat(row.runHours) || 0
+            runHours: parseFloat(row.runHours) || 0,
           });
         });
 
         // Process results into clean format
-        const chambers = results.map(row => {
+        const chambers = results.map((row) => {
           // Determine utilization level
           let utilizationLevel;
-          if (row.utilizationPercent >= 85) utilizationLevel = 'OVER';
-          else if (row.utilizationPercent >= 70) utilizationLevel = 'HIGH';
-          else if (row.utilizationPercent >= 50) utilizationLevel = 'GOOD';
-          else if (row.utilizationPercent >= 30) utilizationLevel = 'MOD';
-          else utilizationLevel = 'LOW';
+          if (row.utilizationPercent >= 85) utilizationLevel = "OVER";
+          else if (row.utilizationPercent >= 70) utilizationLevel = "HIGH";
+          else if (row.utilizationPercent >= 50) utilizationLevel = "GOOD";
+          else if (row.utilizationPercent >= 30) utilizationLevel = "MOD";
+          else utilizationLevel = "LOW";
 
           // Get monthly breakdown for this chamber
           const monthlyBreakdown = monthlyDataByCompany[row.name] || [];
-          
+
           // Calculate growth rate (latest vs previous month)
           let growthRate = 0;
           if (monthlyBreakdown.length >= 2) {
             const latest = monthlyBreakdown[0]?.runHours || 0;
             const previous = monthlyBreakdown[1]?.runHours || 0;
             if (previous > 0) {
-              growthRate = Math.round(((latest - previous) / previous) * 100 * 10) / 10;
+              growthRate =
+                Math.round(((latest - previous) / previous) * 100 * 10) / 10;
             } else if (latest > 0) {
               growthRate = 100;
             }
@@ -2127,17 +1840,25 @@ function jobcardsAPIs(app, io, labbeeUsers) {
             lifetimeStats: {
               totalRunHours: parseFloat(row.lifetimeTotalRunHours) || 0,
               totalTests: row.lifetimeTotalTests || 0,
-              firstTestDate: row.firstTestDate
-            }
+              firstTestDate: row.firstTestDate,
+            },
           };
         });
 
         // Calculate summary statistics
         const totalChambers = chambers.length;
-        const avgUtilization = chambers.length > 0 
-          ? Math.round((chambers.reduce((sum, c) => sum + c.utilizationPercent, 0) / chambers.length) * 10) / 10
-          : 0;
-        const totalRunHours = chambers.reduce((sum, c) => sum + c.totalRunHours, 0);
+        const avgUtilization =
+          chambers.length > 0
+            ? Math.round(
+                (chambers.reduce((sum, c) => sum + c.utilizationPercent, 0) /
+                  chambers.length) *
+                  10
+              ) / 10
+            : 0;
+        const totalRunHours = chambers.reduce(
+          (sum, c) => sum + c.totalRunHours,
+          0
+        );
         const peakChamber = chambers.length > 0 ? chambers[0] : null;
 
         const response = {
@@ -2150,14 +1871,16 @@ function jobcardsAPIs(app, io, labbeeUsers) {
               start: startDate,
               end: endDate,
               description: periodDescription,
-              availableHours
+              availableHours,
             },
-            peakChamber: peakChamber ? {
-              name: peakChamber.name,
-              utilizationPercent: peakChamber.utilizationPercent
-            } : null
+            peakChamber: peakChamber
+              ? {
+                  name: peakChamber.name,
+                  utilizationPercent: peakChamber.utilizationPercent,
+                }
+              : null,
           },
-          chambers
+          chambers,
         };
 
         res.json(response);
@@ -2168,7 +1891,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
   // API endpoint for lifetime chamber totals with utilization calculations and date range filtering
   app.get("/api/chamber-lifetime-totals", (req, res) => {
     const { chamber, startDate, endDate } = req.query;
-    
+
     // Date validation helper function
     const isValidDate = (dateString) => {
       if (!dateString) return true; // Optional parameters
@@ -2178,38 +1901,44 @@ function jobcardsAPIs(app, io, labbeeUsers) {
 
     // Validate date formats
     if (!isValidDate(startDate)) {
-      return res.status(400).json({ error: "Invalid startDate format. Use YYYY-MM-DD format." });
+      return res
+        .status(400)
+        .json({ error: "Invalid startDate format. Use YYYY-MM-DD format." });
     }
     if (!isValidDate(endDate)) {
-      return res.status(400).json({ error: "Invalid endDate format. Use YYYY-MM-DD format." });
+      return res
+        .status(400)
+        .json({ error: "Invalid endDate format. Use YYYY-MM-DD format." });
     }
 
     // Validate date range
     if (startDate && endDate && new Date(startDate) > new Date(endDate)) {
-      return res.status(400).json({ error: "startDate cannot be after endDate." });
+      return res
+        .status(400)
+        .json({ error: "startDate cannot be after endDate." });
     }
 
     // Build date filtering conditions
-    let dateFilter = '';
+    let dateFilter = "";
     const params = [];
 
     if (startDate && endDate) {
-      dateFilter = 'AND td.startDate >= ? AND td.startDate <= ?';
+      dateFilter = "AND td.startDate >= ? AND td.startDate <= ?";
       params.push(startDate, endDate);
     } else if (startDate) {
-      dateFilter = 'AND td.startDate >= ?';
+      dateFilter = "AND td.startDate >= ?";
       params.push(startDate);
     } else if (endDate) {
-      dateFilter = 'AND td.startDate <= ?';
+      dateFilter = "AND td.startDate <= ?";
       params.push(endDate);
     }
 
     // Add chamber filter if provided
-    if (chamber && chamber !== 'all') {
-      dateFilter += ' AND td.testChamber = ?';
+    if (chamber && chamber !== "all") {
+      dateFilter += " AND td.testChamber = ?";
       params.push(chamber);
     }
-    
+
     const query = `
       SELECT 
         td.testChamber as name,
@@ -2233,7 +1962,9 @@ function jobcardsAPIs(app, io, labbeeUsers) {
     db.query(query, params, (error, results) => {
       if (error) {
         console.error("Error fetching chamber lifetime totals:", error);
-        return res.status(500).json({ error: "Failed to fetch chamber lifetime totals" });
+        return res
+          .status(500)
+          .json({ error: "Failed to fetch chamber lifetime totals" });
       }
 
       if (results.length === 0) {
@@ -2248,20 +1979,24 @@ function jobcardsAPIs(app, io, labbeeUsers) {
               start: startDate || null,
               end: endDate || null,
               totalDays: 0,
-              availableHours: 0
-            }
+              availableHours: 0,
+            },
           },
-          chambers: []
+          chambers: [],
         });
       }
 
       // Calculate overall date range for utilization
-      const overallFirstDate = new Date(Math.min(...results.map(r => new Date(r.firstTestDate))));
-      const overallLastDate = new Date(Math.max(...results.map(r => new Date(r.lastTestDate))));
-      
+      const overallFirstDate = new Date(
+        Math.min(...results.map((r) => new Date(r.firstTestDate)))
+      );
+      const overallLastDate = new Date(
+        Math.max(...results.map((r) => new Date(r.lastTestDate)))
+      );
+
       // Determine actual date range used for calculations
       let actualStartDate, actualEndDate;
-      
+
       if (startDate && endDate) {
         actualStartDate = new Date(startDate);
         actualEndDate = new Date(endDate);
@@ -2276,23 +2011,26 @@ function jobcardsAPIs(app, io, labbeeUsers) {
         actualEndDate = overallLastDate;
       }
 
-      const totalDays = Math.ceil((actualEndDate - actualStartDate) / (1000 * 60 * 60 * 24)) + 1;
+      const totalDays =
+        Math.ceil((actualEndDate - actualStartDate) / (1000 * 60 * 60 * 24)) +
+        1;
       const totalAvailableHours = totalDays * 24; // 24/7 operation assumption
 
       // Function to get utilization level
       const getUtilizationLevel = (percent) => {
-        if (percent >= 85) return 'OVER';
-        if (percent >= 70) return 'HIGH';
-        if (percent >= 50) return 'GOOD';
-        if (percent >= 30) return 'MOD';
-        return 'LOW';
+        if (percent >= 85) return "OVER";
+        if (percent >= 70) return "HIGH";
+        if (percent >= 50) return "GOOD";
+        if (percent >= 30) return "MOD";
+        return "LOW";
       };
 
-      const chambers = results.map(row => {
+      const chambers = results.map((row) => {
         const totalRunHours = parseFloat(row.totalRunHours) || 0;
-        const utilizationPercent = totalAvailableHours > 0 
-          ? Math.round((totalRunHours / totalAvailableHours) * 100 * 10) / 10
-          : 0;
+        const utilizationPercent =
+          totalAvailableHours > 0
+            ? Math.round((totalRunHours / totalAvailableHours) * 100 * 10) / 10
+            : 0;
 
         return {
           id: row.name,
@@ -2306,36 +2044,46 @@ function jobcardsAPIs(app, io, labbeeUsers) {
           lastTestMonth: row.lastTestMonth,
           utilizationPercent,
           utilizationLevel: getUtilizationLevel(utilizationPercent),
-          avgRunHoursPerMonth: totalDays > 30 
-            ? Math.round((totalRunHours / (totalDays / 30)) * 10) / 10
-            : totalRunHours
+          avgRunHoursPerMonth:
+            totalDays > 30
+              ? Math.round((totalRunHours / (totalDays / 30)) * 10) / 10
+              : totalRunHours,
         };
       });
 
       const totalChambers = chambers.length;
-      const totalRunHours = chambers.reduce((sum, c) => sum + c.totalRunHours, 0);
+      const totalRunHours = chambers.reduce(
+        (sum, c) => sum + c.totalRunHours,
+        0
+      );
       const totalTests = chambers.reduce((sum, c) => sum + c.totalTests, 0);
-      const avgUtilization = chambers.length > 0 
-        ? Math.round((chambers.reduce((sum, c) => sum + c.utilizationPercent, 0) / chambers.length) * 10) / 10
-        : 0;
+      const avgUtilization =
+        chambers.length > 0
+          ? Math.round(
+              (chambers.reduce((sum, c) => sum + c.utilizationPercent, 0) /
+                chambers.length) *
+                10
+            ) / 10
+          : 0;
 
       const response = {
         summary: {
           totalChambers,
           totalRunHours: Math.round(totalRunHours * 10) / 10,
           totalTests,
-          avgRunHoursPerChamber: totalChambers > 0 
-            ? Math.round((totalRunHours / totalChambers) * 10) / 10 
-            : 0,
+          avgRunHoursPerChamber:
+            totalChambers > 0
+              ? Math.round((totalRunHours / totalChambers) * 10) / 10
+              : 0,
           avgUtilization,
           dateRange: {
-            start: actualStartDate.toISOString().split('T')[0],
-            end: actualEndDate.toISOString().split('T')[0],
+            start: actualStartDate.toISOString().split("T")[0],
+            end: actualEndDate.toISOString().split("T")[0],
             totalDays,
-            availableHours: totalAvailableHours
-          }
+            availableHours: totalAvailableHours,
+          },
         },
-        chambers
+        chambers,
       };
 
       res.json(response);
@@ -2426,7 +2174,9 @@ function jobcardsAPIs(app, io, labbeeUsers) {
     db.query(comprehensiveQuery, params, (error, results) => {
       if (error) {
         console.error("Error fetching chamber utilization:", error);
-        return res.status(500).json({ error: "Failed to fetch chamber utilization data" });
+        return res
+          .status(500)
+          .json({ error: "Failed to fetch chamber utilization data" });
       }
 
       // Get monthly breakdown for the last 3 months
@@ -2448,78 +2198,101 @@ function jobcardsAPIs(app, io, labbeeUsers) {
         ORDER BY testChamber, year DESC, month DESC
       `;
 
-      db.query(monthlyBreakdownQuery, params, (monthlyError, monthlyResults) => {
-        if (monthlyError) {
-          console.error("Error fetching monthly breakdown:", monthlyError);
-          return res.status(500).json({ error: "Failed to fetch monthly breakdown" });
-        }
-
-        // Group monthly data by chamber
-        const monthlyDataByCompany = {};
-        monthlyResults.forEach(row => {
-          if (!monthlyDataByCompany[row.testChamber]) {
-            monthlyDataByCompany[row.testChamber] = [];
+      db.query(
+        monthlyBreakdownQuery,
+        params,
+        (monthlyError, monthlyResults) => {
+          if (monthlyError) {
+            console.error("Error fetching monthly breakdown:", monthlyError);
+            return res
+              .status(500)
+              .json({ error: "Failed to fetch monthly breakdown" });
           }
-          monthlyDataByCompany[row.testChamber].push({
-            year: row.year,
-            month: row.month,
-            monthName: row.monthName,
-            testsCount: row.testsCount,
-            runHours: parseFloat(row.runHours || 0),
-          });
-        });
 
-        // Merge the data and calculate growth rates
-        const processedData = results.map((chamber, index) => {
-          const monthlyData = monthlyDataByCompany[chamber.chamberName] || [];
-          
-          // Sort monthly data by date (newest first)
-          monthlyData.sort((a, b) => 
-            new Date(b.year, b.month - 1) - new Date(a.year, a.month - 1)
-          );
-
-          // Calculate growth rate (compare latest month vs previous month)
-          let growthRate = 0;
-          if (monthlyData.length >= 2) {
-            const latestMonth = monthlyData[0].runHours;
-            const previousMonth = monthlyData[1].runHours;
-            if (previousMonth > 0) {
-              growthRate = ((latestMonth - previousMonth) / previousMonth) * 100;
-            } else if (latestMonth > 0) {
-              growthRate = 100;
+          // Group monthly data by chamber
+          const monthlyDataByCompany = {};
+          monthlyResults.forEach((row) => {
+            if (!monthlyDataByCompany[row.testChamber]) {
+              monthlyDataByCompany[row.testChamber] = [];
             }
-          }
+            monthlyDataByCompany[row.testChamber].push({
+              year: row.year,
+              month: row.month,
+              monthName: row.monthName,
+              testsCount: row.testsCount,
+              runHours: parseFloat(row.runHours || 0),
+            });
+          });
 
-          return {
-            id: index + 1,
-            chamberName: chamber.chamberName,
-            // Lifetime totals (for record keeping)
-            totalTestsTillDate: chamber.totalTestsTillDate,
-            totalRunHoursTillDate: parseFloat(chamber.totalRunHoursTillDate || 0).toFixed(1),
-            firstTestDate: chamber.firstTestDate,
-            lastTestDate: chamber.lastTestDate,
-            // Last 3 months data (for table display)
-            totalTests: chamber.totalTestsLast3Months,
-            totalRunHours: parseFloat(chamber.totalRunHoursLast3Months || 0).toFixed(1),
-            avgTestDuration: parseFloat(chamber.avgTestDurationLast3Months || 0).toFixed(1),
-            utilizationPercent: Math.min(100, parseFloat(chamber.utilizationPercentLast3Months || 0)),
-            growthRate: parseFloat(growthRate.toFixed(1)),
-            // Monthly breakdown for last 3 months
-            month1Hours: monthlyData[0] ? monthlyData[0].runHours.toFixed(1) : '0.0',
-            month2Hours: monthlyData[1] ? monthlyData[1].runHours.toFixed(1) : '0.0',
-            month3Hours: monthlyData[2] ? monthlyData[2].runHours.toFixed(1) : '0.0',
-            month1Tests: monthlyData[0] ? monthlyData[0].testsCount : 0,
-            month2Tests: monthlyData[1] ? monthlyData[1].testsCount : 0,
-            month3Tests: monthlyData[2] ? monthlyData[2].testsCount : 0,
-            month1Name: monthlyData[0] ? monthlyData[0].monthName : '',
-            month2Name: monthlyData[1] ? monthlyData[1].monthName : '',
-            month3Name: monthlyData[2] ? monthlyData[2].monthName : '',
-            monthlyData: monthlyData,
-          };
-        });
+          // Merge the data and calculate growth rates
+          const processedData = results.map((chamber, index) => {
+            const monthlyData = monthlyDataByCompany[chamber.chamberName] || [];
 
-        res.json(processedData);
-      });
+            // Sort monthly data by date (newest first)
+            monthlyData.sort(
+              (a, b) =>
+                new Date(b.year, b.month - 1) - new Date(a.year, a.month - 1)
+            );
+
+            // Calculate growth rate (compare latest month vs previous month)
+            let growthRate = 0;
+            if (monthlyData.length >= 2) {
+              const latestMonth = monthlyData[0].runHours;
+              const previousMonth = monthlyData[1].runHours;
+              if (previousMonth > 0) {
+                growthRate =
+                  ((latestMonth - previousMonth) / previousMonth) * 100;
+              } else if (latestMonth > 0) {
+                growthRate = 100;
+              }
+            }
+
+            return {
+              id: index + 1,
+              chamberName: chamber.chamberName,
+              // Lifetime totals (for record keeping)
+              totalTestsTillDate: chamber.totalTestsTillDate,
+              totalRunHoursTillDate: parseFloat(
+                chamber.totalRunHoursTillDate || 0
+              ).toFixed(1),
+              firstTestDate: chamber.firstTestDate,
+              lastTestDate: chamber.lastTestDate,
+              // Last 3 months data (for table display)
+              totalTests: chamber.totalTestsLast3Months,
+              totalRunHours: parseFloat(
+                chamber.totalRunHoursLast3Months || 0
+              ).toFixed(1),
+              avgTestDuration: parseFloat(
+                chamber.avgTestDurationLast3Months || 0
+              ).toFixed(1),
+              utilizationPercent: Math.min(
+                100,
+                parseFloat(chamber.utilizationPercentLast3Months || 0)
+              ),
+              growthRate: parseFloat(growthRate.toFixed(1)),
+              // Monthly breakdown for last 3 months
+              month1Hours: monthlyData[0]
+                ? monthlyData[0].runHours.toFixed(1)
+                : "0.0",
+              month2Hours: monthlyData[1]
+                ? monthlyData[1].runHours.toFixed(1)
+                : "0.0",
+              month3Hours: monthlyData[2]
+                ? monthlyData[2].runHours.toFixed(1)
+                : "0.0",
+              month1Tests: monthlyData[0] ? monthlyData[0].testsCount : 0,
+              month2Tests: monthlyData[1] ? monthlyData[1].testsCount : 0,
+              month3Tests: monthlyData[2] ? monthlyData[2].testsCount : 0,
+              month1Name: monthlyData[0] ? monthlyData[0].monthName : "",
+              month2Name: monthlyData[1] ? monthlyData[1].monthName : "",
+              month3Name: monthlyData[2] ? monthlyData[2].monthName : "",
+              monthlyData: monthlyData,
+            };
+          });
+
+          res.json(processedData);
+        }
+      );
     });
   });
 
@@ -2610,7 +2383,6 @@ function jobcardsAPIs(app, io, labbeeUsers) {
   // Fetch the number of reports status of the particular JC
   app.get("/api/jcWiseReportsStatusData", (req, res) => {
     const jcNumber = req.query.jcNumber; // Use query parameter
-    console.log("JC Number:", jcNumber);
     const sqlQuery = `
     SELECT 
       COUNT(reportNumber) AS reportCount,

@@ -41,6 +41,8 @@ const Jobcard = ({ jobCardData }) => {
   const setActiveStep = jobcardStore.setActiveStep;
   const editJc = jobcardStore.editJc;
   const setEditJc = jobcardStore.setEditJc;
+  const editJcId = jobcardStore.editJcId;
+  const setEditJcId = jobcardStore.setEditJcId;
 
   const steps = ["SRF Form", "Test Detils", "Observations"];
   const totalSteps = steps.length;
@@ -61,6 +63,8 @@ const Jobcard = ({ jobCardData }) => {
   if (!id) {
     id = "";
   }
+
+  setEditJcId(id);
 
   useEffect(() => {
     jobcardStore.setTestInchargeName(loggedInUser);
@@ -124,17 +128,12 @@ const Jobcard = ({ jobCardData }) => {
 
       const { currentYear, currentMonth } = getCurrentYearAndMonth();
 
-      let finYear = "";
-
-      const shortNextYear = ((currentYear + 1) % 100).toString().padStart(2, "0");
-      const shortCurrentYear = (currentYear % 100).toString().padStart(2, "0");
+      let finYear = 0;
 
       if (currentMonth > 3) {
-        // April to December: Current FY (e.g., Oct 2025 → 2025-26)
-        finYear = `${currentYear}-${shortNextYear}/${currentMonth}`;
+        finYear = `${currentYear}-${currentYear + 1}/${currentMonth}`;
       } else {
-        // January to March: Previous FY (e.g., Feb 2025 → 2024-25)
-        finYear = `${currentYear - 1}-${shortCurrentYear}/${currentMonth}`;
+        finYear = `${currentYear - 1}-${currentYear}/${currentMonth}`;
       }
 
       //fetch the latest jcnumber count
@@ -359,10 +358,6 @@ const Jobcard = ({ jobCardData }) => {
         </Box>
       </Box>
 
-      <Box sx={{ alignSelf: "left" }}>
-        <Typography variant="caption">ISO/IEC 17025:2017 Doc. No.</Typography>
-      </Box>
-
       <Card sx={{ width: "100%", mt: "10px", mb: "10px" }}>
         <Stepper activeStep={activeStep} alternativeLabel nonLinear>
           {steps.map((label, index) => (
@@ -386,60 +381,49 @@ const Jobcard = ({ jobCardData }) => {
           }}
         >
           <Typography
-            variant="body1"
+            variant="h5"
             sx={{
               fontWeight: "bold",
+              // fontStyle: "italic",
               textAlign: { xs: "center", sm: "left" },
             }}
           >
-            <span>JC Number:</span>
-            <Typography
-              component="span"
-              variant="h6"
-              sx={{ color: "#003399", fontWeight: "bold", ml: 1 }}
-            >
+            <span style={{ color: "#003399" }}>JC Number:</span>{" "}
+            <span style={{ color: "#003399" }}>
               {addNewJcToLastMonth
                 ? newJcNumberStringForLastMonth
                 : jobcardStore.jcNumberString}
-            </Typography>
+            </span>
           </Typography>
 
           <Typography
-            variant="body1"
+            variant="h5"
             sx={{
               fontWeight: "bold",
               textAlign: { xs: "center", sm: "left" },
             }}
           >
-            <span>SRF Number:</span>
-
-            <Typography
-              component="span"
-              variant="h6"
-              sx={{ color: "#003399", fontWeight: "bold", ml: 1 }}
-            >
+            <span style={{ color: "#003399" }}>SRF Number:</span>{" "}
+            <span style={{ color: "#003399" }}>
               {addNewJcToLastMonth
                 ? newSrfNumberForLastMonth
                 : jobcardStore.srfNumber}
-            </Typography>
+            </span>
           </Typography>
 
           {editJc && (
             <Typography
-              variant="body1"
+              variant="h7"
               sx={{
                 fontWeight: "bold",
                 textAlign: { xs: "center", sm: "left" },
               }}
             >
-              <span>JC Status:</span>
-              <Typography
-                component="span"
-                variant="h6"
-                sx={{ color: "#003399", fontWeight: "bold", ml: 1 }}
-              >
+              <span style={{ color: "#003399" }}>JC Status:</span>{" "}
+              <span>
+                {/* {jcStatusString} */}
                 {jobcardStore.jcStatus}
-              </Typography>
+              </span>
             </Typography>
           )}
         </Box>

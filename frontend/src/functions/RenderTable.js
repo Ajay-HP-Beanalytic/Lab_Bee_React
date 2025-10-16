@@ -30,6 +30,7 @@ const RenderTable = ({
   rowTemplate,
   deletedIds,
   setDeletedIds,
+  getColumnOptions, // Optional callback for dynamic options
 }) => {
   const {
     stepOneFormData,
@@ -75,6 +76,12 @@ const RenderTable = ({
       [field]: value, // Update only the changed field
     };
 
+    // Clear dependent fields when category changes
+    if (field === "testCategory") {
+      updatedRows[index].testName = "";
+      updatedRows[index].testChamber = "";
+    }
+
     // Calculate duration if both start and end times are available
     // Check if we are updating the start or end time
     if (field === "testStartDateTime" || field === "testEndDateTime") {
@@ -92,7 +99,22 @@ const RenderTable = ({
 
         updatedRows[index].testDuration = durationInMinutes;
       }
+    } else if (field === "startDate" || field === "endDate") {
+      const startTime = new Date(updatedRows[index].startDate);
+      const endTime = new Date(updatedRows[index].endDate);
+
+      if (!isNaN(startTime) && !isNaN(endTime)) {
+        let durationInMilliSecond = endTime - startTime;
+        let durationInMinutes = durationInMilliSecond / (1000 * 60);
+        // Ensure duration is not negative:
+        if (durationInMinutes < 0) {
+          durationInMinutes = 0;
+        }
+
+        updatedRows[index].duration = durationInMinutes;
+      }
     }
+
     // IMPORTANT CHANGE: Just update the local state through setTableRows
     // This will be passed back to the parent component
     setTableRows(updatedRows);
@@ -175,6 +197,7 @@ const RenderTable = ({
                           handleInputChange(rowIndex, column.id, e.target.value)
                         }
                         fullWidth
+                        inputProps={column.inputProps || {}} // Pass native input props
                       />
                     ) : column.type === "number" ? (
                       <TextField
@@ -185,10 +208,11 @@ const RenderTable = ({
                         }
                         fullWidth
                         InputProps={
-                          column.id === "testDuration"
-                            ? { readOnly: true } // Set testDuration as read-only
-                            : {}
+                          column.id === "testDuration" || column.id === "duration"
+                            ? { readOnly: true } // Set testDuration/duration as read-only
+                            : undefined
                         }
+                        inputProps={column.inputProps || {}} // Pass native input props (onWheel, etc.)
                       />
                     ) : column.type === "select" ? (
                       <Select
@@ -198,25 +222,34 @@ const RenderTable = ({
                         }
                         fullWidth
                       >
-                        {Array.isArray(column.options) &&
-                          column.options.map((option) => {
-                            if (typeof option === "string") {
-                              return (
-                                <MenuItem key={option} value={option}>
-                                  {option}
-                                </MenuItem>
-                              );
-                            } else {
-                              return (
-                                <MenuItem
-                                  key={option.id ? option.id : option.label}
-                                  value={option.id ? option.id : option.value}
-                                >
-                                  {option.label}
-                                </MenuItem>
-                              );
-                            }
-                          })}
+                        {(() => {
+                          // Use dynamic options if callback is provided, otherwise use static options
+                          const options = getColumnOptions
+                            ? getColumnOptions(column, row)
+                            : column.options || [];
+
+                          return (
+                            Array.isArray(options) &&
+                            options.map((option) => {
+                              if (typeof option === "string") {
+                                return (
+                                  <MenuItem key={option} value={option}>
+                                    {option}
+                                  </MenuItem>
+                                );
+                              } else {
+                                return (
+                                  <MenuItem
+                                    key={option.id ? option.id : option.label}
+                                    value={option.id ? option.id : option.value}
+                                  >
+                                    {option.label}
+                                  </MenuItem>
+                                );
+                              }
+                            })
+                          );
+                        })()}
                       </Select>
                     ) : column.type === "dateTime" ? (
                       <LocalizationProvider dateAdapter={AdapterDayjs}>
