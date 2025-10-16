@@ -411,7 +411,8 @@ function createTestDetailsTable() {
     CREATE TABLE IF NOT EXISTS tests_details (
         id INT NOT NULL AUTO_INCREMENT,
         jc_number VARCHAR(255),
-        testName VARCHAR(1000), 
+        testCategory VARCHAR(1000),
+        testName VARCHAR(1000),
         testChamber VARCHAR(1000),
         eutSerialNo VARCHAR(1000),
         standard VARCHAR(1000),

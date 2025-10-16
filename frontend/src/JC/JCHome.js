@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   Box,
@@ -47,14 +47,10 @@ export default function JCHome() {
 
   const [refresh, setRefresh] = useState(false);
 
-  const [jcMonthYear, setJCMonthYear] = useState(getCurrentMonthYear());
-
-  const [jcMonthYearList, setJcMonthYearList] = useState([]);
-
   const { month, year } = getCurrentMonthYear();
 
-  const [jcYear, setJCYear] = useState(year);
-  const [jcMonth, setJCMonth] = useState(month);
+  const [jcYear, setJCYear] = useState(year || null);
+  const [jcMonth, setJCMonth] = useState(month || null);
 
   const [availableYears, setAvailableYears] = useState([]);
   const [availableMonths, setAvailableMonths] = useState([]);
@@ -64,15 +60,6 @@ export default function JCHome() {
   const [searchInputTextOfJC, setSearchInputTextOfJC] = useState("");
 
   const [filteredJcData, setFilteredJcData] = useState(jcTableData);
-
-  const [reliabilityJCTableData, setReliabilityJCTableData] = useState([]);
-
-  const [originalReliabilityTableData, setOriginalReliabilityTableData] =
-    useState([]);
-
-  const [filteredReliabilityJcData, setFilteredReliabilityJcData] = useState(
-    reliabilityJCTableData
-  );
 
   const [jcId, setJcId] = useState(null); // Id of the selected job card
   const [openJCPreview, setOpenJCPreview] = useState(false);
@@ -108,11 +95,6 @@ export default function JCHome() {
   const [testDetailsRows, setTestDetailsRows] = useState([
     { id: 0, startDate: null, endDate: null, duration: 0 },
   ]);
-
-  const [reliabilityReportStatus, setReliabilityReportStatus] = useState("");
-  const [reliabilityTaskRow, setReliabilityTaskRow] = useState([{ id: 0 }]);
-
-  const [reliabilityJCNumbers, setReliabilityJCNumbers] = useState([]);
 
   const [jcLastModifiedBy, setJcLastModifiedBy] = useState();
 
@@ -159,9 +141,6 @@ export default function JCHome() {
           setTestInstructions(res.data.jobcard.test_instructions);
           setReferanceDocs(res.data.jobcard.referance_document);
           setJcStatus(res.data.jobcard.jc_status);
-          setReliabilityReportStatus(
-            res.data.jobcard.reliability_report_status
-          );
           setJcCloseDate(res.data.jobcard.jc_closed_date);
           setObservations(res.data.jobcard.observations);
           setJcLastModifiedBy(res.data.jobcard.last_updated_by);
@@ -169,8 +148,6 @@ export default function JCHome() {
           setEutRows(res.data.eut_details);
           setTestRows(res.data.tests);
           setTestDetailsRows(res.data.tests_details);
-
-          setReliabilityTaskRow(res.data.reliability_tasks_details);
 
           setReferanceDocs(res.data.attachments);
 
@@ -185,51 +162,36 @@ export default function JCHome() {
   };
 
   const primaryTS1JCDetailsToPreview = [
-    { label: `Company Name: ${companyName}` },
-    { label: `Company Address: ${companyAddress}` },
-    { label: `Customer Name: ${customerName}` },
-    { label: `Customer Email: ${customerEmail}` },
-    { label: `Contact Number: ${customerNumber}` },
-    { label: `Project Name: ${projectName}` },
-    { label: `SRF Number: ${srfNumber}` },
-    { label: `SRF Date : ${dayjs(srfDate).format("YYYY/MM/DD")}` },
-    { label: `JC Open Date : ${dayjs(jcOpenDate).format("YYYY/MM/DD")}` },
-    { label: `JC Created By: ${testInchargeName}` },
+    { label: "Company Name", value: `${companyName}` },
+    { label: "Company Address", value: `${companyAddress}` },
+    { label: "Customer Name", value: `${customerName}` },
+    { label: "Customer Email", value: `${customerEmail}` },
+    { label: "Contact Number", value: `${customerNumber}` },
+    { label: "Project Name", value: `${projectName}` },
+    { label: "SRF Number", value: `${srfNumber}` },
+    { label: "SRF Date", value: `${dayjs(srfDate).format("YYYY/MM/DD")}` },
     {
-      label: `Item Received Date: ${
+      label: "JC Open Date",
+      value: `${dayjs(jcOpenDate).format("YYYY/MM/DD")}`,
+    },
+    { label: "JC Created By", value: `${testInchargeName}` },
+    {
+      label: "Item Received Date",
+      value: `${
         itemReceivedDate ? dayjs(itemReceivedDate).format("YYYY/MM/DD") : ""
       }`,
     },
-    { label: `Test Category: ${jcCategory}` },
-    { label: `Test Discipline: ${testDiscipline}` },
-    { label: `Sample Condition: ${sampleCondition}` },
-    { label: `Type of Request: ${typeOfRequest}` },
-    { label: `Report Type: ${reportType}` },
-    { label: `JC Status: ${jcStatus}` },
+    { label: "Test Category", value: `${jcCategory}` },
+    { label: "Test Discipline", value: `${testDiscipline}` },
+    { label: "Sample Condition", value: `${sampleCondition}` },
+    { label: "Type of Request", value: `${typeOfRequest}` },
+    { label: "Report Type", value: `${reportType}` },
+    { label: "JC Status", value: `${jcStatus}` },
     {
-      label: `JC Close Date: ${
-        jcCloseDate ? dayjs(jcCloseDate).format("YYYY/MM/DD") : ""
-      }`,
+      label: "JC Close Date",
+      value: `${jcCloseDate ? dayjs(jcCloseDate).format("YYYY/MM/DD") : ""}`,
     },
-    { label: `Observations: ${observations}` },
-  ];
-
-  const primaryReliabilityJCDetailsToPreview = [
-    { label: `Company Name: ${companyName}` },
-    { label: `Company Address: ${companyAddress}` },
-    { label: `Customer Name: ${customerName}` },
-    { label: `Customer Email: ${customerEmail}` },
-    { label: `Contact Number: ${customerNumber}` },
-    { label: `Project Name: ${projectName}` },
-    { label: `JC Open Date : ${dayjs(jcOpenDate).format("YYYY/MM/DD")}` },
-    { label: `JC Created By: ${testInchargeName}` },
-    { label: `JC Status: ${jcStatus}` },
-    {
-      label: `JC Close Date: ${
-        jcCloseDate ? dayjs(jcCloseDate).format("YYYY/MM/DD") : ""
-      }`,
-    },
-    { label: `Observations: ${observations}` },
+    { label: "Observations", value: ` ${observations}` },
   ];
 
   let primaryJCDetails = [];
@@ -238,25 +200,24 @@ export default function JCHome() {
     loggedInUserDepartment === "Reports & Scrutiny"
   ) {
     primaryJCDetails = primaryTS1JCDetailsToPreview;
-  } else if (loggedInUserDepartment === "Reliability") {
-    primaryJCDetails = primaryReliabilityJCDetailsToPreview;
   } else if (
     loggedInUserDepartment === "Administration" ||
     loggedInUserDepartment === "Accounts"
   ) {
     if (jcCategory === "TS1") {
       primaryJCDetails = primaryTS1JCDetailsToPreview;
-    } else if (jcCategory === "Reliability") {
-      primaryJCDetails = primaryReliabilityJCDetailsToPreview;
     }
   }
 
   // Simulate fetching jc data from the database
   useEffect(() => {
-    // Don't fetch data until months are loaded or if no valid month is selected
-    if (availableMonths.length === 0 || !jcMonth || !jcYear) return;
-
-    const jcTableDataRefresh = location.state?.updated;
+    // Don't fetch data if no valid month or year is selected
+    if (!jcMonth || !jcYear) {
+      setLoading(false);
+      setJcTableData([]);
+      setOriginalJcTableData([]);
+      return;
+    }
 
     // Convert month number to short month name format expected by API (if needed)
     const monthNames = [
@@ -276,7 +237,12 @@ export default function JCHome() {
     const monthName = monthNames[jcMonth - 1];
 
     // Safety check for valid month name
-    if (!monthName) return;
+    if (!monthName) {
+      setLoading(false);
+      setJcTableData([]);
+      setOriginalJcTableData([]);
+      return;
+    }
 
     let requiredAPIdata = {
       _fields:
@@ -290,22 +256,6 @@ export default function JCHome() {
     const getTestingJcURL =
       `${serverBaseAddress}/api/getPrimaryJCDataOfTS1?` + urlParameters;
 
-    /////////////////////////////////////////////////////
-    let requiredAPIdataForReliability = {
-      _fields:
-        "jc_number,  jc_open_date, company_name, project_name, reliability_report_status,  jc_status, jc_closed_date, last_updated_by",
-      year: jcYear,
-      month: monthName,
-    };
-
-    const urlParametersForReliability = new URLSearchParams(
-      requiredAPIdataForReliability
-    ).toString();
-
-    const getReliabilityJcURL =
-      `${serverBaseAddress}/api/getPrimaryJCDataOfReliability?` +
-      urlParametersForReliability;
-
     ///////////////////////////////////////////////////////
 
     if (filterRow.length > 0) {
@@ -317,11 +267,6 @@ export default function JCHome() {
           const testingJcResponse = await axios.get(getTestingJcURL);
           setJcTableData(testingJcResponse.data);
           setOriginalJcTableData(testingJcResponse.data);
-
-          // Fetch the reliability JC's
-          const reliabilityJcResponse = await axios.get(getReliabilityJcURL);
-          setReliabilityJCTableData(reliabilityJcResponse.data);
-          setOriginalReliabilityTableData(reliabilityJcResponse.data);
 
           setLoading(false);
         } catch (error) {
@@ -343,16 +288,28 @@ export default function JCHome() {
         );
 
         if (response.status === 200) {
-          setAvailableYears(response.data.years);
+          const years = response.data.years || [];
+          setAvailableYears(years);
 
           // Set the most recent year (first in DESC order) as default
-          if (response.data.years.length > 0) {
-            const mostRecentYear = response.data.years[0]; // Years come in DESC order
+          if (years.length > 0) {
+            const mostRecentYear = years[0]; // Years come in DESC order
             setJCYear(mostRecentYear);
+          } else {
+            // No data available - use current year
+            const currentYear = new Date().getFullYear();
+            setJCYear(currentYear);
+            setAvailableYears([currentYear]);
           }
+        } else {
+          setAvailableYears([]);
         }
       } catch (error) {
         console.error("Failed to fetch years", error);
+        // Fallback to current year if error
+        const currentYear = new Date().getFullYear();
+        setJCYear(currentYear);
+        setAvailableYears([currentYear]);
       }
     };
 
@@ -369,19 +326,29 @@ export default function JCHome() {
           );
 
           if (response.status === 200) {
-            setAvailableMonths(response.data);
+            const months = response.data || [];
+            setAvailableMonths(months);
 
             // Always set the most recent month for better UX
-            if (response.data.length > 0) {
+            if (months.length > 0) {
               // Select the most recent month (highest month number)
-              const mostRecentMonth = response.data.reduce((latest, current) =>
+              const mostRecentMonth = months.reduce((latest, current) =>
                 current.value > latest.value ? current : latest
               );
               setJCMonth(mostRecentMonth.value);
+            } else {
+              // No data available - use current month
+              const currentMonth = new Date().getMonth() + 1;
+              setJCMonth(currentMonth);
             }
+          } else {
+            setAvailableMonths([]);
           }
         } catch (error) {
           console.error("Failed to fetch months for year", error);
+          // Fallback to current month if error
+          const currentMonth = new Date().getMonth() + 1;
+          setJCMonth(currentMonth);
         }
       }
     };
@@ -392,10 +359,7 @@ export default function JCHome() {
   //useEffect to filter the table based on the search input
   useEffect(() => {
     setFilteredJcData(jcTableData);
-    setFilteredReliabilityJcData(reliabilityJCTableData);
-
-    setReliabilityJCNumbers(reliabilityJCTableData.map((row) => row.jc_number));
-  }, [jcTableData, reliabilityJCTableData, refresh, location.state]);
+  }, [jcTableData, refresh, location.state]);
 
   //If data is loading then show Loading text
   if (loading) {
@@ -467,81 +431,6 @@ export default function JCHome() {
     },
   ];
 
-  const reliabilityTableColumns = [
-    {
-      field: "serialNumbers",
-      headerName: "SL No",
-      width: 100,
-      align: "center",
-      headerAlign: "center",
-      headerClassName: "custom-header-color",
-    },
-    {
-      field: "jc_number",
-      headerName: "JC Number",
-      width: 200,
-      align: "center",
-      headerAlign: "center",
-      headerClassName: "custom-header-color",
-    },
-    {
-      field: "jc_open_date",
-      headerName: "JC Open Date",
-      width: 200,
-      align: "center",
-      headerAlign: "center",
-      headerClassName: "custom-header-color",
-    },
-    {
-      field: "company_name",
-      headerName: "Company",
-      width: 200,
-      align: "center",
-      headerAlign: "center",
-      headerClassName: "custom-header-color",
-    },
-    {
-      field: "project_name",
-      headerName: "Project Name",
-      width: 200,
-      align: "center",
-      headerAlign: "center",
-      headerClassName: "custom-header-color",
-    },
-    {
-      field: "reliability_report_status",
-      headerName: "Report Status",
-      width: 200,
-      align: "center",
-      headerAlign: "center",
-      headerClassName: "custom-header-color",
-    },
-    {
-      field: "jc_status",
-      headerName: "JC Status",
-      width: 200,
-      align: "center",
-      headerAlign: "center",
-      headerClassName: "custom-header-color",
-    },
-    {
-      field: "jc_closed_date",
-      headerName: "JC Closed Date",
-      width: 200,
-      align: "center",
-      headerAlign: "center",
-      headerClassName: "custom-header-color",
-    },
-    {
-      field: "last_updated_by",
-      headerName: "Last Updated By",
-      width: 200,
-      align: "center",
-      headerAlign: "center",
-      headerClassName: "custom-header-color",
-    },
-  ];
-
   const addSerialNumbersToRows = (data) => {
     return data.map((item, index) => ({
       ...item,
@@ -550,10 +439,6 @@ export default function JCHome() {
   };
 
   const ts1JcDataWithSerialNumbers = addSerialNumbersToRows(filteredJcData);
-
-  const reliabilityJcDataWithSerialNumbers = addSerialNumbersToRows(
-    filteredReliabilityJcData
-  );
 
   // on changing the month-year selection:
   const handleYearOfJC = (event) => {
@@ -602,16 +487,7 @@ export default function JCHome() {
           params: { selectedJCDateRange: dateRange },
         }
       );
-
-      const reliabilityJCResponse = await axios.get(
-        `${serverBaseAddress}/api/getPrimaryReliabilityJCDataBwTwoDates`,
-        {
-          params: { selectedJCDateRange: dateRange },
-        }
-      );
-
       setJcTableData(testingJCResponse.data);
-      setReliabilityJCTableData(reliabilityJCResponse.data);
     } catch (error) {
       console.error("Error fetching JC data:", error);
     }
@@ -621,7 +497,6 @@ export default function JCHome() {
   const handleJCDateRangeClear = () => {
     setSelectedJCDateRange(null);
     setJcTableData(originalJcTableData);
-    setReliabilityJCTableData(originalReliabilityTableData);
   };
 
   //Start the search filter using the searchbar
@@ -641,22 +516,12 @@ export default function JCHome() {
       );
     });
     setFilteredJcData(filtered);
-
-    const relFiltered = reliabilityJCTableData.filter((row) => {
-      return Object.values(row).some(
-        (value) =>
-          value != null &&
-          value.toString().toLowerCase().includes(searchValue.toLowerCase())
-      );
-    });
-    setFilteredReliabilityJcData(relFiltered);
   };
 
   //Clear the search filter
   const onClearSearchInputOfJC = () => {
     setSearchInputTextOfJC("");
     setFilteredJcData(jcTableData);
-    setFilteredReliabilityJcData(reliabilityJCTableData);
   };
 
   //Functiopn to redirect to new jc create page:
@@ -889,15 +754,15 @@ export default function JCHome() {
             ) : (
               <Box
                 sx={{
-                  height: 500,
-                  width: "100%",
+                  "height": 500,
+                  "width": "100%",
                   "& .custom-header-color": {
                     backgroundColor: "#476f95",
                     color: "whitesmoke",
                     fontWeight: "bold",
                     fontSize: "15px",
                   },
-                  mt: 2,
+                  "mt": 2,
                 }}
               >
                 <DataGrid
@@ -933,107 +798,7 @@ export default function JCHome() {
                   />
                 </Box>
               </Grid>
-
-              <Grid item xs={12} sm={6} md={6}>
-                {filteredReliabilityJcData.length !== 0 && (
-                  <Box
-                    sx={{
-                      display: "flex",
-                      justifyContent: "center",
-                      alignItems: "center",
-                      flexDirection: "column",
-                      padding: 2,
-                      borderRadius: 5,
-                      boxShadow: 2,
-                      backgroundColor: "#ebf0fa",
-                    }}
-                  >
-                    <Typography variant="h5" color="#003366" align="center">
-                      Reliability JC Numbers
-                    </Typography>
-                    {reliabilityJCNumbers.map((jcNumber, index) => (
-                      <List
-                        key={index}
-                        sx={{
-                          width: "100%",
-                          display: "flex",
-                          justifyContent: "center",
-                        }}
-                      >
-                        <ListItem sx={{ justifyContent: "center" }}>
-                          {jcNumber}
-                        </ListItem>
-                      </List>
-                    ))}
-                  </Box>
-                )}
-              </Grid>
             </Grid>
-          </>
-        )}
-
-        {(loggedInUserDepartment === "Reliability" ||
-          loggedInUserDepartment === "Administration" ||
-          loggedInUserDepartment === "Accounts") && (
-          <>
-            <Grid
-              item
-              xs={12}
-              md={6}
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: { xs: "center", md: "center" },
-                mb: 2,
-              }}
-            >
-              <Box sx={{ width: "100%" }}>
-                <Divider sx={{ mt: 5 }}>
-                  <Typography variant="h5" sx={{ color: "#003366" }}>
-                    {" "}
-                    Reliability Task Management
-                  </Typography>
-                </Divider>
-              </Box>
-            </Grid>
-
-            {/* <Typography variant='h4' sx={{ color: '#003366' }}> Its Reliability: {loggedInUserDepartment}</Typography> */}
-
-            {filteredReliabilityJcData &&
-            filteredReliabilityJcData.length === 0 ? (
-              <EmptyCard message="No JC Found" />
-            ) : (
-              <>
-                <Box
-                  sx={{
-                    height: 500,
-                    width: "100%",
-                    "& .custom-header-color": {
-                      backgroundColor: "#476f95",
-                      color: "whitesmoke",
-                      fontWeight: "bold",
-                      fontSize: "15px",
-                    },
-                    mt: 2,
-                  }}
-                >
-                  <DataGrid
-                    initialState={{
-                      sorting: {
-                        sortModel: [{ field: "jc_number", sort: "desc" }],
-                      },
-                    }}
-                    rows={reliabilityJcDataWithSerialNumbers}
-                    columns={reliabilityTableColumns}
-                    sx={{ "&:hover": { cursor: "pointer" } }}
-                    // onRowClick={(params) => editSelectedJC(params.row)}
-                    onRowClick={(params) => openSelectedRowJCData(params.row)}
-                    pageSize={5}
-                    rowsPerPageOptions={[5, 10, 20]}
-                  />
-                </Box>
-              </>
-            )}
           </>
         )}
 
@@ -1047,7 +812,6 @@ export default function JCHome() {
             eutRows={eutRows}
             testRows={testRows}
             testDetailsRows={testDetailsRows}
-            reliabilityTaskRow={reliabilityTaskRow}
             onEdit={() => editSelectedJC(jcId)}
             editJc={editJc}
             jcId={jcId}
