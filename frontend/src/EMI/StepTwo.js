@@ -424,13 +424,30 @@ export default function EMIJCStepTwo() {
 
   // UseEffect to fetch the users:
   useEffect(() => {
-    axios
-      .get(`${serverBaseAddress}/api/getEMIUsers/`)
-      .then((result) => {
-        const emiUsersNames = result.data.map((user) => user.name);
-        setEMIUsers(emiUsersNames);
-      })
-      .catch((error) => console.error("Error fetching EMI users", error));
+    let cancelled = false;
+
+    const fetchEMIReportPreparedByUsers = async () => {
+      try {
+        const [emiRes, rasRes] = await Promise.all([
+          axios.get(`${serverBaseAddress}/api/getEMIUsers/`),
+          axios.get(`${serverBaseAddress}/api/getReportsAndScrutinyUsers/`),
+        ]);
+        if (cancelled) return;
+
+        const emiUsersNames = emiRes.data.map((user) => user.name);
+        const rasUsersNames = rasRes.data.map((user) => user.name);
+        // merge and dedupe
+        setEMIUsers(Array.from(new Set([...emiUsersNames, ...rasUsersNames])));
+      } catch (error) {
+        if (!cancelled) console.error("Error fetching EMI users", error);
+      }
+    };
+
+    fetchEMIReportPreparedByUsers();
+
+    return () => {
+      cancelled = true;
+    };
   }, [loggedInUser]);
 
   return (

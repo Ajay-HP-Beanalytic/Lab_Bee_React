@@ -544,6 +544,7 @@ export default function EMIJCDashboard() {
     loggedInUserDepartment === "Administration" ||
     loggedInUserDepartment === "Accounts" ||
     loggedInUserDepartment === "Marketing" ||
+    loggedInUserDepartment === "Reports & Scrutiny" ||
     loggedInUserRole === "Quality Engineer"
   ) {
     primaryJCDetails = primaryTS2JCDetailsToPreview;
@@ -654,6 +655,7 @@ export default function EMIJCDashboard() {
           loggedInUserDepartment === "Administration" ||
           loggedInUserDepartment === "Accounts" ||
           loggedInUserDepartment === "Marketing" ||
+          loggedInUserDepartment === "Reports & Scrutiny" ||
           loggedInUserRole === "Quality Engineer") && (
           <>
             {filteredJcData && filteredJcData.length === 0 ? (
@@ -661,15 +663,15 @@ export default function EMIJCDashboard() {
             ) : (
               <Box
                 sx={{
-                  height: 500,
-                  width: "100%",
+                  "height": 500,
+                  "width": "100%",
                   "& .custom-header-color": {
                     backgroundColor: "#476f95",
                     color: "whitesmoke",
                     fontWeight: "bold",
                     fontSize: "15px",
                   },
-                  mt: 2,
+                  "mt": 2,
                 }}
               >
                 <DataGrid

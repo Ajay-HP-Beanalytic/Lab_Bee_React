@@ -239,6 +239,23 @@ function usersDataAPIs(app) {
     });
   });
 
+  //API to get reports and scrutiny team members:
+  app.get("/api/getReportsAndScrutinyUsers", (req, res) => {
+    const sql =
+      "SELECT name FROM labbee_users WHERE department LIKE ? AND (role NOT LIKE ? )";
+    db.query(
+      sql,
+      ["%Reports & Scrutiny%", "Quality Engineer"],
+      (error, result) => {
+        if (error) {
+          console.error("Error fetching Reports & Scrutiny users:", error);
+          return res.status(500).json({ error: "Internal server error" });
+        }
+        res.send(result);
+      }
+    );
+  });
+
   // Fetch the Reliability department users:
   app.get("/api/getReliabilityUsers", (req, res) => {
     const reliabilityUsersList =
