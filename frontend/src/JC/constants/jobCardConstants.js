@@ -69,6 +69,12 @@ export const JOB_CARD_OPTIONS = {
     { value: "NABL", label: "NABL" },
     { value: "NON-NABL", label: "Non-NABL" },
   ],
+
+  reportPreparationStatus: [
+    { value: "Report Under Preparation", label: "Report Under Preparation" },
+    { value: "Report Prepared", label: "Report Prepared" },
+    { value: "Report Not Prepared", label: "Report Not Prepared" },
+  ],
 };
 
 //Options for Jobcard notes for customer.

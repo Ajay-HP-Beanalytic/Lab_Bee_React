@@ -24,7 +24,6 @@ import { UserContext } from "../Pages/UserContext";
 // import { useNavigate } from "react-router-dom";
 import JobCardComponent from "./JobCardComponent";
 import DocumentPreviewModal from "../components/DocumentPreviewModal";
-import ReportConfigDialog from "../components/ReportConfigDialog";
 import { generateTS1Report } from "./TS1ReportDocument";
 
 const Transition = forwardRef(function Transition(props, ref) {
@@ -71,11 +70,6 @@ export default function JCPreview({
   const [previewDocumentBlob, setPreviewDocumentBlob] = useState(null);
   const [previewFileName, setPreviewFileName] = useState("");
 
-  // State for report config dialog
-  const [configDialogOpen, setConfigDialogOpen] = useState(false);
-  const [pendingReportData, setPendingReportData] = useState(null);
-  const [lastReportConfig, setLastReportConfig] = useState(null); // Store last config for Previous button
-
   const isTS1Testing = loggedInUserDepartment === "TS1 Testing";
   const isReportsAndScrutiny = loggedInUserDepartment === "Reports & Scrutiny";
   const isReliability = loggedInUserDepartment === "Reliability";
@@ -115,7 +109,7 @@ export default function JCPreview({
     "Test Ended By",
     "Remarks",
     "Test Reviewed By",
-    "Report",
+    "Create Report",
     "Test Report Delivery Instructions",
     "Report Number",
     "Report Prepared By",
@@ -136,107 +130,77 @@ export default function JCPreview({
     onEdit(item);
   };
 
-  const handleGenerateReport = (rowIndex) => {
+  const handleGenerateReport = async (rowIndex) => {
     const currentTestRow = testDetailsRows[rowIndex];
 
-    console.log("Preparing report for test row:", currentTestRow);
-
-    // Convert primaryJCDetails array to object format
-    const primaryData = {};
-    primaryJCDetails.forEach((detail) => {
-      // Extract the key from the label (e.g., "JC Number: " -> "jcNumber")
-      const key = detail.label.split(": ")[0].trim();
-      primaryData[key] = detail.value;
-    });
-
-    // Prepare comprehensive report data
-    const comprehensiveReportData = {
-      // Primary Job Card Information
-      jcNumber: jcNumber,
-      jcCategory: jcCategory,
-      srfNumber: primaryData["SRF Number"] || "",
-      dcNumber: primaryData["DC Number"] || "",
-      poNumber: primaryData["PO Number"] || "",
-      jcOpenDate: primaryData["JC Open Date"] || "",
-      srfDate: primaryData["SRF Date"] || "",
-      itemReceivedDate: primaryData["Item Received Date"] || "",
-      jcCloseDate: primaryData["JC Close Date"] || "",
-      jcStatus: primaryData["JC Status"] || "",
-
-      // Customer Information
-      companyName: primaryData["Company Name"] || "",
-      companyAddress: primaryData["Company Address"] || "",
-      customerName: primaryData["Customer Name"] || "",
-      customerEmail: primaryData["Customer Email"] || "",
-      customerNumber: primaryData["Customer Number"] || "",
-      projectName: primaryData["Project Name"] || "",
-
-      // Test Configuration
-      testCategory: primaryData["Test Category"] || "",
-      testDiscipline: primaryData["Test Discipline"] || "",
-      typeOfRequest: primaryData["Type of Request"] || "",
-      testInchargeName: primaryData["Test Incharge"] || "",
-      testInstructions: primaryData["Test Instructions"] || "",
-      sampleCondition: primaryData["Sample Condition"] || "",
-      reportType: primaryData["Report Type"] || "",
-      observations: primaryData["Observations"] || "",
-
-      // Table Data
-      eutRows: eutRows || [],
-      testRows: testRows || [],
-      testDetailsRows: testDetailsRows || [],
-
-      // Current test row for this specific report
-      currentTestRow: currentTestRow,
-      currentTestRowIndex: rowIndex,
-    };
-
-    console.log("Comprehensive Report Data:", comprehensiveReportData);
-
-    // Store data and open config dialog
-    setPendingReportData(comprehensiveReportData);
-    setConfigDialogOpen(true);
-  };
-
-  // Handler for report config confirmation
-  const handleReportConfigConfirm = async (reportConfig) => {
-    setConfigDialogOpen(false);
-
-    if (!pendingReportData) {
-      alert("No report data available. Please try again.");
-      return;
-    }
+    console.log("Generating report for test row:", currentTestRow);
 
     try {
-      console.log("Generating report with config:", reportConfig);
+      // Convert primaryJCDetails array to object format
+      const primaryData = {};
+      primaryJCDetails.forEach((detail) => {
+        // Extract the key from the label (e.g., "JC Number: " -> "jcNumber")
+        const key = detail.label.split(": ")[0].trim();
+        primaryData[key] = detail.value;
+      });
 
-      // Store the config for the Previous button
-      setLastReportConfig(reportConfig);
+      // Prepare comprehensive report data
+      const comprehensiveReportData = {
+        // Primary Job Card Information
+        jcNumber: jcNumber,
+        jcCategory: jcCategory,
+        srfNumber: primaryData["SRF Number"] || "",
+        dcNumber: primaryData["DC Number"] || "",
+        poNumber: primaryData["PO Number"] || "",
+        jcOpenDate: primaryData["JC Open Date"] || "",
+        srfDate: primaryData["SRF Date"] || "",
+        itemReceivedDate: primaryData["Item Received Date"] || "",
+        jcCloseDate: primaryData["JC Close Date"] || "",
+        jcStatus: primaryData["JC Status"] || "",
 
-      // Generate the report with config (including images)
+        // Customer Information
+        companyName: primaryData["Company Name"] || "",
+        companyAddress: primaryData["Company Address"] || "",
+        customerName: primaryData["Customer Name"] || "",
+        customerEmail: primaryData["Customer Email"] || "",
+        customerNumber: primaryData["Customer Number"] || "",
+        projectName: primaryData["Project Name"] || "",
+
+        // Test Configuration
+        testCategory: primaryData["Test Category"] || "",
+        testDiscipline: primaryData["Test Discipline"] || "",
+        typeOfRequest: primaryData["Type of Request"] || "",
+        testInchargeName: primaryData["Test Incharge"] || "",
+        testInstructions: primaryData["Test Instructions"] || "",
+        sampleCondition: primaryData["Sample Condition"] || "",
+        reportType: primaryData["Report Type"] || "",
+        observations: primaryData["Observations"] || "",
+
+        // Table Data
+        eutRows: eutRows || [],
+        testRows: testRows || [],
+        testDetailsRows: testDetailsRows || [],
+
+        // Current test row for this specific report
+        currentTestRow: currentTestRow,
+        currentTestRowIndex: rowIndex,
+      };
+
+      console.log("Comprehensive Report Data:", comprehensiveReportData);
+
+      // Generate the report and get the blob
       const { blob, fileName } = await generateTS1Report(
-        pendingReportData,
-        reportConfig
+        comprehensiveReportData
       );
 
       // Set the preview modal state
       setPreviewDocumentBlob(blob);
       setPreviewFileName(fileName);
       setPreviewModalOpen(true);
-
-      // Don't clear pendingReportData - keep it for Previous button
-      // setPendingReportData(null);
     } catch (error) {
       console.error("Error generating report:", error);
       alert(`Error generating report: ${error.message}`);
-      // Don't clear pending data on error either
     }
-  };
-
-  // Handler for config dialog cancellation
-  const handleReportConfigCancel = () => {
-    setConfigDialogOpen(false);
-    setPendingReportData(null);
   };
 
   // Handler for closing preview modal
@@ -246,21 +210,7 @@ export default function JCPreview({
     setTimeout(() => {
       setPreviewDocumentBlob(null);
       setPreviewFileName("");
-      // Clear all data when fully closing
-      setPendingReportData(null);
-      setLastReportConfig(null);
     }, 300);
-  };
-
-  // Handler for Previous button in preview modal
-  const handlePreviewPrevious = () => {
-    // Close preview modal
-    setPreviewModalOpen(false);
-    setPreviewDocumentBlob(null);
-    setPreviewFileName("");
-
-    // Reopen config dialog with last config
-    setConfigDialogOpen(true);
   };
 
   return (
@@ -432,7 +382,7 @@ export default function JCPreview({
                               variant="contained"
                               onClick={() => handleGenerateReport(index)}
                             >
-                              Report
+                              Create Report
                             </Button>
                           </TableCell>
                           <TableCell>{row.testReportInstructions}</TableCell>
@@ -488,19 +438,10 @@ export default function JCPreview({
         </Box>
       </Dialog>
 
-      {/* Report Configuration Dialog */}
-      <ReportConfigDialog
-        open={configDialogOpen}
-        onClose={handleReportConfigCancel}
-        onConfirm={handleReportConfigConfirm}
-        initialConfig={lastReportConfig}
-      />
-
       {/* Document Preview Modal */}
       <DocumentPreviewModal
         open={previewModalOpen}
         onClose={handleClosePreviewModal}
-        onPrevious={handlePreviewPrevious}
         documentBlob={previewDocumentBlob}
         fileName={previewFileName}
         title="TS1 Test Report Preview"

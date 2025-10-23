@@ -42,7 +42,11 @@ const Jobcard = ({ jobCardData }) => {
   const editJc = jobcardStore.editJc;
   const setEditJc = jobcardStore.setEditJc;
 
-  const steps = ["SRF Form", "Test Detils", "Observations"];
+  const steps = [
+    "SRF Form",
+    "Test Details & Observations",
+    "JC Status & Reports",
+  ];
   const totalSteps = steps.length;
 
   ////////////////////////
@@ -126,7 +130,9 @@ const Jobcard = ({ jobCardData }) => {
 
       let finYear = "";
 
-      const shortNextYear = ((currentYear + 1) % 100).toString().padStart(2, "0");
+      const shortNextYear = ((currentYear + 1) % 100)
+        .toString()
+        .padStart(2, "0");
       const shortCurrentYear = (currentYear % 100).toString().padStart(2, "0");
 
       if (currentMonth > 3) {
@@ -285,7 +291,7 @@ const Jobcard = ({ jobCardData }) => {
         </Box>
 
         <Box>
-          {activeStep === 0 && (
+          {/* {activeStep === 0 && (
             <Button
               sx={{
                 borderRadius: 1,
@@ -301,7 +307,7 @@ const Jobcard = ({ jobCardData }) => {
             >
               Import SRF Data
             </Button>
-          )}
+          )} */}
 
           <Button
             sx={{

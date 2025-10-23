@@ -163,20 +163,31 @@ export const JC_METADATA_FIELDS = [
     setterKey: "setItemReceivedDate",
     width: "30%",
   },
+];
 
+export const JC_OBSERVATIONS_FIELD = [
+  {
+    name: "observations",
+    label: "Observations",
+    type: "textArea",
+    stateKey: "observations",
+    setterKey: "setObservations",
+    width: "100%",
+    rows: 4,
+  },
+];
+
+// JC Status Fields - Function to get fields with dynamic user options
+export const getJcStatusFields = (usersOptions = []) => [
   {
     name: "testInchargeName",
     label: "JC Incharge",
     type: "select",
     stateKey: "testInchargeName",
     setterKey: "setTestInchargeName",
-    width: "30%",
-    options: [], // Will be populated dynamically from users list
+    width: "50%",
+    options: usersOptions, // Will be populated dynamically from users list
   },
-];
-
-// JC Status Fields:
-export const JC_STATUS_FIELDS = [
   {
     name: "jcCloseDate",
     label: "JC Close Date",
@@ -193,14 +204,5 @@ export const JC_STATUS_FIELDS = [
     setterKey: "setJcStatus",
     width: "50%",
     options: JOB_CARD_OPTIONS.jcStatus,
-  },
-  {
-    name: "observations",
-    label: "Observations",
-    type: "textArea",
-    stateKey: "observations",
-    setterKey: "setObservations",
-    width: "100%",
-    rows: 4,
   },
 ];
