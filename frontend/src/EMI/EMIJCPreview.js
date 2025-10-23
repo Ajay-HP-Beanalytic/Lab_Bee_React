@@ -58,8 +58,7 @@ const EMIJCPreview = ({
   editJc,
   jcId,
 }) => {
-  const { loggedInUser, loggedInUserDepartment, loggedInUserRole } =
-    useContext(UserContext);
+  const { loggedInUserDepartment, loggedInUserRole } = useContext(UserContext);
 
   const [downloadJC, setDownloadJC] = useState(false);
 
@@ -69,6 +68,8 @@ const EMIJCPreview = ({
     loggedInUserDepartment === "Accounts" ||
     loggedInUserDepartment === "Marketing" ||
     loggedInUserRole === "Quality Engineer";
+
+  const isReportsAndScrutiny = loggedInUserDepartment === "Reports & Scrutiny";
 
   const eutTableHeaderNames = [
     "Sl No",
@@ -169,7 +170,7 @@ const EMIJCPreview = ({
 
         <Divider />
 
-        {(isTS2Testing || isAdminOrAccounts) && (
+        {(isTS2Testing || isAdminOrAccounts || isReportsAndScrutiny) && (
           <>
             {eutRows && eutRows.length > 0 && (
               <TableContainer

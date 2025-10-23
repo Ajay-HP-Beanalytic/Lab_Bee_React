@@ -278,11 +278,13 @@ export default function SidenavigationBar() {
       return [1, 2, 3, 4, 5, 6, 8, 9, 10].includes(item.i);
     } else if (loggedInUserDepartment === "Marketing") {
       return [2, 3, 8, 9, 10].includes(item.i);
-    } else if (
-      loggedInUserDepartment === "TS1 Testing" ||
-      loggedInUserRole === "Reports & Scrutiny Manager"
-    ) {
+    } else if (loggedInUserDepartment === "TS1 Testing") {
       return [4, 5, 6, 7, 8].includes(item.i);
+    } else if (
+      loggedInUserRole === "Reports & Scrutiny Manager" ||
+      loggedInUserRole === "Technical Support Writer"
+    ) {
+      return [4, 5, 6, 7, 8, 9].includes(item.i);
     } else if (
       loggedInUserDepartment === "Reliability" ||
       loggedInUserDepartment === "Software"

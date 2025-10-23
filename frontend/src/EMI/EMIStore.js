@@ -1,4 +1,3 @@
-import { update } from "lodash";
 import { create } from "zustand";
 import { serverBaseAddress } from "../Pages/APIPage";
 import axios from "axios";
