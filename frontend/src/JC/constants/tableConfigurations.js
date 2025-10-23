@@ -176,6 +176,19 @@ export const TEST_PERFORMED_TABLE_COLUMNS = [
     options: [],
   },
   {
+    id: "create_ts1_report_button",
+    label: "Create Report",
+    type: "create_ts1_report_button",
+    width: "100px",
+  },
+  {
+    id: "reportPreparationStatus",
+    label: "Report Preparation Status",
+    type: "select",
+    width: "200px",
+    options: JOB_CARD_OPTIONS.reportPreparationStatus,
+  },
+  {
     id: "testReportInstructions",
     label: "Report Delivery Status",
     type: "select",

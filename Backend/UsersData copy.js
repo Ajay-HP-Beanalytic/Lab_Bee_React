@@ -1,7 +1,6 @@
 const bcrypt = require("bcrypt"); // Import bcrypt package in order to encrypt the password
 const saltRounds = 10; // Let saltRoulds be '10' for hasing purpose
 const jwt = require("jsonwebtoken"); // Import jsonwebtoken package in order to create tokens
-const crypto = require("crypto");
 
 const session = require("express-session"); // Import 'express-session' module to create user session
 const { db } = require("./db");
@@ -125,53 +124,10 @@ function usersDataAPIs(app) {
           { expiresIn: "30d" }
         );
 
-        // Set session data
         req.session.user_id = user.id;
         req.session.username = user.name;
         req.session.role = user.role;
         req.session.department = user.department;
-
-        // Track active session
-        const sessionId = req.sessionID;
-        const ipAddress = req.ip || req.connection.remoteAddress;
-        const userAgent = req.headers["user-agent"] || "";
-        const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // For 30 days
-
-        console.log("sessionId-->", sessionId);
-        console.log("ipAddress-->", ipAddress);
-        console.log("userAgent-->", userAgent);
-        console.log("expiresAt-->", expiresAt);
-
-        // Hash the token for storage
-        console.log("token is-->", token);
-        // Hash the token for storage
-        const tokenHash = crypto
-          .createHash("sha256")
-          .update(token, "utf8")
-          .digest("hex");
-        console.log("tokenHash-->", tokenHash);
-
-        const sqlInsertSession = `
-        INSERT INTO active_users_session 
-        (user_id, user_name, session_id, token_hash, created_at, last_activity, expires_at, ip_address, user_agent, revoked) 
-        VALUES (?, ?, ?, ?, NOW(), NOW(), ?, ?, ?, 0)
-      `;
-
-        db.query(
-          sqlInsertSession,
-          [
-            user.id,
-            user.name,
-            sessionId,
-            tokenHash,
-            expiresAt,
-            ipAddress,
-            userAgent,
-          ],
-          (err) => {
-            if (err) console.error("Error tracking session:", err);
-          }
-        );
 
         res.status(200).json({ username: req.session.username, token: token });
       } catch (error) {
@@ -247,19 +203,6 @@ function usersDataAPIs(app) {
 
   // api to logout from the application:
   app.get("/api/logout", (req, res) => {
-    const sessionId = req.sessionID;
-
-    // Mark session as revoked instead of deleting (better for audit trail)
-    const sqlRevokeSession = `
-    UPDATE active_user_session 
-    SET revoked = 1 
-    WHERE session_id = ?
-  `;
-
-    db.query(sqlRevokeSession, [sessionId], (err) => {
-      if (err) console.error("Error revoking session:", err);
-    });
-
     // Clear cookie
     res.clearCookie("connect.sid");
 
@@ -294,23 +237,6 @@ function usersDataAPIs(app) {
     db.query(emiUsersList, (error, result) => {
       res.send(result);
     });
-  });
-
-  //API to get reports and scrutiny team members:
-  app.get("/api/getReportsAndScrutinyUsers", (req, res) => {
-    const sql =
-      "SELECT name FROM labbee_users WHERE department LIKE ? AND (role NOT LIKE ? )";
-    db.query(
-      sql,
-      ["%Reports & Scrutiny%", "Quality Engineer"],
-      (error, result) => {
-        if (error) {
-          console.error("Error fetching Reports & Scrutiny users:", error);
-          return res.status(500).json({ error: "Internal server error" });
-        }
-        res.send(result);
-      }
-    );
   });
 
   // Fetch the Reliability department users:
@@ -377,67 +303,6 @@ function usersDataAPIs(app) {
       "SELECT name FROM labbee_users WHERE department LIKE '%Marketing%' ";
     db.query(marketingUsersList, (error, result) => {
       res.send(result);
-    });
-  });
-
-  ///////////////////////////////////////////////////////////////////////////////////
-  //API to fetch the active users
-  app.get("/api/getActiveUsers", (req, res) => {
-    const query = `
-    SELECT 
-      aus.id, 
-      aus.user_id, 
-      u.name, 
-      u.email, 
-      u.department, 
-      u.role,
-      aus.created_at as login_time, 
-      aus.last_activity,
-      aus.ip_address,
-      aus.user_agent
-    FROM active_users_session aus
-    JOIN labbee_users u ON aus.user_id = u.id
-    WHERE aus.revoked = 0 
-      AND (aus.expires_at IS NULL OR aus.expires_at > NOW())
-      AND aus.last_activity > DATE_SUB(NOW(), INTERVAL 30 MINUTE)
-    ORDER BY aus.last_activity DESC
-  `;
-
-    db.query(query, (error, results) => {
-      if (error) {
-        console.error("Error fetching active users:", error);
-        return res.status(500).json({ error: "Database error" });
-      }
-      console.log("Active users-->", results);
-      res.json({ activeUsers: results, count: results.length });
-    });
-  });
-
-  //API to fetch active TS1 loggedIn user:
-  app.get("/api/getActiveTS1Users", (req, res) => {
-    const query = `
-    SELECT
-      u.id,
-      u.name,
-      u.email,
-      u.department,
-      u.role
-    FROM active_users_session aus
-    JOIN labbee_users u ON aus.user_id = u.id
-    WHERE aus.revoked = 0
-      AND (aus.expires_at IS NULL OR aus.expires_at > NOW())
-      AND aus.last_activity > DATE_SUB(NOW(), INTERVAL 30 MINUTE)
-      AND (u.department LIKE '%TS1 Testing%' OR u.department LIKE '%Reports & Scrutiny%')
-    GROUP BY u.id
-    ORDER BY u.name ASC
-  `;
-
-    db.query(query, (error, results) => {
-      if (error) {
-        console.error("Error fetching active TS1 users:", error);
-        return res.status(500).json({ error: "Database error" });
-      }
-      res.json(results);
     });
   });
 
@@ -637,47 +502,6 @@ function usersDataAPIs(app) {
       console.error("Error resetting password:", error);
       return res.status(500).json({ message: "Internal server error" });
     }
-  });
-
-  //Cleanup Expired/Revoked Sessions
-  // Add inside usersDataAPIs function
-  // Clean up old sessions periodically
-  setInterval(() => {
-    const sqlCleanup = `
-    DELETE FROM active_users_session 
-    WHERE revoked = 1 
-      OR expires_at < DATE_SUB(NOW(), INTERVAL 7 DAY)
-      OR last_activity < DATE_SUB(NOW(), INTERVAL 30 MINUTE)
-  `;
-
-    db.query(sqlCleanup, (err, result) => {
-      if (err) {
-        console.error("Error cleaning stale sessions:", err);
-      } else if (result.affectedRows > 0) {
-        console.log(`Cleaned up ${result.affectedRows} stale sessions`);
-      }
-    });
-  }, 10 * 60 * 1000); // Run every 10 minutes
-
-  // Force logout a specific user (useful for admin)
-  app.post("/api/revokeUserSessions", (req, res) => {
-    const { user_id } = req.body;
-
-    const sqlRevokeSessions = `
-    UPDATE active_users_session 
-    SET revoked = 1 
-    WHERE user_id = ? AND revoked = 0
-  `;
-
-    db.query(sqlRevokeSessions, [user_id], (err, result) => {
-      if (err) {
-        return res.status(500).json({ error: "Failed to revoke sessions" });
-      }
-      res.json({
-        message: "User sessions revoked successfully",
-        sessionsRevoked: result.affectedRows,
-      });
-    });
   });
 }
 

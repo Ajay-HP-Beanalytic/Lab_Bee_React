@@ -35,6 +35,52 @@ const app = express();
 const server = http.createServer(app);
 // const server = https.createServer(serverOptions, app);
 
+// Middleware to validate session on each request
+const validateSession = (req, res, next) => {
+  // Skip validation for public routes (login, register, password reset)
+  const publicRoutes = [
+    "/api/login",
+    "/api/addUser",
+    "/api/checkResetPasswordEmail",
+    "/api/verifyOTP",
+    "/api/resetPassword",
+    "/api/getUserStatus",
+    "/",
+    "/api/testing",
+  ];
+
+  if (publicRoutes.includes(req.path)) {
+    return next();
+  }
+
+  if (!req.sessionID) return next();
+
+  const sqlCheckSession = `
+    SELECT revoked, expires_at
+    FROM active_users_session
+    WHERE session_id = ?
+  `;
+
+  db.query(sqlCheckSession, [req.sessionID], (err, results) => {
+    if (err || results.length === 0) return next();
+
+    const session = results[0];
+
+    // Check if revoked or expired
+    if (
+      session.revoked === 1 ||
+      (session.expires_at && new Date(session.expires_at) < new Date())
+    ) {
+      req.session.destroy();
+      return res
+        .status(401)
+        .json({ message: "Session expired or revoked", sessionInvalid: true });
+    }
+
+    next();
+  });
+};
+
 ///Make the app.connection available to the socket.io servers:
 const io = socketIo(server, {
   cors: {
@@ -121,6 +167,9 @@ app.use(
   })
 );
 
+// Apply validateSession AFTER session middleware
+app.use(validateSession);
+
 // app.use("./FilesUploaded", express.static("FilesUploaded"))
 app.use(
   "/FilesUploaded",
@@ -130,6 +179,7 @@ app.use(
 // Get all the connections from the db
 const {
   createUsersTable,
+  createActiveUsersSessionTable,
   createOtpStorageTable,
   createPasswordResetAttemptsTable,
   createBEAQuotationsTable,
@@ -188,6 +238,7 @@ db.getConnection(function (err, connection) {
 
   // call the table creating functions here:
   createUsersTable();
+  createActiveUsersSessionTable();
   createOtpStorageTable();
   createPasswordResetAttemptsTable();
   createBEAQuotationsTable();

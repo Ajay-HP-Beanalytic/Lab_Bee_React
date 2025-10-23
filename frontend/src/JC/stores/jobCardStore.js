@@ -280,7 +280,7 @@ const useJobCardStore = create(
         set({ loading: true, error: null });
         try {
           const [usersRes, testsRes] = await Promise.all([
-            axios.get(`${serverBaseAddress}/api/getTestingUsers`),
+            axios.get(`${serverBaseAddress}/api/getActiveTS1Users`),
             axios.get(
               `${serverBaseAddress}/api/getAllMappedTestNamesAndChambers`
             ),

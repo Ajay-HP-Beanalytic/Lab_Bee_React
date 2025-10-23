@@ -15,7 +15,10 @@ import {
   TEST_PERFORMED_TABLE_COLUMNS,
   ROW_TEMPLATES,
 } from "./constants/tableConfigurations";
-import { JC_METADATA_FIELDS } from "./constants/formFieldConfigurations";
+import {
+  JC_METADATA_FIELDS,
+  JC_OBSERVATIONS_FIELD,
+} from "./constants/formFieldConfigurations";
 import RenderFormFields from "../components/RenderFormFields";
 
 export default function TS1StepTwo() {
@@ -85,12 +88,8 @@ export default function TS1StepTwo() {
       {/* TEST PERFORMED DETAILS Section */}
       <Card sx={{ mb: 2 }}>
         <CardContent>
-          <Typography variant="h6" sx={{ mb: 1, color: "#003366" }}>
+          <Typography variant="h6" sx={{ mb: "20px", color: "#003366" }}>
             TESTS PERFORMED
-          </Typography>
-          <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
-            Enter details of tests performed including chamber, dates,
-            temperature, humidity, etc.
           </Typography>
 
           <Grid item xs={12} md={6} lg={6}>
@@ -111,6 +110,13 @@ export default function TS1StepTwo() {
             setDeletedIds={setDeletedTestDetailsIds}
             getColumnOptions={getColumnOptions}
           />
+
+          <Grid item xs={12} md={6} lg={6} sx={{ mt: "20px" }}>
+            <RenderFormFields
+              fields={JC_OBSERVATIONS_FIELD}
+              store={jobcardStore}
+            />
+          </Grid>
         </CardContent>
       </Card>
     </Box>

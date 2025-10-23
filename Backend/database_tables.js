@@ -31,6 +31,36 @@ async function createUsersTable() {
   });
 }
 
+//Function to track active user session
+async function createActiveUsersSessionTable() {
+  const query = `
+  CREATE TABLE IF NOT EXISTS active_users_session(
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    user_id INT NOT NULL, 
+    user_name VARCHAR(255) NOT NULL,
+    session_id CHAR(36) NOT NULL,               -- UUID or opaque id
+    token_hash VARBINARY(64) DEFAULT NULL,      -- store hashed token if applicable
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_activity TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    expires_at TIMESTAMP NULL,
+    ip_address VARCHAR(45),
+    user_agent TEXT,
+    revoked TINYINT(1) NOT NULL DEFAULT 0,
+    UNIQUE KEY uq_session_id (session_id),
+    INDEX idx_user_id (user_id),
+    INDEX idx_expires_at (expires_at),
+    FOREIGN KEY (user_id) REFERENCES labbee_users(id) ON DELETE CASCADE
+  )`;
+
+  db.query(query, async function (err, result) {
+    if (err) {
+      console.error("Error while creating active_users_session", err);
+    } else {
+      //console.log("active_users_session table created successfully.")
+    }
+  });
+}
+
 // Function to add the default admin user:
 
 async function addDefaultUser() {
@@ -1125,6 +1155,7 @@ process.on("exit", function () {
 // Export the database connection and table creation functions
 module.exports = {
   createUsersTable,
+  createActiveUsersSessionTable,
   createOtpStorageTable,
   createPasswordResetAttemptsTable,
   createBEAQuotationsTable,

@@ -49,7 +49,7 @@ export default function TS1StepOne() {
       {/* SERVICE REQUEST FORM Section */}
       <Card sx={{ mb: 2 }}>
         <CardContent>
-          <Typography variant="h6" sx={{ mb: 1, color: "#003366" }}>
+          <Typography variant="h6" sx={{ mb: "2px", color: "#003366" }}>
             SERVICE REQUEST FORM
           </Typography>
           <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
@@ -181,7 +181,7 @@ export default function TS1StepOne() {
                             {note.label}
                           </Typography>
                         }
-                        sx={{ alignItems: "flex-start", mb: 1 }}
+                        sx={{ alignItems: "flex-start" }}
                       />
                     </FormGroup>
                   </Grid>
