@@ -62,13 +62,13 @@ const formatDate = (dateValue) => {
 
   // Handle dayjs objects
   if (dayjs.isDayjs(dateValue)) {
-    return dateValue.format("DD/MM/YYYY");
+    return dateValue.format("DD-MM-YYYY");
   }
 
   // Handle Date objects or strings
   const date = dayjs(dateValue);
   if (date.isValid()) {
-    return date.format("DD/MM/YYYY");
+    return date.format("DD-MM-YYYY");
   }
 
   return "";
@@ -79,21 +79,42 @@ const formatDate = (dateValue) => {
  * @param {any} dateValue - Date value (can be dayjs, Date, or string)
  * @returns {string} Formatted datetime string
  */
-const formatDateTime = (dateValue) => {
+// const formatDateTime = (dateValue) => {
+//   if (!dateValue) return "";
+
+//   // Handle dayjs objects
+//   if (dayjs.isDayjs(dateValue)) {
+//     return dateValue.format("DD-MM-YYYY HH:mm A");
+//   }
+
+//   // Handle Date objects or strings
+//   const date = dayjs(dateValue);
+//   if (date.isValid()) {
+//     return date.format("DD-MM-YYYY HH:mm A");
+//   }
+
+//   return "";
+// };
+
+/**
+ * Format datetime values to extract only test start and end times.
+ * @param {any} dateValue - Date value (can be dayjs, DateTime, Date or string)
+ * @returns {string} Formatted time string
+ *  */
+
+const formatTime = (dateValue) => {
   if (!dateValue) return "";
 
-  // Handle dayjs objects
+  //Handle dayjs objects
   if (dayjs.isDayjs(dateValue)) {
-    return dateValue.format("DD/MM/YYYY HH:mm");
+    return dateValue.format("HH:mm A");
   }
 
-  // Handle Date objects or strings
+  //Hadle Dateobjects or strings
   const date = dayjs(dateValue);
   if (date.isValid()) {
-    return date.format("DD/MM/YYYY HH:mm");
+    return date.format("HH:mm A");
   }
-
-  return "";
 };
 
 /**
@@ -262,7 +283,8 @@ export const generateTS1Report = (comprehensiveData, reportConfig = {}) => {
         });
 
         // Generate filename
-        const reportNumber = comprehensiveData.currentTestRow?.reportNumber || "";
+        const reportNumber =
+          comprehensiveData.currentTestRow?.reportNumber || "";
         const jcNumber = comprehensiveData.jcNumber || "";
         const reportTypePrefix = reportType;
         const fileName = reportNumber
@@ -280,7 +302,10 @@ export const generateTS1Report = (comprehensiveData, reportConfig = {}) => {
         if (error.properties && error.properties.errors) {
           console.error("Template errors:", error.properties.errors);
           const errorMessages = error.properties.errors
-            .map((err) => `- ${err.message} (tag: ${err.properties?.id || "unknown"})`)
+            .map(
+              (err) =>
+                `- ${err.message} (tag: ${err.properties?.id || "unknown"})`
+            )
             .join("\n");
           reject(
             new Error(
@@ -302,7 +327,10 @@ export const generateTS1Report = (comprehensiveData, reportConfig = {}) => {
  * @param {object} comprehensiveData - Complete job card data
  * @param {object} reportConfig - Report configuration
  */
-export const downloadTS1Report = async (comprehensiveData, reportConfig = {}) => {
+export const downloadTS1Report = async (
+  comprehensiveData,
+  reportConfig = {}
+) => {
   try {
     const { blob, fileName } = await generateTS1Report(
       comprehensiveData,
@@ -363,8 +391,8 @@ export const prepareReportData = (comprehensiveData) => {
       testStartedBy: row.testStartedBy || "",
       testEndedBy: row.testEndedBy || "",
       testReviewedBy: row.testReviewedBy || "",
-      startDate: formatDateTime(row.startDate),
-      endDate: formatDateTime(row.endDate),
+      startDate: formatDate(row.startDate),
+      endDate: formatDate(row.endDate),
       duration: formatDuration(row.duration),
       actualTestDuration: formatDuration(row.actualTestDuration),
       remarks: row.remarks || "",
@@ -420,8 +448,10 @@ export const prepareReportData = (comprehensiveData) => {
     currentTest_testStartedBy: currentTest.testStartedBy || "",
     currentTest_testEndedBy: currentTest.testEndedBy || "",
     currentTest_testReviewedBy: currentTest.testReviewedBy || "",
-    currentTest_startDate: formatDateTime(currentTest.startDate),
-    currentTest_endDate: formatDateTime(currentTest.endDate),
+    currentTest_startDate: formatDate(currentTest.startDate),
+    currentTest_endDate: formatDate(currentTest.endDate),
+    currentTest_startTime: formatTime(currentTest.startDate),
+    currentTest_endTime: formatTime(currentTest.endDate),
     currentTest_duration: formatDuration(currentTest.duration),
     currentTest_actualTestDuration: formatDuration(
       currentTest.actualTestDuration
@@ -432,7 +462,7 @@ export const prepareReportData = (comprehensiveData) => {
     currentTest_reportStatus: currentTest.reportStatus || "",
 
     // ============= Report Metadata =============
-    reportGeneratedDate: dayjs().format("DD/MM/YYYY"),
+    reportGeneratedDate: dayjs().format("DD-MM-YYYY"),
     reportGeneratedTime: dayjs().format("HH:mm:ss"),
   };
 };

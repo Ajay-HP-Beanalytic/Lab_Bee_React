@@ -36,12 +36,104 @@ function jobcardsAPIs(app, io, labbeeUsers) {
     return `${year}-${month}-${day} ${hours}:${minutes}`;
   }
 
+  // Helper function to normalize dates to YYYY-MM-DD format for comparison
+  function normalizeDateForComparison(dateValue) {
+    if (!dateValue) return "";
+
+    try {
+      const dateObject = new Date(dateValue);
+      if (isNaN(dateObject.getTime())) return String(dateValue); // Invalid date, return as-is
+
+      const year = dateObject.getFullYear();
+      const month = String(dateObject.getMonth() + 1).padStart(2, "0");
+      const day = String(dateObject.getDate()).padStart(2, "0");
+
+      return `${year}-${month}-${day}`;
+    } catch (error) {
+      return String(dateValue); // On error, return as-is
+    }
+  }
+
   const getCurrentYearAndMonth = () => {
     const currentDate = new Date();
     const currentYear = currentDate.getFullYear();
     const currentMonth = currentDate.getMonth() + 1; // Adding 1 because months are zero-indexed
 
     return { currentYear, currentMonth };
+  };
+
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+  /**
+   * Helper Function: Log changes to Audit Trail
+   *
+   * @param {string} tableName - Table where change occurred (e.g., 'bea_jobcards', 'tests_details')
+   * @param {number} recordId - Primary key ID of the changed record
+   * @param {string} jcNumber - Job Card number for filtering
+   * @param {string} fieldName - Field/column that changed (null for CREATE/DELETE)
+   * @param {string} actionType - 'CREATE', 'UPDATE', 'DELETE', 'STATUS_CHANGE'
+   * @param {string} oldValue - Value before change (null for CREATE)
+   * @param {string} newValue - Value after change (null for DELETE)
+   * @param {string} changedBy - Username who made the change
+   * @param {string} userRole - User's role
+   * @param {string} userDepartment - User's department
+   * @param {string} ipAddress - IP address (optional)
+   */
+  const logAuditTrail = async (
+    tableName,
+    recordId,
+    jcNumber,
+    fieldName,
+    actionType,
+    oldValue,
+    newValue,
+    changedBy,
+    userRole,
+    userDepartment,
+    ipAddress = null
+  ) => {
+    try {
+      // Convert complex objects to JSON strings for storage
+      const oldVal =
+        typeof oldValue === "object" ? JSON.stringify(oldValue) : oldValue;
+      const newVal =
+        typeof newValue === "object" ? JSON.stringify(newValue) : newValue;
+
+      const sql = `
+        INSERT INTO ts1_job_card_audit_trail (
+          table_name,
+          record_id,
+          jc_number,
+          field_name,
+          action_type,
+          old_value,
+          new_value,
+          changed_by,
+          user_role,
+          user_department,
+          ip_address
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `;
+
+      const values = [
+        tableName,
+        recordId,
+        jcNumber,
+        fieldName,
+        actionType,
+        oldVal,
+        newVal,
+        changedBy,
+        userRole,
+        userDepartment,
+        ipAddress,
+      ];
+
+      await db.promise().query(sql, values);
+    } catch (error) {
+      console.error("❌ Error logging to audit trail:", error);
+      // Don't throw - audit logging shouldn't break the main operation
+    }
   };
 
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -106,6 +198,8 @@ function jobcardsAPIs(app, io, labbeeUsers) {
       jcCloseDate,
       observations,
       jcLastModifiedBy,
+      jcNote1Checked,
+      jcNote2Checked,
       loggedInUser,
       loggedInUserDepartment,
     } = req.body;
@@ -123,6 +217,12 @@ function jobcardsAPIs(app, io, labbeeUsers) {
       ? dayjs(jcCloseDate).format("YYYY-MM-DD")
       : null;
 
+    // Format notes acknowledged as JSON
+    const notesAcknowledged = JSON.stringify({
+      jcNote1: jcNote1Checked || false,
+      jcNote2: jcNote2Checked || false,
+    });
+
     let connection;
     try {
       // Establish a connection
@@ -131,18 +231,39 @@ function jobcardsAPIs(app, io, labbeeUsers) {
       // Start a transaction
       await connection.beginTransaction();
 
-      // Extract financial year and month part
+      // Extract financial year and month part (short format)
       const { currentYear, currentMonth } = getCurrentYearAndMonth();
+
+      // Calculate short year format (e.g., 2026 → 26)
+      const shortNextYear = ((currentYear + 1) % 100)
+        .toString()
+        .padStart(2, "0");
+      const shortCurrentYear = (currentYear % 100).toString().padStart(2, "0");
+
       let finYear =
         currentMonth > 3
-          ? `${currentYear}-${currentYear + 1}/${currentMonth}`
-          : `${currentYear - 1}-${currentYear}/${currentMonth}`;
+          ? `${currentYear}-${shortNextYear}/${currentMonth}` // e.g., "2025-26/10"
+          : `${currentYear - 1}-${shortCurrentYear}/${currentMonth}`; // e.g., "2024-25/2"
 
       let newSequenceNumber;
 
+      // Generate both old and new format patterns to search for existing JCs
+      const parts = finYear.split("-");
+      const firstYear = parts[0];
+      const [, month] = parts[1].split("/"); // Extract month, ignore short year
+      const fullYear = parseInt(firstYear) + 1;
+
+      const newFormatPattern = `${finYear}-%`; // e.g., "2025-26/10-%"
+      const oldFormatPattern = `${firstYear}-${fullYear}/${month}-%`; // e.g., "2025-2026/10-%"
+
+      // Search for both old and new formats to get the most recent JC
+      // SELECT FOR UPDATE locks the row to prevent race conditions when multiple users create JCs simultaneously
       const [recentJCs] = await connection.query(
-        `SELECT jc_number FROM bea_jobcards WHERE jc_number LIKE ? ORDER BY jc_number DESC LIMIT 1`,
-        [`${finYear}-%`]
+        `SELECT jc_number FROM bea_jobcards
+         WHERE jc_number LIKE ? OR jc_number LIKE ?
+         ORDER BY jc_number DESC LIMIT 1
+         FOR UPDATE`,
+        [newFormatPattern, oldFormatPattern]
       );
 
       if (recentJCs.length > 0) {
@@ -162,10 +283,10 @@ function jobcardsAPIs(app, io, labbeeUsers) {
 
       const sql = `INSERT INTO bea_jobcards(
             jc_number, srf_number, srf_date, dcform_number, jc_open_date, item_received_date, po_number,
-            test_category, test_discipline, sample_condition, type_of_request, report_type, test_incharge, jc_category, company_name, company_address,
+            test_category, test_discipline, sample_condition, type_of_request, report_type, notes_acknowledged, test_incharge, jc_category, company_name, company_address,
             customer_name, customer_email, customer_number, project_name, test_instructions,
             jc_status, reliability_report_status, jc_closed_date, observations, last_updated_by
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
       const values = [
         newJcNumber,
@@ -180,6 +301,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
         sampleCondition || "",
         typeOfRequest || "",
         reportType || "",
+        notesAcknowledged,
         testInchargeName || "",
         jcCategory || "",
         companyName || "",
@@ -244,9 +366,81 @@ function jobcardsAPIs(app, io, labbeeUsers) {
         srfNumber: newSrfNumber,
       });
     } catch (error) {
-      console.log(error);
+      console.error("❌ [Backend JC Creation] Error:", error);
       if (connection) await connection.rollback(); // Rollback transaction in case of error
+
+      // Check for duplicate key error (MySQL error code 1062)
+      if (error.code === "ER_DUP_ENTRY") {
+        console.error(
+          "⚠️ [Backend JC Creation] Duplicate JC number detected - possible race condition"
+        );
+        return res.status(409).json({
+          message: "JC number already exists. Please try again.",
+          error: "DUPLICATE_JC_NUMBER",
+        });
+      }
+
       return res.status(500).json({ message: "Internal server error" });
+    } finally {
+      if (connection) await connection.release(); // Release the connection back to the pool
+    }
+  });
+
+  ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  //API to delete the job-card:
+  app.delete("/api/jobcard/:id", async (req, res) => {
+    const { id } = req.params;
+
+    let connection;
+    try {
+      // Establish a connection
+      connection = await db.promise().getConnection();
+
+      //Start a transaction:
+      await connection.beginTransaction();
+
+      // Fetch the jcNumber using the job card ID
+      const [rows] = await connection.query(
+        "SELECT jc_number FROM bea_jobcards WHERE id = ?",
+        [id]
+      );
+
+      if (rows.length === 0) {
+        await connection.rollback();
+        return res.status(404).json({ message: "Jobcard not found" });
+      }
+
+      const jc_number = rows[0].jc_number;
+
+      // Delete related data from child tables first (to avoid foreign key issues)
+      await connection.query("DELETE FROM eut_details WHERE jc_number = ?", [
+        jc_number,
+      ]);
+
+      await connection.query("DELETE FROM jc_tests WHERE jc_number = ?", [
+        jc_number,
+      ]);
+      await connection.query("DELETE FROM tests_details WHERE jc_number = ?", [
+        jc_number,
+      ]);
+
+      // Delete the main job card
+      await connection.query("DELETE FROM bea_jobcards WHERE id = ?", [id]);
+
+      // Commit the transaction
+      await connection.commit();
+
+      return res.status(200).json({
+        message: "TS1 Job-Card and all related data deleted successfully",
+        jc_number: jc_number,
+      });
+    } catch (error) {
+      console.error("Error deleting Job-Card:", error);
+      if (connection) await connection.rollback(); // Rollback transaction in case of error
+      return res.status(500).json({
+        message: "Failed to delete TS1 Job-Card",
+        error: error.message,
+      });
     } finally {
       if (connection) await connection.release(); // Release the connection back to the pool
     }
@@ -436,7 +630,19 @@ function jobcardsAPIs(app, io, labbeeUsers) {
       jcLastModifiedBy,
       loggedInUser,
       loggedInUserDepartment,
+      loggedInUserRole,
     } = req.body;
+
+    // Backend validation: Only Lab Manager can set status to "Closed"
+    if (jcStatus === "Closed" && loggedInUserRole !== "Lab Manager") {
+      console.error(
+        `⚠️ Unauthorized attempt to close JC ${jcNumber} by role: ${loggedInUserRole}`
+      );
+      return res.status(403).json({
+        message: "Access denied. Only Lab Manager can close job cards.",
+        error: "UNAUTHORIZED_STATUS_CHANGE",
+      });
+    }
 
     const formattedSrfDate = srfDate ? convertDateTime(srfDate) : null;
     const formattedItemReceivedDate = itemReceivedDate
@@ -447,19 +653,20 @@ function jobcardsAPIs(app, io, labbeeUsers) {
       ? convertDateTime(jcCloseDate)
       : null;
 
-    // First, fetch the existing jcStatus from the database
-    const fetchQuery = `SELECT jc_status FROM bea_jobcards WHERE jc_number = ?`;
+    // First, fetch ALL existing values from the database for comparison
+    const fetchQuery = `SELECT * FROM bea_jobcards WHERE jc_number = ?`;
 
     db.query(fetchQuery, [jcNumber], (fetchError, fetchResult) => {
       if (fetchError) {
-        console.error("Error fetching existing jcStatus:", fetchError.message);
+        console.error("Error fetching existing job card:", fetchError.message);
         return res.status(500).json({
           message: "Internal server error",
           error: fetchError.message,
         });
       }
 
-      const existingJcStatus = fetchResult[0]?.jc_status;
+      const existingRow = fetchResult[0] || null;
+      const existingJcStatus = existingRow?.jc_status;
 
       // Proceed with the update only after fetching the current status
       const sqlQuery = `
@@ -532,6 +739,176 @@ function jobcardsAPIs(app, io, labbeeUsers) {
         if (result.affectedRows === 0) {
           console.warn("No rows updated. Check if the jc_number exists.");
           return res.status(404).json({ message: "Jobcard not found" });
+        }
+
+        // Comprehensive field-by-field audit logging for main JC
+        if (existingRow) {
+          const fieldChanges = [
+            {
+              name: "srf_number",
+              newVal: srfNumber,
+              oldVal: existingRow.srf_number,
+            },
+            {
+              name: "srf_date",
+              newVal: formattedSrfDate,
+              oldVal: existingRow.srf_date
+                ? convertDateTime(existingRow.srf_date)
+                : null,
+              isDate: true,
+            },
+            {
+              name: "dcform_number",
+              newVal: dcNumber,
+              oldVal: existingRow.dcform_number,
+            },
+            {
+              name: "jc_open_date",
+              newVal: formattedOpenDate,
+              oldVal: existingRow.jc_open_date
+                ? convertDateTime(existingRow.jc_open_date)
+                : null,
+              isDate: true,
+            },
+            {
+              name: "item_received_date",
+              newVal: formattedItemReceivedDate,
+              oldVal: existingRow.item_received_date,
+              isDate: true,
+            },
+            {
+              name: "po_number",
+              newVal: poNumber,
+              oldVal: existingRow.po_number,
+            },
+            {
+              name: "test_category",
+              newVal: testCategory,
+              oldVal: existingRow.test_category,
+            },
+            {
+              name: "test_discipline",
+              newVal: testDiscipline,
+              oldVal: existingRow.test_discipline,
+            },
+            {
+              name: "sample_condition",
+              newVal: sampleCondition,
+              oldVal: existingRow.sample_condition,
+            },
+            {
+              name: "type_of_request",
+              newVal: typeOfRequest,
+              oldVal: existingRow.type_of_request,
+            },
+            {
+              name: "report_type",
+              newVal: reportType,
+              oldVal: existingRow.report_type,
+            },
+            {
+              name: "test_incharge",
+              newVal: testInchargeName,
+              oldVal: existingRow.test_incharge,
+            },
+            {
+              name: "jc_category",
+              newVal: jcCategory,
+              oldVal: existingRow.jc_category,
+            },
+            {
+              name: "company_name",
+              newVal: companyName,
+              oldVal: existingRow.company_name,
+            },
+            {
+              name: "company_address",
+              newVal: companyAddress,
+              oldVal: existingRow.company_address,
+            },
+            {
+              name: "customer_name",
+              newVal: customerName,
+              oldVal: existingRow.customer_name,
+            },
+            {
+              name: "customer_email",
+              newVal: customerEmail,
+              oldVal: existingRow.customer_email,
+            },
+            {
+              name: "customer_number",
+              newVal: customerNumber,
+              oldVal: existingRow.customer_number,
+            },
+            {
+              name: "project_name",
+              newVal: projectName,
+              oldVal: existingRow.project_name,
+            },
+            {
+              name: "test_instructions",
+              newVal: testInstructions,
+              oldVal: existingRow.test_instructions,
+            },
+            {
+              name: "jc_status",
+              newVal: jcStatus,
+              oldVal: existingRow.jc_status,
+            },
+            {
+              name: "reliability_report_status",
+              newVal: reliabilityReportStatus,
+              oldVal: existingRow.reliability_report_status,
+            },
+            {
+              name: "jc_closed_date",
+              newVal: formattedCloseDate,
+              oldVal: existingRow.jc_closed_date
+                ? convertDateTime(existingRow.jc_closed_date)
+                : null,
+              isDate: true,
+            },
+            {
+              name: "observations",
+              newVal: observations,
+              oldVal: existingRow.observations,
+            },
+          ];
+
+          // Log each changed field
+          fieldChanges.forEach((field) => {
+            // For date fields, normalize to YYYY-MM-DD for comparison to avoid time zone issues
+            let oldValue, newValue;
+
+            if (field.isDate) {
+              oldValue = normalizeDateForComparison(field.oldVal);
+              newValue = normalizeDateForComparison(field.newVal);
+            } else {
+              oldValue = String(field.oldVal || "");
+              newValue = String(field.newVal || "");
+            }
+
+            if (oldValue !== newValue) {
+              // Use STATUS_CHANGE for jc_status, UPDATE for others
+              const actionType =
+                field.name === "jc_status" ? "STATUS_CHANGE" : "UPDATE";
+
+              logAuditTrail(
+                "bea_jobcards",
+                req.params.id,
+                jcNumber,
+                field.name,
+                actionType,
+                field.oldVal,
+                field.newVal,
+                loggedInUser,
+                loggedInUserRole,
+                loggedInUserDepartment,
+                req.ip
+              );
+            }
+          });
         }
 
         // Now, trigger notifications only if the jcStatus has changed
@@ -663,14 +1040,49 @@ function jobcardsAPIs(app, io, labbeeUsers) {
         .json({ Message: "Valid Financial Year is required" });
     }
 
-    let sql = `SELECT COUNT(*) FROM bea_jobcards WHERE jc_number LIKE ?`;
+    // Generate both old and new format patterns
+    // finYear comes in new format like "2025-26/10"
+    // We need to also search old format like "2025-2026/10"
 
-    db.query(sql, [`${finYear}%`], (error, result) => {
+    const parts = finYear.split("-");
+    if (parts.length !== 2 || !parts[1].includes("/")) {
+      return res.status(400).json({ Message: "Invalid Financial Year format" });
+    }
+
+    const firstYear = parts[0]; // "2025"
+    const [shortYear, month] = parts[1].split("/"); // "26", "10"
+
+    // Convert short year to full year for old format
+    const fullYear = parseInt(firstYear) + 1; // 2026
+
+    const newFormatPattern = `${finYear}-%`; // "2025-26/10-%"
+    const oldFormatPattern = `${firstYear}-${fullYear}/${month}-%`; // "2025-2026/10-%"
+
+    // Find the last JC number (same logic as JC creation)
+    // This correctly handles gaps in JC numbers after deletion
+    let sql = `SELECT jc_number FROM bea_jobcards
+               WHERE jc_number LIKE ? OR jc_number LIKE ?
+               ORDER BY jc_number DESC LIMIT 1`;
+
+    db.query(sql, [newFormatPattern, oldFormatPattern], (error, result) => {
       if (error) {
-        console.log(error);
+        console.error("❌ [getJCCount] Database error:", error);
         return res.status(500).json({ message: "Database Error" });
       } else {
-        return res.status(200).json(result[0]["COUNT(*)"]);
+        let sequenceNumber = 0;
+
+        if (result.length > 0) {
+          // Extract sequence number from the last JC (e.g., "2025-26/10-003" -> 3)
+          const lastJcNumber = result[0].jc_number;
+
+          const lastSequence = parseInt(lastJcNumber.split("-")[2], 10);
+          sequenceNumber = lastSequence;
+        } else {
+          console.log("📋 [getJCCount] No existing JCs found, starting from 0");
+        }
+
+        // Return the current sequence number (frontend will add 1)
+        return res.status(200).json(sequenceNumber);
       }
     });
   });
@@ -763,12 +1175,15 @@ function jobcardsAPIs(app, io, labbeeUsers) {
       modelNo,
       serialNo,
       jcNumber,
+      loggedInUser,
+      loggedInUserRole,
+      loggedInUserDepartment,
     } = req.body;
 
     if (eutRowId !== undefined) {
-      // Check if the row exists with the given jcNumber and eutRowId
+      // Fetch ALL existing values for audit trail comparison
       const checkIfExistsQuery =
-        "SELECT id FROM eut_details WHERE jc_number=? AND id=?";
+        "SELECT * FROM eut_details WHERE jc_number=? AND id=?";
       db.query(
         checkIfExistsQuery,
         [jcNumber, eutRowId],
@@ -781,6 +1196,8 @@ function jobcardsAPIs(app, io, labbeeUsers) {
 
           if (checkResult.length > 0) {
             // Row exists, so update it
+            const existingRow = checkResult[0];
+
             const updateQuery = `UPDATE eut_details SET
                     nomenclature = ?,
                     eutDescription = ?,
@@ -808,6 +1225,62 @@ function jobcardsAPIs(app, io, labbeeUsers) {
                   error: updateError,
                 });
               } else {
+                // Comprehensive audit logging for EUT details
+                const fieldChanges = [
+                  {
+                    name: "nomenclature",
+                    newVal: nomenclature || "",
+                    oldVal: existingRow.nomenclature || "",
+                  },
+                  {
+                    name: "eutDescription",
+                    newVal: eutDescription || "",
+                    oldVal: existingRow.eutDescription || "",
+                  },
+                  {
+                    name: "qty",
+                    newVal: qty || "",
+                    oldVal: existingRow.qty || "",
+                  },
+                  {
+                    name: "partNo",
+                    newVal: partNo || "",
+                    oldVal: existingRow.partNo || "",
+                  },
+                  {
+                    name: "modelNo",
+                    newVal: modelNo || "",
+                    oldVal: existingRow.modelNo || "",
+                  },
+                  {
+                    name: "serialNo",
+                    newVal: serialNo || "",
+                    oldVal: existingRow.serialNo || "",
+                  },
+                ];
+
+                // Log each changed field
+                fieldChanges.forEach((field) => {
+                  const oldValue = String(field.oldVal || "");
+                  const newValue = String(field.newVal || "");
+
+                  if (oldValue !== newValue) {
+                    logAuditTrail(
+                      "eut_details",
+                      eutRowId,
+                      jcNumber,
+                      field.name,
+                      "UPDATE",
+                      field.oldVal,
+                      field.newVal,
+                      loggedInUser || "Unknown",
+                      loggedInUserRole,
+                      loggedInUserDepartment,
+                      null
+                    );
+                  }
+                });
+
                 return res.status(200).json({
                   message: "eut_details updated successfully",
                   result: updateResult,
@@ -928,12 +1401,22 @@ function jobcardsAPIs(app, io, labbeeUsers) {
 
   // To Edit the selected tests:
   app.post("/api/tests/", (req, res) => {
-    const { testId, test, nabl, testStandard, testProfile, jcNumber } =
-      req.body;
+    const {
+      testId,
+      test,
+      nabl,
+      testStandard,
+      testProfile,
+      jcNumber,
+      loggedInUser,
+      loggedInUserRole,
+      loggedInUserDepartment,
+    } = req.body;
 
     if (testId !== undefined) {
+      // Fetch ALL existing values for audit trail comparison
       const checkIfExistsQuery =
-        "SELECT id FROM jc_tests WHERE jc_number=? AND id=?";
+        "SELECT * FROM jc_tests WHERE jc_number=? AND id=?";
       db.query(
         checkIfExistsQuery,
         [jcNumber, testId],
@@ -946,12 +1429,14 @@ function jobcardsAPIs(app, io, labbeeUsers) {
 
           if (checkResult.length > 0) {
             // Row exists, so update it
+            const existingRow = checkResult[0];
+
             const updateQuery = `
                     UPDATE jc_tests
                     SET
-                        test = ?, 
-                        nabl = ?, 
-                        testStandard = ?, 
+                        test = ?,
+                        nabl = ?,
+                        testStandard = ?,
                         testProfile = ?
                     WHERE jc_number = ? AND id = ?`;
             const updateValues = [
@@ -970,6 +1455,52 @@ function jobcardsAPIs(app, io, labbeeUsers) {
                   error: updateError,
                 });
               } else {
+                // Comprehensive audit logging for JC tests
+                const fieldChanges = [
+                  {
+                    name: "test",
+                    newVal: test || "",
+                    oldVal: existingRow.test || "",
+                  },
+                  {
+                    name: "nabl",
+                    newVal: nabl || "",
+                    oldVal: existingRow.nabl || "",
+                  },
+                  {
+                    name: "testStandard",
+                    newVal: testStandard || "",
+                    oldVal: existingRow.testStandard || "",
+                  },
+                  {
+                    name: "testProfile",
+                    newVal: testProfile || "",
+                    oldVal: existingRow.testProfile || "",
+                  },
+                ];
+
+                // Log each changed field
+                fieldChanges.forEach((field) => {
+                  const oldValue = String(field.oldVal || "");
+                  const newValue = String(field.newVal || "");
+
+                  if (oldValue !== newValue) {
+                    logAuditTrail(
+                      "jc_tests",
+                      testId,
+                      jcNumber,
+                      field.name,
+                      "UPDATE",
+                      field.oldVal,
+                      field.newVal,
+                      loggedInUser || "Unknown",
+                      loggedInUserRole,
+                      loggedInUserDepartment,
+                      null
+                    );
+                  }
+                });
+
                 return res.status(200).json({
                   message: "Test updated successfully",
                   result: updateResult,
@@ -1115,6 +1646,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
       testEndedBy,
       remarks,
       testReviewedBy,
+      reportPreparationStatus,
       testReportInstructions,
       reportNumber,
       preparedBy,
@@ -1122,13 +1654,16 @@ function jobcardsAPIs(app, io, labbeeUsers) {
       reportStatus,
       jcNumber,
       loggedInUser,
+      loggedInUserRole,
+      loggedInUserDepartment,
     } = req.body;
 
     const formattedStartDate = startDate ? convertDateTime(startDate) : null;
     const formattedEndDate = endDate ? convertDateTime(endDate) : null;
     const formattedDuration = duration < 0 ? 0 : duration;
 
-    const sqlFetchQuery = `SELECT testName, testReportInstructions, reportStatus FROM tests_details WHERE id = ?`;
+    // Fetch ALL current values for comparison
+    const sqlFetchQuery = `SELECT * FROM tests_details WHERE id = ?`;
 
     db.query(sqlFetchQuery, [testDetailRowId], (error, results) => {
       if (error) {
@@ -1192,6 +1727,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
           testEndedBy = ?,
           remarks = ?,
           testReviewedBy = ?,
+          reportPreparationStatus = ?,
           testReportInstructions = ?,
           reportNumber = ?,
           preparedBy = ?,
@@ -1215,13 +1751,14 @@ function jobcardsAPIs(app, io, labbeeUsers) {
           testEndedBy,
           remarks,
           testReviewedBy,
+          reportPreparationStatus,
           testReportInstructions,
           reportNumber,
           preparedBy,
           nablUploaded,
           reportStatus,
           jc_number
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
       const updateValues = [
         testCategory || "",
@@ -1238,6 +1775,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
         testEndedBy || "",
         remarks || "",
         testReviewedBy || "",
+        reportPreparationStatus || "",
         testReportInstructions || "",
         reportNumber || "",
         preparedBy || "",
@@ -1262,6 +1800,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
         testEndedBy || "",
         remarks || "",
         testReviewedBy || "",
+        reportPreparationStatus || "",
         testReportInstructions || "",
         reportNumber || "",
         preparedBy || "",
@@ -1291,6 +1830,140 @@ function jobcardsAPIs(app, io, labbeeUsers) {
               }
             });
           } else {
+            // Comprehensive field-by-field audit logging
+            if (existingRow) {
+              // Define field mapping: new value -> old value from DB
+              const fieldChanges = [
+                {
+                  name: "testCategory",
+                  newVal: testCategory || "",
+                  oldVal: existingRow.testCategory || "",
+                },
+                {
+                  name: "testName",
+                  newVal: testName || "",
+                  oldVal: existingRow.testName || "",
+                },
+                {
+                  name: "testChamber",
+                  newVal: testChamber || "",
+                  oldVal: existingRow.testChamber || "",
+                },
+                {
+                  name: "eutSerialNo",
+                  newVal: eutSerialNo || "",
+                  oldVal: existingRow.eutSerialNo || "",
+                },
+                {
+                  name: "standard",
+                  newVal: standard || "",
+                  oldVal: existingRow.standard || "",
+                },
+                {
+                  name: "testStartedBy",
+                  newVal: testStartedBy || "",
+                  oldVal: existingRow.testStartedBy || "",
+                },
+                {
+                  name: "startDate",
+                  newVal: formattedStartDate,
+                  oldVal: existingRow.startDate
+                    ? convertDateTime(existingRow.startDate)
+                    : null,
+                },
+                {
+                  name: "endDate",
+                  newVal: formattedEndDate,
+                  oldVal: existingRow.endDate
+                    ? convertDateTime(existingRow.endDate)
+                    : null,
+                },
+                {
+                  name: "duration",
+                  newVal: formattedDuration,
+                  oldVal: existingRow.duration || 0,
+                },
+                {
+                  name: "actualTestDuration",
+                  newVal: actualTestDuration || "",
+                  oldVal: existingRow.actualTestDuration || "",
+                },
+                {
+                  name: "unit",
+                  newVal: unit || "",
+                  oldVal: existingRow.unit || "",
+                },
+                {
+                  name: "testEndedBy",
+                  newVal: testEndedBy || "",
+                  oldVal: existingRow.testEndedBy || "",
+                },
+                {
+                  name: "remarks",
+                  newVal: remarks || "",
+                  oldVal: existingRow.remarks || "",
+                },
+                {
+                  name: "testReviewedBy",
+                  newVal: testReviewedBy || "",
+                  oldVal: existingRow.testReviewedBy || "",
+                },
+                {
+                  name: "reportPreparationStatus",
+                  newVal: reportPreparationStatus || "",
+                  oldVal: existingRow.reportPreparationStatus || "",
+                },
+                {
+                  name: "testReportInstructions",
+                  newVal: testReportInstructions || "",
+                  oldVal: existingRow.testReportInstructions || "",
+                },
+                {
+                  name: "reportNumber",
+                  newVal: reportNumber || "",
+                  oldVal: existingRow.reportNumber || "",
+                },
+                {
+                  name: "preparedBy",
+                  newVal: preparedBy || "",
+                  oldVal: existingRow.preparedBy || "",
+                },
+                {
+                  name: "nablUploaded",
+                  newVal: nablUploaded || "",
+                  oldVal: existingRow.nablUploaded || "",
+                },
+                {
+                  name: "reportStatus",
+                  newVal: reportStatus || "",
+                  oldVal: existingRow.reportStatus || "",
+                },
+              ];
+
+              // Log each changed field
+              fieldChanges.forEach((field) => {
+                // Convert to strings for comparison
+                const oldValue = String(field.oldVal || "");
+                const newValue = String(field.newVal || "");
+
+                if (oldValue !== newValue) {
+                  logAuditTrail(
+                    "tests_details",
+                    testDetailRowId,
+                    jcNumber,
+                    field.name,
+                    "UPDATE",
+                    field.oldVal,
+                    field.newVal,
+                    loggedInUser || "Unknown",
+                    loggedInUserRole,
+                    loggedInUserDepartment,
+                    null // IP not available
+                  );
+                }
+              });
+            }
+
             let reportDeliveryMessage = "";
             let reportStatusMessage = "";
 
@@ -1375,7 +2048,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
   //To fetch the data based on the jcnumber from the table 'tests_details'
   app.get("/api/gettestdetailslist/:jc_number", (req, res) => {
     const jcnumber = req.params.jc_number;
-    const sqlQuery = `SELECT  testName,testChamber,eutSerialNo,standard,testStartedBy,startDate,endDate,duration, actualTestDuration, unit,testEndedBy,remarks, testReviewedBy, testReportInstructions, reportNumber,preparedBy,nablUploaded, reportStatus FROM tests_details  WHERE jc_number = ?`;
+    const sqlQuery = `SELECT  testName,testChamber,eutSerialNo,standard,testStartedBy,startDate,endDate,duration, actualTestDuration, unit,testEndedBy,remarks, testReviewedBy, reportPreparationStatus, testReportInstructions, reportNumber,preparedBy,nablUploaded, reportStatus FROM tests_details  WHERE jc_number = ?`;
 
     db.query(sqlQuery, [jcnumber], (error, result) => {
       if (error) {
@@ -2558,6 +3231,51 @@ function jobcardsAPIs(app, io, labbeeUsers) {
         }
       });
     });
+  });
+
+  //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+  // API: Fetch Audit Trail for a specific Job Card
+  //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+  app.get("/api/jobcard/audittrail/:jc_number", async (req, res) => {
+    try {
+      const { jc_number } = req.params;
+
+      const sql = `
+        SELECT
+          id,
+          table_name,
+          record_id,
+          jc_number,
+          field_name,
+          action_type,
+          old_value,
+          new_value,
+          changed_by,
+          user_role,
+          user_department,
+          changed_at,
+          ip_address
+        FROM ts1_job_card_audit_trail
+        WHERE jc_number = ?
+        ORDER BY changed_at DESC
+      `;
+
+      const [results] = await db.promise().query(sql, [jc_number]);
+
+      return res.status(200).json({
+        success: true,
+        count: results.length,
+        auditTrail: results,
+      });
+    } catch (error) {
+      console.error("❌ Error fetching audit trail:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Failed to fetch audit trail",
+        error: error.message,
+      });
+    }
   });
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////

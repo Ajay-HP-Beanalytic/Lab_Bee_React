@@ -340,6 +340,7 @@ function createJobcardsTable() {
         sample_condition VARCHAR(100),
         type_of_request VARCHAR(100),
         report_type VARCHAR(100),
+        notes_acknowledged JSON DEFAULT NULL,
         test_incharge VARCHAR(100),
         jc_category VARCHAR(500),
         company_name VARCHAR(1000),
@@ -459,6 +460,7 @@ function createTestDetailsTable() {
         testEndedBy VARCHAR(500),
         remarks VARCHAR(2000),
         testReviewedBy VARCHAR(500),
+        reportPreparationStatus VARCHAR(500),
         testReportInstructions VARCHAR(1000),
         reportNumber VARCHAR(500),
         preparedBy VARCHAR(500),
@@ -472,6 +474,53 @@ function createTestDetailsTable() {
       console.log("Error occurred while creating tests_details table", err);
     } else {
       //console.log("tests_details table created successfully.")
+    }
+  });
+}
+
+////////////////////////////////////////////////////////////////////////////////////
+// Function to create TS1 Job Card Audit Trail table
+function createTS1JobCardAuditTrailTable() {
+  const createAuditTrailTableQuery = `
+    CREATE TABLE IF NOT EXISTS ts1_job_card_audit_trail (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+
+      -- What was changed
+      table_name VARCHAR(100) NOT NULL COMMENT 'Table where change occurred (bea_jobcards, eut_details, etc.)',
+      record_id INT COMMENT 'Primary key ID of the changed record',
+      jc_number VARCHAR(100) NOT NULL COMMENT 'Job Card number for easy filtering',
+      field_name VARCHAR(100) COMMENT 'Specific field/column that changed',
+
+      -- Change details
+      action_type ENUM('CREATE', 'UPDATE', 'DELETE', 'STATUS_CHANGE') NOT NULL COMMENT 'Type of change',
+      old_value TEXT COMMENT 'Value before change',
+      new_value TEXT COMMENT 'Value after change',
+
+      -- Who and when
+      changed_by VARCHAR(255) NOT NULL COMMENT 'Username who made the change',
+      user_role VARCHAR(100) COMMENT 'Role of user at time of change',
+      user_department VARCHAR(100) COMMENT 'Department of user at time of change',
+      changed_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'Timestamp of change',
+
+      -- Additional context
+      ip_address VARCHAR(45) COMMENT 'IP address of user (for security)',
+
+      -- Indexes for fast queries
+      INDEX idx_jc_number (jc_number),
+      INDEX idx_table_record (table_name, record_id),
+      INDEX idx_changed_at (changed_at),
+      INDEX idx_changed_by (changed_by),
+      INDEX idx_action_type (action_type)
+    ) COMMENT='Audit trail for all TS1 Job Card changes - immutable log for compliance'`;
+
+  db.query(createAuditTrailTableQuery, function (err, result) {
+    if (err) {
+      console.log(
+        "Error occurred while creating ts1_job_card_audit_trail table",
+        err
+      );
+    } else {
+      // console.log("ts1_job_card_audit_trail table created successfully.");
     }
   });
 }
@@ -1171,6 +1220,7 @@ module.exports = {
   createEutDetailsTable,
   createJobcardTestsTable,
   createTestDetailsTable,
+  createTS1JobCardAuditTrailTable,
 
   createChambersForSlotBookingTable,
   createSlotBookingTable,

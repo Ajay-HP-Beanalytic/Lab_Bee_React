@@ -87,24 +87,12 @@ export default function TS1StepOne() {
               <Divider component="hr" sx={{ my: 1 }} />
             </Grid>
 
-            {/* Test Configuration Fields - 2 columns */}
-            <Grid item xs={12} sm={6} md={6}>
-              <RenderFormFields
-                fields={TEST_CONFIG_FIELDS.slice(
-                  0,
-                  Math.ceil(TEST_CONFIG_FIELDS.length / 2)
-                )}
-                store={jobcardStore}
-              />
-            </Grid>
-
-            <Grid item xs={12} sm={6} md={6}>
-              <RenderFormFields
-                fields={TEST_CONFIG_FIELDS.slice(
-                  Math.ceil(TEST_CONFIG_FIELDS.length / 2)
-                )}
-                store={jobcardStore}
-              />
+            <Grid container spacing={2}>
+              {TEST_CONFIG_FIELDS.map((field) => (
+                <Grid item xs={12} sm={6} md={6} lg={4} key={field.name}>
+                  <RenderFormFields fields={[field]} store={jobcardStore} />
+                </Grid>
+              ))}
             </Grid>
 
             {/* File Attachments */}
@@ -154,6 +142,7 @@ export default function TS1StepOne() {
                                 ? jobcardStore.jcNote1Checked
                                 : jobcardStore.jcNote2Checked
                             }
+                            disabled={jobcardStore.editJc}
                             onChange={(e) => {
                               if (note.value === "jcNote1") {
                                 jobcardStore.setJcNote1Checked(

@@ -147,6 +147,18 @@ const useJobCardStore = create(
        * Load entire job card data (for editing)
        */
       loadJobCardData: (data) => {
+        // Parse notes_acknowledged JSON
+        let notesAcknowledged = { jcNote1: false, jcNote2: false };
+        if (data.notes_acknowledged) {
+          try {
+            notesAcknowledged = typeof data.notes_acknowledged === 'string'
+              ? JSON.parse(data.notes_acknowledged)
+              : data.notes_acknowledged;
+          } catch (error) {
+            console.error("Error parsing notes_acknowledged:", error);
+          }
+        }
+
         set({
           jcNumberString: data.jc_number || "",
           srfNumber: data.srf_number || "",
@@ -160,6 +172,8 @@ const useJobCardStore = create(
           jcCloseDate: data.jc_closed_date ? dayjs(data.jc_closed_date) : null,
           jcCategory: data.jc_category || "",
           jcStatus: data.jc_status || "Open",
+          jcNote1Checked: notesAcknowledged.jcNote1 || false,
+          jcNote2Checked: notesAcknowledged.jcNote2 || false,
           companyName: data.company_name || "",
           companyAddress: data.company_address || "",
           customerName: data.customer_name || "",

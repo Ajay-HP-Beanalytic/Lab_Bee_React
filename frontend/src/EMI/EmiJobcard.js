@@ -190,7 +190,8 @@ export default function EmiJobcard() {
     try {
       let response;
 
-      if (editingJC && id) {
+      // Check if there's an id from URL params to determine if we're editing
+      if (id) {
         // If editing an existing Job-Card, make a PUT request to the update endpoint
         response = await axios.put(
           `${serverBaseAddress}/api/EMIJobcard/${id}`,
@@ -287,7 +288,10 @@ export default function EmiJobcard() {
           const formattedNewJCNumber = `${yearPart}/${monthSection}-${newJCNumberPart}`;
 
           setNewJCNumber(formattedNewJCNumber);
-          setEditingJC(false);
+          // Only set editingJC to false if there's no id in the URL
+          if (!id) {
+            setEditingJC(false);
+          }
         } else {
           console.log("Failed to fetch latest JC number");
         }
@@ -297,7 +301,7 @@ export default function EmiJobcard() {
     };
 
     fetchLatestJCNumber();
-  }, [loggedInUser]);
+  }, [loggedInUser, id]);
 
   const populateData = (data) => {
     // Populate Step One data (emiEutData and emiTestsData tables)
@@ -368,9 +372,12 @@ export default function EmiJobcard() {
   };
 
   useEffect(() => {
-    setEditingJC(true);
-    fetchJCData();
-  }, [editingJC]);
+    // Only fetch JC data if there's an id in the URL (edit mode)
+    if (id) {
+      setEditingJC(true);
+      fetchJCData();
+    }
+  }, [id]);
 
   ///////////////////////////////////////////////////////////////////////////////////////
 

@@ -51,7 +51,7 @@ const Jobcard = ({ jobCardData }) => {
 
   ////////////////////////
 
-  const { loggedInUser, loggedInUserDepartment } = useContext(UserContext);
+  const { loggedInUser, loggedInUserDepartment, loggedInUserRole } = useContext(UserContext);
 
   const [addNewJcToLastMonth, setAddNewJcToLastMonth] = useState(false);
   const [lastMonthJcNumberString, setLastMonthJcNumberString] = useState("");
@@ -143,6 +143,9 @@ const Jobcard = ({ jobCardData }) => {
         finYear = `${currentYear - 1}-${shortCurrentYear}/${currentMonth}`;
       }
 
+      console.log("📋 [Jobcard.js] CREATE MODE - Generating new JC number");
+      console.log("📅 [Jobcard.js] finYear:", finYear);
+
       //fetch the latest jcnumber count
       const fetchJCCount = async () => {
         axios
@@ -150,18 +153,28 @@ const Jobcard = ({ jobCardData }) => {
           .then((res) => {
             if (res.status === 200) {
               const count = res.data;
+              console.log("📊 [Jobcard.js] Count received from backend:", count);
+
               //generate jcnumber dynamically
               const dynamicJcNumberString = `${finYear}-${(count + 1)
                 .toString()
                 .padStart(3, "0")}`;
+
+              console.log("✅ [Jobcard.js] Generated JC Number:", dynamicJcNumberString);
+
               jobcardStore.setJcNumberString(dynamicJcNumberString);
 
               //generate srf number
               jobcardStore.setSrfNumber(`BEA/TR/SRF/${dynamicJcNumberString}`);
+
+              console.log("✅ [Jobcard.js] JC Number set in store");
             }
             if (res.status === 500) {
               console.log(res.status);
             }
+          })
+          .catch((error) => {
+            console.error("❌ [Jobcard.js] Error fetching JC count:", error);
           });
       };
 
@@ -189,10 +202,21 @@ const Jobcard = ({ jobCardData }) => {
       jobcardStore.testRows,
       jobcardStore.testDetailsRows,
       loggedInUserDepartment,
+      loggedInUserRole,
       id
     );
 
     if (result.success) {
+      console.log("✅ [Jobcard.js] JC submitted successfully!");
+      console.log("🔢 [Jobcard.js] New JC Number from backend:", result.jcNumber);
+      console.log("🔢 [Jobcard.js] Old JC Number in store:", jobcardStore.jcNumberString);
+
+      // Update store with the actual JC number returned from backend
+      if (result.jcNumber) {
+        jobcardStore.setJcNumberString(result.jcNumber);
+        console.log("✅ [Jobcard.js] Store updated with new JC number:", result.jcNumber);
+      }
+
       // Clear persisted data from localStorage after successful submission
       jobcardStore.resetJobCard();
 
@@ -211,28 +235,53 @@ const Jobcard = ({ jobCardData }) => {
       if (lastJCNumber) {
         //Extract the number part from the last jc number:
         const lastJCNumberArray = lastJCNumber.split("-");
-        const jcNumberPart = lastJCNumberArray[2];
-        const jcNumberToIncrement = parseInt(jcNumberPart, 10);
 
-        // Increment the JC number
-        const newJcNumber = jcNumberToIncrement + 1;
-        const newJcNumberPadded = newJcNumber.toString().padStart(3, "0"); // Pad with leading zeros if needed
+        // Extract year parts (handle both old and new formats)
+        const firstYear = lastJCNumberArray[0]; // e.g., "2025"
+        const secondPart = lastJCNumberArray[1]; // e.g., "2026/10" or "26/10"
 
-        // Construct the new JC number
-        const newJCNumberForLastMonth = `${lastJCNumberArray[0]}-${lastJCNumberArray[1]}-${newJcNumberPadded}`;
+        // Convert to short format if it's in old format (4 digits)
+        let shortSecondYear;
+        if (secondPart.includes("/")) {
+          const [yearPart, monthPart] = secondPart.split("/");
+          // Check if year is in old format (4 digits) or new format (2 digits)
+          if (yearPart.length === 4) {
+            // Old format: convert 2026 to 26
+            shortSecondYear = (parseInt(yearPart) % 100)
+              .toString()
+              .padStart(2, "0");
+          } else {
+            // Already in new format
+            shortSecondYear = yearPart;
+          }
+          // Reconstruct with short format
+          const finYearMonth = `${firstYear}-${shortSecondYear}/${monthPart}`;
 
-        toast.info(
-          "last JC Number for Previous Month: " +
-            lastJCNumber +
-            "\n" +
-            "New JC Number for Previous Month: " +
-            newJCNumberForLastMonth
-        );
-        setAddNewJcToLastMonth(true);
-        jobcardStore.setJcNumberString(newJCNumberForLastMonth);
-        jobcardStore.setSrfNumber(`BEA/TR/SRF/${newJCNumberForLastMonth}`);
-        setNewJcNumberStringForLastMonth(newJCNumberForLastMonth);
-        setNewSrfNumberForLastMonth(`BEA/TR/SRF/${newJCNumberForLastMonth}`);
+          const jcNumberPart = lastJCNumberArray[2];
+          const jcNumberToIncrement = parseInt(jcNumberPart, 10);
+
+          // Increment the JC number
+          const newJcNumber = jcNumberToIncrement + 1;
+          const newJcNumberPadded = newJcNumber.toString().padStart(3, "0");
+
+          // Construct the new JC number in short format
+          const newJCNumberForLastMonth = `${finYearMonth}-${newJcNumberPadded}`;
+
+          toast.info(
+            "Last JC Number for Previous Month: " +
+              lastJCNumber +
+              "\n" +
+              "New JC Number for Previous Month: " +
+              newJCNumberForLastMonth
+          );
+          setAddNewJcToLastMonth(true);
+          jobcardStore.setJcNumberString(newJCNumberForLastMonth);
+          jobcardStore.setSrfNumber(`BEA/TR/SRF/${newJCNumberForLastMonth}`);
+          setNewJcNumberStringForLastMonth(newJCNumberForLastMonth);
+          setNewSrfNumberForLastMonth(`BEA/TR/SRF/${newJCNumberForLastMonth}`);
+        } else {
+          toast.error("Error: Invalid JC Number format");
+        }
       } else {
         toast.error("Error: Last JC Number of Previous Month not found");
       }

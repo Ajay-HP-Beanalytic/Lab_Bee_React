@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import {
   Box,
   Button,
@@ -10,6 +10,7 @@ import {
   MenuItem,
   Select,
   Typography,
+  IconButton,
 } from "@mui/material";
 import SearchBar from "../common/SearchBar";
 import DateRangeFilter from "../common/DateRangeFilter";
@@ -27,6 +28,9 @@ import { EMIJCContext } from "./EMIJCContext";
 import EMITestNamesAndStandards from "./EMITestNamesAndStandards";
 import EMIStandardsManager from "./EMIStandardsManager";
 import EMITestNamesManager from "./EMITestNamesManager";
+import DeleteIcon from "@mui/icons-material/Delete";
+import ConfirmationDialog from "../common/ConfirmationDialog";
+import { toast } from "react-toastify";
 
 export default function EMIJCDashboard() {
   const location = useLocation();
@@ -92,6 +96,10 @@ export default function EMIJCDashboard() {
   const [fetchedEMIJCTestDetailsData, setFetchedEMIJCTestDetailsData] =
     useState([]);
 
+  // State for delete confirmation dialog
+  const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+  const [jcToDelete, setJcToDelete] = useState(null);
+
   //Function to fetch the data of the selected JC from the database:
   useEffect(() => {
     if (jcId) {
@@ -149,6 +157,41 @@ export default function EMIJCDashboard() {
   const onClearSearchInputOfJC = () => {
     setSearchInputTextOfJC("");
     setFilteredJcData(emiJCTableData);
+  };
+
+  //Function to delete the selected JC across database table by admin:
+  const handleOpenDeleteSelectedJobcard = (id) => {
+    setJcToDelete(id);
+    setOpenDeleteDialog(true);
+  };
+
+  const handleCloseDeleteDialog = () => {
+    setOpenDeleteDialog(false);
+    setJcToDelete(null);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!jcToDelete) return;
+
+    try {
+      const response = await axios.delete(
+        `${serverBaseAddress}/api/EMIJobcard/${jcToDelete}`
+      );
+
+      if (response.status === 200) {
+        toast.success("Job-Card deleted successfully");
+        setOpenDeleteDialog(false);
+        setJcToDelete(null);
+        // Refresh the table data
+        setRefresh(!refresh);
+      }
+    } catch (error) {
+      console.error("Error deleting Job-Card:", error);
+      toast.error(
+        error.response?.data?.message ||
+          "Failed to delete Job-Card. Please try again."
+      );
+    }
   };
 
   //Table columns
@@ -209,6 +252,33 @@ export default function EMIJCDashboard() {
       headerAlign: "center",
       headerClassName: "custom-header-color",
     },
+    // Conditionally add Actions column only for Administration department
+    ...(loggedInUserDepartment === "Administration"
+      ? [
+          {
+            field: "actions",
+            headerName: "Actions",
+            width: 100,
+            align: "center",
+            headerAlign: "center",
+            headerClassName: "custom-header-color",
+            renderCell: (params) => (
+              <div>
+                <IconButton
+                  onClick={(e) => {
+                    e.stopPropagation(); // Prevent row click event
+                    handleOpenDeleteSelectedJobcard(params.row.id);
+                  }}
+                  color="error"
+                  title="Delete Job Card"
+                >
+                  <DeleteIcon />
+                </IconButton>
+              </div>
+            ),
+          },
+        ]
+      : []),
   ];
 
   const addSerialNumbersToRows = (data) => {
@@ -661,15 +731,15 @@ export default function EMIJCDashboard() {
             ) : (
               <Box
                 sx={{
-                  height: 500,
-                  width: "100%",
+                  "height": 500,
+                  "width": "100%",
                   "& .custom-header-color": {
                     backgroundColor: "#476f95",
                     color: "whitesmoke",
                     fontWeight: "bold",
                     fontSize: "15px",
                   },
-                  mt: 2,
+                  "mt": 2,
                 }}
               >
                 <DataGrid
@@ -740,6 +810,17 @@ export default function EMIJCDashboard() {
           </Grid>
         </Grid>
       </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmationDialog
+        open={openDeleteDialog}
+        onClose={handleCloseDeleteDialog}
+        onConfirm={handleConfirmDelete}
+        dialogTitle="Delete Job-Card"
+        contentText="Are you sure you want to delete this Job-Card? This action will permanently delete the job card and all its associated data (EUT details, test details, and test performed records). This action cannot be undone."
+        confirmButtonText="Delete"
+        cancelButtonText="Cancel"
+      />
     </>
   );
 }
