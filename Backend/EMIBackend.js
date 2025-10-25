@@ -332,6 +332,74 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
   });
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////
+  //API to delete EMI jobcard and all related data:
+
+  app.delete("/api/EMIJobcard/:id", async (req, res) => {
+    const { id } = req.params; // Retrieve job card ID from the URL
+
+    let connection;
+    try {
+      // Establish a connection
+      connection = await db.promise().getConnection();
+
+      // Start a transaction
+      await connection.beginTransaction();
+
+      // Fetch the jcNumber using the job card ID
+      const [rows] = await connection.query(
+        `SELECT jcNumber FROM emi_jobcards WHERE id = ?`,
+        [id]
+      );
+
+      if (rows.length === 0) {
+        await connection.rollback();
+        return res.status(404).json({ message: "Job card not found" });
+      }
+
+      const jcNumber = rows[0].jcNumber;
+
+      // Delete related data from child tables first (to avoid foreign key issues)
+      // Delete test details
+      await connection.query(
+        `DELETE FROM emi_tests_details_table WHERE jcNumber = ?`,
+        [jcNumber]
+      );
+
+      // Delete tests
+      await connection.query(
+        `DELETE FROM emi_tests_table WHERE jcNumber = ?`,
+        [jcNumber]
+      );
+
+      // Delete EUT data
+      await connection.query(
+        `DELETE FROM emi_eut_table WHERE jcNumber = ?`,
+        [jcNumber]
+      );
+
+      // Finally, delete the main job card
+      await connection.query(`DELETE FROM emi_jobcards WHERE id = ?`, [id]);
+
+      // Commit the transaction
+      await connection.commit();
+
+      return res.status(200).json({
+        message: "Job-Card and all related data deleted successfully",
+        jcNumber: jcNumber,
+      });
+    } catch (error) {
+      console.error("Error deleting Job-Card:", error);
+      if (connection) await connection.rollback(); // Rollback transaction in case of error
+      return res.status(500).json({
+        message: "Failed to delete Job-Card",
+        error: error.message,
+      });
+    } finally {
+      if (connection) await connection.release(); // Release the connection back to the pool
+    }
+  });
+
+  //////////////////////////////////////////////////////////////////////////////////////////////////////////
   //API to edit and update the jobcard details:
 
   app.put("/api/EMIJobcard/:id", async (req, res) => {

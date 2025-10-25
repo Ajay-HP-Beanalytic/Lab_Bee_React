@@ -299,7 +299,11 @@ const DocumentPreviewModal = ({
           Close
         </Button>
         {onPrevious && (
-          <Button onClick={handlePrevious} variant="contained" color="secondary">
+          <Button
+            onClick={handlePrevious}
+            variant="contained"
+            color="secondary"
+          >
             Previous
           </Button>
         )}

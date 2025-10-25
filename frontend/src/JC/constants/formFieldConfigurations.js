@@ -51,7 +51,7 @@ export const CUSTOMER_INFO_FIELDS = [
   {
     name: "customerNumber",
     label: "Contact Number",
-    type: "tel",
+    type: "textField",
     stateKey: "customerNumber",
     setterKey: "setCustomerNumber",
     width: "100%",
@@ -83,7 +83,7 @@ export const TEST_CONFIG_FIELDS = [
     type: "select",
     stateKey: "testCategory",
     setterKey: "setTestCategory",
-    width: "50%",
+    width: "100%",
     options: JOB_CARD_OPTIONS.testCategory,
     showLabel: true,
   },
@@ -93,7 +93,7 @@ export const TEST_CONFIG_FIELDS = [
     type: "select",
     stateKey: "testDiscipline",
     setterKey: "setTestDiscipline",
-    width: "50%",
+    width: "100%",
     options: JOB_CARD_OPTIONS.testDiscipline,
     showLabel: true,
   },
@@ -113,7 +113,7 @@ export const TEST_CONFIG_FIELDS = [
     type: "select",
     stateKey: "sampleCondition",
     setterKey: "setSampleCondition",
-    width: "50%",
+    width: "100%",
     options: JOB_CARD_OPTIONS.sampleCondition,
     showLabel: true,
   },
@@ -123,7 +123,7 @@ export const TEST_CONFIG_FIELDS = [
     type: "select",
     stateKey: "reportType",
     setterKey: "setReportType",
-    width: "50%",
+    width: "100%",
     options: JOB_CARD_OPTIONS.reportType,
     showLabel: true,
   },
@@ -178,31 +178,50 @@ export const JC_OBSERVATIONS_FIELD = [
 ];
 
 // JC Status Fields - Function to get fields with dynamic user options
-export const getJcStatusFields = (usersOptions = []) => [
-  {
-    name: "testInchargeName",
-    label: "JC Incharge",
-    type: "select",
-    stateKey: "testInchargeName",
-    setterKey: "setTestInchargeName",
-    width: "50%",
-    options: usersOptions, // Will be populated dynamically from users list
-  },
-  {
-    name: "jcCloseDate",
-    label: "JC Close Date",
-    type: "datePicker",
-    stateKey: "jcCloseDate",
-    setterKey: "setJcCloseDate",
-    width: "50%",
-  },
-  {
-    name: "jcStatus",
-    label: "JC Status",
-    type: "select",
-    stateKey: "jcStatus",
-    setterKey: "setJcStatus",
-    width: "50%",
-    options: JOB_CARD_OPTIONS.jcStatus,
-  },
-];
+export const getJcStatusFields = (
+  usersOptions = [],
+  loggedInUserRole = "",
+  jobcardStatus = null
+) => {
+  // Filter JC Status options based on user role
+  // Only Lab Manager can set status to "Closed"
+  const jcStatusOptions =
+    loggedInUserRole === "Lab Manager"
+      ? JOB_CARD_OPTIONS.jcStatus
+      : JOB_CARD_OPTIONS.jcStatus.filter((option) => option.id !== "Closed");
+
+  return [
+    {
+      name: "testInchargeName",
+      label: "JC Incharge",
+      type: "select",
+      stateKey: "testInchargeName",
+      setterKey: "setTestInchargeName",
+      width: "100%",
+      options: usersOptions, // Will be populated dynamically from users list
+    },
+
+    {
+      name: "jcStatus",
+      label: "JC Status",
+      type: "select",
+      stateKey: "jcStatus",
+      setterKey: "setJcStatus",
+      width: "100%",
+      options: jcStatusOptions, // Filtered based on user role
+    },
+
+    ...(jobcardStatus === "Closed"
+      ? [
+          {
+            name: "jcCloseDate",
+            label: "JC Close Date",
+            type: "datePicker",
+            stateKey: "jcCloseDate",
+            setterKey: "setJcCloseDate",
+            width: "100%",
+          },
+        ]
+      : []),
+  ];
+};

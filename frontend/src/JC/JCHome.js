@@ -8,11 +8,10 @@ import {
   FormControl,
   Grid,
   InputLabel,
-  List,
-  ListItem,
   MenuItem,
   Select,
   Typography,
+  IconButton,
 } from "@mui/material";
 
 import { serverBaseAddress } from "../Pages/APIPage";
@@ -27,6 +26,9 @@ import Loader from "../common/Loader";
 import { UserContext } from "../Pages/UserContext";
 import JCPreview from "./JCPreview";
 import { CreatePieChart } from "../functions/DashboardFunctions";
+import DeleteIcon from "@mui/icons-material/Delete";
+import ConfirmationDialog from "../common/ConfirmationDialog";
+import { toast } from "react-toastify";
 
 export default function JCHome() {
   const location = useLocation();
@@ -101,6 +103,10 @@ export default function JCHome() {
   const [editJc, setEditJc] = useState(false);
 
   const { loggedInUser, loggedInUserDepartment } = useContext(UserContext);
+
+  // State for delete confirmation dialog
+  const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+  const [jcToDelete, setJcToDelete] = useState(null);
 
   // Fetch and update the JC using useEffect
   useEffect(() => {
@@ -371,6 +377,41 @@ export default function JCHome() {
     return <div>Error: {error.message}</div>;
   }
 
+  //Function to delete the selected JC across database table by admin:
+  const handleOpenDeleteSelectedJobcard = (id) => {
+    setJcToDelete(id);
+    setOpenDeleteDialog(true);
+  };
+
+  const handleCloseDeleteDialog = () => {
+    setOpenDeleteDialog(false);
+    setJcToDelete(null);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!jcToDelete) return;
+
+    try {
+      const response = await axios.delete(
+        `${serverBaseAddress}/api/Jobcard/${jcToDelete}`
+      );
+
+      if (response.status === 200) {
+        toast.success("Job-Card deleted successfully");
+        setOpenDeleteDialog(false);
+        setJcToDelete(null);
+        // Refresh the table data
+        setRefresh(!refresh);
+      }
+    } catch (error) {
+      console.error("Error deleting Job-Card:", error);
+      toast.error(
+        error.response?.data?.message ||
+          "Failed to delete Job-Card. Please try again."
+      );
+    }
+  };
+
   //Table columns
   const columns = [
     {
@@ -429,6 +470,33 @@ export default function JCHome() {
       headerAlign: "center",
       headerClassName: "custom-header-color",
     },
+    // Conditionally add Actions column only for Administration department
+    ...(loggedInUserDepartment === "Administration"
+      ? [
+          {
+            field: "actions",
+            headerName: "Actions",
+            width: 100,
+            align: "center",
+            headerAlign: "center",
+            headerClassName: "custom-header-color",
+            renderCell: (params) => (
+              <div>
+                <IconButton
+                  onClick={(e) => {
+                    e.stopPropagation(); // Prevent row click event
+                    handleOpenDeleteSelectedJobcard(params.row.id);
+                  }}
+                  color="error"
+                  title="Delete Job Card"
+                >
+                  <DeleteIcon />
+                </IconButton>
+              </div>
+            ),
+          },
+        ]
+      : []),
   ];
 
   const addSerialNumbersToRows = (data) => {
@@ -818,6 +886,17 @@ export default function JCHome() {
           />
         )}
       </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmationDialog
+        open={openDeleteDialog}
+        onClose={handleCloseDeleteDialog}
+        onConfirm={handleConfirmDelete}
+        dialogTitle="Delete Job-Card"
+        contentText="Are you sure you want to delete this Job-Card? This action will permanently delete the job card and all its associated data (EUT details, test details, and test performed records). This action cannot be undone."
+        confirmButtonText="Delete"
+        cancelButtonText="Cancel"
+      />
     </>
   );
 }

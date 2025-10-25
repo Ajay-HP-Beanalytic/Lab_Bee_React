@@ -195,6 +195,7 @@ const {
   createEutDetailsTable,
   createJobcardTestsTable,
   createTestDetailsTable,
+  createTS1JobCardAuditTrailTable,
   createChambersForSlotBookingTable,
   createSlotBookingTable,
   createPoStatusTable,
@@ -255,6 +256,7 @@ db.getConnection(function (err, connection) {
   createEutDetailsTable();
   createJobcardTestsTable();
   createTestDetailsTable();
+  createTS1JobCardAuditTrailTable();
 
   createChambersForSlotBookingTable();
   createSlotBookingTable();

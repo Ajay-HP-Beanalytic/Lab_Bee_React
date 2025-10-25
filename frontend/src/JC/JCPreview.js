@@ -25,6 +25,7 @@ import { UserContext } from "../Pages/UserContext";
 import JobCardComponent from "./JobCardComponent";
 import DocumentPreviewModal from "../components/DocumentPreviewModal";
 import ReportConfigDialog from "../components/ReportConfigDialog";
+import AuditHistoryDialog from "../components/AuditHistoryDialog";
 import { generateTS1Report } from "./TS1ReportDocument";
 
 const Transition = forwardRef(function Transition(props, ref) {
@@ -76,6 +77,9 @@ export default function JCPreview({
   const [pendingReportData, setPendingReportData] = useState(null);
   const [lastReportConfig, setLastReportConfig] = useState(null); // Store last config for Previous button
 
+  // State for audit history dialog
+  const [auditHistoryOpen, setAuditHistoryOpen] = useState(false);
+
   const isTS1Testing = loggedInUserDepartment === "TS1 Testing";
   const isReportsAndScrutiny = loggedInUserDepartment === "Reports & Scrutiny";
   const isReliability = loggedInUserDepartment === "Reliability";
@@ -115,12 +119,13 @@ export default function JCPreview({
     "Test Ended By",
     "Remarks",
     "Test Reviewed By",
+    "Report Prepartion Status",
     "Report",
     "Test Report Delivery Instructions",
     "Report Number",
     "Report Prepared By",
     "NABL Uploaded",
-    "Report Status",
+    "Report Delivery Status",
   ];
 
   const tableHeaderStyle = {
@@ -435,6 +440,7 @@ export default function JCPreview({
                               Report
                             </Button>
                           </TableCell>
+                          <TableCell>{row.reportPreparationStatus}</TableCell>
                           <TableCell>{row.testReportInstructions}</TableCell>
                           <TableCell>{row.reportNumber}</TableCell>
                           <TableCell>{row.preparedBy}</TableCell>
@@ -449,7 +455,7 @@ export default function JCPreview({
             </>
           )}
 
-        {/* Buttons for Edit/Update and Download */}
+        {/* Buttons for Edit/Update, View History, Download, and Close */}
         <Box sx={{ display: "flex", justifyContent: "center", mt: 3 }}>
           <Button
             sx={{
@@ -465,6 +471,22 @@ export default function JCPreview({
             onClick={onEditJC}
           >
             Edit/Update
+          </Button>
+
+          {/* View History Button */}
+          <Button
+            sx={{
+              borderRadius: 3,
+              mx: 0.5,
+              mb: 1,
+              bgcolor: "orange",
+              color: "white",
+              borderColor: "black",
+            }}
+            variant="contained"
+            onClick={() => setAuditHistoryOpen(true)}
+          >
+            View History
           </Button>
 
           {/* Download JC Button */}
@@ -504,6 +526,13 @@ export default function JCPreview({
         documentBlob={previewDocumentBlob}
         fileName={previewFileName}
         title="TS1 Test Report Preview"
+      />
+
+      {/* Audit History Dialog */}
+      <AuditHistoryDialog
+        open={auditHistoryOpen}
+        onClose={() => setAuditHistoryOpen(false)}
+        jcNumber={jcNumber}
       />
     </>
   );

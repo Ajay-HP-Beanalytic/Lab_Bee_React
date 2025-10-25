@@ -251,7 +251,7 @@ function usersDataAPIs(app) {
 
     // Mark session as revoked instead of deleting (better for audit trail)
     const sqlRevokeSession = `
-    UPDATE active_user_session 
+    UPDATE active_users_session 
     SET revoked = 1 
     WHERE session_id = ?
   `;
@@ -641,13 +641,13 @@ function usersDataAPIs(app) {
 
   //Cleanup Expired/Revoked Sessions
   // Add inside usersDataAPIs function
-  // Clean up old sessions periodically
+  // Clean up old sessions periodically (every 9 hours)
   setInterval(() => {
     const sqlCleanup = `
-    DELETE FROM active_users_session 
-    WHERE revoked = 1 
+    DELETE FROM active_users_session
+    WHERE revoked = 1
       OR expires_at < DATE_SUB(NOW(), INTERVAL 7 DAY)
-      OR last_activity < DATE_SUB(NOW(), INTERVAL 30 MINUTE)
+      OR last_activity < DATE_SUB(NOW(), INTERVAL 9 HOUR)
   `;
 
     db.query(sqlCleanup, (err, result) => {
@@ -657,7 +657,7 @@ function usersDataAPIs(app) {
         console.log(`Cleaned up ${result.affectedRows} stale sessions`);
       }
     });
-  }, 10 * 60 * 1000); // Run every 10 minutes
+  }, 9 * 60 * 60 * 1000); // Run every 9 hours (matches inactivity timeout)
 
   // Force logout a specific user (useful for admin)
   app.post("/api/revokeUserSessions", (req, res) => {
