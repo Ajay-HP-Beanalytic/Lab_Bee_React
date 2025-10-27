@@ -470,6 +470,7 @@ function App() {
                   "Accounts",
                   "TS2 Testing",
                   "Marketing",
+                  "Reports & Scrutiny",
                 ]}
                 allowedRoles={["Quality Engineer"]}
               >

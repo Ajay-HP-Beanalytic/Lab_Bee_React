@@ -100,22 +100,25 @@ export const TEST_PERFORMED_TABLE_COLUMNS = [
   {
     id: "testCategory",
     label: "Test Category",
-    type: "select",
-    width: "300px",
+    type: "autocomplete",
+    width: 1000,
+    align: "center",
     options: [],
   },
   {
     id: "testName",
     label: "Test Name",
-    type: "select",
-    width: "300px",
+    type: "autocomplete",
+    width: 1000,
+    align: "center",
     options: [], // Will be populated dynamically from testNames
   },
   {
     id: "testChamber",
     label: "Chamber",
-    type: "select",
-    width: "200px",
+    type: "autocomplete",
+    width: 1000,
+    align: "center",
     options: [], // Will be populated dynamically from chambers list
   },
   {
@@ -146,14 +149,14 @@ export const TEST_PERFORMED_TABLE_COLUMNS = [
     id: "startDate",
     label: "Start Date Time",
     type: "dateTime",
-    width: 1500,
+    width: 1000,
     align: "center",
   },
   {
     id: "endDate",
     label: "End Date Time",
     type: "dateTime",
-    width: 1500,
+    width: 1000,
     align: "center",
   },
   {

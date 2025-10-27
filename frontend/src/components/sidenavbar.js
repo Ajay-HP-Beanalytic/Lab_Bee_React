@@ -284,7 +284,7 @@ export default function SidenavigationBar() {
       loggedInUserRole === "Reports & Scrutiny Manager" ||
       loggedInUserRole === "Technical Support Writer"
     ) {
-      return [4, 5, 6, 7, 8, 9].includes(item.i);
+      return [4, 5, 6, 7, 8, 9, 11].includes(item.i);
     } else if (
       loggedInUserDepartment === "Reliability" ||
       loggedInUserDepartment === "Software"

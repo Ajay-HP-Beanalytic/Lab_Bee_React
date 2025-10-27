@@ -136,20 +136,11 @@ function usersDataAPIs(app) {
         const ipAddress = req.ip || req.connection.remoteAddress;
         const userAgent = req.headers["user-agent"] || "";
         const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // For 30 days
-
-        console.log("sessionId-->", sessionId);
-        console.log("ipAddress-->", ipAddress);
-        console.log("userAgent-->", userAgent);
-        console.log("expiresAt-->", expiresAt);
-
-        // Hash the token for storage
-        console.log("token is-->", token);
         // Hash the token for storage
         const tokenHash = crypto
           .createHash("sha256")
           .update(token, "utf8")
           .digest("hex");
-        console.log("tokenHash-->", tokenHash);
 
         const sqlInsertSession = `
         INSERT INTO active_users_session 
@@ -408,7 +399,6 @@ function usersDataAPIs(app) {
         console.error("Error fetching active users:", error);
         return res.status(500).json({ error: "Database error" });
       }
-      console.log("Active users-->", results);
       res.json({ activeUsers: results, count: results.length });
     });
   });

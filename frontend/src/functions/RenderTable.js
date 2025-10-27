@@ -13,6 +13,7 @@ import {
   TableContainer,
   Box,
   Button,
+  Autocomplete,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import RemoveIcon from "@mui/icons-material/Remove";
@@ -23,7 +24,6 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { EMIJCContext } from "../EMI/EMIJCContext";
 import ObservationForms from "../EMI/ObservationForms";
 import { generateTS1Report } from "../JC/TS1ReportDocument";
-import DocumentPreviewModal from "../components/DocumentPreviewModal";
 import useJobCardStore from "../JC/stores/jobCardStore";
 
 const RenderTable = ({
@@ -52,11 +52,6 @@ const RenderTable = ({
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedFormType, setSelectedFormType] = useState("");
   const [selectedRowIndex, setSelectedRowIndex] = useState(null);
-
-  // State for document preview modal
-  const [previewModalOpen, setPreviewModalOpen] = useState(false);
-  const [previewDocumentBlob, setPreviewDocumentBlob] = useState(null);
-  const [previewFileName, setPreviewFileName] = useState("");
 
   // IMPORTANT CHANGE: Remove the dependency between stepOneFormData and testPerformedTableRows
   // Instead, pass them separately to components that need them
@@ -154,85 +149,6 @@ const RenderTable = ({
     setSelectedFormType(formType);
     setSelectedRowIndex(rowIndex);
     setDialogOpen(true);
-  };
-
-  // Handler for generating TS1 report
-  const handleGenerateReport = async (rowIndex) => {
-    const row = tableRows[rowIndex];
-
-    console.log("row data is-->", row);
-
-    // Gather all comprehensive job card data
-    const comprehensiveReportData = {
-      // ============= Primary Job Card Information =============
-      jcNumber: jobcardStore.jcNumberString,
-      srfNumber: jobcardStore.srfNumber,
-      dcNumber: jobcardStore.dcNumber,
-      poNumber: jobcardStore.poNumber,
-      jcOpenDate: jobcardStore.jcOpenDate,
-      srfDate: jobcardStore.srfDate,
-      itemReceivedDate: jobcardStore.itemReceivedDate,
-      jcCloseDate: jobcardStore.jcCloseDate,
-      jcCategory: jobcardStore.jcCategory,
-      jcStatus: jobcardStore.jcStatus,
-
-      // ============= Customer Information =============
-      companyName: jobcardStore.companyName,
-      companyAddress: jobcardStore.companyAddress,
-      customerName: jobcardStore.customerName,
-      customerEmail: jobcardStore.customerEmail,
-      customerNumber: jobcardStore.customerNumber,
-      projectName: jobcardStore.projectName,
-
-      // ============= Test Configuration =============
-      testCategory: jobcardStore.testCategory,
-      testDiscipline: jobcardStore.testDiscipline,
-      typeOfRequest: jobcardStore.typeOfRequest,
-      testInchargeName: jobcardStore.testInchargeName,
-      testInstructions: jobcardStore.testInstructions,
-      sampleCondition: jobcardStore.sampleCondition,
-      reportType: jobcardStore.reportType,
-      observations: jobcardStore.observations,
-
-      // ============= Table Data =============
-      // EUT/DUT table rows
-      eutRows: jobcardStore.eutRows || [],
-
-      // Tests table rows
-      testRows: jobcardStore.testRows || [],
-
-      // All test details rows
-      testDetailsRows: jobcardStore.testDetailsRows || [],
-
-      // ============= Current Test Row (for which report is being generated) =============
-      currentTestRow: row,
-      currentTestRowIndex: rowIndex,
-    };
-
-    console.log("Comprehensive Report Data:", comprehensiveReportData);
-
-    try {
-      // Generate the report and get the blob
-      const { blob, fileName } = await generateTS1Report(comprehensiveReportData);
-
-      // Set the preview modal state
-      setPreviewDocumentBlob(blob);
-      setPreviewFileName(fileName);
-      setPreviewModalOpen(true);
-    } catch (error) {
-      console.error("Error generating report:", error);
-      alert(`Error generating report: ${error.message}`);
-    }
-  };
-
-  // Handler for closing preview modal
-  const handleClosePreviewModal = () => {
-    setPreviewModalOpen(false);
-    // Clear the blob after a delay to allow smooth closing animation
-    setTimeout(() => {
-      setPreviewDocumentBlob(null);
-      setPreviewFileName("");
-    }, 300);
   };
 
   const tableHeaderStyle = { backgroundColor: "#006699", fontWeight: "bold" };
@@ -341,6 +257,48 @@ const RenderTable = ({
                           );
                         })()}
                       </Select>
+                    ) : column.type === "autocomplete" ? (
+                      <Autocomplete
+                        freeSolo
+                        value={row[column.id] || ""}
+                        onChange={(event, newValue) => {
+                          // newValue can be a string (typed) or an object (selected)
+                          const finalValue = typeof newValue === 'object' && newValue !== null
+                            ? (newValue.id || newValue.label || newValue.value || newValue)
+                            : newValue;
+                          handleInputChange(rowIndex, column.id, finalValue);
+                        }}
+                        onInputChange={(event, newInputValue) => {
+                          // Handle typing - only when user is typing (not when selecting)
+                          if (event?.type === 'change') {
+                            handleInputChange(rowIndex, column.id, newInputValue);
+                          }
+                        }}
+                        options={(() => {
+                          // Use dynamic options if callback is provided, otherwise use static options
+                          const options = getColumnOptions
+                            ? getColumnOptions(column, row)
+                            : column.options || [];
+
+                          // Convert options to proper format
+                          return Array.isArray(options)
+                            ? options.map((option) => {
+                                if (typeof option === "string") {
+                                  return option;
+                                } else {
+                                  return option.label || option.value || option;
+                                }
+                              })
+                            : [];
+                        })()}
+                        renderInput={(params) => (
+                          <TextField
+                            {...params}
+                            fullWidth
+                            placeholder="Select or type..."
+                          />
+                        )}
+                      />
                     ) : column.type === "dateTime" ? (
                       <LocalizationProvider dateAdapter={AdapterDayjs}>
                         <DateTimePicker
@@ -390,14 +348,6 @@ const RenderTable = ({
                       >
                         Open OF
                       </Button>
-                    ) : column.type === "create_ts1_report_button" ? (
-                      <Button
-                        variant="outlined"
-                        onClick={() => handleGenerateReport(rowIndex)}
-                        fullWidth
-                      >
-                        Create Report
-                      </Button>
                     ) : (
                       ""
                     )}
@@ -439,15 +389,6 @@ const RenderTable = ({
         formType={selectedFormType}
         commonData={commonData} // Pass any common data
         rowIndex={selectedRowIndex} // Pass the rowIndex
-      />
-
-      {/* Document Preview Modal */}
-      <DocumentPreviewModal
-        open={previewModalOpen}
-        onClose={handleClosePreviewModal}
-        documentBlob={previewDocumentBlob}
-        fileName={previewFileName}
-        title="TS1 Test Report Preview"
       />
     </>
   );
