@@ -295,7 +295,7 @@ db.getConnection(function (err, connection) {
 
 // backend connection of users API's from 'UsersData' page:
 const { usersDataAPIs } = require("./UsersData");
-usersDataAPIs(app);
+usersDataAPIs(app, io, labbeeUsers);
 
 // backend connection from 'BEAQuotationsTable' page:
 const { mainQuotationsTableAPIs } = require("./BEAQuotationsTable");

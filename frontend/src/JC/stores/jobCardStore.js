@@ -56,6 +56,7 @@ const useJobCardStore = create(
       customerEmail: "",
       customerNumber: "",
       projectName: "",
+      testWitnessedBy: "",
 
       // ============= Test Configuration =============
       testCategory: "",
@@ -109,6 +110,7 @@ const useJobCardStore = create(
       setCustomerEmail: (value) => set({ customerEmail: value }),
       setCustomerNumber: (value) => set({ customerNumber: value }),
       setProjectName: (value) => set({ projectName: value }),
+      setTestWitnessedBy: (value) => set({ testWitnessedBy: value }),
 
       // ============= Actions: Test Configuration =============
       setTestCategory: (value) => set({ testCategory: value }),
@@ -151,9 +153,10 @@ const useJobCardStore = create(
         let notesAcknowledged = { jcNote1: false, jcNote2: false };
         if (data.notes_acknowledged) {
           try {
-            notesAcknowledged = typeof data.notes_acknowledged === 'string'
-              ? JSON.parse(data.notes_acknowledged)
-              : data.notes_acknowledged;
+            notesAcknowledged =
+              typeof data.notes_acknowledged === "string"
+                ? JSON.parse(data.notes_acknowledged)
+                : data.notes_acknowledged;
           } catch (error) {
             console.error("Error parsing notes_acknowledged:", error);
           }
@@ -179,11 +182,12 @@ const useJobCardStore = create(
           customerName: data.customer_name || "",
           customerEmail: data.customer_email || "",
           customerNumber: data.customer_number || "",
+          testWitnessedBy: data.test_witnessed_by || "",
           projectName: data.project_name || "",
           testCategory: data.test_category || "",
           testDiscipline: data.test_discipline || "",
           typeOfRequest: data.type_of_request || "",
-          testInchargeName: data.test_incharge_name || "",
+          testInchargeName: data.test_incharge || "",
           testInstructions: data.test_instructions || "",
           sampleCondition: data.sample_condition || "",
           reportType: data.report_type || "",
@@ -216,6 +220,7 @@ const useJobCardStore = create(
           customerName: "",
           customerEmail: "",
           customerNumber: "",
+          testWitnessedBy: "",
           projectName: "",
           testCategory: "",
           testDiscipline: "",
@@ -258,6 +263,7 @@ const useJobCardStore = create(
           customerName: state.customerName,
           customerEmail: state.customerEmail,
           customerNumber: state.customerNumber,
+          testWitnessedBy: state.testWitnessedBy,
           projectName: state.projectName,
           testCategory: state.testCategory,
           testDiscipline: state.testDiscipline,
@@ -285,6 +291,31 @@ const useJobCardStore = create(
       setTestChambers: (testChambers) => set({ testChambers }),
       setLoading: (loading) => set({ loading }),
       setError: (error) => set({ error }),
+
+      /**
+       * Refresh only the users list
+       * Called when login/logout events occur via Socket.IO
+       * Fetches only active (logged-in) users for dropdowns
+       */
+      refreshUsers: async () => {
+        try {
+          const usersRes = await axios.get(
+            `${serverBaseAddress}/api/getActiveTS1Users`
+          );
+
+          if (usersRes.status === 200) {
+            const usersData = usersRes.data.map((user) => ({
+              id: user.id,
+              name: user.name,
+              email: user.email,
+              department: user.department,
+            }));
+            set({ users: usersData });
+          }
+        } catch (error) {
+          console.error("Error refreshing users:", error);
+        }
+      },
 
       /**
        * Load all dynamic data (users, chambers, tests)
@@ -405,14 +436,34 @@ const useJobCardStore = create(
 
       /**
        * Get users as options for dropdowns
+       * Returns active users + current assigned user (if not in active list)
        */
       getUsersAsOptions: () => {
         const state = get();
-        return state.users.map((user) => ({
+        const userOptions = state.users.map((user) => ({
           id: user.id,
           label: user.name,
           value: user.name,
         }));
+
+        // If editing, ensure current testInchargeName is in options
+        // (Material-UI Select requires value to be in options to display it)
+        if (state.editJc && state.testInchargeName) {
+          const currentValueExists = userOptions.some(
+            (opt) => opt.value === state.testInchargeName
+          );
+
+          if (!currentValueExists) {
+            // Add current user to options so it displays
+            userOptions.unshift({
+              id: state.testInchargeName,
+              label: state.testInchargeName,
+              value: state.testInchargeName,
+            });
+          }
+        }
+
+        return userOptions;
       },
 
       /**
@@ -575,6 +626,7 @@ const useJobCardStore = create(
         customerName: state.customerName,
         customerEmail: state.customerEmail,
         customerNumber: state.customerNumber,
+        testWitnessedBy: state.testWitnessedBy,
         projectName: state.projectName,
 
         // Test Configuration

@@ -6,8 +6,8 @@ import dayjs from "dayjs";
 import ImageModule from "docxtemplater-image-module-free";
 
 // Import TS1 Report Templates
-import LT_REPORT_TEMPLATE_NABL from "../templates/Report_Templates/LT_REPORT_TEMPLATE_NABL.docx";
-import LT_REPORT_TEMPLATE_NON_NABL from "../templates/Report_Templates/LT_REPORT_TEMPLATE_NON_NABL.docx";
+import TS1_MASTER_NABL_REPORT_TEMPLATE from "../templates/Report_Templates/TS1_MASTER_NABL_REPORT_TEMPLATE.docx";
+import TS1_MASTER_NON_NABL_REPORT_TEMPLATE from "../templates/Report_Templates/TS1_MASTER_NON_NABL_REPORT_TEMPLATE.docx";
 
 /**
  * Utility function to load a file using PizZipUtils
@@ -152,7 +152,10 @@ const formatDuration = (minutes) => {
  * @param {object} reportConfig - Report configuration from ReportConfigDialog
  * @param {string} reportConfig.reportType - "NABL" or "NON-NABL"
  * @param {string} reportConfig.companyLogoBase64 - Company logo as base64 data URL
- * @param {array} reportConfig.testImagesBase64 - Array of test images as base64 data URLs
+ * @param {array} reportConfig.testImagesBase64 - Array of general test images as base64 data URLs
+ * @param {array} reportConfig.beforeTestImagesBase64 - Array of before test images as base64 data URLs
+ * @param {array} reportConfig.duringTestImagesBase64 - Array of during test images as base64 data URLs
+ * @param {array} reportConfig.afterTestImagesBase64 - Array of after test images as base64 data URLs
  * @param {array} reportConfig.graphImagesBase64 - Array of graph images as base64 data URLs
  *
  * @returns {Promise<{blob: Blob, fileName: string}>} Promise that resolves with blob and filename
@@ -164,13 +167,32 @@ const formatDuration = (minutes) => {
  * SIMPLE FIELDS:
  * - {jcNumber}, {companyName}, {customerName}, etc.
  *
+ * CONDITIONAL SECTIONS:
+ * - {#isNABL} ... {/isNABL} - Shows only for NABL reports
+ * - {#isNonNABL} ... {/isNonNABL} - Shows only for NON-NABL reports
+ *
  * IMAGES:
  * - Company Logo (single): {%companyLogo}
- * - Test Images (loop):
+ * - Test Images - General (loop):
  *   {#testImages}
  *     {%image}
  *     Caption: {caption}
  *   {/testImages}
+ * - Before Test Images (loop):
+ *   {#beforeTestImages}
+ *     {%image}
+ *     Caption: {caption}
+ *   {/beforeTestImages}
+ * - During Test Images (loop):
+ *   {#duringTestImages}
+ *     {%image}
+ *     Caption: {caption}
+ *   {/duringTestImages}
+ * - After Test Images (loop):
+ *   {#afterTestImages}
+ *     {%image}
+ *     Caption: {caption}
+ *   {/afterTestImages}
  * - Graph Images (loop):
  *   {#graphImages}
  *     {%image}
@@ -178,7 +200,8 @@ const formatDuration = (minutes) => {
  *   {/graphImages}
  *
  * TABLE LOOPS:
- * {#eutRows} ... {/eutRows}
+ * {#eutRows} ... {/eutRows} - All EUT rows
+ * {#currentTestEutRows} ... {/currentTestEutRows} - Filtered EUT rows for current test
  * {#testRows} ... {/testRows}
  * {#testDetailsRows} ... {/testDetailsRows}
  */
@@ -187,9 +210,9 @@ export const generateTS1Report = (comprehensiveData, reportConfig = {}) => {
     // Select template based on report type
     const reportType = reportConfig.reportType || "NABL";
     const template =
-      reportType === "NON-NABL"
-        ? LT_REPORT_TEMPLATE_NON_NABL
-        : LT_REPORT_TEMPLATE_NABL;
+      reportType === "NABL"
+        ? TS1_MASTER_NABL_REPORT_TEMPLATE
+        : TS1_MASTER_NON_NABL_REPORT_TEMPLATE;
 
     console.log(`🔹 Generating ${reportType} report...`);
     console.log("📋 Report Config:", {
@@ -243,15 +266,46 @@ export const generateTS1Report = (comprehensiveData, reportConfig = {}) => {
         const dataWithImages = {
           ...formattedData,
 
+          // Conditional flags for report type (used in template conditionals)
+          isNABL: reportType === "NABL",
+          isNonNABL: reportType === "NON-NABL",
+
           // Company Logo (single image) - only include if provided
           companyLogo: reportConfig.companyLogoBase64 || null,
 
-          // Test Images (array for loop) - filter out any empty/invalid images
+          // Test Images - General (array for loop) - filter out any empty/invalid images
           testImages: (reportConfig.testImagesBase64 || [])
             .filter((img) => img && img.trim().length > 0)
             .map((img, index) => ({
               image: img,
               caption: `Test Image ${index + 1}`,
+              imageNumber: index + 1,
+            })),
+
+          // Before Test Images (array for loop) - filter out any empty/invalid images
+          beforeTestImages: (reportConfig.beforeTestImagesBase64 || [])
+            .filter((img) => img && img.trim().length > 0)
+            .map((img, index) => ({
+              image: img,
+              caption: `Before Test - Image ${index + 1}`,
+              imageNumber: index + 1,
+            })),
+
+          // During Test Images (array for loop) - filter out any empty/invalid images
+          duringTestImages: (reportConfig.duringTestImagesBase64 || [])
+            .filter((img) => img && img.trim().length > 0)
+            .map((img, index) => ({
+              image: img,
+              caption: `During Test - Image ${index + 1}`,
+              imageNumber: index + 1,
+            })),
+
+          // After Test Images (array for loop) - filter out any empty/invalid images
+          afterTestImages: (reportConfig.afterTestImagesBase64 || [])
+            .filter((img) => img && img.trim().length > 0)
+            .map((img, index) => ({
+              image: img,
+              caption: `After Test - Image ${index + 1}`,
               imageNumber: index + 1,
             })),
 
@@ -268,6 +322,9 @@ export const generateTS1Report = (comprehensiveData, reportConfig = {}) => {
         console.log("✅ Data prepared with images:", {
           hasLogo: !!dataWithImages.companyLogo,
           testImagesCount: dataWithImages.testImages.length,
+          beforeTestImagesCount: dataWithImages.beforeTestImages.length,
+          duringTestImagesCount: dataWithImages.duringTestImages.length,
+          afterTestImagesCount: dataWithImages.afterTestImages.length,
           graphImagesCount: dataWithImages.graphImages.length,
         });
 
@@ -350,14 +407,52 @@ export const downloadTS1Report = async (
  *
  * @param {object} comprehensiveData - Complete job card data from the store
  * @returns {object} Formatted data ready for docxtemplater
+ *
+ * Returned object includes:
+ * - eutRows: All EUT rows from the job card
+ * - currentTestEutRows: Filtered EUT rows matching the current test's serial number(s)
+ * - testRows: All test rows
+ * - testDetailsRows: All test details rows
+ * - currentTest_*: Individual fields from the current test row
  */
 export const prepareReportData = (comprehensiveData) => {
   // Extract current test row
   const currentTest = comprehensiveData.currentTestRow || {};
 
-  // Format EUT rows for table loop
+  // Format EUT rows for table loop (ALL EUTs)
   const formattedEutRows = (comprehensiveData.eutRows || [])
     .filter((row) => !row.temporary) // Filter out temporary rows
+    .map((row, index) => ({
+      slNo: index + 1,
+      nomenclature: row.nomenclature || "",
+      qty: row.qty || "",
+      partNo: row.partNo || "",
+      modelNo: row.modelNo || "",
+      serialNo: row.serialNo || "",
+    }));
+
+  // Filter EUT rows for CURRENT TEST only (based on currentTest.eutSerialNo)
+  const currentTestEutSerialNo = currentTest.eutSerialNo || "";
+
+  // Split serial numbers if multiple (comma-separated or semicolon-separated)
+  const currentTestSerialNumbers = currentTestEutSerialNo
+    .split(/[,;]/) // Split by comma or semicolon
+    .map((s) => s.trim()) // Remove whitespace
+    .filter((s) => s.length > 0); // Remove empty strings
+
+  // Filter and format EUT rows that match the current test's serial number(s)
+  const currentTestEutRows = (comprehensiveData.eutRows || [])
+    .filter((row) => !row.temporary) // Filter out temporary rows
+    .filter((row) => {
+      // Check if this EUT's serial number matches any of the current test's serial numbers
+      const rowSerialNo = (row.serialNo || "").trim();
+      return currentTestSerialNumbers.some(
+        (testSerial) =>
+          rowSerialNo === testSerial ||
+          rowSerialNo.includes(testSerial) ||
+          testSerial.includes(rowSerialNo)
+      );
+    })
     .map((row, index) => ({
       slNo: index + 1,
       nomenclature: row.nomenclature || "",
@@ -434,9 +529,12 @@ export const prepareReportData = (comprehensiveData) => {
     observations: comprehensiveData.observations || "",
 
     // ============= Table Data (for loops in template) =============
-    eutRows: formattedEutRows,
+    eutRows: formattedEutRows, // ALL EUT rows
     testRows: formattedTestRows,
     testDetailsRows: formattedTestDetailsRows,
+
+    // Filtered EUT rows for current test only
+    currentTestEutRows: currentTestEutRows, // Only EUTs used in this specific test
 
     // ============= Current Test Row (the specific test for this report) =============
     // Prefix with "currentTest_" to distinguish in template

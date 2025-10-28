@@ -14,7 +14,7 @@ const { isSameDay } = require("date-fns");
 
 // Function to handle the operations of the User Registraion and Login process:
 
-function usersDataAPIs(app) {
+function usersDataAPIs(app, io, labbeeUsers) {
   //api to add or register the new user:
   app.post("/api/addUser", (req, res) => {
     //const { name, email, password } = req.body;
@@ -159,8 +159,28 @@ function usersDataAPIs(app) {
             ipAddress,
             userAgent,
           ],
-          (err) => {
-            if (err) console.error("Error tracking session:", err);
+          (err, result) => {
+            if (err) {
+              console.error("Error tracking session:", err);
+              console.error("Failed session data:", {
+                user_id: user.id,
+                user_name: user.name,
+                session_id: sessionId,
+              });
+            } else {
+              console.log(`Session created successfully for user: ${user.name} (ID: ${user.id})`);
+            }
+
+            // Emit Socket.IO event to notify all clients about new login
+            if (io) {
+              io.emit("user_logged_in", {
+                user_id: user.id,
+                name: user.name,
+                email: user.email,
+                department: user.department,
+                role: user.role,
+              });
+            }
           }
         );
 
@@ -239,16 +259,26 @@ function usersDataAPIs(app) {
   // api to logout from the application:
   app.get("/api/logout", (req, res) => {
     const sessionId = req.sessionID;
+    const userId = req.session.user_id;
+    const userName = req.session.username;
 
     // Mark session as revoked instead of deleting (better for audit trail)
     const sqlRevokeSession = `
-    UPDATE active_users_session 
-    SET revoked = 1 
+    UPDATE active_users_session
+    SET revoked = 1
     WHERE session_id = ?
   `;
 
     db.query(sqlRevokeSession, [sessionId], (err) => {
       if (err) console.error("Error revoking session:", err);
+
+      // Emit Socket.IO event to notify all clients about logout
+      if (io && userId) {
+        io.emit("user_logged_out", {
+          user_id: userId,
+          name: userName,
+        });
+      }
     });
 
     // Clear cookie
@@ -375,22 +405,22 @@ function usersDataAPIs(app) {
   //API to fetch the active users
   app.get("/api/getActiveUsers", (req, res) => {
     const query = `
-    SELECT 
-      aus.id, 
-      aus.user_id, 
-      u.name, 
-      u.email, 
-      u.department, 
+    SELECT
+      aus.id,
+      aus.user_id,
+      u.name,
+      u.email,
+      u.department,
       u.role,
-      aus.created_at as login_time, 
+      aus.created_at as login_time,
       aus.last_activity,
       aus.ip_address,
       aus.user_agent
     FROM active_users_session aus
     JOIN labbee_users u ON aus.user_id = u.id
-    WHERE aus.revoked = 0 
+    WHERE aus.revoked = 0
       AND (aus.expires_at IS NULL OR aus.expires_at > NOW())
-      AND aus.last_activity > DATE_SUB(NOW(), INTERVAL 30 MINUTE)
+      AND aus.last_activity > DATE_SUB(NOW(), INTERVAL 540 MINUTE)
     ORDER BY aus.last_activity DESC
   `;
 
@@ -416,7 +446,7 @@ function usersDataAPIs(app) {
     JOIN labbee_users u ON aus.user_id = u.id
     WHERE aus.revoked = 0
       AND (aus.expires_at IS NULL OR aus.expires_at > NOW())
-      AND aus.last_activity > DATE_SUB(NOW(), INTERVAL 30 MINUTE)
+      AND aus.last_activity > DATE_SUB(NOW(), INTERVAL 540 MINUTE)
       AND (u.department LIKE '%TS1 Testing%' OR u.department LIKE '%Reports & Scrutiny%')
     GROUP BY u.id
     ORDER BY u.name ASC

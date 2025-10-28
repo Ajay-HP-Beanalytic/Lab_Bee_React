@@ -247,7 +247,7 @@ const RenderTable = ({
                                 return (
                                   <MenuItem
                                     key={option.id ? option.id : option.label}
-                                    value={option.id ? option.id : option.value}
+                                    value={option.value ? option.value : option.id}
                                   >
                                     {option.label}
                                   </MenuItem>

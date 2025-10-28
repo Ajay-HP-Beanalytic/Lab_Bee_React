@@ -27,6 +27,7 @@ import DocumentPreviewModal from "../components/DocumentPreviewModal";
 import ReportConfigDialog from "../components/ReportConfigDialog";
 import AuditHistoryDialog from "../components/AuditHistoryDialog";
 import { generateTS1Report } from "./TS1ReportDocument";
+import ReportConfigDialogV2 from "../components/ReportConfig/ReportConfigDialogV2";
 
 const Transition = forwardRef(function Transition(props, ref) {
   return <Slide direction="up" ref={ref} {...props} />;
@@ -119,8 +120,8 @@ export default function JCPreview({
     "Test Ended By",
     "Remarks",
     "Test Reviewed By",
-    "Report Prepartion Status",
     "Report",
+    "Report Prepartion Status",
     "Test Report Delivery Instructions",
     "Report Number",
     "Report Prepared By",
@@ -142,6 +143,9 @@ export default function JCPreview({
   };
 
   const handleGenerateReport = (rowIndex) => {
+    alert("This feature will be available soon");
+    return;
+
     const currentTestRow = testDetailsRows[rowIndex];
 
     console.log("Preparing report for test row:", currentTestRow);
@@ -486,7 +490,7 @@ export default function JCPreview({
             variant="contained"
             onClick={() => setAuditHistoryOpen(true)}
           >
-            View History
+            View Change Log
           </Button>
 
           {/* Download JC Button */}
@@ -517,6 +521,13 @@ export default function JCPreview({
         onConfirm={handleReportConfigConfirm}
         initialConfig={lastReportConfig}
       />
+
+      {/* <ReportConfigDialogV2
+        open={configDialogOpen}
+        onClose={handleReportConfigCancel}
+        onConfirm={handleReportConfigConfirm}
+        initialConfig={lastReportConfig}
+      /> */}
 
       {/* Document Preview Modal */}
       <DocumentPreviewModal

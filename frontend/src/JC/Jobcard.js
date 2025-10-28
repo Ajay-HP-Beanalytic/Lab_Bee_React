@@ -15,6 +15,7 @@ import {
 import { toast } from "react-toastify";
 import axios from "axios";
 import dayjs from "dayjs";
+import { io } from "socket.io-client";
 
 import { serverBaseAddress } from "../Pages/APIPage";
 import { useParams } from "react-router-dom";
@@ -26,6 +27,7 @@ import useJobCardSubmit from "./hooks/useJobCardSubmit";
 import TS1JCStepOne from "./TS1StepOne";
 import TS1JCStepTwo from "./TS1StepTwo";
 import TS1JCStepThree from "./TS1StepThree";
+import SRFImportDialog from "../components/SRFImportDialog";
 
 // const Jobcard = () => {
 const Jobcard = ({ jobCardData }) => {
@@ -51,7 +53,8 @@ const Jobcard = ({ jobCardData }) => {
 
   ////////////////////////
 
-  const { loggedInUser, loggedInUserDepartment, loggedInUserRole } = useContext(UserContext);
+  const { loggedInUser, loggedInUserDepartment, loggedInUserRole } =
+    useContext(UserContext);
 
   const [addNewJcToLastMonth, setAddNewJcToLastMonth] = useState(false);
   const [lastMonthJcNumberString, setLastMonthJcNumberString] = useState("");
@@ -60,6 +63,9 @@ const Jobcard = ({ jobCardData }) => {
   const [newJcNumberStringForLastMonth, setNewJcNumberStringForLastMonth] =
     useState("");
   const [newSrfNumberForLastMonth, setNewSrfNumberForLastMonth] = useState("");
+
+  // SRF Import Dialog state
+  const [srfImportDialogOpen, setSrfImportDialogOpen] = useState(false);
 
   let { id } = useParams("id");
   if (!id) {
@@ -75,6 +81,35 @@ const Jobcard = ({ jobCardData }) => {
   useEffect(() => {
     jobcardStore.loadAllJobCardData();
   }, []);
+
+  // Socket.IO: Listen for real-time user login/logout events
+  useEffect(() => {
+    const socket = io(serverBaseAddress, {
+      withCredentials: true,
+      transports: ["websocket", "polling"],
+    });
+
+    // Listen for user login events
+    socket.on("user_logged_in", (data) => {
+      console.log("User logged in:", data.name);
+      // Refresh the users list when a new user logs in
+      jobcardStore.refreshUsers();
+    });
+
+    // Listen for user logout events
+    socket.on("user_logged_out", (data) => {
+      console.log("User logged out:", data.name);
+      // Refresh the users list when a user logs out
+      jobcardStore.refreshUsers();
+    });
+
+    // Cleanup on unmount
+    return () => {
+      socket.off("user_logged_in");
+      socket.off("user_logged_out");
+      socket.disconnect();
+    };
+  }, [jobcardStore]);
 
   // Function to get the current year and month:
   const getCurrentYearAndMonth = () => {
@@ -153,14 +188,20 @@ const Jobcard = ({ jobCardData }) => {
           .then((res) => {
             if (res.status === 200) {
               const count = res.data;
-              console.log("📊 [Jobcard.js] Count received from backend:", count);
+              console.log(
+                "📊 [Jobcard.js] Count received from backend:",
+                count
+              );
 
               //generate jcnumber dynamically
               const dynamicJcNumberString = `${finYear}-${(count + 1)
                 .toString()
                 .padStart(3, "0")}`;
 
-              console.log("✅ [Jobcard.js] Generated JC Number:", dynamicJcNumberString);
+              console.log(
+                "✅ [Jobcard.js] Generated JC Number:",
+                dynamicJcNumberString
+              );
 
               jobcardStore.setJcNumberString(dynamicJcNumberString);
 
@@ -208,13 +249,22 @@ const Jobcard = ({ jobCardData }) => {
 
     if (result.success) {
       console.log("✅ [Jobcard.js] JC submitted successfully!");
-      console.log("🔢 [Jobcard.js] New JC Number from backend:", result.jcNumber);
-      console.log("🔢 [Jobcard.js] Old JC Number in store:", jobcardStore.jcNumberString);
+      console.log(
+        "🔢 [Jobcard.js] New JC Number from backend:",
+        result.jcNumber
+      );
+      console.log(
+        "🔢 [Jobcard.js] Old JC Number in store:",
+        jobcardStore.jcNumberString
+      );
 
       // Update store with the actual JC number returned from backend
       if (result.jcNumber) {
         jobcardStore.setJcNumberString(result.jcNumber);
-        console.log("✅ [Jobcard.js] Store updated with new JC number:", result.jcNumber);
+        console.log(
+          "✅ [Jobcard.js] Store updated with new JC number:",
+          result.jcNumber
+        );
       }
 
       // Clear persisted data from localStorage after successful submission
@@ -310,7 +360,63 @@ const Jobcard = ({ jobCardData }) => {
 
   //Import SRF data and map into SRF fields
   const handleImportSRFData = () => {
-    alert("Importing SRF data");
+    alert("This feature will be available soon");
+    // setSrfImportDialogOpen(true);
+  };
+
+  /**
+   * Handle SRF data import - populate form fields with extracted data
+   */
+  const handleSRFDataImport = (extractedData) => {
+    // Populate customer information
+    if (extractedData.companyName) {
+      jobcardStore.setCompanyName(extractedData.companyName);
+    }
+    if (extractedData.companyAddress) {
+      jobcardStore.setCompanyAddress(extractedData.companyAddress);
+    }
+    if (extractedData.customerName) {
+      jobcardStore.setCustomerName(extractedData.customerName);
+    }
+    if (extractedData.customerEmail) {
+      jobcardStore.setCustomerEmail(extractedData.customerEmail);
+    }
+    if (extractedData.customerNumber) {
+      jobcardStore.setCustomerNumber(extractedData.customerNumber);
+    }
+
+    // Populate project and test information
+    if (extractedData.projectName) {
+      jobcardStore.setProjectName(extractedData.projectName);
+    }
+    if (extractedData.poNumber) {
+      jobcardStore.setPoNumber(extractedData.poNumber);
+    }
+    if (extractedData.testCategory) {
+      jobcardStore.setTestCategory(extractedData.testCategory);
+    }
+    if (extractedData.testDiscipline) {
+      jobcardStore.setTestDiscipline(extractedData.testDiscipline);
+    }
+    if (extractedData.typeOfRequest) {
+      jobcardStore.setTypeOfRequest(extractedData.typeOfRequest);
+    }
+    if (extractedData.sampleCondition) {
+      jobcardStore.setSampleCondition(extractedData.sampleCondition);
+    }
+    if (extractedData.testInstructions) {
+      jobcardStore.setTestInstructions(extractedData.testInstructions);
+    }
+
+    toast.success(
+      `Successfully imported ${
+        Object.keys(extractedData).length
+      } fields from SRF document`,
+      {
+        position: "top-center",
+        autoClose: 3000,
+      }
+    );
   };
 
   return (
@@ -340,7 +446,7 @@ const Jobcard = ({ jobCardData }) => {
         </Box>
 
         <Box>
-          {/* {activeStep === 0 && (
+          {activeStep === 0 && (
             <Button
               sx={{
                 borderRadius: 1,
@@ -356,7 +462,7 @@ const Jobcard = ({ jobCardData }) => {
             >
               Import SRF Data
             </Button>
-          )} */}
+          )}
 
           <Button
             sx={{
@@ -503,6 +609,13 @@ const Jobcard = ({ jobCardData }) => {
       {activeStep === 0 && <TS1JCStepOne />}
       {activeStep === 1 && <TS1JCStepTwo />}
       {activeStep === 2 && <TS1JCStepThree />}
+
+      {/* SRF Import Dialog */}
+      <SRFImportDialog
+        open={srfImportDialogOpen}
+        onClose={() => setSrfImportDialogOpen(false)}
+        onImport={handleSRFDataImport}
+      />
     </>
   );
 };
