@@ -83,6 +83,7 @@ export default function JCHome() {
   const [customerNumber, setCustomerNumber] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
   const [customerName, setCustomerName] = useState("");
+  const [testWitnessedBy, setTestWitnessedBy] = useState("");
   const [projectName, setProjectName] = useState("");
   const [testInstructions, setTestInstructions] = useState("");
   const [sampleCondition, setSampleCondition] = useState("");
@@ -143,6 +144,7 @@ export default function JCHome() {
           setCustomerNumber(res.data.jobcard.customer_number);
           setCustomerName(res.data.jobcard.customer_name);
           setCustomerEmail(res.data.jobcard.customer_email);
+          setTestWitnessedBy(res.data.jobcard.test_witnessed_by);
           setProjectName(res.data.jobcard.project_name);
           setTestInstructions(res.data.jobcard.test_instructions);
           setReferanceDocs(res.data.jobcard.referance_document);
@@ -173,6 +175,7 @@ export default function JCHome() {
     { label: "Customer Name", value: `${customerName}` },
     { label: "Customer Email", value: `${customerEmail}` },
     { label: "Contact Number", value: `${customerNumber}` },
+    { label: "Test Witnessed By", value: `${testWitnessedBy}` },
     { label: "Project Name", value: `${projectName}` },
     { label: "SRF Number", value: `${srfNumber}` },
     { label: "SRF Date", value: `${dayjs(srfDate).format("YYYY/MM/DD")}` },

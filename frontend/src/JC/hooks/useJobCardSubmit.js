@@ -91,6 +91,7 @@ const useJobCardSubmit = () => {
         sampleCondition: formData.sampleCondition,
         reportType: formData.reportType,
         testInchargeName: formData.testInchargeName,
+        testWitnessedBy: formData.testWitnessedBy,
         jcCategory: formData.jcCategory,
 
         companyName: formData.companyName,

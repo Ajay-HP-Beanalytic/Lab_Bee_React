@@ -32,6 +32,7 @@ import dayjs from "dayjs";
  *   width: "100%",
  *   multiline: false,
  *   rows: 1,
+ *   disabled: false,               // Disable field (optional)
  *   options: [],                   // For select/radio fields
  *   inputProps: {},                // Additional input props
  * }
@@ -56,6 +57,7 @@ const RenderFormFields = ({ fields, store }) => {
                 fullWidth
                 multiline={field.multiline || false}
                 rows={field.rows || 1}
+                disabled={field.disabled || false}
                 inputProps={field.inputProps || {}}
                 sx={{ mb: "10px", padding: "2px", width: fieldWidth }}
               />
@@ -71,6 +73,7 @@ const RenderFormFields = ({ fields, store }) => {
                 onChange={(e) => setValue(e.target.value)}
                 fullWidth
                 type="number"
+                disabled={field.disabled || false}
                 inputProps={field.inputProps || {}}
                 sx={{ mb: "10px", padding: "2px", width: fieldWidth }}
               />
@@ -92,6 +95,7 @@ const RenderFormFields = ({ fields, store }) => {
                 }}
                 fullWidth
                 type="tel"
+                disabled={field.disabled || false}
                 inputProps={{
                   inputMode: "numeric",
                   pattern: "[0-9+\\-]*",
@@ -112,6 +116,7 @@ const RenderFormFields = ({ fields, store }) => {
                 onChange={(e) => setValue(e.target.value)}
                 fullWidth
                 type="email"
+                disabled={field.disabled || false}
                 inputProps={field.inputProps || {}}
                 sx={{ mb: "10px", padding: "2px", width: fieldWidth }}
               />
@@ -128,6 +133,7 @@ const RenderFormFields = ({ fields, store }) => {
                 fullWidth
                 multiline
                 rows={field.rows || 4}
+                disabled={field.disabled || false}
                 inputProps={field.inputProps || {}}
                 sx={{ mb: "10px", padding: "2px", width: fieldWidth }}
               />
@@ -140,6 +146,7 @@ const RenderFormFields = ({ fields, store }) => {
                   label={field.label}
                   value={value ? dayjs(value) : null}
                   onChange={(newValue) => setValue(newValue)}
+                  disabled={field.disabled || false}
                   renderInput={(params) => <TextField {...params} fullWidth />}
                   format="DD-MM-YYYY"
                   sx={{ mb: "10px", padding: "2px", width: fieldWidth }}
@@ -154,6 +161,7 @@ const RenderFormFields = ({ fields, store }) => {
                   label={field.label}
                   value={value ? dayjs(value) : null}
                   onChange={(newValue) => setValue(newValue)}
+                  disabled={field.disabled || false}
                   renderInput={(params) => <TextField {...params} fullWidth />}
                   format="DD-MM-YYYY HH:mm"
                   sx={{ mb: "10px", padding: "2px", width: fieldWidth }}
@@ -168,6 +176,7 @@ const RenderFormFields = ({ fields, store }) => {
                   label={field.label}
                   value={value ? dayjs(value) : null}
                   onChange={(newValue) => setValue(newValue)}
+                  disabled={field.disabled || false}
                   renderInput={(params) => <TextField {...params} fullWidth />}
                   format="HH:mm"
                   sx={{ mb: "10px", padding: "2px", width: fieldWidth }}
@@ -180,6 +189,7 @@ const RenderFormFields = ({ fields, store }) => {
               <FormControl
                 key={field.name}
                 fullWidth
+                disabled={field.disabled || false}
                 sx={{ mb: "10px", padding: "2px", width: fieldWidth }}
               >
                 {field.showLabel && (
@@ -195,6 +205,7 @@ const RenderFormFields = ({ fields, store }) => {
                       field.onChange(e);
                     }
                   }}
+                  disabled={field.disabled || false}
                   fullWidth
                 >
                   {Array.isArray(field.options) &&
@@ -242,6 +253,7 @@ const RenderFormFields = ({ fields, store }) => {
                         value={optionValue}
                         control={<Radio />}
                         label={optionLabel}
+                        disabled={field.disabled || false}
                       />
                     );
                   })}
@@ -261,9 +273,11 @@ const RenderFormFields = ({ fields, store }) => {
                     <Checkbox
                       checked={value || false}
                       onChange={(e) => setValue(e.target.checked)}
+                      disabled={field.disabled || false}
                     />
                   }
                   label={field.label}
+                  disabled={field.disabled || false}
                 />
               </Box>
             );

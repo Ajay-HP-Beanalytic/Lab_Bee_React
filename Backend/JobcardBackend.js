@@ -185,6 +185,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
       typeOfRequest,
       reportType,
       testInchargeName,
+      testWitnessedBy,
       jcCategory,
       companyName,
       companyAddress,
@@ -283,10 +284,10 @@ function jobcardsAPIs(app, io, labbeeUsers) {
 
       const sql = `INSERT INTO bea_jobcards(
             jc_number, srf_number, srf_date, dcform_number, jc_open_date, item_received_date, po_number,
-            test_category, test_discipline, sample_condition, type_of_request, report_type, notes_acknowledged, test_incharge, jc_category, company_name, company_address,
+            test_category, test_discipline, sample_condition, type_of_request, report_type, notes_acknowledged, test_incharge, test_witnessed_by, jc_category, company_name, company_address,
             customer_name, customer_email, customer_number, project_name, test_instructions,
             jc_status, reliability_report_status, jc_closed_date, observations, last_updated_by
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
       const values = [
         newJcNumber,
@@ -303,6 +304,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
         reportType || "",
         notesAcknowledged,
         testInchargeName || "",
+        testWitnessedBy || "",
         jcCategory || "",
         companyName || "",
         companyAddress || "",
@@ -615,6 +617,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
       typeOfRequest,
       reportType,
       testInchargeName,
+      testWitnessedBy,
       jcCategory,
       companyName,
       companyAddress,
@@ -632,17 +635,6 @@ function jobcardsAPIs(app, io, labbeeUsers) {
       loggedInUserDepartment,
       loggedInUserRole,
     } = req.body;
-
-    // Backend validation: Only Lab Manager can set status to "Closed"
-    if (jcStatus === "Closed" && loggedInUserRole !== "Lab Manager") {
-      console.error(
-        `⚠️ Unauthorized attempt to close JC ${jcNumber} by role: ${loggedInUserRole}`
-      );
-      return res.status(403).json({
-        message: "Access denied. Only Lab Manager can close job cards.",
-        error: "UNAUTHORIZED_STATUS_CHANGE",
-      });
-    }
 
     const formattedSrfDate = srfDate ? convertDateTime(srfDate) : null;
     const formattedItemReceivedDate = itemReceivedDate
@@ -668,21 +660,53 @@ function jobcardsAPIs(app, io, labbeeUsers) {
       const existingRow = fetchResult[0] || null;
       const existingJcStatus = existingRow?.jc_status;
 
+      // Backend validation: Only Lab Manager can CHANGE status TO "Closed"
+      // Allow if status is already "Closed" and not being changed
+      if (
+        jcStatus === "Closed" &&
+        existingJcStatus !== "Closed" &&
+        loggedInUserRole !== "Lab Manager"
+      ) {
+        console.error(
+          `⚠️ Unauthorized attempt to close JC ${jcNumber} by role: ${loggedInUserRole}`
+        );
+        return res.status(403).json({
+          message: "Access denied. Only Lab Manager can close job cards.",
+          error: "UNAUTHORIZED_STATUS_CHANGE",
+        });
+      }
+
+      // Backend validation: Only Lab Manager can REOPEN a closed JC
+      if (
+        existingJcStatus === "Closed" &&
+        jcStatus !== "Closed" &&
+        loggedInUserRole !== "Lab Manager"
+      ) {
+        console.error(
+          `⚠️ Unauthorized attempt to reopen closed JC ${jcNumber} by role: ${loggedInUserRole}`
+        );
+        return res.status(403).json({
+          message: "Access denied. Only Lab Manager can reopen closed job cards.",
+          error: "UNAUTHORIZED_STATUS_CHANGE",
+        });
+      }
+
       // Proceed with the update only after fetching the current status
       const sqlQuery = `
         UPDATE bea_jobcards SET
             srf_number = ?,
             srf_date = ?,
-            dcform_number = ?, 
-            jc_open_date = ?, 
+            dcform_number = ?,
+            jc_open_date = ?,
             item_received_date = ?,
-            po_number = ?, 
-            test_category = ?, 
+            po_number = ?,
+            test_category = ?,
             test_discipline = ?,
             sample_condition = ?,
-            type_of_request = ?, 
+            type_of_request = ?,
             report_type = ?,
-            test_incharge = ?, 
+            test_incharge = ?,
+            test_witnessed_by = ?,
             jc_category = ?, 
             company_name = ?, 
             company_address = ?,
@@ -712,6 +736,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
         typeOfRequest,
         reportType,
         testInchargeName,
+        testWitnessedBy,
         jcCategory,
         companyName,
         companyAddress,
@@ -810,6 +835,11 @@ function jobcardsAPIs(app, io, labbeeUsers) {
               name: "test_incharge",
               newVal: testInchargeName,
               oldVal: existingRow.test_incharge,
+            },
+            {
+              name: "test_witnessed_by",
+              newVal: testWitnessedBy,
+              oldVal: existingRow.test_witnessed_by,
             },
             {
               name: "jc_category",

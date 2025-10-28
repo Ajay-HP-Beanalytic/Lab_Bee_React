@@ -41,6 +41,14 @@ export const CUSTOMER_INFO_FIELDS = [
     width: "100%",
   },
   {
+    name: "testWitnessedBy",
+    label: "Test Witnessed By(Optional)",
+    type: "textField",
+    stateKey: "testWitnessedBy",
+    setterKey: "setTestWitnessedBy",
+    width: "100%",
+  },
+  {
     name: "customerEmail",
     label: "Customer Email",
     type: "textField",
@@ -183,10 +191,16 @@ export const getJcStatusFields = (
   loggedInUserRole = "",
   jobcardStatus = null
 ) => {
-  // Filter JC Status options based on user role
-  // Only Lab Manager can set status to "Closed"
+  // Check if user is Lab Manager
+  const isLabManager = loggedInUserRole === "Lab Manager";
+
+  // Check if JC is closed
+  const isClosed = jobcardStatus === "Closed";
+
+  // For non-Lab Manager users, show all status options when JC is closed (but field will be disabled)
+  // For other statuses or Lab Manager, filter as before
   const jcStatusOptions =
-    loggedInUserRole === "Lab Manager"
+    isLabManager || isClosed
       ? JOB_CARD_OPTIONS.jcStatus
       : JOB_CARD_OPTIONS.jcStatus.filter((option) => option.id !== "Closed");
 
@@ -209,9 +223,10 @@ export const getJcStatusFields = (
       setterKey: "setJcStatus",
       width: "100%",
       options: jcStatusOptions, // Filtered based on user role
+      disabled: isClosed && !isLabManager, // Disable if closed and not Lab Manager
     },
 
-    ...(jobcardStatus === "Closed"
+    ...(isClosed
       ? [
           {
             name: "jcCloseDate",
@@ -220,6 +235,7 @@ export const getJcStatusFields = (
             stateKey: "jcCloseDate",
             setterKey: "setJcCloseDate",
             width: "100%",
+            disabled: !isLabManager, // Disable if not Lab Manager
           },
         ]
       : []),

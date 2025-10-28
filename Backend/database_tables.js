@@ -348,6 +348,7 @@ function createJobcardsTable() {
         customer_name VARCHAR(1000),
         customer_email VARCHAR(1000),
         customer_number VARCHAR(255),
+        test_witnessed_by VARCHAR(500),
         project_name VARCHAR(1000),
         test_instructions VARCHAR(5000),
         jc_status  VARCHAR(500),
