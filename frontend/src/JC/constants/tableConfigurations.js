@@ -101,7 +101,7 @@ export const TEST_PERFORMED_TABLE_COLUMNS = [
     id: "testCategory",
     label: "Test Category",
     type: "autocomplete",
-    width: 1000,
+    width: "300px",
     align: "center",
     options: [],
   },
@@ -109,7 +109,7 @@ export const TEST_PERFORMED_TABLE_COLUMNS = [
     id: "testName",
     label: "Test Name",
     type: "autocomplete",
-    width: 1000,
+    width: "300px",
     align: "center",
     options: [], // Will be populated dynamically from testNames
   },
@@ -117,7 +117,7 @@ export const TEST_PERFORMED_TABLE_COLUMNS = [
     id: "testChamber",
     label: "Chamber",
     type: "autocomplete",
-    width: 1000,
+    width: "200px",
     align: "center",
     options: [], // Will be populated dynamically from chambers list
   },
@@ -125,14 +125,14 @@ export const TEST_PERFORMED_TABLE_COLUMNS = [
     id: "eutSerialNo",
     label: "EUT S.No",
     type: "textField",
-    width: 300,
+    width: "300px",
     align: "center",
   },
   {
     id: "standard",
     label: "Test Standard",
     type: "textField",
-    width: 300,
+    width: "300px",
     align: "center",
   },
   {
@@ -149,21 +149,21 @@ export const TEST_PERFORMED_TABLE_COLUMNS = [
     id: "startDate",
     label: "Start Date Time",
     type: "dateTime",
-    width: 1000,
+    width: "250px",
     align: "center",
   },
   {
     id: "endDate",
     label: "End Date Time",
     type: "dateTime",
-    width: 1000,
+    width: "250px",
     align: "center",
   },
   {
     id: "duration",
-    label: "Duration (min)",
+    label: "Duration (Hours)",
     type: "textField",
-    width: "120px",
+    width: "150px",
   },
   {
     id: "actualTestDuration",
@@ -172,10 +172,17 @@ export const TEST_PERFORMED_TABLE_COLUMNS = [
     inputProps: {
       onWheel: (e) => e.target.blur(), // Remove focus to prevent scroll
     },
-    width: "120px",
+    width: "150px",
   },
   // { id: "endTemp", label: "End Temp", type: "textField", width: "100px" },
   // { id: "endRh", label: "End Rh", type: "textField", width: "100px" },
+  {
+    id: "unit",
+    label: "Unit",
+    type: "select",
+    width: "150px",
+    options: JOB_CARD_OPTIONS.testUnit,
+  },
   {
     id: "testEndedBy",
     label: "Test Ended By",

@@ -74,6 +74,9 @@ const ImageRequirementsConfig = ({ config = {}, onChange }) => {
         afterTestImages: true,
         graphImages: true,
       },
+      onlyTestPhotos: {
+        testImages: true,
+      },
     };
 
     setRequirements(presets[presetName]);
@@ -95,25 +98,53 @@ const ImageRequirementsConfig = ({ config = {}, onChange }) => {
         </Typography>
         <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
           <Paper
-            sx={{ p: 1, cursor: "pointer", "&:hover": { bgcolor: "#e3f2fd" } }}
+            sx={{
+              "p": 1,
+              "cursor": "pointer",
+              "&:hover": { bgcolor: "#e3f2fd" },
+            }}
             onClick={() => handlePreset("none")}
           >
             <Typography variant="caption">None</Typography>
           </Paper>
           <Paper
-            sx={{ p: 1, cursor: "pointer", "&:hover": { bgcolor: "#e3f2fd" } }}
+            sx={{
+              "p": 1,
+              "cursor": "pointer",
+              "&:hover": { bgcolor: "#e3f2fd" },
+            }}
             onClick={() => handlePreset("basic")}
           >
-            <Typography variant="caption">Basic (Logo + Test + Graphs)</Typography>
+            <Typography variant="caption">
+              Basic (Logo + Test + Graphs)
+            </Typography>
           </Paper>
           <Paper
-            sx={{ p: 1, cursor: "pointer", "&:hover": { bgcolor: "#e3f2fd" } }}
+            sx={{
+              "p": 1,
+              "cursor": "pointer",
+              "&:hover": { bgcolor: "#e3f2fd" },
+            }}
+            onClick={() => handlePreset("onlyTestPhotos")}
+          >
+            <Typography variant="caption">Only Test Photos</Typography>
+          </Paper>
+          <Paper
+            sx={{
+              "p": 1,
+              "cursor": "pointer",
+              "&:hover": { bgcolor: "#e3f2fd" },
+            }}
             onClick={() => handlePreset("nabl")}
           >
-            <Typography variant="caption">NABL (Before/During/After)</Typography>
+            <Typography variant="caption">Before + During + After</Typography>
           </Paper>
           <Paper
-            sx={{ p: 1, cursor: "pointer", "&:hover": { bgcolor: "#e3f2fd" } }}
+            sx={{
+              "p": 1,
+              "cursor": "pointer",
+              "&:hover": { bgcolor: "#e3f2fd" },
+            }}
             onClick={() => handlePreset("all")}
           >
             <Typography variant="caption">All Categories</Typography>
@@ -201,7 +232,8 @@ const ImageRequirementsConfig = ({ config = {}, onChange }) => {
           Summary:
         </Typography>
         <Typography variant="body2">
-          {Object.values(requirements).filter(Boolean).length} image category(ies) selected
+          {Object.values(requirements).filter(Boolean).length} image
+          category(ies) selected
         </Typography>
       </Paper>
     </Box>

@@ -5,8 +5,6 @@ import {
   Button,
   Tooltip,
   Card,
-  useTheme,
-  useMediaQuery,
   Step,
   Stepper,
   StepButton,
@@ -30,19 +28,21 @@ import TS1JCStepThree from "./TS1StepThree";
 import SRFImportDialog from "../components/SRFImportDialog";
 
 // const Jobcard = () => {
-const Jobcard = ({ jobCardData }) => {
+const Jobcard = () => {
   const jobcardStore = useJobCardStore();
+  // Select stable store actions for effects to avoid depending on the whole store
+  const setTestInchargeName = useJobCardStore((s) => s.setTestInchargeName);
+  const setJcLastModifiedBy = useJobCardStore((s) => s.setJcLastModifiedBy);
+  const loadAllJobCardData = useJobCardStore((s) => s.loadAllJobCardData);
   const { submitJobCard, isSaving, navigateToDashboard } = useJobCardSubmit();
 
   const navigate = useNavigate();
-
-  const theme = useTheme();
-  const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
 
   const activeStep = jobcardStore.activeStep;
   const setActiveStep = jobcardStore.setActiveStep;
   const editJc = jobcardStore.editJc;
   const setEditJc = jobcardStore.setEditJc;
+  const jcStatus = jobcardStore.jcStatus;
 
   const steps = [
     "SRF Form",
@@ -57,8 +57,6 @@ const Jobcard = ({ jobCardData }) => {
     useContext(UserContext);
 
   const [addNewJcToLastMonth, setAddNewJcToLastMonth] = useState(false);
-  const [lastMonthJcNumberString, setLastMonthJcNumberString] = useState("");
-  const [lastMonthSrfNumber, setLastMonthSrfNumber] = useState("");
 
   const [newJcNumberStringForLastMonth, setNewJcNumberStringForLastMonth] =
     useState("");
@@ -73,14 +71,14 @@ const Jobcard = ({ jobCardData }) => {
   }
 
   useEffect(() => {
-    jobcardStore.setTestInchargeName(loggedInUser);
-    jobcardStore.setJcLastModifiedBy(loggedInUser);
-  }, [loggedInUser]);
+    setTestInchargeName(loggedInUser);
+    setJcLastModifiedBy(loggedInUser);
+  }, [loggedInUser, setTestInchargeName, setJcLastModifiedBy]);
 
   // Load dynamic data (users, chambers, test names) on component mount
   useEffect(() => {
-    jobcardStore.loadAllJobCardData();
-  }, []);
+    loadAllJobCardData();
+  }, [loadAllJobCardData]);
 
   // Socket.IO: Listen for real-time user login/logout events
   useEffect(() => {
@@ -109,7 +107,7 @@ const Jobcard = ({ jobCardData }) => {
       socket.off("user_logged_out");
       socket.disconnect();
     };
-  }, [jobcardStore]);
+  });
 
   // Function to get the current year and month:
   const getCurrentYearAndMonth = () => {
@@ -178,9 +176,6 @@ const Jobcard = ({ jobCardData }) => {
         finYear = `${currentYear - 1}-${shortCurrentYear}/${currentMonth}`;
       }
 
-      console.log("📋 [Jobcard.js] CREATE MODE - Generating new JC number");
-      console.log("📅 [Jobcard.js] finYear:", finYear);
-
       //fetch the latest jcnumber count
       const fetchJCCount = async () => {
         axios
@@ -188,27 +183,16 @@ const Jobcard = ({ jobCardData }) => {
           .then((res) => {
             if (res.status === 200) {
               const count = res.data;
-              console.log(
-                "📊 [Jobcard.js] Count received from backend:",
-                count
-              );
 
               //generate jcnumber dynamically
               const dynamicJcNumberString = `${finYear}-${(count + 1)
                 .toString()
                 .padStart(3, "0")}`;
 
-              console.log(
-                "✅ [Jobcard.js] Generated JC Number:",
-                dynamicJcNumberString
-              );
-
               jobcardStore.setJcNumberString(dynamicJcNumberString);
 
               //generate srf number
               jobcardStore.setSrfNumber(`BEA/TR/SRF/${dynamicJcNumberString}`);
-
-              console.log("✅ [Jobcard.js] JC Number set in store");
             }
             if (res.status === 500) {
               console.log(res.status);
@@ -224,10 +208,18 @@ const Jobcard = ({ jobCardData }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]); // Only depend on id
 
-  // To submit the Job-card data and store it in a database:
-  const handleSubmitJobcard = async (e) => {
-    // e.preventDefault();
+  //Add color to the JC Status based on the JC Status:
+  // derive color from status (no setState inside effects/memo)
+  const mapJCStatusColor = {
+    "Open": "#ff5722",
+    "Running": "#2196f3",
+    "Closed": "#4caf50",
+    "Test Completed": "#800000",
+  };
+  const jcStatusStringColor = mapJCStatusColor[jcStatus] ?? "#000000";
 
+  // To submit the Job-card data and store it in a database:
+  const handleSubmitJobcard = async () => {
     // Get form data from store
     const formData = jobcardStore.getFormData();
 
@@ -248,23 +240,9 @@ const Jobcard = ({ jobCardData }) => {
     );
 
     if (result.success) {
-      console.log("✅ [Jobcard.js] JC submitted successfully!");
-      console.log(
-        "🔢 [Jobcard.js] New JC Number from backend:",
-        result.jcNumber
-      );
-      console.log(
-        "🔢 [Jobcard.js] Old JC Number in store:",
-        jobcardStore.jcNumberString
-      );
-
       // Update store with the actual JC number returned from backend
       if (result.jcNumber) {
         jobcardStore.setJcNumberString(result.jcNumber);
-        console.log(
-          "✅ [Jobcard.js] Store updated with new JC number:",
-          result.jcNumber
-        );
       }
 
       // Clear persisted data from localStorage after successful submission
@@ -360,8 +338,8 @@ const Jobcard = ({ jobCardData }) => {
 
   //Import SRF data and map into SRF fields
   const handleImportSRFData = () => {
-    alert("This feature will be available soon");
-    // setSrfImportDialogOpen(true);
+    // alert("This feature will be available soon");
+    setSrfImportDialogOpen(true);
   };
 
   /**
@@ -369,6 +347,45 @@ const Jobcard = ({ jobCardData }) => {
    */
   const handleSRFDataImport = (extractedData) => {
     // Populate customer information
+    if (extractedData.srfDate) {
+      // Convert date string to dayjs object
+      // Support multiple date formats commonly found in DOCX files
+      const dateFormats = [
+        "DD-MM-YYYY",
+        "DD/MM/YYYY",
+        "YYYY-MM-DD",
+        "DD.MM.YYYY",
+        "D-M-YYYY",
+        "D/M/YYYY",
+      ];
+
+      let parsedDate = null;
+      for (const format of dateFormats) {
+        const testDate = dayjs(extractedData.srfDate, format, true);
+        if (testDate.isValid()) {
+          parsedDate = testDate;
+          break;
+        }
+      }
+
+      // If none of the specific formats worked, try default parsing
+      if (!parsedDate) {
+        parsedDate = dayjs(extractedData.srfDate);
+      }
+
+      // Only set if we have a valid date
+      if (parsedDate && parsedDate.isValid()) {
+        jobcardStore.setSrfDate(parsedDate);
+        console.log(
+          "✅ Converted srfDate:",
+          extractedData.srfDate,
+          "→",
+          parsedDate.format("DD-MM-YYYY")
+        );
+      } else {
+        console.warn("⚠️ Could not parse srfDate:", extractedData.srfDate);
+      }
+    }
     if (extractedData.companyName) {
       jobcardStore.setCompanyName(extractedData.companyName);
     }
@@ -377,6 +394,9 @@ const Jobcard = ({ jobCardData }) => {
     }
     if (extractedData.customerName) {
       jobcardStore.setCustomerName(extractedData.customerName);
+    }
+    if (extractedData.testWitnessedBy) {
+      jobcardStore.setTestWitnessedBy(extractedData.testWitnessedBy);
     }
     if (extractedData.customerEmail) {
       jobcardStore.setCustomerEmail(extractedData.customerEmail);
@@ -388,6 +408,9 @@ const Jobcard = ({ jobCardData }) => {
     // Populate project and test information
     if (extractedData.projectName) {
       jobcardStore.setProjectName(extractedData.projectName);
+    }
+    if (extractedData.testInstructions) {
+      jobcardStore.setTestInstructions(extractedData.testInstructions);
     }
     if (extractedData.poNumber) {
       jobcardStore.setPoNumber(extractedData.poNumber);
@@ -404,19 +427,55 @@ const Jobcard = ({ jobCardData }) => {
     if (extractedData.sampleCondition) {
       jobcardStore.setSampleCondition(extractedData.sampleCondition);
     }
-    if (extractedData.testInstructions) {
-      jobcardStore.setTestInstructions(extractedData.testInstructions);
+    if (extractedData.reportType) {
+      jobcardStore.setReportType(extractedData.reportType);
     }
 
-    toast.success(
-      `Successfully imported ${
-        Object.keys(extractedData).length
-      } fields from SRF document`,
-      {
-        position: "top-center",
-        autoClose: 3000,
-      }
-    );
+    // Populate EUT details table if available
+    if (extractedData.eutDetails && Array.isArray(extractedData.eutDetails)) {
+      jobcardStore.setEutRows(extractedData.eutDetails);
+      console.log(
+        "✅ Imported EUT table:",
+        extractedData.eutDetails.length,
+        "rows"
+      );
+    }
+
+    // Populate Test details table if available
+    if (extractedData.testDetails && Array.isArray(extractedData.testDetails)) {
+      jobcardStore.setTestRows(extractedData.testDetails);
+      console.log(
+        "✅ Imported Test table:",
+        extractedData.testDetails.length,
+        "rows"
+      );
+    }
+
+    // Count imported items
+    const fieldCount = Object.keys(extractedData).filter(
+      (key) => key !== "eutDetails" && key !== "testDetails"
+    ).length;
+    const eutCount = extractedData.eutDetails
+      ? extractedData.eutDetails.length
+      : 0;
+    const testCount = extractedData.testDetails
+      ? extractedData.testDetails.length
+      : 0;
+
+    // Build success message
+    let message = `Successfully imported ${fieldCount} field(s)`;
+    if (eutCount > 0) {
+      message += `, ${eutCount} EUT row(s)`;
+    }
+    if (testCount > 0) {
+      message += `, ${testCount} Test row(s)`;
+    }
+    message += " from SRF document";
+
+    toast.success(message, {
+      position: "top-center",
+      autoClose: 4000,
+    });
   };
 
   return (
@@ -597,7 +656,7 @@ const Jobcard = ({ jobCardData }) => {
               <Typography
                 component="span"
                 variant="h6"
-                sx={{ color: "#003399", fontWeight: "bold", ml: 1 }}
+                sx={{ color: jcStatusStringColor, fontWeight: "bold", ml: 1 }}
               >
                 {jobcardStore.jcStatus}
               </Typography>

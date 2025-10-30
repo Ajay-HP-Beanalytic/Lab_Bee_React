@@ -686,7 +686,8 @@ function jobcardsAPIs(app, io, labbeeUsers) {
           `⚠️ Unauthorized attempt to reopen closed JC ${jcNumber} by role: ${loggedInUserRole}`
         );
         return res.status(403).json({
-          message: "Access denied. Only Lab Manager can reopen closed job cards.",
+          message:
+            "Access denied. Only Lab Manager can reopen closed job cards.",
           error: "UNAUTHORIZED_STATUS_CHANGE",
         });
       }
@@ -3307,6 +3308,31 @@ function jobcardsAPIs(app, io, labbeeUsers) {
       });
     }
   });
+
+  //////////////////////////////////////////////////////////////////////////////
+  // To get the month-year of the Job-card
+  // To get the last JC number of the previous month
+  app.get("/api/getPreviousMonthJC", (req, res) => {
+    const sqlQuery = `
+        SELECT jc_number 
+        FROM bea_jobcards 
+        WHERE MONTH(jc_open_date) = MONTH(CURRENT_DATE - INTERVAL 1 MONTH)
+        ORDER BY jc_open_date DESC 
+        LIMIT 1`;
+
+    db.query(sqlQuery, (error, result) => {
+      if (error) {
+        return res.status(500).json({
+          error:
+            "An error occurred while fetching the last JC number of the previous month",
+        });
+      } else {
+        res.json(result);
+      }
+    });
+  });
+
+  //////////////////////////////////////////////////////////////////////////////
 
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 }

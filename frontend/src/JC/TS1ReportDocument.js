@@ -151,6 +151,11 @@ const formatDuration = (minutes) => {
  *
  * @param {object} reportConfig - Report configuration from ReportConfigDialog
  * @param {string} reportConfig.reportType - "NABL" or "NON-NABL"
+ * @param {string} reportConfig.testReportNumber - 'Test report number'
+ * @param {string} reportConfig.ulrNumber - 'ULR number'
+ * @param {string} reportConfig.originalReportIssueDate = 'Original Report Issue Date'
+ * @param {string} reportConfig.chamberInfo - 'Chamber Info'
+ * @param {string} reportConfig.chamberMakeInfo - 'Chamber Make Info'
  * @param {string} reportConfig.companyLogoBase64 - Company logo as base64 data URL
  * @param {array} reportConfig.testImagesBase64 - Array of general test images as base64 data URLs
  * @param {array} reportConfig.beforeTestImagesBase64 - Array of before test images as base64 data URLs
@@ -214,6 +219,11 @@ export const generateTS1Report = (comprehensiveData, reportConfig = {}) => {
         ? TS1_MASTER_NABL_REPORT_TEMPLATE
         : TS1_MASTER_NON_NABL_REPORT_TEMPLATE;
 
+    // const testReportNumber = reportConfig.testReportNumber || "";
+    // const ulrNumber = reportConfig.ulrNumber || "";
+    // const originalReportIssueDate = reportConfig.originalReportIssueDate || "";
+    // const chamberInfo = reportConfig.chamberInfo || "";
+
     console.log(`🔹 Generating ${reportType} report...`);
     console.log("📋 Report Config:", {
       reportType,
@@ -269,6 +279,12 @@ export const generateTS1Report = (comprehensiveData, reportConfig = {}) => {
           // Conditional flags for report type (used in template conditionals)
           isNABL: reportType === "NABL",
           isNonNABL: reportType === "NON-NABL",
+
+          testReportNumber: reportConfig.testReportNumber || "",
+          ulrNumber: reportConfig.ulrNumber || "",
+          originalReportIssueDate: reportConfig.originalReportIssueDate || "",
+          chamberInfo: reportConfig.chamberInfo || "",
+          chamberMakeInfo: reportConfig.chamberMakeInfo || "",
 
           // Company Logo (single image) - only include if provided
           companyLogo: reportConfig.companyLogoBase64 || null,

@@ -23,8 +23,6 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { EMIJCContext } from "../EMI/EMIJCContext";
 import ObservationForms from "../EMI/ObservationForms";
-import { generateTS1Report } from "../JC/TS1ReportDocument";
-import useJobCardStore from "../JC/stores/jobCardStore";
 
 const RenderTable = ({
   tableColumns,
@@ -35,19 +33,7 @@ const RenderTable = ({
   setDeletedIds,
   getColumnOptions, // Optional callback for dynamic options
 }) => {
-  const {
-    stepOneFormData,
-    stepTwoFormData,
-    updateStepOneFormData,
-    eutTableRows,
-    updateEutTableRows,
-    testsTableRows,
-    updateTestsTableRows,
-    testPerformedTableRows,
-    updateTestPerformedTableRows,
-  } = useContext(EMIJCContext);
-
-  const jobcardStore = useJobCardStore();
+  const { stepOneFormData, testPerformedTableRows } = useContext(EMIJCContext);
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedFormType, setSelectedFormType] = useState("");
@@ -110,13 +96,13 @@ const RenderTable = ({
 
       if (!isNaN(startTime) && !isNaN(endTime)) {
         let durationInMilliSecond = endTime - startTime;
-        let durationInMinutes = durationInMilliSecond / (1000 * 60);
+        let durationInHours = durationInMilliSecond / (1000 * 60 * 60);
         // Ensure duration is not negative:
-        if (durationInMinutes < 0) {
-          durationInMinutes = 0;
+        if (durationInHours < 0) {
+          durationInHours = 0;
         }
 
-        updatedRows[index].duration = durationInMinutes;
+        updatedRows[index].duration = Number(durationInHours).toFixed(2);
       }
     }
 
@@ -126,15 +112,6 @@ const RenderTable = ({
 
     // REMOVE THIS LINE to prevent automatic updates to the context
     // updateTestPerformedTableRows(updatedRows);
-  };
-
-  // Function to handle "Observation Form" changes
-  const handleObservationFormChange = (index, value) => {
-    handleInputChange(index, "observationForm", value);
-    const row = tableRows[index];
-    const formType = row.observationForm;
-    setSelectedFormType(formType);
-    setDialogOpen(true);
   };
 
   const handleCloseDialog = () => {
@@ -152,11 +129,6 @@ const RenderTable = ({
   };
 
   const tableHeaderStyle = { backgroundColor: "#006699", fontWeight: "bold" };
-  const tableCellStyle = {
-    color: "white",
-    minWidth: "150px", // Adjust as needed
-    padding: "8px",
-  };
   const tableContainerStyle = {
     overflowX: "auto", // Enable horizontal scrolling
   };
@@ -170,9 +142,12 @@ const RenderTable = ({
               {tableColumns.map((column) => (
                 <TableCell
                   key={column.id}
-                  width={column.width}
                   align={column.align || "center"}
-                  style={tableCellStyle}
+                  style={{
+                    color: "white",
+                    minWidth: column.width || "150px",
+                    padding: "8px",
+                  }}
                 >
                   {column.label}
                 </TableCell>
@@ -190,8 +165,10 @@ const RenderTable = ({
                 {tableColumns.map((column) => (
                   <TableCell
                     key={column.id}
-                    width={column.width}
                     align={column.align || "center"}
+                    style={{
+                      minWidth: column.width || "150px",
+                    }}
                   >
                     {column.id === "serialNumber" ? (
                       rowIndex + 1
@@ -247,7 +224,9 @@ const RenderTable = ({
                                 return (
                                   <MenuItem
                                     key={option.id ? option.id : option.label}
-                                    value={option.value ? option.value : option.id}
+                                    value={
+                                      option.value ? option.value : option.id
+                                    }
                                   >
                                     {option.label}
                                   </MenuItem>
@@ -263,15 +242,23 @@ const RenderTable = ({
                         value={row[column.id] || ""}
                         onChange={(event, newValue) => {
                           // newValue can be a string (typed) or an object (selected)
-                          const finalValue = typeof newValue === 'object' && newValue !== null
-                            ? (newValue.id || newValue.label || newValue.value || newValue)
-                            : newValue;
+                          const finalValue =
+                            typeof newValue === "object" && newValue !== null
+                              ? newValue.id ||
+                                newValue.label ||
+                                newValue.value ||
+                                newValue
+                              : newValue;
                           handleInputChange(rowIndex, column.id, finalValue);
                         }}
                         onInputChange={(event, newInputValue) => {
                           // Handle typing - only when user is typing (not when selecting)
-                          if (event?.type === 'change') {
-                            handleInputChange(rowIndex, column.id, newInputValue);
+                          if (event?.type === "change") {
+                            handleInputChange(
+                              rowIndex,
+                              column.id,
+                              newInputValue
+                            );
                           }
                         }}
                         options={(() => {
@@ -307,9 +294,7 @@ const RenderTable = ({
                             handleInputChange(rowIndex, column.id, newValue)
                           }
                           fullWidth
-                          renderInput={(props) => (
-                            <TextField {...props} fullWidth />
-                          )}
+                          renderInput={(props) => <TextField {...props} />}
                           format="DD/MM/YYYY HH:mm"
                         />
                       </LocalizationProvider>
@@ -320,9 +305,8 @@ const RenderTable = ({
                           onChange={(newValue) =>
                             handleInputChange(rowIndex, column.id, newValue)
                           }
-                          renderInput={(props) => (
-                            <TextField {...props} fullWidth />
-                          )}
+                          fullWidth
+                          renderInput={(props) => <TextField {...props} />}
                           format="DD/MM/YYYY"
                         />
                       </LocalizationProvider>
