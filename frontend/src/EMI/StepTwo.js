@@ -1,4 +1,4 @@
-import React, { useCallback, useContext, useEffect, useState } from "react";
+import { useCallback, useContext, useEffect, useState } from "react";
 import { EMIJCContext } from "./EMIJCContext";
 import { useForm } from "react-hook-form";
 import { Box, Card, Grid, Typography } from "@mui/material";
@@ -136,7 +136,7 @@ export default function EMIJCStepTwo() {
       updateTestPerformedTableRows([testPerformedTableRowTemplate]);
     }
     // Note the empty dependency array - this only runs once when component mounts
-  }, []);
+  });
 
   const fieldsToBeFilledByLoggedInUserPartOne = [
     {
@@ -252,21 +252,21 @@ export default function EMIJCStepTwo() {
     {
       id: "testStartDateTime",
       label: "Test Start Date & Time",
-      width: 1500,
+      width: "250px",
       type: "dateTime",
       align: "center",
     },
     {
       id: "startTemp",
       label: "Start Temp(°C)",
-      width: 200,
+      width: "150px",
       type: "textField",
       align: "center",
     },
     {
       id: "startRh",
       label: "Start RH(%)",
-      width: 200,
+      width: "150px",
       type: "textField",
       align: "center",
     },
@@ -281,28 +281,28 @@ export default function EMIJCStepTwo() {
     {
       id: "testEndDateTime",
       label: "Test End Date & Time",
-      width: 800,
+      width: "250px",
       type: "dateTime",
       align: "center",
     },
     {
       id: "endTemp",
       label: "End Temp(°C)",
-      width: 200,
+      width: "150px",
       type: "textField",
       align: "center",
     },
     {
       id: "endRh",
       label: "End RH(%)",
-      width: 200,
+      width: "150px",
       type: "textField",
       align: "center",
     },
     {
       id: "testEndedBy",
       label: "Test Ended By",
-      width: 250,
+      width: "150px",
       type: "select",
       options: emiUsers,
       align: "center",
@@ -310,14 +310,14 @@ export default function EMIJCStepTwo() {
     {
       id: "testDuration",
       label: "Test Duration (Mins)",
-      width: 200,
+      width: "150px",
       type: "number",
       align: "center",
     },
     {
       id: "actualTestDuration",
       label: "Actual Test Duration(Hrs)",
-      width: 200,
+      width: "150px",
       type: "textField",
       align: "center",
     },
@@ -325,7 +325,7 @@ export default function EMIJCStepTwo() {
     {
       id: "observationForm",
       label: "Observation Form",
-      width: 200,
+      width: "150px",
       type: "select",
       options: [
         { label: "CS101", value: "CS101" },
@@ -342,14 +342,14 @@ export default function EMIJCStepTwo() {
     {
       id: "createObservationForm",
       label: "Create Observation Form",
-      width: 200,
+      width: "150px",
       type: "button",
     },
     {
       id: "observationFormStatus",
       label: " Observation Form Status",
       align: "center",
-      width: 200,
+      width: "150px",
       type: "select",
       options: [
         { label: "Added", value: "Added" },
@@ -359,7 +359,7 @@ export default function EMIJCStepTwo() {
     {
       id: "reportDeliveryStatus",
       label: "Report Delivery Status",
-      width: 200,
+      width: "150px",
       type: "select",
       options: [
         { id: "Send Draft Report", label: "Send Draft Report" },
@@ -371,14 +371,14 @@ export default function EMIJCStepTwo() {
     {
       id: "reportNumber",
       label: "Report Number",
-      width: 200,
+      width: "200px",
       type: "textField",
       align: "center",
     },
     {
       id: "reportPreparedBy",
       label: "Report Prepared By",
-      width: 200,
+      width: "150px",
       type: "select",
       options: emiUsers,
       align: "center",
@@ -386,7 +386,7 @@ export default function EMIJCStepTwo() {
     {
       id: "reportStatus",
       label: "Report Status",
-      width: 200,
+      width: "150px",
       type: "select",
       options: [
         { id: "Draft Report Sent", label: "Draft Report Sent" },

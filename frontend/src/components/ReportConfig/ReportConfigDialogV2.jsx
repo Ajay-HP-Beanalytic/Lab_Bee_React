@@ -17,11 +17,22 @@ import {
   FormControl,
   FormLabel,
   Divider,
+  TextField,
+  Grid,
 } from "@mui/material";
 import { Close as CloseIcon } from "@mui/icons-material";
+import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
+import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
+import { DatePicker } from "@mui/x-date-pickers/DatePicker";
+
 import { toast } from "react-toastify";
 import ImageRequirementsConfig from "./ImageRequirementsConfig";
 import ImageUploadSection from "./ImageUploadSection";
+import dayjs from "dayjs";
+import advancedFormat from "dayjs/plugin/advancedFormat";
+
+// Extend dayjs with advancedFormat plugin to support "Do" format
+dayjs.extend(advancedFormat);
 
 /**
  * ReportConfigDialogV2 - Multi-step Report Configuration Dialog
@@ -44,6 +55,12 @@ const ReportConfigDialogV2 = ({
 }) => {
   const [activeStep, setActiveStep] = useState(0);
   const [reportType, setReportType] = useState(defaultReportType);
+  const [testReportNumber, setTestReportNumber] = useState("");
+  const [ulrNumber, setUlrNumber] = useState("");
+  const [originalReportIssueDate, setOriginalReportIssueDate] = useState(null);
+  const [chamberInfo, setChamberInfo] = useState("");
+  const [chamberMakeInfo, setChamberMakeInfo] = useState("");
+
   const [imageRequirements, setImageRequirements] = useState({});
 
   // Image states
@@ -71,7 +88,7 @@ const ReportConfigDialogV2 = ({
   const [dragActive, setDragActive] = useState({});
 
   const steps = [
-    "Report Type",
+    "Report Info",
     "Image Requirements",
     "Upload Images",
     "Review",
@@ -182,6 +199,14 @@ const ReportConfigDialogV2 = ({
   const handleConfirm = () => {
     const config = {
       reportType,
+      testReportNumber,
+      ulrNumber,
+      // Format the date to string for the template (e.g., "1st Jan 2025")
+      originalReportIssueDate: originalReportIssueDate
+        ? originalReportIssueDate.format("Do MMM YYYY")
+        : "",
+      chamberInfo,
+      chamberMakeInfo,
       companyLogo: images.companyLogo,
       companyLogoBase64: images.companyLogoBase64,
       testImages: images.testImages,
@@ -204,6 +229,11 @@ const ReportConfigDialogV2 = ({
   const handleReset = () => {
     setActiveStep(0);
     setReportType(defaultReportType);
+    setTestReportNumber("");
+    setUlrNumber("");
+    setOriginalReportIssueDate(null);
+    setChamberInfo("");
+    setChamberMakeInfo("");
     setImageRequirements({});
     setImages({
       companyLogo: null,
@@ -261,6 +291,77 @@ const ReportConfigDialogV2 = ({
                 />
               </RadioGroup>
             </FormControl>
+
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={6} md={4}>
+                <TextField
+                  label="Report Number"
+                  variant="outlined"
+                  fullWidth
+                  margin="normal"
+                  value={testReportNumber}
+                  onChange={(e) => setTestReportNumber(e.target.value)}
+                />
+              </Grid>
+
+              {reportType === "NABL" && (
+                <Grid item xs={12} sm={6} md={4}>
+                  <TextField
+                    label="ULR Number"
+                    variant="outlined"
+                    fullWidth
+                    margin="normal"
+                    value={ulrNumber}
+                    onChange={(e) => setUlrNumber(e.target.value)}
+                  />
+                </Grid>
+              )}
+
+              <Grid item xs={12} sm={6} md={4}>
+                <LocalizationProvider dateAdapter={AdapterDayjs}>
+                  <DatePicker
+                    label="Original Report Issue Date"
+                    value={originalReportIssueDate}
+                    onChange={(newValue) =>
+                      setOriginalReportIssueDate(newValue)
+                    }
+                    format="DD-MM-YYYY"
+                    slotProps={{
+                      textField: {
+                        fullWidth: true,
+                        margin: "normal",
+                      },
+                    }}
+                  />
+                </LocalizationProvider>
+              </Grid>
+
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  label="Chamber Info"
+                  variant="outlined"
+                  fullWidth
+                  margin="normal"
+                  multiline
+                  rows={4}
+                  value={chamberInfo}
+                  onChange={(e) => setChamberInfo(e.target.value)}
+                />
+              </Grid>
+
+              <Grid item xs={12} sm={6}>
+                <TextField
+                  label="Chamber Make Info"
+                  variant="outlined"
+                  fullWidth
+                  margin="normal"
+                  multiline
+                  rows={4}
+                  value={chamberMakeInfo}
+                  onChange={(e) => setChamberMakeInfo(e.target.value)}
+                />
+              </Grid>
+            </Grid>
           </Box>
         );
 
@@ -407,6 +508,32 @@ const ReportConfigDialogV2 = ({
               <Typography variant="body2" gutterBottom>
                 {reportType}
               </Typography>
+              <Typography variant="subtitle2">Test Report Number:</Typography>
+              <Typography variant="body2" gutterBottom>
+                {testReportNumber}
+              </Typography>
+
+              <Typography variant="subtitle2">Test ULR Number:</Typography>
+              <Typography variant="body2" gutterBottom>
+                {ulrNumber}
+              </Typography>
+
+              <Typography variant="subtitle2">Report Date:</Typography>
+              <Typography variant="body2" gutterBottom>
+                {originalReportIssueDate
+                  ? originalReportIssueDate.format("DD-MM-YYYY")
+                  : "Not specified"}
+              </Typography>
+
+              <Typography variant="subtitle2">Chamber Info:</Typography>
+              <Typography variant="body2" gutterBottom>
+                {chamberInfo || "Not specified"}
+              </Typography>
+
+              <Typography variant="subtitle2">Chamber Make Info:</Typography>
+              <Typography variant="body2" gutterBottom>
+                {chamberMakeInfo || "Not specified"}
+              </Typography>
 
               <Divider sx={{ my: 2 }} />
 
@@ -464,7 +591,12 @@ const ReportConfigDialogV2 = ({
         </Box>
       </DialogTitle>
 
-      <Stepper activeStep={activeStep} sx={{ px: 3, pt: 2 }}>
+      <Stepper
+        activeStep={activeStep}
+        alternativeLabel
+        nonLinear
+        sx={{ px: 3, pt: 2, mb: 2 }}
+      >
         {steps.map((label) => (
           <Step key={label}>
             <StepLabel>{label}</StepLabel>

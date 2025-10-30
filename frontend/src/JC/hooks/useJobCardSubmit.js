@@ -69,7 +69,6 @@ const useJobCardSubmit = () => {
         id,
         jcNumber: formData.jcNumber,
         srfNumber: formData.srfNumber,
-        srfDate: formData.srfDate,
         dcNumber: formData.dcNumber,
         jcOpenDate: formData.jcOpenDate
           ? dayjs(formData.jcOpenDate).format("YYYY-MM-DD")
@@ -121,27 +120,39 @@ const useJobCardSubmit = () => {
         throw new Error("Failed to save job card");
       }
 
-      console.log("🔍 [JC Submit] Full Response:", jcResponse.data);
-      console.log("🔍 [JC Submit] Response jcNumber:", jcResponse.data.jcNumber);
-      console.log("🔍 [JC Submit] formData.jcNumber:", formData.jcNumber);
-
       const jcNumber = jcResponse.data.jcNumber || formData.jcNumber;
-
-      console.log("✅ [JC Submit] Final jcNumber to use:", jcNumber);
 
       // Step 4: Save EUT Details
       if (eutRows.length > 0) {
-        await saveEutDetails(eutRows, jcNumber, formData.lastModifiedBy, loggedInUserRole, loggedInUserDepartment);
+        await saveEutDetails(
+          eutRows,
+          jcNumber,
+          formData.lastModifiedBy,
+          loggedInUserRole,
+          loggedInUserDepartment
+        );
       }
 
       // Step 5: Save Test Details
       if (testRows.length > 0) {
-        await saveTestDetails(testRows, jcNumber, formData.lastModifiedBy, loggedInUserRole, loggedInUserDepartment);
+        await saveTestDetails(
+          testRows,
+          jcNumber,
+          formData.lastModifiedBy,
+          loggedInUserRole,
+          loggedInUserDepartment
+        );
       }
 
       // Step 6: Save Test Performed Details
       if (testDetailsRows.length > 0) {
-        await saveTestPerformedDetails(testDetailsRows, jcNumber, formData.lastModifiedBy, loggedInUserRole, loggedInUserDepartment);
+        await saveTestPerformedDetails(
+          testDetailsRows,
+          jcNumber,
+          formData.lastModifiedBy,
+          loggedInUserRole,
+          loggedInUserDepartment
+        );
       }
 
       // Step 7: Show success message
@@ -162,7 +173,8 @@ const useJobCardSubmit = () => {
         );
       } else {
         toast.error(
-          error.response?.data?.message || "Failed to submit JC. Please try again later."
+          error.response?.data?.message ||
+            "Failed to submit JC. Please try again later."
         );
       }
 
@@ -175,7 +187,13 @@ const useJobCardSubmit = () => {
    * Save EUT Details
    * Backend endpoint: POST /api/eutdetails/serialNos/ and POST /api/eutdetails/
    */
-  const saveEutDetails = async (eutRows, jcNumber, loggedInUser, loggedInUserRole, loggedInUserDepartment) => {
+  const saveEutDetails = async (
+    eutRows,
+    jcNumber,
+    loggedInUser,
+    loggedInUserRole,
+    loggedInUserDepartment
+  ) => {
     try {
       // Step 1: Save serial numbers
       const eutRowIds = eutRows.map((row) => row.id);
@@ -235,7 +253,13 @@ const useJobCardSubmit = () => {
    * Save Test Details
    * Backend endpoint: POST /api/tests_sync/names/ and POST /api/tests/
    */
-  const saveTestDetails = async (testRows, jcNumber, loggedInUser, loggedInUserRole, loggedInUserDepartment) => {
+  const saveTestDetails = async (
+    testRows,
+    jcNumber,
+    loggedInUser,
+    loggedInUserRole,
+    loggedInUserDepartment
+  ) => {
     try {
       // Step 1: Sync test row IDs (handles temporary IDs)
       const testRowIds = testRows.map((row) => row.id);
@@ -290,7 +314,13 @@ const useJobCardSubmit = () => {
    * Save Test Performed Details
    * Backend endpoint: POST /api/testdetails_sync/names/ and POST /api/testdetails/
    */
-  const saveTestPerformedDetails = async (testDetailsRows, jcNumber, loggedInUser, loggedInUserRole, loggedInUserDepartment) => {
+  const saveTestPerformedDetails = async (
+    testDetailsRows,
+    jcNumber,
+    loggedInUser,
+    loggedInUserRole,
+    loggedInUserDepartment
+  ) => {
     try {
       // Step 1: Sync test details row IDs (handles temporary IDs)
       const testDetailsRowIds = testDetailsRows.map((row) => row.id);

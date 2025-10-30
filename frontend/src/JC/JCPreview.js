@@ -24,7 +24,6 @@ import { UserContext } from "../Pages/UserContext";
 // import { useNavigate } from "react-router-dom";
 import JobCardComponent from "./JobCardComponent";
 import DocumentPreviewModal from "../components/DocumentPreviewModal";
-import ReportConfigDialog from "../components/ReportConfigDialog";
 import AuditHistoryDialog from "../components/AuditHistoryDialog";
 import { generateTS1Report } from "./TS1ReportDocument";
 import ReportConfigDialogV2 from "../components/ReportConfig/ReportConfigDialogV2";
@@ -43,15 +42,6 @@ const formatDateTime = (dateString) => {
   return dateValue.format("YYYY/MM/DD HH:mm");
 };
 
-const formatDate = (dateString) => {
-  const dateValue = dayjs(dateString);
-  if (!dateValue.isValid()) {
-    return "";
-  }
-
-  return dateValue.format("YYYY/MM/DD");
-};
-
 export default function JCPreview({
   open,
   onClose,
@@ -61,12 +51,11 @@ export default function JCPreview({
   eutRows,
   testRows,
   testDetailsRows,
-  reliabilityTaskRow,
   onEdit,
   editJc,
   jcId,
 }) {
-  const { loggedInUser, loggedInUserDepartment } = useContext(UserContext);
+  const { loggedInUserDepartment } = useContext(UserContext);
 
   // State for document preview modal
   const [previewModalOpen, setPreviewModalOpen] = useState(false);
@@ -83,7 +72,6 @@ export default function JCPreview({
 
   const isTS1Testing = loggedInUserDepartment === "TS1 Testing";
   const isReportsAndScrutiny = loggedInUserDepartment === "Reports & Scrutiny";
-  const isReliability = loggedInUserDepartment === "Reliability";
   const isAdminOrAccounts =
     loggedInUserDepartment === "Administration" ||
     loggedInUserDepartment === "Accounts";
@@ -217,7 +205,7 @@ export default function JCPreview({
     }
 
     try {
-      console.log("Generating report with config:", reportConfig);
+      console.log("Generating report with config--->:", reportConfig);
 
       // Store the config for the Previous button
       setLastReportConfig(reportConfig);
@@ -515,19 +503,12 @@ export default function JCPreview({
       </Dialog>
 
       {/* Report Configuration Dialog */}
-      <ReportConfigDialog
+      <ReportConfigDialogV2
         open={configDialogOpen}
         onClose={handleReportConfigCancel}
         onConfirm={handleReportConfigConfirm}
         initialConfig={lastReportConfig}
       />
-
-      {/* <ReportConfigDialogV2
-        open={configDialogOpen}
-        onClose={handleReportConfigCancel}
-        onConfirm={handleReportConfigConfirm}
-        initialConfig={lastReportConfig}
-      /> */}
 
       {/* Document Preview Modal */}
       <DocumentPreviewModal

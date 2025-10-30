@@ -43,12 +43,6 @@ export default function EmiJobcard() {
     setTestsTableRows,
     testPerformedTableRows,
     setTestPerformedTableRows,
-    updateStepOneFormData,
-    updateStepTwoFormData,
-    updateStepThreeFormData,
-    updateEutTableRows,
-    updateTestsTableRows,
-    updateTestPerformedTableRows,
     deletedEutIds,
     setDeletedEutIds,
     deletedTestIds,
@@ -94,7 +88,7 @@ export default function EmiJobcard() {
   };
 
   // Function to submit the  EMI Jobcard data:
-  const onSubmitEmiJC = async (data) => {
+  const onSubmitEmiJC = async () => {
     if (!stepTwoFormData.jcOpenDate) {
       toast.warning("Please Enter Job-Card Open Date in Step 2");
       return;
@@ -356,27 +350,24 @@ export default function EmiJobcard() {
     setEditingJCNumber(data.emiPrimaryJCData.jcNumber);
   };
 
-  const fetchJCData = async () => {
-    if (!id) {
-      console.error("Error: JC ID is not defined.");
-      return;
-    }
-    try {
-      const response = await axios.get(
-        `${serverBaseAddress}/api/emi_jobcard/${id}`
-      );
-      populateData(response.data);
-    } catch (error) {
-      console.error("Error fetching job card data:", error);
-    }
-  };
-
+  // Only fetch JC data if there's an id in the URL (edit mode)
   useEffect(() => {
-    // Only fetch JC data if there's an id in the URL (edit mode)
-    if (id) {
-      setEditingJC(true);
-      fetchJCData();
-    }
+    if (!id) return;
+
+    setEditingJC(true);
+
+    const fetchJCData = async () => {
+      try {
+        const response = await axios.get(
+          `${serverBaseAddress}/api/emi_jobcard/${id}`
+        );
+        populateData(response.data);
+      } catch (error) {
+        console.error("Error fetching job card data:", error);
+      }
+    };
+
+    fetchJCData();
   }, [id]);
 
   ///////////////////////////////////////////////////////////////////////////////////////
