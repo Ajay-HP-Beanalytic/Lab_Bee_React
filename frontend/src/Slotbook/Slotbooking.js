@@ -12,7 +12,6 @@ import {
   FormControl,
   Grid,
   InputLabel,
-  Menu,
   MenuItem,
   Select,
   TextField,
@@ -41,7 +40,7 @@ import * as yup from "yup";
 import { toast } from "react-toastify";
 import CustomModal from "../common/CustomModalWithTable";
 import ConfirmationDialog from "../common/ConfirmationDialog";
-import { useParams } from "react-router-dom";
+// import { useParams } from "react-router-dom";
 import { UserContext } from "../Pages/UserContext";
 import SearchBar from "../common/SearchBar";
 
@@ -58,8 +57,6 @@ export default function Slotbooking() {
 
   const [selectedChamber, setSelectedChamber] = useState("");
 
-  const [slotBookedBy, setSlotBookedBy] = useState("");
-
   const [newBookingAdded, setNewBookingAdded] = useState(false);
   const [slotDeleted, setSlotDeleted] = useState(false);
   const [openDeleteSlotDialog, setOpenDeleteSlotDialog] = useState(false);
@@ -72,7 +69,7 @@ export default function Slotbooking() {
 
   const { loggedInUser, loggedInUserDepartment } = useContext(UserContext);
 
-  const { id } = useParams("id");
+  // const { id } = useParams("id");
 
   const [searchInputTextOfSlot, setSearchInputTextOfSlot] = useState("");
   const [filteredSlots, setFilteredSlots] = useState(myEventsList);
@@ -107,6 +104,7 @@ export default function Slotbooking() {
     slotStartDateTime: null,
     slotEndDateTime: null,
     slotDuration: null,
+    slotBookedBy: "",
     remarks: "",
   };
 
@@ -214,13 +212,12 @@ export default function Slotbooking() {
     }
 
     // No overlap found, proceed with booking
-    // const bookingID = await generateBookingID();
     const bookingID = editId ? editId : await generateBookingID();
 
     const completeFormData = {
       ...data,
       bookingID: bookingID,
-      slotBookedBy: slotBookedBy,
+      slotBookedBy: loggedInUser,
 
       slotStartDateTime: selectedSlotStartDate.format("YYYY-MM-DD HH:mm"),
       slotEndDateTime: selectedSlotEndDate.format("YYYY-MM-DD HH:mm"),
@@ -229,12 +226,14 @@ export default function Slotbooking() {
     };
 
     try {
-      const submitBooking = await axios.post(
-        `${serverBaseAddress}/api/slotBooking/` + editId,
-        {
-          formData: completeFormData,
-        }
-      );
+      // Fix: Use correct endpoint based on whether it's new or edit
+      const endpoint = editId
+        ? `${serverBaseAddress}/api/slotBooking/${editId}`
+        : `${serverBaseAddress}/api/slotBooking`;
+
+      await axios.post(endpoint, {
+        formData: completeFormData,
+      });
       setNewBookingAdded(!newBookingAdded);
 
       reset();
@@ -254,10 +253,10 @@ export default function Slotbooking() {
   //////////////////////////////////////////////////////////////////////////////////////
 
   // Functions to handle the errors while submission of slot booking form:
-  const onError = (errors) => {};
+  const onError = () => {};
 
   // Function to delete the existing or selected booking:
-  const handleDeleteBooking = async (e) => {
+  const handleDeleteBooking = async () => {
     const bookingIDToBeDeleted = selectedEvent.id;
 
     try {
@@ -297,7 +296,7 @@ export default function Slotbooking() {
       );
 
       if (selectedChamber) {
-        const selectedChamberId = selectedChamber.id;
+        // const selectedChamberId = selectedChamber.id;
         const selectedChamberName = selectedChamber.title;
 
         setValue("selectedChamber", selectedChamberName);
@@ -382,10 +381,6 @@ export default function Slotbooking() {
   }, [setValue, slotDuration]);
 
   useEffect(() => {
-    setSlotBookedBy(loggedInUser);
-  }, []);
-
-  useEffect(() => {
     // Set the value directly using setValue
     setValue("slotBookedBy", loggedInUser);
   }, [loggedInUser, setValue]);
@@ -401,10 +396,10 @@ export default function Slotbooking() {
 
         const events = allBookingsData.data.map((booking) => {
           // Shorten the test name to max 4 characters and add "..." if necessary
-          const shortTestName =
-            booking.test_name.length > 4
-              ? `${booking.test_name.slice(0, 4)}..`
-              : booking.test_name;
+          // const shortTestName =
+          //   booking.test_name.length > 4
+          //     ? `${booking.test_name.slice(0, 4)}..`
+          //     : booking.test_name;
 
           // Shorten the company name to max 4 characters and add "..." if necessary
           const shortCompanyName =
@@ -436,7 +431,7 @@ export default function Slotbooking() {
     fetchAllTheBookings();
   }, [newBookingAdded, slotDeleted]);
 
-  const eventPropGetter = (event, start, end, isSelected) => {
+  const eventPropGetter = (event) => {
     // Get the current date
     const currentDate = moment();
 
@@ -517,7 +512,7 @@ export default function Slotbooking() {
     setFilteredSlots(filtered);
   };
 
-  const onClearSearchInputOfSlot = (e) => {
+  const onClearSearchInputOfSlot = () => {
     setSearchInputTextOfSlot("");
     setFilteredSlots(myEventsList);
   };

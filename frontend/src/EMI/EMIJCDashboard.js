@@ -23,7 +23,6 @@ import axios from "axios";
 import { useLocation, useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 import EMIJCPreview from "./EMIJCPreview";
-import { CreatePieChart } from "../functions/DashboardFunctions";
 import { EMIJCContext } from "./EMIJCContext";
 import EMITestNamesAndStandards from "./EMITestNamesAndStandards";
 import EMIStandardsManager from "./EMIStandardsManager";
@@ -69,10 +68,6 @@ export default function EMIJCDashboard() {
 
   const [refresh, setRefresh] = useState(false);
 
-  const [jcMonthYear, setJCMonthYear] = useState(getCurrentMonthYear());
-
-  const [jcMonthYearList, setJcMonthYearList] = useState([]);
-
   const { month, year } = getCurrentMonthYear();
 
   const [jcMonth, setJCMonth] = useState(month);
@@ -81,10 +76,7 @@ export default function EMIJCDashboard() {
   const [availableYears, setAvailableYears] = useState([]);
   const [availableMonths, setAvailableMonths] = useState([]);
 
-  const [loading, setLoading] = useState(true); //To show loading label
-
-  const [error, setError] = useState(null); //To show error label
-
+  // eslint-disable-next-line no-unused-vars
   const [selectedJCDateRange, setSelectedJCDateRange] = useState(null);
 
   const [searchInputTextOfJC, setSearchInputTextOfJC] = useState("");
@@ -340,8 +332,6 @@ export default function EMIJCDashboard() {
           setOriginalEmiJCTableData(testingJcResponse.data);
         } catch (error) {
           console.error("Failed to fetch the data", error);
-          setError(error);
-          setLoading(false);
         }
       };
       fetchJCDataFromDatabase();
@@ -469,101 +459,6 @@ export default function EMIJCDashboard() {
 
   const editSelectedJC = (item) => {
     navigate(`/emi_jobcard/${item}`);
-  };
-
-  ///Function to get the count of jc status:
-  const getJobcardStatusCount = (data) => {
-    let jcOpenCount = 0;
-    let jcRunningCount = 0;
-    let jcClosedCount = 0;
-
-    data.forEach((item) => {
-      if (item.jcStatus !== "") {
-        switch (item.jcStatus) {
-          case "Open":
-            jcOpenCount++;
-            break;
-
-          case "Running":
-            jcRunningCount++;
-            break;
-
-          case "Closed":
-            jcClosedCount++;
-            break;
-
-          default:
-            break;
-        }
-      }
-    });
-    return { jcOpenCount, jcRunningCount, jcClosedCount };
-  };
-
-  // const { jcOpenCount, jcRunningCount, jcClosedCount } =
-  //   getJobcardStatusCount(filteredJcData);
-
-  const jcStatusRawData = getJobcardStatusCount(filteredJcData);
-
-  // Prepare data for the pie chart
-  const jcStatusData = {
-    key: ["Open", "Running", "Closed"],
-    value: [
-      jcStatusRawData.jcOpenCount,
-      jcStatusRawData.jcRunningCount,
-      jcStatusRawData.jcClosedCount,
-    ],
-  };
-
-  const jcStatusPieChart = {
-    labels: jcStatusData.key,
-    datasets: [
-      {
-        data: jcStatusData.value,
-        backgroundColor: ["#8cd9b3", "#ff6666", "#4472c4"],
-        // backgroundColor: ["#8cd9b3", "#ff6666", "#4472c4", "#ffc000"],
-      },
-    ],
-  };
-
-  const optionsForJcStatusPieChart = {
-    responsive: true,
-    //maintainAspectRatio: false, // False will keep the size small. If it's true then we can define the size using aspectRatio
-    aspectRatio: 2,
-    plugins: {
-      legend: {
-        position: "top",
-        display: true,
-      },
-      title: {
-        display: true,
-        text: "Job-Card Status",
-        font: {
-          family: "Roboto-Bold",
-          size: 25,
-          weight: "bold",
-        },
-      },
-      subtitle: {
-        display: true,
-        text: "Monthly Job-Card Status",
-        font: {
-          family: "Roboto-Regular",
-          size: 15,
-          weight: "bold",
-        },
-      },
-      datalabels: {
-        display: true,
-        color: "black",
-        fontWeight: "bold",
-        font: {
-          family: "Roboto-Regular",
-          size: 15,
-          weight: "bold",
-        },
-      },
-    },
   };
 
   /////JC Preview:
@@ -759,24 +654,6 @@ export default function EMIJCDashboard() {
                 />
               </Box>
             )}
-
-            {/* <Grid container spacing={4} sx={{ mt: 2 }}>
-              <Grid item xs={12} sm={6} md={6}>
-                <Box
-                  sx={{
-                    backgroundColor: "#ebf0fa",
-                    padding: "10px",
-                    borderRadius: "10px",
-                    boxShadow: "10px",
-                  }}
-                >
-                  <CreatePieChart
-                    data={jcStatusPieChart}
-                    options={optionsForJcStatusPieChart}
-                  />
-                </Box>
-              </Grid>
-            </Grid> */}
           </>
         )}
 

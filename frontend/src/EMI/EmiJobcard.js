@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useState, useCallback } from "react";
 
 import { Box, Button, Card, Typography } from "@mui/material";
 import { FormProvider, useForm } from "react-hook-form";
@@ -259,6 +259,68 @@ export default function EmiJobcard() {
     methods,
   ]);
 
+  const populateData = useCallback(
+    (data) => {
+      // Populate Step One data (emiEutData and emiTestsData tables)
+      setStepOneFormData({
+        companyName: data.emiPrimaryJCData.companyName,
+        companyAddress: data.emiPrimaryJCData.companyAddress,
+        customerName: data.emiPrimaryJCData.customerName,
+        customerEmail: data.emiPrimaryJCData.customerEmail,
+        customerPhone: data.emiPrimaryJCData.customerNumber,
+        projectName: data.emiPrimaryJCData.projectName,
+        reportType: data.emiPrimaryJCData.reportType,
+      });
+      setEutTableRows(data.emiEutData); // populate EUT table
+      setTestsTableRows(data.emiTestsData); // populate Tests table
+
+      // Populate Step Two data (emiTestsDetailsData table)
+      setStepTwoFormData({
+        quoteNumber: data.emiPrimaryJCData.quoteNumber,
+        poNumber: data.emiPrimaryJCData.poNumber,
+        jcOpenDate: data.emiPrimaryJCData.jcOpenDate,
+        itemReceivedDate: data.emiPrimaryJCData.itemReceivedDate,
+        typeOfRequest: data.emiPrimaryJCData.typeOfRequest,
+        sampleCondition: data.emiPrimaryJCData.sampleCondition,
+        slotDuration: data.emiPrimaryJCData.slotDuration,
+        jcIncharge: data.emiPrimaryJCData.jcIncharge,
+        lastUpdatedBy: data.emiPrimaryJCData.lastUpdatedBy,
+      });
+
+      const parsedTestDetailsData = data.emiTestsDetailsData.map(
+        (testDetail) => ({
+          ...testDetail,
+          testStartDateTime: testDetail.testStartDateTime
+            ? dayjs(testDetail.testStartDateTime)
+            : null,
+          testEndDateTime: testDetail.testEndDateTime
+            ? dayjs(testDetail.testEndDateTime)
+            : null,
+        })
+      );
+      setTestPerformedTableRows(parsedTestDetailsData); // populate Test Details table
+
+      // Populate Step Three data (observations, jcStatus, etc.)
+      setStepThreeFormData({
+        observations: data.emiPrimaryJCData.observations,
+        jcStatus: data.emiPrimaryJCData.jcStatus,
+        jcClosedDate: data.emiPrimaryJCData.jcClosedDate,
+      });
+
+      // Set the JC Number for editing
+      setEditingJCNumber(data.emiPrimaryJCData.jcNumber);
+    },
+    [
+      setStepOneFormData,
+      setEutTableRows,
+      setTestsTableRows,
+      setStepTwoFormData,
+      setTestPerformedTableRows,
+      setStepThreeFormData,
+      setEditingJCNumber,
+    ]
+  );
+
   //Function to fetch the JC Number:
   useEffect(() => {
     const fetchLatestJCNumber = async () => {
@@ -297,59 +359,6 @@ export default function EmiJobcard() {
     fetchLatestJCNumber();
   }, [loggedInUser, id]);
 
-  const populateData = (data) => {
-    // Populate Step One data (emiEutData and emiTestsData tables)
-
-    setStepOneFormData({
-      companyName: data.emiPrimaryJCData.companyName,
-      companyAddress: data.emiPrimaryJCData.companyAddress,
-      customerName: data.emiPrimaryJCData.customerName,
-      customerEmail: data.emiPrimaryJCData.customerEmail,
-      customerPhone: data.emiPrimaryJCData.customerNumber,
-      projectName: data.emiPrimaryJCData.projectName,
-      reportType: data.emiPrimaryJCData.reportType,
-    });
-    setEutTableRows(data.emiEutData); // populate EUT table
-    setTestsTableRows(data.emiTestsData); // populate Tests table
-
-    // Populate Step Two data (emiTestsDetailsData table)
-    setStepTwoFormData({
-      quoteNumber: data.emiPrimaryJCData.quoteNumber,
-      poNumber: data.emiPrimaryJCData.poNumber,
-      jcOpenDate: data.emiPrimaryJCData.jcOpenDate,
-      itemReceivedDate: data.emiPrimaryJCData.itemReceivedDate,
-      typeOfRequest: data.emiPrimaryJCData.typeOfRequest,
-      sampleCondition: data.emiPrimaryJCData.sampleCondition,
-      slotDuration: data.emiPrimaryJCData.slotDuration,
-      jcIncharge: data.emiPrimaryJCData.jcIncharge,
-      lastUpdatedBy: data.emiPrimaryJCData.lastUpdatedBy,
-    });
-
-    const parsedTestDetailsData = data.emiTestsDetailsData.map(
-      (testDetail) => ({
-        ...testDetail,
-        testStartDateTime: testDetail.testStartDateTime
-          ? dayjs(testDetail.testStartDateTime)
-          : null,
-        testEndDateTime: testDetail.testEndDateTime
-          ? dayjs(testDetail.testEndDateTime)
-          : null,
-      })
-    );
-    setTestPerformedTableRows(parsedTestDetailsData); // populate Test Details table
-
-    // Populate Step Three data (observations, jcStatus, etc.)
-    setStepThreeFormData({
-      observations: data.emiPrimaryJCData.observations,
-      jcStatus: data.emiPrimaryJCData.jcStatus,
-      jcClosedDate: data.emiPrimaryJCData.jcClosedDate,
-    });
-
-    // Set the JC Number for editing
-
-    setEditingJCNumber(data.emiPrimaryJCData.jcNumber);
-  };
-
   // Only fetch JC data if there's an id in the URL (edit mode)
   useEffect(() => {
     if (!id) return;
@@ -368,7 +377,7 @@ export default function EmiJobcard() {
     };
 
     fetchJCData();
-  }, [id]);
+  }, [id, populateData]);
 
   ///////////////////////////////////////////////////////////////////////////////////////
 

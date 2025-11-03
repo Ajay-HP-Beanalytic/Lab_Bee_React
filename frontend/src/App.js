@@ -1,11 +1,5 @@
 import { useContext, useEffect } from "react";
-import {
-  Routes,
-  Route,
-  useLocation,
-  useNavigate,
-  Navigate,
-} from "react-router-dom";
+import { Routes, Route, useLocation, useNavigate } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import "react-big-calendar/lib/css/react-big-calendar.css";
@@ -49,7 +43,7 @@ import FileBrowser from "./FilesStorage/FileBrowser";
 function App() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { loggedInUser, loggedInUserDepartment, loggedInUserRole, isLoading } =
+  const { loggedInUserDepartment, loggedInUserRole, isLoading } =
     useContext(UserContext);
 
   useEffect(() => {
@@ -63,49 +57,6 @@ function App() {
     handleRouteChange();
   }, [location]);
 
-  // useEffect(() => {
-  //   if (loggedInUserDepartment || loggedInUserRole) {
-  //     if (
-  //       location.pathname === "/" ||
-  //       location.pathname === "/home" ||
-  //       location.pathname === "/reset_password" ||
-  //       location.pathname === "/register"
-  //     ) {
-  //       // Don't redirect if user is on auth pages
-  //       if (
-  //         location.pathname === "/reset_password" ||
-  //         location.pathname === "/register"
-  //       ) {
-  //         return;
-  //       }
-
-  //       if (
-  //         loggedInUserDepartment === "Administration" ||
-  //         loggedInUserDepartment === "Accounts"
-  //       ) {
-  //         navigate("/home");
-  //       } else if (loggedInUserDepartment === "Marketing") {
-  //         navigate("/quotation_dashboard");
-  //       } else if (
-  //         loggedInUserDepartment === "TS1 Testing" ||
-  //         loggedInUserDepartment === "Reports & Scrutiny"
-  //       ) {
-  //         navigate("/jobcard_dashboard");
-  //       } else if (
-  //         loggedInUserDepartment === "TS2 Testing" ||
-  //         loggedInUserRole === "Quality Engineer"
-  //       ) {
-  //         navigate("/emi_jc_dashboard");
-  //       } else if (
-  //         loggedInUserDepartment === "Reliability" ||
-  //         loggedInUserDepartment === "Software"
-  //       ) {
-  //         navigate("/projects");
-  //       }
-  //     }
-  //   }
-  // }, [loggedInUserDepartment, location.pathname, navigate]);
-
   // Improved department-based redirect logic
   useEffect(() => {
     // Don't redirect if still loading or if user data is not available
@@ -113,12 +64,8 @@ function App() {
       return;
     }
 
-    // Define public routes that should not trigger redirects
-    const publicRoutes = ["/", "/register", "/reset_password"];
-
     // Only redirect from root or home routes, not from public auth routes
     if (location.pathname === "/" || location.pathname === "/home") {
-      // if (publicRoutes.includes(location.pathname)) {
       // Add a small delay to ensure navigation is stable
       const redirectTimer = setTimeout(() => {
         if (
@@ -181,7 +128,7 @@ function App() {
       <Helmet>
         <meta charSet="utf-8" />
         <title>Lab Bee</title>
-        <link rel="canonical" href="https://labbee.beanalytic.com/" /> //{" "}
+        <link rel="canonical" href="https://labbee.beanalytic.com/" /> /{" "}
         {/* for SEO might need to change it */}
         <meta
           name="description"

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -46,12 +46,14 @@ dayjs.extend(advancedFormat);
  * @param {function} onClose - Callback when dialog is closed
  * @param {function} onConfirm - Callback when user confirms
  * @param {string} defaultReportType - Default report type
+ * @param {object} initialConfig - Previously saved configuration (for Previous button)
  */
 const ReportConfigDialogV2 = ({
   open,
   onClose,
   onConfirm,
   defaultReportType = "NABL",
+  initialConfig = null,
 }) => {
   const [activeStep, setActiveStep] = useState(0);
   const [reportType, setReportType] = useState(defaultReportType);
@@ -69,23 +71,82 @@ const ReportConfigDialogV2 = ({
     companyLogoPreview: null,
     companyLogoBase64: null,
     testImages: [],
-    testImagePreviews: [],
+    testImagesPreviews: [],
     testImagesBase64: [],
     beforeTestImages: [],
-    beforeTestImagePreviews: [],
+    beforeTestImagesPreviews: [],
     beforeTestImagesBase64: [],
     duringTestImages: [],
-    duringTestImagePreviews: [],
+    duringTestImagesPreviews: [],
     duringTestImagesBase64: [],
     afterTestImages: [],
-    afterTestImagePreviews: [],
+    afterTestImagesPreviews: [],
     afterTestImagesBase64: [],
     graphImages: [],
-    graphImagePreviews: [],
+    graphImagesPreviews: [],
     graphImagesBase64: [],
   });
 
   const [dragActive, setDragActive] = useState({});
+
+  // Initialize state from initialConfig when provided (for Previous button)
+  useEffect(() => {
+    if (initialConfig && open) {
+      setReportType(initialConfig.reportType || defaultReportType);
+      setTestReportNumber(initialConfig.testReportNumber || "");
+      setUlrNumber(initialConfig.ulrNumber || "");
+      setOriginalReportIssueDate(
+        initialConfig.originalReportIssueDate
+          ? dayjs(initialConfig.originalReportIssueDate, "Do MMM YYYY")
+          : null
+      );
+      setChamberInfo(initialConfig.chamberInfo || "");
+      setChamberMakeInfo(initialConfig.chamberMakeInfo || "");
+
+      // Restore image requirements (extract from initial config)
+      const requirements = {
+        companyLogo: !!initialConfig.companyLogo,
+        testImages: initialConfig.testImages?.length > 0,
+        beforeTestImages: initialConfig.beforeTestImages?.length > 0,
+        duringTestImages: initialConfig.duringTestImages?.length > 0,
+        afterTestImages: initialConfig.afterTestImages?.length > 0,
+        graphImages: initialConfig.graphImages?.length > 0,
+      };
+      setImageRequirements(requirements);
+
+      // Restore images
+      setImages({
+        companyLogo: initialConfig.companyLogo || null,
+        companyLogoPreview: initialConfig.companyLogoBase64 || null,
+        companyLogoBase64: initialConfig.companyLogoBase64 || null,
+        testImages: initialConfig.testImages || [],
+        testImagesPreviews: initialConfig.testImagesBase64?.map((base64) => ({
+          preview: base64,
+        })) || [],
+        testImagesBase64: initialConfig.testImagesBase64 || [],
+        beforeTestImages: initialConfig.beforeTestImages || [],
+        beforeTestImagesPreviews: initialConfig.beforeTestImagesBase64?.map(
+          (base64) => ({ preview: base64 })
+        ) || [],
+        beforeTestImagesBase64: initialConfig.beforeTestImagesBase64 || [],
+        duringTestImages: initialConfig.duringTestImages || [],
+        duringTestImagesPreviews: initialConfig.duringTestImagesBase64?.map(
+          (base64) => ({ preview: base64 })
+        ) || [],
+        duringTestImagesBase64: initialConfig.duringTestImagesBase64 || [],
+        afterTestImages: initialConfig.afterTestImages || [],
+        afterTestImagesPreviews: initialConfig.afterTestImagesBase64?.map(
+          (base64) => ({ preview: base64 })
+        ) || [],
+        afterTestImagesBase64: initialConfig.afterTestImagesBase64 || [],
+        graphImages: initialConfig.graphImages || [],
+        graphImagesPreviews: initialConfig.graphImagesBase64?.map((base64) => ({
+          preview: base64,
+        })) || [],
+        graphImagesBase64: initialConfig.graphImagesBase64 || [],
+      });
+    }
+  }, [initialConfig, open, defaultReportType]);
 
   const steps = [
     "Report Info",
@@ -116,6 +177,9 @@ const ReportConfigDialogV2 = ({
     const base64Array = [];
     let processed = 0;
 
+    // Special handling for single image categories (companyLogo)
+    const isSingleImage = category === "companyLogo";
+
     fileArray.forEach((file) => {
       const error = validateImageFile(file);
       if (error) {
@@ -133,18 +197,35 @@ const ReportConfigDialogV2 = ({
         processed++;
 
         if (processed === fileArray.length) {
-          setImages((prev) => ({
-            ...prev,
-            [`${category}`]: [...prev[`${category}`], ...validFiles],
-            [`${category}Previews`]: [
-              ...prev[`${category}Previews`],
-              ...previews,
-            ],
-            [`${category}Base64`]: [
-              ...prev[`${category}Base64`],
-              ...base64Array,
-            ],
-          }));
+          setImages((prev) => {
+            if (isSingleImage) {
+              // For single image categories, replace instead of append
+              return {
+                ...prev,
+                [category]: validFiles[0],
+                [`${category}Preview`]: previews[0]?.preview || null,
+                [`${category}Base64`]: base64Array[0] || null,
+              };
+            } else {
+              // For multiple image categories, append to array
+              const currentImages = Array.isArray(prev[category])
+                ? prev[category]
+                : [];
+              const currentPreviews = Array.isArray(prev[`${category}Previews`])
+                ? prev[`${category}Previews`]
+                : [];
+              const currentBase64 = Array.isArray(prev[`${category}Base64`])
+                ? prev[`${category}Base64`]
+                : [];
+
+              return {
+                ...prev,
+                [category]: [...currentImages, ...validFiles],
+                [`${category}Previews`]: [...currentPreviews, ...previews],
+                [`${category}Base64`]: [...currentBase64, ...base64Array],
+              };
+            }
+          });
           toast.success(`${validFiles.length} image(s) uploaded!`);
         }
       };
@@ -154,16 +235,38 @@ const ReportConfigDialogV2 = ({
 
   // Generic image remove handler
   const handleRemoveImage = (index, category) => {
-    setImages((prev) => ({
-      ...prev,
-      [`${category}`]: prev[`${category}`].filter((_, i) => i !== index),
-      [`${category}Previews`]: prev[`${category}Previews`].filter(
-        (_, i) => i !== index
-      ),
-      [`${category}Base64`]: prev[`${category}Base64`].filter(
-        (_, i) => i !== index
-      ),
-    }));
+    setImages((prev) => {
+      // Special handling for single image categories (companyLogo)
+      const isSingleImage = category === "companyLogo";
+
+      if (isSingleImage) {
+        // For single image, reset to null
+        return {
+          ...prev,
+          [category]: null,
+          [`${category}Preview`]: null,
+          [`${category}Base64`]: null,
+        };
+      } else {
+        // For multiple images, filter out the specific index
+        const currentImages = Array.isArray(prev[category])
+          ? prev[category]
+          : [];
+        const currentPreviews = Array.isArray(prev[`${category}Previews`])
+          ? prev[`${category}Previews`]
+          : [];
+        const currentBase64 = Array.isArray(prev[`${category}Base64`])
+          ? prev[`${category}Base64`]
+          : [];
+
+        return {
+          ...prev,
+          [category]: currentImages.filter((_, i) => i !== index),
+          [`${category}Previews`]: currentPreviews.filter((_, i) => i !== index),
+          [`${category}Base64`]: currentBase64.filter((_, i) => i !== index),
+        };
+      }
+    });
   };
 
   // Drag & drop handlers
@@ -223,7 +326,8 @@ const ReportConfigDialogV2 = ({
 
     console.log("Report Configuration:", config);
     onConfirm(config);
-    handleReset();
+    // Don't reset here - let parent component handle cleanup
+    // handleReset(); // REMOVED: This was clearing data when going to preview
   };
 
   const handleReset = () => {
@@ -240,19 +344,19 @@ const ReportConfigDialogV2 = ({
       companyLogoPreview: null,
       companyLogoBase64: null,
       testImages: [],
-      testImagePreviews: [],
+      testImagesPreviews: [],
       testImagesBase64: [],
       beforeTestImages: [],
-      beforeTestImagePreviews: [],
+      beforeTestImagesPreviews: [],
       beforeTestImagesBase64: [],
       duringTestImages: [],
-      duringTestImagePreviews: [],
+      duringTestImagesPreviews: [],
       duringTestImagesBase64: [],
       afterTestImages: [],
-      afterTestImagePreviews: [],
+      afterTestImagesPreviews: [],
       afterTestImagesBase64: [],
       graphImages: [],
-      graphImagePreviews: [],
+      graphImagesPreviews: [],
       graphImagesBase64: [],
     });
   };
@@ -412,7 +516,7 @@ const ReportConfigDialogV2 = ({
                 title="Test Images"
                 type="testImages"
                 images={images.testImages}
-                previews={images.testImagePreviews}
+                previews={images.testImagesPreviews}
                 onUpload={(files) => handleImagesUpload(files, "testImages")}
                 onRemove={(index) => handleRemoveImage(index, "testImages")}
                 dragActive={dragActive.testImages}
@@ -427,7 +531,7 @@ const ReportConfigDialogV2 = ({
                 title="Before Test Images"
                 type="beforeTestImages"
                 images={images.beforeTestImages}
-                previews={images.beforeTestImagePreviews}
+                previews={images.beforeTestImagesPreviews}
                 onUpload={(files) =>
                   handleImagesUpload(files, "beforeTestImages")
                 }
@@ -446,7 +550,7 @@ const ReportConfigDialogV2 = ({
                 title="During Test Images"
                 type="duringTestImages"
                 images={images.duringTestImages}
-                previews={images.duringTestImagePreviews}
+                previews={images.duringTestImagesPreviews}
                 onUpload={(files) =>
                   handleImagesUpload(files, "duringTestImages")
                 }
@@ -465,7 +569,7 @@ const ReportConfigDialogV2 = ({
                 title="After Test Images"
                 type="afterTestImages"
                 images={images.afterTestImages}
-                previews={images.afterTestImagePreviews}
+                previews={images.afterTestImagesPreviews}
                 onUpload={(files) =>
                   handleImagesUpload(files, "afterTestImages")
                 }
@@ -484,7 +588,7 @@ const ReportConfigDialogV2 = ({
                 title="Graph/Chart Images"
                 type="graphImages"
                 images={images.graphImages}
-                previews={images.graphImagePreviews}
+                previews={images.graphImagesPreviews}
                 onUpload={(files) => handleImagesUpload(files, "graphImages")}
                 onRemove={(index) => handleRemoveImage(index, "graphImages")}
                 dragActive={dragActive.graphImages}

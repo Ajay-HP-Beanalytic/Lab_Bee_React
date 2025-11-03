@@ -338,7 +338,6 @@ const Jobcard = () => {
 
   //Import SRF data and map into SRF fields
   const handleImportSRFData = () => {
-    // alert("This feature will be available soon");
     setSrfImportDialogOpen(true);
   };
 
@@ -376,12 +375,6 @@ const Jobcard = () => {
       // Only set if we have a valid date
       if (parsedDate && parsedDate.isValid()) {
         jobcardStore.setSrfDate(parsedDate);
-        console.log(
-          "✅ Converted srfDate:",
-          extractedData.srfDate,
-          "→",
-          parsedDate.format("DD-MM-YYYY")
-        );
       } else {
         console.warn("⚠️ Could not parse srfDate:", extractedData.srfDate);
       }
@@ -434,21 +427,11 @@ const Jobcard = () => {
     // Populate EUT details table if available
     if (extractedData.eutDetails && Array.isArray(extractedData.eutDetails)) {
       jobcardStore.setEutRows(extractedData.eutDetails);
-      console.log(
-        "✅ Imported EUT table:",
-        extractedData.eutDetails.length,
-        "rows"
-      );
     }
 
     // Populate Test details table if available
     if (extractedData.testDetails && Array.isArray(extractedData.testDetails)) {
       jobcardStore.setTestRows(extractedData.testDetails);
-      console.log(
-        "✅ Imported Test table:",
-        extractedData.testDetails.length,
-        "rows"
-      );
     }
 
     // Count imported items

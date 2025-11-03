@@ -46,8 +46,7 @@ const localizer = momentLocalizer(moment);
 const EMISlotBooking = () => {
   const { loggedInUser } = useContext(UserContext);
 
-  const { getStandardsAsOptions, getTestNamesAsOptions, loadAllEMIData } =
-    useEMIStore();
+  const { getStandardsAsOptions, getTestNamesAsOptions } = useEMIStore();
 
   // Resources for calendar
   const [emiResourcesList, setEmiResourceList] = useState([
@@ -365,10 +364,10 @@ const EMISlotBooking = () => {
           }
 
           // Shorten the test name and company name for display
-          const shortTestName =
-            booking.test_name && booking.test_name.length > 4
-              ? `${booking.test_name.slice(0, 4)}..`
-              : booking.test_name || "Test";
+          // const shortTestName =
+          //   booking.test_name && booking.test_name.length > 4
+          //     ? `${booking.test_name.slice(0, 4)}..`
+          //     : booking.test_name || "Test";
 
           const shortCompanyName =
             booking.company_name && booking.company_name.length > 4
@@ -378,9 +377,10 @@ const EMISlotBooking = () => {
           const customTestName = booking.custom_test_name
             ? booking.custom_test_name
             : booking.test_name;
-          const customStandard = booking.custom_standard
-            ? booking.custom_standard
-            : booking.test_standard;
+
+          // const customStandard = booking.custom_standard
+          //   ? booking.custom_standard
+          //   : booking.test_standard;
 
           return {
             id: booking.booking_id,
@@ -425,23 +425,23 @@ const EMISlotBooking = () => {
     return resource ? resource.resourceId : 1;
   };
 
-  const handleChamberChange = (chamberId) => {
-    setSelectedChamber(chamberId);
-    setValue("chamber_allotted", chamberId);
+  // const handleChamberChange = (chamberId) => {
+  //   setSelectedChamber(chamberId);
+  //   setValue("chamber_allotted", chamberId);
 
-    try {
-      const chamberStandards = getEMIStandardsByChamber(chamberId);
-      setStandards(chamberStandards);
-    } catch (error) {
-      console.error("Error loading standards:", error);
-      setStandards([]);
-    }
+  //   try {
+  //     const chamberStandards = getEMIStandardsByChamber(chamberId);
+  //     setStandards(chamberStandards);
+  //   } catch (error) {
+  //     console.error("Error loading standards:", error);
+  //     setStandards([]);
+  //   }
 
-    setSelectedStandard("");
-    setTests([]);
-    setValue("test_standard", "");
-    setValue("test_name", "");
-  };
+  //   setSelectedStandard("");
+  //   setTests([]);
+  //   setValue("test_standard", "");
+  //   setValue("test_name", "");
+  // };
 
   const handleStandardChange = (standardId) => {
     setSelectedStandard(standardId);
@@ -762,7 +762,7 @@ const EMISlotBooking = () => {
   };
 
   // Event styling with better colors
-  const eventPropGetter = (event, start, end, isSelected) => {
+  const eventPropGetter = (event) => {
     const currentDate = moment();
     const eventStartDate = moment(event.start);
     const eventEndDate = moment(event.end);

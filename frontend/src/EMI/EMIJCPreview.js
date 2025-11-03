@@ -37,14 +37,14 @@ const formatDateTime = (dateString) => {
   return dateValue.format("DD/MM/YYYY HH:mm");
 };
 
-const formatDate = (dateString) => {
-  const dateValue = dayjs(dateString);
-  if (!dateValue.isValid()) {
-    return "";
-  }
+// const formatDate = (dateString) => {
+//   const dateValue = dayjs(dateString);
+//   if (!dateValue.isValid()) {
+//     return "";
+//   }
 
-  return dateValue.format("DD/MM/YYYY");
-};
+//   return dateValue.format("DD/MM/YYYY");
+// };
 
 const EMIJCPreview = ({
   open,

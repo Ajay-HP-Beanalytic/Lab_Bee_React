@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   Button,
   Grid,
@@ -25,13 +25,13 @@ import {
 import axios from "axios";
 import { serverBaseAddress } from "../Pages/APIPage";
 import useEMIStore from "./EMIStore";
-import useFileStorage from "../FilesStorage/useFileStorage";
+// import useFileStorage from "../FilesStorage/useFileStorage";
 import FileViewer from "../FilesStorage/FileViewer";
 import { toast } from "react-toastify";
 import FileSelectionModal from "../common/FileSelectionModal";
 
 const EMITestNamesAndStandards = () => {
-  const { files, searchFiles } = useFileStorage();
+  // const { files, searchFiles } = useFileStorage();
 
   const [viewerOpen, setViewerOpen] = useState(false);
   const [viewingFilePath, setViewingFilePath] = useState(null);
@@ -45,7 +45,7 @@ const EMITestNamesAndStandards = () => {
   const [loading, setLoading] = useState(false);
 
   const [isMultipleFilesFound, setIsMultipleFilesFound] = useState(false);
-  const [foundMultipleFiles, setFoundMultipleFiles] = useState([]);
+  // const [foundMultipleFiles, setFoundMultipleFiles] = useState([]);
   const [filesForModal, setFilesForModal] = useState([]);
   const [modalMessage, setModalMessage] = useState("");
 
@@ -155,7 +155,7 @@ const EMITestNamesAndStandards = () => {
   // DATA LOADING FUNCTIONS
 
   // Load all existing test names and standards
-  const loadTestNamesAndStandards = async () => {
+  const loadTestNamesAndStandards = useCallback(async () => {
     try {
       const [testNamesRes, standardsRes] = await Promise.all([
         axios.get(`${serverBaseAddress}/api/getAllEMITestNames`),
@@ -180,7 +180,7 @@ const EMITestNamesAndStandards = () => {
     } catch (error) {
       console.error("Error loading test names and standards:", error);
     }
-  };
+  }, [setTestNames, setStandards]);
 
   // Load all mappings
   const loadAllMappings = async () => {
@@ -358,7 +358,7 @@ const EMITestNamesAndStandards = () => {
     }
   };
 
-  const handleFileSelect = (file, idx) => {
+  const handleFileSelect = (file) => {
     setViewingFilePath(file.path);
     setViewerOpen(true);
     setIsMultipleFilesFound(false);
@@ -374,7 +374,7 @@ const EMITestNamesAndStandards = () => {
   useEffect(() => {
     loadTestNamesAndStandards();
     loadAllMappings();
-  }, []);
+  }, [loadTestNamesAndStandards]);
 
   return (
     <>
@@ -539,8 +539,8 @@ const EMITestNamesAndStandards = () => {
         ) : (
           <Box
             sx={{
-              height: 400,
-              width: "100%",
+              "height": 400,
+              "width": "100%",
               "& .custom-header-color": {
                 backgroundColor: "#476f95",
                 color: "whitesmoke",

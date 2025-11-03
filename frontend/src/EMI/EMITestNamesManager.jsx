@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { Button, Grid, IconButton, Typography, Box } from "@mui/material";
+import { useEffect, useState, useCallback } from "react";
+import { Button, IconButton, Box } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import DeleteIcon from "@mui/icons-material/Delete";
 import axios from "axios";
@@ -87,10 +87,10 @@ const EMITestNamesManager = () => {
       );
 
       if (response.status === 200) {
-        const newTestName = {
-          id: response.data.id,
-          testName,
-        };
+        // const newTestName = {
+        //   id: response.data.id,
+        //   testName,
+        // };
         await getAllEMITestNames();
         toast.success("Test name added successfully");
         // setTestNames([...testNames, newTestName]);
@@ -125,7 +125,7 @@ const EMITestNamesManager = () => {
   };
 
   // Get all EMI test names from the database
-  const getAllEMITestNames = async () => {
+  const getAllEMITestNames = useCallback(async () => {
     try {
       const response = await axios.get(
         `${serverBaseAddress}/api/getAllEMITestNames`
@@ -144,7 +144,7 @@ const EMITestNamesManager = () => {
     } catch (error) {
       console.error("Error fetching test names:", error);
     }
-  };
+  }, [setStoreTestNames]);
 
   // Add a new test name row when the "Add" button is clicked
   const handleAddTestName = () => {
@@ -205,7 +205,7 @@ const EMITestNamesManager = () => {
   // Load data on component mount
   useEffect(() => {
     getAllEMITestNames();
-  }, []);
+  }, [getAllEMITestNames]);
 
   return (
     <>
@@ -222,8 +222,8 @@ const EMITestNamesManager = () => {
 
       <Box
         sx={{
-          height: 500,
-          width: "100%",
+          "height": 500,
+          "width": "100%",
           "& .custom-header-color": {
             backgroundColor: "#476f95",
             color: "whitesmoke",

@@ -1,5 +1,5 @@
-import React, { useEffect, useState } from "react";
-import { Button, Grid, IconButton, Typography, Box } from "@mui/material";
+import { useEffect, useState, useCallback } from "react";
+import { Button, IconButton, Box } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import DeleteIcon from "@mui/icons-material/Delete";
 import axios from "axios";
@@ -113,10 +113,10 @@ const EMIStandardsManager = () => {
       );
 
       if (response.status === 200) {
-        const newStandard = {
-          id: response.data.id,
-          standardName,
-        };
+        // const newStandard = {
+        //   id: response.data.id,
+        //   standardName,
+        // };
         // setStandards([...standards, newStandard]);
         await getAllEMIStandards();
         toast.success("Standard added successfully");
@@ -151,7 +151,7 @@ const EMIStandardsManager = () => {
   };
 
   // Get all EMI standards from the database
-  const getAllEMIStandards = async () => {
+  const getAllEMIStandards = useCallback(async () => {
     try {
       const response = await axios.get(
         `${serverBaseAddress}/api/getAllEMIStandards`
@@ -170,7 +170,7 @@ const EMIStandardsManager = () => {
     } catch (error) {
       console.error("Error fetching standards:", error);
     }
-  };
+  }, [setStoreStandards]);
 
   // Add a new standard row when the "Add" button is clicked
   const handleAddStandard = () => {
@@ -234,7 +234,7 @@ const EMIStandardsManager = () => {
   // Load data on component mount
   useEffect(() => {
     getAllEMIStandards();
-  }, []);
+  }, [getAllEMIStandards]);
 
   return (
     <>
@@ -251,8 +251,8 @@ const EMIStandardsManager = () => {
 
       <Box
         sx={{
-          height: 500,
-          width: "100%",
+          "height": 500,
+          "width": "100%",
           "& .custom-header-color": {
             backgroundColor: "#476f95",
             color: "whitesmoke",

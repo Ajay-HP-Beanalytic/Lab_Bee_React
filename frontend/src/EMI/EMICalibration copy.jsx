@@ -54,10 +54,12 @@ import * as XLSX from "xlsx";
 
 const EMICalibration = () => {
   const { loggedInUser } = useContext(UserContext);
+  const [selectedMonth, setSelectedMonth] = useState("");
+  const [dateRange, setDateRange] = useState({ dateFrom: null, dateTo: null });
 
   const { control, register, setValue, watch, handleSubmit, reset } = useForm();
 
-  const fileInputRef = useRef(null);
+  const fileInputRef = useRef(null); // Declare fileInputRef
 
   const [emiCalibrationData, setEMICalibrationData] = useState([]);
   const [filteredEMICalibrationData, setFilteredEMICalibrationData] = useState(
@@ -87,116 +89,7 @@ const EMICalibration = () => {
 
   const [dialogLoading, setDialogLoading] = useState(false);
   const [loading, setLoading] = useState(true);
-
-  const addSerialNumbersToRows = (data) => {
-    // Handle different data structures properly
-    let equipmentArray = [];
-
-    if (Array.isArray(data)) {
-      equipmentArray = data;
-    } else if (data && typeof data === "object") {
-      if (data.equipments && Array.isArray(data.equipments)) {
-        equipmentArray = data.equipments;
-      } else if (data.result && Array.isArray(data.result)) {
-        equipmentArray = data.result;
-      } else {
-        equipmentArray = [data];
-      }
-    } else {
-      console.warn("Invalid data format received:", data);
-      return [];
-    }
-
-    // Ensure each item has a valid structure
-    const formattedData = equipmentArray
-      .filter((item) => item && typeof item === "object")
-      .map((item, index) => ({
-        ...item,
-        serialNumbers: index + 1,
-        // Ensure ID exists for MUI DataGrid
-        id: item.id || `temp_id_${index}`,
-        // Keep original date format for filtering, format only for display
-        calibration_date: item.calibration_date || "N/A",
-        calibration_due_date: item.calibration_due_date || "N/A",
-      }));
-
-    return formattedData;
-  };
-
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const handleOpenEquimentDialog = async (row) => {
-    if (row && row.id) {
-      // Edit mode
-      await getSingleEMIEquipmentData(row.id);
-      setEditCalibrationId(row.id);
-      setEditDialogOpen(true);
-      reset();
-    } else {
-      setEditCalibrationId(null);
-      setEditDialogOpen(true);
-      reset();
-    }
-  };
-
-  const handleCloseEditDialog = () => {
-    setEditDialogOpen(false);
-    setEditCalibrationId(null);
-    reset();
-  };
-
-  const handleOpenDeleteEqipmentDialog = useCallback((id) => {
-    if (!id) {
-      console.error("Invalid ID");
-      return;
-    }
-    setSelectedCalibrationId(id);
-    setDeleteDialogOpen(true);
-  }, []);
-
-  const handleCancelDelete = () => {
-    setDeleteDialogOpen(false);
-    setSelectedCalibrationId(null);
-  };
-
-  const onChangeOfSearchInputOfEMICalibrationTable = (event) => {
-    const searchText = event.target.value;
-
-    // Update search text state immediately
-    setSearchInputTextOfEMICalibrationTable(searchText);
-
-    // Direct filtering without useCallback issues
-    if (!Array.isArray(emiCalibrationData)) {
-      console.warn("emiCalibrationData is not an array:", emiCalibrationData);
-      setFilteredEMICalibrationData([]);
-      return;
-    }
-
-    if (!searchText.trim()) {
-      setFilteredEMICalibrationData(emiCalibrationData);
-      return;
-    }
-
-    const filtered = emiCalibrationData.filter((row) => {
-      // Safety check for row
-      if (!row || typeof row !== "object") return false;
-
-      return Object.values(row).some((value) => {
-        if (value === null || value === undefined) return false;
-        return value
-          .toString()
-          .toLowerCase()
-          .includes(searchText.toLowerCase());
-      });
-    });
-
-    setFilteredEMICalibrationData(filtered);
-  };
-
-  // Fixed clear search function
-  const onClearSearchInputOfEMICalibrationTable = () => {
-    setSearchInputTextOfEMICalibrationTable("");
-    setFilteredEMICalibrationData(emiCalibrationData);
-  };
+  const [error, setError] = useState(null);
 
   //EMI Calibration table columns: (FIXED: Memoized to prevent recreation)
   const emiCalibrationTableColumns = useMemo(
@@ -217,6 +110,22 @@ const EMICalibration = () => {
         headerAlign: "center",
         headerClassName: "custom-header-color",
       },
+      // {
+      //   field: "manufacturer",
+      //   headerName: "Manufacturer",
+      //   width: 200,
+      //   align: "center",
+      //   headerAlign: "center",
+      //   headerClassName: "custom-header-color",
+      // },
+      // {
+      //   field: "model_number",
+      //   headerName: "Model Number",
+      //   width: 200,
+      //   align: "center",
+      //   headerAlign: "center",
+      //   headerClassName: "custom-header-color",
+      // },
       {
         field: "equipment_serial_number",
         headerName: "Equipment Serial Number",
@@ -284,6 +193,22 @@ const EMICalibration = () => {
         headerAlign: "center",
         headerClassName: "custom-header-color",
       },
+      // {
+      //   field: "remarks",
+      //   headerName: "Remarks",
+      //   width: 200,
+      //   align: "center",
+      //   headerAlign: "center",
+      //   headerClassName: "custom-header-color",
+      // },
+      // {
+      //   field: "last_updated_by",
+      //   headerName: "Last Updated By",
+      //   width: 200,
+      //   align: "center",
+      //   headerAlign: "center",
+      //   headerClassName: "custom-header-color",
+      // },
       {
         field: "action",
         headerName: "Action",
@@ -309,8 +234,8 @@ const EMICalibration = () => {
         ),
       },
     ],
-    [handleOpenDeleteEqipmentDialog, handleOpenEquimentDialog]
-  );
+    []
+  ); // Empty dependency array since this doesn't depend on any changing values
 
   //EMI Calibration form fields:
   const emiCalibrationFormFields = [
@@ -384,6 +309,115 @@ const EMICalibration = () => {
       width: "100%",
     },
   ];
+
+  const addSerialNumbersToRows = (data) => {
+    // Handle different data structures properly
+    let equipmentArray = [];
+
+    if (Array.isArray(data)) {
+      equipmentArray = data;
+    } else if (data && typeof data === "object") {
+      if (data.equipments && Array.isArray(data.equipments)) {
+        equipmentArray = data.equipments;
+      } else if (data.result && Array.isArray(data.result)) {
+        equipmentArray = data.result;
+      } else {
+        equipmentArray = [data];
+      }
+    } else {
+      console.warn("Invalid data format received:", data);
+      return [];
+    }
+
+    // Ensure each item has a valid structure
+    const formattedData = equipmentArray
+      .filter((item) => item && typeof item === "object")
+      .map((item, index) => ({
+        ...item,
+        serialNumbers: index + 1,
+        // Ensure ID exists for MUI DataGrid
+        id: item.id || `temp_id_${index}`,
+        // Keep original date format for filtering, format only for display
+        calibration_date: item.calibration_date || "N/A",
+        calibration_due_date: item.calibration_due_date || "N/A",
+      }));
+
+    return formattedData;
+  };
+
+  const handleOpenEquimentDialog = async (row) => {
+    if (row && row.id) {
+      // Edit mode
+      await getSingleEMIEquipmentData(row.id);
+      setEditCalibrationId(row.id);
+      setEditDialogOpen(true);
+      reset();
+    } else {
+      setEditCalibrationId(null);
+      setEditDialogOpen(true);
+      reset();
+    }
+  };
+
+  const handleCloseEditDialog = () => {
+    setEditDialogOpen(false);
+    setEditCalibrationId(null);
+    reset();
+  };
+
+  const handleOpenDeleteEqipmentDialog = useCallback((id) => {
+    if (!id) {
+      console.error("Invalid ID");
+      return;
+    }
+    setSelectedCalibrationId(id);
+    setDeleteDialogOpen(true);
+  }, []);
+
+  const handleCancelDelete = () => {
+    setDeleteDialogOpen(false);
+    setSelectedCalibrationId(null);
+  };
+
+  const onChangeOfSearchInputOfEMICalibrationTable = (event) => {
+    const searchText = event.target.value;
+
+    // Update search text state immediately
+    setSearchInputTextOfEMICalibrationTable(searchText);
+
+    // Direct filtering without useCallback issues
+    if (!Array.isArray(emiCalibrationData)) {
+      console.warn("emiCalibrationData is not an array:", emiCalibrationData);
+      setFilteredEMICalibrationData([]);
+      return;
+    }
+
+    if (!searchText.trim()) {
+      setFilteredEMICalibrationData(emiCalibrationData);
+      return;
+    }
+
+    const filtered = emiCalibrationData.filter((row) => {
+      // Safety check for row
+      if (!row || typeof row !== "object") return false;
+
+      return Object.values(row).some((value) => {
+        if (value === null || value === undefined) return false;
+        return value
+          .toString()
+          .toLowerCase()
+          .includes(searchText.toLowerCase());
+      });
+    });
+
+    setFilteredEMICalibrationData(filtered);
+  };
+
+  // Fixed clear search function
+  const onClearSearchInputOfEMICalibrationTable = () => {
+    setSearchInputTextOfEMICalibrationTable("");
+    setFilteredEMICalibrationData(emiCalibrationData);
+  };
 
   //Excel import and adding EMI Calibrations data with excel data to the database:
   const readExcelFile = (file) => {
@@ -512,13 +546,21 @@ const EMICalibration = () => {
           equipment_status: row["Equipment Status"] || "",
           remarks: row["Remarks"],
           last_updated_by: loggedInUser,
-          _rowIndex: row._rowindex || 0,
+          _rowIndex: row._rowindex || 0, // For error tracking
+        };
+      });
+
+      //Add last_updated_by to each row:
+      const emiCalibrationDataWithLastUpdatedBy = parsedData.map((row) => {
+        return {
+          ...row,
+          last_updated_by: loggedInUser,
         };
       });
 
       const response = await axios.post(
         `${serverBaseAddress}/api/addEMIEquipmentsWithExcel`,
-        { emiCalibrationsData: parsedData }
+        { emiCalibrationsData: emiCalibrationDataWithLastUpdatedBy }
       );
       if (response.status === 200) {
         toast.success("Calibrations Data added successfully");
@@ -542,9 +584,27 @@ const EMICalibration = () => {
     try {
       setLoading(true);
 
-      const response = await axios.get(
-        `${serverBaseAddress}/api/getAllEMIEquipmentsData`
-      );
+      // Build query parameters based on current filter state
+      const params = new URLSearchParams();
+      if (selectedMonth) {
+        params.append("month", selectedMonth);
+      }
+
+      if (dateRange && dateRange.dateFrom) {
+        params.append("dateFrom", dateRange.dateFrom);
+      }
+
+      if (dateRange && dateRange.dateTo) {
+        params.append("dateTo", dateRange.dateTo);
+      }
+
+      const queryString = params.toString();
+
+      const url = queryString
+        ? `${serverBaseAddress}/api/getAllEMIEquipmentsData?${queryString}`
+        : `${serverBaseAddress}/api/getAllEMIEquipmentsData`;
+
+      const response = await axios.get(url);
 
       if (response.status === 200) {
         let equipmentsData = [];
@@ -555,8 +615,10 @@ const EMICalibration = () => {
           response.data.equipments &&
           Array.isArray(response.data.equipments)
         ) {
+          // New format: { equipments: [], summary: {} }
           equipmentsData = response.data.equipments;
         } else if (Array.isArray(response.data)) {
+          // Old format: direct array
           equipmentsData = response.data;
         } else {
           console.warn("Unexpected response format:", response.data);
@@ -566,6 +628,7 @@ const EMICalibration = () => {
         // Process the data with serial numbers
         const dataWithSerialNumbers = addSerialNumbersToRows(equipmentsData);
 
+        // Set the state - THIS WAS MISSING!
         setEMICalibrationData(dataWithSerialNumbers);
         setFilteredEMICalibrationData(dataWithSerialNumbers);
       } else {
@@ -575,12 +638,13 @@ const EMICalibration = () => {
       }
     } catch (error) {
       console.error("Error fetching EMI calibration data:", error);
+      setError("Failed to fetch calibration data");
       setEMICalibrationData([]);
       setFilteredEMICalibrationData([]);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [selectedMonth, dateRange]);
 
   //Get single Invoice data and populate the form:
   const getSingleEMIEquipmentData = async (equipmentId) => {
@@ -766,11 +830,11 @@ const EMICalibration = () => {
     }
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = useCallback(() => {
     if (selectedCalibrationId) {
       deleteSelectedEMICalibrationData(selectedCalibrationId);
     }
-  };
+  }, [selectedCalibrationId]);
 
   //Function to fetch the EMI calibration summary data:
   const getEMIClaibrationSummaryData = async () => {
@@ -797,22 +861,38 @@ const EMICalibration = () => {
     }
   };
 
-  // Updated useEffect for filtering
+  const emiCalibrationDataWithSerialNumbers = Array.isArray(
+    filteredEMICalibrationData
+  )
+    ? filteredEMICalibrationData
+    : [];
+
+  //  Updated useEffect for filtering
   useEffect(() => {
     // Only reset when data changes and search is empty
     if (!searchInputTextOfEMICalibrationTable.trim()) {
       setFilteredEMICalibrationData(emiCalibrationData);
     }
-  }, [searchInputTextOfEMICalibrationTable, emiCalibrationData]); // Only depend on data changes
+  }, [emiCalibrationData]); // Only depend on data changes
 
+  // FIXED: Updated initialization useEffect - removed fetchEMIEquipmentData dependency
   useEffect(() => {
     const initializeData = async () => {
       try {
         setLoading(true);
 
-        const response = await axios.get(
-          `${serverBaseAddress}/api/getAllEMIEquipmentsData`
-        );
+        // Direct API call without useCallback dependency
+        const params = new URLSearchParams();
+        if (selectedMonth) params.append("month", selectedMonth);
+        if (dateRange?.dateFrom) params.append("dateFrom", dateRange.dateFrom);
+        if (dateRange?.dateTo) params.append("dateTo", dateRange.dateTo);
+
+        const queryString = params.toString();
+        const url = queryString
+          ? `${serverBaseAddress}/api/getAllEMIEquipmentsData?${queryString}`
+          : `${serverBaseAddress}/api/getAllEMIEquipmentsData`;
+
+        const response = await axios.get(url);
 
         if (response.status === 200) {
           let equipmentsData = response.data?.equipments || response.data || [];
@@ -821,6 +901,7 @@ const EMICalibration = () => {
           setFilteredEMICalibrationData(dataWithSerialNumbers);
         }
 
+        // Also fetch summary
         await getEMIClaibrationSummaryData();
       } catch (error) {
         console.error("Error initializing data:", error);
@@ -832,7 +913,7 @@ const EMICalibration = () => {
     };
 
     initializeData();
-  }, []);
+  }, [selectedMonth, dateRange]); // Only depend on actual values, not functions!
 
   // FIXED: Memoized KPI configuration to prevent recreation
   const emiCalibrationKPIs = useMemo(
@@ -1128,7 +1209,7 @@ const EMICalibration = () => {
         >
           {/* Data Grid */}
           <DataGrid
-            rows={filteredEMICalibrationData}
+            rows={emiCalibrationDataWithSerialNumbers}
             columns={emiCalibrationTableColumns}
             loading={loading}
             getRowId={(row) => row.id || row.serialNumbers}

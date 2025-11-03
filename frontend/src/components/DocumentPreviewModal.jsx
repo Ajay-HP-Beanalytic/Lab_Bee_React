@@ -48,7 +48,84 @@ const DocumentPreviewModal = ({
   useEffect(() => {
     console.log("useEffect triggered - open:", open, "blob:", documentBlob);
 
+    // Capture the ref value at the time of effect execution
+    const containerElement = previewContainerRef.current;
     let timer;
+
+    const renderDocument = async () => {
+      setLoading(true);
+      setError(null);
+
+      console.log("=== RENDER DOCUMENT START ===");
+      console.log("Blob:", documentBlob);
+      console.log("Blob size:", documentBlob?.size);
+      console.log("Blob type:", documentBlob?.type);
+
+      // Store container ref locally to avoid issues with re-renders
+      const container = previewContainerRef.current;
+      console.log("Container element BEFORE render:", container);
+      console.log("Container class:", container?.className);
+
+      try {
+        // Clear previous content
+        if (container) {
+          container.innerHTML = "";
+          console.log("✓ Cleared container");
+        } else {
+          throw new Error("Container ref is null - cannot render");
+        }
+
+        // Verify blob
+        if (!documentBlob) {
+          throw new Error("Document blob is null");
+        }
+
+        console.log("✓ About to call renderAsync with container:", container);
+
+        // Render the document with proper options for tables and images
+        await renderAsync(documentBlob, container, null, {
+          className: "docx-preview",
+          inWrapper: true,
+          ignoreWidth: false,
+          ignoreHeight: false,
+          ignoreFonts: false,
+          breakPages: true,
+          ignoreLastRenderedPageBreak: true,
+          experimental: false,
+          trimXmlDeclaration: true,
+          useBase64URL: true, // Important for images
+          useMathMLPolyfill: false,
+          renderHeaders: true,
+          renderFooters: true,
+          renderFootnotes: true,
+          renderEndnotes: true,
+          renderComments: false,
+        });
+
+        console.log("✓ renderAsync completed");
+
+        // Wait a bit for DOM to update
+        await new Promise((resolve) => setTimeout(resolve, 200));
+
+        // Check result BEFORE calling setLoading(false)
+        console.log("Container children after render:", container.children);
+        console.log("Container children length:", container.children.length);
+        console.log("Container innerHTML length:", container.innerHTML.length);
+
+        if (container.children.length === 0) {
+          console.error("❌ No children in container!");
+          throw new Error("No content was rendered");
+        }
+
+        console.log("✅ SUCCESS - Content rendered!");
+        setLoading(false);
+      } catch (err) {
+        console.error("❌ ERROR:", err);
+        console.error("Stack:", err.stack);
+        setError(`Failed to preview: ${err.message}`);
+        setLoading(false);
+      }
+    };
 
     if (open && documentBlob) {
       // Add a small delay to ensure Dialog is fully mounted
@@ -72,86 +149,12 @@ const DocumentPreviewModal = ({
       if (timer) {
         clearTimeout(timer);
       }
-      if (previewContainerRef.current) {
-        previewContainerRef.current.innerHTML = "";
+      // Use the captured ref value from when effect ran
+      if (containerElement) {
+        containerElement.innerHTML = "";
       }
     };
   }, [open, documentBlob]);
-
-  const renderDocument = async () => {
-    setLoading(true);
-    setError(null);
-
-    console.log("=== RENDER DOCUMENT START ===");
-    console.log("Blob:", documentBlob);
-    console.log("Blob size:", documentBlob?.size);
-    console.log("Blob type:", documentBlob?.type);
-
-    // Store container ref locally to avoid issues with re-renders
-    const container = previewContainerRef.current;
-    console.log("Container element BEFORE render:", container);
-    console.log("Container class:", container?.className);
-
-    try {
-      // Clear previous content
-      if (container) {
-        container.innerHTML = "";
-        console.log("✓ Cleared container");
-      } else {
-        throw new Error("Container ref is null - cannot render");
-      }
-
-      // Verify blob
-      if (!documentBlob) {
-        throw new Error("Document blob is null");
-      }
-
-      console.log("✓ About to call renderAsync with container:", container);
-
-      // Render the document with proper options for tables and images
-      await renderAsync(documentBlob, container, null, {
-        className: "docx-preview",
-        inWrapper: true,
-        ignoreWidth: false,
-        ignoreHeight: false,
-        ignoreFonts: false,
-        breakPages: true,
-        ignoreLastRenderedPageBreak: true,
-        experimental: false,
-        trimXmlDeclaration: true,
-        useBase64URL: true, // Important for images
-        useMathMLPolyfill: false,
-        renderHeaders: true,
-        renderFooters: true,
-        renderFootnotes: true,
-        renderEndnotes: true,
-        renderComments: false,
-      });
-
-      console.log("✓ renderAsync completed");
-
-      // Wait a bit for DOM to update
-      await new Promise((resolve) => setTimeout(resolve, 200));
-
-      // Check result BEFORE calling setLoading(false)
-      console.log("Container children after render:", container.children);
-      console.log("Container children length:", container.children.length);
-      console.log("Container innerHTML length:", container.innerHTML.length);
-
-      if (container.children.length === 0) {
-        console.error("❌ No children in container!");
-        throw new Error("No content was rendered");
-      }
-
-      console.log("✅ SUCCESS - Content rendered!");
-      setLoading(false);
-    } catch (err) {
-      console.error("❌ ERROR:", err);
-      console.error("Stack:", err.stack);
-      setError(`Failed to preview: ${err.message}`);
-      setLoading(false);
-    }
-  };
 
   const handleDownload = () => {
     if (documentBlob) {

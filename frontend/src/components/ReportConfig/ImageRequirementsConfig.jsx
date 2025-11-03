@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
   Box,
   Typography,
@@ -29,9 +29,39 @@ const ImageRequirementsConfig = ({ config = {}, onChange }) => {
     graphImages: config.graphImages ?? false,
   });
 
+  const isInitialMount = useRef(true);
+  const isSyncing = useRef(false);
+
+  // Sync local state with config prop when it changes (e.g., when navigating back)
   useEffect(() => {
+    isSyncing.current = true;
+    setRequirements({
+      companyLogo: config.companyLogo ?? false,
+      testImages: config.testImages ?? false,
+      beforeTestImages: config.beforeTestImages ?? false,
+      duringTestImages: config.duringTestImages ?? false,
+      afterTestImages: config.afterTestImages ?? false,
+      graphImages: config.graphImages ?? false,
+    });
+    // Small timeout to ensure state update completes before resetting flag
+    setTimeout(() => {
+      isSyncing.current = false;
+    }, 0);
+  }, [config]);
+
+  useEffect(() => {
+    // Don't call onChange during initial mount or when syncing from parent
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+
+    if (isSyncing.current) {
+      return;
+    }
+
     onChange(requirements);
-  }, [requirements]);
+  }, [requirements, onChange]);
 
   const handleChange = (field) => (event) => {
     setRequirements((prev) => ({

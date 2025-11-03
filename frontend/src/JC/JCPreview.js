@@ -108,13 +108,14 @@ export default function JCPreview({
     "Test Ended By",
     "Remarks",
     "Test Reviewed By",
-    "Report",
-    "Report Prepartion Status",
+
+    // "Report Prepartion Status",
     "Test Report Delivery Instructions",
     "Report Number",
     "Report Prepared By",
     "NABL Uploaded",
     "Report Delivery Status",
+    "Report",
   ];
 
   const tableHeaderStyle = {
@@ -131,12 +132,10 @@ export default function JCPreview({
   };
 
   const handleGenerateReport = (rowIndex) => {
-    alert("This feature will be available soon");
-    return;
+    // alert("This feature will be available soon");
+    // return;
 
     const currentTestRow = testDetailsRows[rowIndex];
-
-    console.log("Preparing report for test row:", currentTestRow);
 
     // Convert primaryJCDetails array to object format
     const primaryData = {};
@@ -423,6 +422,12 @@ export default function JCPreview({
                           <TableCell>{row.testEndedBy}</TableCell>
                           <TableCell>{row.remarks}</TableCell>
                           <TableCell>{row.testReviewedBy}</TableCell>
+                          {/* <TableCell>{row.reportPreparationStatus}</TableCell> */}
+                          <TableCell>{row.testReportInstructions}</TableCell>
+                          <TableCell>{row.reportNumber}</TableCell>
+                          <TableCell>{row.preparedBy}</TableCell>
+                          <TableCell>{row.nablUploaded}</TableCell>
+                          <TableCell>{row.reportStatus}</TableCell>
                           <TableCell>
                             {" "}
                             <Button
@@ -432,12 +437,6 @@ export default function JCPreview({
                               Report
                             </Button>
                           </TableCell>
-                          <TableCell>{row.reportPreparationStatus}</TableCell>
-                          <TableCell>{row.testReportInstructions}</TableCell>
-                          <TableCell>{row.reportNumber}</TableCell>
-                          <TableCell>{row.preparedBy}</TableCell>
-                          <TableCell>{row.nablUploaded}</TableCell>
-                          <TableCell>{row.reportStatus}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>

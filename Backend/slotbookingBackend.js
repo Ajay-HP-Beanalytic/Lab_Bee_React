@@ -1,6 +1,5 @@
 const { db } = require("./db");
 
-const dayjs = require("dayjs");
 const moment = require("moment");
 require("dotenv").config(); // Ensure .env is loaded
 
@@ -332,51 +331,6 @@ function slotBookingAPIs(app, io, labbeeUsers) {
       }
     });
   });
-
-  // Delete or remove the selected booking:
-  // app.delete("/api/deleteBooking", (req, res) => {
-  //   const { bookingID, loggedInUser } = req.body;
-  //   const deleteBookings = "DELETE FROM bookings_table  WHERE booking_id = ?";
-  //   db.query(deleteBookings, [bookingID], (error, result) => {
-  //     if (error) {
-  //       console.error(
-  //         "Error while marking the selected booking as deleted",
-  //         error
-  //       );
-  //       return res.status(500).json({
-  //         error: "An error occurred while updating the booking status",
-  //       });
-  //     } else {
-  //       if (result.affectedRows > 0) {
-  //         const departmentsToNotify = [
-  //           // "Administration",
-  //           "TS1 Testing",
-  //           "Marketing",
-  //         ];
-
-  //         for (let socketId in labbeeUsers) {
-  //           if (
-  //             departmentsToNotify.includes(labbeeUsers[socketId].department) &&
-  //             labbeeUsers[socketId].username !== loggedInUser
-  //           ) {
-  //             let message = `TS1 Slot: ${bookingID} deleted by ${loggedInUser}`;
-
-  //             io.to(socketId).emit("delete_slot_booking_notification", {
-  //               message: message,
-  //               sender: loggedInUser,
-  //             });
-  //           }
-  //         }
-
-  //         return res.json({
-  //           message: "Booking marked as deleted successfully",
-  //         });
-  //       } else {
-  //         return res.status(404).json({ message: "Booking not found" });
-  //       }
-  //     }
-  //   });
-  // });
 
   app.delete("/api/deleteBooking", (req, res) => {
     const { bookingID, loggedInUser } = req.body;

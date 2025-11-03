@@ -198,13 +198,13 @@ export const TEST_PERFORMED_TABLE_COLUMNS = [
     width: "200px",
     options: [],
   },
-  {
-    id: "reportPreparationStatus",
-    label: "Report Preparation Status",
-    type: "select",
-    width: "200px",
-    options: JOB_CARD_OPTIONS.reportPreparationStatus,
-  },
+  // {
+  //   id: "reportPreparationStatus",
+  //   label: "Report Preparation Status",
+  //   type: "select",
+  //   width: "200px",
+  //   options: JOB_CARD_OPTIONS.reportPreparationStatus,
+  // },
   {
     id: "testReportInstructions",
     label: "Report Delivery Status",
