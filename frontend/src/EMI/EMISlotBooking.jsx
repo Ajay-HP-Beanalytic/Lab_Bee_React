@@ -12,7 +12,14 @@ import {
   Stack,
   Tooltip,
 } from "@mui/material";
-import { useContext, useRef, useState, useEffect } from "react";
+import {
+  useContext,
+  useRef,
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+} from "react";
 
 import { momentLocalizer } from "react-big-calendar";
 import moment from "moment";
@@ -31,7 +38,7 @@ import { useForm } from "react-hook-form";
 import RenderComponents from "../functions/RenderComponents";
 import {
   getAllEMIChambers,
-  getEMIStandardsByChamber,
+  // getEMIStandardsByChamber,
   getTestsByStandard,
 } from "./ChamberTestData";
 import axios from "axios";
@@ -46,14 +53,23 @@ const localizer = momentLocalizer(moment);
 const EMISlotBooking = () => {
   const { loggedInUser } = useContext(UserContext);
 
-  const { getStandardsAsOptions, getTestNamesAsOptions } = useEMIStore();
+  const { getStandardsAsOptions, getTestNamesAsOptions, loadAllEMIData } =
+    useEMIStore();
 
   // Resources for calendar
-  const [emiResourcesList, setEmiResourceList] = useState([
-    { resourceId: 1, title: "Main Chamber" },
-    { resourceId: 2, title: "CS Lab 1" },
-    { resourceId: 3, title: "CS Lab 2" },
-  ]);
+  // const [emiResourcesList, setEmiResourceList] = useState([
+  //   { resourceId: 1, title: "Main Chamber" },
+  //   { resourceId: 2, title: "CS Lab 1" },
+  //   { resourceId: 3, title: "CS Lab 2" },
+  // ]);
+
+  const emiResourcesList = useMemo(() => {
+    return [
+      { resourceId: 1, title: "Main Chamber" },
+      { resourceId: 2, title: "CS Lab 1" },
+      { resourceId: 3, title: "CS Lab 2" },
+    ];
+  }, []);
 
   const [emiEventsList, setEmiEventsList] = useState([]);
   const [openEMISlotBookingDialog, setOpenEMISlotBookingDialog] =
@@ -118,11 +134,14 @@ const EMISlotBooking = () => {
   });
 
   // Fixed chamber options - using consistent structure
-  const emiChamberOptions = [
-    { id: "Main Chamber", label: "Main Chamber" },
-    { id: "CS Lab 1", label: "CS Lab 1" },
-    { id: "CS Lab 2", label: "CS Lab 2" },
-  ];
+  const emiChamberOptions = useMemo(
+    () => [
+      { id: "Main Chamber", label: "Main Chamber" },
+      { id: "CS Lab 1", label: "CS Lab 1" },
+      { id: "CS Lab 2", label: "CS Lab 2" },
+    ],
+    []
+  );
 
   // Fixed standard options
   const emiStandardOptions = [
@@ -284,10 +303,36 @@ const EMISlotBooking = () => {
       console.error("Error loading chambers:", error);
       setChambers(emiChamberOptions);
     }
-  }, []);
+  }, [emiChamberOptions]);
+
+  // BUG FIX: Load EMI standards and test names from API on mount
+  useEffect(() => {
+    loadAllEMIData();
+  }, [loadAllEMIData]);
 
   // Update filtered events when search or events change
   useEffect(() => {
+    const filterEvents = () => {
+      if (!searchInputTextOfSlot.trim()) {
+        setFilteredEventsList(emiEventsList);
+        return;
+      }
+
+      const filtered = emiEventsList.filter(
+        (event) =>
+          event.title
+            ?.toLowerCase()
+            .includes(searchInputTextOfSlot.toLowerCase()) ||
+          event.company_name
+            ?.toLowerCase()
+            .includes(searchInputTextOfSlot.toLowerCase()) ||
+          event.customer_name
+            ?.toLowerCase()
+            .includes(searchInputTextOfSlot.toLowerCase())
+      );
+      setFilteredEventsList(filtered);
+    };
+
     filterEvents();
   }, [searchInputTextOfSlot, emiEventsList]);
 
@@ -322,108 +367,103 @@ const EMISlotBooking = () => {
     setSearchInputTextOfSlot("");
   };
 
-  const filterEvents = () => {
-    if (!searchInputTextOfSlot.trim()) {
-      setFilteredEventsList(emiEventsList);
-      return;
-    }
+  // BUG FIX: Helper function to get resource ID with proper default handling
+  const getResourceIdByChamber = useCallback(
+    (chamberName) => {
+      if (!chamberName) {
+        console.warn("Chamber name is empty or undefined");
+        return 1; // Default to Main Chamber only if chamber is truly empty
+      }
 
-    const filtered = emiEventsList.filter(
-      (event) =>
-        event.title
-          ?.toLowerCase()
-          .includes(searchInputTextOfSlot.toLowerCase()) ||
-        event.company_name
-          ?.toLowerCase()
-          .includes(searchInputTextOfSlot.toLowerCase()) ||
-        event.customer_name
-          ?.toLowerCase()
-          .includes(searchInputTextOfSlot.toLowerCase())
-    );
-    setFilteredEventsList(filtered);
-  };
+      const resource = emiResourcesList.find((r) => r.title === chamberName);
 
-  // Fixed: Fetch all EMI slot bookings with proper date handling
-  const fetchAllEMISlotBookings = async () => {
-    try {
-      const response = await axios.get(
-        `${serverBaseAddress}/api/getEMISlotBookings`
-      );
-      setAllBookings(response.data);
+      if (!resource) {
+        console.warn(
+          `Chamber not found: ${chamberName}, defaulting to Main Chamber`
+        );
+        return 1; // Log warning when defaulting
+      }
 
-      const events = response.data
-        .map((booking) => {
-          // Fix: Ensure proper date parsing for calendar views
-          const startDate = new Date(booking.slot_start_datetime);
-          const endDate = new Date(booking.slot_end_datetime);
-
-          // Validate dates
-          if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-            console.error("Invalid date for booking:", booking);
-            return null;
-          }
-
-          // Shorten the test name and company name for display
-          // const shortTestName =
-          //   booking.test_name && booking.test_name.length > 4
-          //     ? `${booking.test_name.slice(0, 4)}..`
-          //     : booking.test_name || "Test";
-
-          const shortCompanyName =
-            booking.company_name && booking.company_name.length > 4
-              ? `${booking.company_name.slice(0, 4)}..`
-              : booking.company_name || "Company";
-
-          const customTestName = booking.custom_test_name
-            ? booking.custom_test_name
-            : booking.test_name;
-
-          // const customStandard = booking.custom_standard
-          //   ? booking.custom_standard
-          //   : booking.test_standard;
-
-          return {
-            id: booking.booking_id,
-            title: `${shortCompanyName}`,
-            fullTitle: `${customTestName} for ${booking.company_name || ""}`,
-            start: startDate,
-            end: endDate,
-            duration: booking.slot_duration,
-            resourceId: getResourceIdByChamber(booking.chamber_allotted),
-            remarks: booking.remarks,
-            slotBookedBy: booking.slot_booked_by,
-            // Include all booking data for editing
-            company_name: booking.company_name,
-            customer_name: booking.customer_name,
-            customer_email: booking.customer_email,
-            customer_phone: booking.customer_phone,
-            test_name: booking.test_name,
-            test_standard: booking.test_standard,
-            chamber_allotted: booking.chamber_allotted,
-            slot_duration: booking.slot_duration,
-            // Fix: Make sure resource assignment works for all views
-            resource: booking.chamber_allotted,
-          };
-        })
-        .filter((event) => event !== null); // Remove any null events from invalid dates
-
-      setEmiEventsList(events);
-      setFilteredEventsList(events);
-    } catch (error) {
-      console.error("Failed to fetch the bookings", error);
-      toast.error("Failed to load existing bookings");
-    }
-  };
+      return resource.resourceId;
+    },
+    [emiResourcesList]
+  );
 
   useEffect(() => {
-    fetchAllEMISlotBookings();
-  }, [newBookingAdded, slotDeleted]);
+    // Fixed: Fetch all EMI slot bookings with proper date handling
+    const fetchAllEMISlotBookings = async () => {
+      try {
+        const response = await axios.get(
+          `${serverBaseAddress}/api/getEMISlotBookings`
+        );
+        setAllBookings(response.data);
 
-  // Helper function to get resource ID
-  const getResourceIdByChamber = (chamberName) => {
-    const resource = emiResourcesList.find((r) => r.title === chamberName);
-    return resource ? resource.resourceId : 1;
-  };
+        const events = response.data
+          .map((booking) => {
+            // Fix: Ensure proper date parsing for calendar views
+            const startDate = new Date(booking.slot_start_datetime);
+            const endDate = new Date(booking.slot_end_datetime);
+
+            // Validate dates
+            if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+              console.error("Invalid date for booking:", booking);
+              return null;
+            }
+
+            // Shorten the test name and company name for display
+            // const shortTestName =
+            //   booking.test_name && booking.test_name.length > 4
+            //     ? `${booking.test_name.slice(0, 4)}..`
+            //     : booking.test_name || "Test";
+
+            const shortCompanyName =
+              booking.company_name && booking.company_name.length > 4
+                ? `${booking.company_name.slice(0, 4)}..`
+                : booking.company_name || "Company";
+
+            const customTestName = booking.custom_test_name
+              ? booking.custom_test_name
+              : booking.test_name;
+
+            // const customStandard = booking.custom_standard
+            //   ? booking.custom_standard
+            //   : booking.test_standard;
+
+            return {
+              id: booking.booking_id,
+              title: `${shortCompanyName}`,
+              fullTitle: `${customTestName} for ${booking.company_name || ""}`,
+              start: startDate,
+              end: endDate,
+              duration: booking.slot_duration,
+              resourceId: getResourceIdByChamber(booking.chamber_allotted),
+              remarks: booking.remarks,
+              slotBookedBy: booking.slot_booked_by,
+              // Include all booking data for editing
+              company_name: booking.company_name,
+              customer_name: booking.customer_name,
+              customer_email: booking.customer_email,
+              customer_phone: booking.customer_phone,
+              test_name: booking.test_name,
+              test_standard: booking.test_standard,
+              chamber_allotted: booking.chamber_allotted,
+              slot_duration: booking.slot_duration,
+              // Fix: Make sure resource assignment works for all views
+              resource: booking.chamber_allotted,
+            };
+          })
+          .filter((event) => event !== null); // Remove any null events from invalid dates
+
+        setEmiEventsList(events);
+        setFilteredEventsList(events);
+      } catch (error) {
+        console.error("Failed to fetch the bookings", error);
+        toast.error("Failed to load existing bookings");
+      }
+    };
+
+    fetchAllEMISlotBookings();
+  }, [newBookingAdded, slotDeleted, getResourceIdByChamber]);
 
   // const handleChamberChange = (chamberId) => {
   //   setSelectedChamber(chamberId);
@@ -448,11 +488,17 @@ const EMISlotBooking = () => {
     setIsCustomStandard(standardId === "custom_standard");
     setValue("test_standard", standardId);
 
-    try {
-      const standardTests = getTestsByStandard(selectedChamber, standardId);
-      setTests(standardTests);
-    } catch (error) {
-      console.error("Error loading tests:", error);
+    // BUG FIX: Only load tests if not custom standard
+    if (standardId !== "custom_standard") {
+      try {
+        // Note: getTestsByStandard doesn't actually need chamber parameter
+        const standardTests = getTestsByStandard(selectedChamber, standardId);
+        setTests(standardTests);
+      } catch (error) {
+        console.error("Error loading tests:", error);
+        setTests([]);
+      }
+    } else {
       setTests([]);
     }
 
@@ -511,8 +557,15 @@ const EMISlotBooking = () => {
   const fetchBookingData = async (selectedBookingId) => {
     try {
       const response = await axios.get(
-        `${serverBaseAddress}/api/getEMISlotData/` + selectedBookingId
+        `${serverBaseAddress}/api/getEMISlotData/${selectedBookingId}`
       );
+
+      // BUG FIX: Check if data exists before accessing
+      if (!response.data || response.data.length === 0) {
+        toast.error("Booking data not found");
+        return;
+      }
+
       const bookingData = response.data[0];
       setValue("company_name", bookingData.company_name);
       setValue("customer_name", bookingData.customer_name);
@@ -531,13 +584,20 @@ const EMISlotBooking = () => {
       setValue("remarks", bookingData.remarks);
       setValue("slotBookedBy", bookingData.slot_booked_by);
 
-      // Add these lines:
-      setIsCustomStandard(bookingData.test_standard === "custom_standard");
-      setIsCustomTest(bookingData.test_name === "custom_test_name");
+      // BUG FIX: Safely check custom fields with null safety
+      setIsCustomStandard(
+        bookingData.test_standard === "custom_standard" &&
+          !!bookingData.custom_standard
+      );
+      setIsCustomTest(
+        bookingData.test_name === "custom_test_name" &&
+          !!bookingData.custom_test_name
+      );
 
       setEditId(selectedBookingId);
     } catch (error) {
       console.error("Error fetching booking data:", error);
+      toast.error("Failed to load booking data");
     }
   };
 
