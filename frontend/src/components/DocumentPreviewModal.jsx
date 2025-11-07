@@ -46,8 +46,6 @@ const DocumentPreviewModal = ({
 
   // Render the document preview when modal opens or documentBlob changes
   useEffect(() => {
-    console.log("useEffect triggered - open:", open, "blob:", documentBlob);
-
     // Capture the ref value at the time of effect execution
     const containerElement = previewContainerRef.current;
     let timer;
@@ -56,21 +54,21 @@ const DocumentPreviewModal = ({
       setLoading(true);
       setError(null);
 
-      console.log("=== RENDER DOCUMENT START ===");
-      console.log("Blob:", documentBlob);
-      console.log("Blob size:", documentBlob?.size);
-      console.log("Blob type:", documentBlob?.type);
+      // console.log("=== RENDER DOCUMENT START ===");
+      // console.log("Blob:", documentBlob);
+      // console.log("Blob size:", documentBlob?.size);
+      // console.log("Blob type:", documentBlob?.type);
 
       // Store container ref locally to avoid issues with re-renders
       const container = previewContainerRef.current;
-      console.log("Container element BEFORE render:", container);
-      console.log("Container class:", container?.className);
+      // console.log("Container element BEFORE render:", container);
+      // console.log("Container class:", container?.className);
 
       try {
         // Clear previous content
         if (container) {
           container.innerHTML = "";
-          console.log("✓ Cleared container");
+          // console.log("✓ Cleared container");
         } else {
           throw new Error("Container ref is null - cannot render");
         }
@@ -80,7 +78,7 @@ const DocumentPreviewModal = ({
           throw new Error("Document blob is null");
         }
 
-        console.log("✓ About to call renderAsync with container:", container);
+        // console.log("✓ About to call renderAsync with container:", container);
 
         // Render the document with proper options for tables and images
         await renderAsync(documentBlob, container, null, {
@@ -102,26 +100,26 @@ const DocumentPreviewModal = ({
           renderComments: false,
         });
 
-        console.log("✓ renderAsync completed");
+        // console.log("✓ renderAsync completed");
 
         // Wait a bit for DOM to update
         await new Promise((resolve) => setTimeout(resolve, 200));
 
         // Check result BEFORE calling setLoading(false)
-        console.log("Container children after render:", container.children);
-        console.log("Container children length:", container.children.length);
-        console.log("Container innerHTML length:", container.innerHTML.length);
+        // console.log("Container children after render:", container.children);
+        // console.log("Container children length:", container.children.length);
+        // console.log("Container innerHTML length:", container.innerHTML.length);
 
         if (container.children.length === 0) {
-          console.error("❌ No children in container!");
+          // console.error("❌ No children in container!");
           throw new Error("No content was rendered");
         }
 
-        console.log("✅ SUCCESS - Content rendered!");
+        // console.log("✅ SUCCESS - Content rendered!");
         setLoading(false);
       } catch (err) {
-        console.error("❌ ERROR:", err);
-        console.error("Stack:", err.stack);
+        // console.error("❌ ERROR:", err);
+        // console.error("Stack:", err.stack);
         setError(`Failed to preview: ${err.message}`);
         setLoading(false);
       }
@@ -131,10 +129,10 @@ const DocumentPreviewModal = ({
       // Add a small delay to ensure Dialog is fully mounted
       timer = setTimeout(() => {
         if (previewContainerRef.current) {
-          console.log("Conditions met, calling renderDocument");
+          // console.log("Conditions met, calling renderDocument");
           renderDocument();
         } else {
-          console.log("Container ref still not available after delay");
+          // console.log("Container ref still not available after delay");
         }
       }, 100);
     } else {

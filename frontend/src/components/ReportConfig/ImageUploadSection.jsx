@@ -1,18 +1,6 @@
 import { useRef } from "react";
-import {
-  Box,
-  Typography,
-  Card,
-  CardContent,
-  IconButton,
-  Grid,
-} from "@mui/material";
-import {
-  CloudUpload,
-  Delete,
-  Image as ImageIcon,
-} from "@mui/icons-material";
-import { toast } from "react-toastify";
+import { Box, Typography, Card, IconButton, Grid } from "@mui/material";
+import { Delete, Image as ImageIcon } from "@mui/icons-material";
 
 /**
  * Reusable Image Upload Section Component

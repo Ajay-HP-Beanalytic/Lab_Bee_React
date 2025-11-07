@@ -20,7 +20,11 @@ import {
   TextField,
   Grid,
 } from "@mui/material";
-import { Close as CloseIcon } from "@mui/icons-material";
+import {
+  Close as CloseIcon,
+  Add as AddIcon,
+  Delete as DeleteIcon,
+} from "@mui/icons-material";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
@@ -60,10 +64,15 @@ const ReportConfigDialogV2 = ({
   const [testReportNumber, setTestReportNumber] = useState("");
   const [ulrNumber, setUlrNumber] = useState("");
   const [originalReportIssueDate, setOriginalReportIssueDate] = useState(null);
-  const [chamberInfo, setChamberInfo] = useState("");
-  const [chamberMakeInfo, setChamberMakeInfo] = useState("");
 
-  const [imageRequirements, setImageRequirements] = useState({});
+  // Changed to array to support multiple chambers
+  const [chambers, setChambers] = useState([
+    { chamberInfo: "", chamberMake: "" },
+  ]);
+
+  const [imageRequirements, setImageRequirements] = useState({
+    companyLogo: true,
+  });
 
   // Image states
   const [images, setImages] = useState({
@@ -100,8 +109,9 @@ const ReportConfigDialogV2 = ({
           ? dayjs(initialConfig.originalReportIssueDate, "Do MMM YYYY")
           : null
       );
-      setChamberInfo(initialConfig.chamberInfo || "");
-      setChamberMakeInfo(initialConfig.chamberMakeInfo || "");
+      setChambers(
+        initialConfig.chambers || [{ chamberInfo: "", chamberMake: "" }]
+      );
 
       // Restore image requirements (extract from initial config)
       const requirements = {
@@ -120,29 +130,34 @@ const ReportConfigDialogV2 = ({
         companyLogoPreview: initialConfig.companyLogoBase64 || null,
         companyLogoBase64: initialConfig.companyLogoBase64 || null,
         testImages: initialConfig.testImages || [],
-        testImagesPreviews: initialConfig.testImagesBase64?.map((base64) => ({
-          preview: base64,
-        })) || [],
+        testImagesPreviews:
+          initialConfig.testImagesBase64?.map((base64) => ({
+            preview: base64,
+          })) || [],
         testImagesBase64: initialConfig.testImagesBase64 || [],
         beforeTestImages: initialConfig.beforeTestImages || [],
-        beforeTestImagesPreviews: initialConfig.beforeTestImagesBase64?.map(
-          (base64) => ({ preview: base64 })
-        ) || [],
+        beforeTestImagesPreviews:
+          initialConfig.beforeTestImagesBase64?.map((base64) => ({
+            preview: base64,
+          })) || [],
         beforeTestImagesBase64: initialConfig.beforeTestImagesBase64 || [],
         duringTestImages: initialConfig.duringTestImages || [],
-        duringTestImagesPreviews: initialConfig.duringTestImagesBase64?.map(
-          (base64) => ({ preview: base64 })
-        ) || [],
+        duringTestImagesPreviews:
+          initialConfig.duringTestImagesBase64?.map((base64) => ({
+            preview: base64,
+          })) || [],
         duringTestImagesBase64: initialConfig.duringTestImagesBase64 || [],
         afterTestImages: initialConfig.afterTestImages || [],
-        afterTestImagesPreviews: initialConfig.afterTestImagesBase64?.map(
-          (base64) => ({ preview: base64 })
-        ) || [],
+        afterTestImagesPreviews:
+          initialConfig.afterTestImagesBase64?.map((base64) => ({
+            preview: base64,
+          })) || [],
         afterTestImagesBase64: initialConfig.afterTestImagesBase64 || [],
         graphImages: initialConfig.graphImages || [],
-        graphImagesPreviews: initialConfig.graphImagesBase64?.map((base64) => ({
-          preview: base64,
-        })) || [],
+        graphImagesPreviews:
+          initialConfig.graphImagesBase64?.map((base64) => ({
+            preview: base64,
+          })) || [],
         graphImagesBase64: initialConfig.graphImagesBase64 || [],
       });
     }
@@ -262,7 +277,9 @@ const ReportConfigDialogV2 = ({
         return {
           ...prev,
           [category]: currentImages.filter((_, i) => i !== index),
-          [`${category}Previews`]: currentPreviews.filter((_, i) => i !== index),
+          [`${category}Previews`]: currentPreviews.filter(
+            (_, i) => i !== index
+          ),
           [`${category}Base64`]: currentBase64.filter((_, i) => i !== index),
         };
       }
@@ -308,8 +325,10 @@ const ReportConfigDialogV2 = ({
       originalReportIssueDate: originalReportIssueDate
         ? originalReportIssueDate.format("Do MMM YYYY")
         : "",
-      chamberInfo,
-      chamberMakeInfo,
+      chambers, // Array of chamber objects
+      // Image requirements - tracks which image types user wants to include
+      imageRequirements,
+      // Image data
       companyLogo: images.companyLogo,
       companyLogoBase64: images.companyLogoBase64,
       testImages: images.testImages,
@@ -336,9 +355,8 @@ const ReportConfigDialogV2 = ({
     setTestReportNumber("");
     setUlrNumber("");
     setOriginalReportIssueDate(null);
-    setChamberInfo("");
-    setChamberMakeInfo("");
-    setImageRequirements({});
+    setChambers([{ chamberInfo: "", chamberMake: "" }]);
+    setImageRequirements({ companyLogo: true });
     setImages({
       companyLogo: null,
       companyLogoPreview: null,
@@ -440,30 +458,92 @@ const ReportConfigDialogV2 = ({
                 </LocalizationProvider>
               </Grid>
 
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  label="Chamber Info"
-                  variant="outlined"
-                  fullWidth
-                  margin="normal"
-                  multiline
-                  rows={4}
-                  value={chamberInfo}
-                  onChange={(e) => setChamberInfo(e.target.value)}
-                />
-              </Grid>
+              {/* Multiple Chambers Support */}
+              {chambers.map((chamber, index) => (
+                <Grid
+                  container
+                  spacing={2}
+                  key={index}
+                  sx={{ padding: "15px", mt: 1, mb: 1 }}
+                >
+                  <Grid item xs={12}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 1,
+                      }}
+                    >
+                      <Typography variant="subtitle2">
+                        Chamber {index + 1}
+                      </Typography>
+                      {chambers.length > 1 && (
+                        <IconButton
+                          size="small"
+                          color="error"
+                          onClick={() => {
+                            const newChambers = chambers.filter(
+                              (_, i) => i !== index
+                            );
+                            setChambers(newChambers);
+                          }}
+                        >
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      )}
+                    </Box>
+                  </Grid>
 
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  label="Chamber Make Info"
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      label="Chamber Info"
+                      variant="outlined"
+                      fullWidth
+                      margin="normal"
+                      multiline
+                      rows={3}
+                      value={chamber.chamberInfo}
+                      onChange={(e) => {
+                        const newChambers = [...chambers];
+                        newChambers[index].chamberInfo = e.target.value;
+                        setChambers(newChambers);
+                      }}
+                    />
+                  </Grid>
+
+                  <Grid item xs={12} sm={6}>
+                    <TextField
+                      label="Chamber Make"
+                      variant="outlined"
+                      fullWidth
+                      margin="normal"
+                      multiline
+                      rows={3}
+                      value={chamber.chamberMake}
+                      onChange={(e) => {
+                        const newChambers = [...chambers];
+                        newChambers[index].chamberMake = e.target.value;
+                        setChambers(newChambers);
+                      }}
+                    />
+                  </Grid>
+                </Grid>
+              ))}
+
+              {/* Add Chamber Button */}
+              <Grid item xs={12}>
+                <Button
                   variant="outlined"
-                  fullWidth
-                  margin="normal"
-                  multiline
-                  rows={4}
-                  value={chamberMakeInfo}
-                  onChange={(e) => setChamberMakeInfo(e.target.value)}
-                />
+                  startIcon={<AddIcon />}
+                  onClick={() => {
+                    setChambers([
+                      ...chambers,
+                      { chamberInfo: "", chamberMake: "" },
+                    ]);
+                  }}
+                >
+                  Add Another Chamber
+                </Button>
               </Grid>
             </Grid>
           </Box>
@@ -629,15 +709,20 @@ const ReportConfigDialogV2 = ({
                   : "Not specified"}
               </Typography>
 
-              <Typography variant="subtitle2">Chamber Info:</Typography>
-              <Typography variant="body2" gutterBottom>
-                {chamberInfo || "Not specified"}
-              </Typography>
-
-              <Typography variant="subtitle2">Chamber Make Info:</Typography>
-              <Typography variant="body2" gutterBottom>
-                {chamberMakeInfo || "Not specified"}
-              </Typography>
+              <Typography variant="subtitle2">Chambers:</Typography>
+              {chambers.map((chamber, index) => (
+                <Box key={index} sx={{ ml: 2, mb: 1 }}>
+                  <Typography variant="body2">
+                    <strong>Chamber {index + 1}:</strong>
+                  </Typography>
+                  <Typography variant="body2" sx={{ ml: 2 }}>
+                    Info: {chamber.chamberInfo || "Not specified"}
+                  </Typography>
+                  <Typography variant="body2" sx={{ ml: 2 }}>
+                    Make: {chamber.chamberMake || "Not specified"}
+                  </Typography>
+                </Box>
+              ))}
 
               <Divider sx={{ my: 2 }} />
 

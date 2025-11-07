@@ -103,7 +103,7 @@ export default function JCHome() {
 
   const [editJc, setEditJc] = useState(false);
 
-  const { loggedInUser, loggedInUserDepartment } = useContext(UserContext);
+  const { loggedInUserDepartment } = useContext(UserContext);
 
   // State for delete confirmation dialog
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
@@ -177,6 +177,7 @@ export default function JCHome() {
     { label: "Contact Number", value: `${customerNumber}` },
     { label: "Test Witnessed By", value: `${testWitnessedBy}` },
     { label: "Project Name", value: `${projectName}` },
+    { label: "Test Instructions", value: `${testInstructions}` },
     { label: "SRF Number", value: `${srfNumber}` },
     { label: "SRF Date", value: `${dayjs(srfDate).format("YYYY/MM/DD")}` },
     {
@@ -196,6 +197,7 @@ export default function JCHome() {
     { label: "Type of Request", value: `${typeOfRequest}` },
     { label: "Report Type", value: `${reportType}` },
     { label: "JC Status", value: `${jcStatus}` },
+
     {
       label: "JC Close Date",
       value: `${jcCloseDate ? dayjs(jcCloseDate).format("YYYY/MM/DD") : ""}`,
@@ -637,9 +639,6 @@ export default function JCHome() {
     });
     return { jcOpenCount, jcRunningCount, jcClosedCount, jcTestCompletedCount };
   };
-
-  const { jcOpenCount, jcRunningCount, jcClosedCount, jcTestCompletedCount } =
-    getJobcardStatusCount(filteredJcData);
 
   const jcStatusRawData = getJobcardStatusCount(filteredJcData);
 

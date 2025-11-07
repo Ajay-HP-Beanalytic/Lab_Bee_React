@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -15,10 +15,8 @@ import {
   DialogActions,
   TextField,
   Paper,
-  Divider,
 } from "@mui/material";
 import {
-  Folder,
   Storage,
   Refresh,
   Build,
@@ -30,6 +28,7 @@ import {
   FolderOpen,
 } from "@mui/icons-material";
 import axios from "axios";
+import { serverBaseAddress } from "../Pages/APIPage";
 
 const StorageManager = () => {
   const [storageInfo, setStorageInfo] = useState(null);
@@ -41,9 +40,6 @@ const StorageManager = () => {
   const [newDirPath, setNewDirPath] = useState("");
   const [newDirDescription, setNewDirDescription] = useState("");
   const [directoryStats, setDirectoryStats] = useState({});
-
-  // Replace with your actual server URL
-  const serverBaseAddress = "http://localhost:4000";
 
   useEffect(() => {
     loadStorageInfo();
@@ -197,9 +193,9 @@ const StorageManager = () => {
       "Quotation-files": "💼",
       "TS1-standards": "📋",
       "TS2-standards": "📊",
-      uploads: "📁",
-      temp: "🗂️",
-      archived: "📦",
+      "uploads": "📁",
+      "temp": "🗂️",
+      "archived": "📦",
     };
     return icons[dirName] || "📁";
   };

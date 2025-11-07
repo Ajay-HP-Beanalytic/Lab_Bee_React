@@ -175,6 +175,10 @@ const formatDuration = (minutes) => {
  * CONDITIONAL SECTIONS:
  * - {#isNABL} ... {/isNABL} - Shows only for NABL reports
  * - {#isNonNABL} ... {/isNonNABL} - Shows only for NON-NABL reports
+ * - {#isVibrationTest} ... {/isVibrationTest} - Shows only for Vibration tests
+ * - {#isNotVibrationTest} ... {/isNotVibrationTest} - Shows only for non-Vibration tests
+ * - {#isThermalTest} ... {/isThermalTest} - Shows only for Thermal Shock/Cycling tests
+ * - {#isNotThermalTest} ... {/isNotThermalTest} - Shows only for non-Thermal tests
  *
  * IMAGES:
  * - Company Logo (single): {%companyLogo}
@@ -512,6 +516,27 @@ export const prepareReportData = (comprehensiveData) => {
       reportStatus: row.reportStatus || "",
     }));
 
+  // Get test category from the current test row
+  const currentTestCategory = currentTest.testCategory || "";
+  const lowerCategory = currentTestCategory.toLowerCase();
+
+  // Create conditional flags for test categories
+  // These flags will be used by MainReportDocument and TestGraphImages
+  const isVibrationTest = lowerCategory.includes("vibration");
+  const isThermalTest =
+    lowerCategory.includes("thermal shock") ||
+    lowerCategory.includes("thermal cycling") ||
+    lowerCategory.includes("humidity") ||
+    lowerCategory.includes("burn-in") ||
+    lowerCategory.includes("high temp") ||
+    lowerCategory.includes("low temp");
+
+  console.log("📋 prepareReportData - Test Category Analysis:", {
+    currentTestCategory,
+    isVibrationTest,
+    isThermalTest,
+  });
+
   // Prepare comprehensive formatted data
   return {
     // ============= Primary Job Card Information =============
@@ -544,6 +569,13 @@ export const prepareReportData = (comprehensiveData) => {
     reportType: comprehensiveData.reportType || "",
     observations: comprehensiveData.observations || "",
 
+    // ============= Conditional Flags for Test Categories =============
+    // These flags are based on the CURRENT TEST'S category, not general test category
+    isVibrationTest: isVibrationTest,
+    isThermalTest: isThermalTest,
+    isNotVibrationTest: !isVibrationTest,
+    isNotThermalTest: !isThermalTest,
+
     // ============= Table Data (for loops in template) =============
     eutRows: formattedEutRows, // ALL EUT rows
     testRows: formattedTestRows,
@@ -553,27 +585,34 @@ export const prepareReportData = (comprehensiveData) => {
     currentTestEutRows: currentTestEutRows, // Only EUTs used in this specific test
 
     // ============= Current Test Row (the specific test for this report) =============
-    // Prefix with "currentTest_" to distinguish in template
-    currentTest_testCategory: currentTest.testCategory || "",
-    currentTest_testName: currentTest.testName || "",
-    currentTest_testChamber: currentTest.testChamber || "",
-    currentTest_eutSerialNo: currentTest.eutSerialNo || "",
-    currentTest_standard: currentTest.standard || "",
-    currentTest_testStartedBy: currentTest.testStartedBy || "",
-    currentTest_testEndedBy: currentTest.testEndedBy || "",
-    currentTest_testReviewedBy: currentTest.testReviewedBy || "",
-    currentTest_startDate: formatDate(currentTest.startDate),
-    currentTest_endDate: formatDate(currentTest.endDate),
-    currentTest_startTime: formatTime(currentTest.startDate),
-    currentTest_endTime: formatTime(currentTest.endDate),
-    currentTest_duration: formatDuration(currentTest.duration),
-    currentTest_actualTestDuration: formatDuration(
-      currentTest.actualTestDuration
-    ),
-    currentTest_remarks: currentTest.remarks || "",
-    currentTest_reportNumber: currentTest.reportNumber || "",
-    currentTest_preparedBy: currentTest.preparedBy || "",
-    currentTest_reportStatus: currentTest.reportStatus || "",
+    // Store original currentTestRow for direct access
+    currentTestRow: currentTest,
+
+    // Programmatically generate currentTest_* fields with "currentTest_" prefix
+    // This allows template-based access while keeping code maintainable
+    ...Object.keys(currentTest).reduce((acc, key) => {
+      let value = currentTest[key];
+
+      // Apply special formatting for specific field types
+      if (key === "startDate" || key === "endDate") {
+        // Create formatted date
+        acc[`currentTest_${key}`] = formatDate(value);
+        // Also create time fields
+        if (key === "startDate") {
+          acc["currentTest_startTime"] = formatTime(value);
+        } else if (key === "endDate") {
+          acc["currentTest_endTime"] = formatTime(value);
+        }
+      } else if (key === "duration" || key === "actualTestDuration") {
+        // Format duration fields
+        acc[`currentTest_${key}`] = formatDuration(value);
+      } else {
+        // For all other fields, use value or empty string
+        acc[`currentTest_${key}`] = value || "";
+      }
+
+      return acc;
+    }, {}),
 
     // ============= Report Metadata =============
     reportGeneratedDate: dayjs().format("DD-MM-YYYY"),

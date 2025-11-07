@@ -25,8 +25,9 @@ import { UserContext } from "../Pages/UserContext";
 import JobCardComponent from "./JobCardComponent";
 import DocumentPreviewModal from "../components/DocumentPreviewModal";
 import AuditHistoryDialog from "../components/AuditHistoryDialog";
-import { generateTS1Report } from "./TS1ReportDocument";
 import ReportConfigDialogV2 from "../components/ReportConfig/ReportConfigDialogV2";
+import { GenerateReportDocument } from "../Reports/MainReportDocument";
+import { prepareReportData } from "./TS1ReportDocument";
 
 const Transition = forwardRef(function Transition(props, ref) {
   return <Slide direction="up" ref={ref} {...props} />;
@@ -187,10 +188,14 @@ export default function JCPreview({
       currentTestRowIndex: rowIndex,
     };
 
-    console.log("Comprehensive Report Data:", comprehensiveReportData);
+    // Use prepareReportData to format the data and create currentTestEutRows
+    const formattedReportData = prepareReportData(comprehensiveReportData);
+
+    console.log("📋 Comprehensive Report Data (raw):", comprehensiveReportData);
+    console.log("✨ Formatted Report Data (with currentTestEutRows):", formattedReportData);
 
     // Store data and open config dialog
-    setPendingReportData(comprehensiveReportData);
+    setPendingReportData(formattedReportData);
     setConfigDialogOpen(true);
   };
 
@@ -209,8 +214,8 @@ export default function JCPreview({
       // Store the config for the Previous button
       setLastReportConfig(reportConfig);
 
-      // Generate the report with config (including images)
-      const { blob, fileName } = await generateTS1Report(
+      // Generate the report with config (including images) using new docx package
+      const { blob, fileName } = await GenerateReportDocument(
         pendingReportData,
         reportConfig
       );
@@ -498,6 +503,10 @@ export default function JCPreview({
           >
             Close
           </Button>
+
+          {/* <Ts1Report /> */}
+
+          {/* <GenerateReportDocument /> */}
         </Box>
       </Dialog>
 
