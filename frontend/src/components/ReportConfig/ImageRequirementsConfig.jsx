@@ -21,7 +21,7 @@ import {
  */
 const ImageRequirementsConfig = ({ config = {}, onChange }) => {
   const [requirements, setRequirements] = useState({
-    companyLogo: config.companyLogo ?? false,
+    companyLogo: config.companyLogo ?? true,
     testImages: config.testImages ?? false,
     beforeTestImages: config.beforeTestImages ?? false,
     duringTestImages: config.duringTestImages ?? false,
@@ -36,7 +36,7 @@ const ImageRequirementsConfig = ({ config = {}, onChange }) => {
   useEffect(() => {
     isSyncing.current = true;
     setRequirements({
-      companyLogo: config.companyLogo ?? false,
+      companyLogo: config.companyLogo ?? true,
       testImages: config.testImages ?? false,
       beforeTestImages: config.beforeTestImages ?? false,
       duringTestImages: config.duringTestImages ?? false,
