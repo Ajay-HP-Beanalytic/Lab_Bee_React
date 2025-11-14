@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -15,16 +16,12 @@ import {
   Select,
   useMediaQuery,
   Avatar,
-  Chip,
 } from "@mui/material";
 
 import { serverBaseAddress } from "../Pages/APIPage";
 
-import CountUp from "react-countup";
-
 import {
   CreateBarChart,
-  CreateKpiCard,
   CreatePieChart,
 } from "../functions/DashboardFunctions";
 import SearchBar from "../common/SearchBar";
@@ -34,16 +31,6 @@ import { DataGrid } from "@mui/x-data-grid";
 import dayjs from "dayjs";
 import Loader from "../common/Loader";
 import EmptyCard from "../common/EmptyCard";
-import EnhancedKpiCard from "../components/EnhancedKpiCard";
-import {
-  TrendingUp,
-  AttachMoney,
-  Assessment,
-  Groups,
-  CheckCircle,
-  PendingActions,
-  Cancel,
-} from "@mui/icons-material";
 
 export default function QuotationsDashboard() {
   // State variables to hold the data fetched from the database:
@@ -347,7 +334,6 @@ export default function QuotationsDashboard() {
   //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   // Title for the KPI Card dropdown  list:
-  const accordianTitleString = "Click here to see the list";
 
   //Fetching data from the dataset to create the charts and KPI's:
 

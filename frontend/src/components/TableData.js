@@ -1,4 +1,3 @@
-import React from "react";
 import {
   TableContainer,
   Paper,
@@ -54,7 +53,6 @@ export default function TableData({ eutRows, testRows, testdetailsRows }) {
     fontWeight: "bold",
     color: "white",
   };
-  const tableCellStyle = { color: "white" };
 
   return (
     <>

@@ -1,26 +1,62 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Button, Grid, IconButton, Typography, Box } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
 import DeleteIcon from "@mui/icons-material/Delete";
 import axios from "axios";
 import { serverBaseAddress } from "./APIPage";
 import useTestsAndChambersStore from "./TestsAndChambersZustandStore";
+import ConfirmationDialog from "../common/ConfirmationDialog";
+
+const sectionCardSx = {
+  backgroundColor: "#ffffff",
+  borderRadius: 2,
+  p: 2,
+  boxShadow: "0 12px 28px rgba(15, 23, 42, 0.08)",
+  border: "1px solid #e2e8f0",
+  display: "flex",
+  flexDirection: "column",
+  gap: 2,
+};
+
+const sectionHeaderSx = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+};
+
+const dataGridSx = {
+  "border": "none",
+  "fontSize": "0.9rem",
+  "& .custom-header-color": {
+    backgroundColor: "#476f95",
+    color: "whitesmoke",
+    fontWeight: "bold",
+    fontSize: "0.95rem",
+  },
+  "& .MuiDataGrid-cell": {
+    borderBottom: "1px solid #edf2f7",
+  },
+  "& .MuiDataGrid-row:hover": {
+    backgroundColor: "#f8fafc",
+  },
+};
 
 export default function TestsAndChambersList() {
+  //Test category data grid columns
   const testCategoryColumns = [
     {
       field: "serialNumbers",
       headerName: "SL No",
-      width: 50,
+      width: 80,
       align: "center",
-      headerAlign: "center",
+      headerAlign: "left",
       headerClassName: "custom-header-color",
       editable: false,
     },
     {
       field: "testCategory",
       headerName: "Test Category",
-      width: 150,
+      width: 200,
       align: "center",
       headerAlign: "center",
       headerClassName: "custom-header-color",
@@ -29,23 +65,27 @@ export default function TestsAndChambersList() {
     {
       field: "actions",
       headerName: "Actions",
-      width: 100,
+      width: 120,
       align: "center",
       headerAlign: "center",
       headerClassName: "custom-header-color",
       renderCell: (params) => (
-        <IconButton onClick={() => handleDeleteTestCategory(params.id)}>
-          <DeleteIcon />
+        <IconButton
+          size="small"
+          onClick={() => handleDeleteTestCategory(params.id)}
+        >
+          <DeleteIcon fontSize="small" />
         </IconButton>
       ),
     },
   ];
 
+  // Test name data grid columns
   const testListColumns = [
     {
       field: "serialNumbers",
       headerName: "SL No",
-      width: 50,
+      width: 80,
       align: "center",
       headerAlign: "center",
       headerClassName: "custom-header-color",
@@ -54,7 +94,7 @@ export default function TestsAndChambersList() {
     {
       field: "testName",
       headerName: "Test Names",
-      width: 150,
+      width: 200,
       align: "center",
       headerAlign: "center",
       headerClassName: "custom-header-color",
@@ -63,23 +103,27 @@ export default function TestsAndChambersList() {
     {
       field: "actions",
       headerName: "Actions",
-      width: 100,
+      width: 120,
       align: "center",
       headerAlign: "center",
       headerClassName: "custom-header-color",
       renderCell: (params) => (
-        <IconButton onClick={() => handleDeleteTestsList(params.id)}>
-          <DeleteIcon />
+        <IconButton
+          size="small"
+          onClick={() => handleDeleteTestsList(params.id)}
+        >
+          <DeleteIcon fontSize="small" />
         </IconButton>
       ),
     },
   ];
 
+  // Chamber data grid columns
   const chambersListColumns = [
     {
       field: "serialNumbers",
       headerName: "SL No",
-      width: 50,
+      width: 80,
       align: "center",
       headerAlign: "center",
       headerClassName: "custom-header-color",
@@ -88,7 +132,7 @@ export default function TestsAndChambersList() {
     {
       field: "chamber",
       headerName: "Chambers List",
-      width: 150,
+      width: 200,
       align: "center",
       headerAlign: "center",
       headerClassName: "custom-header-color",
@@ -97,13 +141,13 @@ export default function TestsAndChambersList() {
     {
       field: "actions",
       headerName: "Actions",
-      width: 100,
+      width: 120,
       align: "center",
       headerAlign: "center",
       headerClassName: "custom-header-color",
       renderCell: (params) => (
-        <IconButton onClick={() => handleDeleteChamber(params.id)}>
-          <DeleteIcon />
+        <IconButton size="small" onClick={() => handleDeleteChamber(params.id)}>
+          <DeleteIcon fontSize="small" />
         </IconButton>
       ),
     },
@@ -112,17 +156,12 @@ export default function TestsAndChambersList() {
   const [testCategoryRows, setTestCategoryRows] = useState([]);
   const [testListRows, setTestListRows] = useState([]);
   const [chambersListRows, setChambersListRows] = useState([]);
-
-  const addTestCategoryToStore = useTestsAndChambersStore(
-    (state) => state.addTestCategoryToStore
-  );
-
-  const addTestNameToStore = useTestsAndChambersStore(
-    (state) => state.addTestNameToStore
-  );
-  const addTestChamberToStore = useTestsAndChambersStore(
-    (state) => state.addTestChamberToStore
-  );
+  const [confirmDialog, setConfirmDialog] = useState({
+    open: false,
+    title: "",
+    message: "",
+    onConfirm: null,
+  });
 
   const setTestCategories = useTestsAndChambersStore(
     (state) => state.setTestCategories
@@ -179,7 +218,7 @@ export default function TestsAndChambersList() {
   };
 
   // Get all test categories from database
-  const getAllTestCategory = async () => {
+  const getAllTestCategory = useCallback(async () => {
     try {
       const response = await axios.get(
         `${serverBaseAddress}/api/getAllTestCategories`
@@ -191,7 +230,6 @@ export default function TestsAndChambersList() {
           testCategory: item.test_category,
         }));
         setTestCategoryRows(data);
-        // addTestCategoryToStore(data);
         setTestCategories(data);
       } else {
         console.error("Error fetching test categories:", response.status);
@@ -199,7 +237,7 @@ export default function TestsAndChambersList() {
     } catch (error) {
       console.error("Error fetching test categories:", error);
     }
-  };
+  }, [setTestCategories, setTestCategoryRows]);
 
   // Add new test category row
   const handleAddTestCategory = () => {
@@ -257,13 +295,25 @@ export default function TestsAndChambersList() {
     }
   };
 
-  // Delete test category
-  const handleDeleteTestCategory = async (id) => {
-    const confirmDelete = window.confirm(
-      "Are you sure you want to delete this category?"
-    );
-    if (!confirmDelete) return;
+  const openConfirmationDialog = (title, message, onConfirm) => {
+    setConfirmDialog({ open: true, title, message, onConfirm });
+  };
 
+  const handleCloseConfirmationDialog = () => {
+    setConfirmDialog((prev) => ({ ...prev, open: false }));
+  };
+
+  const handleConfirmAction = async () => {
+    try {
+      if (confirmDialog.onConfirm) {
+        await confirmDialog.onConfirm();
+      }
+    } finally {
+      handleCloseConfirmationDialog();
+    }
+  };
+
+  const deleteTestCategory = async (id) => {
     try {
       const response = await axios.delete(
         `${serverBaseAddress}/api/deleteTestCategory/${id}`
@@ -277,6 +327,15 @@ export default function TestsAndChambersList() {
     } catch (error) {
       console.error("Error deleting test category:", error);
     }
+  };
+
+  // Delete test category
+  const handleDeleteTestCategory = (id) => {
+    openConfirmationDialog(
+      "Delete Test Category",
+      "Are you sure you want to delete this category?",
+      () => deleteTestCategory(id)
+    );
   };
 
   ///////////////////////////////////////////////////////////////////////////////////
@@ -371,7 +430,7 @@ export default function TestsAndChambersList() {
   };
 
   // Get all test names
-  const getAllTestNames = async () => {
+  const getAllTestNames = useCallback(async () => {
     try {
       const response = await axios.get(
         `${serverBaseAddress}/api/getAllTestNames`
@@ -382,21 +441,14 @@ export default function TestsAndChambersList() {
           testName: item.test_name,
         }));
         setTestListRows(data);
-        // addTestNameToStore(data);
         setTestNames(data);
       }
     } catch (error) {
       console.error("Error fetching test names:", error);
     }
-  };
+  }, [setTestListRows, setTestNames]);
 
-  // Delete test name
-  const handleDeleteTestsList = async (id) => {
-    const confirmDelete = window.confirm(
-      "Are you sure you want to delete this test?"
-    );
-    if (!confirmDelete) return;
-
+  const deleteTestName = async (id) => {
     try {
       const response = await axios.delete(
         `${serverBaseAddress}/api/deleteTest/${id}`
@@ -410,6 +462,15 @@ export default function TestsAndChambersList() {
     } catch (error) {
       console.error("Error deleting test:", error);
     }
+  };
+
+  // Delete test name
+  const handleDeleteTestsList = (id) => {
+    openConfirmationDialog(
+      "Delete Test",
+      "Are you sure you want to delete this test?",
+      () => deleteTestName(id)
+    );
   };
 
   ///////////////////////////////////////////////////////////////////////////////////
@@ -504,7 +565,7 @@ export default function TestsAndChambersList() {
   };
 
   // Get all chambers
-  const getAllChambersList = async () => {
+  const getAllChambersList = useCallback(async () => {
     try {
       const response = await axios.get(
         `${serverBaseAddress}/api/getAllChambers`
@@ -515,21 +576,14 @@ export default function TestsAndChambersList() {
           chamber: item.chamber_name,
         }));
         setChambersListRows(data);
-        // addTestChamberToStore(data);
         setTestChambers(data);
       }
     } catch (error) {
       console.error("Error fetching chambers:", error);
     }
-  };
+  }, [setChambersListRows, setTestChambers]);
 
-  // Delete chamber
-  const handleDeleteChamber = async (id) => {
-    const confirmDelete = window.confirm(
-      "Are you sure you want to delete this chamber?"
-    );
-    if (!confirmDelete) return;
-
+  const deleteChamber = async (id) => {
     try {
       const response = await axios.delete(
         `${serverBaseAddress}/api/deleteChamber/${id}`
@@ -543,6 +597,15 @@ export default function TestsAndChambersList() {
     } catch (error) {
       console.error("Error deleting chamber:", error);
     }
+  };
+
+  // Delete chamber
+  const handleDeleteChamber = (id) => {
+    openConfirmationDialog(
+      "Delete Chamber",
+      "Are you sure you want to delete this chamber?",
+      () => deleteChamber(id)
+    );
   };
 
   // Add serial numbers to rows
@@ -565,120 +628,140 @@ export default function TestsAndChambersList() {
     getAllTestCategory();
     getAllTestNames();
     getAllChambersList();
-  }, []); // Remove dependencies to prevent infinite loops
+  }, [getAllTestCategory, getAllTestNames, getAllChambersList]);
 
   return (
     <>
       <Grid
         container
-        spacing={2}
+        spacing={3}
         direction="row"
         justifyContent="space-between"
-        alignItems="center"
-        wrap="nowrap"
+        alignItems="stretch"
       >
-        <Grid item xs={12} md={6}>
-          <Typography variant="h6">Test Category</Typography>
-          <Button
-            variant="contained"
-            color="primary"
-            sx={{ mb: 2 }}
-            onClick={handleAddTestCategory}
-          >
-            Add
-          </Button>
-          <Box
-            sx={{
-              height: 500,
-              width: "100%",
-              "& .custom-header-color": {
-                backgroundColor: "#476f95",
-                color: "whitesmoke",
-                fontWeight: "bold",
-                fontSize: "15px",
-              },
-              mt: 2,
-              mb: 2,
-            }}
-          >
+        <Grid item xs={12} md={4}>
+          <Box sx={sectionCardSx}>
+            <Box sx={sectionHeaderSx}>
+              <Typography variant="subtitle1" fontWeight={600}>
+                Test Category
+              </Typography>
+              <Button
+                sx={{
+                  borderRadius: 1,
+                  bgcolor: "orange",
+                  color: "white",
+                  borderColor: "black",
+                  mb: 1,
+                  mt: 1,
+                }}
+                size="small"
+                variant="contained"
+                color="primary"
+                onClick={handleAddTestCategory}
+              >
+                Add
+              </Button>
+            </Box>
             <DataGrid
               rows={testCategoryRowsWithSerialNumbers}
               columns={testCategoryColumns}
-              autoHeight
+              rowHeight={42}
+              headerHeight={48}
+              disableColumnMenu
+              disableSelectionOnClick
+              hideFooterSelectedRowCount
+              sx={{ ...dataGridSx, height: 360 }}
               processRowUpdate={processTestCategoryRowUpdate}
               experimentalFeatures={{ newEditingApi: true }}
             />
           </Box>
         </Grid>
 
-        <Grid item xs={12} md={6}>
-          <Typography variant="h6">Test Names</Typography>
-          <Button
-            variant="contained"
-            color="primary"
-            sx={{ mb: 2 }}
-            onClick={handleAddTestNameRow}
-          >
-            Add
-          </Button>
-          <Box
-            sx={{
-              height: 500,
-              width: "100%",
-              "& .custom-header-color": {
-                backgroundColor: "#476f95",
-                color: "whitesmoke",
-                fontWeight: "bold",
-                fontSize: "15px",
-              },
-              mt: 2,
-              mb: 2,
-            }}
-          >
+        <Grid item xs={12} md={4}>
+          <Box sx={sectionCardSx}>
+            <Box sx={sectionHeaderSx}>
+              <Typography variant="subtitle1" fontWeight={600}>
+                Test Names
+              </Typography>
+              <Button
+                sx={{
+                  borderRadius: 1,
+                  bgcolor: "orange",
+                  color: "white",
+                  borderColor: "black",
+                  mb: 1,
+                  mt: 1,
+                }}
+                size="small"
+                variant="contained"
+                color="primary"
+                onClick={handleAddTestNameRow}
+              >
+                Add
+              </Button>
+            </Box>
             <DataGrid
               rows={testNameRowsWithSerialNumbers}
               columns={testListColumns}
-              autoHeight
+              rowHeight={42}
+              headerHeight={48}
+              disableColumnMenu
+              disableSelectionOnClick
+              hideFooterSelectedRowCount
+              sx={{ ...dataGridSx, height: 360 }}
               processRowUpdate={processTestNameRowUpdate}
               experimentalFeatures={{ newEditingApi: true }}
             />
           </Box>
         </Grid>
 
-        <Grid item xs={12} md={6}>
-          <Typography variant="h6">Chambers Names</Typography>
-          <Button
-            variant="contained"
-            color="primary"
-            sx={{ mb: 2 }}
-            onClick={handleAddChamberRow}
-          >
-            Add
-          </Button>
-          <Box
-            sx={{
-              height: 500,
-              width: "100%",
-              "& .custom-header-color": {
-                backgroundColor: "#476f95",
-                color: "whitesmoke",
-                fontWeight: "bold",
-                fontSize: "15px",
-              },
-              mt: 2,
-              mb: 2,
-            }}
-          >
+        <Grid item xs={12} md={4}>
+          <Box sx={sectionCardSx}>
+            <Box sx={sectionHeaderSx}>
+              <Typography variant="subtitle1" fontWeight={600}>
+                Chambers
+              </Typography>
+              <Button
+                sx={{
+                  borderRadius: 1,
+                  bgcolor: "orange",
+                  color: "white",
+                  borderColor: "black",
+                  mb: 1,
+                  mt: 1,
+                }}
+                size="small"
+                variant="contained"
+                color="primary"
+                onClick={handleAddChamberRow}
+              >
+                Add
+              </Button>
+            </Box>
             <DataGrid
               rows={chambersListRowsWithSerialNumbers}
               columns={chambersListColumns}
-              autoHeight
+              rowHeight={42}
+              headerHeight={48}
+              disableColumnMenu
+              disableSelectionOnClick
+              hideFooterSelectedRowCount
+              sx={{ ...dataGridSx, height: 360 }}
               processRowUpdate={processTestChamberRowUpdate}
               experimentalFeatures={{ newEditingApi: true }}
             />
           </Box>
         </Grid>
       </Grid>
+      <ConfirmationDialog
+        open={confirmDialog.open}
+        onClose={handleCloseConfirmationDialog}
+        onConfirm={handleConfirmAction}
+        dialogTitle={confirmDialog.title || "Confirm"}
+        contentText={confirmDialog.message || "Are you sure?"}
+        confirmButtonText="Delete"
+        cancelButtonText="Cancel"
+      />
     </>
   );
 }

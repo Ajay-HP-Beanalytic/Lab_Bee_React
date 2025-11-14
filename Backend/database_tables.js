@@ -354,7 +354,7 @@ function createJobcardsTable() {
         jc_status  VARCHAR(500),
         reliability_report_status VARCHAR(500),
         jc_closed_date DATE,
-        observations VARCHAR(500),
+        observations TEXT,
         last_updated_by VARCHAR(100),
         PRIMARY KEY(id)
         
@@ -658,7 +658,7 @@ function createEMIJobcardsTable() {
       jcIncharge VARCHAR(100),
       jcStatus  VARCHAR(500),
       jcClosedDate DATE,
-      observations VARCHAR(500),
+      observations TEXT,
       lastUpdatedBy VARCHAR(100),
       PRIMARY KEY(id)
   )`;

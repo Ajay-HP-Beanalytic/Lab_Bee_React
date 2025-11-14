@@ -15,6 +15,7 @@ import {
   Button,
   Grid,
   Box,
+  Tooltip,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import dayjs from "dayjs";
@@ -191,8 +192,11 @@ export default function JCPreview({
     // Use prepareReportData to format the data and create currentTestEutRows
     const formattedReportData = prepareReportData(comprehensiveReportData);
 
-    console.log("📋 Comprehensive Report Data (raw):", comprehensiveReportData);
-    console.log("✨ Formatted Report Data (with currentTestEutRows):", formattedReportData);
+    // console.log("📋 Comprehensive Report Data (raw):", comprehensiveReportData);
+    // console.log(
+    //   "✨ Formatted Report Data (with currentTestEutRows):",
+    //   formattedReportData
+    // );
 
     // Store data and open config dialog
     setPendingReportData(formattedReportData);
@@ -209,8 +213,6 @@ export default function JCPreview({
     }
 
     try {
-      console.log("Generating report with config--->:", reportConfig);
-
       // Store the config for the Previous button
       setLastReportConfig(reportConfig);
 
@@ -229,7 +231,6 @@ export default function JCPreview({
       // setPendingReportData(null);
     } catch (error) {
       console.error("Error generating report:", error);
-      alert(`Error generating report: ${error.message}`);
       // Don't clear pending data on error either
     }
   };
@@ -434,13 +435,27 @@ export default function JCPreview({
                           <TableCell>{row.nablUploaded}</TableCell>
                           <TableCell>{row.reportStatus}</TableCell>
                           <TableCell>
-                            {" "}
-                            <Button
-                              variant="contained"
-                              onClick={() => handleGenerateReport(index)}
+                            <Tooltip
+                              title={
+                                row.endDate === null ||
+                                Number(row.duration) === 0
+                                  ? "Complete the test to enable report generation"
+                                  : "Click to generate report"
+                              }
                             >
-                              Report
-                            </Button>
+                              <span>
+                                <Button
+                                  variant="contained"
+                                  onClick={() => handleGenerateReport(index)}
+                                  disabled={
+                                    row.endDate === null ||
+                                    Number(row.duration) === 0
+                                  }
+                                >
+                                  Report
+                                </Button>
+                              </span>
+                            </Tooltip>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -503,10 +518,6 @@ export default function JCPreview({
           >
             Close
           </Button>
-
-          {/* <Ts1Report /> */}
-
-          {/* <GenerateReportDocument /> */}
         </Box>
       </Dialog>
 
@@ -516,6 +527,7 @@ export default function JCPreview({
         onClose={handleReportConfigCancel}
         onConfirm={handleReportConfigConfirm}
         initialConfig={lastReportConfig}
+        testCategory={pendingReportData?.currentTestRow?.testCategory || ""}
       />
 
       {/* Document Preview Modal */}
@@ -525,7 +537,7 @@ export default function JCPreview({
         onPrevious={handlePreviewPrevious}
         documentBlob={previewDocumentBlob}
         fileName={previewFileName}
-        title="TS1 Test Report Preview"
+        title="Test Report Preview"
       />
 
       {/* Audit History Dialog */}

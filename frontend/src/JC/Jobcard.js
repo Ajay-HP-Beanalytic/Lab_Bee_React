@@ -70,10 +70,15 @@ const Jobcard = () => {
     id = "";
   }
 
+  // Only set these values when creating a NEW job card, not when editing
   useEffect(() => {
-    setTestInchargeName(loggedInUser);
-    setJcLastModifiedBy(loggedInUser);
-  }, [loggedInUser, setTestInchargeName, setJcLastModifiedBy]);
+    if (!id) {
+      // CREATE MODE: Set current user as default
+      setTestInchargeName(loggedInUser);
+      setJcLastModifiedBy(loggedInUser);
+    }
+    // In EDIT mode, these values will be loaded from the database
+  }, [id, loggedInUser, setTestInchargeName, setJcLastModifiedBy]);
 
   // Load dynamic data (users, chambers, test names) on component mount
   useEffect(() => {
@@ -461,23 +466,40 @@ const Jobcard = () => {
     });
   };
 
+  //Button style options:
+  const buttonStyle = {
+    borderRadius: 1,
+    bgcolor: "orange",
+    color: "white",
+    borderColor: "black",
+    padding: { xs: "8px 16px", md: "6px 12px" },
+    fontSize: { xs: "0.875rem", md: "1rem" },
+    mr: 1,
+  };
+
   return (
-    <>
+    <Box sx={{ pb: "120px" }}>
       {/* Navigation Buttons */}
-      <Box sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}>
+      <Box
+        sx={{
+          position: "fixed",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          p: 2,
+          bgcolor: "background.paper",
+          boxShadow:
+            "0px -2px 4px -1px rgba(0,0,0,0.2), 0px -4px 5px 0px rgba(0,0,0,0.14), 0px -1px 10px 0px rgba(0,0,0,0.12)", // Shadow on top
+          zIndex: (theme) => theme.zIndex.appBar, // Use a standard z-index
+          display: "flex",
+          justifyContent: "space-between",
+        }}
+      >
         <Box>
           {loggedInUserDepartment === "Administration" && !editJc && (
             <Tooltip title="Add JC for previous month">
               <Button
-                sx={{
-                  borderRadius: 1,
-                  bgcolor: "orange",
-                  color: "white",
-                  borderColor: "black",
-                  padding: { xs: "8px 16px", md: "6px 12px" },
-                  fontSize: { xs: "0.875rem", md: "1rem" },
-                  mr: 1,
-                }}
+                sx={buttonStyle}
                 variant="contained"
                 onClick={handleAddJcForPreviousMonth}
               >
@@ -488,34 +510,8 @@ const Jobcard = () => {
         </Box>
 
         <Box>
-          {activeStep === 0 && (
-            <Button
-              sx={{
-                borderRadius: 1,
-                bgcolor: "orange",
-                color: "white",
-                borderColor: "black",
-                padding: { xs: "8px 16px", md: "6px 12px" },
-                fontSize: { xs: "0.875rem", md: "1rem" },
-                mr: 1,
-              }}
-              variant="contained"
-              onClick={handleImportSRFData}
-            >
-              Import SRF Data
-            </Button>
-          )}
-
           <Button
-            sx={{
-              borderRadius: 1,
-              bgcolor: "orange",
-              color: "white",
-              borderColor: "black",
-              padding: { xs: "8px 16px", md: "6px 12px" },
-              fontSize: { xs: "0.875rem", md: "1rem" },
-              mr: 1,
-            }}
+            sx={buttonStyle}
             variant="contained"
             onClick={handleGoToJCDashboard}
           >
@@ -523,47 +519,42 @@ const Jobcard = () => {
           </Button>
 
           {activeStep !== 0 && (
-            <Button
-              sx={{
-                borderRadius: 1,
-                bgcolor: "orange",
-                color: "white",
-                borderColor: "black",
-                padding: { xs: "8px 16px", md: "6px 12px" },
-                fontSize: { xs: "0.875rem", md: "1rem" },
-                mr: 1,
-              }}
-              variant="contained"
-              onClick={handleCancel}
-            >
+            <Button sx={buttonStyle} variant="contained" onClick={handleCancel}>
               Previous
             </Button>
           )}
 
+          {activeStep !== totalSteps - 1 && (
+            <Button variant="contained" sx={buttonStyle} onClick={handleNext}>
+              Next
+            </Button>
+          )}
+
           <Button
-            sx={{
-              borderRadius: 1,
-              bgcolor: "orange",
-              color: "white",
-              borderColor: "black",
-              padding: { xs: "8px 16px", md: "6px 12px" },
-              fontSize: { xs: "0.875rem", md: "1rem" },
-            }}
+            sx={buttonStyle}
             variant="contained"
-            onClick={handleNext}
+            onClick={handleSubmitJobcard}
             disabled={isSaving}
           >
-            {isSaving
-              ? "Saving..."
-              : activeStep === steps.length - 1
-              ? "Submit"
-              : "Next"}
+            Submit
           </Button>
         </Box>
       </Box>
 
-      <Box sx={{ alignSelf: "left" }}>
+      <Box sx={{ justifyContent: "space-between", display: "flex" }}>
+        {/* ISO text */}
         <Typography variant="caption">ISO/IEC 17025:2017 Doc. No.</Typography>
+
+        {/* Import SRF button */}
+        {activeStep === 0 && (
+          <Button
+            sx={buttonStyle}
+            variant="contained"
+            onClick={handleImportSRFData}
+          >
+            Import SRF Data
+          </Button>
+        )}
       </Box>
 
       <Card sx={{ width: "100%", mt: "10px", mb: "10px" }}>
@@ -658,7 +649,7 @@ const Jobcard = () => {
         onClose={() => setSrfImportDialogOpen(false)}
         onImport={handleSRFDataImport}
       />
-    </>
+    </Box>
   );
 };
 

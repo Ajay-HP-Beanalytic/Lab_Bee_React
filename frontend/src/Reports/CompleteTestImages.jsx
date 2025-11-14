@@ -71,8 +71,9 @@ export const addCompleteTestImages = (comprehensiveData, reportConfig) => {
         after: 100,
       }),
       ...createMultipleImageParagraphs(beforeImagesBase64, {
-        width: 450,
-        height: 350,
+        width: 300,
+        height: 250,
+        imagesPerRow: 2, // Display images side-by-side
       })
     );
   }
@@ -87,8 +88,9 @@ export const addCompleteTestImages = (comprehensiveData, reportConfig) => {
         after: 100,
       }),
       ...createMultipleImageParagraphs(duringImagesBase64, {
-        width: 450,
-        height: 350,
+        width: 300,
+        height: 250,
+        imagesPerRow: 2, // Display images side-by-side
       })
     );
   }
@@ -103,8 +105,9 @@ export const addCompleteTestImages = (comprehensiveData, reportConfig) => {
         after: 100,
       }),
       ...createMultipleImageParagraphs(afterImagesBase64, {
-        width: 450,
-        height: 350,
+        width: 300,
+        height: 250,
+        imagesPerRow: 2, // Display images side-by-side
       })
     );
   }

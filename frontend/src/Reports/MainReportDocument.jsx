@@ -11,6 +11,7 @@ import { createTestDetailsInfoTable } from "./TestDetailsInfoTable";
 import { addGeneralTestImages } from "./GeneralTestImages";
 import { addCompleteTestImages } from "./CompleteTestImages";
 import { addTestGraphImages } from "./TestGraphImages";
+import { endOfTheReportLine } from "./EndOfReportText";
 
 /**
  * Convert image URL to base64 data URL
@@ -50,6 +51,7 @@ const imageUrlToBase64 = (url) => {
  * @param {object} comprehensiveData.currentTestRow - The specific test row for this report
  *
  * @param {object} reportConfig - Report configuration from ReportConfigDialog
+ * @param {string} reportConfig.testCode - Test code
  * @param {string} reportConfig.reportType - "NABL" or "NON-NABL"
  * @param {string} reportConfig.testReportNumber - Test report number
  * @param {string} reportConfig.ulrNumber - ULR number (NABL only)
@@ -65,24 +67,15 @@ export const GenerateReportDocument = async (
 ) => {
   return new Promise(async (resolve, reject) => {
     try {
-      console.log(
-        "ComprehensiveData in mainReportDocument.jsx is-->",
-        comprehensiveData
-      );
+      // console.log(
+      //   "ComprehensiveData in mainReportDocument.jsx is-->",
+      //   comprehensiveData
+      // );
       const isNABL = reportConfig.reportType === "NABL";
-
-      // Extract test discipline from comprehensiveData
-      const testDiscipline = comprehensiveData.testDiscipline || "";
-
-      console.log(
-        `🔹 Generating ${reportConfig.reportType} report with docx package...`
-      );
-      console.log("📋 Report Config:", reportConfig);
-      console.log("📋 Comprehensive Data:", {
-        testDiscipline,
-        jcNumber: comprehensiveData.jcNumber,
-        companyName: comprehensiveData.companyName,
-      });
+      // console.log(
+      //   `🔹 Generating ${reportConfig.reportType} report with docx package...`
+      // );
+      // console.log("📋 Report Config:", reportConfig);
 
       // Load logos as base64
       let beaLogoBase64 = null;
@@ -90,11 +83,9 @@ export const GenerateReportDocument = async (
 
       try {
         beaLogoBase64 = await imageUrlToBase64(BEA_LOGO);
-        console.log("✅ BEA Logo loaded");
 
         if (isNABL) {
           nablLogoBase64 = await imageUrlToBase64(NABL_LOGO);
-          console.log("✅ NABL Logo loaded");
         }
       } catch (error) {
         console.error("⚠️ Error loading logos:", error);
@@ -104,26 +95,28 @@ export const GenerateReportDocument = async (
       // Use the flags prepared by prepareReportData() in TS1ReportDocument.js
       // These flags are already computed based on currentTest.testCategory
       const isVibrationTest = comprehensiveData.isVibrationTest || false;
+      // eslint-disable-next-line no-unused-vars
       const isThermalTest = comprehensiveData.isThermalTest || false;
 
       // Automatically use landscape orientation for Vibration tests
       const useGraphLandscape = isVibrationTest;
 
-      console.log("📄 MainReportDocument - Orientation Decision:", {
-        isVibrationTest,
-        isThermalTest,
-        finalDecision: useGraphLandscape ? "LANDSCAPE" : "PORTRAIT",
-      });
+      // console.log("📄 MainReportDocument - Orientation Decision:", {
+      //   isVibrationTest,
+      //   isThermalTest,
+      //   finalDecision: useGraphLandscape ? "LANDSCAPE" : "PORTRAIT",
+      // });
 
       // Prepare graph images content (check if it exists)
-      const graphContent =
-        reportConfig.imageRequirements?.graphImages
-          ? addTestGraphImages(
-              comprehensiveData,
-              reportConfig,
-              useGraphLandscape // Automatically true for Vibration tests
-            )
-          : null;
+      // Note: addTestGraphImages is now async (parses vibration documents)
+      const graphContent = reportConfig.imageRequirements?.graphImages
+        ? await addTestGraphImages(
+            comprehensiveData,
+            reportConfig,
+            useGraphLandscape // Automatically true for Vibration tests
+          )
+        : null;
+      const endOfReportParagraphs = endOfTheReportLine();
 
       // Build sections array
       const sections = [];
@@ -134,9 +127,13 @@ export const GenerateReportDocument = async (
           page: {
             margin: {
               top: 1440, // 1 inch = 1440 twentieths of a point
-              right: 1440,
+              // right: 1440, //Original value
+              right: 960, // 0.67"
               bottom: 1440,
-              left: 1440,
+              // left: 1440, //Original value
+              left: 960, // 0.67"
+              header: 360, // 0.25 inch from top edge to header (reduced for larger table)
+              footer: 360, // 0.25 inch from bottom edge to footer
             },
           },
         },
@@ -145,7 +142,7 @@ export const GenerateReportDocument = async (
             isNABL,
             beaLogoBase64,
             nablLogoBase64,
-            testDiscipline,
+            reportConfig.testCode,
             reportConfig.testReportNumber,
             reportConfig.ulrNumber
           ),
@@ -190,9 +187,13 @@ export const GenerateReportDocument = async (
             page: {
               margin: {
                 top: 1440,
-                right: 1440,
+                // right: 1440, //Original value
+                right: 960, // 0.67"
                 bottom: 1440,
-                left: 1440,
+                // left: 1440, //Original value
+                left: 960, // 0.67"
+                header: 360, // 0.25 inch from top edge to header
+                footer: 360, // 0.25 inch from bottom edge to footer
               },
               // LANDSCAPE ORIENTATION
               size: {
@@ -205,7 +206,7 @@ export const GenerateReportDocument = async (
               isNABL,
               beaLogoBase64,
               nablLogoBase64,
-              testDiscipline,
+              reportConfig.testCode,
               reportConfig.testReportNumber,
               reportConfig.ulrNumber
             ),
@@ -213,8 +214,11 @@ export const GenerateReportDocument = async (
           footers: {
             default: createFooter(reportConfig.reportType),
           },
-          children: graphContent,
+          children: [...graphContent, ...endOfReportParagraphs],
         });
+      } else {
+        // Append the end-of-report line to the last page of the main section
+        sections[0].children.push(...endOfReportParagraphs);
       }
 
       // Create the document with sections
@@ -226,19 +230,27 @@ export const GenerateReportDocument = async (
       const blob = await Packer.toBlob(doc);
 
       // Generate filename
-      const reportNumber =
-        comprehensiveData.currentTestRow?.reportNumber ||
-        reportConfig.testReportNumber ||
-        "";
-      const jcNumber = comprehensiveData.jcNumber || "";
-      const reportTypePrefix = reportConfig.reportType || "Report";
-      const fileName = reportNumber
-        ? `${reportTypePrefix}_Report_${reportNumber}.docx`
-        : jcNumber
-        ? `${reportTypePrefix}_Report_${jcNumber}_${Date.now()}.docx`
-        : `${reportTypePrefix}_Report_${Date.now()}.docx`;
+      const now = new Date();
 
-      console.log("✅ Report generated successfully:", fileName);
+      // Convert to IST (Indian Standard Time, UTC+5:30)
+      const istOffset = 5.5 * 60; // IST offset in minutes
+      const localOffset = now.getTimezoneOffset(); // Local offset in minutes
+      const istTime = new Date(
+        now.getTime() + (istOffset + localOffset) * 60000
+      );
+
+      const year = istTime.getFullYear();
+      const month = String(istTime.getMonth() + 1).padStart(2, "0");
+      const day = String(istTime.getDate()).padStart(2, "0");
+      const hours = String(istTime.getHours()).padStart(2, "0");
+      const minutes = String(istTime.getMinutes()).padStart(2, "0");
+
+      // Format: YYYYMMDD_HHMM (IST)
+      const customDate = `${year}${month}${day}_${hours}${minutes}`;
+
+      // Get the first 3 letters/numbers of the report number, or use date if not present
+      const reportNumber = reportConfig.testReportNumber || customDate;
+      const fileName = `REP_${reportNumber}.docx`;
       resolve({ blob, fileName });
     } catch (error) {
       console.error("❌ Error generating report:", error);
@@ -246,12 +258,3 @@ export const GenerateReportDocument = async (
     }
   });
 };
-
-// React component for demonstration (you can remove this if not needed)
-const MainReportDocument = () => {
-  return (
-    <>Main Report Document Generator - Use GenerateReportDocument() function</>
-  );
-};
-
-export default MainReportDocument;

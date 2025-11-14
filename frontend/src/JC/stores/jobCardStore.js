@@ -192,7 +192,7 @@ const useJobCardStore = create(
           sampleCondition: data.sample_condition || "",
           reportType: data.report_type || "",
           observations: data.observations || "",
-          jcLastModifiedBy: data.last_modified_by || null,
+          jcLastModifiedBy: data.last_updated_by || null,
           editJc: true,
         });
       },

@@ -3,11 +3,7 @@ import {
   ImageRun,
   Paragraph,
   TextRun,
-  Table,
   TableRow,
-  TableCell,
-  WidthType,
-  BorderStyle,
   VerticalAlign,
 } from "docx";
 import {
@@ -20,6 +16,12 @@ import {
   reviewedByDesignation,
   reviewedByName,
 } from "./reportConstants";
+import {
+  createTextRun,
+  createParagraph,
+  createTableCell,
+  createDataTable,
+} from "./Report_Functions/docxHelpers";
 
 /**
  * Creates the first page content for the report
@@ -32,58 +34,45 @@ import {
 export const createFirstPage = (comprehensiveData, reportConfig) => {
   return [
     // Test report heading
-    new Paragraph({
-      alignment: AlignmentType.CENTER,
-      spacing: {
-        before: 500,
-        after: 500,
-      },
-      children: [
-        new TextRun({
-          text: `${
-            comprehensiveData?.currentTestRow?.currentTest_testName || ""
-          } TEST REPORT`,
-          bold: true,
-          size: 32, // 16pt
-          allCaps: true,
-          font: "Calibri(Body)",
-          color: "1f497d",
-        }),
-      ],
-    }),
+    createParagraph(
+      `${
+        (comprehensiveData?.currentTestRow?.testName).toUpperCase() || ""
+      } TEST REPORT`,
+      {
+        alignment: AlignmentType.CENTER,
+        bold: true,
+        size: 32,
+        color: "1f497d",
+        font: "Calibri(Body)",
+        spacing: {
+          before: 500,
+          after: 500,
+        },
+      }
+    ),
 
     // Submitted to text
-    new Paragraph({
+    createParagraph("Submitted to:", {
       alignment: AlignmentType.CENTER,
+      bold: true,
+      size: 25,
+      color: "0070c0",
+      font: "Calibri(Body)",
       spacing: {
         after: 500,
       },
-      children: [
-        new TextRun({
-          text: "Submitted to:",
-          bold: true,
-          size: 25, // 10pt
-          font: "Calibri(Body)",
-          color: "0070c0",
-        }),
-      ],
     }),
 
     // Company Name
-    new Paragraph({
+    createParagraph(comprehensiveData?.companyName || "N/A", {
       alignment: AlignmentType.CENTER,
+      bold: true,
+      size: 30,
+      color: "0070c0",
+      font: "Calibri(Body)",
       spacing: {
         after: 300,
       },
-      children: [
-        new TextRun({
-          text: comprehensiveData?.companyName || "N/A",
-          bold: true,
-          size: 30, // 14pt
-          font: "Calibri(Body)",
-          color: "0070c0",
-        }),
-      ],
     }),
 
     // Company Logo Image (if provided)
@@ -108,119 +97,62 @@ export const createFirstPage = (comprehensiveData, reportConfig) => {
       : []),
 
     // Company Address
-    new Paragraph({
+    createParagraph(comprehensiveData?.companyAddress || "N/A", {
       alignment: AlignmentType.CENTER,
+      bold: true,
+      size: 25,
+      color: "1f497d",
+      font: "Calibri(Body)",
       spacing: {
         after: 500,
       },
-      children: [
-        new TextRun({
-          text: comprehensiveData?.companyAddress || "N/A",
-          bold: true,
-          size: 25, // 10pt
-          font: "Calibri(Body)",
-          color: "1f497d",
-        }),
-      ],
     }),
 
     // Report Issue Date
-    new Paragraph({
-      alignment: AlignmentType.LEFT,
-      spacing: {
-        before: 400,
-        after: 1000,
-      },
-      children: [
-        new TextRun({
-          text: `Original Issue Date: ${
-            reportConfig.originalReportIssueDate || "N/A"
-          }`,
-          bold: true,
-          size: 25, // 10pt
-          font: "Calibri(Body)",
-          color: "000000",
-        }),
-      ],
-    }),
+    createParagraph(
+      `Original Issue Date: ${reportConfig.originalReportIssueDate || "N/A"}`,
+      {
+        alignment: AlignmentType.LEFT,
+        bold: true,
+        size: 25,
+        color: "000000",
+        font: "Calibri(Body)",
+        spacing: {
+          before: 400,
+          after: 1000,
+        },
+      }
+    ),
 
     // Signature Table (Prepared By, Reviewed By, Authorized Signature)
-    new Table({
-      width: {
-        size: 100,
-        type: WidthType.PERCENTAGE,
-      },
-      spacing: {
-        after: 1000,
-      },
-      borders: {
-        top: { style: BorderStyle.NONE, size: 0 },
-        bottom: { style: BorderStyle.NONE, size: 0 },
-        left: { style: BorderStyle.NONE, size: 0 },
-        right: { style: BorderStyle.NONE, size: 0 },
-        insideHorizontal: { style: BorderStyle.NONE, size: 0 },
-        insideVertical: { style: BorderStyle.NONE, size: 0 },
-      },
-      rows: [
+    createDataTable(
+      [
         // Row 1: Headers
         new TableRow({
           children: [
-            new TableCell({
-              width: { size: 33, type: WidthType.PERCENTAGE },
+            createTableCell("Prepared By,", {
+              width: 33,
+              alignment: AlignmentType.LEFT,
+              bold: true,
+              size: 23,
               verticalAlign: VerticalAlign.TOP,
-              children: [
-                new Paragraph({
-                  alignment: AlignmentType.LEFT,
-                  spacing: { after: 1000 },
-                  children: [
-                    new TextRun({
-                      text: "Prepared By,",
-                      bold: true,
-                      size: 23,
-                      font: "Calibri(Body)",
-                      color: "000000",
-                    }),
-                  ],
-                }),
-              ],
+              margins: { top: 0, bottom: 1000 },
             }),
-            new TableCell({
-              width: { size: 33, type: WidthType.PERCENTAGE },
+            createTableCell("Reviewed By", {
+              width: 33,
+              alignment: AlignmentType.CENTER,
+              bold: true,
+              size: 23,
               verticalAlign: VerticalAlign.TOP,
-              children: [
-                new Paragraph({
-                  alignment: AlignmentType.CENTER,
-                  spacing: { after: 1000 },
-                  children: [
-                    new TextRun({
-                      text: "Reviewed By",
-                      bold: true,
-                      size: 23,
-                      font: "Calibri(Body)",
-                      color: "000000",
-                    }),
-                  ],
-                }),
-              ],
+              margins: { top: 0, bottom: 1000 },
             }),
-            new TableCell({
-              width: { size: 34, type: WidthType.PERCENTAGE },
+            createTableCell("Authorized Signature,", {
+              width: 34,
+              alignment: AlignmentType.RIGHT,
+              bold: true,
+              size: 23,
               verticalAlign: VerticalAlign.TOP,
-              children: [
-                new Paragraph({
-                  alignment: AlignmentType.RIGHT,
-                  spacing: { after: 1000 },
-                  children: [
-                    new TextRun({
-                      text: "Authorized Signature,",
-                      bold: true,
-                      size: 23,
-                      font: "Calibri(Body)",
-                      color: "000000",
-                    }),
-                  ],
-                }),
-              ],
+              margins: { top: 0, bottom: 1000 },
             }),
           ],
         }),
@@ -228,66 +160,32 @@ export const createFirstPage = (comprehensiveData, reportConfig) => {
         // Row 2: Names
         new TableRow({
           children: [
-            new TableCell({
-              width: { size: 33, type: WidthType.PERCENTAGE },
+            createTableCell(
+              comprehensiveData?.currentTest_preparedBy || preparedByName,
+              {
+                width: 33,
+                alignment: AlignmentType.LEFT,
+                size: 23,
+                verticalAlign: VerticalAlign.TOP,
+                margins: { top: 0, bottom: 100 },
+              }
+            ),
+            createTableCell(
+              comprehensiveData?.currentTest_testReviewedBy || reviewedByName,
+              {
+                width: 33,
+                alignment: AlignmentType.CENTER,
+                size: 23,
+                verticalAlign: VerticalAlign.TOP,
+                margins: { top: 0, bottom: 100 },
+              }
+            ),
+            createTableCell(authorizedByName, {
+              width: 34,
+              alignment: AlignmentType.RIGHT,
+              size: 23,
               verticalAlign: VerticalAlign.TOP,
-              children: [
-                new Paragraph({
-                  alignment: AlignmentType.LEFT,
-                  spacing: { after: 100 },
-                  children: [
-                    new TextRun({
-                      text:
-                        comprehensiveData?.currentTest_preparedBy ||
-                        preparedByName,
-                      bold: false,
-                      size: 23,
-                      font: "Calibri(Body)",
-                      color: "000000",
-                    }),
-                  ],
-                }),
-              ],
-            }),
-            new TableCell({
-              width: { size: 33, type: WidthType.PERCENTAGE },
-              verticalAlign: VerticalAlign.TOP,
-              children: [
-                new Paragraph({
-                  alignment: AlignmentType.CENTER,
-                  spacing: { after: 100 },
-                  children: [
-                    new TextRun({
-                      text:
-                        comprehensiveData?.currentTest_testReviewedBy ||
-                        reviewedByName,
-                      bold: false,
-                      size: 23,
-                      font: "Calibri(Body)",
-                      color: "000000",
-                    }),
-                  ],
-                }),
-              ],
-            }),
-            new TableCell({
-              width: { size: 34, type: WidthType.PERCENTAGE },
-              verticalAlign: VerticalAlign.TOP,
-              children: [
-                new Paragraph({
-                  alignment: AlignmentType.RIGHT,
-                  spacing: { after: 100 },
-                  children: [
-                    new TextRun({
-                      text: authorizedByName,
-                      bold: false,
-                      size: 23,
-                      font: "Calibri(Body)",
-                      color: "000000",
-                    }),
-                  ],
-                }),
-              ],
+              margins: { top: 0, bottom: 100 },
             }),
           ],
         }),
@@ -295,67 +193,41 @@ export const createFirstPage = (comprehensiveData, reportConfig) => {
         // Row 3: Designations
         new TableRow({
           children: [
-            new TableCell({
-              width: { size: 33, type: WidthType.PERCENTAGE },
+            createTableCell(preparedByDesignation || "", {
+              width: 33,
+              alignment: AlignmentType.LEFT,
+              size: 23,
               verticalAlign: VerticalAlign.TOP,
-              children: [
-                new Paragraph({
-                  alignment: AlignmentType.LEFT,
-                  spacing: { after: 600 },
-                  children: [
-                    new TextRun({
-                      text: preparedByDesignation || "",
-                      bold: false,
-                      size: 23,
-                      font: "Calibri(Body)",
-                      color: "000000",
-                    }),
-                  ],
-                }),
-              ],
+              margins: { top: 0, bottom: 600 },
             }),
-            new TableCell({
-              width: { size: 33, type: WidthType.PERCENTAGE },
+            createTableCell(reviewedByDesignation || "", {
+              width: 33,
+              alignment: AlignmentType.CENTER,
+              size: 23,
               verticalAlign: VerticalAlign.TOP,
-              children: [
-                new Paragraph({
-                  alignment: AlignmentType.CENTER,
-                  spacing: { after: 600 },
-                  children: [
-                    new TextRun({
-                      text: reviewedByDesignation || "",
-                      bold: false,
-                      size: 23,
-                      font: "Calibri(Body)",
-                      color: "000000",
-                    }),
-                  ],
-                }),
-              ],
+              margins: { top: 0, bottom: 600 },
             }),
-            new TableCell({
-              width: { size: 34, type: WidthType.PERCENTAGE },
+            createTableCell(authorizedByDesignation || "", {
+              width: 34,
+              alignment: AlignmentType.RIGHT,
+              size: 23,
               verticalAlign: VerticalAlign.TOP,
-              children: [
-                new Paragraph({
-                  alignment: AlignmentType.RIGHT,
-                  spacing: { after: 600 },
-                  children: [
-                    new TextRun({
-                      text: authorizedByDesignation || "",
-                      bold: false,
-                      size: 23,
-                      font: "Calibri(Body)",
-                      color: "000000",
-                    }),
-                  ],
-                }),
-              ],
+              margins: { top: 0, bottom: 600 },
             }),
           ],
         }),
       ],
-    }),
+      {
+        borders: {
+          top: { style: "none", size: 0 },
+          bottom: { style: "none", size: 0 },
+          left: { style: "none", size: 0 },
+          right: { style: "none", size: 0 },
+          insideHorizontal: { style: "none", size: 0 },
+          insideVertical: { style: "none", size: 0 },
+        },
+      }
+    ),
 
     // Disclaimer section
     new Paragraph({
@@ -365,18 +237,18 @@ export const createFirstPage = (comprehensiveData, reportConfig) => {
         after: 200,
       },
       children: [
+        // Note: underline is not in createTextRun helper, so we use TextRun directly
         new TextRun({
           text: "Disclaimer: ",
           bold: true,
-          size: 21, // 10pt
+          size: 21,
           font: "Calibri(Body)",
           color: "000000",
           underline: {},
         }),
-        new TextRun({
-          text: reportDisclaimerText,
+        createTextRun(reportDisclaimerText, {
           bold: false,
-          size: 21, // 10pt
+          size: 21,
           font: "Calibri(Body)",
           color: "000000",
         }),
@@ -384,20 +256,15 @@ export const createFirstPage = (comprehensiveData, reportConfig) => {
     }),
 
     // Disclaimer note
-    new Paragraph({
+    createParagraph(reportDisclaimerNoteText, {
       alignment: AlignmentType.LEFT,
+      bold: true,
+      size: 21,
+      color: "000000",
+      font: "Calibri(Body)",
       spacing: {
         after: 200,
       },
-      children: [
-        new TextRun({
-          text: reportDisclaimerNoteText,
-          bold: true,
-          size: 21, // 10pt
-          font: "Calibri(Body)",
-          color: "000000",
-        }),
-      ],
     }),
   ];
 };

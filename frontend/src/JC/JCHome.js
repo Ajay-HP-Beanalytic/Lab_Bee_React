@@ -191,7 +191,7 @@ export default function JCHome() {
         itemReceivedDate ? dayjs(itemReceivedDate).format("YYYY/MM/DD") : ""
       }`,
     },
-    { label: "Test Category", value: `${jcCategory}` },
+    { label: "Test Category", value: `${testCategory}` },
     { label: "Test Discipline", value: `${testDiscipline}` },
     { label: "Sample Condition", value: `${sampleCondition}` },
     { label: "Type of Request", value: `${typeOfRequest}` },

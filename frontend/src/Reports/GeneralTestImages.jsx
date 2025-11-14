@@ -55,7 +55,6 @@ export const addGeneralTestImages = (comprehensiveData, reportConfig) => {
       width: 300, // Smaller for grid
       height: 250,
       imagesPerRow: 2, // 2 images side-by-side
-      captionPrefix: "Figure",
     }),
   ];
 };

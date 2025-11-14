@@ -161,7 +161,7 @@ export const JC_METADATA_FIELDS = [
     type: "datePicker",
     stateKey: "jcOpenDate",
     setterKey: "setJcOpenDate",
-    width: "30%",
+    width: "100%",
   },
   {
     name: "itemReceivedDate",
@@ -169,7 +169,7 @@ export const JC_METADATA_FIELDS = [
     type: "datePicker",
     stateKey: "itemReceivedDate",
     setterKey: "setItemReceivedDate",
-    width: "30%",
+    width: "100%",
   },
 ];
 

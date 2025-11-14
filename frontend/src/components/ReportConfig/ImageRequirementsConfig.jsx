@@ -18,8 +18,9 @@ import {
  *
  * @param {object} config - Current image requirements configuration
  * @param {function} onChange - Callback when configuration changes
+ * @param {string} testCategory - Test category (e.g., "vibration")
  */
-const ImageRequirementsConfig = ({ config = {}, onChange }) => {
+const ImageRequirementsConfig = ({ config = {}, onChange, testCategory = "" }) => {
   const [requirements, setRequirements] = useState({
     companyLogo: config.companyLogo ?? true,
     testImages: config.testImages ?? false,
@@ -251,7 +252,11 @@ const ImageRequirementsConfig = ({ config = {}, onChange }) => {
                 onChange={handleChange("graphImages")}
               />
             }
-            label="Graph/Chart Images (Test data visualization)"
+            label={
+              testCategory?.toLowerCase() === "vibration"
+                ? "Vibration Test Documents (.doc/.docx files)"
+                : "Graph/Chart Images (Test data visualization)"
+            }
           />
         </FormGroup>
       </FormControl>

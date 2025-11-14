@@ -1,10 +1,9 @@
-import React, { useEffect, useState } from 'react'
-import { Backdrop, Box, CircularProgress } from '@mui/material'
-import { EVENT_CONSTANTS, subscribe, unsubscribe } from './CustomEvents';
-
+import React, { useEffect, useState } from "react";
+import { Backdrop, CircularProgress } from "@mui/material";
+import { EVENT_CONSTANTS, subscribe, unsubscribe } from "./CustomEvents";
 
 export default function Loader() {
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(false);
 
   //Use effect function to activate and deactivate the loader
   useEffect(() => {
@@ -25,13 +24,13 @@ export default function Loader() {
         sx={{
           color: "#fff",
           zIndex: 10000,
-          height: "100vh"
+          height: "100vh",
         }}
         open={true}
       >
         <CircularProgress />
       </Backdrop>
-    )
+    );
   }
-  return null
+  return null;
 }

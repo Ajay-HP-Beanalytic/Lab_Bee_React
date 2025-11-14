@@ -21,7 +21,7 @@ import {
 import FiberManualRecordIcon from "@mui/icons-material/FiberManualRecord";
 import NotificationsIcon from "@mui/icons-material/Notifications";
 import axios from "axios";
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useState, useCallback } from "react";
 import { UserContext } from "../Pages/UserContext";
 import { NotificationContext } from "../Pages/NotificationContext";
 import { serverBaseAddress } from "../Pages/APIPage";
@@ -45,7 +45,7 @@ const NotificationDialog = () => {
   const id = open ? "notification-popover" : undefined;
   const itemsPerPage = 10;
 
-  const fetchUnreadCount = async () => {
+  const fetchUnreadCount = useCallback(async () => {
     try {
       const { data } = await axios.get(
         `${serverBaseAddress}/api/getUnreadNotificationsCount`,
@@ -57,9 +57,9 @@ const NotificationDialog = () => {
     } catch (err) {
       console.error("Unread count error:", err);
     }
-  };
+  }, [loggedInUser, loggedInUserRole]);
 
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
     try {
       setLoading(true);
       const { data } = await axios.get(
@@ -83,12 +83,18 @@ const NotificationDialog = () => {
       console.error("Fetch notifications error:", err);
       setLoading(false);
     }
-  };
+  }, [loggedInUser, loggedInUserRole, setNotifications]);
 
   useEffect(() => {
     fetchNotifications();
     fetchUnreadCount();
-  }, [loggedInUserRole, loggedInUser, newNotificationReceived]);
+  }, [
+    loggedInUserRole,
+    loggedInUser,
+    newNotificationReceived,
+    fetchNotifications,
+    fetchUnreadCount,
+  ]);
 
   const visibleNotifications = notifications.slice(0, page * itemsPerPage);
 

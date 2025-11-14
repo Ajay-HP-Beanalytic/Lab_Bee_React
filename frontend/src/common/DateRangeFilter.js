@@ -1,60 +1,66 @@
-import React, { useEffect, useState } from 'react'
+import { useState } from "react";
 
-import 'react-date-range/dist/styles.css'; // main css file
-import 'react-date-range/dist/theme/default.css'; // theme css file
+import "react-date-range/dist/styles.css"; // main css file
+import "react-date-range/dist/theme/default.css"; // theme css file
 
-import { DateRangePicker } from 'react-date-range';
-import { addDays, format } from 'date-fns';
-import { Button, Grid, IconButton, Tooltip, } from '@mui/material';
-import ClearIcon from '@mui/icons-material/Clear';
-import dayjs from 'dayjs';
+import { DateRangePicker } from "react-date-range";
+import { addDays } from "date-fns";
+import { Button, Grid, IconButton, Tooltip } from "@mui/material";
+import ClearIcon from "@mui/icons-material/Clear";
+import dayjs from "dayjs";
 
-import '../css/dateRange.css'
+import "../css/dateRange.css";
 
-export default function DateRangeFilter({ onClickDateRangeSelectDoneButton, onClickDateRangeSelectClearButton }) {
+export default function DateRangeFilter({
+  onClickDateRangeSelectDoneButton,
+  onClickDateRangeSelectClearButton,
+}) {
+  const [openDateRange, setOpenDateRange] = useState(false);
+  const [selectedDateRange, setSelectedDateRange] = useState("");
+  const [buttonText, setButtonText] = useState("Select Date Range");
 
-  const [openDateRange, setOpenDateRange] = useState(false)
-  const [selectedDateRange, setSelectedDateRange] = useState('')
-  const [buttonText, setButtonText] = useState('Select Date Range')
-
-
-  const [date, setDate] = useState([{
-    startDate: new Date(),
-    endDate: addDays(new Date(), 7),
-    key: 'selection'
-  }])
-
+  const [date, setDate] = useState([
+    {
+      startDate: new Date(),
+      endDate: addDays(new Date(), 7),
+      key: "selection",
+    },
+  ]);
 
   const handleOpenDateRangeCalendar = () => {
-    setOpenDateRange((prev) => !prev)
-  }
-
+    setOpenDateRange((prev) => !prev);
+  };
 
   const handleDateRangeChange = (ranges) => {
-    setDate([ranges.selection])
+    setDate([ranges.selection]);
     // const selectedRange = `${dayjs(ranges.selection.startDate).format('DD-MM-YYYY')} - ${dayjs(ranges.selection.endDate).format('DD-MM-YYYY')}`;
     const selectedRange = {
       startDate: ranges.selection.startDate,
-      endDate: ranges.selection.endDate
+      endDate: ranges.selection.endDate,
     };
-    setSelectedDateRange(selectedRange)
+    setSelectedDateRange(selectedRange);
 
-    setButtonText(`${dayjs(selectedRange.startDate).format('DD-MM-YYYY')} to ${dayjs(selectedRange.endDate).format('DD-MM-YYYY')}`)
+    setButtonText(
+      `${dayjs(selectedRange.startDate).format("DD-MM-YYYY")} to ${dayjs(
+        selectedRange.endDate
+      ).format("DD-MM-YYYY")}`
+    );
+  };
 
-  }
-
-  const clearSelectedDateRange = (event) => {
+  const clearSelectedDateRange = () => {
     setOpenDateRange(false);
-    setDate([{
-      startDate: new Date(),
-      endDate: addDays(new Date(), 7),
-      key: 'selection'
-    }]);
-    setSelectedDateRange('');
-    setButtonText('Select Date Range')
+    setDate([
+      {
+        startDate: new Date(),
+        endDate: addDays(new Date(), 7),
+        key: "selection",
+      },
+    ]);
+    setSelectedDateRange("");
+    setButtonText("Select Date Range");
 
-    onClickDateRangeSelectClearButton()
-  }
+    onClickDateRangeSelectClearButton();
+  };
 
   const handleDone = () => {
     onClickDateRangeSelectDoneButton(selectedDateRange);
@@ -62,13 +68,12 @@ export default function DateRangeFilter({ onClickDateRangeSelectDoneButton, onCl
   };
 
   return (
-
-    <div className='date-range-filter'>
+    <div className="date-range-filter">
       <Grid container spacing={1} alignItems="center">
         <Grid item>
           <Button
-            className='button-to-open-calendar'
-            variant='outlined'
+            className="button-to-open-calendar"
+            variant="outlined"
             onClick={handleOpenDateRangeCalendar}
           >
             {buttonText}
@@ -91,9 +96,9 @@ export default function DateRangeFilter({ onClickDateRangeSelectDoneButton, onCl
       </Grid>
 
       {openDateRange && (
-        <div className='date-range-picker'>
+        <div className="date-range-picker">
           <DateRangePicker
-            className='dateRange'
+            className="dateRange"
             onChange={handleDateRangeChange}
             ranges={date}
             showSelectionPreview={true}
@@ -103,14 +108,20 @@ export default function DateRangeFilter({ onClickDateRangeSelectDoneButton, onCl
             staticRanges={[]}
           />
 
-          <Grid item container justifyContent="flex-end" sx={{ backgroundColor: 'white' }}>
+          <Grid
+            item
+            container
+            justifyContent="flex-end"
+            sx={{ backgroundColor: "white" }}
+          >
             <Button onClick={handleDone}> Done </Button>
-            <Button sx={{ color: 'red' }} onClick={clearSelectedDateRange}> Clear </Button>
+            <Button sx={{ color: "red" }} onClick={clearSelectedDateRange}>
+              {" "}
+              Clear{" "}
+            </Button>
           </Grid>
         </div>
       )}
     </div>
-
-  )
+  );
 }
-

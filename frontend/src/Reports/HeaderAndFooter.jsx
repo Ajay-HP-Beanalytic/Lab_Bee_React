@@ -5,15 +5,17 @@ import {
   TextRun,
   AlignmentType,
   ImageRun,
-  Table,
   TableRow,
-  TableCell,
   VerticalAlign,
-  WidthType,
-  BorderStyle,
   PageNumber,
 } from "docx";
 import { footerText } from "./reportConstants";
+import {
+  createTableCell,
+  createDataTable,
+  createTextRun,
+  createParagraph,
+} from "./Report_Functions/docxHelpers";
 
 /**
  * Creates a reusable header for the report with table layout
@@ -30,19 +32,14 @@ export const createHeader = (
   isNABL,
   beaLogoBase64,
   nablLogoBase64 = null,
-  testDiscipline = "",
+  testCode = "",
   testReportNumber = "",
   ulrNumber = ""
 ) => {
+  const HEADER_CELL_MARGINS = { top: 50, bottom: 50, left: 10, right: 10 };
   // Create the left cell with BEA logo (spans 3 rows)
-  const leftCell = new TableCell({
-    width: {
-      size: 25,
-      type: WidthType.PERCENTAGE,
-    },
-    rowSpan: 3,
-    verticalAlign: VerticalAlign.CENTER,
-    children: [
+  const leftCell = createTableCell(
+    [
       new Paragraph({
         alignment: AlignmentType.CENTER,
         children: beaLogoBase64
@@ -58,47 +55,43 @@ export const createHeader = (
           : [new TextRun({ text: "" })],
       }),
     ],
-  });
+    {
+      width: 25,
+      rowSpan: 3,
+      verticalAlign: VerticalAlign.CENTER,
+      margins: { ...HEADER_CELL_MARGINS, top: 0, bottom: 0 },
+    }
+  );
 
   // Create the right cell with NABL logo (spans 3 rows, conditional)
-  const rightCell = new TableCell({
-    width: {
-      size: 25,
-      type: WidthType.PERCENTAGE,
-    },
-    rowSpan: 3,
-    verticalAlign: VerticalAlign.CENTER,
-    children:
-      isNABL && nablLogoBase64
-        ? [
-            new Paragraph({
-              alignment: AlignmentType.CENTER,
-              children: [
-                new ImageRun({
-                  data: nablLogoBase64,
-                  transformation: {
-                    width: 60,
-                    height: 70,
-                  },
-                }),
-              ],
-            }),
-          ]
-        : [new Paragraph({ text: "" })],
-  });
+  const rightCell = createTableCell(
+    isNABL && nablLogoBase64
+      ? [
+          new Paragraph({
+            alignment: AlignmentType.CENTER,
+            children: [
+              new ImageRun({
+                data: nablLogoBase64,
+                transformation: {
+                  width: 60,
+                  height: 70,
+                },
+              }),
+            ],
+          }),
+        ]
+      : [new Paragraph({ text: "" })],
+    {
+      width: 25,
+      rowSpan: 3,
+      verticalAlign: VerticalAlign.CENTER,
+      margins: { ...HEADER_CELL_MARGINS, top: 0, bottom: 0 },
+    }
+  );
 
   // Row 1 Center Cell: TEST REPORT
-  const row1CenterCell = new TableCell({
-    width: {
-      size: 50,
-      type: WidthType.PERCENTAGE,
-    },
-    verticalAlign: VerticalAlign.CENTER,
-    margins: {
-      top: 50,
-      bottom: 50,
-    },
-    children: [
+  const row1CenterCell = createTableCell(
+    [
       new Paragraph({
         alignment: AlignmentType.CENTER,
         spacing: {
@@ -106,30 +99,29 @@ export const createHeader = (
           after: 50,
         },
         children: [
-          new TextRun({
-            text: "TEST REPORT",
+          createTextRun("TEST REPORT", {
             bold: true,
             size: 20,
             font: "Calibri(Body)",
-            color: "000000", // Black color
+            color: "000000",
           }),
         ],
       }),
     ],
-  });
+    {
+      width: 50,
+      verticalAlign: VerticalAlign.CENTER,
+      // margins: {
+      //   top: 50,
+      //   bottom: 50,
+      // },
+      margins: HEADER_CELL_MARGINS,
+    }
+  );
 
   // Row 2 Center Cell: TEST DISCIPLINE
-  const row2CenterCell = new TableCell({
-    width: {
-      size: 50,
-      type: WidthType.PERCENTAGE,
-    },
-    verticalAlign: VerticalAlign.CENTER,
-    margins: {
-      top: 50,
-      bottom: 50,
-    },
-    children: [
+  const row2CenterCell = createTableCell(
+    [
       new Paragraph({
         alignment: AlignmentType.CENTER,
         spacing: {
@@ -137,15 +129,13 @@ export const createHeader = (
           after: 50,
         },
         children: [
-          new TextRun({
-            text: "TEST DISCIPLINE: ",
+          createTextRun("TEST CODE: ", {
             bold: false,
             size: 20,
             font: "Calibri(Body)",
-            color: "0070C0", // Blue color
+            color: "0070C0",
           }),
-          new TextRun({
-            text: testDiscipline,
+          createTextRun(testCode, {
             bold: false,
             size: 20,
             font: "Calibri(Body)",
@@ -154,7 +144,16 @@ export const createHeader = (
         ],
       }),
     ],
-  });
+    {
+      width: 50,
+      verticalAlign: VerticalAlign.CENTER,
+      // margins: {
+      //   top: 50,
+      //   bottom: 50,
+      // },
+      margins: HEADER_CELL_MARGINS,
+    }
+  );
 
   // Row 3 Center Cell: Test report No and ULR (vertically stacked)
   const row3CenterParagraphs = [
@@ -166,15 +165,13 @@ export const createHeader = (
         after: 50,
       },
       children: [
-        new TextRun({
-          text: "Test report No: ",
+        createTextRun("Test report No: ", {
           bold: false,
           size: 20,
           font: "Calibri(Body)",
-          color: "FF0000", // Red color
+          color: "FF0000",
         }),
-        new TextRun({
-          text: testReportNumber,
+        createTextRun(testReportNumber, {
           bold: true,
           size: 20,
           font: "Calibri(Body)",
@@ -194,15 +191,13 @@ export const createHeader = (
           after: 50,
         },
         children: [
-          new TextRun({
-            text: "ULR: ",
+          createTextRun("ULR: ", {
             bold: false,
             size: 20,
             font: "Calibri(Body)",
             color: "FF0000",
           }),
-          new TextRun({
-            text: ulrNumber,
+          createTextRun(ulrNumber, {
             bold: true,
             size: 20,
             font: "Calibri(Body)",
@@ -213,48 +208,31 @@ export const createHeader = (
     );
   }
 
-  const row3CenterCell = new TableCell({
-    width: {
-      size: 50,
-      type: WidthType.PERCENTAGE,
-    },
+  const row3CenterCell = createTableCell(row3CenterParagraphs, {
+    width: 50,
     verticalAlign: VerticalAlign.CENTER,
-    margins: {
-      top: 50,
-      bottom: 50,
-    },
-    children: row3CenterParagraphs,
+    // margins: {
+    //   top: 50,
+    //   bottom: 50,
+    // },
+    margins: HEADER_CELL_MARGINS,
   });
 
-  // Create the header table with 3 rows
-  const headerTable = new Table({
-    width: {
-      size: 100,
-      type: WidthType.PERCENTAGE,
-    },
-    borders: {
-      top: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
-      bottom: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
-      left: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
-      right: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
-      insideHorizontal: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
-      insideVertical: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
-    },
-    rows: [
-      // Row 1: BEA Logo (rowSpan 3) | TEST REPORT | NABL Logo (rowSpan 3)
-      new TableRow({
-        children: [leftCell, row1CenterCell, rightCell],
-      }),
-      // Row 2: TEST DISCIPLINE (left and right cells are spanned from row 1)
-      new TableRow({
-        children: [row2CenterCell],
-      }),
-      // Row 3: Test report No + ULR (left and right cells are spanned from row 1)
-      new TableRow({
-        children: [row3CenterCell],
-      }),
-    ],
-  });
+  // Create the header table with 3 rows using helper function
+  const headerTable = createDataTable([
+    // Row 1: BEA Logo (rowSpan 3) | TEST REPORT | NABL Logo (rowSpan 3)
+    new TableRow({
+      children: [leftCell, row1CenterCell, rightCell],
+    }),
+    // Row 2: TEST DISCIPLINE (left and right cells are spanned from row 1)
+    new TableRow({
+      children: [row2CenterCell],
+    }),
+    // Row 3: Test report No + ULR (left and right cells are spanned from row 1)
+    new TableRow({
+      children: [row3CenterCell],
+    }),
+  ]);
 
   return new Header({
     children: [headerTable],
@@ -269,19 +247,14 @@ export const createFooter = () => {
   return new Footer({
     children: [
       // Company info - centered
-      new Paragraph({
+      createParagraph(footerText, {
         alignment: AlignmentType.CENTER,
+        bold: true,
+        size: 16,
+        font: "Calibri(Body)",
         spacing: {
           after: 100,
         },
-        children: [
-          new TextRun({
-            text: footerText,
-            size: 16,
-            font: "Calibri(Body)",
-            bold: true,
-          }),
-        ],
       }),
       // Page number - right aligned
       new Paragraph({
@@ -290,11 +263,9 @@ export const createFooter = () => {
           before: 100,
         },
         children: [
-          new TextRun({
-            text: "Page ",
+          createTextRun("Page ", {
             size: 18,
             font: "Calibri(Body)",
-            bold: false,
           }),
           new TextRun({
             children: [PageNumber.CURRENT],
@@ -302,11 +273,9 @@ export const createFooter = () => {
             font: "Calibri(Body)",
             bold: false,
           }),
-          new TextRun({
-            text: " of ",
+          createTextRun(" of ", {
             size: 18,
             font: "Calibri(Body)",
-            bold: false,
           }),
           new TextRun({
             children: [PageNumber.TOTAL_PAGES],

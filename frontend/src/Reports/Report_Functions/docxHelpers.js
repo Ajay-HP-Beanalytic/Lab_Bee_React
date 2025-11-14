@@ -238,6 +238,10 @@ export const createDataTable = (rows, options = {}) => {
       insideHorizontal: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
       insideVertical: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
     },
+    margins: {
+      top: 20,
+      bottom: 20,
+    },
     rows: rows,
   });
 };
@@ -428,7 +432,10 @@ export const createImageGrid = (imagesBase64, options = {}) => {
 
       // Generate caption
       if (options.captionFormatter) {
-        caption = options.captionFormatter(globalIndex + 1, imagesBase64.length);
+        caption = options.captionFormatter(
+          globalIndex + 1,
+          imagesBase64.length
+        );
       } else if (options.captionPrefix) {
         caption = `${options.captionPrefix} ${globalIndex + 1}`;
       }
