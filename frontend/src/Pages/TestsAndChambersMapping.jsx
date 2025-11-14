@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Box,
   Button,
@@ -30,6 +30,7 @@ import useTestsAndChambersStore from "./TestsAndChambersZustandStore";
 import { serverBaseAddress } from "./APIPage";
 import axios from "axios";
 import { toast } from "react-toastify";
+import ConfirmationDialog from "../common/ConfirmationDialog";
 
 export default function TestsAndChambersMapping() {
   const [testType, setTestType] = useState("");
@@ -39,6 +40,12 @@ export default function TestsAndChambersMapping() {
   const [editingData, setEditingData] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [openEditDialog, setOpenEditDialog] = useState(false);
+  const [confirmDialog, setConfirmDialog] = useState({
+    open: false,
+    title: "",
+    message: "",
+    onConfirm: null,
+  });
 
   // Get data from store
   const testCategoryList = useTestsAndChambersStore(
@@ -56,7 +63,7 @@ export default function TestsAndChambersMapping() {
   const columns = useMemo(
     () => [
       { id: "slNo", headerName: "SL No", width: 90 },
-      { id: "testType", headerName: "Test Type", width: 150 },
+      { id: "testType", headerName: "Test Category", width: 150 },
       { id: "testName", headerName: "Test Names", width: 150 },
       { id: "chambers", headerName: "Chambers List", width: 150 },
       { id: "action", headerName: "Action", width: 150, align: "center" },
@@ -78,12 +85,27 @@ export default function TestsAndChambersMapping() {
     };
 
     initializeData();
-  }, []); // Only run once on mount
+  }, [testCategoryList.length, testChambersList.length, testNamesList.length]); // Only run once on mount
+
+  // Function to fetch the test and chamber mapping data from the database
+  const fetchTestAndChamberMappingData = useCallback(async () => {
+    try {
+      const response = await axios.get(
+        `${serverBaseAddress}/api/getAllMappedTestNamesAndChambers`
+      );
+      if (response.status === 200) {
+        setMappedTestAndChambers(response.data);
+        setMappedTestsAndChambersData(response.data);
+      }
+    } catch (error) {
+      console.error("Error fetching test and chamber mapping data:", error);
+    }
+  }, [setMappedTestsAndChambersData]);
 
   // Separate effect for fetching mapping data
   useEffect(() => {
     fetchTestAndChamberMappingData();
-  }, []); // Only run once on mount
+  }, [fetchTestAndChamberMappingData]); // Only run once on mount
 
   // Function to fetch all data and update store (only when store is empty)
   const fetchAllStoreData = async () => {
@@ -202,13 +224,25 @@ export default function TestsAndChambersMapping() {
     setOpenEditDialog(false);
   };
 
-  // Handle deletion of selected test and chambers
-  const deleteSelectedTestAndChamber = async (id) => {
-    const confirmDelete = window.confirm(
-      "Are you sure you want to delete this mapping?"
-    );
-    if (!confirmDelete) return;
+  const openConfirmationDialog = (title, message, onConfirm) => {
+    setConfirmDialog({ open: true, title, message, onConfirm });
+  };
 
+  const handleCloseConfirmationDialog = () => {
+    setConfirmDialog((prev) => ({ ...prev, open: false }));
+  };
+
+  const handleConfirmAction = async () => {
+    try {
+      if (confirmDialog.onConfirm) {
+        await confirmDialog.onConfirm();
+      }
+    } finally {
+      handleCloseConfirmationDialog();
+    }
+  };
+
+  const deleteMapping = async (id) => {
     try {
       // You'll need to implement this API endpoint
       const response = await axios.delete(
@@ -228,6 +262,15 @@ export default function TestsAndChambersMapping() {
       console.error("Error deleting mapping:", error);
       toast.error("Error deleting mapping!");
     }
+  };
+
+  // Handle deletion of selected test and chambers
+  const deleteSelectedTestAndChamber = (id) => {
+    openConfirmationDialog(
+      "Delete Mapping",
+      "Are you sure you want to delete this mapping?",
+      () => deleteMapping(id)
+    );
   };
 
   const addTestNameAndChamberMappingData = async () => {
@@ -274,27 +317,8 @@ export default function TestsAndChambersMapping() {
     }
   };
 
-  // Function to fetch the test and chamber mapping data from the database
-  const fetchTestAndChamberMappingData = async () => {
-    try {
-      const response = await axios.get(
-        `${serverBaseAddress}/api/getAllMappedTestNamesAndChambers`
-      );
-      if (response.status === 200) {
-        setMappedTestAndChambers(response.data);
-        setMappedTestsAndChambersData(response.data);
-      }
-    } catch (error) {
-      console.error("Error fetching test and chamber mapping data:", error);
-    }
-  };
-
   return (
     <>
-      <Typography variant="h5" sx={{ color: "#003366" }}>
-        Environmental Tests and Chambers
-      </Typography>
-
       <Dialog
         open={openEditDialog}
         onClose={handleCancelEditing}
@@ -451,7 +475,6 @@ export default function TestsAndChambersMapping() {
                     <IconButton
                       size="small"
                       onClick={() => editSelectedTestAndChamber(row, row.id)}
-                      color="primary"
                     >
                       <Tooltip title="Edit Test" arrow>
                         <EditIcon fontSize="inherit" />
@@ -461,7 +484,6 @@ export default function TestsAndChambersMapping() {
                     <IconButton
                       size="small"
                       onClick={() => deleteSelectedTestAndChamber(row.id)}
-                      color="error"
                     >
                       <Tooltip title="Delete Test" arrow>
                         <DeleteIcon fontSize="inherit" />
@@ -474,6 +496,15 @@ export default function TestsAndChambersMapping() {
           </Table>
         </TableContainer>
       )}
+      <ConfirmationDialog
+        open={confirmDialog.open}
+        onClose={handleCloseConfirmationDialog}
+        onConfirm={handleConfirmAction}
+        dialogTitle={confirmDialog.title || "Confirm"}
+        contentText={confirmDialog.message || "Are you sure?"}
+        confirmButtonText="Delete"
+        cancelButtonText="Cancel"
+      />
     </>
   );
 }

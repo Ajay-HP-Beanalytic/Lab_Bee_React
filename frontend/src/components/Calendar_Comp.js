@@ -1,9 +1,4 @@
-import React from "react";
-import {
-  Calendar as BigCalendar,
-  CalendarProps,
-  momentLocalizer,
-} from "react-big-calendar";
+import { Calendar as BigCalendar, momentLocalizer } from "react-big-calendar";
 import moment from "moment";
 import withDragAndDrop from "react-big-calendar/lib/addons/dragAndDrop";
 
@@ -66,27 +61,6 @@ const CustomGutterHeader = ({ label }) => {
 
 export default function Calendar(props) {
   return (
-    // <BigCalendar
-    //   {...props}
-    //   localizer={localizer}
-    //   draggableAccessor={"isDraggable"}
-    //   resizable
-    //   onDragStart={(props) => {
-    //     console.log("onDragStart", props);
-    //   }}
-    //   onEventDrop={(props) => {
-    //     console.log("onEventDrop", props);
-    //   }}
-    //   onEventResize={(props) => {
-    //     console.log("onEventResize", props);
-    //   }}
-    //   style={{ height: "100vh" }}
-    //   components={{
-    //     toolbar: CustomToolbar,
-    //     timeGutterHeader: CustomGutterHeader,
-    //   }}
-    // />
-
     <DragAndDropCalendar
       {...props}
       localizer={localizer}

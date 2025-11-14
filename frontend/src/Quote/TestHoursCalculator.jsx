@@ -756,8 +756,11 @@ const calculateThermalCyclingHours = ({
 
 // 3. Thermal Shock Test Calculation
 const calculateThermalShockHours = ({
+  // eslint-disable-next-line no-unused-vars
   startTemp = 25,
+  // eslint-disable-next-line no-unused-vars
   targetHighTemp,
+  // eslint-disable-next-line no-unused-vars
   targetLowTemp,
   transitionTimeSeconds,
   timeToAttainPositiveTemp,

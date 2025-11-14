@@ -34,12 +34,12 @@ export const createEUTInfoTable = (comprehensiveData, reportConfig) => {
   const headerRow = new TableRow({
     tableHeader: true,
     children: [
-      createHeaderCell("Sl. No.", { width: 8 }),
-      createHeaderCell("Nomenclature/EUT Description", { width: 30 }),
+      createHeaderCell("Sl.\nNo.", { width: 8 }),
+      createHeaderCell("Nomenclature", { width: 30 }),
       createHeaderCell("Quantity", { width: 10 }),
-      createHeaderCell("Part Number", { width: 17 }),
-      createHeaderCell("Model Number", { width: 17 }),
-      createHeaderCell("Serial Number", { width: 18 }),
+      createHeaderCell("Part\nNumber", { width: 17 }),
+      createHeaderCell("Model\nNumber", { width: 17 }),
+      createHeaderCell("Serial\nNumber", { width: 18 }),
     ],
   });
 
@@ -60,7 +60,7 @@ export const createEUTInfoTable = (comprehensiveData, reportConfig) => {
 
   return [
     // Section Heading
-    createTableHeadingParagraph("Table: EUT/DUT Description"),
+    createTableHeadingParagraph("Table: EUT/DUT Details"),
 
     // EUT/DUT Info Table
     createDataTable([headerRow, ...dataRows]),
@@ -80,15 +80,15 @@ export const createEUTInfoTable = (comprehensiveData, reportConfig) => {
           before: 100,
           after: 100,
         },
-        border: {
-          top: { style: "single", size: 6, color: "000000" },
-          bottom: { style: "single", size: 6, color: "000000" },
-          left: { style: "single", size: 6, color: "000000" },
-          right: { style: "single", size: 6, color: "000000" },
-        },
-        shading: {
-          fill: "F9F9F9",
-        },
+        // border: {
+        //   top: { style: "single", size: 6, color: "000000" },
+        //   bottom: { style: "single", size: 6, color: "000000" },
+        //   left: { style: "single", size: 6, color: "000000" },
+        //   right: { style: "single", size: 6, color: "000000" },
+        // },
+        // shading: {
+        //   fill: "F9F9F9",
+        // },
         children: lines.flatMap((line, index) => {
           const textRun = new TextRun({
             text: line,

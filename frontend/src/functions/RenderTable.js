@@ -23,13 +23,13 @@ import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { EMIJCContext } from "../EMI/EMIJCContext";
 import ObservationForms from "../EMI/ObservationForms";
+import ConfirmationDialog from "../common/ConfirmationDialog";
 
 const RenderTable = ({
   tableColumns,
   tableRows,
   setTableRows,
   rowTemplate,
-  deletedIds,
   setDeletedIds,
   getColumnOptions, // Optional callback for dynamic options
 }) => {
@@ -38,6 +38,8 @@ const RenderTable = ({
   const [dialogOpen, setDialogOpen] = useState(false);
   const [selectedFormType, setSelectedFormType] = useState("");
   const [selectedRowIndex, setSelectedRowIndex] = useState(null);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [rowIndexPendingDeletion, setRowIndexPendingDeletion] = useState(null);
 
   // IMPORTANT CHANGE: Remove the dependency between stepOneFormData and testPerformedTableRows
   // Instead, pass them separately to components that need them
@@ -57,6 +59,19 @@ const RenderTable = ({
     }
     const updatedRows = tableRows.filter((_, i) => i !== index);
     setTableRows(updatedRows);
+  };
+
+  const handleConfirmDelete = () => {
+    if (rowIndexPendingDeletion !== null) {
+      removeTableRow(rowIndexPendingDeletion);
+    }
+    setRowIndexPendingDeletion(null);
+    setConfirmDeleteOpen(false);
+  };
+
+  const handleCancelDelete = () => {
+    setRowIndexPendingDeletion(null);
+    setConfirmDeleteOpen(false);
   };
 
   // Function to handle input changes in the table rows (Working Fine)
@@ -268,7 +283,7 @@ const RenderTable = ({
                             : column.options || [];
 
                           // Convert options to proper format
-                          return Array.isArray(options)
+                          const formattedOptions = Array.isArray(options)
                             ? options.map((option) => {
                                 if (typeof option === "string") {
                                   return option;
@@ -277,6 +292,17 @@ const RenderTable = ({
                                 }
                               })
                             : [];
+
+                          // Ensure current value is in options (important when loading data before users load)
+                          const currentValue = row[column.id];
+                          if (
+                            currentValue &&
+                            !formattedOptions.includes(currentValue)
+                          ) {
+                            formattedOptions.push(currentValue);
+                          }
+
+                          return formattedOptions;
                         })()}
                         renderInput={(params) => (
                           <TextField
@@ -285,6 +311,15 @@ const RenderTable = ({
                             placeholder="Select or type..."
                           />
                         )}
+                        // Force the autocomplete to always use the inputValue from the value prop
+                        // This ensures the field displays the value even when options are still loading
+                        isOptionEqualToValue={(option, value) => {
+                          // Handle both string and object comparisons
+                          if (typeof option === "string" && typeof value === "string") {
+                            return option === value;
+                          }
+                          return option === value;
+                        }}
                       />
                     ) : column.type === "dateTime" ? (
                       <LocalizationProvider dateAdapter={AdapterDayjs}>
@@ -339,7 +374,10 @@ const RenderTable = ({
                 ))}
                 <TableCell>
                   <IconButton
-                    onClick={() => removeTableRow(rowIndex)}
+                    onClick={() => {
+                      setRowIndexPendingDeletion(rowIndex);
+                      setConfirmDeleteOpen(true);
+                    }}
                     disabled={tableRows.length === 1}
                   >
                     <RemoveIcon />
@@ -373,6 +411,16 @@ const RenderTable = ({
         formType={selectedFormType}
         commonData={commonData} // Pass any common data
         rowIndex={selectedRowIndex} // Pass the rowIndex
+      />
+
+      <ConfirmationDialog
+        open={confirmDeleteOpen}
+        onClose={handleCancelDelete}
+        onConfirm={handleConfirmDelete}
+        dialogTitle="Remove Row"
+        contentText="Are you sure you want to delete this row?"
+        confirmButtonText="Delete"
+        cancelButtonText="Cancel"
       />
     </>
   );

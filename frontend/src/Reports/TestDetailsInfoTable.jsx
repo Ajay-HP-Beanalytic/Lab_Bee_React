@@ -10,7 +10,6 @@ import { AlignmentType, Paragraph, TableRow, PageBreak } from "docx";
 import {
   createHeaderCell,
   createCenteredDataCell,
-  createDataCell,
   createCaptionParagraph,
   createDataTable,
   createTableHeadingParagraph,
@@ -56,10 +55,10 @@ export const createTestDetailsInfoTable = (comprehensiveData, reportConfig) => {
         children: [
           createCenteredDataCell(String(row.slNo), { width: 8 }),
           createCenteredDataCell(row.eutNo, { width: 12 }),
-          createDataCell(row.test, { width: 20 }),
-          createDataCell(row.chamberMakeEquipment, { width: 25 }),
-          createDataCell(row.testProfile, { width: 15 }),
-          createDataCell(row.observation, { width: 20 }),
+          createCenteredDataCell(row.test, { width: 20 }),
+          createCenteredDataCell(row.chamberMakeEquipment, { width: 25 }),
+          createCenteredDataCell(row.testProfile, { width: 15 }),
+          createCenteredDataCell(row.observation, { width: 20 }),
         ],
       })
   );

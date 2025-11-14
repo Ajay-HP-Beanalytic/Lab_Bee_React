@@ -1,4 +1,4 @@
-import { useCallback, useContext, useEffect } from "react";
+import { useCallback, useContext, useEffect, useMemo } from "react";
 import {
   Box,
   Card,
@@ -113,13 +113,16 @@ export default function EMIJCStepOne() {
     },
   ];
 
-  const eutTableRowTemplate = {
-    eutName: "",
-    eutQuantity: "",
-    eutPartNumber: "",
-    eutModelNumber: "",
-    eutSerialNumber: "",
-  };
+  const eutTableRowTemplate = useMemo(
+    () => ({
+      eutName: "",
+      eutQuantity: "",
+      eutPartNumber: "",
+      eutModelNumber: "",
+      eutSerialNumber: "",
+    }),
+    []
+  );
 
   //Fields to create a Tests details table:
   const testsTableColumns = [
@@ -141,11 +144,14 @@ export default function EMIJCStepOne() {
     { id: "testProfile", label: "Limit", width: 300, type: "textField" },
   ];
 
-  const testsTableRowTemplate = {
-    testName: "",
-    testStandard: "",
-    testProfile: "",
-  };
+  const testsTableRowTemplate = useMemo(
+    () => ({
+      testName: "",
+      testStandard: "",
+      testProfile: "",
+    }),
+    []
+  );
 
   // Watch form fields and update context on value change
   const stepOneFormValues = watch();
@@ -166,7 +172,14 @@ export default function EMIJCStepOne() {
     if (testsTableRows.length === 0) {
       updateTestsTableRows([testsTableRowTemplate]); // Add a default row if there's no data
     }
-  }, [eutTableRows, updateEutTableRows, testsTableRows, updateTestsTableRows]);
+  }, [
+    eutTableRows,
+    updateEutTableRows,
+    testsTableRows,
+    updateTestsTableRows,
+    eutTableRowTemplate,
+    testsTableRowTemplate,
+  ]);
 
   const handleUpdateStepOneFormData = useCallback(
     (values) => {
@@ -193,6 +206,7 @@ export default function EMIJCStepOne() {
         updateTestsTableRows([testsTableRowTemplate]); // Add a default row if there's no data
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Empty dependency array so it only runs once on mount
 
   //////////////////////////////////////////////////////////////
@@ -216,6 +230,7 @@ export default function EMIJCStepOne() {
     if (testsTableRows.length === 0) {
       updateTestsTableRows([testsTableRowTemplate]);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Empty dependency array so it only runs once on mount
 
   return (

@@ -1,11 +1,8 @@
 import { Breadcrumbs, Typography } from "@mui/material";
-import { Link, useLocation } from "react-router-dom";
+import { Link } from "react-router-dom";
 import NavigateNextIcon from "@mui/icons-material/NavigateNext";
 
 export default function BreadCrumbs({ customBreadcrumbs }) {
-  const location = useLocation();
-  const path = location.pathname;
-
   const breadcrumbs = customBreadcrumbs || [];
 
   if (!breadcrumbs || breadcrumbs.length === 0) {
@@ -13,7 +10,7 @@ export default function BreadCrumbs({ customBreadcrumbs }) {
   }
 
   return (
-    <div role="project-management-navigation">
+    <div>
       <Breadcrumbs
         separator={<NavigateNextIcon fontSize="small" />}
         aria-label="breadcrumb"

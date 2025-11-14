@@ -30,7 +30,6 @@ import CurrencyRupeeIcon from "@mui/icons-material/CurrencyRupee";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import { Link, Outlet } from "react-router-dom";
 
-import RobotoBoldFont from "../fonts/Roboto-Bold.ttf";
 import UserProfile from "../LoginRegister/UserProfile";
 
 // import { serverBaseAddress } from "../Pages/APIPage";

@@ -7,17 +7,17 @@
  */
 
 import {
-  BorderStyle,
   Paragraph,
-  Table,
-  TableCell,
   TableRow,
-  TextRun,
-  WidthType,
   AlignmentType,
   VerticalAlign,
   PageBreak,
 } from "docx";
+import {
+  createTableCell,
+  createDataTable,
+  createTableHeadingParagraph,
+} from "./Report_Functions/docxHelpers";
 
 /**
  * Get the value for each field from comprehensiveData
@@ -25,10 +25,10 @@ import {
 const getFieldValue = (fieldId, comprehensiveData, _reportConfig) => {
   switch (fieldId) {
     case 1: // Test Start Date
-      return comprehensiveData?.currentTestRow?.currentTest_startDate || "N/A";
+      return comprehensiveData?.currentTest_startDate || "N/A";
 
     case 2: // Test End Date
-      return comprehensiveData?.currentTestRow?.currentTest_endDate || "N/A";
+      return comprehensiveData?.currentTest_endDate || "N/A";
 
     case 3: // Service Request Number
       return comprehensiveData?.jcNumber || "N/A";
@@ -90,120 +90,60 @@ export const createGeneralInfoTable = (comprehensiveData, reportConfig) => {
       children: [new PageBreak()],
     }),
 
-    // Optional: Add a heading before the table
-    new Paragraph({
-      text: "General Information",
-      heading: "Heading2",
-      spacing: {
-        before: 200,
-        after: 100,
-      },
-      alignment: AlignmentType.CENTER,
-      font: "Calibri(Body)",
+    // Add a heading before the table
+    createTableHeadingParagraph("General Information", {
+      before: 300,
+      after: 100,
     }),
 
     // General Info Table
-    new Table({
-      width: {
-        size: 100,
-        type: WidthType.PERCENTAGE,
-      },
-      borders: {
-        top: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
-        bottom: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
-        left: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
-        right: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
-        insideHorizontal: {
-          style: BorderStyle.SINGLE,
-          size: 1,
-          color: "000000",
-        },
-        insideVertical: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
-      },
-
-      spacing: {
-        before: 500,
-        after: 1000,
-      },
-      rows: generalInfoTableFieldNames.map((field) => {
+    createDataTable(
+      generalInfoTableFieldNames.map((field) => {
         const value = getFieldValue(field.id, comprehensiveData, reportConfig);
 
         return new TableRow({
           children: [
             // Column 1: Serial Number
-            new TableCell({
-              width: { size: 8, type: WidthType.PERCENTAGE },
+            createTableCell(`${field.id}.`, {
+              width: 8,
+              alignment: AlignmentType.CENTER,
+              size: 21,
               verticalAlign: VerticalAlign.CENTER,
               margins: {
                 top: 20,
                 bottom: 20,
               },
-              children: [
-                new Paragraph({
-                  alignment: AlignmentType.CENTER,
-                  children: [
-                    new TextRun({
-                      text: `${field.id}.`,
-                      size: 21,
-                      font: "Calibri(Body)",
-                      color: "000000",
-                      bold: false,
-                    }),
-                  ],
-                }),
-              ],
             }),
 
             // Column 2: Field Name
-            new TableCell({
-              width: { size: 42, type: WidthType.PERCENTAGE },
+            createTableCell(field.name, {
+              width: 42,
+              alignment: AlignmentType.LEFT,
+              size: 21,
               verticalAlign: VerticalAlign.CENTER,
               margins: {
                 top: 20,
                 bottom: 20,
               },
-              children: [
-                new Paragraph({
-                  alignment: AlignmentType.LEFT,
-                  children: [
-                    new TextRun({
-                      text: field.name,
-                      size: 21,
-                      font: "Calibri(Body)",
-                      color: "000000",
-                      bold: false,
-                    }),
-                  ],
-                }),
-              ],
             }),
 
             // Column 3: Value
-            new TableCell({
-              width: { size: 50, type: WidthType.PERCENTAGE },
+            createTableCell(value, {
+              width: 50,
+              alignment: AlignmentType.LEFT,
+              size: 21,
               verticalAlign: VerticalAlign.CENTER,
               margins: {
                 top: 20,
                 bottom: 20,
               },
-              children: [
-                new Paragraph({
-                  alignment: AlignmentType.LEFT,
-                  children: [
-                    new TextRun({
-                      text: value,
-                      size: 21,
-                      font: "Calibri(Body)",
-                      color: "000000",
-                      bold: false,
-                    }),
-                  ],
-                }),
-              ],
             }),
           ],
         });
       }),
-    }),
+      {
+        // Additional table options if needed
+      }
+    ),
   ];
 };

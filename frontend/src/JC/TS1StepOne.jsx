@@ -25,6 +25,7 @@ import {
 } from "./constants/tableConfigurations";
 import {
   CUSTOMER_INFO_FIELDS,
+  JC_METADATA_FIELDS,
   TEST_CONFIG_FIELDS,
 } from "./constants/formFieldConfigurations";
 import { TS1_JC_NOTES } from "./constants/jobCardConstants";
@@ -177,6 +178,18 @@ export default function TS1StepOne() {
                 ))}
               </Box>
             </Grid>
+          </Grid>
+        </CardContent>
+      </Card>
+
+      <Card sx={{ mt: 1, mb: 1 }}>
+        <CardContent>
+          <Grid container spacing={2}>
+            {JC_METADATA_FIELDS.map((field) => (
+              <Grid item xs={12} sm={6} md={6} lg={6} key={field.name}>
+                <RenderFormFields fields={[field]} store={jobcardStore} />
+              </Grid>
+            ))}
           </Grid>
         </CardContent>
       </Card>

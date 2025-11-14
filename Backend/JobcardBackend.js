@@ -138,6 +138,31 @@ function jobcardsAPIs(app, io, labbeeUsers) {
 
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+  /**
+   * Helper Function: Update parent job card's last_updated_by field
+   * Called whenever child table data (EUT, tests, test details) is modified
+   *
+   * @param {string} jcNumber - Job Card number
+   * @param {string} updatedBy - Username who made the change
+   */
+  const updateParentJobCardLastModified = async (jcNumber, updatedBy) => {
+    try {
+      const sql = `UPDATE bea_jobcards SET last_updated_by = ? WHERE jc_number = ?`;
+      await db.promise().query(sql, [updatedBy, jcNumber]);
+      // console.log(
+      //   `✏️ Updated parent JC ${jcNumber} last_updated_by to: ${updatedBy}`
+      // );
+    } catch (error) {
+      console.error(
+        `❌ Error updating parent JC last_updated_by for ${jcNumber}:`,
+        error
+      );
+      // Don't throw - this shouldn't break the main operation
+    }
+  };
+
+  ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+
   // Function to store the notifications to the table:
   const saveNotificationToDatabase = async (
     message,
@@ -692,6 +717,93 @@ function jobcardsAPIs(app, io, labbeeUsers) {
         });
       }
 
+      // Check if any fields actually changed
+      // Build array of field changes to detect if anything changed
+      const fieldComparisons = [
+        { newVal: srfNumber, oldVal: existingRow?.srf_number },
+        {
+          newVal: formattedSrfDate,
+          oldVal: existingRow?.srf_date
+            ? convertDateTime(existingRow.srf_date)
+            : null,
+          isDate: true,
+        },
+        { newVal: dcNumber, oldVal: existingRow?.dcform_number },
+        {
+          newVal: formattedOpenDate,
+          oldVal: existingRow?.jc_open_date
+            ? convertDateTime(existingRow.jc_open_date)
+            : null,
+          isDate: true,
+        },
+        {
+          newVal: formattedItemReceivedDate,
+          oldVal: existingRow?.item_received_date,
+          isDate: true,
+        },
+        { newVal: poNumber, oldVal: existingRow?.po_number },
+        { newVal: testCategory, oldVal: existingRow?.test_category },
+        { newVal: testDiscipline, oldVal: existingRow?.test_discipline },
+        { newVal: sampleCondition, oldVal: existingRow?.sample_condition },
+        { newVal: typeOfRequest, oldVal: existingRow?.type_of_request },
+        { newVal: reportType, oldVal: existingRow?.report_type },
+        { newVal: testInchargeName, oldVal: existingRow?.test_incharge },
+        { newVal: testWitnessedBy, oldVal: existingRow?.test_witnessed_by },
+        { newVal: jcCategory, oldVal: existingRow?.jc_category },
+        { newVal: companyName, oldVal: existingRow?.company_name },
+        { newVal: companyAddress, oldVal: existingRow?.company_address },
+        { newVal: customerName, oldVal: existingRow?.customer_name },
+        { newVal: customerEmail, oldVal: existingRow?.customer_email },
+        { newVal: customerNumber, oldVal: existingRow?.customer_number },
+        { newVal: projectName, oldVal: existingRow?.project_name },
+        { newVal: testInstructions, oldVal: existingRow?.test_instructions },
+        { newVal: jcStatus, oldVal: existingRow?.jc_status },
+        {
+          newVal: reliabilityReportStatus,
+          oldVal: existingRow?.reliability_report_status,
+        },
+        {
+          newVal: formattedCloseDate,
+          oldVal: existingRow?.jc_closed_date
+            ? convertDateTime(existingRow.jc_closed_date)
+            : null,
+          isDate: true,
+        },
+        { newVal: observations, oldVal: existingRow?.observations },
+      ];
+
+      // Check if any field has actually changed
+      let hasChanges = false;
+      for (const field of fieldComparisons) {
+        let oldValue, newValue;
+        if (field.isDate) {
+          oldValue = normalizeDateForComparison(field.oldVal);
+          newValue = normalizeDateForComparison(field.newVal);
+        } else {
+          oldValue = String(field.oldVal || "");
+          newValue = String(field.newVal || "");
+        }
+        if (oldValue !== newValue) {
+          hasChanges = true;
+          break;
+        }
+      }
+
+      // Only update last_updated_by if there were actual changes
+      const lastUpdatedByValue = hasChanges
+        ? loggedInUser
+        : existingRow?.last_updated_by || loggedInUser;
+
+      if (!hasChanges) {
+        // console.log(
+        //   `ℹ️ No changes detected for JC ${jcNumber}. Preserving last_updated_by: ${lastUpdatedByValue}`
+        // );
+      } else {
+        // console.log(
+        //   `✏️ Changes detected for JC ${jcNumber}. Updating last_updated_by to: ${loggedInUser}`
+        // );
+      }
+
       // Proceed with the update only after fetching the current status
       const sqlQuery = `
         UPDATE bea_jobcards SET
@@ -708,17 +820,17 @@ function jobcardsAPIs(app, io, labbeeUsers) {
             report_type = ?,
             test_incharge = ?,
             test_witnessed_by = ?,
-            jc_category = ?, 
-            company_name = ?, 
+            jc_category = ?,
+            company_name = ?,
             company_address = ?,
-            customer_name = ?, 
-            customer_email = ?, 
-            customer_number = ?, 
-            project_name = ?, 
+            customer_name = ?,
+            customer_email = ?,
+            customer_number = ?,
+            project_name = ?,
             test_instructions = ?,
-            jc_status = ?, 
-            reliability_report_status = ?, 
-            jc_closed_date = ?, 
+            jc_status = ?,
+            reliability_report_status = ?,
+            jc_closed_date = ?,
             observations = ?,
             last_updated_by = ?
         WHERE jc_number = ?
@@ -750,7 +862,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
         reliabilityReportStatus,
         formattedCloseDate,
         observations,
-        loggedInUser,
+        lastUpdatedByValue,
         jcNumber,
       ];
 
@@ -1109,7 +1221,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
           const lastSequence = parseInt(lastJcNumber.split("-")[2], 10);
           sequenceNumber = lastSequence;
         } else {
-          console.log("📋 [getJCCount] No existing JCs found, starting from 0");
+          // console.log("📋 [getJCCount] No existing JCs found, starting from 0");
         }
 
         // Return the current sequence number (frontend will add 1)
@@ -1124,7 +1236,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
 
     // Check if eutRowIds and jcNumberString are defined
     if (!eutRowIds || !jcNumberString) {
-      console.log("Missing eutRowIds or jcNumberString");
+      // console.log("Missing eutRowIds or jcNumberString");
       return res
         .status(400)
         .json({ message: "Missing eutRowIds or jcNumberString" });
@@ -1154,6 +1266,14 @@ function jobcardsAPIs(app, io, labbeeUsers) {
             });
           })
         );
+
+        // Update parent JC if rows were deleted
+        if (toDelete.length > 0) {
+          await updateParentJobCardLastModified(
+            jcNumberString,
+            loggedInUser || "Unknown"
+          );
+        }
 
         // Add new rows only if needed
         const newIds = [];
@@ -1290,12 +1410,14 @@ function jobcardsAPIs(app, io, labbeeUsers) {
                   },
                 ];
 
-                // Log each changed field
+                // Log each changed field and track if any changes occurred
+                let hasChanges = false;
                 fieldChanges.forEach((field) => {
                   const oldValue = String(field.oldVal || "");
                   const newValue = String(field.newVal || "");
 
                   if (oldValue !== newValue) {
+                    hasChanges = true;
                     logAuditTrail(
                       "eut_details",
                       eutRowId,
@@ -1311,6 +1433,11 @@ function jobcardsAPIs(app, io, labbeeUsers) {
                     );
                   }
                 });
+
+                // Update parent job card's last_updated_by if changes were made
+                if (hasChanges) {
+                  updateParentJobCardLastModified(jcNumber, loggedInUser);
+                }
 
                 return res.status(200).json({
                   message: "eut_details updated successfully",
@@ -1340,6 +1467,9 @@ function jobcardsAPIs(app, io, labbeeUsers) {
                   error: insertError,
                 });
               } else {
+                // Update parent job card's last_updated_by when new EUT row is added
+                updateParentJobCardLastModified(jcNumber, loggedInUser);
+
                 return res.status(200).json({
                   message: "eut_details inserted successfully",
                   result: insertResult,
@@ -1377,7 +1507,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
 
     // Check if testRowIds and jcNumberString are defined
     if (!testRowIds || !jcNumberString) {
-      console.log("Missing testRowIds or jcNumberString");
+      // console.log("Missing testRowIds or jcNumberString");
       return res
         .status(400)
         .json({ message: "Missing testRowIds or jcNumberString" });
@@ -1404,6 +1534,14 @@ function jobcardsAPIs(app, io, labbeeUsers) {
             });
           })
         );
+
+        // Update parent JC if rows were deleted
+        if (toDelete.length > 0) {
+          await updateParentJobCardLastModified(
+            jcNumberString,
+            loggedInUser || "Unknown"
+          );
+        }
 
         // Add new rows
         const newIds = [];
@@ -1510,12 +1648,14 @@ function jobcardsAPIs(app, io, labbeeUsers) {
                   },
                 ];
 
-                // Log each changed field
+                // Log each changed field and track if any changes occurred
+                let hasChanges = false;
                 fieldChanges.forEach((field) => {
                   const oldValue = String(field.oldVal || "");
                   const newValue = String(field.newVal || "");
 
                   if (oldValue !== newValue) {
+                    hasChanges = true;
                     logAuditTrail(
                       "jc_tests",
                       testId,
@@ -1531,6 +1671,11 @@ function jobcardsAPIs(app, io, labbeeUsers) {
                     );
                   }
                 });
+
+                // Update parent job card's last_updated_by if changes were made
+                if (hasChanges) {
+                  updateParentJobCardLastModified(jcNumber, loggedInUser);
+                }
 
                 return res.status(200).json({
                   message: "Test updated successfully",
@@ -1558,6 +1703,9 @@ function jobcardsAPIs(app, io, labbeeUsers) {
                   error: insertError,
                 });
               } else {
+                // Update parent job card's last_updated_by when new test row is added
+                updateParentJobCardLastModified(jcNumber, loggedInUser);
+
                 return res.status(200).json({
                   message: "Test inserted successfully",
                   result: insertResult,
@@ -1600,7 +1748,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
 
     // Check if testDetailsRowIds and jcNumberString are defined
     if (!testDetailsRowIds || !jcNumberString) {
-      console.log("Missing testDetailsRowIds or jcNumberString");
+      // console.log("Missing testDetailsRowIds or jcNumberString");
       return res
         .status(400)
         .json({ message: "Missing testDetailsRowIds or jcNumberString" });
@@ -1629,6 +1777,14 @@ function jobcardsAPIs(app, io, labbeeUsers) {
             });
           })
         );
+
+        // Update parent JC if rows were deleted
+        if (toDelete.length > 0) {
+          await updateParentJobCardLastModified(
+            jcNumberString,
+            loggedInUser || "Unknown"
+          );
+        }
 
         // Add new rows
         const newIds = [];
@@ -1855,6 +2011,9 @@ function jobcardsAPIs(app, io, labbeeUsers) {
                   .status(500)
                   .json({ message: "Internal server error", error });
               } else {
+                // Update parent job card's last_updated_by when new test detail row is added
+                updateParentJobCardLastModified(jcNumber, loggedInUser);
+
                 res
                   .status(200)
                   .json({ message: "tests_details inserted successfully" });
@@ -1971,13 +2130,15 @@ function jobcardsAPIs(app, io, labbeeUsers) {
                 },
               ];
 
-              // Log each changed field
+              // Log each changed field and track if any changes occurred
+              let hasChanges = false;
               fieldChanges.forEach((field) => {
                 // Convert to strings for comparison
                 const oldValue = String(field.oldVal || "");
                 const newValue = String(field.newVal || "");
 
                 if (oldValue !== newValue) {
+                  hasChanges = true;
                   logAuditTrail(
                     "tests_details",
                     testDetailRowId,
@@ -1993,6 +2154,11 @@ function jobcardsAPIs(app, io, labbeeUsers) {
                   );
                 }
               });
+
+              // Update parent job card's last_updated_by if changes were made
+              if (hasChanges) {
+                updateParentJobCardLastModified(jcNumber, loggedInUser);
+              }
             }
 
             let reportDeliveryMessage = "";

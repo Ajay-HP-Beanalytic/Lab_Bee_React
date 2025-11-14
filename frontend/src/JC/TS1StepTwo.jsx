@@ -3,7 +3,7 @@ import {
   Box,
   Card,
   CardContent,
-  Divider,
+  // Divider,
   Grid,
   Typography,
 } from "@mui/material";
@@ -16,7 +16,7 @@ import {
   ROW_TEMPLATES,
 } from "./constants/tableConfigurations";
 import {
-  JC_METADATA_FIELDS,
+  // JC_METADATA_FIELDS,
   JC_OBSERVATIONS_FIELD,
 } from "./constants/formFieldConfigurations";
 import RenderFormFields from "../components/RenderFormFields";
@@ -92,14 +92,14 @@ export default function TS1StepTwo() {
             TESTS PERFORMED
           </Typography>
 
-          <Grid item xs={12} md={6} lg={6}>
+          {/* <Grid item xs={12} md={6} lg={6}>
             <RenderFormFields
               fields={JC_METADATA_FIELDS}
               store={jobcardStore}
             />
-          </Grid>
+          </Grid> */}
 
-          <Divider component="hr" sx={{ my: 1 }} />
+          {/* <Divider component="hr" sx={{ my: 1 }} /> */}
 
           <RenderTable
             tableColumns={tableColumns}

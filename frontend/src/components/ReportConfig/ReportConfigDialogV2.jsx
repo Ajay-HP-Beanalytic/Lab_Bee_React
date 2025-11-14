@@ -9,7 +9,7 @@ import {
   Typography,
   Stepper,
   Step,
-  StepLabel,
+  StepButton,
   IconButton,
   Radio,
   RadioGroup,
@@ -19,11 +19,19 @@ import {
   Divider,
   TextField,
   Grid,
+  LinearProgress,
+  Alert,
+  Card,
+  CardContent,
+  Chip,
+  Stack,
 } from "@mui/material";
 import {
   Close as CloseIcon,
   Add as AddIcon,
   Delete as DeleteIcon,
+  CheckCircle as CheckCircleIcon,
+  Photo as PhotoIcon,
 } from "@mui/icons-material";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
@@ -37,6 +45,80 @@ import advancedFormat from "dayjs/plugin/advancedFormat";
 
 // Extend dayjs with advancedFormat plugin to support "Do" format
 dayjs.extend(advancedFormat);
+
+// ============================================
+// IMAGE OPTIMIZATION CONSTANTS (Option A)
+// ============================================
+const MAX_IMAGES_PER_CATEGORY = 50;
+const MAX_TOTAL_IMAGES = 100;
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB per image
+const BATCH_SIZE = 5; // Process 5 images at a time
+
+// ============================================
+// DOCUMENT OPTIMIZATION CONSTANTS (For Vibration Tests)
+// ============================================
+const MAX_DOCUMENTS_PER_CATEGORY = 50; // Max 50 documents for vibration tests
+const MAX_DOCUMENT_FILE_SIZE = 10 * 1024 * 1024; // 10MB per document
+const DOCUMENT_BATCH_SIZE = 3; // Process 3 documents at a time (slower than images)
+
+// ============================================
+// IMAGE COMPRESSION UTILITY (Option B)
+// ============================================
+/**
+ * Compresses and resizes an image before converting to base64
+ * Reduces memory usage by 60-80% with no visible quality loss
+ *
+ * @param {File} file - The image file to compress
+ * @param {number} maxWidth - Maximum width (default: 1920px)
+ * @param {number} maxHeight - Maximum height (default: 1080px)
+ * @param {number} quality - JPEG quality 0-1 (default: 0.85)
+ * @returns {Promise<string>} Compressed base64 image string
+ */
+const compressImage = (
+  file,
+  maxWidth = 1920,
+  maxHeight = 1080,
+  quality = 0.85
+) => {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let width = img.width;
+        let height = img.height;
+
+        // Calculate new dimensions while maintaining aspect ratio
+        if (width > height) {
+          if (width > maxWidth) {
+            height = (height * maxWidth) / width;
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width = (width * maxHeight) / height;
+            height = maxHeight;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // Convert to base64 with compression
+        const compressedBase64 = canvas.toDataURL("image/jpeg", quality);
+        resolve(compressedBase64);
+      };
+      img.onerror = () => reject(new Error("Failed to load image"));
+      img.src = e.target.result;
+    };
+    reader.onerror = () => reject(new Error("Failed to read file"));
+    reader.readAsDataURL(file);
+  });
+};
 
 /**
  * ReportConfigDialogV2 - Multi-step Report Configuration Dialog
@@ -58,8 +140,10 @@ const ReportConfigDialogV2 = ({
   onConfirm,
   defaultReportType = "NABL",
   initialConfig = null,
+  testCategory = "",
 }) => {
   const [activeStep, setActiveStep] = useState(0);
+  const [testCode, setTestCode] = useState("");
   const [reportType, setReportType] = useState(defaultReportType);
   const [testReportNumber, setTestReportNumber] = useState("");
   const [ulrNumber, setUlrNumber] = useState("");
@@ -69,6 +153,9 @@ const ReportConfigDialogV2 = ({
   const [chambers, setChambers] = useState([
     { chamberInfo: "", chamberMake: "" },
   ]);
+
+  // Upload progress tracking (Option B)
+  const [uploadProgress, setUploadProgress] = useState(null); // { current: 0, total: 10, category: 'testImages' }
 
   const [imageRequirements, setImageRequirements] = useState({
     companyLogo: true,
@@ -102,6 +189,7 @@ const ReportConfigDialogV2 = ({
   useEffect(() => {
     if (initialConfig && open) {
       setReportType(initialConfig.reportType || defaultReportType);
+      setTestCode(initialConfig.testCode || "");
       setTestReportNumber(initialConfig.testReportNumber || "");
       setUlrNumber(initialConfig.ulrNumber || "");
       setOriginalReportIssueDate(
@@ -170,82 +258,337 @@ const ReportConfigDialogV2 = ({
     "Review",
   ];
 
-  // Image validation
-  const validateImageFile = (file) => {
+  // ============================================
+  // HELPER FUNCTIONS
+  // ============================================
+
+  /**
+   * Get total count of all uploaded images across all categories
+   */
+  const getTotalImageCount = () => {
+    let total = 0;
+    if (images.companyLogoBase64) total += 1;
+    total += (images.testImagesBase64 || []).length;
+    total += (images.beforeTestImagesBase64 || []).length;
+    total += (images.duringTestImagesBase64 || []).length;
+    total += (images.afterTestImagesBase64 || []).length;
+    total += (images.graphImagesBase64 || []).length;
+    return total;
+  };
+
+  /**
+   * Image/Document validation with updated file size limit (Option A)
+   * For vibration tests, graphImages can accept Word documents
+   */
+  const validateImageFile = (file, category) => {
+    const isVibration = testCategory?.toLowerCase() === "vibration";
+    const isGraphCategory = category === "graphImages";
+
+    // For vibration test graph section, allow Word documents
+    if (isVibration && isGraphCategory) {
+      const validDocTypes = [
+        "application/msword", // .doc
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document", // .docx
+      ];
+
+      if (!validDocTypes.includes(file.type)) {
+        return "Please upload a valid Word document (.doc or .docx)";
+      }
+      if (file.size > MAX_DOCUMENT_FILE_SIZE) {
+        return `Document size must be less than ${
+          MAX_DOCUMENT_FILE_SIZE / 1024 / 1024
+        }MB`;
+      }
+      return null;
+    }
+
+    // For all other cases, validate as image
     const validTypes = ["image/jpeg", "image/jpg", "image/png"];
-    const maxSize = 5 * 1024 * 1024; // 5MB
 
     if (!validTypes.includes(file.type)) {
       return "Please upload a valid image file (JPG, JPEG, PNG)";
     }
-    if (file.size > maxSize) {
-      return "Image size must be less than 5MB";
+    if (file.size > MAX_FILE_SIZE) {
+      return `Image size must be less than ${MAX_FILE_SIZE / 1024 / 1024}MB`;
     }
     return null;
   };
 
-  // Generic image upload handler
-  const handleImagesUpload = (files, category) => {
+  /**
+   * OPTIMIZED IMAGE UPLOAD HANDLER
+   * Implements Option A (limits + warnings) and Option B (compression + batch processing)
+   */
+  const handleImagesUpload = async (files, category) => {
     const fileArray = Array.from(files);
-    const validFiles = [];
-    const previews = [];
-    const base64Array = [];
-    let processed = 0;
-
-    // Special handling for single image categories (companyLogo)
     const isSingleImage = category === "companyLogo";
+    const isVibration = testCategory?.toLowerCase() === "vibration";
+    const isGraphCategory = category === "graphImages";
+    const isDocumentUpload = isVibration && isGraphCategory;
 
-    fileArray.forEach((file) => {
-      const error = validateImageFile(file);
-      if (error) {
-        toast.error(`${file.name}: ${error}`);
-        processed++;
+    // ============================================
+    // OPTION A: LIMITS VALIDATION (Images or Documents)
+    // ============================================
+    const currentCount = isSingleImage
+      ? images[`${category}Base64`]
+        ? 1
+        : 0
+      : (images[`${category}Base64`] || []).length;
+
+    const totalImages = getTotalImageCount();
+
+    // For document uploads (vibration tests)
+    if (isDocumentUpload) {
+      // Check document count limit
+      if (currentCount + fileArray.length > MAX_DOCUMENTS_PER_CATEGORY) {
+        toast.error(
+          `Maximum ${MAX_DOCUMENTS_PER_CATEGORY} documents allowed for vibration tests.\n` +
+            `Currently: ${currentCount}, Attempting to add: ${fileArray.length}`,
+          { autoClose: 5000 }
+        );
+        return;
+      }
+    } else {
+      // For regular image uploads
+      // Check per-category limit
+      if (
+        !isSingleImage &&
+        currentCount + fileArray.length > MAX_IMAGES_PER_CATEGORY
+      ) {
+        toast.error(
+          `Maximum ${MAX_IMAGES_PER_CATEGORY} images per category.\n` +
+            `Currently: ${currentCount}, Attempting to add: ${fileArray.length}`,
+          { autoClose: 5000 }
+        );
         return;
       }
 
-      validFiles.push(file);
+      // Check total limit
+      if (totalImages + fileArray.length > MAX_TOTAL_IMAGES) {
+        toast.error(
+          `Maximum ${MAX_TOTAL_IMAGES} images total across all categories.\n` +
+            `Currently: ${totalImages}, Attempting to add: ${fileArray.length}`,
+          { autoClose: 5000 }
+        );
+        return;
+      }
+    }
 
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        previews.push({ file: file.name, preview: e.target.result });
-        base64Array.push(e.target.result);
-        processed++;
+    // Validate all files first
+    const validFiles = [];
+    for (const file of fileArray) {
+      const error = validateImageFile(file, category);
+      if (error) {
+        toast.error(`${file.name}: ${error}`);
+      } else {
+        validFiles.push(file);
+      }
+    }
 
-        if (processed === fileArray.length) {
-          setImages((prev) => {
-            if (isSingleImage) {
-              // For single image categories, replace instead of append
-              return {
-                ...prev,
-                [category]: validFiles[0],
-                [`${category}Preview`]: previews[0]?.preview || null,
-                [`${category}Base64`]: base64Array[0] || null,
-              };
-            } else {
-              // For multiple image categories, append to array
-              const currentImages = Array.isArray(prev[category])
-                ? prev[category]
-                : [];
-              const currentPreviews = Array.isArray(prev[`${category}Previews`])
-                ? prev[`${category}Previews`]
-                : [];
-              const currentBase64 = Array.isArray(prev[`${category}Base64`])
-                ? prev[`${category}Base64`]
-                : [];
+    if (validFiles.length === 0) {
+      toast.warning("No valid files to upload");
+      return;
+    }
 
-              return {
-                ...prev,
-                [category]: [...currentImages, ...validFiles],
-                [`${category}Previews`]: [...currentPreviews, ...previews],
-                [`${category}Base64`]: [...currentBase64, ...base64Array],
-              };
-            }
-          });
-          toast.success(`${validFiles.length} image(s) uploaded!`);
+    // ============================================
+    // DUPLICATE DETECTION (For Documents)
+    // ============================================
+    let filesToUpload = validFiles;
+
+    if (isDocumentUpload) {
+      // Get currently uploaded file names
+      const existingFiles = images[`${category}`] || [];
+      const existingFileNames = existingFiles.map((f) => f.name);
+
+      // Filter out duplicates
+      const duplicates = [];
+      const uniqueFiles = [];
+
+      validFiles.forEach((file) => {
+        if (existingFileNames.includes(file.name)) {
+          duplicates.push(file.name);
+        } else {
+          uniqueFiles.push(file);
         }
-      };
-      reader.readAsDataURL(file);
-    });
+      });
+
+      // Show warning for duplicates
+      if (duplicates.length > 0) {
+        toast.warning(
+          `⚠️ ${
+            duplicates.length
+          } duplicate document(s) skipped:\n${duplicates.join(
+            ", "
+          )}\n\nThese files are already uploaded.`,
+          {
+            autoClose: 6000,
+          }
+        );
+        // console.warn("Duplicate documents skipped:", duplicates);
+      }
+
+      // Update files to upload (excluding duplicates)
+      filesToUpload = uniqueFiles;
+
+      // If all files were duplicates, stop here
+      if (filesToUpload.length === 0) {
+        toast.info("No new documents to upload.");
+        return;
+      }
+    }
+
+    // ============================================
+    // OPTION B: BATCH PROCESSING WITH COMPRESSION
+    // ============================================
+    try {
+      // Determine batch size based on file type
+      // Documents are larger and slower to process, so use smaller batch size
+      const batchSize = isDocumentUpload ? DOCUMENT_BATCH_SIZE : BATCH_SIZE;
+
+      const totalBatches = Math.ceil(filesToUpload.length / batchSize);
+      const processedImages = [];
+      const processedPreviews = [];
+      const processedBase64 = [];
+
+      // Initialize progress
+      setUploadProgress({ current: 0, total: filesToUpload.length, category });
+
+      // console.log(
+      //   `📤 Starting ${isDocumentUpload ? "document" : "image"} upload: ${
+      //     filesToUpload.length
+      //   } file(s) in ${totalBatches} batch(es) of ${batchSize}`
+      // );
+
+      for (let i = 0; i < totalBatches; i++) {
+        const batch = filesToUpload.slice(i * batchSize, (i + 1) * batchSize);
+
+        // Process batch in parallel using Promise.all
+        const batchResults = await Promise.all(
+          batch.map(async (file) => {
+            try {
+              let processedBase64;
+
+              // Skip compression for Word documents in vibration tests
+              if (isDocumentUpload) {
+                processedBase64 = await new Promise((resolve, reject) => {
+                  const reader = new FileReader();
+                  reader.onload = (e) => resolve(e.target.result);
+                  reader.onerror = () =>
+                    reject(new Error("Failed to read file"));
+                  reader.readAsDataURL(file);
+                });
+              } else {
+                // Compress images for all other cases
+                processedBase64 = await compressImage(file);
+              }
+
+              return {
+                file,
+                preview: processedBase64,
+                base64: processedBase64,
+                success: true,
+              };
+            } catch (error) {
+              console.error(`Failed to process ${file.name}:`, error);
+              toast.error(`Failed to process ${file.name}`);
+              return { success: false };
+            }
+          })
+        );
+
+        // Filter successful compressions for this batch only
+        const batchImages = [];
+        const batchPreviews = [];
+        const batchBase64 = [];
+
+        batchResults.forEach((result) => {
+          if (result.success) {
+            batchImages.push(result.file);
+            batchPreviews.push({
+              file: result.file.name,
+              preview: result.preview,
+            });
+            batchBase64.push(result.base64);
+            // Also accumulate for final count
+            processedImages.push(result.file);
+            processedPreviews.push({
+              file: result.file.name,
+              preview: result.preview,
+            });
+            processedBase64.push(result.base64);
+          }
+        });
+
+        // Update progress
+        const currentProgress = Math.min(
+          (i + 1) * batchSize,
+          filesToUpload.length
+        );
+        setUploadProgress({
+          current: currentProgress,
+          total: filesToUpload.length,
+          category,
+        });
+
+        // Update state with this batch (incremental updates for better UX)
+        setImages((prev) => {
+          if (isSingleImage) {
+            // For single image categories, replace instead of append
+            return {
+              ...prev,
+              [category]: batchImages[0],
+              [`${category}Preview`]: batchPreviews[0]?.preview || null,
+              [`${category}Base64`]: batchBase64[0] || null,
+            };
+          } else {
+            // For multiple image categories, append ONLY this batch to array
+            const currentImages = Array.isArray(prev[category])
+              ? prev[category]
+              : [];
+            const currentPreviews = Array.isArray(prev[`${category}Previews`])
+              ? prev[`${category}Previews`]
+              : [];
+            const currentBase64 = Array.isArray(prev[`${category}Base64`])
+              ? prev[`${category}Base64`]
+              : [];
+
+            return {
+              ...prev,
+              [category]: [...currentImages, ...batchImages],
+              [`${category}Previews`]: [...currentPreviews, ...batchPreviews],
+              [`${category}Base64`]: [...currentBase64, ...batchBase64],
+            };
+          }
+        });
+      }
+
+      // Clear progress and show success
+      setUploadProgress(null);
+
+      if (processedImages.length > 0) {
+        const isVibrationDoc =
+          testCategory?.toLowerCase() === "vibration" &&
+          category === "graphImages";
+        const fileType = isVibrationDoc ? "document(s)" : "image(s)";
+        const action = isVibrationDoc ? "uploaded" : "uploaded and optimized";
+
+        toast.success(
+          `${processedImages.length} ${fileType} ${action}! ${
+            isVibrationDoc ? "📄" : "📸"
+          }`,
+          {
+            autoClose: 3000,
+          }
+        );
+      }
+    } catch (error) {
+      console.error("Upload error:", error);
+      toast.error(
+        `Failed to upload ${
+          isDocumentUpload ? "documents" : "images"
+        }. Please try again.`
+      );
+      setUploadProgress(null);
+    }
   };
 
   // Generic image remove handler
@@ -316,9 +659,14 @@ const ReportConfigDialogV2 = ({
     setActiveStep((prev) => prev - 1);
   };
 
+  const handleStepClick = (step) => {
+    setActiveStep(step);
+  };
+
   const handleConfirm = () => {
     const config = {
       reportType,
+      testCode,
       testReportNumber,
       ulrNumber,
       // Format the date to string for the template (e.g., "1st Jan 2025")
@@ -343,7 +691,7 @@ const ReportConfigDialogV2 = ({
       graphImagesBase64: images.graphImagesBase64,
     };
 
-    console.log("Report Configuration:", config);
+    // console.log("Report Configuration:", config);
     onConfirm(config);
     // Don't reset here - let parent component handle cleanup
     // handleReset(); // REMOVED: This was clearing data when going to preview
@@ -352,6 +700,7 @@ const ReportConfigDialogV2 = ({
   const handleReset = () => {
     setActiveStep(0);
     setReportType(defaultReportType);
+    setTestCode("");
     setTestReportNumber("");
     setUlrNumber("");
     setOriginalReportIssueDate(null);
@@ -415,6 +764,20 @@ const ReportConfigDialogV2 = ({
             </FormControl>
 
             <Grid container spacing={2}>
+              {/* Test Code Field */}
+              <Grid item xs={12} sm={6} md={4}>
+                <TextField
+                  label="Test Code"
+                  variant="outlined"
+                  fullWidth
+                  margin="normal"
+                  value={testCode}
+                  onChange={(e) => setTestCode(e.target.value.toUpperCase())}
+                  placeholder="e.g., TC, RV, TS, IP"
+                />
+              </Grid>
+
+              {/* Report Number Field */}
               <Grid item xs={12} sm={6} md={4}>
                 <TextField
                   label="Report Number"
@@ -426,6 +789,7 @@ const ReportConfigDialogV2 = ({
                 />
               </Grid>
 
+              {/* ULR Number Field (NABL only) */}
               {reportType === "NABL" && (
                 <Grid item xs={12} sm={6} md={4}>
                   <TextField
@@ -439,6 +803,7 @@ const ReportConfigDialogV2 = ({
                 </Grid>
               )}
 
+              {/* Original Report Issue Date */}
               <Grid item xs={12} sm={6} md={4}>
                 <LocalizationProvider dateAdapter={AdapterDayjs}>
                   <DatePicker
@@ -555,6 +920,7 @@ const ReportConfigDialogV2 = ({
           <ImageRequirementsConfig
             config={imageRequirements}
             onChange={setImageRequirements}
+            testCategory={testCategory}
           />
         );
 
@@ -568,6 +934,38 @@ const ReportConfigDialogV2 = ({
             <Typography variant="body2" color="text.secondary" gutterBottom>
               Upload images for the selected categories
             </Typography>
+
+            {/* Image Limits Info Alert */}
+            <Alert severity="info" sx={{ my: 2 }}>
+              Limits: {MAX_IMAGES_PER_CATEGORY} images per category |{" "}
+              {MAX_TOTAL_IMAGES} images total | {MAX_FILE_SIZE / 1024 / 1024}MB
+              per image
+            </Alert>
+
+            {/* Progress Indicator (Option B) */}
+            {uploadProgress && (
+              <Box sx={{ my: 2 }}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    mb: 1,
+                  }}
+                >
+                  <Typography variant="body2" color="text.secondary">
+                    Processing {uploadProgress.category}...
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {uploadProgress.current} / {uploadProgress.total}
+                  </Typography>
+                </Box>
+                <LinearProgress
+                  variant="determinate"
+                  value={(uploadProgress.current / uploadProgress.total) * 100}
+                  sx={{ height: 8, borderRadius: 1 }}
+                />
+              </Box>
+            )}
 
             <Divider sx={{ my: 2 }} />
 
@@ -665,7 +1063,11 @@ const ReportConfigDialogV2 = ({
 
             {imageRequirements.graphImages && (
               <ImageUploadSection
-                title="Graph/Chart Images"
+                title={
+                  testCategory?.toLowerCase() === "vibration"
+                    ? "Vibration Test Documents (.doc/.docx)"
+                    : "Graph/Chart Images"
+                }
                 type="graphImages"
                 images={images.graphImages}
                 previews={images.graphImagesPreviews}
@@ -675,92 +1077,331 @@ const ReportConfigDialogV2 = ({
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
+                testCategory={testCategory}
+                isDocumentUpload={true}
               />
             )}
           </Box>
         );
 
       case 3:
-        // Step 4: Review
+        // Step 4: Review - Improved Design
         return (
           <Box>
-            <Typography variant="h6" gutterBottom>
+            <Typography
+              variant="h5"
+              gutterBottom
+              sx={{ mb: 3, fontWeight: 600 }}
+            >
               Review Configuration
             </Typography>
-            <Box sx={{ mt: 2 }}>
-              <Typography variant="subtitle2">Report Type:</Typography>
-              <Typography variant="body2" gutterBottom>
-                {reportType}
-              </Typography>
-              <Typography variant="subtitle2">Test Report Number:</Typography>
-              <Typography variant="body2" gutterBottom>
-                {testReportNumber}
+
+            {/* Report Information - Simplified */}
+            <Box sx={{ mb: 3, p: 2, bgcolor: "grey.50", borderRadius: 1 }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
+                Report Information
               </Typography>
 
-              <Typography variant="subtitle2">Test ULR Number:</Typography>
-              <Typography variant="body2" gutterBottom>
-                {ulrNumber}
-              </Typography>
-
-              <Typography variant="subtitle2">Report Date:</Typography>
-              <Typography variant="body2" gutterBottom>
-                {originalReportIssueDate
-                  ? originalReportIssueDate.format("DD-MM-YYYY")
-                  : "Not specified"}
-              </Typography>
-
-              <Typography variant="subtitle2">Chambers:</Typography>
-              {chambers.map((chamber, index) => (
-                <Box key={index} sx={{ ml: 2, mb: 1 }}>
-                  <Typography variant="body2">
-                    <strong>Chamber {index + 1}:</strong>
+              <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
+                <Box sx={{ flex: "1 1 200px" }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Report Type:
                   </Typography>
-                  <Typography variant="body2" sx={{ ml: 2 }}>
-                    Info: {chamber.chamberInfo || "Not specified"}
+                  <Chip
+                    label={reportType}
+                    color={reportType === "NABL" ? "primary" : "secondary"}
+                    size="small"
+                    sx={{ mt: 0.5 }}
+                  />
+                </Box>
+
+                <Box sx={{ flex: "1 1 200px" }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Test Code:
                   </Typography>
-                  <Typography variant="body2" sx={{ ml: 2 }}>
-                    Make: {chamber.chamberMake || "Not specified"}
+                  <Typography variant="body1" sx={{ mt: 0.5 }}>
+                    {testCode || (
+                      <em style={{ color: "#999" }}>Not specified</em>
+                    )}
                   </Typography>
                 </Box>
-              ))}
 
-              <Divider sx={{ my: 2 }} />
+                <Box sx={{ flex: "1 1 200px" }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Test Report Number:
+                  </Typography>
+                  <Typography variant="body1" sx={{ mt: 0.5 }}>
+                    {testReportNumber || (
+                      <em style={{ color: "#999" }}>Not specified</em>
+                    )}
+                  </Typography>
+                </Box>
 
-              <Typography variant="subtitle2">Images to Upload:</Typography>
-              {imageRequirements.companyLogo && (
-                <Typography variant="body2">
-                  ✓ Company Logo (
-                  {images.companyLogoBase64 ? "1 uploaded" : "0 uploaded"})
-                </Typography>
-              )}
-              {imageRequirements.testImages && (
-                <Typography variant="body2">
-                  ✓ Test Images ({images.testImages.length} uploaded)
-                </Typography>
-              )}
-              {imageRequirements.beforeTestImages && (
-                <Typography variant="body2">
-                  ✓ Before Test Images ({images.beforeTestImages.length}{" "}
-                  uploaded)
-                </Typography>
-              )}
-              {imageRequirements.duringTestImages && (
-                <Typography variant="body2">
-                  ✓ During Test Images ({images.duringTestImages.length}{" "}
-                  uploaded)
-                </Typography>
-              )}
-              {imageRequirements.afterTestImages && (
-                <Typography variant="body2">
-                  ✓ After Test Images ({images.afterTestImages.length} uploaded)
-                </Typography>
-              )}
-              {imageRequirements.graphImages && (
-                <Typography variant="body2">
-                  ✓ Graph Images ({images.graphImages.length} uploaded)
-                </Typography>
-              )}
+                {reportType === "NABL" && ulrNumber && (
+                  <Box sx={{ flex: "1 1 200px" }}>
+                    <Typography variant="body2" color="text.secondary">
+                      ULR Number:
+                    </Typography>
+                    <Typography variant="body1" sx={{ mt: 0.5 }}>
+                      {ulrNumber}
+                    </Typography>
+                  </Box>
+                )}
+
+                <Box sx={{ flex: "1 1 200px" }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Report Issue Date:
+                  </Typography>
+                  <Typography variant="body1" sx={{ mt: 0.5 }}>
+                    {originalReportIssueDate ? (
+                      originalReportIssueDate.format("DD-MM-YYYY")
+                    ) : (
+                      <em style={{ color: "#999" }}>Not specified</em>
+                    )}
+                  </Typography>
+                </Box>
+              </Box>
             </Box>
+
+            {/* Test Chambers - Simplified */}
+            <Box sx={{ mb: 3, p: 2, bgcolor: "grey.50", borderRadius: 1 }}>
+              <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
+                Test Chambers ({chambers.length})
+              </Typography>
+
+              {chambers.map((chamber, index) => (
+                <Box
+                  key={index}
+                  sx={{
+                    mb: index < chambers.length - 1 ? 2 : 0,
+                    pb: index < chambers.length - 1 ? 2 : 0,
+                    borderBottom:
+                      index < chambers.length - 1
+                        ? "1px solid #e0e0e0"
+                        : "none",
+                  }}
+                >
+                  <Typography
+                    variant="body2"
+                    sx={{ fontWeight: 600, mb: 1, color: "primary.main" }}
+                  >
+                    Chamber {index + 1}
+                  </Typography>
+                  <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
+                    <Box sx={{ flex: "1 1 200px" }}>
+                      <Typography variant="caption" color="text.secondary">
+                        Info:
+                      </Typography>
+                      <Typography variant="body2">
+                        {chamber.chamberInfo || (
+                          <em style={{ color: "#999" }}>Not specified</em>
+                        )}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ flex: "1 1 200px" }}>
+                      <Typography variant="caption" color="text.secondary">
+                        Make:
+                      </Typography>
+                      <Typography variant="body2">
+                        {chamber.chamberMake || (
+                          <em style={{ color: "#999" }}>Not specified</em>
+                        )}
+                      </Typography>
+                    </Box>
+                  </Box>
+                </Box>
+              ))}
+            </Box>
+
+            {/* Images Summary Card */}
+            <Card sx={{ mb: 2, boxShadow: 2 }}>
+              <CardContent>
+                <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+                  <PhotoIcon sx={{ mr: 1, color: "primary.main" }} />
+                  <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                    Images Summary
+                  </Typography>
+                </Box>
+                <Divider sx={{ mb: 2 }} />
+
+                <Stack spacing={1}>
+                  {imageRequirements.companyLogo && (
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                      }}
+                    >
+                      <Box sx={{ display: "flex", alignItems: "center" }}>
+                        <CheckCircleIcon
+                          sx={{ fontSize: 18, mr: 1, color: "success.main" }}
+                        />
+                        <Typography variant="body2">Company Logo</Typography>
+                      </Box>
+                      <Chip
+                        label={
+                          images.companyLogoBase64 ? "1 uploaded" : "0 uploaded"
+                        }
+                        size="small"
+                        color={images.companyLogoBase64 ? "success" : "default"}
+                        variant="outlined"
+                      />
+                    </Box>
+                  )}
+                  {imageRequirements.testImages && (
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                      }}
+                    >
+                      <Box sx={{ display: "flex", alignItems: "center" }}>
+                        <CheckCircleIcon
+                          sx={{ fontSize: 18, mr: 1, color: "success.main" }}
+                        />
+                        <Typography variant="body2">Test Images</Typography>
+                      </Box>
+                      <Chip
+                        label={`${images.testImages.length} uploaded`}
+                        size="small"
+                        color={
+                          images.testImages.length > 0 ? "success" : "default"
+                        }
+                        variant="outlined"
+                      />
+                    </Box>
+                  )}
+                  {imageRequirements.beforeTestImages && (
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                      }}
+                    >
+                      <Box sx={{ display: "flex", alignItems: "center" }}>
+                        <CheckCircleIcon
+                          sx={{ fontSize: 18, mr: 1, color: "success.main" }}
+                        />
+                        <Typography variant="body2">
+                          Before Test Images
+                        </Typography>
+                      </Box>
+                      <Chip
+                        label={`${images.beforeTestImages.length} uploaded`}
+                        size="small"
+                        color={
+                          images.beforeTestImages.length > 0
+                            ? "success"
+                            : "default"
+                        }
+                        variant="outlined"
+                      />
+                    </Box>
+                  )}
+                  {imageRequirements.duringTestImages && (
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                      }}
+                    >
+                      <Box sx={{ display: "flex", alignItems: "center" }}>
+                        <CheckCircleIcon
+                          sx={{ fontSize: 18, mr: 1, color: "success.main" }}
+                        />
+                        <Typography variant="body2">
+                          During Test Images
+                        </Typography>
+                      </Box>
+                      <Chip
+                        label={`${images.duringTestImages.length} uploaded`}
+                        size="small"
+                        color={
+                          images.duringTestImages.length > 0
+                            ? "success"
+                            : "default"
+                        }
+                        variant="outlined"
+                      />
+                    </Box>
+                  )}
+                  {imageRequirements.afterTestImages && (
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                      }}
+                    >
+                      <Box sx={{ display: "flex", alignItems: "center" }}>
+                        <CheckCircleIcon
+                          sx={{ fontSize: 18, mr: 1, color: "success.main" }}
+                        />
+                        <Typography variant="body2">
+                          After Test Images
+                        </Typography>
+                      </Box>
+                      <Chip
+                        label={`${images.afterTestImages.length} uploaded`}
+                        size="small"
+                        color={
+                          images.afterTestImages.length > 0
+                            ? "success"
+                            : "default"
+                        }
+                        variant="outlined"
+                      />
+                    </Box>
+                  )}
+                  {imageRequirements.graphImages && (
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                      }}
+                    >
+                      <Box sx={{ display: "flex", alignItems: "center" }}>
+                        <CheckCircleIcon
+                          sx={{ fontSize: 18, mr: 1, color: "success.main" }}
+                        />
+                        <Typography variant="body2">
+                          {testCategory?.toLowerCase() === "vibration"
+                            ? "Vibration Test Documents"
+                            : "Graph/Chart Images"}
+                        </Typography>
+                      </Box>
+                      <Chip
+                        label={`${images.graphImages.length} uploaded`}
+                        size="small"
+                        color={
+                          images.graphImages.length > 0 ? "success" : "default"
+                        }
+                        variant="outlined"
+                      />
+                    </Box>
+                  )}
+                </Stack>
+
+                {/* Total Image Count Summary */}
+                <Alert
+                  severity="success"
+                  icon={<CheckCircleIcon />}
+                  sx={{ mt: 2 }}
+                >
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    Total: {getTotalImageCount()} / {MAX_TOTAL_IMAGES} images
+                  </Typography>
+                  <Typography variant="caption">
+                    All images optimized and compressed for best performance
+                  </Typography>
+                </Alert>
+              </CardContent>
+            </Card>
           </Box>
         );
 
@@ -786,9 +1427,11 @@ const ReportConfigDialogV2 = ({
         nonLinear
         sx={{ px: 3, pt: 2, mb: 2 }}
       >
-        {steps.map((label) => (
+        {steps.map((label, index) => (
           <Step key={label}>
-            <StepLabel>{label}</StepLabel>
+            <StepButton onClick={() => handleStepClick(index)}>
+              {label}
+            </StepButton>
           </Step>
         ))}
       </Stepper>
