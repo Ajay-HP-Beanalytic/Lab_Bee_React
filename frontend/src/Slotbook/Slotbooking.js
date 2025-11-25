@@ -212,13 +212,9 @@ export default function Slotbooking() {
     }
 
     // No overlap found, proceed with booking
-    const bookingID = editId ? editId : await generateBookingID();
-
     const completeFormData = {
       ...data,
-      bookingID: bookingID,
       slotBookedBy: loggedInUser,
-
       slotStartDateTime: selectedSlotStartDate.format("YYYY-MM-DD HH:mm"),
       slotEndDateTime: selectedSlotEndDate.format("YYYY-MM-DD HH:mm"),
       loggedInUser: loggedInUser,
@@ -231,22 +227,27 @@ export default function Slotbooking() {
         ? `${serverBaseAddress}/api/slotBooking/${editId}`
         : `${serverBaseAddress}/api/slotBooking`;
 
-      await axios.post(endpoint, {
+      const response = await axios.post(endpoint, {
         formData: completeFormData,
       });
+
       setNewBookingAdded(!newBookingAdded);
 
       reset();
       handleCloseDialog();
       handleCloseModal();
 
+      // Get booking ID from backend response
+      const bookingID = editId ? editId : response.data.bookingID;
+
       toast.success(
         editId
           ? `Booking ID: ${editId} Updated Successfully.`
-          : `Slot Booked Successfully.\n Booking ID:${bookingID}`
+          : `Slot Booked Successfully.\nBooking ID: ${bookingID}`
       );
     } catch (error) {
       console.error("Failed to book the slot", error);
+      toast.error(error.response?.data?.error || "Failed to book the slot. Please try again.");
     }
   };
 
@@ -360,7 +361,6 @@ export default function Slotbooking() {
             id: chamber.chamber_id, // Ensure id is a string
             title: chamber.chamber_id,
           }));
-          console.log("resourceData", resourceData);
           setMyResourceList(resourceData);
         } else {
           console.error(
@@ -846,26 +846,3 @@ export default function Slotbooking() {
   );
 }
 
-// Function to generate booking ID
-const generateBookingID = async () => {
-  const prefix = "BEATS";
-  const currentDate = moment().format("YYYYMMDD");
-
-  try {
-    const response = await axios.get(
-      `${serverBaseAddress}/api/getLatestBookingID`
-    );
-    if (response.data && response.data.length > 0) {
-      const lastBookingId = response.data[0].booking_id;
-      const lastNumber = parseInt(lastBookingId.slice(-3), 10);
-      const nextNumber = lastNumber + 1;
-      const formattedNextNumber = String(nextNumber).padStart(3, "0");
-      const nextBookingId = `${prefix}${currentDate}${formattedNextNumber}`;
-      return nextBookingId;
-    } else {
-      return `${prefix}${currentDate}001`;
-    }
-  } catch (error) {
-    console.error("Failed to generate booking ID:", error);
-  }
-};

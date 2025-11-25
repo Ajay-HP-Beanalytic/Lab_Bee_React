@@ -32,8 +32,9 @@ const serverOptions = {
   ),
 };
 
-// const server = http.createServer(app);
-const server = https.createServer(serverOptions, app);
+//create server instance
+const server = https.createServer(serverOptions, app); //For deployement
+// const server = http.createServer(app); //For development
 
 // Middleware to validate session on each request
 const validateSession = (req, res, next) => {

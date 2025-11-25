@@ -100,10 +100,65 @@ function slotBookingAPIs(app, io, labbeeUsers) {
     });
   });
 
+  // Helper function to generate booking ID based on current date
+  const generateBookingID = async () => {
+    const prefix = "BEATS";
+    const currentDate = moment().format("YYYYMMDD");
+
+    return new Promise((resolve, reject) => {
+      // Get the latest booking ID for TODAY's date - use numeric sorting on the last 3 digits
+      const latestBookingIdQuery = `
+        SELECT booking_id
+        FROM bookings_table
+        WHERE booking_id IS NOT NULL
+        AND booking_id LIKE '${prefix}${currentDate}%'
+        ORDER BY CAST(SUBSTRING(booking_id, -3) AS UNSIGNED) DESC
+        LIMIT 1
+      `;
+
+      db.query(latestBookingIdQuery, (error, result) => {
+        if (error) {
+          console.error("Error fetching latest booking ID:", error);
+          reject(error);
+          return;
+        }
+
+        if (result.length === 0) {
+          // No bookings for today, start with 001
+          resolve(`${prefix}${currentDate}001`);
+        } else {
+          const lastBookingId = result[0].booking_id;
+
+          if (!lastBookingId) {
+            // Safety check: if null somehow got through, start with 001
+            resolve(`${prefix}${currentDate}001`);
+          } else {
+            const lastNumber = parseInt(lastBookingId.slice(-3), 10);
+            const nextNumber = lastNumber + 1;
+            const formattedNextNumber = String(nextNumber).padStart(3, "0");
+            const nextBookingId = `${prefix}${currentDate}${formattedNextNumber}`;
+            resolve(nextBookingId);
+          }
+        }
+      });
+    });
+  };
+
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
   //Working fine:
-  app.post("/api/slotBooking", (req, res) => {
+  app.post("/api/slotBooking", async (req, res) => {
     const { formData } = req.body;
+
+    // Generate booking ID on the backend
+    let bookingID;
+    try {
+      bookingID = await generateBookingID();
+    } catch (error) {
+      console.error("Error generating booking ID:", error);
+      return res
+        .status(500)
+        .json({ error: "Failed to generate booking ID. Please try again." });
+    }
 
     const sqlQuery = `
       INSERT INTO bookings_table (booking_id, company_name, customer_name, customer_email, customer_phone, test_name, chamber_allotted, slot_start_datetime, slot_end_datetime, slot_duration, remarks, slot_booked_by)
@@ -117,7 +172,7 @@ function slotBookingAPIs(app, io, labbeeUsers) {
     );
 
     const values = [
-      formData.bookingID,
+      bookingID,
       formData.company,
       formData.customerName,
       formData.customerEmail,
@@ -139,7 +194,7 @@ function slotBookingAPIs(app, io, labbeeUsers) {
       } else {
         const currentTimestampForSlotBooking = new Date().toISOString();
 
-        let message = `New TS1 Slot: ${formData.bookingID} booked, by ${formData.slotBookedBy}`;
+        let message = `New TS1 Slot: ${bookingID} booked, by ${formData.slotBookedBy}`;
         let usersToNotifyNewSlotBooking = [
           "Lab Manager",
           "Lab Engineer",
@@ -168,7 +223,9 @@ function slotBookingAPIs(app, io, labbeeUsers) {
             }
           }
         }
-        res.status(200).json({ message: "Slot Booked Successfully" });
+        res
+          .status(200)
+          .json({ message: "Slot Booked Successfully", bookingID: bookingID });
 
         // Save the notification in the database
         // saveNotificationToDatabase(
@@ -185,7 +242,7 @@ function slotBookingAPIs(app, io, labbeeUsers) {
   // To fetch the last saved booking Id from the table bookings_table table:
   app.get("/api/getLatestBookingID", (req, res) => {
     const latestBookingId =
-      "SELECT booking_id FROM bookings_table ORDER BY id DESC LIMIT 1 ";
+      "SELECT booking_id FROM bookings_table WHERE booking_id IS NOT NULL ORDER BY id DESC LIMIT 1 ";
     db.query(latestBookingId, (error, result) => {
       if (error) {
         console.error("Error fetching the latest booking ID", error);
