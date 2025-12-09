@@ -9,7 +9,7 @@ export const jobCardValidators = {
   /**
    * Validate Job Card form data before submission
    */
-  validateJobCard: (data, loggedInUserDepartment) => {
+  validateJobCard: (data) => {
     const errors = [];
 
     // Required field validations

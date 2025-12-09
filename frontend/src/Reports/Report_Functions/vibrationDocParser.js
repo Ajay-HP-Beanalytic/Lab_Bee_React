@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 /**
  * Vibration Document Parser - Enhanced Version
  *
@@ -29,7 +30,7 @@
  * ✅ Empty paragraphs preserved for spacing
  */
 
-import mammoth from 'mammoth';
+import mammoth from "mammoth";
 import {
   Paragraph,
   TextRun,
@@ -40,8 +41,8 @@ import {
   WidthType,
   AlignmentType,
   BorderStyle,
-  VerticalAlign
-} from 'docx';
+  VerticalAlign,
+} from "docx";
 
 const NODE_TYPE = {
   ELEMENT: typeof Node !== "undefined" ? Node.ELEMENT_NODE : 1,
@@ -111,7 +112,11 @@ const getImageDimensionsFromBase64 = (base64Data) => {
       bytes[2] === 0x4e &&
       bytes[3] === 0x47
     ) {
-      const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+      const view = new DataView(
+        bytes.buffer,
+        bytes.byteOffset,
+        bytes.byteLength
+      );
       return {
         width: view.getUint32(16, false),
         height: view.getUint32(20, false),
@@ -157,9 +162,12 @@ const getImageDimensionsFromBase64 = (base64Data) => {
  */
 const base64ToArrayBuffer = (base64) => {
   // Remove data URL prefix if present
-  const base64Data = base64.includes(',') ? base64.split(',')[1] : base64;
+  const base64Data = base64.includes(",") ? base64.split(",")[1] : base64;
   const bytes = decodeBase64ToUint8Array(base64Data);
-  return bytes.buffer.slice(bytes.byteOffset, bytes.byteOffset + bytes.byteLength);
+  return bytes.buffer.slice(
+    bytes.byteOffset,
+    bytes.byteOffset + bytes.byteLength
+  );
 };
 
 /**
@@ -169,7 +177,7 @@ const base64ToArrayBuffer = (base64) => {
  */
 const hasTabSeparatedContent = (element) => {
   const text = element.textContent;
-  return text.includes('\t');
+  return text.includes("\t");
 };
 
 /**
@@ -181,7 +189,7 @@ const createTableFromTabContent = (element) => {
   try {
     // Extract text content preserving structure
     const text = element.textContent;
-    const columns = text.split('\t');
+    const columns = text.split("\t");
 
     if (columns.length < 2) return null;
 
@@ -193,14 +201,16 @@ const createTableFromTabContent = (element) => {
 
     const processNodeForTable = (node) => {
       if (node.nodeType === NODE_TYPE.TEXT) {
-        const parts = node.textContent.split('\t');
+        const parts = node.textContent.split("\t");
         parts.forEach((part, index) => {
           if (part) {
-            currentCellContent.push(new TextRun({
-              text: part,
-              size: 20,
-              font: "Calibri(Body)",
-            }));
+            currentCellContent.push(
+              new TextRun({
+                text: part,
+                size: 20,
+                font: "Calibri(Body)",
+              })
+            );
           }
           if (index < parts.length - 1) {
             // Tab encountered, save current cell
@@ -209,16 +219,18 @@ const createTableFromTabContent = (element) => {
           }
         });
       } else if (node.nodeType === NODE_TYPE.ELEMENT) {
-        if (node.tagName === 'STRONG' || node.tagName === 'B') {
-          const parts = node.textContent.split('\t');
+        if (node.tagName === "STRONG" || node.tagName === "B") {
+          const parts = node.textContent.split("\t");
           parts.forEach((part, index) => {
             if (part) {
-              currentCellContent.push(new TextRun({
-                text: part,
-                bold: true,
-                size: 20,
-                font: "Calibri(Body)",
-              }));
+              currentCellContent.push(
+                new TextRun({
+                  text: part,
+                  bold: true,
+                  size: 20,
+                  font: "Calibri(Body)",
+                })
+              );
             }
             if (index < parts.length - 1) {
               cellChildren.push([...currentCellContent]);
@@ -242,18 +254,22 @@ const createTableFromTabContent = (element) => {
     if (cellChildren.length < 2) return null;
 
     // Determine alignment based on column count
-    const alignments = cellChildren.length === 2
-      ? [AlignmentType.LEFT, AlignmentType.RIGHT]
-      : cellChildren.length === 3
-      ? [AlignmentType.LEFT, AlignmentType.CENTER, AlignmentType.RIGHT]
-      : cellChildren.map(() => AlignmentType.LEFT);
+    const alignments =
+      cellChildren.length === 2
+        ? [AlignmentType.LEFT, AlignmentType.RIGHT]
+        : cellChildren.length === 3
+        ? [AlignmentType.LEFT, AlignmentType.CENTER, AlignmentType.RIGHT]
+        : cellChildren.map(() => AlignmentType.LEFT);
 
     // Create table cells
     const tableCells = cellChildren.map((cellContent, index) => {
       return new TableCell({
         children: [
           new Paragraph({
-            children: cellContent.length > 0 ? cellContent : [new TextRun({ text: "" })],
+            children:
+              cellContent.length > 0
+                ? cellContent
+                : [new TextRun({ text: "" })],
             alignment: alignments[index] || AlignmentType.LEFT,
             spacing: { before: 0, after: 0 },
           }),
@@ -305,50 +321,58 @@ const processNode = (node) => {
   if (node.nodeType === NODE_TYPE.TEXT) {
     const text = node.textContent;
     if (text && text.trim()) {
-      elements.push(new TextRun({
-        text: text,
-        size: 20,
-        font: "Calibri(Body)",
-      }));
+      elements.push(
+        new TextRun({
+          text: text,
+          size: 20,
+          font: "Calibri(Body)",
+        })
+      );
     }
   } else if (node.nodeType === NODE_TYPE.ELEMENT) {
-    if (node.tagName === 'STRONG' || node.tagName === 'B') {
+    if (node.tagName === "STRONG" || node.tagName === "B") {
       const text = node.textContent;
       if (text) {
-        elements.push(new TextRun({
-          text: text,
-          bold: true,
-          size: 20,
-          font: "Calibri(Body)",
-        }));
+        elements.push(
+          new TextRun({
+            text: text,
+            bold: true,
+            size: 20,
+            font: "Calibri(Body)",
+          })
+        );
       }
-    } else if (node.tagName === 'EM' || node.tagName === 'I') {
+    } else if (node.tagName === "EM" || node.tagName === "I") {
       const text = node.textContent;
       if (text) {
-        elements.push(new TextRun({
-          text: text,
-          italics: true,
-          size: 20,
-          font: "Calibri(Body)",
-        }));
+        elements.push(
+          new TextRun({
+            text: text,
+            italics: true,
+            size: 20,
+            font: "Calibri(Body)",
+          })
+        );
       }
-    } else if (node.tagName === 'U') {
+    } else if (node.tagName === "U") {
       const text = node.textContent;
       if (text) {
-        elements.push(new TextRun({
-          text: text,
-          underline: {},
-          size: 20,
-          font: "Calibri(Body)",
-        }));
+        elements.push(
+          new TextRun({
+            text: text,
+            underline: {},
+            size: 20,
+            font: "Calibri(Body)",
+          })
+        );
       }
-    } else if (node.tagName === 'IMG') {
-      const src = node.getAttribute('src');
-      if (src && src.startsWith('data:image')) {
+    } else if (node.tagName === "IMG") {
+      const src = node.getAttribute("src");
+      if (src && src.startsWith("data:image")) {
         const { base64: base64Data } = getDataUrlInfo(src);
 
-        const parsedWidth = parseInt(node.getAttribute('width'), 10);
-        const parsedHeight = parseInt(node.getAttribute('height'), 10);
+        const parsedWidth = parseInt(node.getAttribute("width"), 10);
+        const parsedHeight = parseInt(node.getAttribute("height"), 10);
         let width = Number.isFinite(parsedWidth) ? parsedWidth : undefined;
         let height = Number.isFinite(parsedHeight) ? parsedHeight : undefined;
 
@@ -375,20 +399,22 @@ const processNode = (node) => {
           // console.log(`dY-��,? Processing image: using ${width}x${height}`);
         }
 
-        elements.push(new ImageRun({
-          data: base64Data,
-          transformation: {
-            width: width,
-            height: height,
-          },
-        }));
+        elements.push(
+          new ImageRun({
+            data: base64Data,
+            transformation: {
+              width: width,
+              height: height,
+            },
+          })
+        );
       }
-    } else if (node.tagName === 'SPAN') {
+    } else if (node.tagName === "SPAN") {
       // Process children of span
       Array.from(node.childNodes).forEach((child) => {
         elements.push(...processNode(child));
       });
-    } else if (node.tagName === 'BR') {
+    } else if (node.tagName === "BR") {
       elements.push(
         new TextRun({
           text: "",
@@ -399,11 +425,13 @@ const processNode = (node) => {
       // For other elements, just get the text
       const text = node.textContent;
       if (text && text.trim()) {
-        elements.push(new TextRun({
-          text: text,
-          size: 20,
-          font: "Calibri(Body)",
-        }));
+        elements.push(
+          new TextRun({
+            text: text,
+            size: 20,
+            font: "Calibri(Body)",
+          })
+        );
       }
     }
   }
@@ -421,7 +449,7 @@ const parseHtmlToDocxElements = (html) => {
 
   try {
     const parser = getDomParser();
-    const doc = parser.parseFromString(html, 'text/html');
+    const doc = parser.parseFromString(html, "text/html");
     const body = doc.body;
 
     // Process each child element
@@ -442,7 +470,7 @@ const parseHtmlToDocxElements = (html) => {
                     bold: true,
                     font: "Calibri(Body)",
                     color: "000000", // Black color
-                  })
+                  }),
                 ],
                 spacing: {
                   before: 240,
@@ -455,7 +483,7 @@ const parseHtmlToDocxElements = (html) => {
         }
 
         // Handle paragraphs
-        else if (element.tagName === 'P') {
+        else if (element.tagName === "P") {
           // Check if this paragraph has tab-separated content
           if (hasTabSeparatedContent(element)) {
             const table = createTableFromTabContent(element);
@@ -488,11 +516,13 @@ const parseHtmlToDocxElements = (html) => {
 
             if (children.length > 0) {
               // Check if this paragraph contains only images
-              const hasOnlyImages = children.every(child => child instanceof ImageRun);
+              const hasOnlyImages = children.every(
+                (child) => child instanceof ImageRun
+              );
 
               if (hasOnlyImages) {
                 // Create separate paragraphs for each image
-                children.forEach(child => {
+                children.forEach((child) => {
                   elements.push(
                     new Paragraph({
                       children: [child],
@@ -525,7 +555,7 @@ const parseHtmlToDocxElements = (html) => {
                       text: element.textContent,
                       size: 20,
                       font: "Calibri(Body)",
-                    })
+                    }),
                   ],
                   spacing: {
                     before: 0,
@@ -538,15 +568,17 @@ const parseHtmlToDocxElements = (html) => {
         }
 
         // Handle top-level images (not inside paragraphs)
-        else if (element.tagName === 'IMG') {
-          const src = element.getAttribute('src');
-          if (src && src.startsWith('data:image')) {
+        else if (element.tagName === "IMG") {
+          const src = element.getAttribute("src");
+          if (src && src.startsWith("data:image")) {
             const { base64: base64Data } = getDataUrlInfo(src);
 
-            const parsedWidth = parseInt(element.getAttribute('width'), 10);
-            const parsedHeight = parseInt(element.getAttribute('height'), 10);
+            const parsedWidth = parseInt(element.getAttribute("width"), 10);
+            const parsedHeight = parseInt(element.getAttribute("height"), 10);
             let width = Number.isFinite(parsedWidth) ? parsedWidth : undefined;
-            let height = Number.isFinite(parsedHeight) ? parsedHeight : undefined;
+            let height = Number.isFinite(parsedHeight)
+              ? parsedHeight
+              : undefined;
 
             if ((!width || !height) && base64Data) {
               const intrinsic = getImageDimensionsFromBase64(base64Data);
@@ -593,12 +625,12 @@ const parseHtmlToDocxElements = (html) => {
         }
 
         // Handle tables
-        else if (element.tagName === 'TABLE') {
+        else if (element.tagName === "TABLE") {
           const tableRows = [];
-          const rows = element.querySelectorAll('tr');
+          const rows = element.querySelectorAll("tr");
 
           rows.forEach((row) => {
-            const cells = row.querySelectorAll('td, th');
+            const cells = row.querySelectorAll("td, th");
             const tableCells = [];
 
             cells.forEach((cell) => {
@@ -606,20 +638,28 @@ const parseHtmlToDocxElements = (html) => {
               const cellChildren = [];
 
               // Check if cell contains images
-              const imgs = cell.querySelectorAll('img');
+              const imgs = cell.querySelectorAll("img");
               if (imgs.length > 0) {
                 imgs.forEach((img) => {
-                  const src = img.getAttribute('src');
-                  if (src && src.startsWith('data:image')) {
+                  const src = img.getAttribute("src");
+                  if (src && src.startsWith("data:image")) {
                     const { base64: base64Data } = getDataUrlInfo(src);
 
-                    const parsedWidth = parseInt(img.getAttribute('width'), 10);
-                    const parsedHeight = parseInt(img.getAttribute('height'), 10);
-                    let width = Number.isFinite(parsedWidth) ? parsedWidth : undefined;
-                    let height = Number.isFinite(parsedHeight) ? parsedHeight : undefined;
+                    const parsedWidth = parseInt(img.getAttribute("width"), 10);
+                    const parsedHeight = parseInt(
+                      img.getAttribute("height"),
+                      10
+                    );
+                    let width = Number.isFinite(parsedWidth)
+                      ? parsedWidth
+                      : undefined;
+                    let height = Number.isFinite(parsedHeight)
+                      ? parsedHeight
+                      : undefined;
 
                     if ((!width || !height) && base64Data) {
-                      const intrinsic = getImageDimensionsFromBase64(base64Data);
+                      const intrinsic =
+                        getImageDimensionsFromBase64(base64Data);
                       if (intrinsic && intrinsic.width && intrinsic.height) {
                         width = intrinsic.width;
                         height = intrinsic.height;
@@ -668,7 +708,7 @@ const parseHtmlToDocxElements = (html) => {
                       new TextRun({
                         text: textContent,
                         size: 20,
-                        bold: cell.tagName === 'TH',
+                        bold: cell.tagName === "TH",
                         font: "Calibri(Body)",
                       }),
                     ],
@@ -708,11 +748,27 @@ const parseHtmlToDocxElements = (html) => {
                 },
                 borders: {
                   top: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
-                  bottom: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
+                  bottom: {
+                    style: BorderStyle.SINGLE,
+                    size: 1,
+                    color: "000000",
+                  },
                   left: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
-                  right: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
-                  insideHorizontal: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
-                  insideVertical: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
+                  right: {
+                    style: BorderStyle.SINGLE,
+                    size: 1,
+                    color: "000000",
+                  },
+                  insideHorizontal: {
+                    style: BorderStyle.SINGLE,
+                    size: 1,
+                    color: "000000",
+                  },
+                  insideVertical: {
+                    style: BorderStyle.SINGLE,
+                    size: 1,
+                    color: "000000",
+                  },
                 },
               })
             );
@@ -722,7 +778,6 @@ const parseHtmlToDocxElements = (html) => {
         console.error("Error processing element:", err);
       }
     });
-
   } catch (error) {
     console.error("❌ Error parsing HTML to docx elements:", error);
   }
@@ -768,8 +823,6 @@ export const parseVibrationDocument = async (base64Document) => {
 
     // Debug: Count images in HTML
     const imgMatches = htmlContent.match(/<img[^>]*>/gi);
-    const imgCount = imgMatches ? imgMatches.length : 0;
-    // console.log(`🖼️ Found ${imgCount} images in HTML`);
 
     // Debug: Log image attributes to see if dimensions are present
     if (imgMatches && imgMatches.length > 0) {
@@ -789,8 +842,12 @@ export const parseVibrationDocument = async (base64Document) => {
     const elements = parseHtmlToDocxElements(htmlContent);
 
     // Debug: Count element types
-    const paragraphs = elements.filter(e => e.constructor.name === 'Paragraph').length;
-    const tables = elements.filter(e => e.constructor.name === 'Table').length;
+    const paragraphs = elements.filter(
+      (e) => e.constructor.name === "Paragraph"
+    ).length;
+    const tables = elements.filter(
+      (e) => e.constructor.name === "Table"
+    ).length;
 
     // console.log(`✅ Created ${elements.length} docx elements:`, {
     //   paragraphs,
@@ -800,7 +857,6 @@ export const parseVibrationDocument = async (base64Document) => {
     // });
 
     return elements;
-
   } catch (error) {
     console.error("❌ Error parsing vibration document:", error);
     throw error;
@@ -852,7 +908,9 @@ export const parseVibrationDocuments = async (base64Documents) => {
         new Paragraph({
           children: [
             new TextRun({
-              text: `[Error loading vibration document ${i + 1}. Please verify the file format.]`,
+              text: `[Error loading vibration document ${
+                i + 1
+              }. Please verify the file format.]`,
               color: "FF0000",
               italics: true,
               size: 22,

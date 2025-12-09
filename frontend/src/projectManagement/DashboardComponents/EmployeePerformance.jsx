@@ -437,7 +437,6 @@ import {
   LinearProgress,
   Box,
   Avatar,
-  Divider,
   Accordion,
   AccordionSummary,
   AccordionDetails,
@@ -449,7 +448,6 @@ import {
 import {
   ExpandMore,
   Star,
-  TrendingUp,
   Assignment,
   CheckCircle,
   Schedule,
@@ -697,8 +695,8 @@ const EmployeePerformanceTable = ({ tasks, members }) => {
                 <AccordionSummary
                   expandIcon={<ExpandMore />}
                   sx={{
-                    bgcolor: departmentColors[department],
-                    color: "white",
+                    "bgcolor": departmentColors[department],
+                    "color": "white",
                     "& .MuiAccordionSummary-content": {
                       alignItems: "center",
                     },
@@ -896,10 +894,10 @@ const EmployeePerformanceTable = ({ tasks, members }) => {
                                   variant="determinate"
                                   value={employee.completionRate}
                                   sx={{
-                                    width: 60,
-                                    height: 6,
-                                    borderRadius: 3,
-                                    backgroundColor: "#e0e0e0",
+                                    "width": 60,
+                                    "height": 6,
+                                    "borderRadius": 3,
+                                    "backgroundColor": "#e0e0e0",
                                     "& .MuiLinearProgress-bar": {
                                       backgroundColor: getPerformanceColor(
                                         employee.completionRate

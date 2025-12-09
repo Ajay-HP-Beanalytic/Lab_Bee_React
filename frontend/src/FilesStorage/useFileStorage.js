@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { serverBaseAddress } from "../Pages/APIPage";
 import axios from "axios";
 
@@ -8,7 +8,7 @@ const useFileStorage = () => {
   const [error, setError] = useState(null);
 
   // List files in a folder:
-  const listFiles = async (folder = "") => {
+  const listFiles = useCallback(async (folder = "") => {
     setLoading(true);
     setError(null);
 
@@ -17,7 +17,6 @@ const useFileStorage = () => {
         params: { folder },
       });
 
-      console.log("Fetched files-->", response.data.files);
       setFiles(response.data.files);
     } catch (error) {
       setError("Failed to load files");
@@ -25,7 +24,7 @@ const useFileStorage = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   // Download file
   const downloadFile = async (filePath, fileName) => {

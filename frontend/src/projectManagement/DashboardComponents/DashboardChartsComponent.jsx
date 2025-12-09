@@ -23,11 +23,11 @@ export const StatusDistributionChart = ({
 }) => {
   const statusColors = {
     "In Progress": "#ff9800",
-    Done: "#4caf50",
+    "Done": "#4caf50",
     "To Do": "#2196f3",
-    Blocked: "#f44336",
+    "Blocked": "#f44336",
     "On Hold": "#9e9e9e",
-    Planning: "#9c27b0",
+    "Planning": "#9c27b0",
   };
 
   const chartData =
@@ -118,7 +118,7 @@ export const DepartmentProductivityChart = ({
                 }}
               />
               <Tooltip
-                formatter={(value, name) => [`${value}%`, "Completion Rate"]}
+                formatter={(value, _name) => [`${value}%`, "Completion Rate"]}
                 labelFormatter={(label) => `Department: ${label}`}
               />
               <Bar dataKey="productivity" radius={[4, 4, 0, 0]} />

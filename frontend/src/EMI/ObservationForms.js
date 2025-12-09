@@ -10,7 +10,8 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import React, { useContext, useRef, useState } from "react";
+import { toast } from "react-toastify";
+import { useContext, useRef } from "react";
 
 import dayjs from "dayjs";
 import { EMIJCContext } from "./EMIJCContext";
@@ -44,7 +45,7 @@ const ObservationForms = ({
     cs116TableRows,
     cs118ADTableRows,
     cs118CDTableRows,
-    cs118TableRows,
+    // cs118TableRows,
     rs103TableRows,
     setCs114TableRows,
     setCs115TableRows,
@@ -54,12 +55,11 @@ const ObservationForms = ({
     setCs118CDTableRows,
   } = useContext(EMIJCContext);
 
-  const { control, register, setValue, watch } = useForm();
+  const { setValue } = useForm();
 
-  const [selectedFormType, setSelectedFormType] = useState(formType);
+  // const [selectedFormType, setSelectedFormType] = useState(formType);
 
   const [stepOneFormData, testPerformedTableRows] = commonData;
-  const [downloadObservationForm, setDownloadObservationForm] = useState(false);
 
   // Common fields data based on the test performed
   const commonDataForOF = {
@@ -227,7 +227,7 @@ const ObservationForms = ({
     setRs103TableRows,
     setCs118ADTableRows,
     setCs118CDTableRows,
-    // Notice we removed testPerformedTableRows to prevent continual resets.
+    testPerformedTableRows,
   ]);
 
   const BEAADDRESS =
@@ -351,8 +351,10 @@ const ObservationForms = ({
 
       // Update the context or state
       updateTestPerformedTableRows(updatedTestPerformedTableRows);
+      toast.success("Observation form data saved successfully.");
     } catch (error) {
       console.error("Error in saving observation form data:", error);
+      toast.error("Error while saving observation form data");
     }
   };
 

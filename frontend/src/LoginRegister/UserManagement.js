@@ -1,4 +1,4 @@
-import { useContext, useEffect, useRef, useState } from "react";
+import { useContext, useEffect, useCallback, useState } from "react";
 import {
   Box,
   Button,
@@ -34,18 +34,11 @@ import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 
 import { serverBaseAddress } from "../Pages/APIPage";
-import { useNavigate } from "react-router-dom";
 import { UserContext } from "../Pages/UserContext";
 import DataBackup from "../Pages/DataBackup";
 import SearchBar from "../common/SearchBar";
 
 export default function UserManagement() {
-  // State variable to set the user name:
-  // const [loggedInUser, setLoggedInUser] = useState('')
-
-  // Navigation hook to navigate upon successfull logout
-  const navigate = useNavigate();
-
   // State variables to add the user data
   const [userName, setUserName] = useState("");
   const [userEmail, setUserEmail] = useState("");
@@ -140,11 +133,10 @@ export default function UserManagement() {
   // State varaiable to Edit the users data
   const [editUserDetailsFields, setEditUserDetailsFields] = useState(false);
 
-  const fileInputRef = useRef(null); // Declare fileInputRef
   const [refresh, setRefresh] = useState(false);
   const [editId, setEditId] = useState("");
 
-  const { loggedInUser, loggedInUserDepartment } = useContext(UserContext);
+  const { loggedInUserDepartment } = useContext(UserContext);
 
   // Function to submit the data from the dialog
   const onSubmitAddUserButton = async (e) => {
@@ -244,7 +236,7 @@ export default function UserManagement() {
   }
 
   // Function to add new user:
-  const addNewUserButton = (user) => {
+  const addNewUserButton = () => {
     setEditUserDetailsFields(true);
   };
 
@@ -253,7 +245,7 @@ export default function UserManagement() {
     setEditUserDetailsFields(true);
     setEditId(id);
     // Find user data by ID instead of using index
-    const rowData = usersList.find(user => user.id === id);
+    const rowData = usersList.find((user) => user.id === id);
     if (rowData) {
       setUserName(rowData.name);
       setUserEmail(rowData.email);
@@ -317,11 +309,6 @@ export default function UserManagement() {
     handleOpen(id);
   };
 
-  // Function to reset the user password:
-  const resetUserPasswordButton = (id) => {
-    navigate("/reset_password");
-  };
-
   // UseEffect to handle deletion when deleteUserId changes
   useEffect(() => {}, [deleteUserId]);
 
@@ -348,28 +335,30 @@ export default function UserManagement() {
   };
 
   //Function to filter the table based on search and department
-  const filterUserManagementTable = (
-    searchValue,
-    departmentFilter = selectedDepartmentFilter
-  ) => {
-    let filtered = usersList;
+  const filterUserManagementTable = useCallback(
+    (searchValue, departmentFilter = selectedDepartmentFilter) => {
+      let filtered = usersList;
 
-    // Filter by department first
-    if (departmentFilter) {
-      filtered = filtered.filter((row) => row.department === departmentFilter);
-    }
-
-    // Then filter by search text
-    if (searchValue) {
-      filtered = filtered.filter((row) => {
-        return Object.values(row).some((value) =>
-          value.toString().toLowerCase().includes(searchValue.toLowerCase())
+      // Filter by department first
+      if (departmentFilter) {
+        filtered = filtered.filter(
+          (row) => row.department === departmentFilter
         );
-      });
-    }
+      }
 
-    setFilteredUsersList(filtered);
-  };
+      // Then filter by search text
+      if (searchValue) {
+        filtered = filtered.filter((row) => {
+          return Object.values(row).some((value) =>
+            value.toString().toLowerCase().includes(searchValue.toLowerCase())
+          );
+        });
+      }
+
+      setFilteredUsersList(filtered);
+    },
+    [usersList, selectedDepartmentFilter]
+  );
 
   //Function to clear the search bar and filter the table
   const onClearSearchInputOfUserManagement = () => {
@@ -390,7 +379,12 @@ export default function UserManagement() {
       searchInputTextOfUserManagement,
       selectedDepartmentFilter
     );
-  }, [usersList]);
+  }, [
+    filterUserManagementTable,
+    searchInputTextOfUserManagement,
+    selectedDepartmentFilter,
+    usersList,
+  ]);
 
   return (
     <>

@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { serverBaseAddress } from "../Pages/APIPage";
 import axios from "axios";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { addSerialNumbersToRows } from "../functions/UtilityFunctions";
 import {
   Box,
@@ -39,7 +39,9 @@ const ProjectsTable = () => {
 
   const [searchInputText, setSearchInputText] = useState("");
   const [filteredProjects, setFilteredProjects] = useState(projects);
+  // eslint-disable-next-line no-unused-vars
   const [reliabilityProjects, setReliabilityProjects] = useState([]);
+  // eslint-disable-next-line no-unused-vars
   const [softwareProjects, setSoftwareProjects] = useState([]);
   const [baseFilteredProjects, setBaseFilteredProjects] = useState([]);
 
@@ -208,7 +210,7 @@ const ProjectsTable = () => {
     addSerialNumbersToRows(filteredProjects);
 
   //Function to fetch all the tasks from the database:
-  const fetchProjectsFromDatabase = async () => {
+  const fetchProjectsFromDatabase = useCallback(async () => {
     try {
       setLoading(true);
       const response = await axios.get(`${serverBaseAddress}/api/getProjects`);
@@ -220,11 +222,11 @@ const ProjectsTable = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [setProjectsList]);
 
   useEffect(() => {
     fetchProjectsFromDatabase();
-  }, []);
+  }, [fetchProjectsFromDatabase]);
 
   //Function to delete the task from the database:
   const deleteSelectedProject = async (project_id) => {
@@ -305,15 +307,15 @@ const ProjectsTable = () => {
         ) : (
           <Box
             sx={{
-              height: 500,
-              width: "100%",
+              "height": 500,
+              "width": "100%",
               "& .custom-header-color": {
                 backgroundColor: "#476f95",
                 color: "whitesmoke",
                 fontWeight: "bold",
                 fontSize: "15px",
               },
-              mt: 2,
+              "mt": 2,
             }}
           >
             <DataGrid

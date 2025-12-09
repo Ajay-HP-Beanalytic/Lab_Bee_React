@@ -59,6 +59,7 @@ export default function ResetPassword() {
   const [otpCountdown, setOtpCountdown] = useState(60);
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  // eslint-disable-next-line no-unused-vars
   const [otpError, setOtpError] = useState("");
   const [passwordError, setPasswordError] = useState("");
   const navigate = useNavigate();

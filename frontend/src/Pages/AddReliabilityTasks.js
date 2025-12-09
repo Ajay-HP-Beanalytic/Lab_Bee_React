@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   TextField,
   Box,
@@ -38,8 +38,6 @@ export default function AddReliabilityTasks() {
   const [uploadedFileName, setUploadedFileName] = useState(null);
 
   const [editRelTaskFields, setEditRelTaskFields] = useState(false);
-
-  const [selectedFile, setSelectedFile] = useState(null);
   const fileInputRef = useRef(null);
 
   const [ref, setRef] = useState(false);
@@ -202,7 +200,7 @@ export default function AddReliabilityTasks() {
           }
         })
         .catch((error) => {
-          toast.error("An error occurred while deleting the task.");
+          toast.error("An error occurred while deleting the task.", error);
         });
     } else {
       handleCancelBtnIsClicked();

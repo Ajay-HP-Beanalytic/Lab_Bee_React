@@ -35,6 +35,7 @@ const AddModulesAndTests = () => {
   const [moduleName, setModulename] = useState("");
   const [moduleDescription, setmoduleDescription] = useState("");
   const [modulesList, setModulesList] = useState([]);
+  // eslint-disable-next-line no-unused-vars
   const [uploadedFileName, setUploadedFileName] = useState(null); // Define the uploadedFileName state variable
 
   const [editItemsoftModuleFields, setEditItemsoftModuleFields] =
@@ -214,7 +215,7 @@ const AddModulesAndTests = () => {
           }
         })
         .catch((error) => {
-          toast.error("An error occurred while deleting the module.");
+          toast.error("An error occurred while deleting the module.", error);
         });
       //toast.success("Data Added Successfully");
       //setModulesList([...modulesList, { module_name: moduleName, module_description: moduleDescription }]);

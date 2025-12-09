@@ -1,4 +1,4 @@
-import { useState, useEffect, useContext } from "react";
+import { useState, useEffect, useContext, useCallback, useMemo } from "react";
 import {
   Box,
   Typography,
@@ -111,6 +111,7 @@ export default function Quotation() {
   const formattedDate = moment(new Date()).format("YYYY-MM-DD");
   const [selectedDate, setSelectedDate] = useState(formattedDate);
   const [catCode, setCatCode] = useState("TS1");
+  // eslint-disable-next-line no-unused-vars
   const [updatingQuote, setUpdatingQuote] = useState(false);
   const [existingQuoteId, setExistingQuoteId] = useState("");
 
@@ -122,6 +123,7 @@ export default function Quotation() {
   const [taxableAmount, setTaxableAmount] = useState(0);
   const [discountAmount, setDiscountAmount] = useState("");
   const [totalAmountWords, setTotalAmountWords] = useState("");
+  // eslint-disable-next-line no-unused-vars
   const [totalAmountAfterDiscount, setTotalAmountAfterDiscount] = useState(0);
 
   const { id } = useParams("id");
@@ -178,8 +180,8 @@ export default function Quotation() {
     });
 
     // Set initial quotation ID when the component mounts
-    setInitialQuotationId(initialCompanyName);
-  }, [id]);
+    // setInitialQuotationId(initialCompanyName);
+  }, [id, initialCompanyName]);
 
   // To prefill the primary company details on selecting company name:
   const prefillTextFields = (selectedCompanyId) => {
@@ -271,19 +273,20 @@ export default function Quotation() {
   };
 
   // Set initial quotation ID based on the company name
-  const setInitialQuotationId = (newCompanyName) => {
-    const currentDate = new Date();
-    const currentYear = currentDate.getFullYear().toString().slice(-2);
-    const currentMonth = (currentDate.getMonth() + 1)
-      .toString()
-      .padStart(2, "0");
-    const currentDay = currentDate.getDate().toString();
-    // const dynamicQuotationIdString = `BEA/TS1/${newCompanyName}/${currentYear}${currentMonth}${currentDay}-001`;
-    // setQuotationIDString(dynamicQuotationIdString);
-  };
+  // const setInitialQuotationId = (newCompanyName) => {
+  //   const currentDate = new Date();
+  //   const currentYear = currentDate.getFullYear().toString().slice(-2);
+  //   const currentMonth = (currentDate.getMonth() + 1)
+  //     .toString()
+  //     .padStart(2, "0");
+  //   const currentDay = currentDate.getDate().toString();
+  //   // const dynamicQuotationIdString = `BEA/TS1/${newCompanyName}/${currentYear}${currentMonth}${currentDay}-001`;
+  //   // setQuotationIDString(dynamicQuotationIdString);
+  // };
 
   // To generate quotation ID dynamically based on the last saved quoataion ID:
-  const generateDynamicQuotationIdString = async () => {
+
+  const generateDynamicQuotationIdString = useCallback(async () => {
     if (id) {
       setQuotationIDString(existingQuoteId);
     } else {
@@ -328,7 +331,7 @@ export default function Quotation() {
         ) {
           // Same month and year - continue sequence
           // Split from the end to get the last part after the final dash
-          const lastDashIndex = lastQuotationID.lastIndexOf('-');
+          const lastDashIndex = lastQuotationID.lastIndexOf("-");
           const serialNumberStr = lastQuotationID.substring(lastDashIndex + 1);
           previousQuoteNumber = parseInt(serialNumberStr);
           // Check if parseInt returned NaN and provide fallback
@@ -351,11 +354,11 @@ export default function Quotation() {
       // Set the quotation ID after fetching the last ID
       setQuotationIDString(newQuoteId);
     }
-  };
+  }, [id, existingQuoteId, catCode, customerId]);
 
   useEffect(() => {
     generateDynamicQuotationIdString();
-  }, [quoteCategory, customerId]);
+  }, [quoteCategory, customerId, generateDynamicQuotationIdString]);
 
   // Function to create quotation with retry logic for duplicate ID handling
   const createQuotationWithRetry = async (formData, maxRetries = 3) => {
@@ -389,7 +392,7 @@ export default function Quotation() {
             .toString()
             .padStart(2, "0");
           // Split from the end to get the last part after the final dash
-          const lastDashIndex = lastQuotationID.lastIndexOf('-');
+          const lastDashIndex = lastQuotationID.lastIndexOf("-");
           const serialNumberStr = lastQuotationID.substring(lastDashIndex + 1);
           const lastNumber = parseInt(serialNumberStr);
 
@@ -616,6 +619,32 @@ export default function Quotation() {
     setQuoteVersion("");
   };
 
+  //Indian rupees to words configuration
+  const toWords = useMemo(
+    () =>
+      new ToWords({
+        localeCode: "en-IN",
+        converterOptions: {
+          currency: true,
+          ignoreDecimal: false,
+          ignoreZeroCurrency: false,
+          doNotAddOnly: false,
+          currencyOptions: {
+            // can be used to override defaults for the selected locale
+            name: "Rupee",
+            plural: "Rupees",
+            symbol: "₹",
+            fractionalUnit: {
+              name: "Paisa",
+              plural: "Paise",
+              symbol: "",
+            },
+          },
+        },
+      }),
+    []
+  );
+
   // Useeffect to calculate the total amount, to display that in word.
   useEffect(() => {
     const subtotal = tableData
@@ -635,29 +664,13 @@ export default function Quotation() {
     setTaxableAmount(subtotal);
     setTotalAmountWords(toWords.convert(subTotalAfterDiscount).toUpperCase());
     setTotalAmountAfterDiscount(subTotalAfterDiscount);
-  }, [tableData, originalTaxableAmount]);
-
-  //Indian rupees to words configuration
-  const toWords = new ToWords({
-    localeCode: "en-IN",
-    converterOptions: {
-      currency: true,
-      ignoreDecimal: false,
-      ignoreZeroCurrency: false,
-      doNotAddOnly: false,
-      currencyOptions: {
-        // can be used to override defaults for the selected locale
-        name: "Rupee",
-        plural: "Rupees",
-        symbol: "₹",
-        fractionalUnit: {
-          name: "Paisa",
-          plural: "Paise",
-          symbol: "",
-        },
-      },
-    },
-  });
+  }, [
+    tableData,
+    originalTaxableAmount,
+    isTotalDiscountVisible,
+    discountAmount,
+    toWords,
+  ]);
 
   // Enhanced modern table styles
   const tableHeaderStyle = {

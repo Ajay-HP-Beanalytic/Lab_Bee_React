@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 
 const FileViewer = ({ filePath, onClose, serverBaseAddress }) => {
   const [fileInfo, setFileInfo] = useState(null);
@@ -6,13 +6,7 @@ const FileViewer = ({ filePath, onClose, serverBaseAddress }) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    if (filePath) {
-      loadFileInfo();
-    }
-  }, [filePath]);
-
-  const loadFileInfo = async () => {
+  const loadFileInfo = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -62,7 +56,13 @@ const FileViewer = ({ filePath, onClose, serverBaseAddress }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filePath, serverBaseAddress]);
+
+  useEffect(() => {
+    if (filePath) {
+      loadFileInfo();
+    }
+  }, [filePath, loadFileInfo]);
 
   const downloadFile = () => {
     const link = document.createElement("a");

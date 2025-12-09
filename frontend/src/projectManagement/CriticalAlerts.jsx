@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Alert,
   AlertTitle,
@@ -7,21 +7,14 @@ import {
   IconButton,
   Typography,
   Chip,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
   Badge,
 } from "@mui/material";
 import {
   Warning,
   Error,
-  Info,
   ExpandMore,
   ExpandLess,
-  Schedule,
   Block,
-  Assignment,
 } from "@mui/icons-material";
 import axios from "axios";
 import { serverBaseAddress } from "../Pages/APIPage";

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import {
   Box,
   Typography,
@@ -12,15 +12,10 @@ import {
 
 import axios from "axios";
 import { serverBaseAddress } from "../Pages/APIPage";
-import { useNavigate } from "react-router-dom";
 import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import DashboardSummaryCards from "./DashboardComponents/DashboardSummaryCards";
-import CriticalAlerts from "./CriticalAlerts";
 import {
-  DepartmentProductivityChart,
-  MonthlyTrendsChart,
-  PriorityDistributionChart,
   StatusDistributionChart,
   TaskTrendsChart,
 } from "./DashboardComponents/DashboardChartsComponent";
@@ -29,7 +24,6 @@ import EmployeePerformanceTable from "./DashboardComponents/EmployeePerformance"
 dayjs.extend(relativeTime);
 
 const ManagementDashboard = () => {
-  const navigate = useNavigate();
   const [dashboardData, setDashboardData] = useState({
     projects: [],
     tasks: [],
@@ -42,7 +36,7 @@ const ManagementDashboard = () => {
   const [error, setError] = useState(null);
 
   // Fetch dashboard data
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
@@ -70,10 +64,10 @@ const ManagementDashboard = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   // Process raw data into dashboard format
-  const processDataForCharts = (projects, tasks, members) => {
+  const processDataForCharts = (projects, tasks, _members) => {
     // Project status distribution
     const projectStatusData = [
       {
@@ -201,7 +195,7 @@ const ManagementDashboard = () => {
     // Auto-refresh every 5 minutes
     const interval = setInterval(fetchDashboardData, 5 * 60 * 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchDashboardData]);
 
   const handleTabChange = (event, newValue) => {
     setTabValue(newValue);
@@ -238,14 +232,7 @@ const ManagementDashboard = () => {
   }
 
   const { projects, tasks, members } = dashboardData;
-  const {
-    projectStatusData,
-    taskStatusData,
-    taskPriorityData,
-    departmentProductivity,
-    monthlyProjectTrends,
-    taskTrends,
-  } = processedData;
+  const { projectStatusData, taskStatusData, taskTrends } = processedData;
 
   return (
     <Box sx={{ p: 3 }}>
@@ -259,9 +246,6 @@ const ManagementDashboard = () => {
           Monthly overview of project performance and team productivity
         </Typography>
       </Box>
-
-      {/* Critical Alerts */}
-      {/* <CriticalAlerts /> */}
 
       {/* Executive Summary Cards */}
       <Box sx={{ mb: 3 }}>

@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useState, useMemo, useCallback } from "react";
 import Tabs from "@mui/material/Tabs";
 import Tab from "@mui/material/Tab";
 import Box from "@mui/material/Box";
@@ -27,15 +27,18 @@ const ProjectManagementDashboard = () => {
     loggedInUserRole === "Reliability Manager" ||
     loggedInUserRole === "Administrator";
 
-  const tabConfig = [
-    ...(hasDashboardAccess
-      ? [{ label: "Dashboard", component: <ManagementDashboard /> }]
-      : []),
-    { label: "Projects List", component: <ProjectsTable /> },
-    { label: "Tasks List", component: <SprintBacklog /> },
-    { label: "Kanban Sheet", component: <KanbanSheet /> },
-    { label: "My Tasks", component: <MyTasks /> },
-  ];
+  const tabConfig = useMemo(
+    () => [
+      ...(hasDashboardAccess
+        ? [{ label: "Dashboard", component: <ManagementDashboard /> }]
+        : []),
+      { label: "Projects List", component: <ProjectsTable /> },
+      { label: "Tasks List", component: <SprintBacklog /> },
+      { label: "Kanban Sheet", component: <KanbanSheet /> },
+      { label: "My Tasks", component: <MyTasks /> },
+    ],
+    [hasDashboardAccess]
+  );
 
   // Check if breadcrumbs should be shown
   const shouldShowBreadcrumbs = () => {
@@ -129,7 +132,7 @@ const ProjectManagementDashboard = () => {
   };
 
   // Check if current route is create/edit
-  const isCreateEditRoute = () => {
+  const isCreateEditRoute = useCallback(() => {
     const path = location.pathname;
     return (
       path === "/create_project" ||
@@ -137,7 +140,7 @@ const ProjectManagementDashboard = () => {
       path === "/add_task" ||
       path.startsWith("/edit_task/")
     );
-  };
+  }, [location.pathname]);
 
   // Synchronize tab index with current route
   useEffect(() => {
@@ -182,7 +185,14 @@ const ProjectManagementDashboard = () => {
     if (correctTabIndex >= 0 && correctTabIndex !== tabIndex) {
       setTabIndex(correctTabIndex);
     }
-  }, [location.pathname, hasDashboardAccess, tabConfig.length]);
+  }, [
+    location.pathname,
+    hasDashboardAccess,
+    tabConfig.length,
+    isCreateEditRoute,
+    tabIndex,
+    tabConfig,
+  ]);
 
   // Reset tab index when user role changes (and thus tabConfig changes)
   useEffect(() => {
@@ -194,7 +204,7 @@ const ProjectManagementDashboard = () => {
     if (!isCreateEditRoute()) {
       setTabIndex(0);
     }
-  }, [hasDashboardAccess]);
+  }, [hasDashboardAccess, isCreateEditRoute]);
 
   return (
     <Box>

@@ -55,7 +55,7 @@ export default function ChamberAndCalibration() {
   const [calibrationDoneDate, setCalibrationDoneDate] = useState("");
   const [calibrationDueDate, setCalibrationDueDate] = useState("");
   const [calibratedBy, setCalibratedBy] = useState("");
-  const [calibrationStatus, setCalibrationStatus] = useState("");
+  // const [calibrationStatus, setCalibrationStatus] = useState("");
   const [chamberStatus, setChamberStatus] = useState("");
   const [remarks, setRemarks] = useState("");
 
@@ -70,6 +70,7 @@ export default function ChamberAndCalibration() {
   const [filteredChamberList, setFilteredChamberList] = useState(chambersList);
   const [searchInputTextOfCal, setSearchInputTextOfCal] = useState("");
 
+  // eslint-disable-next-line no-unused-vars
   const [uploadedFileName, setUploadedFileName] = useState(null); // Define the uploadedFileName state variable
 
   const [editChamberCalibrationFields, setEditChamberCalibrationFields] =
@@ -96,7 +97,7 @@ export default function ChamberAndCalibration() {
   });
 
   // Function to handle the submit process.
-  const onSubmitChambersButton = async (e) => {
+  const onSubmitChambersButton = async () => {
     const formattedCalibrationDoneDate = calibrationDoneDate
       ? moment(calibrationDoneDate).format("YYYY-MM-DD")
       : null;
@@ -291,14 +292,14 @@ export default function ChamberAndCalibration() {
   let calibration_due_counts = 0;
 
   const currentDate = new Date();
-  const currentYear = currentDate.getFullYear();
-  const currentMonth = currentDate.getMonth();
+  // const currentYear = currentDate.getFullYear();
+  // const currentMonth = currentDate.getMonth();
 
   // Calibration due label for the KPI
-  const currentMonthName = new Intl.DateTimeFormat("en-US", {
-    month: "long",
-  }).format(currentDate);
-  const currentYearAndMonth = `${currentMonthName}-${currentYear}`;
+  // const currentMonthName = new Intl.DateTimeFormat("en-US", {
+  //   month: "long",
+  // }).format(currentDate);
+  // const currentYearAndMonth = `${currentMonthName}-${currentYear}`;
 
   // Calculate 45 days ahead
   const nextDate = new Date(currentDate);
@@ -355,6 +356,7 @@ export default function ChamberAndCalibration() {
   );
 
   // Chamber status KPI or Count with detailed information:
+  // eslint-disable-next-line no-unused-vars
   let good_ChamberCount = 0;
   let underMaintenance_ChamberCount = 0;
   let chamber_underMaintenanceDetails = [];
@@ -482,7 +484,7 @@ export default function ChamberAndCalibration() {
         }
       })
       .catch((error) => {
-        toast.error("An error occurred while deleting the Chamber.");
+        toast.error("An error occurred while deleting the Chamber.", error);
       });
   };
 

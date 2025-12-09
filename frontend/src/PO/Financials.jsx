@@ -1,4 +1,4 @@
-import { useContext, useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   Box,
   Button,
@@ -44,12 +44,10 @@ import dayjs from "dayjs";
 import axios from "axios";
 import { serverBaseAddress } from "../Pages/APIPage";
 import InvoiceTable from "./InoviceTable";
-import { UserContext } from "../Pages/UserContext";
 import EmptyCard from "../common/EmptyCard";
 import ChamberRunHours from "../Pages/ChamberRunHours";
 
 const Financials = () => {
-  const { loggedInUser } = useContext(UserContext);
   const [selectedDepartment, setSelectedDepartment] = useState("All");
   const [availableYears, setAvailableYears] = useState([]);
   const [availableMonths, setAvailableMonths] = useState([]);
@@ -61,6 +59,7 @@ const Financials = () => {
   const [tabValue, setTabValue] = useState(0);
 
   const [loading, setLoading] = useState(true);
+  // eslint-disable-next-line no-unused-vars
   const [error, setError] = useState(null);
 
   const [dashboardData, setDashboardData] = useState({
@@ -633,11 +632,8 @@ const Financials = () => {
                           cx,
                           cy,
                           midAngle,
-                          innerRadius,
                           outerRadius,
                           department,
-                          revenue,
-                          percent,
                         }) => {
                           const RADIAN = Math.PI / 180;
                           const radius = outerRadius + 25;

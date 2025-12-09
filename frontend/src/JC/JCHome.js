@@ -57,6 +57,7 @@ export default function JCHome() {
   const [availableYears, setAvailableYears] = useState([]);
   const [availableMonths, setAvailableMonths] = useState([]);
 
+  // eslint-disable-next-line no-unused-vars
   const [selectedJCDateRange, setSelectedJCDateRange] = useState(null);
 
   const [searchInputTextOfJC, setSearchInputTextOfJC] = useState("");
@@ -71,7 +72,7 @@ export default function JCHome() {
   const [srfDate, setSrfDate] = useState(null);
   const [jcOpenDate, setJcOpenDate] = useState(null);
   const [itemReceivedDate, setItemReceivedDate] = useState(null);
-  const [poNumber, setPonumber] = useState("");
+  // const [poNumber, setPonumber] = useState("");
   const [jcCategory, setJcCategory] = useState("");
   const [testCategory, setTestCategory] = useState("");
   const [testDiscipline, setTestDiscipline] = useState("");
@@ -88,6 +89,7 @@ export default function JCHome() {
   const [testInstructions, setTestInstructions] = useState("");
   const [sampleCondition, setSampleCondition] = useState("");
   const [reportType, setReportType] = useState("");
+  // eslint-disable-next-line no-unused-vars
   const [referanceDocs, setReferanceDocs] = useState([]);
   const [jcStatus, setJcStatus] = useState("Open");
   const [jcCloseDate, setJcCloseDate] = useState(null);
@@ -99,6 +101,7 @@ export default function JCHome() {
     { id: 0, startDate: null, endDate: null, duration: 0 },
   ]);
 
+  // eslint-disable-next-line no-unused-vars
   const [jcLastModifiedBy, setJcLastModifiedBy] = useState();
 
   const [editJc, setEditJc] = useState(false);
@@ -131,7 +134,7 @@ export default function JCHome() {
             parsedItemReceivedDate.isValid() ? parsedItemReceivedDate : null
           );
 
-          setPonumber(res.data.jobcard.po_number);
+          // setPonumber(res.data.jobcard.po_number);
           setTestCategory(res.data.jobcard.test_category);
           setTestDiscipline(res.data.jobcard.test_discipline);
           setSampleCondition(res.data.jobcard.sample_condition);
@@ -878,6 +881,7 @@ export default function JCHome() {
             onClose={handleCloseJCPreview}
             jcCategory={jcCategory}
             jcNumber={jcNumberString}
+            jcStatus={jcStatus}
             primaryJCDetails={primaryJCDetails}
             eutRows={eutRows}
             testRows={testRows}
