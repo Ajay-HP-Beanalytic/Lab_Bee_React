@@ -20,7 +20,7 @@ const CS118Form = ({ formType }) => {
     cs118ADTableRows,
     updateCs118CDTableRows,
     cs118CDTableRows,
-    cs118TableRows,
+    // cs118TableRows,
   } = useContext(EMIJCContext);
 
   const performanceCreteriaOptions = [

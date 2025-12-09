@@ -445,6 +445,8 @@ export default function NotificationsManagement() {
     setNotifications,
     loggedInUserDepartment,
     setNewNotificationReceived,
+    loggedInUserRole,
+    socket,
   ]);
 
   return null; // This component doesn't render anything

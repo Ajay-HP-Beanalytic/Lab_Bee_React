@@ -48,7 +48,6 @@ const InvoiceTable = () => {
 
   const [loading, setLoading] = useState(true);
   const [dialogLoading, setDialogLoading] = useState(false);
-  const [error, setError] = useState(null);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editInvoiceId, setEditInvoiceId] = useState(null);
 
@@ -471,29 +470,32 @@ const InvoiceTable = () => {
     }
   };
 
-  const deleteSelectedInvoiceData = async (id) => {
-    try {
-      setDialogLoading(true);
+  const deleteSelectedInvoiceData = useCallback(
+    async (id) => {
+      try {
+        setDialogLoading(true);
 
-      const response = await axios.delete(
-        `${serverBaseAddress}/api/deleteInvoiceData/${id}`
-      );
-      if (response.status === 200) {
-        toast.success("Invoice deleted successfully");
-        await fetchInvoiceData();
+        const response = await axios.delete(
+          `${serverBaseAddress}/api/deleteInvoiceData/${id}`
+        );
+        if (response.status === 200) {
+          toast.success("Invoice deleted successfully");
+          await fetchInvoiceData();
 
-        setDeleteDialogOpen(false);
-        setSelectedInvoiceId(null);
-      } else {
-        console.error("Error deleting invoice data:", response.status);
+          setDeleteDialogOpen(false);
+          setSelectedInvoiceId(null);
+        } else {
+          console.error("Error deleting invoice data:", response.status);
+        }
+      } catch (error) {
+        console.error("Error deleting invoice data:", error);
+        toast.error("Failed to delete invoice data");
+      } finally {
+        setDialogLoading(false);
       }
-    } catch (error) {
-      console.error("Error deleting invoice data:", error);
-      toast.error("Failed to delete invoice data");
-    } finally {
-      setDialogLoading(false);
-    }
-  };
+    },
+    [fetchInvoiceData]
+  );
 
   //Table columns:
   const invoiceTableColumns = [
@@ -680,15 +682,18 @@ const InvoiceTable = () => {
     filterInvoiceDataTable(searchText);
   };
 
-  const filterInvoiceDataTable = (searchValue) => {
-    const filtered = invoiceData.filter((row) => {
-      // Return Object, some that includes:
-      return Object.values(row).some((value) =>
-        value.toString().toLowerCase().includes(searchValue.toLowerCase())
-      );
-    });
-    setFilteredInvoiceData(filtered);
-  };
+  const filterInvoiceDataTable = useCallback(
+    (searchValue) => {
+      const filtered = invoiceData.filter((row) => {
+        // Return Object, some that includes:
+        return Object.values(row).some((value) =>
+          value.toString().toLowerCase().includes(searchValue.toLowerCase())
+        );
+      });
+      setFilteredInvoiceData(filtered);
+    },
+    [invoiceData]
+  );
 
   const onClearSearchInputOfInvoiceTable = () => {
     setSearchInputTextOfInvoiceTable("");
@@ -992,16 +997,16 @@ const InvoiceTable = () => {
       ) : (
         <Box
           sx={{
-            height: 500,
-            width: "100%",
+            "height": 500,
+            "width": "100%",
             "& .custom-header-color": {
               backgroundColor: "#476f95",
               color: "whitesmoke",
               fontWeight: "bold",
               fontSize: "15px",
             },
-            mt: 1,
-            mb: 2,
+            "mt": 1,
+            "mb": 2,
           }}
         >
           <DataGrid

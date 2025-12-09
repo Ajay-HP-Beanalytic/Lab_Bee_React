@@ -23,14 +23,11 @@ import {
   InputAdornment,
 } from "@mui/material";
 import {
-  InsertDriveFile,
-  Folder,
   Search,
   Preview,
   CloudDownload,
   Upload,
   Delete,
-  Add,
   Refresh,
   CreateNewFolder,
   Clear,
@@ -52,7 +49,6 @@ const FileBrowser = () => {
     searchFiles,
     deleteFile,
     createDirectory,
-    isViewableFile,
   } = useFileStorage();
 
   const [currentPath, setCurrentPath] = useState("");
@@ -71,7 +67,7 @@ const FileBrowser = () => {
 
   useEffect(() => {
     listFiles(currentPath);
-  }, [currentPath]);
+  }, [currentPath, listFiles]);
 
   const handleFolderClick = (folder) => {
     setPathHistory([...pathHistory, currentPath]);
@@ -80,21 +76,21 @@ const FileBrowser = () => {
     setSearchQuery("");
   };
 
-  const handleBreadcrumbClick = (pathIndex) => {
-    if (pathIndex === -1) {
-      // Go to root
-      setCurrentPath("");
-      setPathHistory([]);
-    } else {
-      // Go to specific path
-      const newHistory = pathHistory.slice(0, pathIndex + 1);
-      const targetPath = pathHistory[pathIndex];
-      setCurrentPath(targetPath);
-      setPathHistory(newHistory);
-    }
-    setIsSearching(false);
-    setSearchQuery("");
-  };
+  // const handleBreadcrumbClick = (pathIndex) => {
+  //   if (pathIndex === -1) {
+  //     // Go to root
+  //     setCurrentPath("");
+  //     setPathHistory([]);
+  //   } else {
+  //     // Go to specific path
+  //     const newHistory = pathHistory.slice(0, pathIndex + 1);
+  //     const targetPath = pathHistory[pathIndex];
+  //     setCurrentPath(targetPath);
+  //     setPathHistory(newHistory);
+  //   }
+  //   setIsSearching(false);
+  //   setSearchQuery("");
+  // };
 
   const handleSearch = () => {
     if (searchQuery.trim()) {
@@ -174,17 +170,17 @@ const FileBrowser = () => {
   };
 
   // NEW: Handle file deletion
-  const handleDeleteFile = async (file) => {
-    // if (window.confirm(`Are you sure you want to delete "${file.name}"?`)) {
+  // const handleDeleteFile = async (file) => {
+  //   // if (window.confirm(`Are you sure you want to delete "${file.name}"?`)) {
 
-    try {
-      await deleteFile(file.path);
-      listFiles(currentPath); // Refresh file list
-    } catch (error) {
-      toast.error("Delete failed");
-      console.error("Delete failed:", error);
-    }
-  };
+  //   try {
+  //     await deleteFile(file.path);
+  //     listFiles(currentPath); // Refresh file list
+  //   } catch (error) {
+  //     toast.error("Delete failed");
+  //     console.error("Delete failed:", error);
+  //   }
+  // };
 
   // Existing helper functions
   const formatFileSize = (bytes) => {
@@ -395,7 +391,6 @@ const FileBrowser = () => {
                             <CloudDownload />
                           </IconButton>
                           <IconButton
-                            // onClick={() => handleDeleteFile(file)}
                             onClick={() => handleDelete(file)}
                             title="Delete"
                             color="error"

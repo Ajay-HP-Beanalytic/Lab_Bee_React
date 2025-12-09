@@ -1,6 +1,5 @@
 import Box from "@mui/material/Box";
 import Grid from "@mui/material/Grid";
-import bgimg from "../images/backimg.jpg";
 import bealogo from "../images/BEALogo.jpg";
 import Button from "@mui/material/Button";
 import TextField from "@mui/material/TextField";
@@ -56,9 +55,8 @@ const signInLogoAndText = {
 export default function Login() {
   const { clearUserContext } = useContext(UserContext);
 
-  const [remember, setRemember] = useState(false);
-
   // Set initial state with the last logged email
+  // eslint-disable-next-line no-unused-vars
   const [userEmail, setUserEmail] = useState(
     localStorage.getItem("lastLoggedEmail") || ""
   );

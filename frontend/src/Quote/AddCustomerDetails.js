@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import {
   Box,
   Button,
@@ -137,7 +138,7 @@ export default function AddCustomerDetails() {
   }
 
   // Function to add new customer details
-  const addNewCustomerDetailsButton = (customer) => {
+  const addNewCustomerDetailsButton = () => {
     setEditCustomerDetailsFields(true);
   };
 
@@ -296,7 +297,7 @@ export default function AddCustomerDetails() {
         }
       })
       .catch((error) => {
-        toast.error("An error occurred while deleting.");
+        toast.error("An error occurred while deleting.", error);
       });
   };
 

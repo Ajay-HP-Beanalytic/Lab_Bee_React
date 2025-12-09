@@ -49,6 +49,7 @@ export default function JCPreview({
   onClose,
   jcCategory,
   jcNumber,
+  jcStatus,
   primaryJCDetails,
   eutRows,
   testRows,
@@ -57,7 +58,7 @@ export default function JCPreview({
   editJc,
   jcId,
 }) {
-  const { loggedInUserDepartment } = useContext(UserContext);
+  const { loggedInUserDepartment, loggedInUserRole } = useContext(UserContext);
 
   // State for document preview modal
   const [previewModalOpen, setPreviewModalOpen] = useState(false);
@@ -77,6 +78,11 @@ export default function JCPreview({
   const isAdminOrAccounts =
     loggedInUserDepartment === "Administration" ||
     loggedInUserDepartment === "Accounts";
+  const isLabManager = loggedInUserRole === "Lab Manager";
+  const canEditJC =
+    isLabManager || isAdminOrAccounts || isReportsAndScrutiny || isTS1Testing;
+  const disableEditButton =
+    !canEditJC || (jcStatus === "Closed" && isTS1Testing && !isLabManager);
 
   const eutTableHeaderNames = [
     "Sl No",
@@ -134,9 +140,6 @@ export default function JCPreview({
   };
 
   const handleGenerateReport = (rowIndex) => {
-    // alert("This feature will be available soon");
-    // return;
-
     const currentTestRow = testDetailsRows[rowIndex];
 
     // Convert primaryJCDetails array to object format
@@ -480,6 +483,7 @@ export default function JCPreview({
             variant="contained"
             color="primary"
             onClick={onEditJC}
+            disabled={disableEditButton}
           >
             Edit/Update
           </Button>

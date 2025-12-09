@@ -9,7 +9,6 @@ import {
   Box,
   Typography,
   IconButton,
-  Avatar,
   Chip,
   Divider,
   Card,
@@ -19,7 +18,6 @@ import {
 } from "@mui/material";
 import {
   CloudUpload,
-  Image,
   Delete,
   PictureAsPdf,
   CheckCircle,
@@ -87,13 +85,13 @@ export default function DocToPdf({ id }) {
   const [quoteCategory, setQuoteCategory] = useState("");
   const [quoteVersion, setQuoteVersion] = useState("");
   const [tableData, setTableData] = useState(initialTableData);
-  const [counter, setCounter] = useState(tableData.length + 1);
   const [taxableAmount, setTaxableAmount] = useState(0);
 
   const [quotationTitle, setQuotationTitle] = useState("");
   const [quotationTitleDialog, setQuotationTitleDialog] = useState(true);
 
   const [companyLogoImage, setCompanyLogoImage] = useState(null);
+  // eslint-disable-next-line no-unused-vars
   const [companyLogoFile, setCompanyLogoFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [imageError, setImageError] = useState("");
@@ -192,7 +190,7 @@ export default function DocToPdf({ id }) {
 
   // Function to get image as ArrayBuffer for embedding
   const getImageBuffer = (imageUrl) => {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve, _reject) => {
       if (!imageUrl) {
         resolve(null);
         return;
@@ -277,7 +275,7 @@ export default function DocToPdf({ id }) {
           console.error("No matching image found for tagValue:", tagValue);
           throw new Error(`Image not found for: ${tagValue}`);
         },
-        getSize: function (img, tagValue, tagName) {
+        getSize: function (img, _tagValue, _tagName) {
           // img is the actual image buffer returned by getImage()
           try {
             if (img && img.length > 0) {
@@ -482,7 +480,7 @@ export default function DocToPdf({ id }) {
       .catch((error) => {
         console.error(error);
       });
-  }, []);
+  }, [id]);
 
   return (
     <>

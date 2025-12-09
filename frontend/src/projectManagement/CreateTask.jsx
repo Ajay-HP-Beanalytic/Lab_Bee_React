@@ -1,7 +1,7 @@
 import { useForm } from "react-hook-form";
 import RenderComponents from "../functions/RenderComponents";
 import { Box, Card, Grid } from "@mui/material";
-import { useContext, useEffect, useMemo, useState } from "react";
+import { useContext, useEffect, useMemo, useState, useCallback } from "react";
 import { UserContext } from "../Pages/UserContext";
 import axios from "axios";
 import { serverBaseAddress } from "../Pages/APIPage";
@@ -59,7 +59,7 @@ const CreateTask = () => {
     }
   };
 
-  const fetchProjectIdsForDropdown = async () => {
+  const fetchProjectIdsForDropdown = useCallback(async () => {
     const projectIdsFetched = projectsData.map((project) => project.project_id);
     console.log("projectIdsFetched", projectIdsFetched);
 
@@ -79,10 +79,10 @@ const CreateTask = () => {
     const projectIds = filteredProjects.map((project) => project.project_id);
     setProjectIdsForDropdown(projectIds);
     return projectIds;
-  };
+  }, [projectsData, loggedInUserDepartment]);
 
   // Function to get options based on logged-in user's department
-  const getAssignedToOptions = () => {
+  const getAssignedToOptions = useMemo(() => {
     switch (loggedInUserDepartment) {
       case "Reliability":
         return reliabilityMembers;
@@ -97,9 +97,14 @@ const CreateTask = () => {
       default:
         return [];
     }
-  };
+  }, [
+    administrationMembers,
+    loggedInUserDepartment,
+    reliabilityMembers,
+    softwareMembers,
+  ]);
 
-  const getDepartmentOptions = () => {
+  const getDepartmentOptions = useMemo(() => {
     switch (loggedInUserDepartment) {
       case "Reliability":
         return ["Reliability"];
@@ -110,7 +115,7 @@ const CreateTask = () => {
       default:
         return [];
     }
-  };
+  }, [loggedInUserDepartment]);
 
   //Fields details to render in the form:
   const taskFormDatafields = useMemo(
@@ -212,70 +217,74 @@ const CreateTask = () => {
         width: "30%",
       },
     ],
-    [
-      reliabilityMembers,
-      softwareMembers,
-      administrationMembers,
-      loggedInUserDepartment,
-    ]
+    [projectIdsForDropdown, getDepartmentOptions, getAssignedToOptions]
   );
 
+  // Function to navigate back to tasks list
+  const handleNavigateBack = useCallback(() => {
+    // Navigate back to tasks list with proper state management
+    navigate("/tasks", { replace: false });
+  }, [navigate]);
+
   //Function to fetch the task data from the database:
-  const fetchTaskDetailsAndPopulateForm = async (taskId) => {
-    try {
-      setIsLoading(true);
+  const fetchTaskDetailsAndPopulateForm = useCallback(
+    async (taskId) => {
+      try {
+        setIsLoading(true);
 
-      const response = await axios.get(
-        `${serverBaseAddress}/api/getTaskData/${taskId}`
-      );
+        const response = await axios.get(
+          `${serverBaseAddress}/api/getTaskData/${taskId}`
+        );
 
-      // FIX: The API returns an array, get the first item
-      if (response.data) {
-        const taskData = response.data;
-        //populate the form fields with the task details:
-        setValue(
-          "corresponding_project_id",
-          taskData.corresponding_project_id || ""
+        // FIX: The API returns an array, get the first item
+        if (response.data) {
+          const taskData = response.data;
+          //populate the form fields with the task details:
+          setValue(
+            "corresponding_project_id",
+            taskData.corresponding_project_id || ""
+          );
+          setValue("department", taskData.department || "");
+          setValue("title", taskData.title || "");
+          setValue("description", taskData.description || "");
+          setValue("assigned_to", taskData.assigned_to || "");
+          setValue("story_points", taskData.story_points?.toString() || "");
+          setValue("estimated_hours", taskData.estimated_hours || "");
+          setValue("actual_hours", taskData.actual_hours || "");
+          setValue(
+            "task_assigned_date",
+            taskData.task_assigned_date
+              ? dayjs(taskData.task_assigned_date)
+              : null
+          );
+          setValue(
+            "task_due_date",
+            taskData.task_due_date ? dayjs(taskData.task_due_date) : null
+          );
+          setValue(
+            "task_completed_date",
+            taskData.task_completed_date
+              ? dayjs(taskData.task_completed_date)
+              : null
+          );
+          setValue("priority", taskData.priority || "");
+          setValue("status", taskData.status || "");
+        } else {
+          toast.error("Task not found to update.");
+          handleNavigateBack();
+        }
+      } catch (error) {
+        console.error("Error fetching task details:", error);
+        toast.error(
+          `Error fetching task details: ${error.message || "Server error"}`
         );
-        setValue("department", taskData.department || "");
-        setValue("title", taskData.title || "");
-        setValue("description", taskData.description || "");
-        setValue("assigned_to", taskData.assigned_to || "");
-        setValue("story_points", taskData.story_points?.toString() || "");
-        setValue("estimated_hours", taskData.estimated_hours || "");
-        setValue("actual_hours", taskData.actual_hours || "");
-        setValue(
-          "task_assigned_date",
-          taskData.task_assigned_date
-            ? dayjs(taskData.task_assigned_date)
-            : null
-        );
-        setValue(
-          "task_due_date",
-          taskData.task_due_date ? dayjs(taskData.task_due_date) : null
-        );
-        setValue(
-          "task_completed_date",
-          taskData.task_completed_date
-            ? dayjs(taskData.task_completed_date)
-            : null
-        );
-        setValue("priority", taskData.priority || "");
-        setValue("status", taskData.status || "");
-      } else {
-        toast.error("Task not found to update.");
         handleNavigateBack();
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      console.error("Error fetching task details:", error);
-      toast.error(
-        `Error fetching task details: ${error.message || "Server error"}`
-      );
-      handleNavigateBack();
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    },
+    [setValue, handleNavigateBack]
+  );
 
   //Function to fetch and populate the task details based on the task_id:
   useEffect(() => {
@@ -297,7 +306,13 @@ const CreateTask = () => {
 
     //Initialize the component:
     initializeComponent();
-  }, [taskIdFromParams, location.pathname]);
+  }, [
+    taskIdFromParams,
+    location.pathname,
+    fetchProjectIdsForDropdown,
+    fetchTaskDetailsAndPopulateForm,
+    reset,
+  ]);
 
   // Function to save the new task to the database:
   const saveNewTaskToDatabase = async (data) => {
@@ -421,12 +436,6 @@ const CreateTask = () => {
     setSelectedTaskId(null);
     reset();
     handleNavigateBack();
-  };
-
-  // Function to navigate back to tasks list
-  const handleNavigateBack = () => {
-    // Navigate back to tasks list with proper state management
-    navigate("/tasks", { replace: false });
   };
 
   return (

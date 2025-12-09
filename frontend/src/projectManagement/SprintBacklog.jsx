@@ -1,4 +1,5 @@
-import { useContext, useEffect, useState } from "react";
+/* eslint-disable no-unused-vars */
+import { useContext, useEffect, useState, useCallback } from "react";
 import {
   Box,
   Button,
@@ -42,7 +43,9 @@ const SprintBacklog = () => {
     (state) => state.setKanbanSheetData
   );
 
+  // eslint-disable-next-line no-unused-vars
   const [reliabilityMembers, setReliabilityMembers] = useState([]);
+  // eslint-disable-next-line no-unused-vars
   const [softwareMembers, setSoftwareMembers] = useState([]);
   const [administrationMembers, setAdministrationMembers] = useState([]);
 
@@ -226,7 +229,7 @@ const SprintBacklog = () => {
   const tasksTableWithSerialNumbers = addSerialNumbersToRows(filteredTasks);
 
   //Function to fetch all the tasks from the database:
-  const fetchTasksFromDatabase = async () => {
+  const fetchTasksFromDatabase = useCallback(async () => {
     try {
       setLoading(true);
       const response = await axios.get(`${serverBaseAddress}/api/getAllTasks`);
@@ -258,7 +261,7 @@ const SprintBacklog = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [setKanbanSheetData, setTasksList]);
 
   //Function to populate the data to view and update the task data:
   // Function to handle row click in DataGrid
@@ -284,7 +287,7 @@ const SprintBacklog = () => {
   useEffect(() => {
     fetchTasksFromDatabase();
     fetchTeamMembersFromDatabase();
-  }, []);
+  }, [fetchTasksFromDatabase]);
 
   //Function to delete the task from the database:
   const deleteSelectedTask = async (task_id) => {
@@ -363,15 +366,15 @@ const SprintBacklog = () => {
         ) : (
           <Box
             sx={{
-              height: 500,
-              width: "100%",
+              "height": 500,
+              "width": "100%",
               "& .custom-header-color": {
                 backgroundColor: "#476f95",
                 color: "whitesmoke",
                 fontWeight: "bold",
                 fontSize: "15px",
               },
-              mt: 2,
+              "mt": 2,
             }}
           >
             <DataGrid

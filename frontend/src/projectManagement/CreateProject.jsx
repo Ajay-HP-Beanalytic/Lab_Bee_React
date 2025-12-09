@@ -1,6 +1,6 @@
-import { useContext, useEffect, useMemo, useState } from "react";
+import { useContext, useEffect, useMemo, useState, useCallback } from "react";
 import { UserContext } from "../Pages/UserContext";
-import { Box, Button, Card, Grid, Typography } from "@mui/material";
+import { Box, Button, Card, Grid } from "@mui/material";
 import { useForm } from "react-hook-form";
 import RenderComponents from "../functions/RenderComponents";
 import axios from "axios";
@@ -8,19 +8,10 @@ import { serverBaseAddress } from "../Pages/APIPage";
 import { toast } from "react-toastify";
 import dayjs from "dayjs";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
-import useProjectManagementStore from "./ProjectStore";
 
 const CreateProject = () => {
-  const {
-    loggedInUser,
-    loggedInUserDepartment,
-    loggedInUserRole,
-    loggedInUserId,
-  } = useContext(UserContext);
+  const { loggedInUserDepartment, loggedInUserId } = useContext(UserContext);
 
-  const projectsData = useProjectManagementStore(
-    (state) => state.allTasksData.projectsList
-  );
   const navigate = useNavigate();
   const { id: projectIdFromParams } = useParams();
   const location = useLocation();
@@ -38,13 +29,13 @@ const CreateProject = () => {
   const [selectedProjectId, setSelectedProjectId] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const RELIABILITY_PROJECT_MANAGER_ROLES = [
-    "Managing Director",
-    "Reliability Manager",
-  ];
+  const RELIABILITY_PROJECT_MANAGER_ROLES = useMemo(
+    () => ["Managing Director", "Reliability Manager"],
+    []
+  );
 
   //Function to fetch software and reliability team members from the database:
-  const fetchTeamMembersFromDatabase = async () => {
+  const fetchTeamMembersFromDatabase = useCallback(async () => {
     try {
       const response = await axios.get(
         `${serverBaseAddress}/api/getProjectManagementMembers`
@@ -74,10 +65,10 @@ const CreateProject = () => {
     } catch (error) {
       console.log("Error fetching team members from database:", error);
     }
-  };
+  }, [RELIABILITY_PROJECT_MANAGER_ROLES]);
 
   // Function to get options based on logged-in user's department
-  const getAssignedToOptions = () => {
+  const getAssignedToOptions = useCallback(() => {
     switch (loggedInUserDepartment) {
       case "Reliability":
         return reliabilityMembers;
@@ -92,9 +83,14 @@ const CreateProject = () => {
       default:
         return [];
     }
-  };
+  }, [
+    loggedInUserDepartment,
+    reliabilityMembers,
+    softwareMembers,
+    administrationMembers,
+  ]);
 
-  const getDepartmentOptions = () => {
+  const getDepartmentOptions = useCallback(() => {
     switch (loggedInUserDepartment) {
       case "Reliability":
         return ["Reliability"];
@@ -105,7 +101,7 @@ const CreateProject = () => {
       default:
         return [];
     }
-  };
+  }, [loggedInUserDepartment]);
 
   //Fields details to render in the form:
   const projectFormDatafields = useMemo(
@@ -209,73 +205,78 @@ const CreateProject = () => {
       },
     ],
     [
-      reliabilityMembers,
-      softwareMembers,
-      administrationMembers,
-      reliabilityProjectManagers,
+      getDepartmentOptions,
       loggedInUserDepartment,
+      reliabilityProjectManagers,
+      getAssignedToOptions,
     ]
   );
 
   //Function to fetch the task data from the database:
-  const fetchProjectDetailsAndPopulateForm = async (projectId) => {
-    try {
-      setIsLoading(true);
+  const fetchProjectDetailsAndPopulateForm = useCallback(
+    async (projectId) => {
+      try {
+        setIsLoading(true);
 
-      const response = await axios.get(
-        `${serverBaseAddress}/api/getProjectData/${projectId}`
-      );
+        const response = await axios.get(
+          `${serverBaseAddress}/api/getProjectData/${projectId}`
+        );
 
-      // FIX: The API returns an array, get the first item
-      if (response.data) {
-        const projectData = response.data;
-        //populate the form fields with the task details:
-        setValue("po_number", projectData.po_number || "");
-        setValue("department", projectData.department || "");
-        setValue("company_name", projectData.company_name || "");
-        setValue("project_name", projectData.project_name || "");
-        setValue("project_manager", projectData.project_manager || "");
-        setValue("allocated_hours", projectData.allocated_hours || "");
-        setValue("total_tasks_count", projectData.total_tasks_count || "");
-        setValue("pending_tasks_count", projectData.pending_tasks_count || "");
-        setValue(
-          "project_start_date",
-          projectData.project_start_date
-            ? dayjs(projectData.project_start_date)
-            : null
+        // FIX: The API returns an array, get the first item
+        if (response.data) {
+          const projectData = response.data;
+          //populate the form fields with the task details:
+          setValue("po_number", projectData.po_number || "");
+          setValue("department", projectData.department || "");
+          setValue("company_name", projectData.company_name || "");
+          setValue("project_name", projectData.project_name || "");
+          setValue("project_manager", projectData.project_manager || "");
+          setValue("allocated_hours", projectData.allocated_hours || "");
+          setValue("total_tasks_count", projectData.total_tasks_count || "");
+          setValue(
+            "pending_tasks_count",
+            projectData.pending_tasks_count || ""
+          );
+          setValue(
+            "project_start_date",
+            projectData.project_start_date
+              ? dayjs(projectData.project_start_date)
+              : null
+          );
+          setValue(
+            "project_end_date",
+            projectData.project_end_date
+              ? dayjs(projectData.project_end_date)
+              : null
+          );
+          setValue(
+            "in_progress_tasks_count",
+            projectData.in_progress_tasks_count || ""
+          );
+          setValue(
+            "completed_tasks_count",
+            projectData.completed_tasks_count || ""
+          );
+          setValue("project_status", projectData.project_status || "");
+          setValue("remarks", projectData.remarks || "");
+        } else {
+          toast.error("Project not found to update.");
+          // navigate("/projects");
+          navigate("/projects", { replace: false });
+        }
+      } catch (error) {
+        console.error("Error fetching project details:", error);
+        toast.error(
+          `Error fetching project details: ${error.message || "Server error"}`
         );
-        setValue(
-          "project_end_date",
-          projectData.project_end_date
-            ? dayjs(projectData.project_end_date)
-            : null
-        );
-        setValue(
-          "in_progress_tasks_count",
-          projectData.in_progress_tasks_count || ""
-        );
-        setValue(
-          "completed_tasks_count",
-          projectData.completed_tasks_count || ""
-        );
-        setValue("project_status", projectData.project_status || "");
-        setValue("remarks", projectData.remarks || "");
-      } else {
-        toast.error("Project not found to update.");
         // navigate("/projects");
-        handleNavigateBack();
+        navigate("/projects", { replace: false });
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      console.error("Error fetching project details:", error);
-      toast.error(
-        `Error fetching project details: ${error.message || "Server error"}`
-      );
-      // navigate("/projects");
-      handleNavigateBack();
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    },
+    [setValue, navigate]
+  );
 
   //Function to fetch and populate the task details based on the task_id:
   useEffect(() => {
@@ -296,7 +297,13 @@ const CreateProject = () => {
 
     //Initialize the component:
     initializeComponent();
-  }, [projectIdFromParams, location.pathname]);
+  }, [
+    projectIdFromParams,
+    location.pathname,
+    fetchTeamMembersFromDatabase,
+    fetchProjectDetailsAndPopulateForm,
+    reset,
+  ]);
 
   // Function to navigate back to projects list
   const handleNavigateBack = () => {

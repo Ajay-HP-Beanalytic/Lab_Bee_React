@@ -1,4 +1,10 @@
-import { createContext, useCallback, useEffect, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useEffect,
+  useState,
+  useMemo,
+} from "react";
 import { serverBaseAddress } from "./APIPage";
 import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -8,30 +14,6 @@ export const UserContext = createContext();
 
 //Create the provider component:
 export const UserProvider = ({ children }) => {
-  //Old method:
-  // const navigate = useNavigate();
-
-  // const [loggedInUser, setLoggedInUser] = useState("");
-  // const [loggedInUserDepartment, setLoggedInUserDepartment] = useState("");
-
-  // axios.defaults.withCredentials = true;
-
-  // // To get the logged in user name:
-  // useEffect(() => {
-  //   axios
-  //     .get(`${serverBaseAddress}/api/getLoggedInUser`)
-  //     .then((res) => {
-  //       if (res.data.valid) {
-  //         // setLoggedInUserRole(res.data.user_role)
-  //         setLoggedInUser(res.data.user_name);
-  //         setLoggedInUserDepartment(res.data.user_department);
-  //       } else {
-  //         navigate("/");
-  //       }
-  //     })
-  //     .catch((err) => console.log(err));
-  // }, []);
-
   //New method:
   const navigate = useNavigate();
   const location = useLocation();
@@ -43,7 +25,7 @@ export const UserProvider = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true); // loading state
 
   // Public routes that don't require authentication
-  const publicRoutes = ["/", "/register", "/reset_password"];
+  // eslint-disable-next-line react-hooks/exhaustive-deps
 
   // To set the axios defaults only once
   useEffect(() => {
@@ -58,10 +40,16 @@ export const UserProvider = ({ children }) => {
     setLoggedInUserId("");
   }, []);
 
+  // Public routes array for useCallback dependency
+  const publicRoutes = useMemo(() => ["/", "/register", "/reset_password"], []);
+
   // Check if current route is public
-  const isPublicRoute = useCallback((pathname) => {
-    return publicRoutes.includes(pathname);
-  }, []);
+  const isPublicRoute = useCallback(
+    (pathname) => {
+      return publicRoutes.includes(pathname);
+    },
+    [publicRoutes]
+  );
 
   const fetchLoggedInUser = useCallback(async () => {
     setIsLoading(true);

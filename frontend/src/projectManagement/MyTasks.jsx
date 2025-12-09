@@ -1,31 +1,25 @@
-import React, { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useState, useCallback, useMemo } from "react";
 import {
   Box,
   Card,
   CardContent,
   Typography,
   Chip,
-  Avatar,
   Grid,
-  Button,
   Tabs,
   Tab,
   LinearProgress,
-  IconButton,
-  Tooltip,
   Paper,
   Divider,
 } from "@mui/material";
 import {
   PlayArrow,
-  Pause,
   CheckCircle,
   Block,
   Schedule,
   Assignment,
   TrendingUp,
   CalendarToday,
-  Priority,
 } from "@mui/icons-material";
 import { UserContext } from "../Pages/UserContext";
 import axios from "axios";
@@ -34,12 +28,10 @@ import dayjs from "dayjs";
 import { useNavigate } from "react-router-dom";
 import SearchBar from "../common/SearchBar";
 import EmptyCard from "../common/EmptyCard";
-import useProjectManagementStore from "./ProjectStore";
 
 const MyTasks = () => {
   const navigate = useNavigate();
-  const { loggedInUser, loggedInUserDepartment, loggedInUserId } =
-    useContext(UserContext);
+  const { loggedInUser, loggedInUserId } = useContext(UserContext);
 
   const [myTasks, setMyTasks] = useState([]);
   const [filteredTasks, setFilteredTasks] = useState([]);
@@ -55,8 +47,21 @@ const MyTasks = () => {
     overdue: 0,
   });
 
+  // Calculate task statistics
+  const calculateTaskStats = useMemo((tasks) => {
+    const stats = {
+      total: tasks.length,
+      todo: tasks.filter((task) => task.status === "To Do").length,
+      inProgress: tasks.filter((task) => task.status === "In Progress").length,
+      done: tasks.filter((task) => task.status === "Done").length,
+      onHold: tasks.filter((task) => task.status === "On Hold").length,
+      overdue: tasks.filter((task) => isOverdue(task.task_due_date)).length,
+    };
+    setTaskStats(stats);
+  }, []);
+
   // Fetch tasks assigned to the logged-in user
-  const fetchMyTasks = async () => {
+  const fetchMyTasks = useCallback(async () => {
     try {
       setLoading(true);
       const response = await axios.get(
@@ -74,20 +79,7 @@ const MyTasks = () => {
     } finally {
       setLoading(false);
     }
-  };
-
-  // Calculate task statistics
-  const calculateTaskStats = (tasks) => {
-    const stats = {
-      total: tasks.length,
-      todo: tasks.filter((task) => task.status === "To Do").length,
-      inProgress: tasks.filter((task) => task.status === "In Progress").length,
-      done: tasks.filter((task) => task.status === "Done").length,
-      onHold: tasks.filter((task) => task.status === "On Hold").length,
-      overdue: tasks.filter((task) => isOverdue(task.task_due_date)).length,
-    };
-    setTaskStats(stats);
-  };
+  }, [calculateTaskStats, loggedInUserId]);
 
   // Filter tasks based on tab selection
   const filterTasksByStatus = (status) => {
@@ -206,7 +198,7 @@ const MyTasks = () => {
 
   useEffect(() => {
     fetchMyTasks();
-  }, [loggedInUserId]);
+  }, [fetchMyTasks, loggedInUserId]);
 
   if (loading) {
     return (
@@ -347,14 +339,16 @@ const MyTasks = () => {
               <Grid item xs={12} md={6} lg={4} key={task.task_id}>
                 <Card
                   sx={{
-                    height: "100%",
-                    cursor: "pointer",
-                    transition: "all 0.3s ease",
+                    "height": "100%",
+                    "cursor": "pointer",
+                    "transition": "all 0.3s ease",
                     "&:hover": {
                       transform: "translateY(-4px)",
                       boxShadow: 4,
                     },
-                    border: overdue ? "2px solid #f44336" : "1px solid #e0e0e0",
+                    "border": overdue
+                      ? "2px solid #f44336"
+                      : "1px solid #e0e0e0",
                   }}
                   onClick={() => handleTaskClick(task.task_id)}
                 >

@@ -5,7 +5,6 @@ import {
   CardContent,
   Typography,
   Grid,
-  Chip,
   LinearProgress,
   Divider,
 } from "@mui/material";
@@ -274,9 +273,9 @@ const DashboardSummaryCards = ({ projectsData, tasksData, membersData }) => {
                 variant="determinate"
                 value={projectCompletionRate}
                 sx={{
-                  height: 8,
-                  borderRadius: 4,
-                  bgcolor: "rgba(255,255,255,0.2)",
+                  "height": 8,
+                  "borderRadius": 4,
+                  "bgcolor": "rgba(255,255,255,0.2)",
                   "& .MuiLinearProgress-bar": {
                     bgcolor: "rgba(255,255,255,0.9)",
                   },
@@ -378,9 +377,9 @@ const DashboardSummaryCards = ({ projectsData, tasksData, membersData }) => {
                   variant="determinate"
                   value={taskCompletionRate}
                   sx={{
-                    height: 6,
-                    borderRadius: 3,
-                    bgcolor: "rgba(255,255,255,0.2)",
+                    "height": 6,
+                    "borderRadius": 3,
+                    "bgcolor": "rgba(255,255,255,0.2)",
                     "& .MuiLinearProgress-bar": {
                       bgcolor: "rgba(255,255,255,0.9)",
                     },

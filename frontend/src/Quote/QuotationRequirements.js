@@ -5,8 +5,6 @@ import AddCustomerDetails from "./AddCustomerDetails";
 import AddModulesAndTests from "./AddModulesAndTests";
 import { Card, Typography } from "@mui/material";
 import { UserContext } from "../Pages/UserContext";
-import PaySlipDashboard from "../HR/paySlipDashboard";
-import TestHoursCalculator from "./TestHoursCalculator";
 
 export default function QuotationRequirements() {
   const { loggedInUserDepartment } = useContext(UserContext);
@@ -24,11 +22,6 @@ export default function QuotationRequirements() {
       <Card sx={{ width: "100%", padding: "20px" }}>
         {loggedInUserDepartment !== "Marketing" && <AddModulesAndTests />}
       </Card>
-
-      <br />
-
-      {/* <PaySlipDashboard /> */}
-      {/* <TestHoursCalculator /> */}
     </>
   );
 }

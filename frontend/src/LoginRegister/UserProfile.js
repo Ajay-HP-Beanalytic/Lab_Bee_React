@@ -22,7 +22,6 @@ import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import { serverBaseAddress } from "../Pages/APIPage";
 import axios from "axios";
-import UserLogoutDialog from "../components/UserLogoutDialog";
 
 export default function UserProfile({ userAvatar, userName }) {
   const [isUserDialogOpen, setUserDialogOpen] = useState(false);
@@ -111,8 +110,6 @@ export default function UserProfile({ userAvatar, userName }) {
           </Stack>
         </Box>
       </Card>
-
-      {/* {isUserDialogOpen && <UserLogoutDialog />} */}
 
       <Dialog
         hideBackdrop
