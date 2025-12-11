@@ -32,6 +32,35 @@ import {
  * @returns {Array<Paragraph>} Array of Paragraph objects
  */
 export const createFirstPage = (comprehensiveData, reportConfig) => {
+  // const addressLines = (comprehensiveData?.companyAddress ?? "N/A").split(
+  //   /,\s*/
+  // );
+
+  const wrapByWords = (text, maxLen = 35, maxLines = 3) => {
+    const words = text.split(/\s+/);
+    const lines = [];
+    let current = "";
+
+    for (const w of words) {
+      if ((current + " " + w).trim().length > maxLen && current) {
+        lines.push(current);
+        if (lines.length >= maxLines - 1) {
+          // last line gets the rest
+          lines.push(words.slice(words.indexOf(w)).join(" "));
+          return lines;
+        }
+        current = w;
+      } else {
+        current = current ? `${current} ${w}` : w;
+      }
+    }
+    if (current) lines.push(current);
+    return lines;
+  };
+
+  const address = comprehensiveData?.companyAddress ?? "N/A";
+  const wrappedAddress = wrapByWords(address, 35, 3).join("\n");
+
   return [
     // Test report heading
     createParagraph(
@@ -41,7 +70,7 @@ export const createFirstPage = (comprehensiveData, reportConfig) => {
       {
         alignment: AlignmentType.CENTER,
         bold: true,
-        size: 32,
+        size: 40,
         color: "1f497d",
         font: "Calibri(Body)",
         spacing: {
@@ -60,18 +89,6 @@ export const createFirstPage = (comprehensiveData, reportConfig) => {
       font: "Calibri(Body)",
       spacing: {
         after: 500,
-      },
-    }),
-
-    // Company Name
-    createParagraph(comprehensiveData?.companyName || "N/A", {
-      alignment: AlignmentType.CENTER,
-      bold: true,
-      size: 30,
-      color: "0070c0",
-      font: "Calibri(Body)",
-      spacing: {
-        after: 300,
       },
     }),
 
@@ -96,16 +113,64 @@ export const createFirstPage = (comprehensiveData, reportConfig) => {
         ]
       : []),
 
+    // Company Name
+    createParagraph(comprehensiveData?.companyName || "N/A", {
+      alignment: AlignmentType.CENTER,
+      bold: true,
+      size: 32,
+      color: "1f497d",
+      font: "Calibri(Body)",
+      spacing: {
+        after: 300,
+      },
+    }),
+
     // Company Address
-    createParagraph(comprehensiveData?.companyAddress || "N/A", {
+    // createParagraph(comprehensiveData?.companyAddress || "N/A", {
+    //   alignment: AlignmentType.CENTER,
+    //   bold: true,
+    //   size: 25,
+    //   color: "1f497d",
+    //   font: "Calibri(Body)",
+    //   spacing: {
+    //     after: 500,
+    //   },
+    // }),
+
+    // new Paragraph({
+    //   alignment: AlignmentType.CENTER,
+    //   spacing: { after: 500 },
+    //   children: addressLines.flatMap((line, idx) => [
+    //     new TextRun({
+    //       text: line,
+    //       bold: true,
+    //       size: 25,
+    //       color: "1f497d",
+    //       font: "Calibri(Body)",
+    //     }),
+    //     ...(idx < addressLines.length - 1 ? [new TextRun({ break: 1 })] : []),
+    //   ]),
+    // }),
+
+    // createParagraph(
+    //   (comprehensiveData?.companyAddress ?? "N/A").replace(/,\s*/g, ",\n"),
+    //   {
+    //     alignment: AlignmentType.CENTER,
+    //     bold: true,
+    //     size: 25,
+    //     color: "1f497d",
+    //     font: "Calibri(Body)",
+    //     spacing: { after: 500 },
+    //   }
+    // ),
+
+    createParagraph(wrappedAddress, {
       alignment: AlignmentType.CENTER,
       bold: true,
       size: 25,
       color: "1f497d",
       font: "Calibri(Body)",
-      spacing: {
-        after: 500,
-      },
+      spacing: { after: 500 },
     }),
 
     // Report Issue Date
@@ -195,7 +260,7 @@ export const createFirstPage = (comprehensiveData, reportConfig) => {
           children: [
             createTableCell(preparedByDesignation || "", {
               width: 33,
-              alignment: AlignmentType.LEFT,
+              alignment: AlignmentType.JUSTIFIED,
               size: 23,
               verticalAlign: VerticalAlign.TOP,
               margins: { top: 0, bottom: 600 },

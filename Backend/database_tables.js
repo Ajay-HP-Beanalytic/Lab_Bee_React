@@ -341,7 +341,7 @@ function createJobcardsTable() {
         type_of_request VARCHAR(100),
         report_type VARCHAR(100),
         notes_acknowledged JSON DEFAULT NULL,
-        test_incharge VARCHAR(100),
+        jc_created_by VARCHAR(100),
         jc_category VARCHAR(500),
         company_name VARCHAR(1000),
         company_address VARCHAR(2000),

@@ -490,7 +490,7 @@ export const prepareReportData = (comprehensiveData) => {
     testCategory: comprehensiveData.testCategory || "",
     testDiscipline: comprehensiveData.testDiscipline || "",
     typeOfRequest: comprehensiveData.typeOfRequest || "",
-    testInchargeName: comprehensiveData.testInchargeName || "",
+    jcCreatedBy: comprehensiveData.jcCreatedBy || "",
     testInstructions: comprehensiveData.testInstructions || "",
     sampleCondition: comprehensiveData.sampleCondition || "",
     reportType: comprehensiveData.reportType || "",

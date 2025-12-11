@@ -31,6 +31,7 @@ import {
 export const createHeader = (
   isNABL,
   beaLogoBase64,
+  // eslint-disable-next-line no-unused-vars
   nablLogoBase64 = null,
   testCode = "",
   testReportNumber = "",
@@ -65,22 +66,23 @@ export const createHeader = (
 
   // Create the right cell with NABL logo (spans 3 rows, conditional)
   const rightCell = createTableCell(
-    isNABL && nablLogoBase64
-      ? [
-          new Paragraph({
-            alignment: AlignmentType.CENTER,
-            children: [
-              new ImageRun({
-                data: nablLogoBase64,
-                transformation: {
-                  width: 60,
-                  height: 70,
-                },
-              }),
-            ],
-          }),
-        ]
-      : [new Paragraph({ text: "" })],
+    // isNABL && nablLogoBase64
+    //   ? [
+    //       new Paragraph({
+    //         alignment: AlignmentType.CENTER,
+    //         children: [
+    //           new ImageRun({
+    //             data: nablLogoBase64,
+    //             transformation: {
+    //               width: 60,
+    //               height: 70,
+    //             },
+    //           }),
+    //         ],
+    //       }),
+    //     ]
+    //   :
+    [new Paragraph({ text: "" })],
     {
       width: 25,
       rowSpan: 3,

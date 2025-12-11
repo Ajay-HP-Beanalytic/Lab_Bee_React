@@ -40,12 +40,12 @@ const ImageUploadSection = ({
   multiple = true,
   testCategory = "",
   isDocumentUpload = false,
+  isVibrationTest = false,
 }) => {
   const inputRef = useRef(null);
 
   // Determine if we should accept documents instead of images
-  const isVibrationDocuments =
-    testCategory?.toLowerCase() === "vibration" && isDocumentUpload;
+  const isVibrationDocuments = isVibrationTest && isDocumentUpload;
 
   const handleFileChange = (e) => {
     if (e.target.files.length > 0) {

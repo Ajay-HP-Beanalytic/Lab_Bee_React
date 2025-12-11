@@ -141,13 +141,19 @@ const ReportConfigDialogV2 = ({
   defaultReportType = "NABL",
   initialConfig = null,
   testCategory = "",
+  isVibrationTest = false,
 }) => {
   const [activeStep, setActiveStep] = useState(0);
   const [testCode, setTestCode] = useState("");
   const [reportType, setReportType] = useState(defaultReportType);
   const [testReportNumber, setTestReportNumber] = useState("");
   const [ulrNumber, setUlrNumber] = useState("");
-  const [originalReportIssueDate, setOriginalReportIssueDate] = useState(null);
+  const [originalReportIssueDate, setOriginalReportIssueDate] = useState(() =>
+    dayjs()
+  );
+
+  // Determine if it is a vibration test (from prop only)
+  const isVibration = isVibrationTest;
 
   // Changed to array to support multiple chambers
   const [chambers, setChambers] = useState([
@@ -281,7 +287,6 @@ const ReportConfigDialogV2 = ({
    * For vibration tests, graphImages can accept Word documents
    */
   const validateImageFile = (file, category) => {
-    const isVibration = testCategory?.toLowerCase() === "vibration";
     const isGraphCategory = category === "graphImages";
 
     // For vibration test graph section, allow Word documents
@@ -321,7 +326,6 @@ const ReportConfigDialogV2 = ({
   const handleImagesUpload = async (files, category) => {
     const fileArray = Array.from(files);
     const isSingleImage = category === "companyLogo";
-    const isVibration = testCategory?.toLowerCase() === "vibration";
     const isGraphCategory = category === "graphImages";
     const isDocumentUpload = isVibration && isGraphCategory;
 
@@ -565,9 +569,7 @@ const ReportConfigDialogV2 = ({
       setUploadProgress(null);
 
       if (processedImages.length > 0) {
-        const isVibrationDoc =
-          testCategory?.toLowerCase() === "vibration" &&
-          category === "graphImages";
+        const isVibrationDoc = isVibration && category === "graphImages";
         const fileType = isVibrationDoc ? "document(s)" : "image(s)";
         const action = isVibrationDoc ? "uploaded" : "uploaded and optimized";
 
@@ -921,6 +923,7 @@ const ReportConfigDialogV2 = ({
             config={imageRequirements}
             onChange={setImageRequirements}
             testCategory={testCategory}
+            isVibrationTest={isVibration}
           />
         );
 
@@ -1064,7 +1067,7 @@ const ReportConfigDialogV2 = ({
             {imageRequirements.graphImages && (
               <ImageUploadSection
                 title={
-                  testCategory?.toLowerCase() === "vibration"
+                  isVibration
                     ? "Vibration Test Documents (.doc/.docx)"
                     : "Graph/Chart Images"
                 }
@@ -1079,6 +1082,7 @@ const ReportConfigDialogV2 = ({
                 onDrop={handleDrop}
                 testCategory={testCategory}
                 isDocumentUpload={true}
+                isVibrationTest={isVibration}
               />
             )}
           </Box>
@@ -1370,7 +1374,7 @@ const ReportConfigDialogV2 = ({
                           sx={{ fontSize: 18, mr: 1, color: "success.main" }}
                         />
                         <Typography variant="body2">
-                          {testCategory?.toLowerCase() === "vibration"
+                          {isVibration
                             ? "Vibration Test Documents"
                             : "Graph/Chart Images"}
                         </Typography>

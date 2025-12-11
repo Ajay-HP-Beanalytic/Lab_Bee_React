@@ -77,7 +77,7 @@ export default function JCHome() {
   const [testCategory, setTestCategory] = useState("");
   const [testDiscipline, setTestDiscipline] = useState("");
   const [typeOfRequest, setTypeOfRequest] = useState("");
-  const [testInchargeName, setTestInchargeName] = useState("");
+  const [jcCreatedBy, setJcCreatedBy] = useState("");
 
   const [companyName, setCompanyName] = useState("");
   const [companyAddress, setCompanyAddress] = useState("");
@@ -141,7 +141,7 @@ export default function JCHome() {
           setReportType(res.data.jobcard.report_type);
           setJcCategory(res.data.jobcard.jc_category);
           setTypeOfRequest(res.data.jobcard.type_of_request);
-          setTestInchargeName(res.data.jobcard.test_incharge);
+          setJcCreatedBy(res.data.jobcard.jc_created_by);
           setCompanyName(res.data.jobcard.company_name);
           setCompanyAddress(res.data.jobcard.company_address);
           setCustomerNumber(res.data.jobcard.customer_number);
@@ -187,7 +187,7 @@ export default function JCHome() {
       label: "JC Open Date",
       value: `${dayjs(jcOpenDate).format("YYYY/MM/DD")}`,
     },
-    { label: "JC Created By", value: `${testInchargeName}` },
+    { label: "JC Created By", value: `${jcCreatedBy}` },
     {
       label: "Item Received Date",
       value: `${
