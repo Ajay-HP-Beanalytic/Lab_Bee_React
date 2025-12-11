@@ -40,7 +40,7 @@ export const createTestDetailsInfoTable = (comprehensiveData, reportConfig) => {
     tableHeader: true,
     children: [
       createHeaderCell("SL No.", { width: 8 }),
-      createHeaderCell("EUT No.", { width: 12 }),
+      createHeaderCell("EUT\nSerial No.", { width: 12 }),
       createHeaderCell("Test", { width: 20 }),
       createHeaderCell("Chamber/Make/\nEquipment SL no.", { width: 25 }),
       createHeaderCell("Test Profile", { width: 15 }),
@@ -54,7 +54,8 @@ export const createTestDetailsInfoTable = (comprehensiveData, reportConfig) => {
       new TableRow({
         children: [
           createCenteredDataCell(String(row.slNo), { width: 8 }),
-          createCenteredDataCell(row.eutNo, { width: 12 }),
+          // createCenteredDataCell(row.eutNo, { width: 12 }),
+          createCenteredDataCell("Refer Table - 1", { width: 12 }),
           createCenteredDataCell(row.test, { width: 20 }),
           createCenteredDataCell(row.chamberMakeEquipment, { width: 25 }),
           createCenteredDataCell(row.testProfile, { width: 15 }),
@@ -66,7 +67,7 @@ export const createTestDetailsInfoTable = (comprehensiveData, reportConfig) => {
   return [
     // Section heading
     createTableHeadingParagraph(
-      "Table: EUT/DUT numbers and respective details for tests conducted"
+      "Table-2: EUT/DUT numbers and respective details for tests conducted"
     ),
 
     // Test details table

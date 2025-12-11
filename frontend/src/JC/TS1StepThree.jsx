@@ -15,7 +15,8 @@ export default function TS1StepThree() {
   const JC_STATUS_FIELDS = getJcStatusFields(
     usersOptions,
     loggedInUserRole,
-    jobcardStore.jcStatus
+    jobcardStore.jcStatus,
+    jobcardStore.editJc
   );
 
   return (

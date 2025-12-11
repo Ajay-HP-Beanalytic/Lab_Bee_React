@@ -62,7 +62,7 @@ const useJobCardStore = create(
       testCategory: "",
       testDiscipline: "",
       typeOfRequest: "",
-      testInchargeName: "",
+      jcCreatedBy: "",
       testInstructions: "",
       sampleCondition: "",
       reportType: "",
@@ -119,7 +119,7 @@ const useJobCardStore = create(
       setSampleCondition: (value) => set({ sampleCondition: value }),
       setReportType: (value) => set({ reportType: value }),
 
-      setTestInchargeName: (value) => set({ testInchargeName: value }),
+      setJcCreatedBy: (value) => set({ jcCreatedBy: value }),
       setTestInstructions: (value) => set({ testInstructions: value }),
       setObservations: (value) => set({ observations: value }),
 
@@ -187,7 +187,7 @@ const useJobCardStore = create(
           testCategory: data.test_category || "",
           testDiscipline: data.test_discipline || "",
           typeOfRequest: data.type_of_request || "",
-          testInchargeName: data.test_incharge || "",
+          jcCreatedBy: data.jc_created_by || "",
           testInstructions: data.test_instructions || "",
           sampleCondition: data.sample_condition || "",
           reportType: data.report_type || "",
@@ -225,7 +225,7 @@ const useJobCardStore = create(
           testCategory: "",
           testDiscipline: "",
           typeOfRequest: "",
-          testInchargeName: "",
+          jcCreatedBy: "",
           testInstructions: "",
           sampleCondition: "",
           reportType: "",
@@ -268,7 +268,7 @@ const useJobCardStore = create(
           testCategory: state.testCategory,
           testDiscipline: state.testDiscipline,
           typeOfRequest: state.typeOfRequest,
-          testInchargeName: state.testInchargeName,
+          jcCreatedBy: state.jcCreatedBy,
           testInstructions: state.testInstructions,
           sampleCondition: state.sampleCondition,
           reportType: state.reportType,
@@ -446,19 +446,19 @@ const useJobCardStore = create(
           value: user.name,
         }));
 
-        // If editing, ensure current testInchargeName is in options
+        // If editing, ensure current jcCreatedBy is in options
         // (Material-UI Select requires value to be in options to display it)
-        if (state.editJc && state.testInchargeName) {
+        if (state.editJc && state.jcCreatedBy) {
           const currentValueExists = userOptions.some(
-            (opt) => opt.value === state.testInchargeName
+            (opt) => opt.value === state.jcCreatedBy
           );
 
           if (!currentValueExists) {
             // Add current user to options so it displays
             userOptions.unshift({
-              id: state.testInchargeName,
-              label: state.testInchargeName,
-              value: state.testInchargeName,
+              id: state.jcCreatedBy,
+              label: state.jcCreatedBy,
+              value: state.jcCreatedBy,
             });
           }
         }
@@ -633,7 +633,7 @@ const useJobCardStore = create(
         testCategory: state.testCategory,
         testDiscipline: state.testDiscipline,
         typeOfRequest: state.typeOfRequest,
-        testInchargeName: state.testInchargeName,
+        jcCreatedBy: state.jcCreatedBy,
         testInstructions: state.testInstructions,
         sampleCondition: state.sampleCondition,
         reportType: state.reportType,

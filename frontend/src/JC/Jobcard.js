@@ -31,7 +31,7 @@ import SRFImportDialog from "../components/SRFImportDialog";
 const Jobcard = () => {
   const jobcardStore = useJobCardStore();
   // Select stable store actions for effects to avoid depending on the whole store
-  const setTestInchargeName = useJobCardStore((s) => s.setTestInchargeName);
+  const setJcCreatedBy = useJobCardStore((s) => s.setJcCreatedBy);
   const setJcLastModifiedBy = useJobCardStore((s) => s.setJcLastModifiedBy);
   const loadAllJobCardData = useJobCardStore((s) => s.loadAllJobCardData);
   const { submitJobCard, isSaving, navigateToDashboard } = useJobCardSubmit();
@@ -74,11 +74,11 @@ const Jobcard = () => {
   useEffect(() => {
     if (!id) {
       // CREATE MODE: Set current user as default
-      setTestInchargeName(loggedInUser);
+      setJcCreatedBy(loggedInUser);
       setJcLastModifiedBy(loggedInUser);
     }
     // In EDIT mode, these values will be loaded from the database
-  }, [id, loggedInUser, setTestInchargeName, setJcLastModifiedBy]);
+  }, [id, loggedInUser, setJcCreatedBy, setJcLastModifiedBy]);
 
   // Load dynamic data (users, chambers, test names) on component mount
   useEffect(() => {

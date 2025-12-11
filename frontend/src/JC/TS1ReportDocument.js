@@ -158,28 +158,29 @@ export const prepareReportData = (comprehensiveData) => {
 
   // Get test category from the current test row
   const currentTestCategory = currentTest.testCategory || "";
-  const lowerCategory = currentTestCategory.toLowerCase();
+  const lowerCategory = currentTestCategory.toLowerCase().trim(); // Added .trim() to remove extra spaces
 
   // Create conditional flags for test categories
   // These flags will be used by MainReportDocument and TestGraphImages
-  const isVibrationTest = lowerCategory.includes("vibration");
+  const isVibrationTest = lowerCategory.includes("vibration test");
 
   // Test categories that require Test Graph Table
   // Includes: High Temp, Low Temp, Damp Heat, Altitude, Thermal Cycling, Thermal Shock, CATH
   const isThermalTest =
-    lowerCategory.includes("high temperature") ||
-    lowerCategory.includes("high temp") ||
-    lowerCategory.includes("low temperature") ||
-    lowerCategory.includes("low temp") ||
+    lowerCategory.includes("thermal cycling test") ||
+    lowerCategory.includes("high temperature test") ||
+    lowerCategory.includes("low temperature test") ||
+    lowerCategory.includes("cold test") ||
     lowerCategory.includes("damp heat") ||
     lowerCategory.includes("altitude test") ||
-    lowerCategory.includes("altitude") ||
-    lowerCategory.includes("thermal cycling") ||
-    lowerCategory.includes("thermal shock") ||
+    lowerCategory.includes("humidity test") ||
+    lowerCategory.includes("thermal shock test") ||
+    lowerCategory.includes("salt spray test") ||
     lowerCategory.includes("cath test") ||
-    lowerCategory.includes("cath") ||
-    lowerCategory.includes("humidity") ||
-    lowerCategory.includes("burn-in");
+    lowerCategory.includes("tropical exposure test") ||
+    lowerCategory.includes("mixed gas test") ||
+    lowerCategory.includes("ip tests") ||
+    lowerCategory.includes("chemical tests");
 
   // Prepare comprehensive formatted data
   return {
@@ -207,7 +208,7 @@ export const prepareReportData = (comprehensiveData) => {
     testCategory: comprehensiveData.testCategory || "",
     testDiscipline: comprehensiveData.testDiscipline || "",
     typeOfRequest: comprehensiveData.typeOfRequest || "",
-    testInchargeName: comprehensiveData.testInchargeName || "",
+    jcCreatedBy: comprehensiveData.jcCreatedBy || "",
     testInstructions: comprehensiveData.testInstructions || "",
     sampleCondition: comprehensiveData.sampleCondition || "",
     reportType: comprehensiveData.reportType || "",

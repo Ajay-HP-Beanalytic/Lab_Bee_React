@@ -60,7 +60,7 @@ export const createEUTInfoTable = (comprehensiveData, reportConfig) => {
 
   return [
     // Section Heading
-    createTableHeadingParagraph("Table: EUT/DUT Details"),
+    createTableHeadingParagraph("Table-1: EUT/DUT Details"),
 
     // EUT/DUT Info Table
     createDataTable([headerRow, ...dataRows]),

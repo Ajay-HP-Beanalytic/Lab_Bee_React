@@ -209,7 +209,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
       sampleCondition,
       typeOfRequest,
       reportType,
-      testInchargeName,
+      jcCreatedBy,
       testWitnessedBy,
       jcCategory,
       companyName,
@@ -309,7 +309,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
 
       const sql = `INSERT INTO bea_jobcards(
             jc_number, srf_number, srf_date, dcform_number, jc_open_date, item_received_date, po_number,
-            test_category, test_discipline, sample_condition, type_of_request, report_type, notes_acknowledged, test_incharge, test_witnessed_by, jc_category, company_name, company_address,
+            test_category, test_discipline, sample_condition, type_of_request, report_type, notes_acknowledged, jc_created_by, test_witnessed_by, jc_category, company_name, company_address,
             customer_name, customer_email, customer_number, project_name, test_instructions,
             jc_status, reliability_report_status, jc_closed_date, observations, last_updated_by
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
@@ -328,7 +328,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
         typeOfRequest || "",
         reportType || "",
         notesAcknowledged,
-        testInchargeName || "",
+        loggedInUser || "",
         testWitnessedBy || "",
         jcCategory || "",
         companyName || "",
@@ -641,7 +641,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
       sampleCondition,
       typeOfRequest,
       reportType,
-      testInchargeName,
+      // jcCreatedBy is immutable - not extracted for UPDATE
       testWitnessedBy,
       jcCategory,
       companyName,
@@ -747,7 +747,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
         { newVal: sampleCondition, oldVal: existingRow?.sample_condition },
         { newVal: typeOfRequest, oldVal: existingRow?.type_of_request },
         { newVal: reportType, oldVal: existingRow?.report_type },
-        { newVal: testInchargeName, oldVal: existingRow?.test_incharge },
+        // jc_created_by is immutable - not included in change detection
         { newVal: testWitnessedBy, oldVal: existingRow?.test_witnessed_by },
         { newVal: jcCategory, oldVal: existingRow?.jc_category },
         { newVal: companyName, oldVal: existingRow?.company_name },
@@ -818,7 +818,6 @@ function jobcardsAPIs(app, io, labbeeUsers) {
             sample_condition = ?,
             type_of_request = ?,
             report_type = ?,
-            test_incharge = ?,
             test_witnessed_by = ?,
             jc_category = ?,
             company_name = ?,
@@ -848,7 +847,6 @@ function jobcardsAPIs(app, io, labbeeUsers) {
         sampleCondition,
         typeOfRequest,
         reportType,
-        testInchargeName,
         testWitnessedBy,
         jcCategory,
         companyName,
@@ -944,11 +942,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
               newVal: reportType,
               oldVal: existingRow.report_type,
             },
-            {
-              name: "test_incharge",
-              newVal: testInchargeName,
-              oldVal: existingRow.test_incharge,
-            },
+            // jc_created_by is immutable - not tracked for changes
             {
               name: "test_witnessed_by",
               newVal: testWitnessedBy,

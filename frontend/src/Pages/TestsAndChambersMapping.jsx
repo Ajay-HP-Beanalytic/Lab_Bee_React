@@ -19,6 +19,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TablePagination,
   Tooltip,
   Typography,
 } from "@mui/material";
@@ -31,6 +32,7 @@ import { serverBaseAddress } from "./APIPage";
 import axios from "axios";
 import { toast } from "react-toastify";
 import ConfirmationDialog from "../common/ConfirmationDialog";
+import SearchBar from "../common/SearchBar";
 
 export default function TestsAndChambersMapping() {
   const [testType, setTestType] = useState("");
@@ -46,6 +48,9 @@ export default function TestsAndChambersMapping() {
     message: "",
     onConfirm: null,
   });
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Get data from store
   const testCategoryList = useTestsAndChambersStore(
@@ -152,12 +157,11 @@ export default function TestsAndChambersMapping() {
     }
   };
 
-  // Transform mapping data for table display
+  // Transform mapping data for table display with alphabetical sorting and search filtering
   const testAndChamberData = useMemo(() => {
-    return mappedTestAndChambers.map((item, index) => {
+    const data = mappedTestAndChambers.map((item) => {
       const mappedData = item.mapped_testname_and_chamber;
       return {
-        slNo: index + 1,
         id: item.id,
         testType: item.test_category,
         testName: Array.isArray(mappedData.testName)
@@ -169,7 +173,32 @@ export default function TestsAndChambersMapping() {
         action: "Edit",
       };
     });
-  }, [mappedTestAndChambers]);
+
+    // Filter by search query (search across test category, test names, and chambers)
+    const filteredData = searchQuery
+      ? data.filter((item) => {
+          const searchLower = searchQuery.toLowerCase();
+          return (
+            item.testType?.toLowerCase().includes(searchLower) ||
+            item.testName?.toLowerCase().includes(searchLower) ||
+            item.chambers?.toLowerCase().includes(searchLower)
+          );
+        })
+      : data;
+
+    // Sort alphabetically by test category
+    const sortedData = filteredData.sort((a, b) => {
+      const aValue = a.testType?.toLowerCase() || "";
+      const bValue = b.testType?.toLowerCase() || "";
+      return aValue.localeCompare(bValue);
+    });
+
+    // Add serial numbers after sorting
+    return sortedData.map((item, index) => ({
+      ...item,
+      slNo: index + 1,
+    }));
+  }, [mappedTestAndChambers, searchQuery]);
 
   const handleSelectMultipleTestName = (event) => {
     const {
@@ -317,6 +346,23 @@ export default function TestsAndChambersMapping() {
     }
   };
 
+  // Pagination handlers
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  // Get paginated data
+  const paginatedData = useMemo(() => {
+    const startIndex = page * rowsPerPage;
+    const endIndex = startIndex + rowsPerPage;
+    return testAndChamberData.slice(startIndex, endIndex);
+  }, [testAndChamberData, page, rowsPerPage]);
+
   return (
     <>
       <Dialog
@@ -438,63 +484,86 @@ export default function TestsAndChambersMapping() {
         Add Test and Chamber
       </Button>
 
+      <SearchBar
+        placeholder="Search test category, name, or chamber..."
+        searchInputText={searchQuery}
+        onChangeOfSearchInput={(e) => setSearchQuery(e.target.value)}
+        onClearSearchInput={() => setSearchQuery("")}
+      />
+
       {testAndChamberData.length === 0 ? (
         <Typography variant="body1" sx={{ textAlign: "center", mt: 4 }}>
           No mappings found. Click "Add Test and Chamber" to create your first
           mapping.
         </Typography>
       ) : (
-        <TableContainer>
-          <Table
-            sx={{ minWidth: 650 }}
-            aria-label="tests-and-chambers-table"
-            size="small"
-          >
-            <TableHead sx={{ backgroundColor: "#476f95" }}>
-              <TableRow>
-                {columns.map((column) => (
-                  <TableCell
-                    key={column.id}
-                    sx={{ color: "white", fontWeight: "bold" }}
-                    align={column.align || "left"}
-                  >
-                    {column.headerName}
-                  </TableCell>
-                ))}
-              </TableRow>
-            </TableHead>
-
-            <TableBody>
-              {testAndChamberData.map((row) => (
-                <TableRow key={row.id} hover>
-                  <TableCell>{row.slNo}</TableCell>
-                  <TableCell>{row.testType}</TableCell>
-                  <TableCell>{row.testName}</TableCell>
-                  <TableCell>{row.chambers}</TableCell>
-                  <TableCell align="center">
-                    <IconButton
-                      size="small"
-                      onClick={() => editSelectedTestAndChamber(row, row.id)}
+        <Box>
+          <TableContainer sx={{ maxHeight: 450, mt: 2, overflowY: "auto" }}>
+            <Table
+              sx={{ minWidth: 650 }}
+              aria-label="tests-and-chambers-table"
+              size="small"
+              stickyHeader
+            >
+              <TableHead>
+                <TableRow>
+                  {columns.map((column) => (
+                    <TableCell
+                      key={column.id}
+                      sx={{
+                        backgroundColor: "#476f95",
+                        color: "white",
+                        fontWeight: "bold",
+                      }}
+                      align={column.align || "left"}
                     >
-                      <Tooltip title="Edit Test" arrow>
-                        <EditIcon fontSize="inherit" />
-                      </Tooltip>
-                    </IconButton>
-
-                    <IconButton
-                      size="small"
-                      onClick={() => deleteSelectedTestAndChamber(row.id)}
-                    >
-                      <Tooltip title="Delete Test" arrow>
-                        <DeleteIcon fontSize="inherit" />
-                      </Tooltip>
-                    </IconButton>
-                  </TableCell>
+                      {column.headerName}
+                    </TableCell>
+                  ))}
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+              </TableHead>
+
+              <TableBody>
+                {paginatedData.map((row) => (
+                  <TableRow key={row.id} hover>
+                    <TableCell>{row.slNo}</TableCell>
+                    <TableCell>{row.testType}</TableCell>
+                    <TableCell>{row.testName}</TableCell>
+                    <TableCell>{row.chambers}</TableCell>
+                    <TableCell align="center">
+                      <IconButton
+                        size="small"
+                        onClick={() => editSelectedTestAndChamber(row, row.id)}
+                      >
+                        <Tooltip title="Edit Test" arrow>
+                          <EditIcon fontSize="inherit" />
+                        </Tooltip>
+                      </IconButton>
+
+                      <IconButton
+                        size="small"
+                        onClick={() => deleteSelectedTestAndChamber(row.id)}
+                      >
+                        <Tooltip title="Delete Test" arrow>
+                          <DeleteIcon fontSize="inherit" />
+                        </Tooltip>
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+          <TablePagination
+            component="div"
+            count={testAndChamberData.length}
+            page={page}
+            onPageChange={handleChangePage}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            rowsPerPageOptions={[5, 10, 25, 50, 100]}
+          />
+        </Box>
       )}
       <ConfirmationDialog
         open={confirmDialog.open}

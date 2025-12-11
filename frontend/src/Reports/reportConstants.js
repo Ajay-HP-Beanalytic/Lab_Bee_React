@@ -3,7 +3,7 @@ export const footerText = `BE Analytic Solutions, B131/A, Devasandra Industrial 
   sales@beanalytic.com, www.beanalytic.com `;
 
 export const reportDisclaimerText = `
-Disclaimer: In making any use of this test report you are expressly agreeing to the disclaimers 
+In making any use of this test report you are expressly agreeing to the disclaimers 
 and notices below: BE Analytic Testing procedures were performed to the best of our ability. 
 All data and test results presented in your report document the equipment's characteristics which 
 were analysed and/or calculated at that specific point in time. 

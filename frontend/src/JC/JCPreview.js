@@ -176,7 +176,7 @@ export default function JCPreview({
       testCategory: primaryData["Test Category"] || "",
       testDiscipline: primaryData["Test Discipline"] || "",
       typeOfRequest: primaryData["Type of Request"] || "",
-      testInchargeName: primaryData["Test Incharge"] || "",
+      jcCreatedBy: primaryData["Test Incharge"] || "",
       testInstructions: primaryData["Test Instructions"] || "",
       sampleCondition: primaryData["Sample Condition"] || "",
       reportType: primaryData["Report Type"] || "",
@@ -532,6 +532,7 @@ export default function JCPreview({
         onConfirm={handleReportConfigConfirm}
         initialConfig={lastReportConfig}
         testCategory={pendingReportData?.currentTestRow?.testCategory || ""}
+        isVibrationTest={pendingReportData?.isVibrationTest || false}
       />
 
       {/* Document Preview Modal */}

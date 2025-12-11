@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { JOB_CARD_OPTIONS } from "./jobCardConstants";
 
 /**
@@ -189,7 +190,8 @@ export const JC_OBSERVATIONS_FIELD = [
 export const getJcStatusFields = (
   usersOptions = [],
   loggedInUserRole = "",
-  jobcardStatus = null
+  jobcardStatus = null,
+  editJc = false
 ) => {
   // Check if user is Lab Manager
   const isLabManager = loggedInUserRole === "Lab Manager";
@@ -205,15 +207,16 @@ export const getJcStatusFields = (
       : JOB_CARD_OPTIONS.jcStatus.filter((option) => option.id !== "Closed");
 
   return [
-    {
-      name: "testInchargeName",
-      label: "JC Incharge",
-      type: "select",
-      stateKey: "testInchargeName",
-      setterKey: "setTestInchargeName",
-      width: "100%",
-      options: usersOptions, // Will be populated dynamically from users list
-    },
+    // {
+    //   name: "jcCreatedBy",
+    //   label: "JC Created By",
+    //   type: "select",
+    //   stateKey: "jcCreatedBy",
+    //   setterKey: "setJcCreatedBy",
+    //   width: "100%",
+    //   options: usersOptions, // Will be populated dynamically from users list
+    //   disabled: editJc, // Immutable - can only be set during creation
+    // },
 
     {
       name: "jcStatus",

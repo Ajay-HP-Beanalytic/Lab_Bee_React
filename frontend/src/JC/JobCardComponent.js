@@ -27,7 +27,7 @@ const JobCardComponent = ({ id }) => {
     customerEmail: "",
     customerPhone: "",
     testWitnessedBy: "",
-    testIncharge: "",
+    jcCreatedBy: "",
     testInstructions: "",
 
     relReportStatus: "",
@@ -150,7 +150,7 @@ const JobCardComponent = ({ id }) => {
           customerEmail: jobcard.customer_email,
           customerPhone: jobcard.customer_number,
           testWitnessedBy: jobcard.test_witnessed_by,
-          testIncharge: jobcard.test_incharge,
+          jcCreatedBy: jobcard.jc_created_by,
 
           relReportStatus: jobcard.reliability_report_status,
           jcCategory: jobcard.jc_category,

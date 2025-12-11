@@ -23,18 +23,18 @@ const socketIo = require("socket.io");
 // create an express application::
 const app = express();
 
-// const serverOptions = {
-//   key: fs.readFileSync(
-//     "/etc/letsencrypt/live/labbee.beanalytic.com/privkey.pem"
-//   ),
-//   cert: fs.readFileSync(
-//     "/etc/letsencrypt/live/labbee.beanalytic.com/fullchain.pem"
-//   ),
-// };
+const serverOptions = {
+  key: fs.readFileSync(
+    "/etc/letsencrypt/live/labbee.beanalytic.com/privkey.pem"
+  ),
+  cert: fs.readFileSync(
+    "/etc/letsencrypt/live/labbee.beanalytic.com/fullchain.pem"
+  ),
+};
 
 //create server instance
-// const server = https.createServer(serverOptions, app); //For deployement
-const server = http.createServer(app); //For development
+const server = https.createServer(serverOptions, app); //For deployement
+// const server = http.createServer(app); //For development
 
 // Middleware to validate session on each request
 const validateSession = (req, res, next) => {
@@ -414,8 +414,8 @@ app.get("/", (req, res) => {
   res.send("Hello Welcome to Labbee...");
 });
 
-// const PORT = 4002; //For deploymentt
-const PORT = 4001;
+const PORT = 4002; //For deploymentt
+// const PORT = 4001;
 
 app.get("/api/testing", (req, res) => {
   res.send("Backend is up and running...");

@@ -168,7 +168,9 @@ function usersDataAPIs(app, io, labbeeUsers) {
                 session_id: sessionId,
               });
             } else {
-              console.log(`Session created successfully for user: ${user.name} (ID: ${user.id})`);
+              console.log(
+                `Session created successfully for user: ${user.name} (ID: ${user.id})`
+              );
             }
 
             // Emit Socket.IO event to notify all clients about new login
@@ -557,7 +559,6 @@ function usersDataAPIs(app, io, labbeeUsers) {
   // API to check if the entered email exists and send OTP
   app.post("/api/checkResetPasswordEmail", async (req, res) => {
     const { email } = req.body;
-
     try {
       const sqlCheckEmail = "SELECT * FROM labbee_users WHERE email=?";
       const [result] = await db.promise().query(sqlCheckEmail, [email]);

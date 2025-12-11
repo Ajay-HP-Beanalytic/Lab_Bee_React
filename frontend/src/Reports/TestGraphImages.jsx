@@ -63,19 +63,11 @@ export const addTestGraphImages = async (
   const graphImagesBase64 = reportConfig?.graphImagesBase64 || [];
 
   if (graphImagesBase64.length === 0) {
-    console.log("⚠️ No test graph images to render");
     return null; // Return null instead of empty array to indicate no content
   }
 
   // Check if this is a vibration test
-  const testCategory = comprehensiveData?.currentTestRow?.testCategory || "";
-  const isVibrationTest = testCategory.toLowerCase() === "vibration";
-
-  console.log(
-    `✅ Rendering ${graphImagesBase64.length} test graph ${
-      isVibrationTest ? "documents" : "images"
-    } (${isLandscape ? "LANDSCAPE" : "PORTRAIT"})`
-  );
+  const isVibrationTest = comprehensiveData?.isVibrationTest || false;
 
   // Adjust dimensions based on orientation
   const imageWidth = isLandscape ? 700 : 550;
@@ -83,11 +75,6 @@ export const addTestGraphImages = async (
 
   // Use the isThermalTest flag from prepareReportData (already computed)
   const includeThermalTable = comprehensiveData.isThermalTest || false;
-
-  console.log("📊 TestGraphImages - Thermal Table Decision:", {
-    isThermalTest: includeThermalTable,
-    willAddTable: includeThermalTable,
-  });
 
   const content = [];
 
@@ -100,7 +87,6 @@ export const addTestGraphImages = async (
 
   // If thermal test, add the thermal test table first
   if (includeThermalTable) {
-    console.log("✅ Adding thermal test table before graph images");
     content.push(...createTestGraphTable(comprehensiveData));
   }
 
@@ -109,14 +95,10 @@ export const addTestGraphImages = async (
 
   // Handle vibration test documents differently from regular images
   if (isVibrationTest) {
-    console.log("📄 Processing vibration test documents with mammoth.js...");
     try {
       // Parse vibration documents and extract content
       const documentElements = await parseVibrationDocuments(graphImagesBase64);
       content.push(...documentElements);
-      console.log(
-        `✅ Successfully embedded ${graphImagesBase64.length} vibration document(s) with ${documentElements.length} elements`
-      );
     } catch (error) {
       console.error("❌ Error parsing vibration documents:", error);
       // Fallback: add error message

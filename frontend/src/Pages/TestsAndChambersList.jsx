@@ -6,6 +6,7 @@ import axios from "axios";
 import { serverBaseAddress } from "./APIPage";
 import useTestsAndChambersStore from "./TestsAndChambersZustandStore";
 import ConfirmationDialog from "../common/ConfirmationDialog";
+import SearchBar from "../common/SearchBar";
 
 const sectionCardSx = {
   backgroundColor: "#ffffff",
@@ -162,6 +163,11 @@ export default function TestsAndChambersList() {
     message: "",
     onConfirm: null,
   });
+
+  // Search state
+  const [searchTestCategory, setSearchTestCategory] = useState("");
+  const [searchTestName, setSearchTestName] = useState("");
+  const [searchChamber, setSearchChamber] = useState("");
 
   const setTestCategories = useTestsAndChambersStore(
     (state) => state.setTestCategories
@@ -608,20 +614,35 @@ export default function TestsAndChambersList() {
     );
   };
 
-  // Add serial numbers to rows
-  const addSerialNumbersToRows = (data) => {
-    return data.map((item, index) => ({
+  // Add serial numbers to rows, sort alphabetically, and filter by search
+  const addSerialNumbersToRows = (data, sortKey, searchQuery) => {
+    // Filter data based on search query
+    const filteredData = searchQuery
+      ? data.filter((item) =>
+          item[sortKey]?.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+      : data;
+
+    // Sort alphabetically
+    const sortedData = [...filteredData].sort((a, b) => {
+      const aValue = a[sortKey]?.toLowerCase() || '';
+      const bValue = b[sortKey]?.toLowerCase() || '';
+      return aValue.localeCompare(bValue);
+    });
+
+    // Add serial numbers
+    return sortedData.map((item, index) => ({
       ...item,
       serialNumbers: index + 1,
     }));
   };
 
-  // Generate rows with serial numbers
+  // Generate rows with serial numbers, alphabetical sorting, and search filtering
   const testCategoryRowsWithSerialNumbers =
-    addSerialNumbersToRows(testCategoryRows);
-  const testNameRowsWithSerialNumbers = addSerialNumbersToRows(testListRows);
+    addSerialNumbersToRows(testCategoryRows, 'testCategory', searchTestCategory);
+  const testNameRowsWithSerialNumbers = addSerialNumbersToRows(testListRows, 'testName', searchTestName);
   const chambersListRowsWithSerialNumbers =
-    addSerialNumbersToRows(chambersListRows);
+    addSerialNumbersToRows(chambersListRows, 'chamber', searchChamber);
 
   // Load data on component mount
   useEffect(() => {
@@ -662,6 +683,12 @@ export default function TestsAndChambersList() {
                 Add
               </Button>
             </Box>
+            <SearchBar
+              placeholder="Search test category..."
+              searchInputText={searchTestCategory}
+              onChangeOfSearchInput={(e) => setSearchTestCategory(e.target.value)}
+              onClearSearchInput={() => setSearchTestCategory("")}
+            />
             <DataGrid
               rows={testCategoryRowsWithSerialNumbers}
               columns={testCategoryColumns}
@@ -670,7 +697,12 @@ export default function TestsAndChambersList() {
               disableColumnMenu
               disableSelectionOnClick
               hideFooterSelectedRowCount
-              sx={{ ...dataGridSx, height: 360 }}
+              pagination
+              pageSizeOptions={[5, 10, 25, 50, 100]}
+              initialState={{
+                pagination: { paginationModel: { pageSize: 10 } },
+              }}
+              sx={{ ...dataGridSx, height: 450 }}
               processRowUpdate={processTestCategoryRowUpdate}
               experimentalFeatures={{ newEditingApi: true }}
             />
@@ -700,6 +732,12 @@ export default function TestsAndChambersList() {
                 Add
               </Button>
             </Box>
+            <SearchBar
+              placeholder="Search test name..."
+              searchInputText={searchTestName}
+              onChangeOfSearchInput={(e) => setSearchTestName(e.target.value)}
+              onClearSearchInput={() => setSearchTestName("")}
+            />
             <DataGrid
               rows={testNameRowsWithSerialNumbers}
               columns={testListColumns}
@@ -708,7 +746,12 @@ export default function TestsAndChambersList() {
               disableColumnMenu
               disableSelectionOnClick
               hideFooterSelectedRowCount
-              sx={{ ...dataGridSx, height: 360 }}
+              pagination
+              pageSizeOptions={[5, 10, 25, 50, 100]}
+              initialState={{
+                pagination: { paginationModel: { pageSize: 10 } },
+              }}
+              sx={{ ...dataGridSx, height: 450 }}
               processRowUpdate={processTestNameRowUpdate}
               experimentalFeatures={{ newEditingApi: true }}
             />
@@ -738,6 +781,12 @@ export default function TestsAndChambersList() {
                 Add
               </Button>
             </Box>
+            <SearchBar
+              placeholder="Search chamber..."
+              searchInputText={searchChamber}
+              onChangeOfSearchInput={(e) => setSearchChamber(e.target.value)}
+              onClearSearchInput={() => setSearchChamber("")}
+            />
             <DataGrid
               rows={chambersListRowsWithSerialNumbers}
               columns={chambersListColumns}
@@ -746,7 +795,12 @@ export default function TestsAndChambersList() {
               disableColumnMenu
               disableSelectionOnClick
               hideFooterSelectedRowCount
-              sx={{ ...dataGridSx, height: 360 }}
+              pagination
+              pageSizeOptions={[5, 10, 25, 50, 100]}
+              initialState={{
+                pagination: { paginationModel: { pageSize: 10 } },
+              }}
+              sx={{ ...dataGridSx, height: 450 }}
               processRowUpdate={processTestChamberRowUpdate}
               experimentalFeatures={{ newEditingApi: true }}
             />

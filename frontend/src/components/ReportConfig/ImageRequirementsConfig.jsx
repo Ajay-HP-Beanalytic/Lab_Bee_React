@@ -19,8 +19,14 @@ import {
  * @param {object} config - Current image requirements configuration
  * @param {function} onChange - Callback when configuration changes
  * @param {string} testCategory - Test category (e.g., "vibration")
+ * @param {boolean} isVibrationTest - Whether it is a vibration test
  */
-const ImageRequirementsConfig = ({ config = {}, onChange, testCategory = "" }) => {
+const ImageRequirementsConfig = ({
+  config = {},
+  onChange,
+  testCategory = "",
+  isVibrationTest = false,
+}) => {
   const [requirements, setRequirements] = useState({
     companyLogo: config.companyLogo ?? true,
     testImages: config.testImages ?? false,
@@ -253,7 +259,7 @@ const ImageRequirementsConfig = ({ config = {}, onChange, testCategory = "" }) =
               />
             }
             label={
-              testCategory?.toLowerCase() === "vibration"
+              isVibrationTest
                 ? "Vibration Test Documents (.doc/.docx files)"
                 : "Graph/Chart Images (Test data visualization)"
             }
