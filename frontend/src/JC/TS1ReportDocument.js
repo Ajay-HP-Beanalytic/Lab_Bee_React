@@ -182,6 +182,9 @@ export const prepareReportData = (comprehensiveData) => {
     lowerCategory.includes("ip tests") ||
     lowerCategory.includes("chemical tests");
 
+  //Test categories that requires Vibration document upload wizard and test graph table.
+  const isESSTest = lowerCategory.includes("ess");
+
   // Prepare comprehensive formatted data
   return {
     // ============= Primary Job Card Information =============
@@ -218,8 +221,10 @@ export const prepareReportData = (comprehensiveData) => {
     // These flags are based on the CURRENT TEST'S category, not general test category
     isVibrationTest: isVibrationTest,
     isThermalTest: isThermalTest,
+    isESSTest: isESSTest,
     isNotVibrationTest: !isVibrationTest,
     isNotThermalTest: !isThermalTest,
+    isNotESSTest: !isESSTest,
 
     // ============= Table Data (for loops in template) =============
     eutRows: formattedEutRows, // ALL EUT rows

@@ -24,6 +24,7 @@ import {
 const ImageRequirementsConfig = ({
   config = {},
   onChange,
+  // eslint-disable-next-line no-unused-vars
   testCategory = "",
   isVibrationTest = false,
 }) => {

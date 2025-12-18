@@ -705,7 +705,7 @@ const ReportConfigDialogV2 = ({
     setTestCode("");
     setTestReportNumber("");
     setUlrNumber("");
-    setOriginalReportIssueDate(null);
+    setOriginalReportIssueDate(() => dayjs());
     setChambers([{ chamberInfo: "", chamberMake: "" }]);
     setImageRequirements({ companyLogo: true });
     setImages({

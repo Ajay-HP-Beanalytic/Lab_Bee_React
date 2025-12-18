@@ -98,6 +98,8 @@ export const GenerateReportDocument = async (
       // eslint-disable-next-line no-unused-vars
       const isThermalTest = comprehensiveData.isThermalTest || false;
 
+      const isESSTest = comprehensiveData.isESSTest || false;
+
       // Automatically use landscape orientation for Vibration tests
       const useGraphLandscape = isVibrationTest;
 

@@ -38,6 +38,7 @@ const ImageUploadSection = ({
   onDragLeave,
   onDrop,
   multiple = true,
+  // eslint-disable-next-line no-unused-vars
   testCategory = "",
   isDocumentUpload = false,
   isVibrationTest = false,
