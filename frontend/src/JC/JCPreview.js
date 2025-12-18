@@ -16,8 +16,13 @@ import {
   Grid,
   Box,
   Tooltip,
+  Checkbox,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
+import SouthEastIcon from "@mui/icons-material/SouthEast";
+import NorthEastIcon from "@mui/icons-material/NorthEast";
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+import AssignmentIcon from "@mui/icons-material/Assignment";
 import dayjs from "dayjs";
 
 import Slide from "@mui/material/Slide";
@@ -29,6 +34,7 @@ import AuditHistoryDialog from "../components/AuditHistoryDialog";
 import ReportConfigDialogV2 from "../components/ReportConfig/ReportConfigDialogV2";
 import { GenerateReportDocument } from "../Reports/MainReportDocument";
 import { prepareReportData } from "./TS1ReportDocument";
+import { toast } from "react-toastify";
 
 const Transition = forwardRef(function Transition(props, ref) {
   return <Slide direction="up" ref={ref} {...props} />;
@@ -72,6 +78,9 @@ export default function JCPreview({
 
   // State for audit history dialog
   const [auditHistoryOpen, setAuditHistoryOpen] = useState(false);
+
+  //State for ESS Tests selection and to generate ESS test report.
+  const [selectedESSTests, setSelectedESSTests] = useState([]);
 
   const isTS1Testing = loggedInUserDepartment === "TS1 Testing";
   const isReportsAndScrutiny = loggedInUserDepartment === "Reports & Scrutiny";
@@ -268,6 +277,91 @@ export default function JCPreview({
     setConfigDialogOpen(true);
   };
 
+  //Handle ESS checkbox :
+  const handleESSCheckboxChange = (rowIndex, isChecked) => {
+    console.log("rowIndex is-->", rowIndex);
+    console.log("isChecked-->", isChecked);
+    if (isChecked) {
+      setSelectedESSTests((prev) => [...prev, rowIndex]);
+    } else {
+      setSelectedESSTests((prev) => prev.filter((i) => i !== rowIndex));
+    }
+  };
+
+  //Handle ESS Test Report Generation:
+  const handleGenerateESSTestReport = () => {
+    // Validation: At least one ESS test must be selected
+    if (selectedESSTests.length === 0) {
+      toast.warning(
+        "Please select at least one ESS test to generate the report."
+      );
+      return;
+    }
+
+    // Get all selected rows data (sorted by index to maintain order)
+    const essTestRows = selectedESSTests
+      .sort((a, b) => a - b)
+      .map((index) => testDetailsRows[index]);
+
+    // Convert primaryJCDetails array to object format
+    const primaryData = {};
+    primaryJCDetails.forEach((detail) => {
+      const key = detail.label.split(": ")[0].trim();
+      primaryData[key] = detail.value;
+    });
+
+    // Create comprehensive ESS report data
+    const comprehensiveReportData = {
+      // Primary Job Card Information
+      jcNumber: jcNumber,
+      jcCategory: jcCategory,
+      srfNumber: primaryData["SRF Number"] || "",
+      dcNumber: primaryData["DC Number"] || "",
+      poNumber: primaryData["PO Number"] || "",
+      jcOpenDate: primaryData["JC Open Date"] || "",
+      srfDate: primaryData["SRF Date"] || "",
+      itemReceivedDate: primaryData["Item Received Date"] || "",
+      jcCloseDate: primaryData["JC Close Date"] || "",
+      jcStatus: primaryData["JC Status"] || "",
+
+      // Customer Information
+      companyName: primaryData["Company Name"] || "",
+      companyAddress: primaryData["Company Address"] || "",
+      customerName: primaryData["Customer Name"] || "",
+      customerEmail: primaryData["Customer Email"] || "",
+      customerNumber: primaryData["Customer Number"] || "",
+      projectName: primaryData["Project Name"] || "",
+
+      // Test Configuration
+      testCategory: primaryData["Test Category"] || "",
+      testDiscipline: primaryData["Test Discipline"] || "",
+      typeOfRequest: primaryData["Type of Request"] || "",
+      jcCreatedBy: primaryData["Test Incharge"] || "",
+      testInstructions: primaryData["Test Instructions"] || "",
+      sampleCondition: primaryData["Sample Condition"] || "",
+      reportType: primaryData["Report Type"] || "",
+      observations: primaryData["Observations"] || "",
+
+      // Table Data
+      eutRows: eutRows || [],
+      testRows: testRows || [],
+      testDetailsRows: testDetailsRows || [],
+
+      // ESS Specific Data
+      isESSReport: true,
+      essTestRows: essTestRows, // Array of all selected ESS tests
+      currentTestRow: essTestRows[0], // Primary test for header info
+      currentTestRowIndex: selectedESSTests.sort((a, b) => a - b)[0],
+    };
+
+    // Use prepareReportData to format the data
+    const formattedReportData = prepareReportData(comprehensiveReportData);
+
+    // Store data and open config dialog
+    setPendingReportData(formattedReportData);
+    setConfigDialogOpen(true);
+  };
+
   return (
     <>
       <Dialog
@@ -438,27 +532,174 @@ export default function JCPreview({
                           <TableCell>{row.nablUploaded}</TableCell>
                           <TableCell>{row.reportStatus}</TableCell>
                           <TableCell>
-                            <Tooltip
-                              title={
-                                row.endDate === null ||
-                                Number(row.duration) === 0
-                                  ? "Complete the test to enable report generation"
-                                  : "Click to generate report"
-                              }
-                            >
-                              <span>
-                                <Button
-                                  variant="contained"
-                                  onClick={() => handleGenerateReport(index)}
-                                  disabled={
+                            {row.testCategory === "ESS" ? (
+                              <Box
+                                sx={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 0.5,
+                                }}
+                              >
+                                {/* Checkbox with tooltip */}
+                                <Tooltip
+                                  title={
                                     row.endDate === null ||
                                     Number(row.duration) === 0
+                                      ? "Complete the test to enable report generation"
+                                      : selectedESSTests.includes(index)
+                                      ? "Selected for ESS Report"
+                                      : "Select this test for ESS Report"
                                   }
                                 >
-                                  Report
-                                </Button>
-                              </span>
-                            </Tooltip>
+                                  <span>
+                                    <Checkbox
+                                      checked={selectedESSTests.includes(index)}
+                                      disabled={
+                                        row.endDate === null ||
+                                        Number(row.duration) === 0
+                                      }
+                                      onChange={(e) =>
+                                        handleESSCheckboxChange(
+                                          index,
+                                          e.target.checked
+                                        )
+                                      }
+                                      sx={{
+                                        "color": selectedESSTests.includes(
+                                          index
+                                        )
+                                          ? "#9c27b0"
+                                          : "inherit",
+                                        "&.Mui-checked": {
+                                          color: "#9c27b0",
+                                        },
+                                      }}
+                                    />
+                                  </span>
+                                </Tooltip>
+
+                                {/* Curved arrows pointing to button - show for all selected ESS rows */}
+                                {selectedESSTests.includes(index) &&
+                                  (() => {
+                                    const buttonRowIndex = Math.max(
+                                      ...selectedESSTests
+                                    );
+                                    const isButtonRow =
+                                      index === buttonRowIndex;
+                                    const isAboveButton =
+                                      index < buttonRowIndex;
+
+                                    return (
+                                      <>
+                                        {/* Arrow - curves based on position relative to button */}
+                                        {isAboveButton ? (
+                                          <SouthEastIcon
+                                            sx={{
+                                              "color": "#d32f2f",
+                                              "fontSize": 22,
+                                              "animation":
+                                                "curveDown 1.5s infinite",
+                                              "@keyframes curveDown": {
+                                                "0%, 100%": {
+                                                  transform: "translate(0, 0)",
+                                                },
+                                                "50%": {
+                                                  transform:
+                                                    "translate(3px, 3px)",
+                                                },
+                                              },
+                                            }}
+                                          />
+                                        ) : isButtonRow ? (
+                                          <ArrowForwardIcon
+                                            sx={{
+                                              "color": "#9c27b0",
+                                              "fontSize": 22,
+                                              "animation":
+                                                "bounceRight 1s infinite",
+                                              "@keyframes bounceRight": {
+                                                "0%, 100%": {
+                                                  transform: "translateX(0)",
+                                                },
+                                                "50%": {
+                                                  transform: "translateX(4px)",
+                                                },
+                                              },
+                                            }}
+                                          />
+                                        ) : (
+                                          <NorthEastIcon
+                                            sx={{
+                                              "color": "#d32f2f",
+                                              "fontSize": 22,
+                                              "animation":
+                                                "curveUp 1.5s infinite",
+                                              "@keyframes curveUp": {
+                                                "0%, 100%": {
+                                                  transform: "translate(0, 0)",
+                                                },
+                                                "50%": {
+                                                  transform:
+                                                    "translate(3px, -3px)",
+                                                },
+                                              },
+                                            }}
+                                          />
+                                        )}
+                                      </>
+                                    );
+                                  })()}
+
+                                {/* ESS Report Button - Shows ONLY on the last selected row */}
+                                {selectedESSTests.length > 0 &&
+                                  index === Math.max(...selectedESSTests) && (
+                                    <Tooltip
+                                      title={`Generate ESS Report with ${selectedESSTests.length} selected test(s)`}
+                                    >
+                                      <Button
+                                        variant="contained"
+                                        size="small"
+                                        startIcon={<AssignmentIcon />}
+                                        onClick={handleGenerateESSTestReport}
+                                        sx={{
+                                          "backgroundColor": "#9c27b0",
+                                          "ml": 0.5,
+                                          "whiteSpace": "nowrap",
+                                          "boxShadow":
+                                            "0 2px 8px rgba(156, 39, 176, 0.4)",
+                                          "&:hover": {
+                                            backgroundColor: "#7b1fa2",
+                                          },
+                                        }}
+                                      >
+                                        ESS Report ({selectedESSTests.length})
+                                      </Button>
+                                    </Tooltip>
+                                  )}
+                              </Box>
+                            ) : (
+                              <Tooltip
+                                title={
+                                  row.endDate === null ||
+                                  Number(row.duration) === 0
+                                    ? "Complete the test to enable report generation"
+                                    : "Click to generate report"
+                                }
+                              >
+                                <span>
+                                  <Button
+                                    variant="contained"
+                                    onClick={() => handleGenerateReport(index)}
+                                    disabled={
+                                      row.endDate === null ||
+                                      Number(row.duration) === 0
+                                    }
+                                  >
+                                    Report
+                                  </Button>
+                                </span>
+                              </Tooltip>
+                            )}
                           </TableCell>
                         </TableRow>
                       ))}
