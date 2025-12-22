@@ -724,6 +724,11 @@ export default function QuotationsDashboard() {
           <EmptyCard message="No Quote Found" />
         ) : (
           <DataGrid
+            initialState={{
+              sorting: {
+                sortModel: [{ field: "serialNumbers", sort: "desc" }],
+              },
+            }}
             rows={quotationTableWithSerialNumbers}
             columns={columns}
             sx={{
