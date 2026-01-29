@@ -21,7 +21,8 @@ export default function EmiJobcard() {
 
   const navigate = useNavigate();
 
-  const { loggedInUser, loggedInUserDepartment } = useContext(UserContext);
+  const { loggedInUser, loggedInUserDepartment, loggedInUserRole } =
+    useContext(UserContext);
   //Fetch all the form data from 3 steps:
   const {
     initialStepOneFormData,
@@ -174,6 +175,7 @@ export default function EmiJobcard() {
       stepThreeData: stepThreeFormData,
       loggedInUser,
       loggedInUserDepartment,
+      loggedInUserRole,
       deletedEutIds,
       deletedTestIds,
       deletedTestPerformedIds,

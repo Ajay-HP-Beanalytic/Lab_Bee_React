@@ -21,7 +21,7 @@ const EMIJCDocument = ({ id }) => {
       try {
         // Assuming you have an API endpoint to fetch the job card data by id
         const response = await axios.get(
-          `${serverBaseAddress}/api/emi_jobcard/${id}`
+          `${serverBaseAddress}/api/emi_jobcard/${id}`,
         );
 
         const {
@@ -103,7 +103,7 @@ const EMIJCDocument = ({ id }) => {
               endDate: endDateObj,
               slNoCounter: index + 1,
             };
-          }
+          },
         );
 
         const templateData = {

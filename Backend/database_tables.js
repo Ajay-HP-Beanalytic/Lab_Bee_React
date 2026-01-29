@@ -85,7 +85,7 @@ async function addDefaultUser() {
     // Hash the default password
     const hashedDefaultPassword = await bcrypt.hash(
       defaultUserPassword,
-      saltRounds
+      saltRounds,
     );
 
     // Insert the default user
@@ -139,7 +139,7 @@ function createPasswordResetAttemptsTable() {
     if (err) {
       console.log(
         "Error occurred while creating password_reset_attempts table",
-        err
+        err,
       );
     } else {
       //console.log("password_reset_attempts table created successfully.")
@@ -202,7 +202,7 @@ function createChamberCalibrationTable() {
     if (err) {
       console.log(
         "Error occurred while creating chamber_calibration table",
-        err
+        err,
       );
     } else {
       //console.log("chamber_calibration table created successfully.")
@@ -314,7 +314,7 @@ function createReliabilityTasksDetailsTable() {
     if (err) {
       console.log(
         "Error occurred while creating reliability_tasks_details table",
-        err
+        err,
       );
     } else {
       //console.log("jc_tests table created successfully.")
@@ -518,10 +518,56 @@ function createTS1JobCardAuditTrailTable() {
     if (err) {
       console.log(
         "Error occurred while creating ts1_job_card_audit_trail table",
-        err
+        err,
       );
     } else {
       // console.log("ts1_job_card_audit_trail table created successfully.");
+    }
+  });
+}
+
+// Function to create EMI Job Card Audit Trail table
+function createEMIJobCardAuditTrailTable() {
+  const createAuditTrailTableQuery = `
+    CREATE TABLE IF NOT EXISTS emi_job_card_audit_trail (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+
+      -- What was changed
+      table_name VARCHAR(100) NOT NULL COMMENT 'Table where change occurred (emi_jobcards, emi_eut_table, etc.)',
+      record_id INT COMMENT 'Primary key ID of the changed record',
+      jc_number VARCHAR(100) NOT NULL COMMENT 'Job Card number for easy filtering',
+      field_name VARCHAR(100) COMMENT 'Specific field/column that changed',
+
+      -- Change details
+      action_type ENUM('CREATE', 'UPDATE', 'DELETE', 'STATUS_CHANGE') NOT NULL COMMENT 'Type of change',
+      old_value TEXT COMMENT 'Value before change',
+      new_value TEXT COMMENT 'Value after change',
+
+      -- Who and when
+      changed_by VARCHAR(255) NOT NULL COMMENT 'Username who made the change',
+      user_role VARCHAR(100) COMMENT 'Role of user at time of change',
+      user_department VARCHAR(100) COMMENT 'Department of user at time of change',
+      changed_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT 'Timestamp of change',
+
+      -- Additional context
+      ip_address VARCHAR(45) COMMENT 'IP address of user (for security)',
+
+      -- Indexes for fast queries
+      INDEX idx_jc_number (jc_number),
+      INDEX idx_table_record (table_name, record_id),
+      INDEX idx_changed_at (changed_at),
+      INDEX idx_changed_by (changed_by),
+      INDEX idx_action_type (action_type)
+    ) COMMENT='Audit trail for all EMI Job Card changes - immutable log for compliance'`;
+
+  db.query(createAuditTrailTableQuery, function (err, result) {
+    if (err) {
+      console.log(
+        "Error occurred while creating emi_job_card_audit_trail table",
+        err,
+      );
+    } else {
+      // console.log("emi_job_card_audit_trail table created successfully.");
     }
   });
 }
@@ -683,6 +729,7 @@ function createEMIJobcardsEUTTable() {
       eutPartNumber VARCHAR(1000),
       eutModelNumber VARCHAR(1000),
       eutSerialNumber VARCHAR(1000),
+      eutUnitPowerRating VARCHAR(1000),
       lastUpdatedBy VARCHAR(100),
       PRIMARY KEY(id)
   )`;
@@ -755,7 +802,7 @@ function createEMIJobcardsTestsDetailsTable() {
     if (err) {
       console.log(
         "Error occurred while creating emi_tests_details_table ",
-        err
+        err,
       );
     } else {
       // console.log("emi_tests_details_table created successfully.")
@@ -895,7 +942,7 @@ const createEMIStandardAndTestMappingTable = () => {
     if (err) {
       console.log(
         "Error occured while creating emi_test_standard_mapping_table",
-        err
+        err,
       );
     } else {
       // console.log("emi_test_standard_mapping_table created successfully.");
@@ -975,7 +1022,7 @@ function createTestAndChamberMappingTable() {
     if (err) {
       console.log(
         "Error occured while creating test_and_chamber_mapping_table",
-        err
+        err,
       );
     } else {
       // console.log("test_and_chamber_mapping_table created successfully.");
@@ -1096,7 +1143,7 @@ function createProjectRetrospectiveTable() {
     if (err) {
       console.log(
         "Error occured while creating project_retrospective_table",
-        err
+        err,
       );
     } else {
       // console.log("project_retrospective_table created successfully.");
@@ -1222,6 +1269,7 @@ module.exports = {
   createJobcardTestsTable,
   createTestDetailsTable,
   createTS1JobCardAuditTrailTable,
+  createEMIJobCardAuditTrailTable,
 
   createChambersForSlotBookingTable,
   createSlotBookingTable,

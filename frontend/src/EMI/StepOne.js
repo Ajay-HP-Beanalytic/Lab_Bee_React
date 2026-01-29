@@ -96,7 +96,7 @@ export default function EMIJCStepOne() {
     {
       id: "eutPartNumber",
       label: "Part Number",
-      width: 300,
+      width: 250,
       type: "textField",
     },
     {
@@ -111,6 +111,12 @@ export default function EMIJCStepOne() {
       width: 200,
       type: "textField",
     },
+    {
+      id: "eutUnitPowerRating",
+      label: "Unit Power Rating",
+      width: 200,
+      type: "textField",
+    },
   ];
 
   const eutTableRowTemplate = useMemo(
@@ -121,7 +127,7 @@ export default function EMIJCStepOne() {
       eutModelNumber: "",
       eutSerialNumber: "",
     }),
-    []
+    [],
   );
 
   //Fields to create a Tests details table:
@@ -150,7 +156,7 @@ export default function EMIJCStepOne() {
       testStandard: "",
       testProfile: "",
     }),
-    []
+    [],
   );
 
   // Watch form fields and update context on value change
@@ -187,7 +193,7 @@ export default function EMIJCStepOne() {
         updateStepOneFormData(values);
       }
     },
-    [stepOneFormData, updateStepOneFormData]
+    [stepOneFormData, updateStepOneFormData],
   );
 
   useEffect(() => {

@@ -139,7 +139,7 @@ export default function EMIJCDashboard() {
       return Object.values(row).some(
         (value) =>
           value != null &&
-          value.toString().toLowerCase().includes(searchValue.toLowerCase())
+          value.toString().toLowerCase().includes(searchValue.toLowerCase()),
       );
     });
     setFilteredJcData(filtered);
@@ -167,7 +167,7 @@ export default function EMIJCDashboard() {
 
     try {
       const response = await axios.delete(
-        `${serverBaseAddress}/api/EMIJobcard/${jcToDelete}`
+        `${serverBaseAddress}/api/EMIJobcard/${jcToDelete}`,
       );
 
       if (response.status === 200) {
@@ -181,7 +181,7 @@ export default function EMIJCDashboard() {
       console.error("Error deleting Job-Card:", error);
       toast.error(
         error.response?.data?.message ||
-          "Failed to delete Job-Card. Please try again."
+          "Failed to delete Job-Card. Please try again.",
       );
     }
   };
@@ -343,7 +343,7 @@ export default function EMIJCDashboard() {
     const fetchYears = async () => {
       try {
         const response = await axios.get(
-          `${serverBaseAddress}/api/getTS2JCDateOptions`
+          `${serverBaseAddress}/api/getTS2JCDateOptions`,
         );
 
         if (response.status === 200) {
@@ -369,7 +369,7 @@ export default function EMIJCDashboard() {
       if (jcYear) {
         try {
           const response = await axios.get(
-            `${serverBaseAddress}/api/getAvailableTS2JCMonthsForYear?year=${jcYear}`
+            `${serverBaseAddress}/api/getAvailableTS2JCMonthsForYear?year=${jcYear}`,
           );
 
           if (response.status === 200) {
@@ -379,7 +379,7 @@ export default function EMIJCDashboard() {
             if (response.data.length > 0) {
               // Select the most recent month (highest month number)
               const mostRecentMonth = response.data.reduce((latest, current) =>
-                current.value > latest.value ? current : latest
+                current.value > latest.value ? current : latest,
               );
               setJCMonth(mostRecentMonth.value);
             }
@@ -426,7 +426,7 @@ export default function EMIJCDashboard() {
       selectedJCDateRange.endDate
     ) {
       const formattedDateRange = `${dayjs(selectedJCDateRange.startDate).format(
-        "YYYY-MM-DD"
+        "YYYY-MM-DD",
       )} - ${dayjs(selectedJCDateRange.endDate).format("YYYY-MM-DD")}`;
       setSelectedJCDateRange(formattedDateRange);
       fetchJCDataBetweenTwoDates(formattedDateRange);
@@ -443,7 +443,7 @@ export default function EMIJCDashboard() {
         `${serverBaseAddress}/api/getPrimaryTS2JCDataBwTwoDates`,
         {
           params: { selectedJCDateRange: dateRange },
-        }
+        },
       );
       setEmiJCTableData(testingJCResponse.data);
     } catch (error) {

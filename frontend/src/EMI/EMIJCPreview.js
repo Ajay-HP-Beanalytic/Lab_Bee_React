@@ -22,6 +22,7 @@ import dayjs from "dayjs";
 
 import Slide from "@mui/material/Slide";
 import EMIJCDocument from "./EMIJCDocument";
+import AuditHistoryDialog from "../components/AuditHistoryDialog";
 
 const Transition = forwardRef(function Transition(props, ref) {
   return <Slide direction="up" ref={ref} {...props} />;
@@ -62,6 +63,9 @@ const EMIJCPreview = ({
 
   const [downloadJC, setDownloadJC] = useState(false);
 
+  // State for audit history dialog
+  const [emiAuditHistoryOpen, setEmiAuditHistoryOpen] = useState(false);
+
   const isTS2Testing = loggedInUserDepartment === "TS2 Testing";
   const isAdminOrAccounts =
     loggedInUserDepartment === "Administration" ||
@@ -73,11 +77,12 @@ const EMIJCPreview = ({
 
   const eutTableHeaderNames = [
     "Sl No",
-    "Eut Details",
+    "Eut Description",
     "Quantity",
     "Part Number",
     "Model Number",
     "Serial Number",
+    "Unit Power Rating",
     "Last Updated By",
   ];
 
@@ -203,6 +208,7 @@ const EMIJCPreview = ({
                         <TableCell>{row.eutPartNumber}</TableCell>
                         <TableCell> {row.eutModelNumber}</TableCell>
                         <TableCell>{row.eutSerialNumber}</TableCell>
+                        <TableCell>{row.eutUnitPowerRating}</TableCell>
                         <TableCell> {row.lastUpdatedBy}</TableCell>
                       </TableRow>
                     ))}
@@ -328,6 +334,22 @@ const EMIJCPreview = ({
             Edit/Update
           </Button>
 
+          {/* View History Button */}
+          <Button
+            sx={{
+              borderRadius: 3,
+              mx: 0.5,
+              mb: 1,
+              bgcolor: "orange",
+              color: "white",
+              borderColor: "black",
+            }}
+            variant="contained"
+            onClick={() => setEmiAuditHistoryOpen(true)}
+          >
+            View Change Log
+          </Button>
+
           {/* Download JC Button */}
           {/* {editJc ? <JobCardComponent id={jcId} /> : null} */}
           {editJc ? (
@@ -367,6 +389,14 @@ const EMIJCPreview = ({
       </Dialog>
 
       {downloadJC && <EMIJCDocument id={jcId} />}
+
+      {/* Audit History Dialog */}
+      <AuditHistoryDialog
+        open={emiAuditHistoryOpen}
+        onClose={() => setEmiAuditHistoryOpen(false)}
+        jcNumber={jcNumber}
+        isEmi={true}
+      />
     </>
   );
 };
