@@ -109,7 +109,7 @@ export default function ResetPassword() {
     try {
       const response = await axios.post(
         `${serverBaseAddress}/api/checkResetPasswordEmail`,
-        { email }
+        { email },
       );
 
       if (response.status === 200) {
@@ -121,7 +121,7 @@ export default function ResetPassword() {
       if (error.response) {
         if (error.response.status === 429) {
           toast.warning(
-            `You have reached the limit of 3 attempts per day.\nYou can reset your password after 24 hours.`
+            `You have reached the limit of 3 attempts per day.\nYou can reset your password after 24 hours.`,
           );
         } else if (error.response.status === 404) {
           toast.error("Email not found in the database.");
@@ -190,7 +190,7 @@ export default function ResetPassword() {
     try {
       const response = await axios.post(
         `${serverBaseAddress}/api/resetPassword`,
-        { email, newPassword }
+        { email, newPassword },
       );
       if (response.status === 200) {
         toast.success("Password reset successfully");
@@ -209,7 +209,7 @@ export default function ResetPassword() {
     try {
       const response = await axios.post(
         `${serverBaseAddress}/api/checkResetPasswordEmail`,
-        { email }
+        { email },
       );
       if (response.status === 200) {
         setOtpSent(true);
@@ -531,7 +531,7 @@ export default function ResetPassword() {
                   }}
                   onClick={() => navigate("/")}
                 >
-                  Sign In
+                  Back to Labbee/Sign In
                 </Box>
               </Typography>
             </Stack>

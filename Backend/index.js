@@ -57,6 +57,7 @@ const validateSession = (req, res, next) => {
     "/api/getUserStatus",
     "/",
     "/api/testing",
+    "/api/logout",
   ];
 
   if (publicRoutes.includes(req.path)) {

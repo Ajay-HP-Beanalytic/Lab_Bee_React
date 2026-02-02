@@ -13,6 +13,39 @@ function loadFile(url, callback) {
   PizZipUtils.getBinaryContent(url, callback);
 }
 
+// Remove invalid XML control chars
+function sanitizeForXml(value) {
+  if (value == null) return "";
+  // eslint-disable-next-line no-control-regex
+  return String(value).replace(
+    // eslint-disable-next-line no-control-regex
+    /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g,
+    "",
+  );
+}
+
+function sanitizeDeep(input) {
+  //Check if the input is null or not
+  if (input === null) return input;
+
+  //Check if the input is a string
+  if (typeof input === "string" || typeof input === "number") {
+    return sanitizeForXml(input);
+  }
+
+  //Check if the input is an Array
+  if (Array.isArray(input)) {
+    return input.map((item) => sanitizeDeep(item));
+  }
+
+  //Check if the input is an Object
+  if (typeof input === "object") {
+    Object.fromEntries(
+      Object.entries(input).map(([key, value]) => [key, sanitizeDeep(value)]),
+    );
+    return input;
+  }
+}
 const EMIJCDocument = ({ id }) => {
   //usEffect hook to fetch the jobcard data.
   useEffect(() => {
@@ -151,8 +184,9 @@ const EMIJCDocument = ({ id }) => {
             linebreaks: true,
           });
           // Set the fetched data in the document
-          doc.setData(templateData);
-
+          const sanitizedData = sanitizeDeep(templateData);
+          // doc.setData(templateData);
+          doc.setData(sanitizedData);
           try {
             // Render the document
             doc.render();

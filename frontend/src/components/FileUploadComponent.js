@@ -1,13 +1,15 @@
-import React, { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   Button,
   IconButton,
   List,
   ListItem,
   ListItemText,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
+import PreviewIcon from "@mui/icons-material/Preview";
 import { serverBaseAddress } from "../Pages/APIPage";
 import axios from "axios";
 
@@ -25,6 +27,7 @@ const FileUploadComponent = ({
   onFilesChange,
   jcNumber,
   existingAttachments = [],
+  onPreview,
 }) => {
   const fileInputRef = useRef(null);
   const [files, setFiles] = useState([...existingAttachments]);
@@ -56,7 +59,7 @@ const FileUploadComponent = ({
           headers: {
             "Content-Type": "multipart/form-data",
           },
-        }
+        },
       );
 
       // Update file IDs with IDs from the database
@@ -92,6 +95,17 @@ const FileUploadComponent = ({
     const fileNameWithTimestamp = file.file_path.split("/").pop();
     const url = `${serverBaseAddress}/api/FilesUploaded/${fileNameWithTimestamp}`;
     window.open(url, "_blank");
+  };
+
+  //Function to preview the document:
+  const handlePreviewFile = (file) => {
+    if (onPreview) {
+      onPreview(file);
+    } else {
+      const fileNameWithTimestamp = file.file_path.split("/").pop();
+      const url = `${serverBaseAddress}/api/FilesUploaded/${fileNameWithTimestamp}`;
+      window.open(url, "_blank");
+    }
   };
 
   const extractOriginalFileName = (filePath) => {
@@ -130,13 +144,24 @@ const FileUploadComponent = ({
               onClick={() => handleFileClick({ file, file_path })}
               style={{ cursor: "pointer" }}
             />
-            <IconButton
-              edge="end"
-              aria-label="delete"
-              onClick={() => handleFileDelete(id)}
-            >
-              <DeleteIcon />
-            </IconButton>
+            <Tooltip title="Preview">
+              <IconButton
+                edge="start"
+                aria-label="preview"
+                onClick={() => handlePreviewFile({ file, file_path })}
+              >
+                <PreviewIcon />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Delete">
+              <IconButton
+                edge="end"
+                aria-label="delete"
+                onClick={() => handleFileDelete(id)}
+              >
+                <DeleteIcon />
+              </IconButton>
+            </Tooltip>
           </ListItem>
         ))}
       </List>

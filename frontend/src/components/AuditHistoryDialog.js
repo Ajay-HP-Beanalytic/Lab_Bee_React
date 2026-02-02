@@ -131,8 +131,15 @@ export default function AuditHistoryDialog({
     <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth>
       <DialogTitle>
         <Box display="flex" justifyContent="space-between">
-          <Typography variant="h6" align="center">
-            Change History - JC {jcNumber} {isEmi ? "(EMI/EMC)" : ""}
+          <Typography
+            variant="h6"
+            align="center"
+            fontStyle="italic"
+            fontWeight="bold"
+          >
+            {isEmi
+              ? `TS2 JC: ${jcNumber} Change History `
+              : `TS1 JC:${jcNumber} Change History `}
           </Typography>
           <IconButton onClick={onClose} size="small">
             <CloseIcon />
