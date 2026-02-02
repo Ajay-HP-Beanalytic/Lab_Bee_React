@@ -1,4 +1,8 @@
 // Install or import the necessary packages
+const path = require("path");
+const envFile =
+  process.env.NODE_ENV === "production" ? ".env.production" : ".env.development";
+require("dotenv").config({ path: path.join(__dirname, envFile) });
 const express = require("express"); //express is a framework of node.js
 const bodyParser = require("body-parser"); // nodemon is used to update the data automatically
 const mysql = require("mysql2"); // In order to interact with the mysql database.
@@ -13,7 +17,6 @@ const createBackup = require("./Backup"); // Import the backup function
 const fs = require("fs");
 
 // const multer = require('multer');
-const path = require("path");
 // const fs = require('fs');
 
 const http = require("http");
@@ -23,18 +26,24 @@ const socketIo = require("socket.io");
 // create an express application::
 const app = express();
 
-const serverOptions = {
-  key: fs.readFileSync(
-    "/etc/letsencrypt/live/labbee.beanalytic.com/privkey.pem"
-  ),
-  cert: fs.readFileSync(
-    "/etc/letsencrypt/live/labbee.beanalytic.com/fullchain.pem"
-  ),
-};
+// When behind Nginx (TLS terminated at the proxy), keep USE_HTTPS=false.
+const useHttps = process.env.USE_HTTPS === "true";
+const sslKeyPath = process.env.SSL_KEY_PATH;
+const sslCertPath = process.env.SSL_CERT_PATH;
+
+const serverOptions =
+  useHttps && sslKeyPath && sslCertPath
+    ? {
+        key: fs.readFileSync(sslKeyPath),
+        cert: fs.readFileSync(sslCertPath),
+      }
+    : null;
 
 //create server instance
-const server = https.createServer(serverOptions, app); //For deployement
-// const server = http.createServer(app); //For development
+const server =
+  useHttps && serverOptions
+    ? https.createServer(serverOptions, app) // For deployment
+    : http.createServer(app); // For development
 
 // Middleware to validate session on each request
 const validateSession = (req, res, next) => {
@@ -48,6 +57,7 @@ const validateSession = (req, res, next) => {
     "/api/getUserStatus",
     "/",
     "/api/testing",
+    "/api/logout",
   ];
 
   if (publicRoutes.includes(req.path)) {
@@ -128,7 +138,7 @@ app.use(
     //origin: "https://labbee.beanalytic.com", // Allow requests from this origin
     methods: ["POST", "GET", "DELETE", "PUT"],
     credentials: true,
-  })
+  }),
 );
 
 // const corsOption = {
@@ -165,7 +175,7 @@ app.use(
 
       // Set the session cookie properties
     },
-  })
+  }),
 );
 
 // Apply validateSession AFTER session middleware
@@ -174,7 +184,7 @@ app.use(validateSession);
 // app.use("./FilesUploaded", express.static("FilesUploaded"))
 app.use(
   "/FilesUploaded",
-  express.static(path.join(__dirname, "FilesUploaded"))
+  express.static(path.join(__dirname, "FilesUploaded")),
 );
 
 // Get all the connections from the db
@@ -197,6 +207,7 @@ const {
   createJobcardTestsTable,
   createTestDetailsTable,
   createTS1JobCardAuditTrailTable,
+  createEMIJobCardAuditTrailTable,
   createChambersForSlotBookingTable,
   createSlotBookingTable,
   createPoStatusTable,
@@ -258,6 +269,7 @@ db.getConnection(function (err, connection) {
   createJobcardTestsTable();
   createTestDetailsTable();
   createTS1JobCardAuditTrailTable();
+  createEMIJobCardAuditTrailTable();
 
   createChambersForSlotBookingTable();
   createSlotBookingTable();
@@ -414,8 +426,8 @@ app.get("/", (req, res) => {
   res.send("Hello Welcome to Labbee...");
 });
 
-const PORT = 4002; //For deploymentt
-// const PORT = 4001;
+// const PORT = 4002; //For deploymentt
+const PORT = process.env.PORT || 4001;
 
 app.get("/api/testing", (req, res) => {
   res.send("Backend is up and running...");

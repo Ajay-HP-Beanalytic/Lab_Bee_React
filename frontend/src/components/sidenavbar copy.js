@@ -18,16 +18,7 @@ import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
 import CalculateIcon from "@mui/icons-material/Calculate";
 
-import {
-  Avatar,
-  Popover,
-  SvgIcon,
-  Tooltip,
-  BottomNavigation,
-  BottomNavigationAction,
-  Paper,
-  useMediaQuery,
-} from "@mui/material";
+import { Avatar, Popover, SvgIcon, Tooltip } from "@mui/material";
 import EventRepeatIcon from "@mui/icons-material/EventRepeat";
 import HomeIcon from "@mui/icons-material/Home";
 import CalendarMonthSharpIcon from "@mui/icons-material/CalendarMonthSharp";
@@ -368,16 +359,10 @@ export default function SidenavigationBar() {
     );
   }
 
-  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
-
   return (
     <>
       <Box
-        sx={{
-          paddingLeft: isMobile ? 0 : `${leftmargin}px`,
-          paddingBottom: isMobile ? "70px" : 0,
-          transition: "0.2s ease-in-out",
-        }}
+        sx={{ paddingLeft: `${leftmargin}px`, transition: "0.2s ease-in-out" }}
       >
         <CssBaseline />
 
@@ -385,23 +370,16 @@ export default function SidenavigationBar() {
         <AppBar
           position="fixed"
           elevation={1}
-          sx={{
-            backgroundColor: "#0f6cbd",
-            color: "#2f2f2f",
-            height: "64px",
-            ...(isMobile && { width: "100%", marginLeft: 0 }),
-          }}
+          sx={{ backgroundColor: "#0f6cbd", color: "#2f2f2f", height: "64px" }}
         >
           <Toolbar>
-            {!isMobile && (
-              <IconButton
-                aria-label="open drawer"
-                onClick={handleMenuToggle}
-                edge="start"
-              >
-                <MenuIcon sx={{ color: "white" }} />
-              </IconButton>
-            )}
+            <IconButton
+              aria-label="open drawer"
+              onClick={handleMenuToggle}
+              edge="start"
+            >
+              <MenuIcon sx={{ color: "white" }} />
+            </IconButton>
 
             <Typography variant="h6" noWrap component="div" color={"white"}>
               Lab Bee
@@ -437,23 +415,21 @@ export default function SidenavigationBar() {
           </Toolbar>
         </AppBar>
 
-        {!isMobile && (
-          <Drawer variant="permanent" open={open}>
-            <DrawerHeader>
-              <IconButton onClick={handleDrawerClose}>
-                {theme.direction === "rtl" ? (
-                  <ChevronRightIcon />
-                ) : (
-                  <ChevronLeftIcon />
-                )}
-              </IconButton>
-            </DrawerHeader>
+        <Drawer variant="permanent" open={open}>
+          <DrawerHeader>
+            <IconButton onClick={handleDrawerClose}>
+              {theme.direction === "rtl" ? (
+                <ChevronRightIcon />
+              ) : (
+                <ChevronLeftIcon />
+              )}
+            </IconButton>
+          </DrawerHeader>
 
-            {filteredItems.map((item) => (
-              <MenuItem key={item.i} item={item} index={item.i} />
-            ))}
-          </Drawer>
-        )}
+          {filteredItems.map((item) => (
+            <MenuItem key={item.i} item={item} index={item.i} />
+          ))}
+        </Drawer>
 
         <Box component="main" sx={{ flexGrow: 1, padding: 3 }}>
           <Box
@@ -465,68 +441,6 @@ export default function SidenavigationBar() {
           />
           <Outlet />
         </Box>
-
-        {isMobile && (
-          <Paper
-            sx={{
-              position: "fixed",
-              bottom: 0,
-              left: 0,
-              right: 0,
-              zIndex: 1000,
-            }}
-            elevation={3}
-          >
-            <BottomNavigation
-              showLabels
-              value={selectedIndex}
-              onChange={(event, newValue) => {
-                setSelectedIndex(newValue);
-              }}
-              sx={{
-                "height": 70,
-                "overflowX": "auto",
-                "justifyContent":
-                  filteredItems.length > 4 ? "flex-start" : "center",
-                "& .MuiBottomNavigationAction-root": {
-                  "minWidth": "auto",
-                  "padding": "10px 16px",
-                  "color": "#5f6368",
-                  "&.Mui-selected": {
-                    color: "#0f6cbd",
-                    paddingTop: "12px",
-                  },
-                },
-                // Hide scrollbar for cleaner UI
-                "&::-webkit-scrollbar": {
-                  display: "none",
-                },
-                "scrollbarWidth": "none", // Firefox
-                "-ms-overflow-style": "none", // IE/Edge
-              }}
-            >
-              {filteredItems.map((item) => (
-                <BottomNavigationAction
-                  key={item.i}
-                  label={item.label}
-                  icon={
-                    <GradientIcon gradientId={`${item.gradientId}_mobile`}>
-                      {item.icon}
-                    </GradientIcon>
-                  }
-                  component={Link}
-                  to={item.path}
-                  value={item.i} // Use item.i to match selectedIndex logic
-                  // However, selectedIndex is an index (0,1,2..) or the 'i' value?
-                  // In handleListItemClick: setSelectedIndex(index).
-                  // In MenuItem: index={item.i}. So it is the 'i' value.
-                  // But 'i' are 1-based and sparse.
-                  // BottomNavigation expects 'value' to match 'value' prop of selected child.
-                />
-              ))}
-            </BottomNavigation>
-          </Paper>
-        )}
       </Box>
     </>
   );

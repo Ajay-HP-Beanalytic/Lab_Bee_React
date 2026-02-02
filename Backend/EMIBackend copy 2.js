@@ -25,24 +25,6 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
     return `${year}-${month}-${day} ${hours}:${minutes}`;
   }
 
-  // Helper to normalize dates to YYYY-MM-DD for comparisons
-  function normalizeDateForComparison(dateValue) {
-    if (!dateValue) return "";
-
-    try {
-      const dateObject = new Date(dateValue);
-      if (isNaN(dateObject.getTime())) return String(dateValue);
-
-      const year = dateObject.getFullYear();
-      const month = String(dateObject.getMonth() + 1).padStart(2, "0");
-      const day = String(dateObject.getDate()).padStart(2, "0");
-
-      return `${year}-${month}-${day}`;
-    } catch (error) {
-      return String(dateValue);
-    }
-  }
-
   const getCurrentYearAndMonth = () => {
     const currentDate = new Date();
     const currentYear = currentDate.getFullYear();
@@ -134,18 +116,10 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
    * @param {string} jcNumber - Job Card number
    * @param {string} updatedBy - Username who made the change
    */
-  const updateParentEMIJobCardLastModified = async (
-    jcNumber,
-    updatedBy,
-    connection = null,
-  ) => {
+  const updateParentEMIJobCardLastModified = async (jcNumber, updatedBy) => {
     try {
       const sql = `UPDATE emi_jobcards SET lastUpdatedBy = ? WHERE jcNumber = ?`;
-      if (connection) {
-        await connection.query(sql, [updatedBy, jcNumber]);
-      } else {
-        await db.promise().query(sql, [updatedBy, jcNumber]);
-      }
+      await db.promise().query(sql, [updatedBy, jcNumber]);
     } catch (error) {
       console.error(
         `❌ Error updating parent EMI JC lastUpdatedBy for ${jcNumber}:`,
@@ -738,28 +712,6 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
         },
       ];
 
-      // Check if any main JC field has actually changed
-      let hasMainChanges = false;
-      for (const field of mainJCFields) {
-        let oldValue;
-        let newValue;
-        if (field.isDate) {
-          oldValue = normalizeDateForComparison(field.oldVal);
-          newValue = normalizeDateForComparison(field.newVal);
-        } else {
-          oldValue = String(field.oldVal || "");
-          newValue = String(field.newVal || "");
-        }
-        if (oldValue !== newValue) {
-          hasMainChanges = true;
-          break;
-        }
-      }
-
-      const lastUpdatedByValue = hasMainChanges
-        ? loggedInUser
-        : existingJC.lastUpdatedBy || loggedInUser;
-
       // Update the main `emi_jobcards` table
       const updateJobCardSql = `
             UPDATE emi_jobcards 
@@ -804,7 +756,7 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
         jcStatus || "",
         formattedCloseDate || null,
         observations || "",
-        lastUpdatedByValue,
+        loggedInUser,
         id,
       ];
 
@@ -812,16 +764,8 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
 
       // Log Audit Trail for Main JC
       for (const field of mainJCFields) {
-        let oldValue;
-        let newValue;
-
-        if (field.isDate) {
-          oldValue = normalizeDateForComparison(field.oldVal);
-          newValue = normalizeDateForComparison(field.newVal);
-        } else {
-          oldValue = String(field.oldVal || "");
-          newValue = String(field.newVal || "");
-        }
+        const oldValue = String(field.oldVal || "");
+        const newValue = String(field.newVal || "");
 
         if (oldValue !== newValue) {
           const actionType =
@@ -868,8 +812,6 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
         existingTestDetailsRows.map((row) => [row.id, row]),
       );
 
-      let childChangesDetected = false;
-
       // Handle the EUT table rows
       // Delete rows that are marked for deletion
       if (deletedEutIds.length > 0) {
@@ -891,7 +833,6 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
             );
           }
         }
-        childChangesDetected = true;
         const deleteEutSql = `DELETE FROM emi_eut_table WHERE id IN (?) AND jcNumber = ?`;
         await connection.query(deleteEutSql, [deletedEutIds, jcNumber]);
       }
@@ -900,53 +841,6 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
         if (eutRow.id) {
           // Update existing rows
           const existingRow = existingEutMap.get(eutRow.id);
-          const eutFields = [
-            {
-              name: "eutName",
-              newVal: eutRow.eutName,
-              oldVal: existingRow?.eutName,
-            },
-            {
-              name: "eutQuantity",
-              newVal: eutRow.eutQuantity,
-              oldVal: existingRow?.eutQuantity,
-            },
-            {
-              name: "eutPartNumber",
-              newVal: eutRow.eutPartNumber,
-              oldVal: existingRow?.eutPartNumber,
-            },
-            {
-              name: "eutModelNumber",
-              newVal: eutRow.eutModelNumber,
-              oldVal: existingRow?.eutModelNumber,
-            },
-            {
-              name: "eutSerialNumber",
-              newVal: eutRow.eutSerialNumber,
-              oldVal: existingRow?.eutSerialNumber,
-            },
-            {
-              name: "eutUnitPowerRating",
-              newVal: eutRow.eutUnitPowerRating,
-              oldVal: existingRow?.eutUnitPowerRating,
-            },
-          ];
-
-          const eutChangedFields = [];
-          for (const field of eutFields) {
-            const oldValue = String(field.oldVal || "");
-            const newValue = String(field.newVal || "");
-            if (oldValue !== newValue) {
-              eutChangedFields.push(field);
-            }
-          }
-
-          const eutLastUpdatedBy =
-            eutChangedFields.length > 0
-              ? loggedInUser || ""
-              : existingRow?.lastUpdatedBy || loggedInUser || "";
-
           const updateEutSql = `
                     UPDATE emi_eut_table 
                     SET eutName = ?, eutQuantity = ?, eutPartNumber = ?, eutModelNumber = ?, eutSerialNumber = ?,  eutUnitPowerRating = ?, lastUpdatedBy = ?
@@ -959,7 +853,7 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
             eutRow.eutModelNumber || "",
             eutRow.eutSerialNumber || "",
             eutRow.eutUnitPowerRating || "",
-            eutLastUpdatedBy,
+            loggedInUser || "",
             eutRow.id,
             jcNumber,
           ];
@@ -967,21 +861,57 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
           await connection.query(updateEutSql, eutValues);
 
           // Audit Log for EUT Updates
-          if (existingRow && eutChangedFields.length > 0) {
-            childChangesDetected = true;
-            for (const field of eutChangedFields) {
-              await logAuditTrail(
-                "emi_eut_table",
-                eutRow.id,
-                jcNumber,
-                field.name,
-                "UPDATE",
-                field.oldVal,
-                field.newVal,
-                loggedInUser,
-                loggedInUserRole,
-                loggedInUserDepartment,
-              );
+          if (existingRow) {
+            const eutFields = [
+              {
+                name: "eutName",
+                newVal: eutRow.eutName,
+                oldVal: existingRow.eutName,
+              },
+              {
+                name: "eutQuantity",
+                newVal: eutRow.eutQuantity,
+                oldVal: existingRow.eutQuantity,
+              },
+              {
+                name: "eutPartNumber",
+                newVal: eutRow.eutPartNumber,
+                oldVal: existingRow.eutPartNumber,
+              },
+              {
+                name: "eutModelNumber",
+                newVal: eutRow.eutModelNumber,
+                oldVal: existingRow.eutModelNumber,
+              },
+              {
+                name: "eutSerialNumber",
+                newVal: eutRow.eutSerialNumber,
+                oldVal: existingRow.eutSerialNumber,
+              },
+              {
+                name: "eutUnitPowerRating",
+                newVal: eutRow.eutUnitPowerRating,
+                oldVal: existingRow.eutUnitPowerRating,
+              },
+            ];
+
+            for (const field of eutFields) {
+              const oldValue = String(field.oldVal || "");
+              const newValue = String(field.newVal || "");
+              if (oldValue !== newValue) {
+                await logAuditTrail(
+                  "emi_eut_table",
+                  eutRow.id,
+                  jcNumber,
+                  field.name,
+                  "UPDATE",
+                  field.oldVal,
+                  field.newVal,
+                  loggedInUser,
+                  loggedInUserRole,
+                  loggedInUserDepartment,
+                );
+              }
             }
           }
         } else {
@@ -1006,7 +936,19 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
             eutValues,
           );
 
-          childChangesDetected = true;
+          // Log Creation
+          await logAuditTrail(
+            "emi_eut_table",
+            insertResult.insertId,
+            jcNumber,
+            null,
+            "CREATE",
+            null,
+            JSON.stringify(eutRow), // Store new row data
+            loggedInUser,
+            loggedInUserRole,
+            loggedInUserDepartment,
+          );
         }
       }
 
@@ -1031,7 +973,6 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
             );
           }
         }
-        childChangesDetected = true;
         const deleteTestSql = `DELETE FROM emi_tests_table WHERE id IN (?) AND jcNumber = ?`;
         await connection.query(deleteTestSql, [deletedTestIds, jcNumber]);
       }
@@ -1040,38 +981,6 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
         if (testRow.id) {
           // Update existing rows
           const existingRow = existingTestMap.get(testRow.id);
-          const testFields = [
-            {
-              name: "testName",
-              newVal: testRow.testName,
-              oldVal: existingRow?.testName,
-            },
-            {
-              name: "testStandard",
-              newVal: testRow.testStandard,
-              oldVal: existingRow?.testStandard,
-            },
-            {
-              name: "testProfile",
-              newVal: testRow.testProfile,
-              oldVal: existingRow?.testProfile,
-            },
-          ];
-
-          const testChangedFields = [];
-          for (const field of testFields) {
-            const oldValue = String(field.oldVal || "");
-            const newValue = String(field.newVal || "");
-            if (oldValue !== newValue) {
-              testChangedFields.push(field);
-            }
-          }
-
-          const testLastUpdatedBy =
-            testChangedFields.length > 0
-              ? loggedInUser || ""
-              : existingRow?.lastUpdatedBy || loggedInUser || "";
-
           const updateTestsSql = `
                     UPDATE emi_tests_table 
                     SET testName = ?, testStandard = ?, testProfile = ?, lastUpdatedBy = ?
@@ -1081,28 +990,49 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
             testRow.testName || "",
             testRow.testStandard || "",
             testRow.testProfile || "",
-            testLastUpdatedBy,
+            loggedInUser || "",
             testRow.id,
             jcNumber,
           ];
           await connection.query(updateTestsSql, testValues);
 
           // Audit Log for Test Updates
-          if (existingRow && testChangedFields.length > 0) {
-            childChangesDetected = true;
-            for (const field of testChangedFields) {
-              await logAuditTrail(
-                "emi_tests_table",
-                testRow.id,
-                jcNumber,
-                field.name,
-                "UPDATE",
-                field.oldVal,
-                field.newVal,
-                loggedInUser,
-                loggedInUserRole,
-                loggedInUserDepartment,
-              );
+          if (existingRow) {
+            const testFields = [
+              {
+                name: "testName",
+                newVal: testRow.testName,
+                oldVal: existingRow.testName,
+              },
+              {
+                name: "testStandard",
+                newVal: testRow.testStandard,
+                oldVal: existingRow.testStandard,
+              },
+              {
+                name: "testProfile",
+                newVal: testRow.testProfile,
+                oldVal: existingRow.testProfile,
+              },
+            ];
+
+            for (const field of testFields) {
+              const oldValue = String(field.oldVal || "");
+              const newValue = String(field.newVal || "");
+              if (oldValue !== newValue) {
+                await logAuditTrail(
+                  "emi_tests_table",
+                  testRow.id,
+                  jcNumber,
+                  field.name,
+                  "UPDATE",
+                  field.oldVal,
+                  field.newVal,
+                  loggedInUser,
+                  loggedInUserRole,
+                  loggedInUserDepartment,
+                );
+              }
             }
           }
         } else {
@@ -1123,7 +1053,19 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
             testValues,
           );
 
-          childChangesDetected = true;
+          // Log Creation
+          await logAuditTrail(
+            "emi_tests_table",
+            insertResult.insertId,
+            jcNumber,
+            null,
+            "CREATE",
+            null,
+            JSON.stringify(testRow),
+            loggedInUser,
+            loggedInUserRole,
+            loggedInUserDepartment,
+          );
         }
       }
 
@@ -1148,7 +1090,6 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
             );
           }
         }
-        childChangesDetected = true;
         const deleteTestPerformedSql = `DELETE FROM emi_tests_details_table WHERE id IN (?) AND jcNumber = ?`;
         await connection.query(deleteTestPerformedSql, [
           deletedTestPerformedIds,
@@ -1167,144 +1108,6 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
         if (testPerformedRow.id) {
           // Update existing rows
           const existingRow = existingTestDetailsMap.get(testPerformedRow.id);
-          const testDetailsFields = [
-            {
-              name: "testName",
-              newVal: testPerformedRow.testName,
-              oldVal: existingRow?.testName,
-            },
-            {
-              name: "eutName",
-              newVal: testPerformedRow.eutName,
-              oldVal: existingRow?.eutName,
-            },
-            {
-              name: "eutSerialNumber",
-              newVal: testPerformedRow.eutSerialNumber,
-              oldVal: existingRow?.eutSerialNumber,
-            },
-            {
-              name: "testMachine",
-              newVal: testPerformedRow.testMachine,
-              oldVal: existingRow?.testMachine,
-            },
-            {
-              name: "testStandard",
-              newVal: testPerformedRow.testStandard,
-              oldVal: existingRow?.testStandard,
-            },
-            {
-              name: "slotDetails",
-              newVal: testPerformedRow.slotDetails,
-              oldVal: existingRow?.slotDetails,
-            },
-            {
-              name: "testStartDateTime",
-              newVal: formattedStartDateTime,
-              oldVal: existingRow?.testStartDateTime
-                ? convertDateTime(existingRow.testStartDateTime)
-                : null,
-              isDate: true,
-            },
-            {
-              name: "startTemp",
-              newVal: testPerformedRow.startTemp,
-              oldVal: existingRow?.startTemp,
-            },
-            {
-              name: "startRh",
-              newVal: testPerformedRow.startRh,
-              oldVal: existingRow?.startRh,
-            },
-            {
-              name: "testStartedBy",
-              newVal: testPerformedRow.testStartedBy,
-              oldVal: existingRow?.testStartedBy,
-            },
-            {
-              name: "testEndDateTime",
-              newVal: formattedEndDateTime,
-              oldVal: existingRow?.testEndDateTime
-                ? convertDateTime(existingRow.testEndDateTime)
-                : null,
-              isDate: true,
-            },
-            {
-              name: "testEndedBy",
-              newVal: testPerformedRow.testEndedBy,
-              oldVal: existingRow?.testEndedBy,
-            },
-            {
-              name: "endTemp",
-              newVal: testPerformedRow.endTemp,
-              oldVal: existingRow?.endTemp,
-            },
-            {
-              name: "endRh",
-              newVal: testPerformedRow.endRh,
-              oldVal: existingRow?.endRh,
-            },
-            {
-              name: "testDuration",
-              newVal: testPerformedRow.testDuration,
-              oldVal: existingRow?.testDuration,
-            },
-            {
-              name: "actualTestDuration",
-              newVal: testPerformedRow.actualTestDuration,
-              oldVal: existingRow?.actualTestDuration,
-            },
-            {
-              name: "observationForm",
-              newVal: testPerformedRow.observationForm,
-              oldVal: existingRow?.observationForm,
-            },
-            {
-              name: "observationFormStatus",
-              newVal: testPerformedRow.observationFormStatus,
-              oldVal: existingRow?.observationFormStatus,
-            },
-            {
-              name: "observationFormData",
-              newVal: testPerformedRow.observationFormData,
-              oldVal: existingRow?.observationFormData,
-            },
-            {
-              name: "reportDeliveryStatus",
-              newVal: testPerformedRow.reportDeliveryStatus,
-              oldVal: existingRow?.reportDeliveryStatus,
-            },
-            {
-              name: "reportNumber",
-              newVal: testPerformedRow.reportNumber,
-              oldVal: existingRow?.reportNumber,
-            },
-            {
-              name: "reportPreparedBy",
-              newVal: testPerformedRow.reportPreparedBy,
-              oldVal: existingRow?.reportPreparedBy,
-            },
-            {
-              name: "reportStatus",
-              newVal: testPerformedRow.reportStatus,
-              oldVal: existingRow?.reportStatus,
-            },
-          ];
-
-          const testDetailsChangedFields = [];
-          for (const field of testDetailsFields) {
-            const oldValue = String(field.oldVal || "");
-            const newValue = String(field.newVal || "");
-            if (oldValue !== newValue) {
-              testDetailsChangedFields.push(field);
-            }
-          }
-
-          const testDetailsLastUpdatedBy =
-            testDetailsChangedFields.length > 0
-              ? loggedInUser || ""
-              : existingRow?.lastUpdatedBy || loggedInUser || "";
-
           const updateTestPerformedSql = `
                     UPDATE emi_tests_details_table 
                     SET testName = ?, eutName = ?, eutSerialNumber = ?, testMachine = ?, testStandard = ?,  slotDetails = ?,
@@ -1339,7 +1142,7 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
             testPerformedRow.reportPreparedBy || "",
             testPerformedRow.reportStatus || "",
 
-            testDetailsLastUpdatedBy,
+            loggedInUser || "",
             testPerformedRow.id,
             jcNumber,
           ];
@@ -1347,21 +1150,148 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
           await connection.query(updateTestPerformedSql, testPerformedValues);
 
           // Audit Log for Test Details Updates
-          if (existingRow && testDetailsChangedFields.length > 0) {
-            childChangesDetected = true;
-            for (const field of testDetailsChangedFields) {
-              await logAuditTrail(
-                "emi_tests_details_table",
-                testPerformedRow.id,
-                jcNumber,
-                field.name,
-                "UPDATE",
-                field.oldVal,
-                field.newVal,
-                loggedInUser,
-                loggedInUserRole,
-                loggedInUserDepartment,
-              );
+          if (existingRow) {
+            const testDetailsFields = [
+              {
+                name: "testName",
+                newVal: testPerformedRow.testName,
+                oldVal: existingRow.testName,
+              },
+              {
+                name: "eutName",
+                newVal: testPerformedRow.eutName,
+                oldVal: existingRow.eutName,
+              },
+              {
+                name: "eutSerialNumber",
+                newVal: testPerformedRow.eutSerialNumber,
+                oldVal: existingRow.eutSerialNumber,
+              },
+              {
+                name: "testMachine",
+                newVal: testPerformedRow.testMachine,
+                oldVal: existingRow.testMachine,
+              },
+              {
+                name: "testStandard",
+                newVal: testPerformedRow.testStandard,
+                oldVal: existingRow.testStandard,
+              },
+              {
+                name: "slotDetails",
+                newVal: testPerformedRow.slotDetails,
+                oldVal: existingRow.slotDetails,
+              },
+              {
+                name: "testStartDateTime",
+                newVal: formattedStartDateTime,
+                oldVal: existingRow.testStartDateTime
+                  ? convertDateTime(existingRow.testStartDateTime)
+                  : null,
+                isDate: true,
+              },
+              {
+                name: "startTemp",
+                newVal: testPerformedRow.startTemp,
+                oldVal: existingRow.startTemp,
+              },
+              {
+                name: "startRh",
+                newVal: testPerformedRow.startRh,
+                oldVal: existingRow.startRh,
+              },
+              {
+                name: "testStartedBy",
+                newVal: testPerformedRow.testStartedBy,
+                oldVal: existingRow.testStartedBy,
+              },
+              {
+                name: "testEndDateTime",
+                newVal: formattedEndDateTime,
+                oldVal: existingRow.testEndDateTime
+                  ? convertDateTime(existingRow.testEndDateTime)
+                  : null,
+                isDate: true,
+              },
+              {
+                name: "testEndedBy",
+                newVal: testPerformedRow.testEndedBy,
+                oldVal: existingRow.testEndedBy,
+              },
+              {
+                name: "endTemp",
+                newVal: testPerformedRow.endTemp,
+                oldVal: existingRow.endTemp,
+              },
+              {
+                name: "endRh",
+                newVal: testPerformedRow.endRh,
+                oldVal: existingRow.endRh,
+              },
+              {
+                name: "testDuration",
+                newVal: testPerformedRow.testDuration,
+                oldVal: existingRow.testDuration,
+              },
+              {
+                name: "actualTestDuration",
+                newVal: testPerformedRow.actualTestDuration,
+                oldVal: existingRow.actualTestDuration,
+              },
+              {
+                name: "observationForm",
+                newVal: testPerformedRow.observationForm,
+                oldVal: existingRow.observationForm,
+              },
+              {
+                name: "observationFormStatus",
+                newVal: testPerformedRow.observationFormStatus,
+                oldVal: existingRow.observationFormStatus,
+              },
+              {
+                name: "observationFormData",
+                newVal: testPerformedRow.observationFormData,
+                oldVal: existingRow.observationFormData,
+              },
+              {
+                name: "reportDeliveryStatus",
+                newVal: testPerformedRow.reportDeliveryStatus,
+                oldVal: existingRow.reportDeliveryStatus,
+              },
+              {
+                name: "reportNumber",
+                newVal: testPerformedRow.reportNumber,
+                oldVal: existingRow.reportNumber,
+              },
+              {
+                name: "reportPreparedBy",
+                newVal: testPerformedRow.reportPreparedBy,
+                oldVal: existingRow.reportPreparedBy,
+              },
+              {
+                name: "reportStatus",
+                newVal: testPerformedRow.reportStatus,
+                oldVal: existingRow.reportStatus,
+              },
+            ];
+
+            for (const field of testDetailsFields) {
+              const oldValue = String(field.oldVal || "");
+              const newValue = String(field.newVal || "");
+              if (oldValue !== newValue) {
+                await logAuditTrail(
+                  "emi_tests_details_table",
+                  testPerformedRow.id,
+                  jcNumber,
+                  field.name,
+                  "UPDATE",
+                  field.oldVal,
+                  field.newVal,
+                  loggedInUser,
+                  loggedInUserRole,
+                  loggedInUserDepartment,
+                );
+              }
             }
           }
         } else {
@@ -1407,16 +1337,20 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
             testPerformedValues,
           );
 
-          childChangesDetected = true;
+          // Log Creation
+          await logAuditTrail(
+            "emi_tests_details_table",
+            insertResult.insertId,
+            jcNumber,
+            null,
+            "CREATE",
+            null,
+            JSON.stringify(testPerformedRow),
+            loggedInUser,
+            loggedInUserRole,
+            loggedInUserDepartment,
+          );
         }
-      }
-
-      if (childChangesDetected && !hasMainChanges) {
-        await updateParentEMIJobCardLastModified(
-          jcNumber,
-          loggedInUser,
-          connection,
-        );
       }
 
       // Commit the transaction

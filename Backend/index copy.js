@@ -20,7 +20,7 @@ const http = require("http");
 const https = require("https");
 const socketIo = require("socket.io");
 
-// create an express application:
+// create an express application::
 const app = express();
 
 // const serverOptions = {
@@ -32,12 +32,57 @@ const app = express();
 //   ),
 // };
 
-const server = http.createServer(app);
-// const server = https.createServer(serverOptions, app);
+//create server instance
+// const server = https.createServer(serverOptions, app); //For deployement
+const server = http.createServer(app); //For development
 
-///Make the app.connection available to the socket.io server:
-// const io = socketIo(server);
+// Middleware to validate session on each request
+const validateSession = (req, res, next) => {
+  // Skip validation for public routes (login, register, password reset)
+  const publicRoutes = [
+    "/api/login",
+    "/api/addUser",
+    "/api/checkResetPasswordEmail",
+    "/api/verifyOTP",
+    "/api/resetPassword",
+    "/api/getUserStatus",
+    "/",
+    "/api/testing",
+  ];
 
+  if (publicRoutes.includes(req.path)) {
+    return next();
+  }
+
+  if (!req.sessionID) return next();
+
+  const sqlCheckSession = `
+    SELECT revoked, expires_at
+    FROM active_users_session
+    WHERE session_id = ?
+  `;
+
+  db.query(sqlCheckSession, [req.sessionID], (err, results) => {
+    if (err || results.length === 0) return next();
+
+    const session = results[0];
+
+    // Check if revoked or expired
+    if (
+      session.revoked === 1 ||
+      (session.expires_at && new Date(session.expires_at) < new Date())
+    ) {
+      req.session.destroy();
+      return res
+        .status(401)
+        .json({ message: "Session expired or revoked", sessionInvalid: true });
+    }
+
+    next();
+  });
+};
+
+///Make the app.connection available to the socket.io servers:
 const io = socketIo(server, {
   cors: {
     origin: true, // mention the host address of the frontend
@@ -46,13 +91,6 @@ const io = socketIo(server, {
     credentials: true,
   },
 });
-
-// io.on("connection", (socket) => {
-//   console.log("A user connected");
-//   socket.on("disconnect", () => {
-//     console.log("A user disconnected");
-//   });
-// });
 
 let labbeeUsers = {};
 
@@ -90,7 +128,7 @@ app.use(
     //origin: "https://labbee.beanalytic.com", // Allow requests from this origin
     methods: ["POST", "GET", "DELETE", "PUT"],
     credentials: true,
-  })
+  }),
 );
 
 // const corsOption = {
@@ -127,18 +165,22 @@ app.use(
 
       // Set the session cookie properties
     },
-  })
+  }),
 );
+
+// Apply validateSession AFTER session middleware
+app.use(validateSession);
 
 // app.use("./FilesUploaded", express.static("FilesUploaded"))
 app.use(
   "/FilesUploaded",
-  express.static(path.join(__dirname, "FilesUploaded"))
+  express.static(path.join(__dirname, "FilesUploaded")),
 );
 
 // Get all the connections from the db
 const {
   createUsersTable,
+  createActiveUsersSessionTable,
   createOtpStorageTable,
   createPasswordResetAttemptsTable,
   createBEAQuotationsTable,
@@ -154,10 +196,36 @@ const {
   createEutDetailsTable,
   createJobcardTestsTable,
   createTestDetailsTable,
+  createTS1JobCardAuditTrailTable,
   createChambersForSlotBookingTable,
   createSlotBookingTable,
   createPoStatusTable,
   createNotificationsTable,
+
+  createEMIJobcardsTable,
+  createEMIJobcardsEUTTable,
+  createEMIJobcardsTestsTable,
+  createEMIJobcardsTestsDetailsTable,
+  createEMISLotBookingTable,
+  createEMICalibrationsTable,
+  createEMITestsTable,
+  createEMITestStandardsTable,
+  createEMIStandardAndTestMappingTable,
+
+  createTestCategoryTable,
+  createTestNamesTable,
+  createChambersListTable,
+  createTestAndChamberMappingTable,
+
+  createProjectsTable,
+  createProjectTasksTable,
+  createProjectSprintsTable,
+  createProjectRetrospectiveTable,
+  createProjectTaskLogsTable,
+
+  createInvoiceDataTable,
+
+  createFileAccessLogTable,
 } = require("./database_tables");
 
 //Get db connection from the db.js file
@@ -172,6 +240,7 @@ db.getConnection(function (err, connection) {
 
   // call the table creating functions here:
   createUsersTable();
+  createActiveUsersSessionTable();
   createOtpStorageTable();
   createPasswordResetAttemptsTable();
   createBEAQuotationsTable();
@@ -188,6 +257,7 @@ db.getConnection(function (err, connection) {
   createEutDetailsTable();
   createJobcardTestsTable();
   createTestDetailsTable();
+  createTS1JobCardAuditTrailTable();
 
   createChambersForSlotBookingTable();
   createSlotBookingTable();
@@ -195,12 +265,38 @@ db.getConnection(function (err, connection) {
 
   createNotificationsTable();
 
+  createEMIJobcardsTable();
+  createEMIJobcardsEUTTable();
+  createEMIJobcardsTestsTable();
+  createEMIJobcardsTestsDetailsTable();
+  createEMISLotBookingTable();
+  createEMICalibrationsTable();
+  createEMITestsTable();
+  createEMITestStandardsTable();
+  createEMIStandardAndTestMappingTable();
+
+  createTestCategoryTable();
+  createTestNamesTable();
+  createChambersListTable();
+
+  createTestAndChamberMappingTable();
+
+  createProjectsTable();
+  createProjectTasksTable();
+  createProjectSprintsTable();
+  createProjectRetrospectiveTable();
+  createProjectTaskLogsTable();
+
+  createInvoiceDataTable();
+
+  createFileAccessLogTable();
+
   connection.release(); // Release the connection back to the pool when done
 });
 
 // backend connection of users API's from 'UsersData' page:
 const { usersDataAPIs } = require("./UsersData");
-usersDataAPIs(app);
+usersDataAPIs(app, io, labbeeUsers);
 
 // backend connection from 'BEAQuotationsTable' page:
 const { mainQuotationsTableAPIs } = require("./BEAQuotationsTable");
@@ -238,9 +334,32 @@ slotBookingAPIs(app, io, labbeeUsers);
 const { poInvoiceBackendAPIs } = require("./PoInvoiceBackend");
 poInvoiceBackendAPIs(app);
 
+//Backend connection of EMI/EMC jobcards API's from 'EMIBackend' page
+const { emiJobcardsAPIs } = require("./EMIBackend");
+emiJobcardsAPIs(app, io, labbeeUsers);
+
+const { emiTestNamesAndStandardsAPIs } = require("./EMITestAndStandardsAPI");
+emiTestNamesAndStandardsAPIs(app, io, labbeeUsers);
+
 // backend connection to acess the notifications:
 const { notificationsAPIs } = require("./notifications");
 notificationsAPIs(app, io, labbeeUsers);
+
+// backend connection to acess the test category, test names and chambers list:
+const { TestsAndChambersUpdateAPIs } = require("./TestsAndChambersUpdateAPI");
+TestsAndChambersUpdateAPIs(app, io, labbeeUsers);
+
+//backend connection to acess the project tasks:
+const { projectManagementAPIs } = require("./projectManagementAPI");
+projectManagementAPIs(app, io, labbeeUsers);
+
+//backend connection to access files from the server:
+const { fileStorageAPIs } = require("./fileStorageAPIs");
+fileStorageAPIs(app, io, labbeeUsers);
+
+//backend connection to access the openai APIs:
+const { openaiAPIs } = require("./OpenaiAPI");
+openaiAPIs(app, io, labbeeUsers);
 
 /// Code to get backup of only database in .sql format:
 ///Data Backup function:
@@ -296,7 +415,7 @@ app.get("/", (req, res) => {
 });
 
 // const PORT = 4002; //For deploymentt
-const PORT = 4000;
+const PORT = 4001;
 
 app.get("/api/testing", (req, res) => {
   res.send("Backend is up and running...");

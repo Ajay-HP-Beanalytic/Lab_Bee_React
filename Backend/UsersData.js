@@ -57,7 +57,7 @@ function usersDataAPIs(app, io, labbeeUsers) {
                   .json({ message: "Internal server error" });
               }
               return res.status(200).json({ message: "Registration Success" });
-            }
+            },
           );
         })
         .catch((err) => {
@@ -122,7 +122,7 @@ function usersDataAPIs(app, io, labbeeUsers) {
         const token = jwt.sign(
           { userID: user.id, email: user.email },
           jwtSecret,
-          { expiresIn: "30d" }
+          { expiresIn: "30d" },
         );
 
         // Set session data
@@ -169,7 +169,7 @@ function usersDataAPIs(app, io, labbeeUsers) {
               });
             } else {
               console.log(
-                `Session created successfully for user: ${user.name} (ID: ${user.id})`
+                `Session created successfully for user: ${user.name} (ID: ${user.id})`,
               );
             }
 
@@ -183,7 +183,7 @@ function usersDataAPIs(app, io, labbeeUsers) {
                 role: user.role,
               });
             }
-          }
+          },
         );
 
         res.status(200).json({ username: req.session.username, token: token });
@@ -332,7 +332,7 @@ function usersDataAPIs(app, io, labbeeUsers) {
           return res.status(500).json({ error: "Internal server error" });
         }
         res.send(result);
-      }
+      },
     );
   });
 
@@ -663,22 +663,25 @@ function usersDataAPIs(app, io, labbeeUsers) {
   //Cleanup Expired/Revoked Sessions
   // Add inside usersDataAPIs function
   // Clean up old sessions periodically (every 9 hours)
-  setInterval(() => {
-    const sqlCleanup = `
+  setInterval(
+    () => {
+      const sqlCleanup = `
     DELETE FROM active_users_session
     WHERE revoked = 1
       OR expires_at < DATE_SUB(NOW(), INTERVAL 7 DAY)
       OR last_activity < DATE_SUB(NOW(), INTERVAL 9 HOUR)
   `;
 
-    db.query(sqlCleanup, (err, result) => {
-      if (err) {
-        console.error("Error cleaning stale sessions:", err);
-      } else if (result.affectedRows > 0) {
-        console.log(`Cleaned up ${result.affectedRows} stale sessions`);
-      }
-    });
-  }, 9 * 60 * 60 * 1000); // Run every 9 hours (matches inactivity timeout)
+      db.query(sqlCleanup, (err, result) => {
+        if (err) {
+          console.error("Error cleaning stale sessions:", err);
+        } else if (result.affectedRows > 0) {
+          console.log(`Cleaned up ${result.affectedRows} stale sessions`);
+        }
+      });
+    },
+    9 * 60 * 60 * 1000,
+  ); // Run every 9 hours (matches inactivity timeout)
 
   // Force logout a specific user (useful for admin)
   app.post("/api/revokeUserSessions", (req, res) => {

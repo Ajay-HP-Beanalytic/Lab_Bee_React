@@ -231,7 +231,7 @@ export default function JCPreview({
       // Generate the report with config (including images) using new docx package
       const { blob, fileName } = await GenerateReportDocument(
         pendingReportData,
-        reportConfig
+        reportConfig,
       );
 
       // Set the preview modal state
@@ -279,8 +279,6 @@ export default function JCPreview({
 
   //Handle ESS checkbox :
   const handleESSCheckboxChange = (rowIndex, isChecked) => {
-    console.log("rowIndex is-->", rowIndex);
-    console.log("isChecked-->", isChecked);
     if (isChecked) {
       setSelectedESSTests((prev) => [...prev, rowIndex]);
     } else {
@@ -293,7 +291,7 @@ export default function JCPreview({
     // Validation: At least one ESS test must be selected
     if (selectedESSTests.length === 0) {
       toast.warning(
-        "Please select at least one ESS test to generate the report."
+        "Please select at least one ESS test to generate the report.",
       );
       return;
     }
@@ -547,8 +545,8 @@ export default function JCPreview({
                                     Number(row.duration) === 0
                                       ? "Complete the test to enable report generation"
                                       : selectedESSTests.includes(index)
-                                      ? "Selected for ESS Report"
-                                      : "Select this test for ESS Report"
+                                        ? "Selected for ESS Report"
+                                        : "Select this test for ESS Report"
                                   }
                                 >
                                   <span>
@@ -561,12 +559,12 @@ export default function JCPreview({
                                       onChange={(e) =>
                                         handleESSCheckboxChange(
                                           index,
-                                          e.target.checked
+                                          e.target.checked,
                                         )
                                       }
                                       sx={{
                                         "color": selectedESSTests.includes(
-                                          index
+                                          index,
                                         )
                                           ? "#9c27b0"
                                           : "inherit",
@@ -582,7 +580,7 @@ export default function JCPreview({
                                 {selectedESSTests.includes(index) &&
                                   (() => {
                                     const buttonRowIndex = Math.max(
-                                      ...selectedESSTests
+                                      ...selectedESSTests,
                                     );
                                     const isButtonRow =
                                       index === buttonRowIndex;

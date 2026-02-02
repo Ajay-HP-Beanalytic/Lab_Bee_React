@@ -50,10 +50,22 @@ export default function QuotationsDashboard() {
   const [refresh, setRefresh] = useState(false);
 
   // Pagination state for DataGrid
-  const [paginationModel, setPaginationModel] = useState({
-    page: 0,
-    pageSize: 50,
+  const [paginationModel, setPaginationModel] = useState(() => {
+    const savedPagination = sessionStorage.getItem("quoteDashboardPagination");
+    return savedPagination
+      ? JSON.parse(savedPagination)
+      : {
+          page: 0,
+          pageSize: 50,
+        };
   });
+
+  useEffect(() => {
+    sessionStorage.setItem(
+      "quoteDashboardPagination",
+      JSON.stringify(paginationModel)
+    );
+  }, [paginationModel]);
 
   const { month, year } = getCurrentMonthYear();
 

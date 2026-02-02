@@ -161,7 +161,7 @@ const RenderTable = ({
                   style={{
                     color: "white",
                     minWidth: column.width || "150px",
-                    padding: "8px",
+                    padding: "1px",
                   }}
                 >
                   {column.label}
@@ -183,6 +183,7 @@ const RenderTable = ({
                     align={column.align || "center"}
                     style={{
                       minWidth: column.width || "150px",
+                      padding: "5px",
                     }}
                   >
                     {column.id === "serialNumber" ? (
@@ -272,7 +273,7 @@ const RenderTable = ({
                             handleInputChange(
                               rowIndex,
                               column.id,
-                              newInputValue
+                              newInputValue,
                             );
                           }
                         }}
@@ -315,7 +316,10 @@ const RenderTable = ({
                         // This ensures the field displays the value even when options are still loading
                         isOptionEqualToValue={(option, value) => {
                           // Handle both string and object comparisons
-                          if (typeof option === "string" && typeof value === "string") {
+                          if (
+                            typeof option === "string" &&
+                            typeof value === "string"
+                          ) {
                             return option === value;
                           }
                           return option === value;

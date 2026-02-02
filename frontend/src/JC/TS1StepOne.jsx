@@ -29,9 +29,19 @@ import {
   TEST_CONFIG_FIELDS,
 } from "./constants/formFieldConfigurations";
 import { TS1_JC_NOTES } from "./constants/jobCardConstants";
+import DocumentPreviewModal from "../components/DocumentPreviewModal";
+import axios from "axios";
+import { serverBaseAddress } from "../Pages/APIPage";
+import { toast } from "react-toastify";
 
 export default function TS1StepOne() {
   const jobcardStore = useJobCardStore();
+
+  const [previewDocumentModalOpen, setPreviewDocumentModalOpen] =
+    useState(false);
+  const [previewDocumentBlob, setPreviewDocumentBlob] = useState(null);
+  const [previewFileName, setPreviewFileName] = useState("");
+  const [previewFileType, setPreviewFileType] = useState("");
 
   // Local state for deleted row IDs
   const [deletedEutIds, setDeletedEutIds] = useState([]);
@@ -42,191 +52,251 @@ export default function TS1StepOne() {
     jobcardStore.setReferanceDocs(newFiles);
   };
 
+  //Function to handle the preview of the attached documents:
+  const handlePreviewFile = async (file) => {
+    if (!file.file_path) {
+      toast.error("File path not found");
+      return;
+    }
+
+    const fileExtension = file.file_path.split(".").pop().toLowerCase();
+    const fileNameWithTimestamp = file.file_path.split("/").pop();
+    const url = `${serverBaseAddress}/api/FilesUploaded/${fileNameWithTimestamp}`;
+
+    // Handle PDF - Open in new tab
+    if (fileExtension === "pdf") {
+      window.open(url, "_blank");
+      return;
+    }
+
+    // Handle other formats (not docx or images) - Open in new tab (likely downloads)
+    const isImage = ["jpg", "jpeg", "png", "gif", "bmp", "webp"].includes(
+      fileExtension
+    );
+    if (fileExtension !== "docx" && !isImage) {
+      window.open(url, "_blank");
+      return;
+    }
+
+    // For DOCX and Images, fetch blob and show in modal
+    try {
+      const response = await axios.get(url, {
+        responseType: "blob",
+      });
+
+      setPreviewDocumentBlob(response.data);
+      setPreviewFileName(fileNameWithTimestamp);
+      setPreviewFileType(fileExtension);
+      setPreviewDocumentModalOpen(true);
+    } catch (error) {
+      console.error("Error fetching file for preview:", error);
+      toast.error("Failed to load file preview");
+    }
+  };
+
   const theme = useTheme();
   const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
 
+  const handleClosePreviewDocumentModal = () => {
+    setPreviewDocumentModalOpen(false);
+  };
+
   return (
-    <Box sx={{ mt: 2 }}>
-      {/* SERVICE REQUEST FORM Section */}
-      <Card sx={{ mb: 2 }}>
-        <CardContent>
-          <Typography variant="h6" sx={{ mb: "2px", color: "#003366" }}>
-            SERVICE REQUEST FORM
-          </Typography>
-          <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
-            (To be filled by the customer)
-          </Typography>
+    <>
+      <Box sx={{ mt: 2 }}>
+        {/* SERVICE REQUEST FORM Section */}
+        <Card sx={{ mb: 2 }}>
+          <CardContent>
+            <Typography variant="h6" sx={{ mb: "2px", color: "#003366" }}>
+              SERVICE REQUEST FORM
+            </Typography>
+            <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
+              (To be filled by the customer)
+            </Typography>
 
-          <Grid
-            container
-            spacing={2}
-            justifyContent="center"
-            alignSelf="center"
-            sx={{ padding: "10px" }}
-          >
-            {/* Customer Information Fields - 2 columns */}
-            <Grid item xs={12} sm={6} md={6}>
-              <RenderFormFields
-                fields={CUSTOMER_INFO_FIELDS.slice(
-                  0,
-                  Math.ceil(CUSTOMER_INFO_FIELDS.length / 2)
-                )}
-                store={jobcardStore}
-              />
+            <Grid
+              container
+              spacing={2}
+              justifyContent="center"
+              alignSelf="center"
+              sx={{ padding: "10px" }}
+            >
+              {/* Customer Information Fields - 2 columns */}
+              <Grid item xs={12} sm={6} md={6}>
+                <RenderFormFields
+                  fields={CUSTOMER_INFO_FIELDS.slice(
+                    0,
+                    Math.ceil(CUSTOMER_INFO_FIELDS.length / 2),
+                  )}
+                  store={jobcardStore}
+                />
+              </Grid>
+
+              <Grid item xs={12} sm={6} md={6}>
+                <RenderFormFields
+                  fields={CUSTOMER_INFO_FIELDS.slice(
+                    Math.ceil(CUSTOMER_INFO_FIELDS.length / 2),
+                  )}
+                  store={jobcardStore}
+                />
+              </Grid>
+
+              <Grid item xs={12}>
+                <Divider component="hr" sx={{ my: 1 }} />
+              </Grid>
+
+              <Grid container spacing={2}>
+                {TEST_CONFIG_FIELDS.map((field) => (
+                  <Grid item xs={12} sm={6} md={6} lg={4} key={field.name}>
+                    <RenderFormFields fields={[field]} store={jobcardStore} />
+                  </Grid>
+                ))}
+              </Grid>
+
+              {/* File Attachments */}
+              <Grid item xs={12}>
+                <Box
+                  sx={{
+                    border: "1px dashed #ccc",
+                    borderRadius: 2,
+                    p: 2,
+                    bgcolor: "#fafafa",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                  }}
+                >
+                  <FileUploadComponent
+                    fieldName="Attach Reference Documents"
+                    onFilesChange={handleFilesChange}
+                    jcNumber={jobcardStore.jcNumberString}
+                    existingAttachments={jobcardStore.referanceDocs}
+                    onPreview={handlePreviewFile}
+                  />
+                </Box>
+              </Grid>
+
+              <Grid item xs={12}>
+                <Box
+                  sx={{
+                    mt: 1,
+                    mb: 1,
+                    padding: 2,
+                    border: "1px solid black",
+                    backgroundColor: "#fff9e6",
+                  }}
+                >
+                  <Typography variant="h5" sx={{ color: "#d32f2f", mb: 1 }}>
+                    ⚠️ Important Notes - Customer Acknowledgment
+                  </Typography>
+                  {TS1_JC_NOTES.map((note) => (
+                    <Grid key={note.value}>
+                      <FormGroup>
+                        <FormControlLabel
+                          required
+                          control={
+                            <Checkbox
+                              checked={
+                                note.value === "jcNote1"
+                                  ? jobcardStore.jcNote1Checked
+                                  : jobcardStore.jcNote2Checked
+                              }
+                              disabled={jobcardStore.editJc}
+                              onChange={(e) => {
+                                if (note.value === "jcNote1") {
+                                  jobcardStore.setJcNote1Checked(
+                                    e.target.checked,
+                                  );
+                                } else {
+                                  jobcardStore.setJcNote2Checked(
+                                    e.target.checked,
+                                  );
+                                }
+                              }}
+                              sx={{
+                                "color": "#d32f2f",
+                                "&.Mui-checked": {
+                                  color: "#2e7d32",
+                                },
+                              }}
+                            />
+                          }
+                          label={
+                            <Typography
+                              variant={isSmallScreen ? "body2" : "body1"}
+                              sx={{ color: "#424242", fontWeight: 500 }}
+                            >
+                              {note.label}
+                            </Typography>
+                          }
+                          sx={{ alignItems: "flex-start" }}
+                        />
+                      </FormGroup>
+                    </Grid>
+                  ))}
+                </Box>
+              </Grid>
             </Grid>
+          </CardContent>
+        </Card>
 
-            <Grid item xs={12} sm={6} md={6}>
-              <RenderFormFields
-                fields={CUSTOMER_INFO_FIELDS.slice(
-                  Math.ceil(CUSTOMER_INFO_FIELDS.length / 2)
-                )}
-                store={jobcardStore}
-              />
-            </Grid>
-
-            <Grid item xs={12}>
-              <Divider component="hr" sx={{ my: 1 }} />
-            </Grid>
-
+        <Card sx={{ mt: 1, mb: 1 }}>
+          <CardContent>
             <Grid container spacing={2}>
-              {TEST_CONFIG_FIELDS.map((field) => (
-                <Grid item xs={12} sm={6} md={6} lg={4} key={field.name}>
+              {JC_METADATA_FIELDS.map((field) => (
+                <Grid item xs={12} sm={6} md={6} lg={6} key={field.name}>
                   <RenderFormFields fields={[field]} store={jobcardStore} />
                 </Grid>
               ))}
             </Grid>
+          </CardContent>
+        </Card>
 
-            {/* File Attachments */}
-            <Grid item xs={12}>
-              <Box
-                sx={{
-                  border: "1px dashed #ccc",
-                  borderRadius: 2,
-                  p: 2,
-                  bgcolor: "#fafafa",
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                }}
-              >
-                <FileUploadComponent
-                  fieldName="Attach Reference Documents"
-                  onFilesChange={handleFilesChange}
-                  jcNumber={jobcardStore.jcNumberString}
-                  existingAttachments={jobcardStore.referanceDocs}
-                />
-              </Box>
-            </Grid>
+        {/* EUT/DUT DETAILS Section */}
+        <Card sx={{ mb: 2 }}>
+          <CardContent>
+            <Typography variant="h6" sx={{ mb: 2, color: "#003366" }}>
+              EUT/DUT DETAILS
+            </Typography>
+            <RenderTable
+              tableColumns={EUT_TABLE_COLUMNS}
+              tableRows={jobcardStore.eutRows}
+              setTableRows={jobcardStore.setEutRows}
+              rowTemplate={ROW_TEMPLATES.eut}
+              deletedIds={deletedEutIds}
+              setDeletedIds={setDeletedEutIds}
+            />
+          </CardContent>
+        </Card>
 
-            <Grid item xs={12}>
-              <Box
-                sx={{
-                  mt: 1,
-                  mb: 1,
-                  padding: 2,
-                  border: "1px solid black",
-                  backgroundColor: "#fff9e6",
-                }}
-              >
-                <Typography variant="h5" sx={{ color: "#d32f2f", mb: 1 }}>
-                  ⚠️ Important Notes - Customer Acknowledgment
-                </Typography>
-                {TS1_JC_NOTES.map((note) => (
-                  <Grid key={note.value}>
-                    <FormGroup>
-                      <FormControlLabel
-                        required
-                        control={
-                          <Checkbox
-                            checked={
-                              note.value === "jcNote1"
-                                ? jobcardStore.jcNote1Checked
-                                : jobcardStore.jcNote2Checked
-                            }
-                            disabled={jobcardStore.editJc}
-                            onChange={(e) => {
-                              if (note.value === "jcNote1") {
-                                jobcardStore.setJcNote1Checked(
-                                  e.target.checked
-                                );
-                              } else {
-                                jobcardStore.setJcNote2Checked(
-                                  e.target.checked
-                                );
-                              }
-                            }}
-                            sx={{
-                              "color": "#d32f2f",
-                              "&.Mui-checked": {
-                                color: "#2e7d32",
-                              },
-                            }}
-                          />
-                        }
-                        label={
-                          <Typography
-                            variant={isSmallScreen ? "body2" : "body1"}
-                            sx={{ color: "#424242", fontWeight: 500 }}
-                          >
-                            {note.label}
-                          </Typography>
-                        }
-                        sx={{ alignItems: "flex-start" }}
-                      />
-                    </FormGroup>
-                  </Grid>
-                ))}
-              </Box>
-            </Grid>
-          </Grid>
-        </CardContent>
-      </Card>
+        {/* TEST DETAILS Section */}
+        <Card sx={{ mb: 2 }}>
+          <CardContent>
+            <Typography variant="h6" sx={{ mb: 2, color: "#003366" }}>
+              TEST DETAILS
+            </Typography>
+            <RenderTable
+              tableColumns={TEST_TABLE_COLUMNS}
+              tableRows={jobcardStore.testRows}
+              setTableRows={jobcardStore.setTestRows}
+              rowTemplate={ROW_TEMPLATES.test}
+              deletedIds={deletedTestIds}
+              setDeletedIds={setDeletedTestIds}
+            />
+          </CardContent>
+        </Card>
+      </Box>
 
-      <Card sx={{ mt: 1, mb: 1 }}>
-        <CardContent>
-          <Grid container spacing={2}>
-            {JC_METADATA_FIELDS.map((field) => (
-              <Grid item xs={12} sm={6} md={6} lg={6} key={field.name}>
-                <RenderFormFields fields={[field]} store={jobcardStore} />
-              </Grid>
-            ))}
-          </Grid>
-        </CardContent>
-      </Card>
-
-      {/* EUT/DUT DETAILS Section */}
-      <Card sx={{ mb: 2 }}>
-        <CardContent>
-          <Typography variant="h6" sx={{ mb: 2, color: "#003366" }}>
-            EUT/DUT DETAILS
-          </Typography>
-          <RenderTable
-            tableColumns={EUT_TABLE_COLUMNS}
-            tableRows={jobcardStore.eutRows}
-            setTableRows={jobcardStore.setEutRows}
-            rowTemplate={ROW_TEMPLATES.eut}
-            deletedIds={deletedEutIds}
-            setDeletedIds={setDeletedEutIds}
-          />
-        </CardContent>
-      </Card>
-
-      {/* TEST DETAILS Section */}
-      <Card sx={{ mb: 2 }}>
-        <CardContent>
-          <Typography variant="h6" sx={{ mb: 2, color: "#003366" }}>
-            TEST DETAILS
-          </Typography>
-          <RenderTable
-            tableColumns={TEST_TABLE_COLUMNS}
-            tableRows={jobcardStore.testRows}
-            setTableRows={jobcardStore.setTestRows}
-            rowTemplate={ROW_TEMPLATES.test}
-            deletedIds={deletedTestIds}
-            setDeletedIds={setDeletedTestIds}
-          />
-        </CardContent>
-      </Card>
-    </Box>
+      {/* Open Document Preview Modal to prview the attached documents */}
+      <DocumentPreviewModal
+        open={previewDocumentModalOpen}
+        onClose={handleClosePreviewDocumentModal}
+        // onPrevious={handleDocumentPreviewPrevious}
+        documentBlob={previewDocumentBlob}
+        fileName={previewFileName}
+        fileType={previewFileType}
+        title="Files / Documents Preview"
+      />
+    </>
   );
 }

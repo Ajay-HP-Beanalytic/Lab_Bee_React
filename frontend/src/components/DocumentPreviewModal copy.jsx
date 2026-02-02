@@ -22,15 +22,14 @@ import { saveAs } from "file-saver";
 /**
  * DocumentPreviewModal Component
  *
- * Displays a preview of a .docx document or image in a modal dialog
+ * Displays a preview of a .docx document in a modal dialog
  * Allows users to preview before downloading
  *
  * @param {boolean} open - Controls modal visibility
  * @param {function} onClose - Callback when modal is closed
  * @param {function} onPrevious - Callback when Previous button is clicked (optional)
- * @param {Blob} documentBlob - The document blob to preview
+ * @param {Blob} documentBlob - The .docx document blob to preview
  * @param {string} fileName - Suggested filename for download
- * @param {string} fileType - File extension (docx, png, jpg, etc.)
  * @param {string} title - Modal title (optional)
  */
 const DocumentPreviewModal = ({
@@ -39,36 +38,14 @@ const DocumentPreviewModal = ({
   onPrevious,
   documentBlob,
   fileName = "document.docx",
-  fileType = "docx",
   title = "Document Preview",
 }) => {
   const previewContainerRef = useRef(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [imageUrl, setImageUrl] = useState(null);
 
-  const isImage = ["jpg", "jpeg", "png", "gif", "bmp", "webp"].includes(
-    fileType.toLowerCase()
-  );
-
-  // Handle Image Previews
+  // Render the document preview when modal opens or documentBlob changes
   useEffect(() => {
-    if (open && documentBlob && isImage) {
-      const url = URL.createObjectURL(documentBlob);
-      setImageUrl(url);
-      
-      // Cleanup
-      return () => {
-        URL.revokeObjectURL(url);
-        setImageUrl(null);
-      };
-    }
-  }, [open, documentBlob, isImage]);
-
-  // Handle DOCX Previews
-  useEffect(() => {
-    if (!open || !documentBlob || isImage) return;
-
     // Capture the ref value at the time of effect execution
     const containerElement = previewContainerRef.current;
     let timer;
@@ -85,10 +62,7 @@ const DocumentPreviewModal = ({
         if (container) {
           container.innerHTML = "";
         } else {
-           // If we are here but supposed to be rendering docx, it might be an issue.
-           // However, if we just switched from image to docx, ref might need a moment.
-           // throw new Error("Container ref is null - cannot render");
-           return; 
+          throw new Error("Container ref is null - cannot render");
         }
 
         // Verify blob
@@ -141,7 +115,12 @@ const DocumentPreviewModal = ({
           // console.log("Container ref still not available after delay");
         }
       }, 100);
-    } 
+    } else {
+      console.log("Conditions not met:", {
+        open,
+        hasBlob: !!documentBlob,
+      });
+    }
 
     // Cleanup function to clear the container and timer when modal closes
     return () => {
@@ -153,7 +132,7 @@ const DocumentPreviewModal = ({
         containerElement.innerHTML = "";
       }
     };
-  }, [open, documentBlob, isImage]);
+  }, [open, documentBlob]);
 
   const handleDownload = () => {
     if (documentBlob) {
@@ -207,9 +186,6 @@ const DocumentPreviewModal = ({
           overflow: "auto",
           backgroundColor: "#f5f5f5",
           position: "relative",
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: isImage ? 'center' : 'flex-start'
         }}
       >
         {/* Loading Overlay - positioned absolutely on top */}
@@ -266,54 +242,37 @@ const DocumentPreviewModal = ({
           </Box>
         )}
 
-        {/* Image Preview */}
-        {isImage && imageUrl && (
-           <img 
-             src={imageUrl} 
-             alt={fileName} 
-             style={{ 
-               maxWidth: '100%', 
-               maxHeight: '100%', 
-               objectFit: 'contain',
-               boxShadow: "0 0 10px rgba(0,0,0,0.1)" 
-             }} 
-           />
-        )}
-
-        {/* DOCX Preview Container - conditionally rendered but ref is needed */}
-        {!isImage && (
-          <Box
-            ref={previewContainerRef}
-            sx={{
+        {/* Preview Container - ALWAYS mounted so ref stays valid */}
+        <Box
+          ref={previewContainerRef}
+          sx={{
+            "backgroundColor": "white",
+            "padding": "20px",
+            "minHeight": "600px",
+            "& .docx-wrapper": {
+              backgroundColor: "white",
+              padding: "30px",
+              boxShadow: "0 0 10px rgba(0,0,0,0.1)",
+            },
+            "& .docx": {
+              margin: "0 auto",
+            },
+            // Style tables
+            "& table": {
+              borderCollapse: "collapse",
               width: "100%",
-              "backgroundColor": "white",
-              "padding": "20px",
-              "minHeight": "600px",
-              "& .docx-wrapper": {
-                backgroundColor: "white",
-                padding: "30px",
-                boxShadow: "0 0 10px rgba(0,0,0,0.1)",
-              },
-              "& .docx": {
-                margin: "0 auto",
-              },
-              // Style tables
-              "& table": {
-                borderCollapse: "collapse",
-                width: "100%",
-                marginBottom: "1em",
-              },
-              "& table td, & table th": {
-                border: "1px solid #ddd",
-                padding: "8px",
-              },
-              "& table th": {
-                backgroundColor: "#f2f2f2",
-                fontWeight: "bold",
-              },
-            }}
-          />
-        )}
+              marginBottom: "1em",
+            },
+            "& table td, & table th": {
+              border: "1px solid #ddd",
+              padding: "8px",
+            },
+            "& table th": {
+              backgroundColor: "#f2f2f2",
+              fontWeight: "bold",
+            },
+          }}
+        />
       </DialogContent>
 
       <DialogActions sx={{ p: 2, gap: 1 }}>

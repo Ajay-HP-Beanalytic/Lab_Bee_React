@@ -30,8 +30,14 @@ import { serverBaseAddress } from "../Pages/APIPage";
  * @param {boolean} open - Dialog open state
  * @param {function} onClose - Close handler
  * @param {string} jcNumber - Job Card number to fetch history for
+ * @param {boolean} isEmi - Whether this is an EMI Job Card (TS2)
  */
-export default function AuditHistoryDialog({ open, onClose, jcNumber }) {
+export default function AuditHistoryDialog({
+  open,
+  onClose,
+  jcNumber,
+  isEmi = false,
+}) {
   const [auditTrail, setAuditTrail] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -51,9 +57,13 @@ export default function AuditHistoryDialog({ open, onClose, jcNumber }) {
     try {
       // URL encode the JC number to handle slashes (e.g., 2025-26/10-005)
       const encodedJcNumber = encodeURIComponent(jcNumber);
-      const response = await axios.get(
-        `${serverBaseAddress}/api/jobcard/audittrail/${encodedJcNumber}`
-      );
+
+      // Determine the correct endpoint based on isEmi prop
+      const endpoint = isEmi
+        ? `/api/emi/jobcard/audittrail/${encodedJcNumber}`
+        : `/api/jobcard/audittrail/${encodedJcNumber}`;
+
+      const response = await axios.get(`${serverBaseAddress}${endpoint}`);
 
       if (response.data.success) {
         setAuditTrail(response.data.auditTrail);
@@ -102,10 +112,18 @@ export default function AuditHistoryDialog({ open, onClose, jcNumber }) {
 
   // Format table name for display
   const formatTableName = (tableName) => {
+    // TS1 Tables
     if (tableName === "bea_jobcards") return "Main JC";
     if (tableName === "tests_details") return "Test Details";
     if (tableName === "eut_details") return "EUT Details";
     if (tableName === "jc_tests") return "Tests";
+
+    // TS2 (EMI) Tables
+    if (tableName === "emi_jobcards") return "Main JC";
+    if (tableName === "emi_tests_details_table") return "Test Details";
+    if (tableName === "emi_eut_table") return "EUT Details";
+    if (tableName === "emi_tests_table") return "Tests";
+
     return tableName;
   };
 
@@ -113,8 +131,15 @@ export default function AuditHistoryDialog({ open, onClose, jcNumber }) {
     <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth>
       <DialogTitle>
         <Box display="flex" justifyContent="space-between">
-          <Typography variant="h6" align="center">
-            Change History - JC {jcNumber}
+          <Typography
+            variant="h6"
+            align="center"
+            fontStyle="italic"
+            fontWeight="bold"
+          >
+            {isEmi
+              ? `TS2 JC: ${jcNumber} Change History `
+              : `TS1 JC:${jcNumber} Change History `}
           </Typography>
           <IconButton onClick={onClose} size="small">
             <CloseIcon />
