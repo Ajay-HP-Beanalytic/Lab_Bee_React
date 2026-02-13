@@ -146,6 +146,15 @@ function usersDataAPIs(app, io, labbeeUsers) {
         INSERT INTO active_users_session 
         (user_id, user_name, session_id, token_hash, created_at, last_activity, expires_at, ip_address, user_agent, revoked) 
         VALUES (?, ?, ?, ?, NOW(), NOW(), ?, ?, ?, 0)
+        ON DUPLICATE KEY UPDATE
+          user_id = VALUES(user_id),
+          user_name = VALUES(user_name),
+          token_hash = VALUES(token_hash),
+          last_activity = NOW(),
+          expires_at = VALUES(expires_at),
+          ip_address = VALUES(ip_address),
+          user_agent = VALUES(user_agent),
+          revoked = 0
       `;
 
         db.query(
@@ -169,7 +178,7 @@ function usersDataAPIs(app, io, labbeeUsers) {
               });
             } else {
               console.log(
-                `Session created successfully for user: ${user.name} (ID: ${user.id})`,
+                `Session tracked successfully for user: ${user.name} (ID: ${user.id})`,
               );
             }
 
