@@ -263,6 +263,20 @@ export default function EmiJobcard() {
 
   const populateData = useCallback(
     (data) => {
+      const rawConformityData = data.emiPrimaryJCData.conformityData;
+      let parsedConformityData = {};
+      if (rawConformityData) {
+        if (typeof rawConformityData === "string") {
+          try {
+            parsedConformityData = JSON.parse(rawConformityData);
+          } catch (error) {
+            parsedConformityData = {};
+          }
+        } else if (typeof rawConformityData === "object") {
+          parsedConformityData = rawConformityData;
+        }
+      }
+
       // Populate Step One data (emiEutData and emiTestsData tables)
       setStepOneFormData({
         companyName: data.emiPrimaryJCData.companyName,
@@ -272,6 +286,7 @@ export default function EmiJobcard() {
         customerPhone: data.emiPrimaryJCData.customerNumber,
         projectName: data.emiPrimaryJCData.projectName,
         reportType: data.emiPrimaryJCData.reportType,
+        ...parsedConformityData,
       });
       setEutTableRows(data.emiEutData); // populate EUT table
       setTestsTableRows(data.emiTestsData); // populate Tests table

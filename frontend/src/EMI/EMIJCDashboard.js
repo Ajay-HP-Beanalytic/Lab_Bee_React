@@ -662,6 +662,7 @@ export default function EMIJCDashboard() {
             open={openJCPreview}
             onClose={handleCloseJCPreview}
             jcNumber={fetchedEMIJCNumber}
+            emiPrimaryData={fetchedEMIJCPrimaryData}
             primaryJCDetails={primaryJCDetails}
             eutRows={fetchedEMIJCEUTData}
             testRows={fetchedEMIJCTestsData}

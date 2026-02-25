@@ -46,6 +46,12 @@ function sanitizeDeep(input) {
     return input;
   }
 }
+
+function withFallback(value) {
+  const normalized = value == null ? "" : String(value).trim();
+  return normalized === "" ? "N/A" : normalized;
+}
+
 const EMIJCDocument = ({ id }) => {
   //usEffect hook to fetch the jobcard data.
   useEffect(() => {
@@ -86,7 +92,41 @@ const EMIJCDocument = ({ id }) => {
           jcClosedDate,
           observations,
           lastUpdatedBy,
+          conformityData: rawConformityData,
         } = emiPrimaryJCData;
+
+        let conformityData = {};
+        if (rawConformityData) {
+          if (typeof rawConformityData === "string") {
+            try {
+              conformityData = JSON.parse(rawConformityData);
+            } catch (error) {
+              conformityData = {};
+            }
+          } else if (typeof rawConformityData === "object") {
+            conformityData = rawConformityData;
+          }
+        }
+
+        const decisionRuleOptions = [
+          conformityData.decisionRuleOptionStandardRequirement
+            ? "As per standard requirement"
+            : null,
+          conformityData.decisionRuleOptionIncludesLabUncertainty
+            ? "Includes Lab Uncertainty"
+            : null,
+        ]
+          .filter(Boolean)
+          .join(", ");
+
+        const testResultOptions = [
+          conformityData.testResultReportRequired ? "Report Required" : null,
+          conformityData.testResultReportHardCopy ? "Hard Copy" : null,
+          conformityData.certificateRequired ? "Certificate Required" : null,
+          conformityData.certificateSoftCopy ? "Soft Copy" : null,
+        ]
+          .filter(Boolean)
+          .join(", ");
 
         //Parse and seggregate EUT table:
         const parsedEUT = emiEutData.map((eut, index) => {
@@ -167,6 +207,19 @@ const EMIJCDocument = ({ id }) => {
             : "",
           observations,
           lastUpdatedBy,
+          conformityStatement: withFallback(conformityData.conformityStatement),
+          conformityDecisionRule: withFallback(
+            conformityData.decisionRuleApplicable,
+          ),
+          conformityDecisionRuleOptions: withFallback(decisionRuleOptions),
+          conformityTestResultOptions: withFallback(testResultOptions),
+          customerWitness: withFallback(conformityData.customerWitness),
+          customerWitness1: withFallback(conformityData.customerWitness1),
+          customerWitness2: withFallback(conformityData.customerWitness2),
+          customerWitness3: withFallback(conformityData.customerWitness3),
+          customerWitness4: withFallback(conformityData.customerWitness4),
+          customerWitness5: withFallback(conformityData.customerWitness5),
+          customerWitness6: withFallback(conformityData.customerWitness6),
           parsedEUT,
           parsedTests,
           parsedTestDetails,

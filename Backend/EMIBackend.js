@@ -43,6 +43,53 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
     }
   }
 
+  function normalizeJsonForComparison(value) {
+    if (value === null || value === undefined || value === "") return "";
+
+    try {
+      const parsedValue =
+        typeof value === "string" ? JSON.parse(value) : value || {};
+      const sortedObject = {};
+      Object.keys(parsedValue)
+        .sort()
+        .forEach((key) => {
+          sortedObject[key] = parsedValue[key];
+        });
+      return JSON.stringify(sortedObject);
+    } catch (error) {
+      return String(value);
+    }
+  }
+
+  function buildConformityData(stepOneData = {}) {
+    const conformityKeys = [
+      "conformityStatement",
+      "decisionRuleApplicable",
+      "decisionRuleOptionStandardRequirement",
+      "decisionRuleOptionIncludesLabUncertainty",
+      "testResultReportRequired",
+      "testResultReportHardCopy",
+      "certificateRequired",
+      "certificateSoftCopy",
+      "customerWitness",
+      "customerWitness1",
+      "customerWitness2",
+      "customerWitness3",
+      "customerWitness4",
+      "customerWitness5",
+      "customerWitness6",
+    ];
+
+    const conformityData = {};
+    for (const key of conformityKeys) {
+      if (stepOneData[key] !== undefined) {
+        conformityData[key] = stepOneData[key];
+      }
+    }
+
+    return Object.keys(conformityData).length > 0 ? conformityData : null;
+  }
+
   const getCurrentYearAndMonth = () => {
     const currentDate = new Date();
     const currentYear = currentDate.getFullYear();
@@ -260,6 +307,7 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
       projectName,
       reportType,
     } = stepOneData;
+    const conformityData = buildConformityData(stepOneData);
 
     // Destructure fields from each step's data
     const {
@@ -329,13 +377,13 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
 
       const sql = `INSERT INTO emi_jobcards(
               jcNumber, quoteNumber, poNumber, jcOpenDate, itemReceivedDate, typeOfRequest, sampleCondition, slotDuration, 
-              companyName, companyAddress, customerName, customerEmail, customerNumber, projectName, reportType, jcIncharge, jcStatus, jcClosedDate, 
-              observations, lastUpdatedBy) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+              companyName, companyAddress, customerName, customerEmail, customerNumber, projectName, reportType, conformityData, jcIncharge, jcStatus, jcClosedDate, 
+              observations, lastUpdatedBy) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
       const jcValues = [
         newJcNumber,
-        poNumber || "",
         quoteNumber || "",
+        poNumber || "",
         formattedOpenDate || null,
         formattedItemReceivedDate || null,
         typeOfRequest || "",
@@ -348,6 +396,7 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
         customerPhone || "",
         projectName || "",
         reportType || "",
+        conformityData ? JSON.stringify(conformityData) : null,
         jcIncharge || "",
         jcStatus || "",
         formattedCloseDate || null,
@@ -598,6 +647,7 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
       projectName,
       reportType,
     } = stepOneData;
+    const conformityData = buildConformityData(stepOneData);
     const {
       quoteNumber,
       poNumber,
@@ -718,6 +768,12 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
           oldVal: existingJC.reportType,
         },
         {
+          name: "conformityData",
+          newVal: conformityData ? JSON.stringify(conformityData) : null,
+          oldVal: existingJC.conformityData,
+          isJson: true,
+        },
+        {
           name: "jcIncharge",
           newVal: jcIncharge,
           oldVal: existingJC.jcIncharge,
@@ -746,6 +802,9 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
         if (field.isDate) {
           oldValue = normalizeDateForComparison(field.oldVal);
           newValue = normalizeDateForComparison(field.newVal);
+        } else if (field.isJson) {
+          oldValue = normalizeJsonForComparison(field.oldVal);
+          newValue = normalizeJsonForComparison(field.newVal);
         } else {
           oldValue = String(field.oldVal || "");
           newValue = String(field.newVal || "");
@@ -778,6 +837,7 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
                 customerNumber = ?, 
                 projectName = ?, 
                 reportType = ?, 
+                conformityData = ?,
                 jcIncharge = ?, 
                 jcStatus = ?, 
                 jcClosedDate = ?, 
@@ -800,6 +860,7 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
         customerPhone || "",
         projectName || "",
         reportType || "",
+        conformityData ? JSON.stringify(conformityData) : null,
         jcIncharge || "",
         jcStatus || "",
         formattedCloseDate || null,
@@ -818,6 +879,9 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
         if (field.isDate) {
           oldValue = normalizeDateForComparison(field.oldVal);
           newValue = normalizeDateForComparison(field.newVal);
+        } else if (field.isJson) {
+          oldValue = normalizeJsonForComparison(field.oldVal);
+          newValue = normalizeJsonForComparison(field.newVal);
         } else {
           oldValue = String(field.oldVal || "");
           newValue = String(field.newVal || "");

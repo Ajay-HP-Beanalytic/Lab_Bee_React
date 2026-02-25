@@ -14,6 +14,7 @@ import _ from "lodash";
 import RenderComponents from "../functions/RenderComponents";
 import RenderTable from "../functions/RenderTable";
 import useEMIStore from "./EMIStore";
+import EMIJCConformity from "./emiJcConformity";
 
 export default function EMIJCStepOne() {
   const theme = useTheme();
@@ -90,7 +91,7 @@ export default function EMIJCStepOne() {
 
   //Fields to create a EUT details table:
   const eutTableColumns = [
-    { id: "serialNumber", label: "SL No", width: 20 },
+    { id: "serialNumber", label: "SL No", width: 25 },
     { id: "eutName", label: "EUT Details", width: 300, type: "textField" },
     { id: "eutQuantity", label: "Quantity", width: 200, type: "textField" },
     {
@@ -166,7 +167,7 @@ export default function EMIJCStepOne() {
   useEffect(() => {
     if (stepOneFormData) {
       _.forEach(stepOneFormData, (value, key) => {
-        setValue(key, value || "");
+        setValue(key, value ?? "");
       });
     }
   }, [stepOneFormData, setValue]);
@@ -200,21 +201,6 @@ export default function EMIJCStepOne() {
     handleUpdateStepOneFormData(stepOneFormValues);
   }, [stepOneFormValues, handleUpdateStepOneFormData]);
 
-  useEffect(() => {
-    // Add a mount check to ensure this only runs once
-    const shouldInitialize = true; // You can replace this with a ref if needed
-
-    if (shouldInitialize) {
-      if (eutTableRows.length === 0) {
-        updateEutTableRows([eutTableRowTemplate]);
-      }
-      if (testsTableRows.length === 0) {
-        updateTestsTableRows([testsTableRowTemplate]); // Add a default row if there's no data
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Empty dependency array so it only runs once on mount
-
   //////////////////////////////////////////////////////////////
 
   // Load EMI data on component mount
@@ -228,23 +214,17 @@ export default function EMIJCStepOne() {
     };
 
     initializeEMIData();
-
-    // Initialize table rows if empty
-    if (eutTableRows.length === 0) {
-      updateEutTableRows([eutTableRowTemplate]);
-    }
-    if (testsTableRows.length === 0) {
-      updateTestsTableRows([testsTableRowTemplate]);
-    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Empty dependency array so it only runs once on mount
 
   return (
     <>
       <Card sx={{ width: "100%", mt: "10px", mb: "10px" }}>
-        <Typography variant="h5" sx={{ mb: "5px" }}>
-          Customer Details
-        </Typography>
+        <Box sx={{ px: 2, py: 1, bgcolor: "grey.50" }}>
+          <Typography variant="h5" sx={{ mb: "5px" }}>
+            Customer Details
+          </Typography>
+        </Box>
 
         <Grid
           container
@@ -283,7 +263,7 @@ export default function EMIJCStepOne() {
         >
           <Grid item xs={12} sm={6} sx={{ padding: "5px" }}>
             <Typography
-              variant={isSmallScreen ? "body2" : "h7"}
+              variant={isSmallScreen ? "body2" : "subtitle2"}
               color="red"
               gutterBottom
             >
@@ -296,7 +276,7 @@ export default function EMIJCStepOne() {
 
           <Grid item xs={12} sm={6} sx={{ padding: "5px" }}>
             <Typography
-              variant={isSmallScreen ? "body2" : "h7"}
+              variant={isSmallScreen ? "body2" : "subtitle2"}
               color="red"
               gutterBottom
             >
@@ -309,7 +289,7 @@ export default function EMIJCStepOne() {
 
           <Grid item xs={12} sm={6} sx={{ padding: "5px" }}>
             <Typography
-              variant={isSmallScreen ? "body2" : "h7"}
+              variant={isSmallScreen ? "body2" : "subtitle2"}
               color="red"
               gutterBottom
             >
@@ -323,10 +303,16 @@ export default function EMIJCStepOne() {
       </Card>
 
       <Card sx={{ width: "100%", mt: "10px", mb: "10px", padding: "10px" }}>
+        <EMIJCConformity control={control} watch={watch} />
+      </Card>
+
+      <Card sx={{ width: "100%", mt: "10px", mb: "10px", padding: "10px" }}>
         <Box>
-          <Typography variant="h5" sx={{ mb: "5px" }}>
-            EUT Details
-          </Typography>
+          <Box sx={{ px: 2, py: 1, bgcolor: "grey.50" }}>
+            <Typography variant="h5" sx={{ mb: "5px" }}>
+              EUT Details
+            </Typography>
+          </Box>
 
           <RenderTable
             tableColumns={eutTableColumns}
@@ -341,9 +327,11 @@ export default function EMIJCStepOne() {
 
       <Card sx={{ width: "100%", mt: "10px", mb: "10px", padding: "10px" }}>
         <Box>
-          <Typography variant="h5" sx={{ mb: "5px" }}>
-            Test Details
-          </Typography>
+          <Box sx={{ px: 2, py: 1, bgcolor: "grey.50" }}>
+            <Typography variant="h5" sx={{ mb: "5px" }}>
+              Test Details
+            </Typography>
+          </Box>
 
           <RenderTable
             tableColumns={testsTableColumns}
