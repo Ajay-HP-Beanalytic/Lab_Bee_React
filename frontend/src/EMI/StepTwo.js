@@ -114,7 +114,7 @@ export default function EMIJCStepTwo() {
         updateStepTwoFormData(values);
       }
     },
-    [stepTwoFormData, updateStepTwoFormData]
+    [stepTwoFormData, updateStepTwoFormData],
   );
 
   useEffect(() => {
@@ -484,9 +484,11 @@ export default function EMIJCStepTwo() {
 
       <Card sx={{ width: "100%", mt: "10px", mb: "10px", padding: "10px" }}>
         <Box>
-          <Typography variant="h5" sx={{ mb: "5px" }}>
-            Tests Performed Details
-          </Typography>
+          <Box sx={{ px: 2, py: 1, bgcolor: "grey.50" }}>
+            <Typography variant="h5" sx={{ mb: "5px" }}>
+              Tests Performed Details
+            </Typography>
+          </Box>
 
           {/* <RenderTable
             tableColumns={testPerformedTableColumns}

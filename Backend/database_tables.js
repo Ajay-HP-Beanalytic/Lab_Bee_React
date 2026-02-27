@@ -701,6 +701,7 @@ function createEMIJobcardsTable() {
       customerNumber VARCHAR(255),
       projectName VARCHAR(1000),
       reportType VARCHAR(100),
+      conformityData JSON DEFAULT NULL,
       jcIncharge VARCHAR(100),
       jcStatus  VARCHAR(500),
       jcClosedDate DATE,

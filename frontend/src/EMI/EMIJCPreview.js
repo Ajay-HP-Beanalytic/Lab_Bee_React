@@ -51,6 +51,7 @@ const EMIJCPreview = ({
   open,
   onClose,
   jcNumber,
+  emiPrimaryData,
   primaryJCDetails,
   eutRows,
   testRows,
@@ -128,6 +129,80 @@ const EMIJCPreview = ({
   };
   const tableCellStyle = { color: "white" };
 
+  let conformityData = {};
+  const rawConformityData = emiPrimaryData?.conformityData;
+  if (rawConformityData) {
+    if (typeof rawConformityData === "string") {
+      try {
+        conformityData = JSON.parse(rawConformityData);
+      } catch (error) {
+        conformityData = {};
+      }
+    } else if (typeof rawConformityData === "object") {
+      conformityData = rawConformityData;
+    }
+  }
+
+  const conformityRows = [
+    {
+      label: "Statement of Conformity",
+      value: conformityData.conformityStatement || "",
+    },
+    {
+      label: "If Yes Decision Rule",
+      value: conformityData.decisionRuleApplicable || "",
+    },
+    // {
+    //   label: "Decision Rule Options",
+    //   value: [
+    //     conformityData.decisionRuleOptionStandardRequirement
+    //       ? "As per standard requirement"
+    //       : null,
+    //     conformityData.decisionRuleOptionIncludesLabUncertainty
+    //       ? "Includes Lab Uncertainty"
+    //       : null,
+    //   ]
+    //     .filter(Boolean)
+    //     .join(", "),
+    // },
+    {
+      label: "Test Result Options",
+      value: [
+        conformityData.testResultReportRequired ? "Report Required" : null,
+        conformityData.testResultReportHardCopy ? "Hard Copy" : null,
+        conformityData.certificateRequired ? "Certificate Required" : null,
+        conformityData.certificateSoftCopy ? "Soft Copy" : null,
+      ]
+        .filter(Boolean)
+        .join(", "),
+    },
+    { label: "Customer Witness", value: conformityData.customerWitness || "" },
+    {
+      label: "Customer Witness 1",
+      value: conformityData.customerWitness1 || "",
+    },
+    {
+      label: "Customer Witness 2",
+      value: conformityData.customerWitness2 || "",
+    },
+    {
+      label: "Customer Witness 3",
+      value: conformityData.customerWitness3 || "",
+    },
+    {
+      label: "Customer Witness 4",
+      value: conformityData.customerWitness4 || "",
+    },
+    {
+      label: "Customer Witness 5",
+      value: conformityData.customerWitness5 || "",
+    },
+    {
+      label: "Customer Witness 6",
+      value: conformityData.customerWitness6 || "",
+    },
+  ].filter((row) => row.value);
+
   const onEditJC = (item) => {
     onEdit(item);
   };
@@ -172,6 +247,38 @@ const EMIJCPreview = ({
             </Grid>
           ))}
         </Grid>
+
+        {conformityRows.length > 0 && (
+          <>
+            <Divider />
+            <TableContainer
+              component={Paper}
+              sx={{ padding: 2, mt: 2, backgroundColor: "#f5f5f0" }}
+            >
+              <Typography variant="h6" align="center" sx={{ mb: 1 }}>
+                Statement of Conformity
+              </Typography>
+              <Table size="small" aria-label="conformity table">
+                <TableHead sx={tableHeaderStyle}>
+                  <TableRow>
+                    <TableCell sx={tableCellStyle}>Field</TableCell>
+                    <TableCell sx={tableCellStyle}>Value</TableCell>
+                  </TableRow>
+                </TableHead>
+                <TableBody>
+                  {conformityRows.map((row) => (
+                    <TableRow key={row.label}>
+                      <TableCell sx={{ fontWeight: 600 }}>
+                        {row.label}
+                      </TableCell>
+                      <TableCell>{row.value}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </>
+        )}
 
         <Divider />
 
