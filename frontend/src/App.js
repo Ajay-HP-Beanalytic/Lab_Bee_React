@@ -39,6 +39,7 @@ import Financials from "./PO/Financials";
 import { Box, LinearProgress, Typography } from "@mui/material";
 import TestHoursCalculator from "./Quote/TestHoursCalculator";
 import FileBrowser from "./FilesStorage/FileBrowser";
+import SocialMediaConetntDashboard from "./marketing/smc_dashboard";
 
 function App() {
   const location = useLocation();
@@ -542,6 +543,18 @@ function App() {
                 allowedRoles={["Quality Engineer"]}
               >
                 <FileBrowser />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Route configuration for social media content generation page */}
+          <Route
+            path="marketing"
+            element={
+              <ProtectedRoute
+                allowedDepartments={["Administration", "Marketing"]}
+              >
+                <SocialMediaConetntDashboard />
               </ProtectedRoute>
             }
           />

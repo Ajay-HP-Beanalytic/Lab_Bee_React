@@ -1,7 +1,9 @@
 // Install or import the necessary packages
 const path = require("path");
 const envFile =
-  process.env.NODE_ENV === "production" ? ".env.production" : ".env.development";
+  process.env.NODE_ENV === "production"
+    ? ".env.production"
+    : ".env.development";
 require("dotenv").config({ path: path.join(__dirname, envFile) });
 const express = require("express"); //express is a framework of node.js
 const bodyParser = require("body-parser"); // nodemon is used to update the data automatically
@@ -372,6 +374,12 @@ fileStorageAPIs(app, io, labbeeUsers);
 //backend connection to access the openai APIs:
 const { openaiAPIs } = require("./OpenaiAPI");
 openaiAPIs(app, io, labbeeUsers);
+
+//Backend connection to acess bea_marketing_APIs:
+const {
+  beaMarketingContentAPIs,
+} = require("./BEA_Marketing/beaMarketingContentsAPI");
+beaMarketingContentAPIs({ app, io, labbeeUsers });
 
 /// Code to get backup of only database in .sql format:
 ///Data Backup function:
