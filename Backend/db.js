@@ -7,16 +7,11 @@ const db = mysql.createPool({
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_DATABASE,
-
-  // host: "localhost",
-  // user: "root",
-  // password: "Labbee@2024",
-  // database: "labbee"
-
-  //host : "92.205.7.122",
-  //user : "beaLab",
-  //password : "FIycjLM5BTF;",
-  //database : "i7627920_labbee"
+  waitForConnections: true, // Queue new queries if all connections are busy, instead of failing with an error
+  connectionLimit: 10, // Max 10 simultaneous DB queries (each query uses a connection for ~20-50ms, so 10 is enough for 50+ users)
+  idleTimeout: 60000, // Close unused connections after 60s of inactivity (prevents stale connections at night)
+  enableKeepAlive: true, // Send TCP pings to MySQL server to prevent it from killing idle connections
+  keepAliveInitialDelay: 10000, // Start sending keep-alive pings 10s after a connection becomes idle
 });
 
 module.exports = { db };

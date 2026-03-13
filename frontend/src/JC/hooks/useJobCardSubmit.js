@@ -202,6 +202,7 @@ const useJobCardSubmit = () => {
         {
           eutRowIds,
           jcNumberString: jcNumber,
+          loggedInUser,
         }
       );
 
