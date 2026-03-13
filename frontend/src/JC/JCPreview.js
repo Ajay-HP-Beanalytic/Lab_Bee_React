@@ -40,14 +40,14 @@ const Transition = forwardRef(function Transition(props, ref) {
   return <Slide direction="up" ref={ref} {...props} />;
 });
 
-// Function to format date
+// Function to format datetime
 const formatDateTime = (dateString) => {
   const dateValue = dayjs(dateString);
   if (!dateValue.isValid()) {
     return "";
   }
 
-  return dateValue.format("YYYY/MM/DD HH:mm");
+  return dateValue.format("DD/MM/YYYY HH:mm");
 };
 
 export default function JCPreview({

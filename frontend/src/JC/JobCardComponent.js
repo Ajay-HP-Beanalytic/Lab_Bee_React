@@ -69,7 +69,7 @@ const JobCardComponent = ({ id }) => {
           const endDate = new Date(test.endDate);
 
           const startDateObj = {
-            date: startDate.toISOString().split("T")[0],
+            date: dayjs(startDate).isValid() ? dayjs(startDate).format("DD-MM-YYYY") : "",
             time: startDate.toLocaleTimeString([], {
               hour: "2-digit",
               minute: "2-digit",
@@ -77,7 +77,7 @@ const JobCardComponent = ({ id }) => {
           };
 
           const endDateObj = {
-            date: endDate.toISOString().split("T")[0],
+            date: dayjs(endDate).isValid() ? dayjs(endDate).format("DD-MM-YYYY") : "",
             time: endDate.toLocaleTimeString([], {
               hour: "2-digit",
               minute: "2-digit",
@@ -102,13 +102,13 @@ const JobCardComponent = ({ id }) => {
         const parsedRelTasksDetails = reliability_tasks_details.map(
           (detail, index) => {
             const taskStartDate = dayjs(detail.task_start_date).format(
-              "YYYY-MM-DD"
+              "DD-MM-YYYY"
             );
             const taskEndDate = dayjs(detail.task_end_date).format(
-              "YYYY-MM-DD"
+              "DD-MM-YYYY"
             );
             const taskCompletionDate = dayjs(detail.task_completed_date).format(
-              "YYYY-MM-DD"
+              "DD-MM-YYYY"
             );
 
             return {
@@ -127,16 +127,16 @@ const JobCardComponent = ({ id }) => {
           jcNumber: jobcard.jc_number,
           srfNumber: jobcard.srf_number,
           srfDate: dayjs(jobcard.srf_date).isValid()
-            ? dayjs(jobcard.srf_date).format("YYYY-MM-DD")
+            ? dayjs(jobcard.srf_date).format("DD-MM-YYYY")
             : "",
           jcOpenDate: dayjs(jobcard.jc_open_date).isValid()
-            ? dayjs(jobcard.jc_open_date).format("YYYY-MM-DD")
+            ? dayjs(jobcard.jc_open_date).format("DD-MM-YYYY")
             : "",
           itemReceivedDate: dayjs(jobcard.item_received_date).isValid()
-            ? dayjs(jobcard.item_received_date).format("YYYY-MM-DD")
+            ? dayjs(jobcard.item_received_date).format("DD-MM-YYYY")
             : "",
           jcCloseDate: dayjs(jobcard.jc_closed_date).isValid()
-            ? dayjs(jobcard.jc_closed_date).format("YYYY-MM-DD")
+            ? dayjs(jobcard.jc_closed_date).format("DD-MM-YYYY")
             : "",
           companyName: jobcard.company_name,
           companyAddress: jobcard.company_address,

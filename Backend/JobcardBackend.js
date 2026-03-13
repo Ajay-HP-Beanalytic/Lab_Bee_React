@@ -1226,7 +1226,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
 
   // To Insert or delete EUTDetails:
   app.post("/api/eutdetails/serialNos/", (req, res) => {
-    let { eutRowIds, jcNumberString } = req.body;
+    let { eutRowIds, jcNumberString, loggedInUser } = req.body;
 
     // Check if eutRowIds and jcNumberString are defined
     if (!eutRowIds || !jcNumberString) {
@@ -1839,8 +1839,8 @@ function jobcardsAPIs(app, io, labbeeUsers) {
       loggedInUserDepartment,
     } = req.body;
 
-    const formattedStartDate = startDate ? convertDateTime(startDate) : null;
-    const formattedEndDate = endDate ? convertDateTime(endDate) : null;
+    const formattedStartDate = startDate && !isNaN(new Date(startDate)) ? convertDateTime(startDate) : null;
+    const formattedEndDate = endDate && !isNaN(new Date(endDate)) ? convertDateTime(endDate) : null;
     const formattedDuration = duration < 0 ? 0 : duration;
 
     // Fetch ALL current values for comparison

@@ -128,10 +128,10 @@ export default function JCHome() {
           setJcOpenDate(parsedJcStartDate.isValid() ? parsedJcStartDate : null);
 
           const parsedItemReceivedDate = dayjs(
-            res.data.jobcard.item_received_date
+            res.data.jobcard.item_received_date,
           );
           setItemReceivedDate(
-            parsedItemReceivedDate.isValid() ? parsedItemReceivedDate : null
+            parsedItemReceivedDate.isValid() ? parsedItemReceivedDate : null,
           );
 
           // setPonumber(res.data.jobcard.po_number);
@@ -182,16 +182,16 @@ export default function JCHome() {
     { label: "Project Name", value: `${projectName}` },
     { label: "Test Instructions", value: `${testInstructions}` },
     { label: "SRF Number", value: `${srfNumber}` },
-    { label: "SRF Date", value: `${dayjs(srfDate).format("YYYY/MM/DD")}` },
+    { label: "SRF Date", value: `${dayjs(srfDate).format("DD/MM/YYYY")}` },
     {
       label: "JC Open Date",
-      value: `${dayjs(jcOpenDate).format("YYYY/MM/DD")}`,
+      value: `${dayjs(jcOpenDate).format("DD/MM/YYYY")}`,
     },
     { label: "JC Created By", value: `${jcCreatedBy}` },
     {
       label: "Item Received Date",
       value: `${
-        itemReceivedDate ? dayjs(itemReceivedDate).format("YYYY/MM/DD") : ""
+        itemReceivedDate ? dayjs(itemReceivedDate).format("DD/MM/YYYY") : ""
       }`,
     },
     { label: "Test Category", value: `${testCategory}` },
@@ -203,7 +203,7 @@ export default function JCHome() {
 
     {
       label: "JC Close Date",
-      value: `${jcCloseDate ? dayjs(jcCloseDate).format("YYYY/MM/DD") : ""}`,
+      value: `${jcCloseDate ? dayjs(jcCloseDate).format("DD/MM/YYYY") : ""}`,
     },
     { label: "Observations", value: ` ${observations}` },
   ];
@@ -298,7 +298,7 @@ export default function JCHome() {
     const fetchYears = async () => {
       try {
         const response = await axios.get(
-          `${serverBaseAddress}/api/getJCDateOptions`
+          `${serverBaseAddress}/api/getJCDateOptions`,
         );
 
         if (response.status === 200) {
@@ -336,7 +336,7 @@ export default function JCHome() {
       if (jcYear) {
         try {
           const response = await axios.get(
-            `${serverBaseAddress}/api/getAvailableJCMonthsForYear?year=${jcYear}`
+            `${serverBaseAddress}/api/getAvailableJCMonthsForYear?year=${jcYear}`,
           );
 
           if (response.status === 200) {
@@ -347,7 +347,7 @@ export default function JCHome() {
             if (months.length > 0) {
               // Select the most recent month (highest month number)
               const mostRecentMonth = months.reduce((latest, current) =>
-                current.value > latest.value ? current : latest
+                current.value > latest.value ? current : latest,
               );
               setJCMonth(mostRecentMonth.value);
             } else {
@@ -401,7 +401,7 @@ export default function JCHome() {
 
     try {
       const response = await axios.delete(
-        `${serverBaseAddress}/api/Jobcard/${jcToDelete}`
+        `${serverBaseAddress}/api/Jobcard/${jcToDelete}`,
       );
 
       if (response.status === 200) {
@@ -415,7 +415,7 @@ export default function JCHome() {
       console.error("Error deleting Job-Card:", error);
       toast.error(
         error.response?.data?.message ||
-          "Failed to delete Job-Card. Please try again."
+          "Failed to delete Job-Card. Please try again.",
       );
     }
   };
@@ -544,7 +544,7 @@ export default function JCHome() {
       selectedJCDateRange.endDate
     ) {
       const formattedDateRange = `${dayjs(selectedJCDateRange.startDate).format(
-        "YYYY-MM-DD"
+        "YYYY-MM-DD",
       )} - ${dayjs(selectedJCDateRange.endDate).format("YYYY-MM-DD")}`;
       setSelectedJCDateRange(formattedDateRange);
       fetchJCDataBetweenTwoDates(formattedDateRange);
@@ -561,7 +561,7 @@ export default function JCHome() {
         `${serverBaseAddress}/api/getPrimaryTestingJCDataBwTwoDates`,
         {
           params: { selectedJCDateRange: dateRange },
-        }
+        },
       );
       setJcTableData(testingJCResponse.data);
     } catch (error) {
@@ -588,7 +588,7 @@ export default function JCHome() {
       return Object.values(row).some(
         (value) =>
           value != null &&
-          value.toString().toLowerCase().includes(searchValue.toLowerCase())
+          value.toString().toLowerCase().includes(searchValue.toLowerCase()),
       );
     });
     setFilteredJcData(filtered);
