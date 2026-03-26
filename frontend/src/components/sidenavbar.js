@@ -17,6 +17,7 @@ import ListItemButton from "@mui/material/ListItemButton";
 import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
 import CalculateIcon from "@mui/icons-material/Calculate";
+import NewspaperIcon from "@mui/icons-material/Newspaper";
 
 import {
   Avatar,
@@ -276,6 +277,13 @@ export default function SidenavigationBar() {
       icon: <ManageAccountsIcon />,
       path: "/user_management",
       gradientId: "usersManagementGradient",
+    },
+    {
+      i: 15,
+      label: "Marketing Content",
+      icon: <NewspaperIcon />,
+      path: "/marketing",
+      gradientId: "marketingGradient",
     },
   ];
 
