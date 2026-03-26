@@ -253,7 +253,7 @@ export default function AddCustomerDetails() {
   const filterDataGridTable = (searchValue) => {
     const filtered = companiesList.filter((row) => {
       return Object.values(row).some((value) =>
-        value.toString().toLowerCase().includes(searchValue.toLowerCase())
+        value != null && value.toString().toLowerCase().includes(searchValue.toLowerCase())
       );
     });
     setFilteredCompaniesList(filtered);

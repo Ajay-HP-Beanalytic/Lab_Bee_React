@@ -68,10 +68,9 @@ export const generateJcDocument = (jobCardData) => {
     });
 
     const sanitizedData = sanitizeDeep(jobCardData);
-    doc.setData(sanitizedData);
 
     try {
-      doc.render();
+      doc.render(sanitizedData);
     } catch (error) {
       console.error("Docxtemplater render error:", error);
     }
