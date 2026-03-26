@@ -11,6 +11,7 @@
   "license": "ISC",
   "dependencies": {
     "@cyntler/react-doc-viewer": "^1.14.1",
+    "@openai/agents": "^0.6.0",
     "@react-pdf/renderer": "^3.1.14",
     "archiver": "^7.0.1",
     "axios": "^1.5.0",
@@ -39,7 +40,8 @@
     "react-hook-form": "^7.51.1",
     "react-router-dom": "^6.16.0",
     "socket.io": "^4.7.5",
-    "uuid": "^11.1.0"
+    "uuid": "^11.1.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "eslint": "^9.38.0"
