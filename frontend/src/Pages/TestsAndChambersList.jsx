@@ -320,6 +320,11 @@ export default function TestsAndChambersList() {
   };
 
   const deleteTestCategory = async (id) => {
+    if (String(id).startsWith("temp-")) {
+      setTestCategoryRows((prev) => prev.filter((row) => row.id !== id));
+      return;
+    }
+
     try {
       const response = await axios.delete(
         `${serverBaseAddress}/api/deleteTestCategory/${id}`
@@ -455,6 +460,12 @@ export default function TestsAndChambersList() {
   }, [setTestListRows, setTestNames]);
 
   const deleteTestName = async (id) => {
+    // Temp rows exist only in local state — no DB record to delete
+    if (String(id).startsWith("temp-")) {
+      setTestListRows((prev) => prev.filter((row) => row.id !== id));
+      return;
+    }
+
     try {
       const response = await axios.delete(
         `${serverBaseAddress}/api/deleteTest/${id}`
@@ -590,6 +601,11 @@ export default function TestsAndChambersList() {
   }, [setChambersListRows, setTestChambers]);
 
   const deleteChamber = async (id) => {
+    if (String(id).startsWith("temp-")) {
+      setChambersListRows((prev) => prev.filter((row) => row.id !== id));
+      return;
+    }
+
     try {
       const response = await axios.delete(
         `${serverBaseAddress}/api/deleteChamber/${id}`

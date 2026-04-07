@@ -52,6 +52,10 @@ function TestsAndChambersUpdateAPIs(app, io, labbeeUsers) {
   app.delete("/api/deleteTestCategory/:id", (req, res) => {
     const { id } = req.params;
 
+    if (!id || isNaN(Number(id)) || !Number.isInteger(Number(id)) || Number(id) <= 0) {
+      return res.status(400).json({ error: "Invalid test category ID" });
+    }
+
     try {
       const query = `DELETE FROM test_category_table WHERE id = ?`;
       db.query(query, [id], (error, results) => {
@@ -141,6 +145,10 @@ function TestsAndChambersUpdateAPIs(app, io, labbeeUsers) {
   app.delete("/api/deleteTest/:id", (req, res) => {
     const { id } = req.params;
 
+    if (!id || isNaN(Number(id)) || !Number.isInteger(Number(id)) || Number(id) <= 0) {
+      return res.status(400).json({ error: "Invalid test ID" });
+    }
+
     try {
       const query = `DELETE FROM test_names_table WHERE id = ?`;
       db.query(query, [id], (error, results) => {
@@ -225,6 +233,10 @@ function TestsAndChambersUpdateAPIs(app, io, labbeeUsers) {
   // API to delete chamber:
   app.delete("/api/deleteChamber/:id", (req, res) => {
     const { id } = req.params;
+
+    if (!id || isNaN(Number(id)) || !Number.isInteger(Number(id)) || Number(id) <= 0) {
+      return res.status(400).json({ error: "Invalid chamber ID" });
+    }
 
     try {
       const query = `DELETE FROM chambers_list_table WHERE id = ?`;

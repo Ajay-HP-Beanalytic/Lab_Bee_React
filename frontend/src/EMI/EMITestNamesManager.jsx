@@ -7,6 +7,7 @@ import { serverBaseAddress } from "../Pages/APIPage";
 import useEMIStore from "./EMIStore";
 import { toast } from "react-toastify";
 import ConfirmationDialog from "../common/ConfirmationDialog";
+import SearchBar from "../common/SearchBar";
 
 const sectionCardSx = {
   backgroundColor: "#ffffff",
@@ -45,6 +46,7 @@ const dataGridSx = {
 const EMITestNamesManager = () => {
   // State for component data
   const [testNames, setTestNames] = useState([]);
+  const [searchText, setSearchText] = useState("");
   const [confirmDialog, setConfirmDialog] = useState({
     open: false,
     title: "",
@@ -101,8 +103,13 @@ const EMITestNamesManager = () => {
     }));
   };
 
-  // Generate rows with serial numbers
-  const testNamesWithSerialNumbers = addSerialNumbersToRows(testNames);
+  // Filter test names based on search text
+  const filteredTestNames = testNames.filter((row) =>
+    row.testName?.toLowerCase().includes(searchText.toLowerCase())
+  );
+
+  // Generate rows with serial numbers (from filtered list)
+  const testNamesWithSerialNumbers = addSerialNumbersToRows(filteredTestNames);
 
   ///////////////////////////////////////////////////////////////////////////////////
   // CONFIRMATION DIALOG FUNCTIONS
@@ -221,6 +228,14 @@ const EMITestNamesManager = () => {
 
   // Delete test name
   const deleteTestName = async (id) => {
+    // Temp rows exist only in local state — no DB record to delete
+    if (String(id).startsWith("temp-")) {
+      const updatedTestNames = testNames.filter((row) => row.id !== id);
+      setTestNames(updatedTestNames);
+      setStoreTestNames(updatedTestNames);
+      return;
+    }
+
     try {
       const response = await axios.delete(
         `${serverBaseAddress}/api/deleteEMITestName/${id}`
@@ -301,8 +316,6 @@ const EMITestNamesManager = () => {
               bgcolor: "orange",
               color: "white",
               borderColor: "black",
-              mb: 1,
-              mt: 1,
             }}
             size="small"
             variant="contained"
@@ -312,15 +325,24 @@ const EMITestNamesManager = () => {
             Add
           </Button>
         </Box>
+        <SearchBar
+          placeholder="Search test names..."
+          searchInputText={searchText}
+          onChangeOfSearchInput={(e) => setSearchText(e.target.value)}
+          onClearSearchInput={() => setSearchText("")}
+        />
         <DataGrid
           rows={testNamesWithSerialNumbers}
           columns={testNamesTableColumns}
-          rowHeight={42}
-          headerHeight={48}
+          autoHeight
+          rowHeight={36}
+          initialState={{
+            pagination: { paginationModel: { pageSize: 10 } },
+          }}
+          pageSizeOptions={[5, 10, 20, 50]}
           disableColumnMenu
-          disableSelectionOnClick
-          hideFooterSelectedRowCount
-          sx={{ ...dataGridSx, height: 400 }}
+          disableRowSelectionOnClick
+          sx={{ ...dataGridSx, fontSize: "0.85rem" }}
           processRowUpdate={processTestNameRowUpdate}
           experimentalFeatures={{ newEditingApi: true }}
         />

@@ -134,7 +134,7 @@ export default function ChamberAndCalibration() {
           calibrationStatus: autoCalibrationStatus, // Use auto-calculated status
           chamberStatus,
           remarks,
-        }
+        },
       );
 
       if (addChamberRequest.status === 200) {
@@ -165,7 +165,7 @@ export default function ChamberAndCalibration() {
     const fetchChambersList = async () => {
       try {
         const chambersURL = await axios.get(
-          `${serverBaseAddress}/api/getChamberData`
+          `${serverBaseAddress}/api/getChamberData`,
         );
         setChambersList(chambersURL.data);
         setFilteredChamberList(chambersURL.data);
@@ -230,7 +230,7 @@ export default function ChamberAndCalibration() {
                   date_info.getDate(),
                   hours,
                   minutes,
-                  seconds
+                  seconds,
                 );
               };
 
@@ -253,7 +253,7 @@ export default function ChamberAndCalibration() {
                     calibrationStatus,
                     chamberStatus,
                     remarks,
-                  }
+                  },
                 );
 
                 if (addChamberRequest.status === 200) {
@@ -278,7 +278,7 @@ export default function ChamberAndCalibration() {
           }
         } else {
           toast.error(
-            "The Excel file must have exactly 8 columns (excluding headers). And Don't keep any date format in excel sheet"
+            "The Excel file must have exactly 8 columns (excluding headers). And Don't keep any date format in excel sheet",
           );
         }
       };
@@ -326,7 +326,7 @@ export default function ChamberAndCalibration() {
   // Keep the old array for backward compatibility
   const calibrationsPendingNext45Days =
     calibrationsPendingNext45DaysDetails.map(
-      (item) => `${item.chamber_name} is due on ${item.calibration_due_date}`
+      (item) => `${item.chamber_name} is due on ${item.calibration_due_date}`,
     );
 
   // Use backend-calculated calibration status data:
@@ -352,7 +352,7 @@ export default function ChamberAndCalibration() {
 
   // Keep the old array for backward compatibility
   const calibration_expiredChamberNames = calibration_expiredChamberDetails.map(
-    (item) => item.chamber_name
+    (item) => item.chamber_name,
   );
 
   // Chamber status KPI or Count with detailed information:
@@ -378,14 +378,14 @@ export default function ChamberAndCalibration() {
     } else {
       // Handle other cases (optional)
       console.warn(
-        `Unexpected value in 'chamber_status': ${item.chamber_status}`
+        `Unexpected value in 'chamber_status': ${item.chamber_status}`,
       );
     }
   });
 
   // Keep the old array for backward compatibility
   const chamber_underMaintenanceNames = chamber_underMaintenanceDetails.map(
-    (item) => item.chamber_name
+    (item) => item.chamber_name,
   );
 
   // Function to open the dialog:
@@ -402,10 +402,10 @@ export default function ChamberAndCalibration() {
     setChamberName(row.chamber_name);
     setChamberID(row.chamber_id);
     setCalibrationDoneDate(
-      moment(row.calibration_done_date).format("YYYY-MM-DD")
+      moment(row.calibration_done_date).format("YYYY-MM-DD"),
     );
     setCalibrationDueDate(
-      moment(row.calibration_due_date).format("YYYY-MM-DD")
+      moment(row.calibration_due_date).format("YYYY-MM-DD"),
     );
     setCalibratedBy(row.calibration_done_by);
     setChamberStatus(row.chamber_status);
@@ -454,7 +454,7 @@ export default function ChamberAndCalibration() {
           value != null &&
           value !== "" &&
           value !== undefined &&
-          value.toString().toLowerCase().includes(searchValue.toLowerCase())
+          value.toString().toLowerCase().includes(searchValue.toLowerCase()),
       );
     });
     setFilteredChamberList(filtered);
@@ -474,7 +474,7 @@ export default function ChamberAndCalibration() {
       .then((res) => {
         if (res.status === 200) {
           const updatedChambersList = chambersList.filter(
-            (item) => item.id !== deleteItemId
+            (item) => item.id !== deleteItemId,
           );
           setChambersList(updatedChambersList);
           toast.success("Chamber Deleted Successfully");
@@ -520,6 +520,8 @@ export default function ChamberAndCalibration() {
       align: "center",
       headerAlign: "center",
       headerClassName: "custom-header-color",
+      renderCell: (params) =>
+        params.value ? dayjs(params.value).format("DD-MM-YYYY") : "-",
     },
     {
       field: "calibration_due_date",
@@ -528,6 +530,8 @@ export default function ChamberAndCalibration() {
       align: "center",
       headerAlign: "center",
       headerClassName: "custom-header-color",
+      renderCell: (params) =>
+        params.value ? dayjs(params.value).format("DD-MM-YYYY") : "-",
     },
     {
       field: "calibration_done_by",
@@ -931,7 +935,6 @@ export default function ChamberAndCalibration() {
         ) : (
           <Box
             sx={{
-              "height": 500,
               "width": "100%",
               "& .custom-header-color": {
                 backgroundColor: "#476f95",
@@ -947,8 +950,11 @@ export default function ChamberAndCalibration() {
               rows={chamberCalibrationDataWithSerialNumbers}
               columns={columns}
               autoHeight
-              pageSize={10}
-              rowsPerPageOptions={[5, 10, 20, 50]}
+              rowHeight={40}
+              initialState={{
+                pagination: { paginationModel: { pageSize: 10 } },
+              }}
+              pageSizeOptions={[5, 10, 20, 50]}
               disableRowSelectionOnClick
               sx={{
                 "& .MuiDataGrid-row:hover": {
@@ -1010,7 +1016,7 @@ export default function ChamberAndCalibration() {
                               <Typography variant="body2">
                                 Due Date:{" "}
                                 {dayjs(chamber.calibration_due_date).format(
-                                  "DD-MM-YYYY"
+                                  "DD-MM-YYYY",
                                 )}
                               </Typography>
                             )}

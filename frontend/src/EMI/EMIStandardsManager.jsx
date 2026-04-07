@@ -7,6 +7,7 @@ import { serverBaseAddress } from "../Pages/APIPage";
 import useEMIStore from "./EMIStore";
 import { toast } from "react-toastify";
 import ConfirmationDialog from "../common/ConfirmationDialog";
+import SearchBar from "../common/SearchBar";
 
 const sectionCardSx = {
   backgroundColor: "#ffffff",
@@ -45,6 +46,7 @@ const dataGridSx = {
 const EMIStandardsManager = () => {
   // State for component data
   const [standards, setStandards] = useState([]);
+  const [searchText, setSearchText] = useState("");
   const [confirmDialog, setConfirmDialog] = useState({
     open: false,
     title: "",
@@ -54,6 +56,11 @@ const EMIStandardsManager = () => {
 
   // Zustand store actions
   const { setStandards: setStoreStandards } = useEMIStore();
+
+  // Filter standards based on search text
+  const filteredStandards = standards.filter((row) =>
+    row.standardName?.toLowerCase().includes(searchText.toLowerCase())
+  );
 
   // Table columns for Standards
   const standardsTableColumns = [
@@ -101,8 +108,8 @@ const EMIStandardsManager = () => {
     }));
   };
 
-  // Generate rows with serial numbers
-  const standardsWithSerialNumbers = addSerialNumbersToRows(standards);
+  // Generate rows with serial numbers (from filtered list)
+  const standardsWithSerialNumbers = addSerialNumbersToRows(filteredStandards);
 
   ///////////////////////////////////////////////////////////////////////////////////
   // CONFIRMATION DIALOG FUNCTIONS
@@ -224,6 +231,14 @@ const EMIStandardsManager = () => {
 
   // Delete standard
   const deleteStandard = async (id) => {
+    // Temp rows exist only in local state — no DB record to delete
+    if (String(id).startsWith("temp-")) {
+      const updatedStandards = standards.filter((row) => row.id !== id);
+      setStandards(updatedStandards);
+      setStoreStandards(updatedStandards);
+      return;
+    }
+
     try {
       const response = await axios.delete(
         `${serverBaseAddress}/api/deleteEMIStandard/${id}`
@@ -307,8 +322,6 @@ const EMIStandardsManager = () => {
               bgcolor: "orange",
               color: "white",
               borderColor: "black",
-              mb: 1,
-              mt: 1,
             }}
             size="small"
             variant="contained"
@@ -318,15 +331,24 @@ const EMIStandardsManager = () => {
             Add
           </Button>
         </Box>
+        <SearchBar
+          placeholder="Search standards..."
+          searchInputText={searchText}
+          onChangeOfSearchInput={(e) => setSearchText(e.target.value)}
+          onClearSearchInput={() => setSearchText("")}
+        />
         <DataGrid
           rows={standardsWithSerialNumbers}
           columns={standardsTableColumns}
-          rowHeight={42}
-          headerHeight={48}
+          autoHeight
+          rowHeight={36}
+          initialState={{
+            pagination: { paginationModel: { pageSize: 10 } },
+          }}
+          pageSizeOptions={[5, 10, 20, 50]}
           disableColumnMenu
-          disableSelectionOnClick
-          hideFooterSelectedRowCount
-          sx={{ ...dataGridSx, height: 400 }}
+          disableRowSelectionOnClick
+          sx={{ ...dataGridSx, fontSize: "0.85rem" }}
           processRowUpdate={processStandardRowUpdate}
           experimentalFeatures={{ newEditingApi: true }}
         />
