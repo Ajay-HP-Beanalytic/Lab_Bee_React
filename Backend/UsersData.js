@@ -122,8 +122,10 @@ function usersDataAPIs(app, io, labbeeUsers) {
         const token = jwt.sign(
           { userID: user.id, email: user.email },
           jwtSecret,
-          { expiresIn: "30d" },
+          { expiresIn: "9h" },
         );
+
+        const SESSION_DURATION_MS = 540 * 60 * 1000; // 9 hours
 
         // Set session data
         req.session.user_id = user.id;
@@ -135,7 +137,7 @@ function usersDataAPIs(app, io, labbeeUsers) {
         const sessionId = req.sessionID;
         const ipAddress = req.ip || req.connection.remoteAddress;
         const userAgent = req.headers["user-agent"] || "";
-        const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // For 30 days
+        const expiresAt = new Date(Date.now() + SESSION_DURATION_MS);
         // Hash the token for storage
         const tokenHash = crypto
           .createHash("sha256")

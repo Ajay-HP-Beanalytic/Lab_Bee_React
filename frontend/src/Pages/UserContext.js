@@ -23,6 +23,7 @@ export const UserProvider = ({ children }) => {
   const [loggedInUserRole, setLoggedInUserRole] = useState("");
   const [loggedInUserId, setLoggedInUserId] = useState("");
   const [isLoading, setIsLoading] = useState(true); // loading state
+  const [backendUnavailable, setBackendUnavailable] = useState(false);
 
   // Public routes that don't require authentication
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -51,11 +52,30 @@ export const UserProvider = ({ children }) => {
     [publicRoutes]
   );
 
-  const fetchLoggedInUser = useCallback(async () => {
-    setIsLoading(true);
+  const handleSessionInvalid = useCallback(() => {
+    setBackendUnavailable(false);
+    clearUserContext();
+    if (!isPublicRoute(location.pathname)) {
+      navigate("/", { replace: true });
+    }
+  }, [clearUserContext, navigate, location.pathname, isPublicRoute]);
+
+  const isBackendUnavailableError = useCallback((error) => {
+    return (
+      !error.response || [502, 503, 504].includes(error.response?.status)
+    );
+  }, []);
+
+  const fetchLoggedInUser = useCallback(async (options = {}) => {
+    const { showLoader = true } = options;
+
+    if (showLoader) {
+      setIsLoading(true);
+    }
 
     try {
       const res = await axios.get(`${serverBaseAddress}/api/getLoggedInUser`);
+      setBackendUnavailable(false);
 
       if (res.data.valid) {
         setLoggedInUser(res.data.user_name);
@@ -63,29 +83,72 @@ export const UserProvider = ({ children }) => {
         setLoggedInUserRole(res.data.user_role);
         setLoggedInUserId(res.data.user_id);
       } else {
-        // Invalid session - clear data and redirect if not on public route
-        clearUserContext();
-        if (!isPublicRoute(location.pathname)) {
-          navigate("/", { replace: true });
-        }
+        handleSessionInvalid();
       }
     } catch (error) {
-      // Backend is down or network error - clear user data and redirect
-      clearUserContext();
-
-      if (!isPublicRoute(location.pathname)) {
-        navigate("/", { replace: true });
+      if (
+        error.response?.status === 401 &&
+        error.response?.data?.sessionInvalid
+      ) {
+        handleSessionInvalid();
+      } else if (isBackendUnavailableError(error)) {
+        setBackendUnavailable(true);
       }
     } finally {
-      setIsLoading(false);
+      if (showLoader) {
+        setIsLoading(false);
+      }
     }
-  }, [navigate, location.pathname, isPublicRoute, clearUserContext]);
+  }, [handleSessionInvalid, isBackendUnavailableError]);
+
+  const retryConnectionCheck = useCallback(async () => {
+    await fetchLoggedInUser({ showLoader: false });
+  }, [fetchLoggedInUser]);
 
   useEffect(() => {
     // Always fetch user data to check session validity
     // This ensures that when backend restarts, we detect invalid session
     fetchLoggedInUser();
   }, [fetchLoggedInUser]);
+
+  useEffect(() => {
+    if (isPublicRoute(location.pathname)) {
+      return undefined;
+    }
+
+    const SESSION_POLL_INTERVAL_MS = 2 * 60 * 1000;
+
+    const intervalId = setInterval(() => {
+      fetchLoggedInUser({ showLoader: false });
+    }, SESSION_POLL_INTERVAL_MS);
+
+    return () => clearInterval(intervalId);
+  }, [location.pathname, isPublicRoute, fetchLoggedInUser]);
+
+  useEffect(() => {
+    const interceptorId = axios.interceptors.response.use(
+      (response) => {
+        setBackendUnavailable(false);
+        return response;
+      },
+      (error) => {
+        if (
+          error.response?.status === 401 &&
+          error.response?.data?.sessionInvalid
+        ) {
+          handleSessionInvalid();
+        } else if (isBackendUnavailableError(error)) {
+          setBackendUnavailable(true);
+        }
+
+        return Promise.reject(error);
+      }
+    );
+
+    return () => {
+      axios.interceptors.response.eject(interceptorId);
+    };
+  }, [handleSessionInvalid, isBackendUnavailableError]);
 
   // Clear user context when navigating to public routes
   useEffect(() => {
@@ -106,6 +169,8 @@ export const UserProvider = ({ children }) => {
         loggedInUserId,
         setLoggedInUserId,
         isLoading, // Expose loading state
+        backendUnavailable,
+        retryConnectionCheck,
         clearUserContext, // Expose clear function for logout
       }}
     >

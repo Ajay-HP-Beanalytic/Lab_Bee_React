@@ -30,6 +30,7 @@ import { UserContext } from "./Pages/UserContext";
 import ProtectedRoute from "./Pages/ProtectedRoute";
 import { Helmet } from "react-helmet";
 import NotificationsManagement from "./Pages/NotificationsManagement";
+import ServerUnavailablePage from "./Pages/ServerUnavailablePage";
 import EmiJobcard from "./EMI/EmiJobcard";
 import EMIJCDashboard from "./EMI/EMIJCDashboard";
 import EMISlotBooking from "./EMI/EMISlotBooking";
@@ -44,7 +45,13 @@ import SocialMediaConetntDashboard from "./marketing/smc_dashboard";
 function App() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { loggedInUserDepartment, loggedInUserRole, isLoading } =
+  const {
+    loggedInUserDepartment,
+    loggedInUserRole,
+    isLoading,
+    backendUnavailable,
+    retryConnectionCheck,
+  } =
     useContext(UserContext);
 
   useEffect(() => {
@@ -122,6 +129,10 @@ function App() {
         <Typography sx={{ ml: 2 }}>Loading...</Typography>
       </Box>
     );
+  }
+
+  if (backendUnavailable) {
+    return <ServerUnavailablePage onRetry={retryConnectionCheck} />;
   }
 
   return (
