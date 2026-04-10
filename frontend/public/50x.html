@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Lab Bee | Server Unavailable</title>
+    <style>
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: linear-gradient(135deg, #061a40 0%, #0b3d91 45%, #0f6ab4 100%);
+        font-family: Arial, sans-serif;
+        color: #102a43;
+      }
+
+      .panel {
+        width: min(560px, calc(100vw - 32px));
+        background: #ffffff;
+        border-radius: 18px;
+        box-shadow: 0 18px 60px rgba(0, 0, 0, 0.28);
+        padding: 36px;
+      }
+
+      h1 {
+        margin: 0 0 16px;
+        font-size: 32px;
+      }
+
+      p {
+        margin: 0 0 12px;
+        line-height: 1.5;
+        color: #486581;
+      }
+
+      button {
+        margin-top: 20px;
+        background: #1565c0;
+        color: #fff;
+        border: 0;
+        border-radius: 10px;
+        padding: 12px 18px;
+        font-size: 16px;
+        cursor: pointer;
+      }
+
+      button:hover {
+        background: #0d47a1;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="panel">
+      <h1>Server Unavailable</h1>
+      <p>Lab Bee cannot reach the server right now.</p>
+      <p>Please try again in a few minutes. If the problem continues, contact the administrator.</p>
+      <button onclick="window.location.reload()">Retry Connection</button>
+    </div>
+  </body>
+</html>

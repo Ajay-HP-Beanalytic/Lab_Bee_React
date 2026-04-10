@@ -14,6 +14,7 @@ import { FcExpired } from "react-icons/fc";
 
 import AddIcon from "@mui/icons-material/Add";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
+import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { Close, Business } from "@mui/icons-material";
@@ -610,6 +611,47 @@ export default function ChamberAndCalibration() {
   const chamberCalibrationDataWithSerialNumbers =
     addSerialNumbersToRows(filteredChamberList);
 
+  const handleExportChamberCalibrationToExcel = () => {
+    if (chamberCalibrationDataWithSerialNumbers.length === 0) {
+      toast.info("No chamber calibration data available to export");
+      return;
+    }
+
+    const exportRows = chamberCalibrationDataWithSerialNumbers.map((row) => ({
+      "SL No": row.serialNumbers,
+      "Chamber/Equipment": row.chamber_name || "",
+      "Chamber/Equipment ID": row.chamber_id || "",
+      "Calibration Done Date": row.calibration_done_date
+        ? dayjs(row.calibration_done_date).format("DD-MM-YYYY")
+        : "-",
+      "Calibration Due Date": row.calibration_due_date
+        ? dayjs(row.calibration_due_date).format("DD-MM-YYYY")
+        : "-",
+      "Calibration Done By": row.calibration_done_by || "",
+      "Calibration Status": row.calibration_status || "",
+      "Chamber Status": row.chamber_status || "",
+      "Remarks/Observation": row.remarks || "",
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(exportRows);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(
+      workbook,
+      worksheet,
+      "Chamber Calibration Data",
+    );
+
+    const fileSuffix = searchInputTextOfCal.trim()
+      ? `_filtered_${searchInputTextOfCal.trim().replace(/[^a-z0-9]+/gi, "_")}`
+      : "_all-data";
+
+    XLSX.writeFile(
+      workbook,
+      `chamber-calibration${fileSuffix}.xlsx`,
+    );
+    toast.success("Chamber calibration data exported successfully");
+  };
+
   ////////////////////////////////////////////////////////////////////////////////////////////////
 
   return (
@@ -708,6 +750,24 @@ export default function ChamberAndCalibration() {
               style={{ display: "none" }}
               ref={fileInputRef}
             />
+            <Button
+              sx={{
+                borderRadius: 1,
+                bgcolor: "#2e7d32",
+                color: "white",
+                borderColor: "black",
+                padding: { xs: "8px 16px", md: "6px 12px" },
+                fontSize: { xs: "0.875rem", md: "1rem" },
+                mr: 1,
+              }}
+              variant="contained"
+              onClick={handleExportChamberCalibrationToExcel}
+              startIcon={<FileDownloadIcon />}
+              disabled={chamberCalibrationDataWithSerialNumbers.length === 0}
+            >
+              Export Excel
+            </Button>
+
             <Button
               sx={{
                 borderRadius: 1,

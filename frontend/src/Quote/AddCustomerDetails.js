@@ -21,6 +21,7 @@ import * as XLSX from "xlsx";
 
 import AddIcon from "@mui/icons-material/Add";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
+import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 
@@ -87,7 +88,7 @@ export default function AddCustomerDetails() {
           customerContactNumber,
           customerId,
           customerReferance,
-        }
+        },
       );
 
       if (addCompanyDetilsRequest.status === 200) {
@@ -113,7 +114,7 @@ export default function AddCustomerDetails() {
     const fetchCompaniesDataList = async () => {
       try {
         const companiesURL = await axios.get(
-          `${serverBaseAddress}/api/getCompanyDetails`
+          `${serverBaseAddress}/api/getCompanyDetails`,
         );
         setCompaniesList(companiesURL.data);
         setFilteredCompaniesList(companiesURL.data);
@@ -189,7 +190,7 @@ export default function AddCustomerDetails() {
                     customerContactNumber,
                     customerId,
                     customerReferance,
-                  }
+                  },
                 );
 
                 if (addCompanyRequest.status === 200) {
@@ -222,7 +223,7 @@ export default function AddCustomerDetails() {
           }
         } else {
           toast.error(
-            "The Excel file must have exactly 5 columns (excluding headers)."
+            "The Excel file must have exactly 5 columns (excluding headers).",
           );
         }
       };
@@ -252,9 +253,10 @@ export default function AddCustomerDetails() {
   //Function to filter the table
   const filterDataGridTable = (searchValue) => {
     const filtered = companiesList.filter((row) => {
-      return Object.values(row).some((value) =>
-        value != null &&
-        value.toString().toLowerCase().includes(searchValue.toLowerCase())
+      return Object.values(row).some(
+        (value) =>
+          value != null &&
+          value.toString().toLowerCase().includes(searchValue.toLowerCase()),
       );
     });
     setFilteredCompaniesList(filtered);
@@ -288,7 +290,7 @@ export default function AddCustomerDetails() {
       .then((res) => {
         if (res.status === 200) {
           const updatedCompaniesList = companiesList.filter(
-            (item) => item.id !== deleteItemId
+            (item) => item.id !== deleteItemId,
           );
           setCompaniesList(updatedCompaniesList);
           toast.success("Customer Data Deleted Successfully");
@@ -397,8 +399,32 @@ export default function AddCustomerDetails() {
   };
 
   const customersDataWithSerialNumbers = addSerialNumbersToRows(
-    filteredCompaniesList
+    filteredCompaniesList,
   );
+
+  const handleExportCustomerDetailsToExcel = () => {
+    if (companiesList.length === 0) {
+      toast.info("No customer data available to export");
+      return;
+    }
+
+    const exportRows = addSerialNumbersToRows(companiesList).map((row) => ({
+      "SL No": row.serialNumbers,
+      "Company Name": row.company_name || "",
+      "Company Address": row.company_address || "",
+      "Contact Person Name": row.contact_person || "",
+      "Email": row.customer_email || "",
+      "Contact Number": row.customer_contact_number || "",
+      "Company ID": row.company_id || "",
+      "Customer Referance": row.customer_referance || "",
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(exportRows);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Customer Details");
+    XLSX.writeFile(workbook, "customer-details-all-data.xlsx");
+    toast.success("Customer details exported successfully");
+  };
 
   return (
     <div>
@@ -562,7 +588,7 @@ export default function AddCustomerDetails() {
         <Box sx={{ mx: 2, mb: 2, mt: 4 }}>
           <Grid
             container
-            spacing={2}
+            spacing={1}
             alignItems="center"
             justifyContent="flex-end"
           >
@@ -592,6 +618,17 @@ export default function AddCustomerDetails() {
                       <UploadFileIcon
                         fontSize="inherit"
                         onClick={() => fileInputRef.current.click()}
+                      />
+                    </Tooltip>
+                  </IconButton>
+                </Grid>
+
+                <Grid item>
+                  <IconButton variant="contained" size="large">
+                    <Tooltip title="Export Excel" arrow>
+                      <FileDownloadIcon
+                        fontSize="inherit"
+                        onClick={handleExportCustomerDetailsToExcel}
                       />
                     </Tooltip>
                   </IconButton>

@@ -31,6 +31,7 @@ import {
 } from "@mui/material";
 import { useForm } from "react-hook-form";
 import FileUploadIcon from "@mui/icons-material/FileUpload";
+import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -61,11 +62,11 @@ const EMICalibration = () => {
 
   const [emiCalibrationData, setEMICalibrationData] = useState([]);
   const [filteredEMICalibrationData, setFilteredEMICalibrationData] = useState(
-    []
+    [],
   );
 
   const [emiCalibrationSummaryData, setEMICalibrationSummaryData] = useState(
-    {}
+    {},
   );
   const [openDialog, setOpenDialog] = useState(false);
   const [dialogData, setDialogData] = useState({
@@ -309,7 +310,7 @@ const EMICalibration = () => {
         ),
       },
     ],
-    [handleOpenDeleteEqipmentDialog, handleOpenEquimentDialog]
+    [handleOpenDeleteEqipmentDialog, handleOpenEquimentDialog],
   );
 
   //EMI Calibration form fields:
@@ -455,7 +456,7 @@ const EMICalibration = () => {
                   value !== "" &&
                   value !== null &&
                   value !== undefined &&
-                  !String(value).startsWith("_")
+                  !String(value).startsWith("_"),
               );
             });
 
@@ -518,7 +519,7 @@ const EMICalibration = () => {
 
       const response = await axios.post(
         `${serverBaseAddress}/api/addEMIEquipmentsWithExcel`,
-        { emiCalibrationsData: parsedData }
+        { emiCalibrationsData: parsedData },
       );
       if (response.status === 200) {
         toast.success("Calibrations Data added successfully");
@@ -543,7 +544,7 @@ const EMICalibration = () => {
       setLoading(true);
 
       const response = await axios.get(
-        `${serverBaseAddress}/api/getAllEMIEquipmentsData`
+        `${serverBaseAddress}/api/getAllEMIEquipmentsData`,
       );
 
       if (response.status === 200) {
@@ -588,7 +589,7 @@ const EMICalibration = () => {
       setDialogLoading(true);
 
       const response = await axios.get(
-        `${serverBaseAddress}/api/getSingleEMIEquipmentData/${equipmentId}`
+        `${serverBaseAddress}/api/getSingleEMIEquipmentData/${equipmentId}`,
       );
       if (response.status === 200) {
         // Handle both array and object responses
@@ -603,40 +604,40 @@ const EMICalibration = () => {
           setValue("model_number", fetchedEquipmentData.model_number || "");
           setValue(
             "equipment_serial_number",
-            fetchedEquipmentData.equipment_serial_number || ""
+            fetchedEquipmentData.equipment_serial_number || "",
           );
           setValue("uid_number", fetchedEquipmentData.uid_number || "");
           setValue(
             "calibration_date",
             fetchedEquipmentData.calibration_date
               ? dayjs(fetchedEquipmentData.calibration_date)
-              : null
+              : null,
           );
           setValue(
             "calibration_due_date",
             fetchedEquipmentData.calibration_due_date
               ? dayjs(fetchedEquipmentData.calibration_due_date)
-              : null
+              : null,
           );
 
           setValue(
             "calibration_done_by",
-            fetchedEquipmentData.calibration_done_by || ""
+            fetchedEquipmentData.calibration_done_by || "",
           );
           setValue(
             "calibration_status",
-            fetchedEquipmentData.calibration_status || ""
+            fetchedEquipmentData.calibration_status || "",
           );
           setValue(
             "equipment_status",
-            fetchedEquipmentData.equipment_status || ""
+            fetchedEquipmentData.equipment_status || "",
           );
           setValue("remarks", fetchedEquipmentData.remarks || "");
         }, 100);
       } else {
         console.error(
           "Error fetching EMI Calibration data and setting state:",
-          response.status
+          response.status,
         );
       }
     } catch (error) {
@@ -659,7 +660,7 @@ const EMICalibration = () => {
 
       const response = await axios.post(
         `${serverBaseAddress}/api/addEMIEquipment`,
-        { formData }
+        { formData },
       );
       if (response.status === 200) {
         toast.success("Equipmet added successfully");
@@ -691,7 +692,7 @@ const EMICalibration = () => {
 
       const response = await axios.post(
         `${serverBaseAddress}/api/updateEMIEquipment/${editCalibrationId}`,
-        { formData }
+        { formData },
       );
       if (response.status === 200) {
         toast.success("EMI Equipment data updated successfully");
@@ -746,7 +747,7 @@ const EMICalibration = () => {
       setDialogLoading(true);
 
       const response = await axios.delete(
-        `${serverBaseAddress}/api/deleteEMIEquipment/${id}`
+        `${serverBaseAddress}/api/deleteEMIEquipment/${id}`,
       );
       if (response.status === 200) {
         toast.success("Equipment data deleted successfully");
@@ -776,7 +777,7 @@ const EMICalibration = () => {
   const getEMIClaibrationSummaryData = async () => {
     try {
       const response = await axios.get(
-        `${serverBaseAddress}/api/getEMICalibrationSummary`
+        `${serverBaseAddress}/api/getEMICalibrationSummary`,
       );
       if (response.status === 200) {
         const summaryData = response.data;
@@ -811,7 +812,7 @@ const EMICalibration = () => {
         setLoading(true);
 
         const response = await axios.get(
-          `${serverBaseAddress}/api/getAllEMIEquipmentsData`
+          `${serverBaseAddress}/api/getAllEMIEquipmentsData`,
         );
 
         if (response.status === 200) {
@@ -833,6 +834,42 @@ const EMICalibration = () => {
 
     initializeData();
   }, []);
+
+  const handleExportEMICalibrationToExcel = () => {
+    if (filteredEMICalibrationData.length === 0) {
+      toast.info("No EMI calibration data available to export");
+      return;
+    }
+
+    const exportRows = filteredEMICalibrationData.map((row) => ({
+      "SL No": row.serialNumbers,
+      "Equipment Name": row.equipment_name || "",
+      "Equipment Serial Number": row.equipment_serial_number || "",
+      "UID Number": row.uid_number || "",
+      "Calibration Date": row.calibration_date
+        ? dayjs(row.calibration_date).format("DD-MM-YYYY")
+        : "-",
+      "Calibration Due Date": row.calibration_due_date
+        ? dayjs(row.calibration_due_date).format("DD-MM-YYYY")
+        : "-",
+      "Calibration Done By": row.calibration_done_by || "",
+      "Calibration Status": row.calibration_status || "",
+      "Equipment Status": row.equipment_status || "",
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(exportRows);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "EMI Calibration Data");
+
+    const fileSuffix = searchInputTextOfEMICalibrationTable.trim()
+      ? `_filtered_${searchInputTextOfEMICalibrationTable
+          .trim()
+          .replace(/[^a-z0-9]+/gi, "_")}`
+      : "_all-data";
+
+    XLSX.writeFile(workbook, `emi-calibration${fileSuffix}.xlsx`);
+    toast.success("EMI calibration data exported successfully");
+  };
 
   // FIXED: Memoized KPI configuration to prevent recreation
   const emiCalibrationKPIs = useMemo(
@@ -870,7 +907,7 @@ const EMICalibration = () => {
         equipments: emiCalibrationSummaryData.inactiveNames || [],
       },
     ],
-    [emiCalibrationSummaryData]
+    [emiCalibrationSummaryData],
   );
 
   // Function to handle KPI card click and show equipment list
@@ -982,7 +1019,7 @@ const EMICalibration = () => {
                           <Typography variant="body2">
                             Due Date:{" "}
                             {dayjs(equipment.calibration_due_date).format(
-                              "DD-MM-YYYY"
+                              "DD-MM-YYYY",
                             )}
                           </Typography>
                           {getStatusChip(equipment, dialogData.type)}
@@ -1056,6 +1093,7 @@ const EMICalibration = () => {
           display: "flex",
           flexDirection: "row",
           justifyContent: "flex-end",
+          mb: "10px",
         }}
       >
         <input
@@ -1065,6 +1103,24 @@ const EMICalibration = () => {
           style={{ display: "none" }}
           onChange={handleImportExcel}
         />
+        <Button
+          sx={{
+            borderRadius: 1,
+            bgcolor: "#2e7d32",
+            color: "white",
+            borderColor: "black",
+            padding: { xs: "8px 16px", md: "6px 12px" },
+            fontSize: { xs: "0.875rem", md: "1rem" },
+            mr: 1,
+          }}
+          variant="contained"
+          onClick={handleExportEMICalibrationToExcel}
+          startIcon={<FileDownloadIcon />}
+          disabled={filteredEMICalibrationData.length === 0}
+        >
+          Export Excel
+        </Button>
+
         <Button
           sx={{
             borderRadius: 1,

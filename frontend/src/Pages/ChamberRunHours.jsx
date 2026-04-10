@@ -21,12 +21,10 @@ import {
   Refresh,
   CalendarToday,
   Assessment,
+  Clear,
+  FileDownload,
 } from "@mui/icons-material";
-import {
-  DataGrid,
-  GridToolbarContainer,
-  GridToolbarExport,
-} from "@mui/x-data-grid";
+import { DataGrid } from "@mui/x-data-grid";
 import {
   BarChart,
   Bar,
@@ -42,7 +40,10 @@ import { serverBaseAddress } from "./APIPage";
 import { toast } from "react-toastify";
 import SearchBar from "../common/SearchBar";
 import DateRangeFilter from "../common/DateRangeFilter";
+
 import dayjs from "dayjs";
+import EmptyCard from "../common/EmptyCard";
+import * as XLSX from "xlsx";
 
 // Reusable Components
 const UtilizationChip = ({ utilizationPercent, level }) => {
@@ -126,29 +127,18 @@ const ChamberRunHours = () => {
       }
 
       const response = await axios.get(
-        `${serverBaseAddress}/api/chamber-lifetime-totals?${params.toString()}`
+        `${serverBaseAddress}/api/chamber-lifetime-totals?${params.toString()}`,
       );
 
       if (response.status === 200) {
         setData(response.data);
         setFilteredChambers(response.data.chambers || []);
-
-        const dateRangeText =
-          dateRange.startDate || dateRange.endDate
-            ? "for selected period"
-            : "for all time";
-
-        if (response.data.chambers?.length > 0) {
-          toast.success(
-            `Loaded ${response.data.chambers.length} chambers ${dateRangeText}`
-          );
-        } else {
-          toast.info("No data found for selected criteria");
-        }
       }
     } catch (error) {
       console.error("Error fetching lifetime data:", error);
-      setError("Failed to fetch chamber lifetime data");
+      setError(
+        error.response?.data?.error || "Failed to fetch chamber lifetime data",
+      );
       toast.error("Failed to fetch chamber data");
     } finally {
       setLoading(false);
@@ -168,20 +158,11 @@ const ChamberRunHours = () => {
       setFilteredChambers(data.chambers);
     } else {
       const filtered = data.chambers.filter((chamber) =>
-        chamber.name.toLowerCase().includes(searchInputText.toLowerCase())
+        chamber.name.toLowerCase().includes(searchInputText.toLowerCase()),
       );
       setFilteredChambers(filtered);
     }
   }, [searchInputText, data]);
-
-  // Custom toolbar for DataGrid
-  const CustomToolbar = () => {
-    return (
-      <GridToolbarContainer>
-        <GridToolbarExport />
-      </GridToolbarContainer>
-    );
-  };
 
   // DataGrid columns with utilization percentage instead of days active
   const columns = [
@@ -297,6 +278,7 @@ const ChamberRunHours = () => {
   ];
 
   // Event handlers
+
   const handleRefresh = () => {
     fetchLifetimeData();
     toast.info("Refreshing chamber data...");
@@ -307,11 +289,23 @@ const ChamberRunHours = () => {
   };
 
   // Date range handlers (following Financials.jsx pattern)
-  const handleDateRangeChange = (startDate, endDate) => {
-    const formattedStartDate = startDate
-      ? dayjs(startDate).format("YYYY-MM-DD")
-      : "";
-    const formattedEndDate = endDate ? dayjs(endDate).format("YYYY-MM-DD") : "";
+  const handleDateRangeChange = (selectedDateRange) => {
+    const startDate = selectedDateRange?.startDate;
+    const endDate = selectedDateRange?.endDate;
+
+    const formattedStartDate =
+      startDate && dayjs(startDate).isValid()
+        ? dayjs(startDate).format("YYYY-MM-DD")
+        : "";
+    const formattedEndDate =
+      endDate && dayjs(endDate).isValid()
+        ? dayjs(endDate).format("YYYY-MM-DD")
+        : "";
+
+    if ((startDate && !formattedStartDate) || (endDate && !formattedEndDate)) {
+      toast.error("Invalid date range selected");
+      return;
+    }
 
     setDateRange({
       startDate: formattedStartDate,
@@ -324,6 +318,43 @@ const ChamberRunHours = () => {
   const handleClearDateRange = () => {
     setDateRange({ startDate: "", endDate: "" });
     toast.info("Date range cleared");
+  };
+
+  const handleExportToExcel = () => {
+    if (filteredChambers.length === 0) {
+      toast.info("No chamber data available to export");
+      return;
+    }
+
+    const exportRows = filteredChambers.map((chamber, index) => ({
+      "SL No": index + 1,
+      "Chamber Name": chamber.name,
+      "Total Run Hours": chamber.totalRunHours,
+      "Total Tests": chamber.totalTests,
+      "Avg Test Duration": chamber.avgTestDuration,
+      "First Test": chamber.firstTestMonth,
+      "Last Test": chamber.lastTestMonth,
+      "Utilization %": chamber.utilizationPercent,
+      "Utilization Level": chamber.utilizationLevel,
+      "Avg Hours/Month": chamber.avgRunHoursPerMonth,
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(exportRows);
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Chamber Run Hours");
+
+    const chamberSuffix =
+      selectedChamber !== "all" ? `_${selectedChamber}` : "_all-chambers";
+    const dateSuffix =
+      dateRange.startDate || dateRange.endDate
+        ? `_${dateRange.startDate || "start"}_to_${dateRange.endDate || "end"}`
+        : "_full-data";
+
+    XLSX.writeFile(
+      workbook,
+      `chamber-run-hours${chamberSuffix}${dateSuffix}.xlsx`,
+    );
+    toast.success("Excel file exported successfully");
   };
 
   // Search handlers
@@ -362,6 +393,13 @@ const ChamberRunHours = () => {
     avgRunHoursPerChamber: 0,
     avgUtilization: 0,
   };
+  const hasActiveDateFilter = Boolean(dateRange.startDate || dateRange.endDate);
+
+  const emptyStateMessage = searchInputText
+    ? `No chambers found matching "${searchInputText}"`
+    : hasActiveDateFilter
+      ? "No data available for the selected date range"
+      : "No chamber data found for selected criteria";
 
   // Prepare chart data
   const topChambersData = filteredChambers.slice(0, 10).map((chamber) => ({
@@ -418,14 +456,6 @@ const ChamberRunHours = () => {
     );
   }
 
-  if (error) {
-    return (
-      <Alert severity="error" sx={{ m: 2 }}>
-        {error}
-      </Alert>
-    );
-  }
-
   return (
     <Box sx={{ p: 2 }}>
       {/* Header */}
@@ -437,11 +467,17 @@ const ChamberRunHours = () => {
           Chamber Run Hours Analysis
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          {data?.summary?.dateRange
-            ? `Data Period: ${data.summary.dateRange.start} to ${data.summary.dateRange.end}`
+          {hasActiveDateFilter
+            ? `Data Period: ${summary?.dateRange?.start || dateRange.startDate} to ${summary?.dateRange?.end || dateRange.endDate}`
             : "Comprehensive lifetime statistics for all chambers"}
         </Typography>
       </Box>
+
+      {error && (
+        <Alert severity="error" sx={{ mb: 3 }}>
+          {error}
+        </Alert>
+      )}
 
       {/* KPI Cards */}
       <Grid container spacing={3} sx={{ mb: 3 }}>
@@ -452,7 +488,7 @@ const ChamberRunHours = () => {
             icon={<Engineering />}
             color="#1976d2"
             subtitle={
-              data?.summary?.dateRange
+              hasActiveDateFilter
                 ? "For selected period"
                 : "All active chambers"
             }
@@ -465,8 +501,8 @@ const ChamberRunHours = () => {
             icon={<CalendarToday />}
             color="#4caf50"
             subtitle={
-              data?.summary?.dateRange
-                ? `${data.summary.dateRange.totalDays} days period`
+              hasActiveDateFilter
+                ? `${summary?.dateRange?.totalDays || 0} days period`
                 : "Since inception"
             }
           />
@@ -487,7 +523,7 @@ const ChamberRunHours = () => {
             icon={<Assessment />}
             color="#ff9800"
             subtitle={
-              data?.summary?.dateRange
+              hasActiveDateFilter
                 ? "For selected period"
                 : "All time tests"
             }
@@ -496,7 +532,13 @@ const ChamberRunHours = () => {
       </Grid>
 
       {/* Single Row Filter Layout */}
-      <Card sx={{ mb: 3, p: 2 }}>
+      <Card
+        sx={{
+          mb: 3,
+          p: 2,
+          overflow: "visible",
+        }}
+      >
         <Typography variant="h6" sx={{ mb: 2, color: "#003366" }}>
           Filters
         </Typography>
@@ -531,6 +573,28 @@ const ChamberRunHours = () => {
             onClickDateRangeSelectClearButton={handleClearDateRange}
           />
 
+          {/* Clear Filter Button */}
+          {(dateRange.startDate || dateRange.endDate) && (
+            <Button
+              variant="outlined"
+              startIcon={<Clear />}
+              onClick={handleClearDateRange}
+              size="small"
+            >
+              Clear Filter
+            </Button>
+          )}
+
+          <Button
+            variant="contained"
+            startIcon={<FileDownload />}
+            onClick={handleExportToExcel}
+            size="small"
+            disabled={filteredChambers.length === 0}
+          >
+            Export Excel
+          </Button>
+
           {/* Refresh Button */}
           <Button
             variant="outlined"
@@ -560,22 +624,26 @@ const ChamberRunHours = () => {
               <Typography variant="h6" sx={{ mb: 2 }}>
                 Top Chambers by Hours
               </Typography>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={topChambersData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis
-                    dataKey="name"
-                    angle={-45}
-                    textAnchor="end"
-                    height={80}
-                  />
-                  <YAxis />
-                  <RechartsTooltip
-                    formatter={(value) => [`${value}h`, "Total Hours"]}
-                  />
-                  <Bar dataKey="hours" fill="#4caf50" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+              {filteredChambers.length === 0 ? (
+                <EmptyCard message={emptyStateMessage} />
+              ) : (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={topChambersData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis
+                      dataKey="name"
+                      angle={-45}
+                      textAnchor="end"
+                      height={80}
+                    />
+                    <YAxis />
+                    <RechartsTooltip
+                      formatter={(value) => [`${value}h`, "Total Hours"]}
+                    />
+                    <Bar dataKey="hours" fill="#4caf50" radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
             </CardContent>
           </Card>
         </Grid>
@@ -587,21 +655,25 @@ const ChamberRunHours = () => {
               <Typography variant="h6" sx={{ mb: 2 }}>
                 Utilization Level Distribution
               </Typography>
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={utilizationDistributionData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="level" />
-                  <YAxis />
-                  <RechartsTooltip
-                    formatter={(value) => [`${value} chambers`, "Count"]}
-                  />
-                  <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-                    {utilizationDistributionData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
+              {filteredChambers.length === 0 ? (
+                <EmptyCard message={emptyStateMessage} />
+              ) : (
+                <ResponsiveContainer width="100%" height={300}>
+                  <BarChart data={utilizationDistributionData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="level" />
+                    <YAxis />
+                    <RechartsTooltip
+                      formatter={(value) => [`${value} chambers`, "Count"]}
+                    />
+                    <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                      {utilizationDistributionData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              )}
             </CardContent>
           </Card>
         </Grid>
@@ -614,13 +686,7 @@ const ChamberRunHours = () => {
             Chamber Details - Sorted by Utilization
           </Typography>
           {filteredChambers.length === 0 ? (
-            <Box sx={{ textAlign: "center", py: 4 }}>
-              <Typography variant="body1" color="text.secondary">
-                {searchInputText
-                  ? `No chambers found matching "${searchInputText}"`
-                  : "No chamber data found for selected criteria"}
-              </Typography>
-            </Box>
+            <EmptyCard message={emptyStateMessage} />
           ) : (
             <Box
               sx={{
@@ -638,9 +704,6 @@ const ChamberRunHours = () => {
               <DataGrid
                 rows={chamberTableWithSerialNumbers}
                 columns={columns}
-                slots={{
-                  toolbar: CustomToolbar,
-                }}
                 sx={{
                   "&:hover": { cursor: "pointer" },
                   "& .MuiDataGrid-columnHeader": {
@@ -656,7 +719,6 @@ const ChamberRunHours = () => {
                 onPaginationModelChange={setPaginationModel}
                 pageSizeOptions={[25, 50, 100]}
                 disableRowSelectionOnClick
-                checkboxSelection
               />
             </Box>
           )}
