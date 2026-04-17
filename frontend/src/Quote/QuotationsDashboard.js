@@ -1,5 +1,5 @@
 /* eslint-disable no-unused-vars */
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import {
@@ -16,7 +16,22 @@ import {
   Select,
   useMediaQuery,
   Avatar,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  InputAdornment,
+  IconButton,
+  Snackbar,
+  Alert,
+  CircularProgress,
+  Tooltip,
 } from "@mui/material";
+import LinkIcon from "@mui/icons-material/Link";
+import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+import EmailOutlinedIcon from "@mui/icons-material/EmailOutlined";
+import { UserContext } from "../Pages/UserContext";
 
 import { serverBaseAddress } from "../Pages/APIPage";
 
@@ -92,8 +107,65 @@ export default function QuotationsDashboard() {
   const [monthlyGrowth, setMonthlyGrowth] = useState(0);
 
   const isSmallScreen = useMediaQuery((theme) => theme.breakpoints.down("sm"));
+  const { loggedInUserId } = useContext(UserContext);
 
   const navigate = useNavigate();
+
+  // ── Feasibility link dialog state ──────────────────────────────────────────
+  const [linkDialogOpen, setLinkDialogOpen] = useState(false);
+  const [linkCustomerName, setLinkCustomerName] = useState("");
+  const [linkCustomerEmail, setLinkCustomerEmail] = useState("");
+  const [generatedLink, setGeneratedLink] = useState("");
+  const [linkGenerating, setLinkGenerating] = useState(false);
+  const [linkError, setLinkError] = useState("");
+  const [copySnackbar, setCopySnackbar] = useState(false);
+
+  const handleOpenLinkDialog = () => {
+    setLinkDialogOpen(true);
+    setLinkCustomerName("");
+    setLinkCustomerEmail("");
+    setGeneratedLink("");
+    setLinkError("");
+  };
+
+  const handleCloseLinkDialog = () => {
+    setLinkDialogOpen(false);
+  };
+
+  const handleGenerateLink = async () => {
+    if (!linkCustomerEmail.trim()) {
+      setLinkError("Customer email is required.");
+      return;
+    }
+    if (!/\S+@\S+\.\S+/.test(linkCustomerEmail)) {
+      setLinkError("Enter a valid email address.");
+      return;
+    }
+    setLinkError("");
+    setLinkGenerating(true);
+    try {
+      const res = await axios.post(
+        `${serverBaseAddress}/api/feasibility/generate-link`,
+        {
+          customer_name: linkCustomerName,
+          customer_email: linkCustomerEmail,
+          generated_by: loggedInUserId,
+        }
+      );
+      setGeneratedLink(res.data.link);
+    } catch (err) {
+      setLinkError(
+        err.response?.data?.error || "Failed to generate link. Please try again."
+      );
+    } finally {
+      setLinkGenerating(false);
+    }
+  };
+
+  const handleCopyLink = () => {
+    navigator.clipboard.writeText(generatedLink);
+    setCopySnackbar(true);
+  };
 
   // Calculate enhanced KPI metrics
   const calculateEnhancedMetrics = (data) => {
@@ -620,17 +692,28 @@ export default function QuotationsDashboard() {
           display: "flex",
           justifyContent: { xs: "center", md: "flex-end" },
           alignItems: "center",
-          mt: { xs: 2, md: 0 }, // Add some margin top on small screens
+          gap: 1.5,
+          mt: { xs: 2, md: 0 },
         }}
       >
+        <Button
+          variant="outlined"
+          color="primary"
+          startIcon={<LinkIcon />}
+          onClick={handleOpenLinkDialog}
+          sx={{ mb: "10px", borderRadius: 1 }}
+        >
+          Send Feasibility Link
+        </Button>
+
         <Button
           sx={{
             borderRadius: 1,
             bgcolor: "orange",
             color: "white",
             borderColor: "black",
-            padding: { xs: "8px 16px", md: "6px 12px" }, // Adjust padding for different screen sizes
-            fontSize: { xs: "0.875rem", md: "1rem" }, // Adjust font size for different screen sizes
+            padding: { xs: "8px 16px", md: "6px 12px" },
+            fontSize: { xs: "0.875rem", md: "1rem" },
             mb: "10px",
           }}
           variant="contained"
@@ -901,6 +984,119 @@ export default function QuotationsDashboard() {
         </Grid>
       </Box>
       {/* </Card> */}
+
+      {/* ── Feasibility Link Dialog ─────────────────────────────────────── */}
+      <Dialog
+        open={linkDialogOpen}
+        onClose={handleCloseLinkDialog}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle sx={{ fontWeight: 700 }}>
+          Send Feasibility Request Link
+        </DialogTitle>
+
+        <DialogContent dividers>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5 }}>
+            Enter the customer's details below. A unique link will be generated
+            that they can use to submit their test requirements directly.
+            The link is valid for <strong>7 days</strong>.
+          </Typography>
+
+          <TextField
+            label="Customer Name"
+            fullWidth
+            value={linkCustomerName}
+            onChange={(e) => setLinkCustomerName(e.target.value)}
+            size="small"
+            sx={{ mb: 2 }}
+          />
+
+          <TextField
+            label="Customer Email *"
+            type="email"
+            fullWidth
+            value={linkCustomerEmail}
+            onChange={(e) => {
+              setLinkCustomerEmail(e.target.value);
+              setLinkError("");
+            }}
+            size="small"
+            error={!!linkError && !generatedLink}
+            helperText={!generatedLink ? linkError : ""}
+          />
+
+          {/* Generated link display */}
+          {generatedLink && (
+            <Box sx={{ mt: 3 }}>
+              <Typography variant="caption" color="text.secondary" display="block" mb={0.5}>
+                Generated Link — copy and send this to your customer
+              </Typography>
+              <TextField
+                fullWidth
+                value={generatedLink}
+                size="small"
+                InputProps={{
+                  readOnly: true,
+                  sx: { fontFamily: "monospace", fontSize: "0.8rem", bgcolor: "#f5f5f5" },
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <Tooltip title="Copy link">
+                        <IconButton size="small" onClick={handleCopyLink}>
+                          <ContentCopyIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    </InputAdornment>
+                  ),
+                }}
+              />
+              <Button
+                variant="text"
+                size="small"
+                startIcon={<EmailOutlinedIcon />}
+                href={`mailto:${linkCustomerEmail}?subject=Test Feasibility Request – BE Analytic&body=Dear ${linkCustomerName || "Sir/Madam"},%0A%0APlease use the link below to submit your test feasibility request:%0A%0A${encodeURIComponent(generatedLink)}%0A%0AThe link is valid for 7 days.%0A%0ARegards,%0ABE Analytic Team`}
+                sx={{ mt: 1 }}
+              >
+                Open in Email Client
+              </Button>
+            </Box>
+          )}
+        </DialogContent>
+
+        <DialogActions sx={{ px: 3, py: 2 }}>
+          <Button onClick={handleCloseLinkDialog} color="inherit">
+            {generatedLink ? "Close" : "Cancel"}
+          </Button>
+          {!generatedLink && (
+            <Button
+              variant="contained"
+              onClick={handleGenerateLink}
+              disabled={linkGenerating}
+              startIcon={
+                linkGenerating ? (
+                  <CircularProgress size={16} color="inherit" />
+                ) : (
+                  <LinkIcon />
+                )
+              }
+            >
+              {linkGenerating ? "Generating…" : "Generate Link"}
+            </Button>
+          )}
+        </DialogActions>
+      </Dialog>
+
+      {/* Copy success snackbar */}
+      <Snackbar
+        open={copySnackbar}
+        autoHideDuration={2500}
+        onClose={() => setCopySnackbar(false)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
+      >
+        <Alert severity="success" sx={{ width: "100%" }}>
+          Link copied to clipboard!
+        </Alert>
+      </Snackbar>
     </>
   );
 }
