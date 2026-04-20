@@ -18,6 +18,7 @@ import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
 import CalculateIcon from "@mui/icons-material/Calculate";
 import NewspaperIcon from "@mui/icons-material/Newspaper";
+import TuneIcon from "@mui/icons-material/Tune";
 
 import {
   Avatar,
@@ -285,6 +286,20 @@ export default function SidenavigationBar() {
       path: "/marketing",
       gradientId: "marketingGradient",
     },
+    {
+      i: 16,
+      label: "Chamber Specs",
+      icon: <TuneIcon />,
+      path: "/ts1_chamber_specs",
+      gradientId: "chamberSpecsGradient",
+    },
+    {
+      i: 17,
+      label: "Test Pricing",
+      icon: <CurrencyRupeeIcon />,
+      path: "/ts1_test_pricing",
+      gradientId: "testPricingGradient",
+    },
   ];
 
   const filteredItems = items.filter((item) => {
@@ -295,7 +310,7 @@ export default function SidenavigationBar() {
     } else if (loggedInUserDepartment === "Marketing") {
       return [2, 3, 8, 9, 10].includes(item.i);
     } else if (loggedInUserDepartment === "TS1 Testing") {
-      return [4, 5, 6, 7, 8].includes(item.i);
+      return [4, 5, 6, 7, 8, 16, 17].includes(item.i);
     } else if (
       loggedInUserRole === "Reports & Scrutiny Manager" ||
       loggedInUserRole === "Technical Support Writer"

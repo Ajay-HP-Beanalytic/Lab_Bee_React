@@ -253,6 +253,8 @@ const {
   createFeasibilityLinkTokensTable,
   createFeasibilityRequestsTable,
   createFeasibilityRequestTestsTable,
+  createTS1ChamberSpecTable,
+  createTS1TestPricingTable,
 } = require("./FeasibilityAutomation/feasibility_tables");
 
 //Get db connection from the db.js file
@@ -323,6 +325,8 @@ db.getConnection(function (err, connection) {
   createFeasibilityLinkTokensTable();
   createFeasibilityRequestsTable();
   createFeasibilityRequestTestsTable();
+  createTS1ChamberSpecTable();
+  createTS1TestPricingTable();
 
   connection.release(); // Release the connection back to the pool when done
 });
@@ -397,6 +401,12 @@ openaiAPIs(app, io, labbeeUsers);
 // Feasibility Automation APIs:
 const { feasibilityAPIs } = require("./FeasibilityAutomation/FeasibilityAPI");
 feasibilityAPIs(app);
+
+const { chamberSpecsAPIs } = require("./FeasibilityAutomation/ChamberSpecsAPI");
+chamberSpecsAPIs(app);
+
+const { testPricingAPIs } = require("./FeasibilityAutomation/TestPricingAPI");
+testPricingAPIs(app);
 
 //Backend connection to acess bea_marketing_APIs:
 const {

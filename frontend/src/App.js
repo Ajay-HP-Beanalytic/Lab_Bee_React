@@ -43,6 +43,8 @@ import FileBrowser from "./FilesStorage/FileBrowser";
 import SocialMediaConetntDashboard from "./marketing/smc_dashboard";
 import FeasibilityRequestForm from "./test_feasibility_automation/FeasibilityRequestForm";
 import FeasibilityRequestSuccess from "./test_feasibility_automation/FeasibilityRequestSuccess";
+import ChamberSpecsManager from "./test_feasibility_automation/ChamberSpecsManager";
+import TestPricingManager from "./test_feasibility_automation/TestPricingManager";
 
 function App() {
   const location = useLocation();
@@ -307,6 +309,28 @@ function App() {
                 allowedRoles={[]}
               >
                 <ChamberAndCalibration />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="ts1_chamber_specs"
+            element={
+              <ProtectedRoute
+                allowedDepartments={["Administration", "TS1 Testing"]}
+                allowedRoles={[]}
+              >
+                <ChamberSpecsManager />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="ts1_test_pricing"
+            element={
+              <ProtectedRoute
+                allowedDepartments={["Administration", "TS1 Testing"]}
+                allowedRoles={[]}
+              >
+                <TestPricingManager />
               </ProtectedRoute>
             }
           />

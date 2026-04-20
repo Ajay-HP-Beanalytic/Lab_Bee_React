@@ -81,8 +81,64 @@ function createFeasibilityRequestTestsTable() {
   });
 }
 
+function createTS1ChamberSpecTable() {
+  const sqlQuery = `
+    CREATE TABLE IF NOT EXISTS ts1_chamber_spec (
+      id                    INT NOT NULL AUTO_INCREMENT,
+      chamber_name          VARCHAR(500) NOT NULL,
+      chamber_id            VARCHAR(100) UNIQUE NOT NULL,
+      chamber_category      VARCHAR(100),
+      length_cm             DECIMAL(10,2),
+      width_cm              DECIMAL(10,2),
+      height_cm             DECIMAL(10,2),
+      max_load_kg           DECIMAL(10,2),
+      temp_min_celsius      DECIMAL(10,2),
+      temp_max_celsius      DECIMAL(10,2),
+      humidity_min_rh       DECIMAL(10,2),
+      humidity_max_rh       DECIMAL(10,2),
+      temp_ramp_rate        DECIMAL(10,2),
+      humidity_ramp_rate    DECIMAL(10,2),
+      vibration_freq_min_hz DECIMAL(10,2),
+      vibration_freq_max_hz DECIMAL(10,2),
+      vibration_max_g       DECIMAL(10,2),
+      supported_tests       JSON DEFAULT NULL,
+      supported_standards   JSON DEFAULT NULL,
+      is_nabl_accredited    TINYINT(1) DEFAULT 0,
+      special_notes         TEXT,
+      created_at            TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at            TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      PRIMARY KEY(id)
+    )`;
+  db.query(sqlQuery, (err) => {
+    if (err) console.log("Error creating ts1_chamber_spec table", err);
+  });
+}
+
+function createTS1TestPricingTable() {
+  const sqlQuery = `
+    CREATE TABLE IF NOT EXISTS ts1_test_pricing (
+      id             INT NOT NULL AUTO_INCREMENT,
+      test_name      VARCHAR(500) NOT NULL,
+      test_category  VARCHAR(100),
+      pricing_type   ENUM('per_hour', 'per_test') NOT NULL DEFAULT 'per_hour',
+      charge_amount  DECIMAL(10,2) NOT NULL,
+      min_hours      DECIMAL(10,2) DEFAULT NULL,
+      is_nabl_accredited TINYINT(1) DEFAULT 0,
+      is_active      TINYINT(1) DEFAULT 1,
+      notes          TEXT,
+      created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      PRIMARY KEY(id)
+    )`;
+  db.query(sqlQuery, (err) => {
+    if (err) console.log("Error creating ts1_test_pricing table", err);
+  });
+}
+
 module.exports = {
   createFeasibilityLinkTokensTable,
   createFeasibilityRequestsTable,
   createFeasibilityRequestTestsTable,
+  createTS1ChamberSpecTable,
+  createTS1TestPricingTable,
 };

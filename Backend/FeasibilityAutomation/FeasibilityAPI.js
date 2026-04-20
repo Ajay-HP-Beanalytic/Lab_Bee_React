@@ -2,6 +2,7 @@ const crypto = require("crypto");
 const nodemailer = require("nodemailer");
 const { db } = require("../db");
 
+//Create a transporter function to send emails.
 const createTransporter = () =>
   nodemailer.createTransport({
     service: "Gmail",
@@ -11,6 +12,7 @@ const createTransporter = () =>
     },
   });
 
+//Function to send the confirmation email to the client.
 const sendConfirmationEmail = (to, contactName, reference, companyName) => {
   const transporter = createTransporter();
   const mailOptions = {
@@ -43,8 +45,8 @@ const sendConfirmationEmail = (to, contactName, reference, companyName) => {
   return transporter.sendMail(mailOptions);
 };
 
+//API endpoints of feasibility checking automation.
 const feasibilityAPIs = (app) => {
-
   // Staff generates a unique link for a customer (authenticated)
   app.post("/api/feasibility/generate-link", (req, res) => {
     const { customer_email, customer_name, generated_by } = req.body;
@@ -63,7 +65,13 @@ const feasibilityAPIs = (app) => {
 
     db.query(
       sql,
-      [token, generated_by, customer_email || null, customer_name || null, expiresAt],
+      [
+        token,
+        generated_by,
+        customer_email || null,
+        customer_name || null,
+        expiresAt,
+      ],
       (err) => {
         if (err) {
           console.error("generate-link error:", err);
@@ -73,7 +81,7 @@ const feasibilityAPIs = (app) => {
         const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
         const link = `${frontendUrl}/feasibility-request?token=${token}`;
         res.json({ success: true, token, link, expires_at: expiresAt });
-      }
+      },
     );
   });
 
@@ -92,9 +100,13 @@ const feasibilityAPIs = (app) => {
         return res.status(500).json({ error: "Server error" });
       }
       if (results.length === 0) {
-        return res.status(404).json({ valid: false, message: "This link is invalid or has expired." });
+        return res.status(404).json({
+          valid: false,
+          message: "This link is invalid or has expired.",
+        });
       }
 
+      //If the token is validated then get the customer email and name
       const { customer_email, customer_name } = results[0];
       res.json({ valid: true, customer_email, customer_name });
     });
@@ -102,9 +114,22 @@ const feasibilityAPIs = (app) => {
 
   // Public – customer submits the feasibility form
   app.post("/api/feasibility/submit", (req, res) => {
-    const { token, company_name, contact_person, contact_email, contact_phone, tests } = req.body;
+    const {
+      token,
+      company_name,
+      contact_person,
+      contact_email,
+      contact_phone,
+      tests,
+    } = req.body;
 
-    if (!token || !company_name || !contact_email || !tests || tests.length === 0) {
+    if (
+      !token ||
+      !company_name ||
+      !contact_email ||
+      !tests ||
+      tests.length === 0
+    ) {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
@@ -119,7 +144,9 @@ const feasibilityAPIs = (app) => {
         return res.status(500).json({ error: "Server error" });
       }
       if (tokenResults.length === 0) {
-        return res.status(400).json({ error: "This link is invalid or has already been used." });
+        return res
+          .status(400)
+          .json({ error: "This link is invalid or has already been used." });
       }
 
       // Insert the feasibility request
@@ -130,7 +157,13 @@ const feasibilityAPIs = (app) => {
 
       db.query(
         requestSql,
-        [token, company_name, contact_person || null, contact_email, contact_phone || null],
+        [
+          token,
+          company_name,
+          contact_person || null,
+          contact_email,
+          contact_phone || null,
+        ],
         (err, requestResult) => {
           if (err) {
             console.error("submit – insert request error:", err);
@@ -165,22 +198,30 @@ const feasibilityAPIs = (app) => {
           db.query(testSql, [testValues], (err) => {
             if (err) {
               console.error("submit – insert tests error:", err);
-              return res.status(500).json({ error: "Failed to save test details" });
+              return res
+                .status(500)
+                .json({ error: "Failed to save test details" });
             }
 
             // Mark token as used so the link can't be resubmitted
             db.query(
               `UPDATE feasibility_link_tokens SET is_used = 1 WHERE token = ?`,
-              [token]
+              [token],
             );
 
             // Send confirmation email (non-blocking)
-            sendConfirmationEmail(contact_email, contact_person || contact_email, reference, company_name)
-              .catch((emailErr) => console.error("Confirmation email failed:", emailErr));
+            sendConfirmationEmail(
+              contact_email,
+              contact_person || contact_email,
+              reference,
+              company_name,
+            ).catch((emailErr) =>
+              console.error("Confirmation email failed:", emailErr),
+            );
 
             res.json({ success: true, request_id: requestId, reference });
           });
-        }
+        },
       );
     });
   });
