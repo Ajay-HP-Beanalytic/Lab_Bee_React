@@ -92,16 +92,16 @@ export default function Quotation() {
 
   const [companyName, setCompanyName] = useState(initialCompanyName);
   const [toCompanyAddress, setToCompanyAddress] = useState(
-    initialToCompanyAddress
+    initialToCompanyAddress,
   );
   const [kindAttention, setKindAttention] = useState(initialKindAttention);
   const [customerId, setCustomerId] = useState(initialCustomerID);
   const [customerEmail, setCustomerEmail] = useState(initialCustomerEmail);
   const [customerContactNumber, setCustomerContactNumber] = useState(
-    initialCustomerContactNumber
+    initialCustomerContactNumber,
   );
   const [customerReferance, setCustomerreferance] = useState(
-    initialCustomerReferance
+    initialCustomerReferance,
   );
   const [projectName, setProjectName] = useState(initialProjectName);
   const [quoteCategory, setQuoteCategory] = useState("Environmental Testing");
@@ -154,7 +154,7 @@ export default function Quotation() {
         setCustomerContactNumber(result.data[0].customer_contact_number);
         setCustomerreferance(result.data[0].customer_referance);
         setSelectedDate(
-          moment(result.data[0].quote_given_date).format("YYYY-MM-DD")
+          moment(result.data[0].quote_given_date).format("YYYY-MM-DD"),
         );
         setKindAttention(result.data[0].kind_attention);
         setProjectName(result.data[0].project_name);
@@ -170,8 +170,7 @@ export default function Quotation() {
 
     //Fetch companyIds from the table in order to autofill the data:
     axios.get(`${serverBaseAddress}/api/getCompanyIdList`).then((result) => {
-      const companyIds = result.data.map((item) => item.company_id);
-      setCompanyIdList(companyIds);
+      setCompanyIdList(result.data); // [{ company_id, company_name }] already sorted A→Z by backend
     });
 
     //Fetch item soft modules list from the table :
@@ -235,7 +234,7 @@ export default function Quotation() {
 
   const handleInputChange = (slno, field, value) => {
     const updatedData = tableData.map((row) =>
-      row.slno === slno ? { ...row, [field]: value } : row
+      row.slno === slno ? { ...row, [field]: value } : row,
     );
     setTableData(updatedData);
   };
@@ -301,7 +300,7 @@ export default function Quotation() {
 
       try {
         const response = await axios.get(
-          `${serverBaseAddress}/api/getLatestQuotationID`
+          `${serverBaseAddress}/api/getLatestQuotationID`,
         );
 
         if (response.status === 200) {
@@ -369,7 +368,7 @@ export default function Quotation() {
 
         // Fetch latest ID and generate new one
         const response = await axios.get(
-          `${serverBaseAddress}/api/getLatestQuotationID`
+          `${serverBaseAddress}/api/getLatestQuotationID`,
         );
         const lastQuotationID =
           response.data[0]?.quotation_ids || "BEA/TS//-000";
@@ -414,7 +413,7 @@ export default function Quotation() {
           {
             ...formData,
             quotationIdString: freshQuotationId,
-          }
+          },
         );
 
         // Update the state with successful ID
@@ -429,11 +428,11 @@ export default function Quotation() {
             error.response?.data?.sqlMessage?.includes("quotation_ids"))
         ) {
           console.log(
-            `Attempt ${attempt + 1}: Duplicate ID detected, retrying...`
+            `Attempt ${attempt + 1}: Duplicate ID detected, retrying...`,
           );
           // Small random delay to reduce collision probability
           await new Promise((resolve) =>
-            setTimeout(resolve, 100 + Math.random() * 200)
+            setTimeout(resolve, 100 + Math.random() * 200),
           );
           continue; // Try again with new ID
         }
@@ -441,7 +440,7 @@ export default function Quotation() {
       }
     }
     throw new Error(
-      "Failed to create quotation after multiple attempts due to ID conflicts"
+      "Failed to create quotation after multiple attempts due to ID conflicts",
     );
   };
 
@@ -472,7 +471,7 @@ export default function Quotation() {
     // Check at least one row is filled completely or rlse give a error messgae:
     if (quoteCategory === "Item Soft") {
       isAtLeastOneRowIsFilled = tableData.some(
-        (row) => row.module_id && row.amount
+        (row) => row.module_id && row.amount,
       );
     }
     if (
@@ -481,7 +480,7 @@ export default function Quotation() {
       quoteCategory === "Others"
     ) {
       isAtLeastOneRowIsFilled = tableData.some(
-        (row) => row.testDescription && row.amount
+        (row) => row.testDescription && row.amount,
       );
     }
     if (
@@ -495,7 +494,7 @@ export default function Quotation() {
           row.duration &&
           row.unit &&
           row.perUnitCharge &&
-          row.amount
+          row.amount,
       );
     }
 
@@ -532,7 +531,7 @@ export default function Quotation() {
         // Update existing quotation - no retry needed
         response = await axios.post(
           `${serverBaseAddress}/api/quotation/` + editId,
-          formData
+          formData,
         );
       } else {
         // Create new quotation - use retry logic
@@ -546,7 +545,7 @@ export default function Quotation() {
       console.error("Error submitting quotation:", error);
       if (error.message.includes("multiple attempts")) {
         toast.error(
-          "Unable to create quotation due to system busy. Please try again."
+          "Unable to create quotation due to system busy. Please try again.",
         );
       } else {
         toast.error("Failed to create the quotation");
@@ -642,7 +641,7 @@ export default function Quotation() {
           },
         },
       }),
-    []
+    [],
   );
 
   // Useeffect to calculate the total amount, to display that in word.
@@ -777,12 +776,21 @@ export default function Quotation() {
               <FormControl sx={{ width: { xs: "70%", md: "50%" } }}>
                 <Autocomplete
                   disablePortal
-                  value={selectedCompanyId}
+                  value={
+                    companyIdList.find(
+                      (c) => c.company_id === selectedCompanyId,
+                    ) || null
+                  }
                   onChange={(event, newValue) => {
-                    setSelectedCompanyId(newValue);
-                    prefillTextFields(newValue);
+                    const id = newValue ? newValue.company_id : "";
+                    setSelectedCompanyId(id);
+                    prefillTextFields(id);
                   }}
                   options={companyIdList}
+                  getOptionLabel={(option) => option.company_name || ""}
+                  isOptionEqualToValue={(option, value) =>
+                    option.company_id === value.company_id
+                  }
                   renderInput={(params) => (
                     <TextField
                       {...params}
@@ -887,8 +895,9 @@ export default function Quotation() {
                       "marginTop": "16px",
                       "marginBottom": "16px",
                       "marginLeft": "10px",
+                      "borderRadius": 3,
                       "& .MuiOutlinedInput-root": {
-                        "borderRadius": 2,
+                        // "borderRadius": 2,
                         "&:hover fieldset": {
                           borderColor: "#1976d2",
                         },
@@ -1066,8 +1075,9 @@ export default function Quotation() {
                           "width": "50%",
                           "marginBottom": "16px",
                           "marginRight": "10px",
+                          "borderRadius": 3,
                           "& .MuiOutlinedInput-root": {
-                            "borderRadius": 2,
+                            // "borderRadius": 2,
                             "&:hover .MuiOutlinedInput-notchedOutline": {
                               borderColor: "#1976d2",
                             },
@@ -1308,7 +1318,7 @@ export default function Quotation() {
                                 handleInputChange(
                                   row.slno,
                                   "testDescription",
-                                  e.target.value
+                                  e.target.value,
                                 )
                               }
                             />
@@ -1324,7 +1334,7 @@ export default function Quotation() {
                                   handleInputChange(
                                     row.slno,
                                     "sacNo",
-                                    e.target.value
+                                    e.target.value,
                                   )
                                 }
                               />
@@ -1338,7 +1348,7 @@ export default function Quotation() {
                                   handleCellChange(
                                     row.slno,
                                     "duration",
-                                    parseFloat(e.target.value)
+                                    parseFloat(e.target.value),
                                   )
                                 }
                               />
@@ -1352,7 +1362,7 @@ export default function Quotation() {
                                     handleInputChange(
                                       row.slno,
                                       "unit",
-                                      e.target.value
+                                      e.target.value,
                                     )
                                   }
                                 >
@@ -1375,7 +1385,7 @@ export default function Quotation() {
                                   handleCellChange(
                                     row.slno,
                                     "perUnitCharge",
-                                    parseFloat(e.target.value)
+                                    parseFloat(e.target.value),
                                   )
                                 }
                               />
@@ -1392,7 +1402,7 @@ export default function Quotation() {
                                     handleInputChange(
                                       row.slno,
                                       "module_id",
-                                      e.target.value
+                                      e.target.value,
                                     )
                                   }
                                 >
@@ -1416,7 +1426,7 @@ export default function Quotation() {
                               handleCellChange(
                                 row.slno,
                                 "amount",
-                                parseFloat(e.target.value)
+                                parseFloat(e.target.value),
                               )
                             }
                           />
@@ -1553,8 +1563,8 @@ export default function Quotation() {
                 ? "Updating..."
                 : "Creating..."
               : editId
-              ? "Update Quotation"
-              : "Create Quotation"}
+                ? "Update Quotation"
+                : "Create Quotation"}
           </Button>
 
           {editId && (
