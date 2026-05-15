@@ -12,7 +12,14 @@ import {
   Alert,
   Stack,
   Tooltip,
+  ToggleButton,
+  ToggleButtonGroup,
+  Card,
+  Divider,
 } from "@mui/material";
+import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
+import GridOnIcon from "@mui/icons-material/GridOn";
+import ChamberGridView from "../Slotbook/ChamberGridView";
 import {
   useContext,
   useRef,
@@ -96,6 +103,7 @@ const EMISlotBooking = () => {
   // Search functionality state
   const [searchInputTextOfSlot, setSearchInputTextOfSlot] = useState("");
   const [filteredEventsList, setFilteredEventsList] = useState([]);
+  const [viewMode, setViewMode] = useState("grid");
 
   const [isCustomStandard, setIsCustomStandard] = useState(false);
   const [isCustomTest, setIsCustomTest] = useState(false);
@@ -141,7 +149,7 @@ const EMISlotBooking = () => {
       { id: "CS Lab 1", label: "CS Lab 1" },
       { id: "CS Lab 2", label: "CS Lab 2" },
     ],
-    []
+    [],
   );
 
   // Fixed standard options
@@ -329,7 +337,7 @@ const EMISlotBooking = () => {
             .includes(searchInputTextOfSlot.toLowerCase()) ||
           event.customer_name
             ?.toLowerCase()
-            .includes(searchInputTextOfSlot.toLowerCase())
+            .includes(searchInputTextOfSlot.toLowerCase()),
       );
       setFilteredEventsList(filtered);
     };
@@ -380,14 +388,14 @@ const EMISlotBooking = () => {
 
       if (!resource) {
         console.warn(
-          `Chamber not found: ${chamberName}, defaulting to Main Chamber`
+          `Chamber not found: ${chamberName}, defaulting to Main Chamber`,
         );
         return 1; // Log warning when defaulting
       }
 
       return resource.resourceId;
     },
-    [emiResourcesList]
+    [emiResourcesList],
   );
 
   useEffect(() => {
@@ -395,7 +403,7 @@ const EMISlotBooking = () => {
     const fetchAllEMISlotBookings = async () => {
       try {
         const response = await axios.get(
-          `${serverBaseAddress}/api/getEMISlotBookings`
+          `${serverBaseAddress}/api/getEMISlotBookings`,
         );
         setAllBookings(response.data);
 
@@ -558,7 +566,7 @@ const EMISlotBooking = () => {
   const fetchBookingData = async (selectedBookingId) => {
     try {
       const response = await axios.get(
-        `${serverBaseAddress}/api/getEMISlotData/${selectedBookingId}`
+        `${serverBaseAddress}/api/getEMISlotData/${selectedBookingId}`,
       );
 
       // BUG FIX: Check if data exists before accessing
@@ -588,11 +596,11 @@ const EMISlotBooking = () => {
       // BUG FIX: Safely check custom fields with null safety
       setIsCustomStandard(
         bookingData.test_standard === "custom_standard" &&
-          !!bookingData.custom_standard
+          !!bookingData.custom_standard,
       );
       setIsCustomTest(
         bookingData.test_name === "custom_test_name" &&
-          !!bookingData.custom_test_name
+          !!bookingData.custom_test_name,
       );
 
       setEditId(selectedBookingId);
@@ -612,7 +620,7 @@ const EMISlotBooking = () => {
     try {
       if (selectedEvent?.id) {
         const response = await axios.delete(
-          `${serverBaseAddress}/api/deleteEMISlot/${selectedEvent.id}`
+          `${serverBaseAddress}/api/deleteEMISlot/${selectedEvent.id}`,
         );
         if (response.status === 200) {
           toast.success("Booking deleted successfully");
@@ -642,7 +650,7 @@ const EMISlotBooking = () => {
     const duration = dayjs(slotInfo.end).diff(
       dayjs(slotInfo.start),
       "hour",
-      true
+      true,
     );
     setValue("slot_duration", duration.toFixed(2));
 
@@ -747,7 +755,7 @@ const EMISlotBooking = () => {
                 `${selectedChamber} is already booked for ${booking.company_name}\n` +
                   `From: ${existingStart.format("DD/MM/YYYY HH:mm")}\n` +
                   `To: ${existingEnd.format("DD/MM/YYYY HH:mm")}\n` +
-                  `Please select a different time slot.`
+                  `Please select a different time slot.`,
               );
               return;
             }
@@ -782,7 +790,7 @@ const EMISlotBooking = () => {
       if (editId) {
         response = await axios.post(
           `${serverBaseAddress}/api/updateEMISlot/${editId}`,
-          { formData: completeFormData }
+          { formData: completeFormData },
         );
       } else {
         response = await axios.post(`${serverBaseAddress}/api/bookNewEMISlot`, {
@@ -794,7 +802,7 @@ const EMISlotBooking = () => {
         toast.success(
           editId
             ? `Booking ${editId} updated successfully`
-            : `Slot booked successfully. Booking ID: ${bookingID}`
+            : `Slot booked successfully. Booking ID: ${bookingID}`,
         );
 
         handleCloseEMISlotBookingDialog();
@@ -806,7 +814,7 @@ const EMISlotBooking = () => {
     } catch (error) {
       console.error("Failed to submit EMI slot booking:", error);
       toast.error(
-        error.response?.data?.message || "Failed to submit EMI slot booking"
+        error.response?.data?.message || "Failed to submit EMI slot booking",
       );
     }
   };
@@ -876,20 +884,17 @@ const EMISlotBooking = () => {
       <Box
         sx={{
           display: "flex",
-          justifyContent: "space-between",
+          justifyContent: "flex-end",
           alignItems: "center",
-          mb: 2,
         }}
       >
-        <Typography variant="h4" sx={{ color: "#003366" }}>
-          EMI-EMC Slot Booking
-        </Typography>
         <Button
           sx={{
             borderRadius: 1,
             bgcolor: "orange",
             color: "white",
             borderColor: "black",
+            mb: "10px",
           }}
           variant="contained"
           color="primary"
@@ -899,55 +904,106 @@ const EMISlotBooking = () => {
         </Button>
       </Box>
 
-      <Grid
-        container
-        sx={{ mb: 2, justifyContent: "space-between" }}
-        spacing={2}
-      >
-        <Grid item xs={12} sm={6} md={4}>
-          <SearchBar
-            placeholder="Search bookings..."
-            searchInputText={searchInputTextOfSlot}
-            onChangeOfSearchInput={handleSearchChange}
-            onClearSearchInput={handleClearSearch}
-          />
-        </Grid>
+      <Card sx={{ width: "100%", padding: "20px" }}>
+        <Divider>
+          <Typography variant="h4" sx={{ color: "#003366" }}>
+            Slot Booking
+          </Typography>
+        </Divider>
 
-        <Grid item xs={12} sm={6} md={4} sx={{ textAlign: "right" }}>
-          <Tooltip title="Info" arrow>
+        {/* ── Toolbar: search + info + view toggle ────────────────────────── */}
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 2,
+            mt: 1.5,
+            mb: 2,
+            flexWrap: "wrap",
+          }}
+        >
+          <Box sx={{ flex: 1, minWidth: 200 }}>
+            <SearchBar
+              placeholder="Search bookings..."
+              searchInputText={searchInputTextOfSlot}
+              onChangeOfSearchInput={handleSearchChange}
+              onClearSearchInput={handleClearSearch}
+            />
+          </Box>
+          <Tooltip title="Color code info" arrow>
             <IconButton
               color="primary"
-              aria-label="filter"
               onClick={handleOpenSlotBookingColorCodeInfoDialog}
             >
               <HelpCenterIcon />
             </IconButton>
           </Tooltip>
-        </Grid>
-      </Grid>
+          <ToggleButtonGroup
+            value={viewMode}
+            exclusive
+            onChange={(_, v) => v && setViewMode(v)}
+            size="small"
+          >
+            <ToggleButton value="grid">
+              <GridOnIcon fontSize="small" sx={{ mr: 0.5 }} />
+              Grid
+            </ToggleButton>
+            <ToggleButton value="calendar">
+              <CalendarMonthIcon fontSize="small" sx={{ mr: 0.5 }} />
+              Calendar
+            </ToggleButton>
+          </ToggleButtonGroup>
+        </Box>
 
-      <div ref={emiCalendarRef}>
-        <Calendar
-          localizer={localizer}
-          events={filteredEventsList}
-          resources={emiResourcesList}
-          resourceIdAccessor="resourceId"
-          resourceTitleAccessor="title"
-          toolbar={true}
-          selectable={true}
-          defaultView="month"
-          views={["month", "week", "day"]}
-          startAccessor="start"
-          endAccessor="end"
-          eventPropGetter={eventPropGetter}
-          onSelectEvent={handleEventClick}
-          onSelectSlot={handleSelectSlot}
-          style={{ height: 600 }}
-          // Fixed: Add proper step and time slot props for week/day views
-          step={30}
-          timeslots={2}
-        />
-      </div>
+        {/* ── Views ───────────────────────────────────────────────────────── */}
+        {viewMode === "grid" ? (
+          <ChamberGridView
+            resources={emiResourcesList.map((r) => ({
+              id: r.resourceId,
+              title: r.title,
+            }))}
+            events={filteredEventsList}
+            onEventClick={handleEventClick}
+            onSlotClick={({ chamberId, date, endDate }) => {
+              reset();
+              setIsEditingEMISlot(false);
+              setEditId("");
+              const chamber = emiResourcesList.find(
+                (r) => r.resourceId === chamberId,
+              );
+              if (chamber) setValue("chamber_allotted", chamber.title);
+              setValue("slot_start_datetime", dayjs(date));
+              setValue(
+                "slot_end_datetime",
+                dayjs(endDate ?? new Date(date.getTime() + 60 * 60 * 1000)),
+              );
+              handleOpenEMISlotBookingDialog();
+            }}
+          />
+        ) : (
+          <div ref={emiCalendarRef}>
+            <Calendar
+              localizer={localizer}
+              events={filteredEventsList}
+              resources={emiResourcesList}
+              resourceIdAccessor="resourceId"
+              resourceTitleAccessor="title"
+              toolbar={true}
+              selectable={true}
+              defaultView="month"
+              views={["month", "week", "day"]}
+              startAccessor="start"
+              endAccessor="end"
+              eventPropGetter={eventPropGetter}
+              onSelectEvent={handleEventClick}
+              onSelectSlot={handleSelectSlot}
+              style={{ height: 600 }}
+              step={30}
+              timeslots={2}
+            />
+          </div>
+        )}
+      </Card>
 
       <Dialog
         open={openEMISlotBookingDialog}
@@ -1096,7 +1152,7 @@ const generateEMISlotBookingID = async () => {
 
   try {
     const response = await axios.get(
-      `${serverBaseAddress}/api/getLatestEMISlotBookingID`
+      `${serverBaseAddress}/api/getLatestEMISlotBookingID`,
     );
 
     if (response.data && response.data.length > 0) {

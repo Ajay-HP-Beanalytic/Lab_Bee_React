@@ -327,7 +327,7 @@ function App() {
             path="ts1_test_pricing"
             element={
               <ProtectedRoute
-                allowedDepartments={["Administration", "TS1 Testing"]}
+                allowedDepartments={["Administration", "Accounts"]}
                 allowedRoles={[]}
               >
                 <TestPricingManager />

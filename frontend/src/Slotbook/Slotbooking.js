@@ -15,8 +15,13 @@ import {
   MenuItem,
   Select,
   TextField,
+  ToggleButton,
+  ToggleButtonGroup,
   Typography,
 } from "@mui/material";
+import CalendarMonthIcon from "@mui/icons-material/CalendarMonth";
+import GridOnIcon from "@mui/icons-material/GridOn";
+import ChamberGridView from "./ChamberGridView";
 import { momentLocalizer } from "react-big-calendar";
 import moment from "moment";
 // import moment from "moment-timezone";
@@ -73,6 +78,7 @@ export default function Slotbooking() {
 
   const [searchInputTextOfSlot, setSearchInputTextOfSlot] = useState("");
   const [filteredSlots, setFilteredSlots] = useState(myEventsList);
+  const [viewMode, setViewMode] = useState("grid");
 
   // Initialize useRef hook
   const calendarRef = useRef(null);
@@ -547,33 +553,74 @@ export default function Slotbooking() {
             Slot Booking
           </Typography>
         </Divider>
-        <Grid container sx={{ mt: 1, mb: 2 }} spacing={2}>
-          <Grid item xs={12} sm={6} md={12}>
+
+        {/* ── Toolbar: search + view toggle ───────────────────────────── */}
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2, mt: 1.5, mb: 2, flexWrap: "wrap" }}>
+          <Box sx={{ flex: 1, minWidth: 200 }}>
             <SearchBar
               placeholder="Search Slot"
               searchInputText={searchInputTextOfSlot}
               onChangeOfSearchInput={onChangeOfSearchInputOfSlot}
               onClearSearchInput={onClearSearchInputOfSlot}
             />
-          </Grid>
-        </Grid>
-        <div ref={calendarRef}>
-          <Calendar
-            localizer={localizer}
-            // events={myEventsList}
-            events={filteredSlots}
+          </Box>
+          <ToggleButtonGroup
+            value={viewMode}
+            exclusive
+            onChange={(_, v) => v && setViewMode(v)}
+            size="small"
+          >
+            <ToggleButton value="grid">
+              <GridOnIcon fontSize="small" sx={{ mr: 0.5 }} />
+              Grid
+            </ToggleButton>
+            <ToggleButton value="calendar">
+              <CalendarMonthIcon fontSize="small" sx={{ mr: 0.5 }} />
+              Calendar
+            </ToggleButton>
+          </ToggleButtonGroup>
+        </Box>
+
+        {/* ── Views ───────────────────────────────────────────────────── */}
+        {viewMode === "grid" ? (
+          <ChamberGridView
             resources={myResourcesList}
-            toolbar={true}
-            defaultView="month"
-            views={["month", "week", "day"]}
-            eventPropGetter={eventPropGetter}
-            selectable={true}
-            onSelectEvent={handleEventClick}
-            startAccessor="start"
-            endAccessor="end"
-            onSelectSlot={handleSelectSlot}
+            events={filteredSlots}
+            onEventClick={handleEventClick}
+            onSlotClick={({ chamberId, date, endDate }) => {
+              const dStart = dayjs(date);
+              const dEnd   = endDate ? dayjs(endDate) : dStart.add(1, "hour");
+              const diffMs = dEnd.diff(dStart);
+              const hrs    = Math.floor(diffMs / (1000 * 60 * 60));
+              const mins   = Math.round((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+              setSlotStartDateTime(dStart);
+              setValue("slotStartDateTime", dStart);
+              setSlotEndDateTime(dEnd);
+              setValue("slotEndDateTime", dEnd);
+              setSelectedChamber(chamberId);
+              setValue("selectedChamber", chamberId);
+              setSlotDuration(`${hrs}.${String(mins).padStart(2, "0")}`);
+              handleOpenDialog();
+            }}
           />
-        </div>
+        ) : (
+          <div ref={calendarRef}>
+            <Calendar
+              localizer={localizer}
+              events={filteredSlots}
+              resources={myResourcesList}
+              toolbar={true}
+              defaultView="month"
+              views={["month", "week", "day"]}
+              eventPropGetter={eventPropGetter}
+              selectable={true}
+              onSelectEvent={handleEventClick}
+              startAccessor="start"
+              endAccessor="end"
+              onSelectSlot={handleSelectSlot}
+            />
+          </div>
+        )}
       </Card>
       {openDialog && (
         <Grid container sx={{ display: "flex" }}>

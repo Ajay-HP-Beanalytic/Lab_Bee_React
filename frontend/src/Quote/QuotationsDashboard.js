@@ -46,6 +46,7 @@ import { DataGrid } from "@mui/x-data-grid";
 import dayjs from "dayjs";
 import Loader from "../common/Loader";
 import EmptyCard from "../common/EmptyCard";
+import { toast } from "react-toastify";
 
 export default function QuotationsDashboard() {
   // State variables to hold the data fetched from the database:
@@ -78,7 +79,7 @@ export default function QuotationsDashboard() {
   useEffect(() => {
     sessionStorage.setItem(
       "quoteDashboardPagination",
-      JSON.stringify(paginationModel)
+      JSON.stringify(paginationModel),
     );
   }, [paginationModel]);
 
@@ -121,11 +122,13 @@ export default function QuotationsDashboard() {
   const [copySnackbar, setCopySnackbar] = useState(false);
 
   const handleOpenLinkDialog = () => {
-    setLinkDialogOpen(true);
-    setLinkCustomerName("");
-    setLinkCustomerEmail("");
-    setGeneratedLink("");
-    setLinkError("");
+    toast.info("This feature is coming on the way..");
+    return;
+    // setLinkDialogOpen(true);
+    // setLinkCustomerName("");
+    // setLinkCustomerEmail("");
+    // setGeneratedLink("");
+    // setLinkError("");
   };
 
   const handleCloseLinkDialog = () => {
@@ -150,12 +153,13 @@ export default function QuotationsDashboard() {
           customer_name: linkCustomerName,
           customer_email: linkCustomerEmail,
           generated_by: loggedInUserId,
-        }
+        },
       );
       setGeneratedLink(res.data.link);
     } catch (err) {
       setLinkError(
-        err.response?.data?.error || "Failed to generate link. Please try again."
+        err.response?.data?.error ||
+          "Failed to generate link. Please try again.",
       );
     } finally {
       setLinkGenerating(false);
@@ -189,7 +193,7 @@ export default function QuotationsDashboard() {
         counts[status.toLowerCase()] = (counts[status.toLowerCase()] || 0) + 1;
         return counts;
       },
-      { pending: 0, approved: 0, rejected: 0 }
+      { pending: 0, approved: 0, rejected: 0 },
     );
     setQuotesStatusCounts(statusCounts);
 
@@ -206,14 +210,14 @@ export default function QuotationsDashboard() {
     const fetchMonthwiseQuotesCount = async () => {
       try {
         const response = await axios.get(
-          `${serverBaseAddress}/api/getLastSixMonthsQuotesCount`
+          `${serverBaseAddress}/api/getLastSixMonthsQuotesCount`,
         );
         if (response.status === 200) {
           setMonthWiseQuotesCount(response.data);
         } else {
           console.error(
             "Failed to fetch quotes list. Status:",
-            response.status
+            response.status,
           );
         }
       } catch (error) {
@@ -264,7 +268,7 @@ export default function QuotationsDashboard() {
         setLoading(true);
         try {
           const response = await axios.get(
-            `${serverBaseAddress}/api/getQuotationData?` + urlParameters
+            `${serverBaseAddress}/api/getQuotationData?` + urlParameters,
           );
           setQuotesTableData(response.data);
           setOriginalQuoteTableData(response.data);
@@ -286,7 +290,7 @@ export default function QuotationsDashboard() {
     const fetchYears = async () => {
       try {
         const response = await axios.get(
-          `${serverBaseAddress}/api/getQuoteDateOptions`
+          `${serverBaseAddress}/api/getQuoteDateOptions`,
         );
 
         if (response.status === 200) {
@@ -312,7 +316,7 @@ export default function QuotationsDashboard() {
       if (selectedYear) {
         try {
           const response = await axios.get(
-            `${serverBaseAddress}/api/getAvailableQuoteMonthsForYear?year=${selectedYear}`
+            `${serverBaseAddress}/api/getAvailableQuoteMonthsForYear?year=${selectedYear}`,
           );
 
           if (response.status === 200) {
@@ -322,7 +326,7 @@ export default function QuotationsDashboard() {
             if (response.data.length > 0) {
               // Select the most recent month (highest month number)
               const mostRecentMonth = response.data.reduce((latest, current) =>
-                current.value > latest.value ? current : latest
+                current.value > latest.value ? current : latest,
               );
               setSelectedMonth(mostRecentMonth.value);
             }
@@ -472,7 +476,7 @@ export default function QuotationsDashboard() {
 
   // Convert counts object to array for data points
   const quoteCategoryCountsForQuotePieChart = labelsForQuotePieChart.map(
-    (categoryLabel) => monthWiseQuoteCategoryCount[categoryLabel]
+    (categoryLabel) => monthWiseQuoteCategoryCount[categoryLabel],
   );
 
   // Creating a pie chart for calibration status for chambers and equipments:
@@ -604,9 +608,9 @@ export default function QuotationsDashboard() {
       selectedQuoteDateRange.endDate
     ) {
       const formattedDateRange = `${dayjs(
-        selectedQuoteDateRange.startDate
+        selectedQuoteDateRange.startDate,
       ).format("YYYY-MM-DD")} - ${dayjs(selectedQuoteDateRange.endDate).format(
-        "YYYY-MM-DD"
+        "YYYY-MM-DD",
       )}`;
 
       setSelectedQuoteDateRange(formattedDateRange);
@@ -623,7 +627,7 @@ export default function QuotationsDashboard() {
         `${serverBaseAddress}/api/getQuotesDataBwTwoDates`,
         {
           params: { selectedQuoteDateRange: dateRange },
-        }
+        },
       );
       setQuotesTableData(response.data);
       calculateEnhancedMetrics(response.data);
@@ -653,7 +657,7 @@ export default function QuotationsDashboard() {
   const filterDataGridTable = (searchValue) => {
     const filtered = quotesTableData.filter((row) => {
       return Object.values(row).some((value) =>
-        value.toString().toLowerCase().includes(searchValue.toLowerCase())
+        value.toString().toLowerCase().includes(searchValue.toLowerCase()),
       );
     });
     setFilteredQuoteData(filtered);
@@ -999,8 +1003,8 @@ export default function QuotationsDashboard() {
         <DialogContent dividers>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2.5 }}>
             Enter the customer's details below. A unique link will be generated
-            that they can use to submit their test requirements directly.
-            The link is valid for <strong>7 days</strong>.
+            that they can use to submit their test requirements directly. The
+            link is valid for <strong>7 days</strong>.
           </Typography>
 
           <TextField
@@ -1029,7 +1033,12 @@ export default function QuotationsDashboard() {
           {/* Generated link display */}
           {generatedLink && (
             <Box sx={{ mt: 3 }}>
-              <Typography variant="caption" color="text.secondary" display="block" mb={0.5}>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                display="block"
+                mb={0.5}
+              >
                 Generated Link — copy and send this to your customer
               </Typography>
               <TextField
@@ -1038,7 +1047,11 @@ export default function QuotationsDashboard() {
                 size="small"
                 InputProps={{
                   readOnly: true,
-                  sx: { fontFamily: "monospace", fontSize: "0.8rem", bgcolor: "#f5f5f5" },
+                  sx: {
+                    fontFamily: "monospace",
+                    fontSize: "0.8rem",
+                    bgcolor: "#f5f5f5",
+                  },
                   endAdornment: (
                     <InputAdornment position="end">
                       <Tooltip title="Copy link">
