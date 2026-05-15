@@ -62,6 +62,14 @@ const validateSession = (req, res, next) => {
     "/api/logout",
   ];
 
+  // Feasibility public routes (token-protected, no session required)
+  const isFeasibilityPublicRoute =
+    req.path.startsWith("/api/feasibility/validate-token/") ||
+    req.path.startsWith("/api/feasibility/status/") ||
+    req.path === "/api/feasibility/submit";
+
+  if (isFeasibilityPublicRoute) return next();
+
   if (publicRoutes.includes(req.path)) {
     return next();
   }
@@ -241,6 +249,14 @@ const {
   createFileAccessLogTable,
 } = require("./database_tables");
 
+const {
+  createFeasibilityLinkTokensTable,
+  createFeasibilityRequestsTable,
+  createFeasibilityRequestTestsTable,
+  createTS1ChamberSpecTable,
+  createTS1TestPricingTable,
+} = require("./FeasibilityAutomation/feasibility_tables");
+
 //Get db connection from the db.js file
 const { db } = require("./db");
 
@@ -304,6 +320,13 @@ db.getConnection(function (err, connection) {
   createInvoiceDataTable();
 
   createFileAccessLogTable();
+
+  // Feasibility Automation tables:
+  createFeasibilityLinkTokensTable();
+  createFeasibilityRequestsTable();
+  createFeasibilityRequestTestsTable();
+  createTS1ChamberSpecTable();
+  createTS1TestPricingTable();
 
   connection.release(); // Release the connection back to the pool when done
 });
@@ -374,6 +397,16 @@ fileStorageAPIs(app, io, labbeeUsers);
 //backend connection to access the openai APIs:
 const { openaiAPIs } = require("./OpenaiAPI");
 openaiAPIs(app, io, labbeeUsers);
+
+// Feasibility Automation APIs:
+const { feasibilityAPIs } = require("./FeasibilityAutomation/FeasibilityAPI");
+feasibilityAPIs(app);
+
+const { chamberSpecsAPIs } = require("./FeasibilityAutomation/ChamberSpecsAPI");
+chamberSpecsAPIs(app);
+
+const { testPricingAPIs } = require("./FeasibilityAutomation/TestPricingAPI");
+testPricingAPIs(app);
 
 //Backend connection to acess bea_marketing_APIs:
 const {

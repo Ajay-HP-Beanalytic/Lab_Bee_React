@@ -100,7 +100,7 @@ function customerDetailsAPIs(app) {
 
   // To fetch the company id from the table 'customers_details'
   app.get("/api/getCompanyIdList", (req, res) => {
-    const sqlQuery = `SELECT company_id FROM customers_details`;
+    const sqlQuery = `SELECT company_id, company_name FROM customers_details ORDER BY company_name ASC`;
 
     db.query(sqlQuery, (error, result) => {
       if (error) {
