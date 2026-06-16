@@ -164,12 +164,15 @@ function slotBookingAPIs(app, io, labbeeUsers) {
       INSERT INTO bookings_table (booking_id, company_name, customer_name, customer_email, customer_phone, test_name, chamber_allotted, slot_start_datetime, slot_end_datetime, slot_duration, remarks, slot_booked_by)
       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
-    const formattedSlotStartDateTime = moment(
-      formData.slotStartDateTime
-    ).format("YYYY-MM-DD HH:mm");
-    const formattedSlotEndDateTime = moment(formData.slotEndDateTime).format(
-      "YYYY-MM-DD HH:mm"
-    );
+    if (
+      !moment(formData.slotStartDateTime, moment.ISO_8601, true).isValid() ||
+      !moment(formData.slotEndDateTime, moment.ISO_8601, true).isValid()
+    ) {
+      return res.status(400).json({ error: "Invalid slot datetime values provided." });
+    }
+
+    const formattedSlotStartDateTime = moment(formData.slotStartDateTime, moment.ISO_8601, true).format("YYYY-MM-DD HH:mm");
+    const formattedSlotEndDateTime = moment(formData.slotEndDateTime, moment.ISO_8601, true).format("YYYY-MM-DD HH:mm");
 
     const values = [
       bookingID,
@@ -317,11 +320,15 @@ function slotBookingAPIs(app, io, labbeeUsers) {
         WHERE booking_id = ?
     `;
 
-    const formattedSlotStartDateTime = moment(
-      formData.slotStartDateTime
-    ).format("YYYY-MM-DD HH:mm");
-    const formattedSlotEndDateTime = moment(formData.slotEndDateTime).format(
-      "YYYY-MM-DD HH:mm"
+    if (
+      !moment(formData.slotStartDateTime, moment.ISO_8601, true).isValid() ||
+      !moment(formData.slotEndDateTime, moment.ISO_8601, true).isValid()
+    ) {
+      return res.status(400).json({ error: "Invalid slot datetime values provided." });
+    }
+
+    const formattedSlotStartDateTime = moment(formData.slotStartDateTime, moment.ISO_8601, true).format("YYYY-MM-DD HH:mm");
+    const formattedSlotEndDateTime = moment(formData.slotEndDateTime, moment.ISO_8601, true).format("YYYY-MM-DD HH:mm"
     );
 
     const values = [

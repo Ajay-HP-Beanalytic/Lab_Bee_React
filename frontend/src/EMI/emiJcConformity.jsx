@@ -164,7 +164,7 @@ const EMIJCConformity = ({ control, watch }) => {
             Measurement Uncertainty (MU):
           </Typography>
           <Typography variant="body2" sx={{ mt: 0.25 }} color="red">
-            a) Pass when measured value &lt; limit specified by the standard.
+            a) Pass when measured value &lt;= limit specified by the standard.
           </Typography>
           <Typography variant="body2" sx={{ mt: 0.25 }} color="red">
             b) Fail when measured value &gt; limit specified by the standard.
@@ -173,11 +173,11 @@ const EMIJCConformity = ({ control, watch }) => {
             2. Acceptance rule considering Measurement Uncertainty (MU):
           </Typography>
           <Typography variant="body2" sx={{ mt: 0.25 }} color="red">
-            a) Pass when measured value + MU &lt; limit specified by the
+            a) Pass when measured value + MU &lt;= limit specified by the
             standard.
           </Typography>
           <Typography variant="body2" sx={{ mt: 0.25 }} color="red">
-            b) Fail when measured value - MU &gt; limit specified by the
+            b) Fail when measured value + MU &gt; limit specified by the
             standard.
           </Typography>
           <Typography
@@ -185,7 +185,61 @@ const EMIJCConformity = ({ control, watch }) => {
             sx={{ mt: 0.75, fontWeight: 550 }}
             color="red"
           >
-            3. If No, Statement of Conformity will not be provided.
+            3. If Not Applicable, Statement of Conformity will not be provided.
+          </Typography>
+        </Grid>
+      </Grid>
+
+      {/* Performance Criteria Note */}
+      <Grid container alignItems="flex-start" sx={rowSx}>
+        <Grid item xs={12} md={4}>
+          <Typography variant="body2" sx={labelSx}>
+            Performance Criteria for Immunity Test:
+          </Typography>
+        </Grid>
+
+        <Grid
+          item
+          xs={12}
+          md={8}
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "flex-start",
+            textAlign: "left",
+          }}
+        >
+          <Typography variant="body2" sx={{ mt: 0.5 }} color="red">
+            During and after the immunity test, the Equipment Under Test (EUT)
+            shall continue to operate as intended and shall not exhibit any
+            degradation in performance, malfunction, loss of function,
+            unintended operation, or change in operating status. The EUT shall
+            meet all specified performance requirements throughout the test and
+            after the test has been completed.
+          </Typography>
+
+          <Typography variant="body2" sx={{ mt: 2 }} color="red">
+            Note:
+          </Typography>
+
+          <Typography variant="body2" sx={{ mt: 0.5 }} color="red">
+            1. It is the responsibility of the customer to provide and clearly
+            define the applicable Performance Criteria before the start of
+            immunity testing. The Performance Criteria describe how the
+            Equipment Under Test (EUT) is expected to perform during and after
+            the application of immunity test signals. These criteria form the
+            basis for determining whether the EUT has passed or failed the test.
+            Without clearly defined Performance Criteria, it is not possible to
+            make an objective and technically justified pass/fail assessment.
+          </Typography>
+          <br />
+          <Typography variant="body2" sx={{ mt: 0.25 }} color="red">
+            2. The Performance Criteria have been written by the laboratory as a
+            general guideline for immunity testing. The customer is responsible
+            for defining the final Performance Criteria and may modify, revise,
+            or replace these criteria as necessary to reflect the intended
+            operation and performance requirements of the Equipment Under Test
+            (EUT).
           </Typography>
         </Grid>
       </Grid>
@@ -279,12 +333,18 @@ const EMIJCConformity = ({ control, watch }) => {
 
       {showCustomerWitness && (
         <Grid container spacing={2} sx={{ px: 2, py: 1.25 }}>
-          <Grid item xs={12} sx={{ display: "flex", justifyContent: "flex-end" }}>
+          <Grid
+            item
+            xs={12}
+            sx={{ display: "flex", justifyContent: "flex-end" }}
+          >
             <Tooltip title="Remove Customer Witness">
               <span>
                 <IconButton
                   color="primary"
-                  onClick={() => setWitnessCount((prev) => Math.max(prev - 1, 3))}
+                  onClick={() =>
+                    setWitnessCount((prev) => Math.max(prev - 1, 3))
+                  }
                   disabled={witnessCount <= 3}
                   size="small"
                 >
@@ -296,7 +356,9 @@ const EMIJCConformity = ({ control, watch }) => {
               <span>
                 <IconButton
                   color="primary"
-                  onClick={() => setWitnessCount((prev) => Math.min(prev + 1, 6))}
+                  onClick={() =>
+                    setWitnessCount((prev) => Math.min(prev + 1, 6))
+                  }
                   disabled={witnessCount >= 6}
                   size="small"
                 >

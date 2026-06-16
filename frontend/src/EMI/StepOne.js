@@ -92,7 +92,12 @@ export default function EMIJCStepOne() {
   //Fields to create a EUT details table:
   const eutTableColumns = [
     { id: "serialNumber", label: "SL No", width: 25 },
-    { id: "eutName", label: "EUT Details", width: 300, type: "textField" },
+    {
+      id: "eutName",
+      label: "Brief Description of Equipment",
+      width: 300,
+      type: "textField",
+    },
     { id: "eutQuantity", label: "Quantity", width: 200, type: "textField" },
     {
       id: "eutPartNumber",

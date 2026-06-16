@@ -170,7 +170,10 @@ export default function Quotation() {
 
     //Fetch companyIds from the table in order to autofill the data:
     axios.get(`${serverBaseAddress}/api/getCompanyIdList`).then((result) => {
-      setCompanyIdList(result.data); // [{ company_id, company_name }] already sorted A→Z by backend
+      const sorted = [...result.data].sort((a, b) =>
+        a.company_name.localeCompare(b.company_name)
+      );
+      setCompanyIdList(sorted);
     });
 
     //Fetch item soft modules list from the table :
@@ -776,6 +779,7 @@ export default function Quotation() {
               <FormControl sx={{ width: { xs: "70%", md: "50%" } }}>
                 <Autocomplete
                   disablePortal
+                  autoHighlight
                   value={
                     companyIdList.find(
                       (c) => c.company_id === selectedCompanyId,
@@ -791,6 +795,16 @@ export default function Quotation() {
                   isOptionEqualToValue={(option, value) =>
                     option.company_id === value.company_id
                   }
+                  filterOptions={(options, { inputValue }) => {
+                    const keyword = inputValue.toLowerCase();
+                    return options
+                      .filter((opt) =>
+                        opt.company_name.toLowerCase().includes(keyword)
+                      )
+                      .sort((a, b) =>
+                        a.company_name.localeCompare(b.company_name)
+                      );
+                  }}
                   renderInput={(params) => (
                     <TextField
                       {...params}
