@@ -45,6 +45,8 @@ import FeasibilityRequestForm from "./test_feasibility_automation/FeasibilityReq
 import FeasibilityRequestSuccess from "./test_feasibility_automation/FeasibilityRequestSuccess";
 import ChamberSpecsManager from "./test_feasibility_automation/ChamberSpecsManager";
 import TestPricingManager from "./test_feasibility_automation/TestPricingManager";
+import JCPrintPage from "./JC/JCPrintPage";
+import EMIJCPrintPage from "./EMI/EMIJCPrintPage";
 
 function App() {
   const location = useLocation();
@@ -55,8 +57,7 @@ function App() {
     isLoading,
     backendUnavailable,
     retryConnectionCheck,
-  } =
-    useContext(UserContext);
+  } = useContext(UserContext);
 
   useEffect(() => {
     const handleRouteChange = () => {
@@ -118,7 +119,13 @@ function App() {
   // Show loading spinner while checking authentication
   if (
     isLoading &&
-    !["/", "/register", "/reset_password", "/feasibility-request", "/feasibility-submitted"].includes(location.pathname)
+    ![
+      "/",
+      "/register",
+      "/reset_password",
+      "/feasibility-request",
+      "/feasibility-submitted",
+    ].includes(location.pathname)
   ) {
     return (
       <Box
@@ -161,8 +168,16 @@ function App() {
         <Route path="/" exact element={<Login />} />
         <Route path="/register" exact element={<Register />} />
         <Route path="/reset_password" exact element={<ResetPassword />} />
-        <Route path="/feasibility-request" element={<FeasibilityRequestForm />} />
-        <Route path="/feasibility-submitted" element={<FeasibilityRequestSuccess />} />
+        <Route
+          path="/feasibility-request"
+          element={<FeasibilityRequestForm />}
+        />
+        <Route
+          path="/feasibility-submitted"
+          element={<FeasibilityRequestSuccess />}
+        />
+        <Route path="/jc-print" element={<JCPrintPage />} />
+        <Route path="/emi-jc-print/:id" element={<EMIJCPrintPage />} />
 
         {/* Protected Routes */}
         <Route path="" element={<SidenavigationBar />}>

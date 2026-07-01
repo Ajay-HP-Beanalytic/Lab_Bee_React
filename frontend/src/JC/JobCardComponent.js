@@ -1,13 +1,18 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import axios from "axios";
 // import { useParams } from "react-router-dom";
 import dayjs from "dayjs";
 import { serverBaseAddress } from "../Pages/APIPage";
-import { generateJcDocument } from "./JCDocument";
+import { openJcPreview, downloadJcWord } from "./JCDocument";
+import { UserContext } from "../Pages/UserContext";
 import { Button } from "@mui/material";
 
 const JobCardComponent = ({ id }) => {
   // const { id } = useParams();
+  const { loggedInUserDepartment } = useContext(UserContext);
+  const isPdfEnabled =
+    loggedInUserDepartment === "Administration" ||
+    loggedInUserDepartment === "Accounts";
 
   const [jobCard, setJobCard] = useState({
     jcNumber: "",
@@ -69,7 +74,9 @@ const JobCardComponent = ({ id }) => {
           const endDate = new Date(test.endDate);
 
           const startDateObj = {
-            date: dayjs(startDate).isValid() ? dayjs(startDate).format("DD-MM-YYYY") : "",
+            date: dayjs(startDate).isValid()
+              ? dayjs(startDate).format("DD-MM-YYYY")
+              : "",
             time: startDate.toLocaleTimeString([], {
               hour: "2-digit",
               minute: "2-digit",
@@ -77,7 +84,9 @@ const JobCardComponent = ({ id }) => {
           };
 
           const endDateObj = {
-            date: dayjs(endDate).isValid() ? dayjs(endDate).format("DD-MM-YYYY") : "",
+            date: dayjs(endDate).isValid()
+              ? dayjs(endDate).format("DD-MM-YYYY")
+              : "",
             time: endDate.toLocaleTimeString([], {
               hour: "2-digit",
               minute: "2-digit",
@@ -102,13 +111,13 @@ const JobCardComponent = ({ id }) => {
         const parsedRelTasksDetails = reliability_tasks_details.map(
           (detail, index) => {
             const taskStartDate = dayjs(detail.task_start_date).format(
-              "DD-MM-YYYY"
+              "DD-MM-YYYY",
             );
             const taskEndDate = dayjs(detail.task_end_date).format(
-              "DD-MM-YYYY"
+              "DD-MM-YYYY",
             );
             const taskCompletionDate = dayjs(detail.task_completed_date).format(
-              "DD-MM-YYYY"
+              "DD-MM-YYYY",
             );
 
             return {
@@ -118,7 +127,7 @@ const JobCardComponent = ({ id }) => {
               taskCompletionDate,
               slNoCounter: index + 1,
             };
-          }
+          },
         );
 
         // console.log(jobcard)
@@ -171,27 +180,37 @@ const JobCardComponent = ({ id }) => {
       });
   }, [id]);
 
-  const handleGenerateDocument = () => {
-    generateJcDocument(jobCard);
-  };
-
   return (
     <div>
-      <Button
-        sx={{
-          borderRadius: 3,
-          mx: 0.5,
-          mb: 1,
-          bgcolor: "orange",
-          color: "white",
-          borderColor: "black",
-        }}
-        variant="contained"
-        color="primary"
-        onClick={handleGenerateDocument}
-      >
-        Download
-      </Button>
+      {isPdfEnabled ? (
+        <Button
+          variant="contained"
+          sx={{
+            mx: 0.5,
+            mb: 1,
+            borderRadius: 3,
+            bgcolor: "orange",
+            color: "white",
+          }}
+          onClick={() => openJcPreview(jobCard)}
+        >
+          View / Download JC
+        </Button>
+      ) : (
+        <Button
+          variant="contained"
+          sx={{
+            mx: 0.5,
+            mb: 1,
+            borderRadius: 3,
+            bgcolor: "orange",
+            color: "white",
+          }}
+          onClick={() => downloadJcWord(jobCard)}
+        >
+          Download
+        </Button>
+      )}
     </div>
   );
 };

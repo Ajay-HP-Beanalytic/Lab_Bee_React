@@ -1,9 +1,6 @@
-import { useEffect } from "react";
 import Docxtemplater from "docxtemplater";
 import PizZip from "pizzip";
-import { saveAs } from "file-saver";
 import PizZipUtils from "pizzip/utils";
-
 import EMIJCTemplate from "../templates/TS2_JC_TEMPLATE.docx";
 import axios from "axios";
 import { serverBaseAddress } from "../Pages/APIPage";
@@ -13,37 +10,22 @@ function loadFile(url, callback) {
   PizZipUtils.getBinaryContent(url, callback);
 }
 
-// Remove invalid XML control chars
 function sanitizeForXml(value) {
   if (value == null) return "";
-  // eslint-disable-next-line no-control-regex
-  return String(value).replace(
-    // eslint-disable-next-line no-control-regex
-    /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g,
-    "",
-  );
+  return [...String(value)].filter((ch) => {
+    const c = ch.charCodeAt(0);
+    return !(c <= 8 || c === 11 || c === 12 || (c >= 14 && c <= 31) || c === 127);
+  }).join("");
 }
 
 function sanitizeDeep(input) {
-  //Check if the input is null or not
   if (input === null) return input;
-
-  //Check if the input is a string
-  if (typeof input === "string" || typeof input === "number") {
-    return sanitizeForXml(input);
-  }
-
-  //Check if the input is an Array
-  if (Array.isArray(input)) {
-    return input.map((item) => sanitizeDeep(item));
-  }
-
-  //Check if the input is an Object
+  if (typeof input === "string" || typeof input === "number") return sanitizeForXml(input);
+  if (Array.isArray(input)) return input.map((item) => sanitizeDeep(item));
   if (typeof input === "object") {
-    Object.fromEntries(
+    return Object.fromEntries(
       Object.entries(input).map(([key, value]) => [key, sanitizeDeep(value)]),
     );
-    return input;
   }
 }
 
@@ -52,218 +34,108 @@ function withFallback(value) {
   return normalized === "" ? "N/A" : normalized;
 }
 
-const EMIJCDocument = ({ id }) => {
-  //usEffect hook to fetch the jobcard data.
-  useEffect(() => {
-    // Fetch the job card data based on the provided id
-    const fetchEMIJCData = async () => {
-      try {
-        // Assuming you have an API endpoint to fetch the job card data by id
-        const response = await axios.get(
-          `${serverBaseAddress}/api/emi_jobcard/${id}`,
-        );
+export const generateEmiDocxBlob = (id) =>
+  new Promise(async (resolve, reject) => {
+    try {
+      const response = await axios.get(`${serverBaseAddress}/api/emi_jobcard/${id}`);
+      const { emiPrimaryJCData, emiEutData, emiTestsData, emiTestsDetailsData } = response.data;
 
-        const {
-          emiPrimaryJCData,
-          emiEutData,
-          emiTestsData,
-          emiTestsDetailsData,
-        } = response.data;
+      const {
+        jcNumber, srfNumber, srfDate, quoteNumber, poNumber,
+        jcOpenDate, itemReceivedDate, typeOfRequest, sampleCondition,
+        slotDuration, companyName, customerName, customerEmail,
+        customerNumber, projectName, reportType, jcIncharge, jcStatus,
+        jcClosedDate, observations, lastUpdatedBy,
+        conformityData: rawConformityData,
+      } = emiPrimaryJCData;
 
-        const {
-          jcNumber,
-          srfNumber,
-          srfDate,
-          quoteNumber,
-          poNumber,
-          jcOpenDate,
-          itemReceivedDate,
-          typeOfRequest,
-          sampleCondition,
-          slotDuration,
-          companyName,
-          customerName,
-          customerEmail,
-          customerNumber,
-          projectName,
-          reportType,
-          jcIncharge,
-          jcStatus,
-          jcClosedDate,
-          observations,
-          lastUpdatedBy,
-          conformityData: rawConformityData,
-        } = emiPrimaryJCData;
-
-        let conformityData = {};
-        if (rawConformityData) {
-          if (typeof rawConformityData === "string") {
-            try {
-              conformityData = JSON.parse(rawConformityData);
-            } catch (error) {
-              conformityData = {};
-            }
-          } else if (typeof rawConformityData === "object") {
-            conformityData = rawConformityData;
-          }
+      let conformityData = {};
+      if (rawConformityData) {
+        if (typeof rawConformityData === "string") {
+          try { conformityData = JSON.parse(rawConformityData); } catch { conformityData = {}; }
+        } else if (typeof rawConformityData === "object") {
+          conformityData = rawConformityData;
         }
-
-        const decisionRuleOptions = [
-          conformityData.decisionRuleOptionStandardRequirement
-            ? "As per standard requirement"
-            : null,
-          conformityData.decisionRuleOptionIncludesLabUncertainty
-            ? "Includes Lab Uncertainty"
-            : null,
-        ]
-          .filter(Boolean)
-          .join(", ");
-
-        const testResultOptions = [
-          conformityData.testResultReportRequired ? "Report Required" : null,
-          conformityData.testResultReportHardCopy ? "Hard Copy" : null,
-          conformityData.certificateRequired ? "Certificate Required" : null,
-          conformityData.certificateSoftCopy ? "Soft Copy" : null,
-        ]
-          .filter(Boolean)
-          .join(", ");
-
-        //Parse and seggregate EUT table:
-        const parsedEUT = emiEutData.map((eut, index) => {
-          return {
-            ...eut,
-            slNoCounter: index + 1,
-          };
-        });
-
-        //Parse and seggregate JC Tests table:
-        const parsedTests = emiTestsData.map((test, index) => {
-          return {
-            ...test,
-            slNoCounter: index + 1,
-          };
-        });
-
-        // Parse and segregate date and time for tests_details
-        const parsedTestDetails = emiTestsDetailsData.map(
-          (testDetails, index) => {
-            const startDate = new Date(testDetails.testStartDateTime);
-            const endDate = new Date(testDetails.testEndDateTime);
-
-            const startDateObj = {
-              date: dayjs(startDate).isValid()
-                ? dayjs(startDate).format("DD-MM-YYYY")
-                : "",
-              time: startDate.toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-              }),
-            };
-
-            const endDateObj = {
-              date: dayjs(endDate).isValid()
-                ? dayjs(endDate).format("DD-MM-YYYY")
-                : "",
-              time: endDate.toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-              }),
-            };
-
-            return {
-              ...testDetails,
-              startDate: startDateObj,
-              endDate: endDateObj,
-              slNoCounter: index + 1,
-            };
-          },
-        );
-
-        const templateData = {
-          jcNumber,
-          srfNumber,
-          srfDate,
-          quoteNumber,
-          poNumber,
-          jcOpenDate: dayjs(jcOpenDate).isValid()
-            ? dayjs(jcOpenDate).format("DD-MM-YYYY")
-            : "",
-          itemReceivedDate: dayjs(itemReceivedDate).isValid()
-            ? dayjs(itemReceivedDate).format("DD-MM-YYYY")
-            : "",
-          typeOfRequest,
-          sampleCondition,
-          slotDuration,
-          companyName,
-          customerName,
-          customerEmail,
-          customerNumber,
-          projectName,
-          reportType,
-          jcIncharge,
-          jcStatus,
-          jcClosedDate: dayjs(jcClosedDate).isValid()
-            ? dayjs(jcClosedDate).format("DD-MM-YYYY")
-            : "",
-          observations,
-          lastUpdatedBy,
-          conformityStatement: withFallback(conformityData.conformityStatement),
-          conformityDecisionRule: withFallback(
-            conformityData.decisionRuleApplicable,
-          ),
-          conformityDecisionRuleOptions: withFallback(decisionRuleOptions),
-          conformityTestResultOptions: withFallback(testResultOptions),
-          customerWitness: withFallback(conformityData.customerWitness),
-          customerWitness1: withFallback(conformityData.customerWitness1),
-          customerWitness2: withFallback(conformityData.customerWitness2),
-          customerWitness3: withFallback(conformityData.customerWitness3),
-          customerWitness4: withFallback(conformityData.customerWitness4),
-          customerWitness5: withFallback(conformityData.customerWitness5),
-          customerWitness6: withFallback(conformityData.customerWitness6),
-          parsedEUT,
-          parsedTests,
-          parsedTestDetails,
-        };
-
-        // Load the template document
-        loadFile(EMIJCTemplate, function (error, content) {
-          if (error) {
-            throw error;
-          }
-
-          const zip = new PizZip(content);
-          const doc = new Docxtemplater(zip, {
-            paragraphLoop: true,
-            linebreaks: true,
-          });
-          // Set the fetched data in the document
-          const sanitizedData = sanitizeDeep(templateData);
-          // doc.setData(templateData);
-          doc.setData(sanitizedData);
-          try {
-            // Render the document
-            doc.render();
-          } catch (renderError) {
-            console.error("Docxtemplater render error:", renderError);
-            return;
-          }
-
-          // Generate the document as a blob and trigger the download
-          const blob = doc.getZip().generate({
-            type: "blob",
-            mimeType:
-              "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-          });
-          const fileName = `JC_${emiPrimaryJCData.jcNumber}.docx`;
-          saveAs(blob, fileName);
-        });
-      } catch (fetchError) {
-        console.error("Error fetching job card data:", fetchError);
       }
-    };
 
-    fetchEMIJCData();
-  }, [id]);
+      const decisionRuleOptions = [
+        conformityData.decisionRuleOptionStandardRequirement ? "As per standard requirement" : null,
+        conformityData.decisionRuleOptionIncludesLabUncertainty ? "Includes Lab Uncertainty" : null,
+      ].filter(Boolean).join(", ");
+
+      const testResultOptions = [
+        conformityData.testResultReportRequired ? "Report Required" : null,
+        conformityData.testResultReportHardCopy ? "Hard Copy" : null,
+        conformityData.certificateRequired ? "Certificate Required" : null,
+        conformityData.certificateSoftCopy ? "Soft Copy" : null,
+      ].filter(Boolean).join(", ");
+
+      const parsedEUT = emiEutData.map((eut, index) => ({ ...eut, slNoCounter: index + 1 }));
+      const parsedTests = emiTestsData.map((test, index) => ({ ...test, slNoCounter: index + 1 }));
+
+      const parsedTestDetails = emiTestsDetailsData.map((testDetails, index) => {
+        const startDate = new Date(testDetails.testStartDateTime);
+        const endDate = new Date(testDetails.testEndDateTime);
+        return {
+          ...testDetails,
+          startDate: {
+            date: dayjs(startDate).isValid() ? dayjs(startDate).format("DD-MM-YYYY") : "",
+            time: startDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          },
+          endDate: {
+            date: dayjs(endDate).isValid() ? dayjs(endDate).format("DD-MM-YYYY") : "",
+            time: endDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+          },
+          slNoCounter: index + 1,
+        };
+      });
+
+      const templateData = {
+        jcNumber, srfNumber, srfDate, quoteNumber, poNumber,
+        jcOpenDate: dayjs(jcOpenDate).isValid() ? dayjs(jcOpenDate).format("DD-MM-YYYY") : "",
+        itemReceivedDate: dayjs(itemReceivedDate).isValid() ? dayjs(itemReceivedDate).format("DD-MM-YYYY") : "",
+        typeOfRequest, sampleCondition, slotDuration,
+        companyName, customerName, customerEmail, customerNumber,
+        projectName, reportType, jcIncharge, jcStatus,
+        jcClosedDate: dayjs(jcClosedDate).isValid() ? dayjs(jcClosedDate).format("DD-MM-YYYY") : "",
+        observations, lastUpdatedBy,
+        conformityStatement: withFallback(conformityData.conformityStatement),
+        conformityDecisionRule: withFallback(conformityData.decisionRuleApplicable),
+        conformityDecisionRuleOptions: withFallback(decisionRuleOptions),
+        conformityTestResultOptions: withFallback(testResultOptions),
+        customerWitness: withFallback(conformityData.customerWitness),
+        customerWitness1: withFallback(conformityData.customerWitness1),
+        customerWitness2: withFallback(conformityData.customerWitness2),
+        customerWitness3: withFallback(conformityData.customerWitness3),
+        customerWitness4: withFallback(conformityData.customerWitness4),
+        customerWitness5: withFallback(conformityData.customerWitness5),
+        customerWitness6: withFallback(conformityData.customerWitness6),
+        parsedEUT, parsedTests, parsedTestDetails,
+      };
+
+      loadFile(EMIJCTemplate, (error, content) => {
+        if (error) { reject(error); return; }
+        const zip = new PizZip(content);
+        const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true });
+        doc.setData(sanitizeDeep(templateData));
+        try {
+          doc.render();
+        } catch (renderError) {
+          console.error("Docxtemplater render error:", renderError);
+          reject(renderError);
+          return;
+        }
+        const blob = doc.getZip().generate({
+          type: "blob",
+          mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        });
+        resolve({ blob, jcNumber });
+      });
+    } catch (err) {
+      reject(err);
+    }
+  });
+
+export const openEmiJcPreview = (id) => {
+  window.open(`/emi-jc-print/${id}`, "_blank");
 };
-
-export default EMIJCDocument;
