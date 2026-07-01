@@ -13,6 +13,7 @@ const cors = require("cors"); // cors is used to access our backend API. In our 
 //it deals with requests made from one domain (origin) to another different domain (origin) via JavaScript.
 
 const session = require("express-session"); // Import 'express-session' module to create user session
+const MySQLStore = require("express-mysql-session")(session);
 const cookieParser = require("cookie-parser"); // Import 'cookie-parser' module to create cookies for a logge in user
 
 const createBackup = require("./Backup"); // Import the backup function
@@ -171,19 +172,35 @@ app.use(express.urlencoded({ limit: "50mb", extended: true })); // for URL-encod
 
 app.use(cookieParser());
 
+const sessionStore = new MySQLStore({
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_DATABASE,
+  clearExpired: true,           // automatically delete expired sessions
+  checkExpirationInterval: 15 * 60 * 1000, // check every 15 minutes
+  expiration: 540 * 60 * 1000, // match cookie maxAge (9 hours)
+  createDatabaseTable: true,    // auto-create sessions table if missing
+  connectionLimit: 3,
+  schema: {
+    tableName: "user_sessions",
+    columnNames: {
+      session_id: "session_id",
+      expires: "expires",
+      data: "data",
+    },
+  },
+});
+
 app.use(
   session({
-    secret: "secret", // A secret key used to encrypt the session cookie
+    secret: process.env.SESSION_SECRET || "secret",
     resave: false,
     saveUninitialized: false,
+    store: sessionStore,
     cookie: {
       secure: false,
-      maxAge: 540 * 60 * 1000,
-      //maxAge: 30 * 60 * 1000, // 30 minutes in milliseconds (the value is calculated by multiplying the number of minutes (30) by the number of seconds in a minute (60) and then by 1000 to convert it to milliseconds.)
-
-      //name: 'labbee_user', // Set your custom cookie name here (Default is : connect.sid if we use 'express-session')
-
-      // Set the session cookie properties
+      maxAge: 540 * 60 * 1000, // 9 hours
     },
   }),
 );
@@ -414,6 +431,10 @@ const {
 } = require("./BEA_Marketing/beaMarketingContentsAPI");
 beaMarketingContentAPIs({ app, io, labbeeUsers });
 
+// DOCX → PDF conversion via LibreOffice:
+const { convertToPdfAPIs } = require("./convertToPdfAPI");
+convertToPdfAPIs(app);
+
 /// Code to get backup of only database in .sql format:
 ///Data Backup function:
 //Backend API route address to fetch the data backup:
@@ -472,6 +493,41 @@ const PORT = process.env.PORT || 4001;
 
 app.get("/api/testing", (req, res) => {
   res.send("Backend is up and running...");
+});
+
+// Global Express error handler — catches errors passed via next(err) from any route
+app.use((err, req, res, next) => {
+  const timestamp = new Date().toISOString();
+  console.error("=".repeat(60));
+  console.error(`[EXPRESS ERROR] ${timestamp}`);
+  console.error(`Route  : ${req.method} ${req.originalUrl}`);
+  console.error(`Body   : ${JSON.stringify(req.body)}`);
+  console.error(`Message: ${err.message}`);
+  console.error(`Stack  :\n${err.stack}`);
+  console.error("=".repeat(60));
+  if (!res.headersSent) {
+    res.status(err.status || 500).json({ error: "Internal server error" });
+  }
+});
+
+process.on("uncaughtException", (err) => {
+  const timestamp = new Date().toISOString();
+  console.error("=".repeat(60));
+  console.error(`[uncaughtException] ${timestamp}`);
+  console.error(`Message: ${err.message}`);
+  console.error(`Stack  :\n${err.stack}`);
+  console.error("=".repeat(60));
+});
+
+process.on("unhandledRejection", (reason) => {
+  const timestamp = new Date().toISOString();
+  console.error("=".repeat(60));
+  console.error(`[unhandledRejection] ${timestamp}`);
+  console.error(`Reason : ${reason instanceof Error ? reason.message : reason}`);
+  if (reason instanceof Error) {
+    console.error(`Stack  :\n${reason.stack}`);
+  }
+  console.error("=".repeat(60));
 });
 
 server.listen(PORT, () => {

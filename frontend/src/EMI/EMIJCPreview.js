@@ -21,7 +21,8 @@ import CloseIcon from "@mui/icons-material/Close";
 import dayjs from "dayjs";
 
 import Slide from "@mui/material/Slide";
-import EMIJCDocument from "./EMIJCDocument";
+import { saveAs } from "file-saver";
+import { openEmiJcPreview, generateEmiDocxBlob } from "./EMIJCDocument";
 import AuditHistoryDialog from "../components/AuditHistoryDialog";
 
 const Transition = forwardRef(function Transition(props, ref) {
@@ -62,10 +63,25 @@ const EMIJCPreview = ({
 }) => {
   const { loggedInUserDepartment, loggedInUserRole } = useContext(UserContext);
 
-  const [downloadJC, setDownloadJC] = useState(false);
-
   // State for audit history dialog
   const [emiAuditHistoryOpen, setEmiAuditHistoryOpen] = useState(false);
+  const [downloadingWord, setDownloadingWord] = useState(false);
+
+  const isPdfEnabled =
+    loggedInUserDepartment === "Administration" ||
+    loggedInUserDepartment === "Accounts";
+
+  const handleDirectWordDownload = async () => {
+    setDownloadingWord(true);
+    try {
+      const { blob, jcNumber } = await generateEmiDocxBlob(jcId);
+      saveAs(blob, `JC_${jcNumber}.docx`);
+    } catch (err) {
+      console.error("Error downloading JC:", err);
+    } finally {
+      setDownloadingWord(false);
+    }
+  };
 
   const isTS2Testing = loggedInUserDepartment === "TS2 Testing";
   const isAdminOrAccounts =
@@ -457,24 +473,38 @@ const EMIJCPreview = ({
             View Change Log
           </Button>
 
-          {/* Download JC Button */}
-          {/* {editJc ? <JobCardComponent id={jcId} /> : null} */}
+          {/* View / Download JC Button */}
           {editJc ? (
-            <Button
-              sx={{
-                borderRadius: 3,
-                mx: 0.5,
-                mb: 1,
-                bgcolor: "orange",
-                color: "white",
-                borderColor: "black",
-              }}
-              variant="contained"
-              color="primary"
-              onClick={() => setDownloadJC(true)}
-            >
-              Download
-            </Button>
+            isPdfEnabled ? (
+              <Button
+                sx={{
+                  borderRadius: 3,
+                  mx: 0.5,
+                  mb: 1,
+                  bgcolor: "orange",
+                  color: "white",
+                }}
+                variant="contained"
+                onClick={() => openEmiJcPreview(jcId)}
+              >
+                View / Download JC
+              </Button>
+            ) : (
+              <Button
+                sx={{
+                  borderRadius: 3,
+                  mx: 0.5,
+                  mb: 1,
+                  bgcolor: "orange",
+                  color: "white",
+                }}
+                variant="contained"
+                onClick={handleDirectWordDownload}
+                disabled={downloadingWord}
+              >
+                {downloadingWord ? "Downloading…" : "Download"}
+              </Button>
+            )
           ) : null}
 
           <Button
@@ -494,8 +524,6 @@ const EMIJCPreview = ({
           </Button>
         </Box>
       </Dialog>
-
-      {downloadJC && <EMIJCDocument id={jcId} />}
 
       {/* Audit History Dialog */}
       <AuditHistoryDialog
