@@ -1,4 +1,4 @@
-import { useContext, useEffect } from "react";
+import { useContext, useEffect, useRef } from "react";
 import { serverBaseAddress } from "./APIPage";
 import { UserContext } from "./UserContext";
 import { NotificationContext } from "./NotificationContext";
@@ -9,15 +9,16 @@ export default function NotificationsManagement() {
     useContext(UserContext);
   const { setNewNotificationReceived, setNotifications } =
     useContext(NotificationContext);
+  const socketRef = useRef(null);
 
-  // const socket = io(serverBaseAddress); // Replace with your server address
-  const socket = io(serverBaseAddress, {
-    withCredentials: true,
-    transports: ["websocket", "polling"],
-  });
 
   //Handle notifications here:
   useEffect(() => {
+    const socket = io(serverBaseAddress, {
+      withCredentials: true,
+      transports: ["websocket", "polling"],
+    });
+    socketRef.current = socket;
     if (loggedInUser) {
       socket.emit("user_connected", {
         username: loggedInUser,
@@ -439,6 +440,7 @@ export default function NotificationsManagement() {
         "emi_jobcard_submit_notification",
         handleEMIJobcardSubmitNotification
       );
+      socket.disconnect();
     };
   }, [
     loggedInUser,
@@ -446,7 +448,6 @@ export default function NotificationsManagement() {
     loggedInUserDepartment,
     setNewNotificationReceived,
     loggedInUserRole,
-    socket,
   ]);
 
   return null; // This component doesn't render anything

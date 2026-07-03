@@ -2,6 +2,7 @@ import {
   createContext,
   useCallback,
   useEffect,
+  useRef,
   useState,
   useMemo,
 } from "react";
@@ -24,6 +25,7 @@ export const UserProvider = ({ children }) => {
   const [loggedInUserId, setLoggedInUserId] = useState("");
   const [isLoading, setIsLoading] = useState(true); // loading state
   const [backendUnavailable, setBackendUnavailable] = useState(false);
+  const consecutiveFailures = useRef(0);
 
   // Public routes that don't require authentication
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -53,6 +55,7 @@ export const UserProvider = ({ children }) => {
   );
 
   const handleSessionInvalid = useCallback(() => {
+    consecutiveFailures.current = 0;
     setBackendUnavailable(false);
     clearUserContext();
     if (!isPublicRoute(location.pathname)) {
@@ -75,6 +78,7 @@ export const UserProvider = ({ children }) => {
 
     try {
       const res = await axios.get(`${serverBaseAddress}/api/getLoggedInUser`);
+      consecutiveFailures.current = 0;
       setBackendUnavailable(false);
 
       if (res.data.valid) {
@@ -85,21 +89,14 @@ export const UserProvider = ({ children }) => {
       } else {
         handleSessionInvalid();
       }
-    } catch (error) {
-      if (
-        error.response?.status === 401 &&
-        error.response?.data?.sessionInvalid
-      ) {
-        handleSessionInvalid();
-      } else if (isBackendUnavailableError(error)) {
-        setBackendUnavailable(true);
-      }
+    } catch {
+      // 401 and backend-unavailable errors are handled by the axios interceptor
     } finally {
       if (showLoader) {
         setIsLoading(false);
       }
     }
-  }, [handleSessionInvalid, isBackendUnavailableError]);
+  }, [handleSessionInvalid]);
 
   const retryConnectionCheck = useCallback(async () => {
     await fetchLoggedInUser({ showLoader: false });
@@ -128,6 +125,7 @@ export const UserProvider = ({ children }) => {
   useEffect(() => {
     const interceptorId = axios.interceptors.response.use(
       (response) => {
+        consecutiveFailures.current = 0;
         setBackendUnavailable(false);
         return response;
       },
@@ -138,7 +136,10 @@ export const UserProvider = ({ children }) => {
         ) {
           handleSessionInvalid();
         } else if (isBackendUnavailableError(error)) {
-          setBackendUnavailable(true);
+          consecutiveFailures.current += 1;
+          if (consecutiveFailures.current >= 2) {
+            setBackendUnavailable(true);
+          }
         }
 
         return Promise.reject(error);
