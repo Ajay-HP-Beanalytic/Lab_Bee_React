@@ -67,6 +67,8 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
       "decisionRuleApplicable",
       "decisionRuleOptionStandardRequirement",
       "decisionRuleOptionIncludesLabUncertainty",
+      "decisionRuleOption",
+      "performanceCriteria",
       "testResultReportRequired",
       "testResultReportHardCopy",
       "certificateRequired",

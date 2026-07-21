@@ -25,9 +25,6 @@ const EMIJCConformity = ({ control, watch }) => {
   const showDecisionRuleOptions =
     showDecisionRule && decisionRuleApplicable === "Applicable";
 
-  const performanceCriteria = watch("performanceCriteria");
-  const hasPerformanceCriteria = String(performanceCriteria || "").trim() !== "";
-
   const customerWitness = watch("customerWitness");
   const showCustomerWitness = customerWitness === "Yes";
   const witness1 = watch("customerWitness1");
@@ -145,97 +142,53 @@ const EMIJCConformity = ({ control, watch }) => {
         </Grid>
       )}
 
-      {showDecisionRuleOptions && (
-        <Grid container alignItems="flex-start" sx={rowSx}>
-          <Grid item xs={12} md={4}>
-            <Typography variant="body2" sx={labelSx}>
-              Select the Acceptance Rule
-            </Typography>
-          </Grid>
-          <Grid
-            item
-            xs={12}
-            md={8}
-            sx={{
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "flex-start",
-              textAlign: "left",
-            }}
+      <Grid container alignItems="flex-start" sx={rowSx}>
+        <Grid item xs={12} md={4}>
+          <Typography variant="body2" sx={labelSx}>
+            Note
+          </Typography>
+        </Grid>
+        <Grid
+          item
+          xs={12}
+          md={8}
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "flex-start",
+            textAlign: "left",
+          }}
+        >
+          <Typography variant="body2" sx={{ mt: 0.5 }} color="red">
+            1. If Applicable, simple acceptance rule without considering
+            Measurement Uncertainty (MU):
+          </Typography>
+          <Typography variant="body2" sx={{ mt: 0.25 }} color="red">
+            a) Pass when measured value &lt;= limit specified by the standard.
+          </Typography>
+          <Typography variant="body2" sx={{ mt: 0.25 }} color="red">
+            b) Fail when measured value &gt; limit specified by the standard.
+          </Typography>
+          <Typography variant="body2" sx={{ mt: 0.5 }} color="red">
+            2. Acceptance rule considering Measurement Uncertainty (MU):
+          </Typography>
+          <Typography variant="body2" sx={{ mt: 0.25 }} color="red">
+            a) Pass when measured value + MU &lt;= limit specified by the
+            standard.
+          </Typography>
+          <Typography variant="body2" sx={{ mt: 0.25 }} color="red">
+            b) Fail when measured value + MU &gt; limit specified by the
+            standard.
+          </Typography>
+          <Typography
+            variant="body2"
+            sx={{ mt: 0.75, fontWeight: 550 }}
+            color="red"
           >
-            <Controller
-              name="decisionRuleOption"
-              control={control}
-              defaultValue=""
-              render={({ field }) => (
-                <RadioGroup aria-label="Acceptance Rule" {...field}>
-                  <FormControlLabel
-                    value="Simple Acceptance"
-                    control={<Radio />}
-                    sx={{ alignItems: "flex-start", mb: 1 }}
-                    label={
-                      <Box sx={{ mt: 1 }}>
-                        <Typography variant="body2" sx={{ fontWeight: 550 }}>
-                          Simple acceptance rule without considering Measurement
-                          Uncertainty (MU):
-                        </Typography>
-                        <Typography variant="body2" sx={{ mt: 0.25 }}>
-                          a) Pass when measured value &lt;= limit specified by
-                          the standard.
-                        </Typography>
-                        <Typography variant="body2" sx={{ mt: 0.25 }}>
-                          b) Fail when measured value &gt; limit specified by
-                          the standard.
-                        </Typography>
-                      </Box>
-                    }
-                  />
-                  <FormControlLabel
-                    value="Considering Measurement Uncertainty"
-                    control={<Radio />}
-                    sx={{ alignItems: "flex-start" }}
-                    label={
-                      <Box sx={{ mt: 1 }}>
-                        <Typography variant="body2" sx={{ fontWeight: 550 }}>
-                          Acceptance rule considering Measurement Uncertainty
-                          (MU):
-                        </Typography>
-                        <Typography variant="body2" sx={{ mt: 0.25 }}>
-                          a) Pass when measured value + MU &lt;= limit specified
-                          by the standard.
-                        </Typography>
-                        <Typography variant="body2" sx={{ mt: 0.25 }}>
-                          b) Fail when measured value + MU &gt; limit specified
-                          by the standard.
-                        </Typography>
-                      </Box>
-                    }
-                  />
-                </RadioGroup>
-              )}
-            />
-          </Grid>
+            3. If Not Applicable, Statement of Conformity will not be provided.
+          </Typography>
         </Grid>
-      )}
-
-      {showDecisionRule && decisionRuleApplicable === "Not Applicable" && (
-        <Grid container alignItems="flex-start" sx={rowSx}>
-          <Grid item xs={12} md={4}>
-            <Typography variant="body2" sx={labelSx}>
-              Note
-            </Typography>
-          </Grid>
-          <Grid item xs={12} md={8}>
-            <Typography
-              variant="body2"
-              sx={{ mt: 0.5, fontWeight: 550 }}
-              color="red"
-            >
-              If Not Applicable, Statement of Conformity will not be provided.
-            </Typography>
-          </Grid>
-        </Grid>
-      )}
+      </Grid>
 
       {/* Performance Criteria Note */}
       <Grid container alignItems="flex-start" sx={rowSx}>
@@ -288,29 +241,6 @@ const EMIJCConformity = ({ control, watch }) => {
             operation and performance requirements of the Equipment Under Test
             (EUT).
           </Typography>
-
-          <Controller
-            name="performanceCriteria"
-            control={control}
-            defaultValue=""
-            render={({ field }) => (
-              <TextField
-                {...field}
-                label="Performance Criteria *"
-                placeholder="Enter the applicable Performance Criteria for the immunity tests"
-                multiline
-                minRows={4}
-                fullWidth
-                sx={{ mt: 2 }}
-                error={!hasPerformanceCriteria}
-                helperText={
-                  hasPerformanceCriteria
-                    ? ""
-                    : "Performance Criteria is mandatory. The 'Next' button stays disabled until this is filled."
-                }
-              />
-            )}
-          />
         </Grid>
       </Grid>
 

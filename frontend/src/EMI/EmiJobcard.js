@@ -1,6 +1,6 @@
 import { useContext, useEffect, useState, useCallback } from "react";
 
-import { Box, Button, Card, Typography } from "@mui/material";
+import { Box, Button, Card, Tooltip, Typography } from "@mui/material";
 import { FormProvider, useForm } from "react-hook-form";
 import Stepper from "@mui/material/Stepper";
 import Step from "@mui/material/Step";
@@ -74,6 +74,11 @@ export default function EmiJobcard() {
     mode: "onChange", // Change this based on when you want validation to trigger
   });
 
+  // Performance Criteria (Step One) is mandatory before moving ahead
+  const hasPerformanceCriteria =
+    String(stepOneFormData?.performanceCriteria || "").trim() !== "";
+  const isNextDisabled = activeStep !== totalSteps - 1 && !hasPerformanceCriteria;
+
   // Go to next step or handle form submit on last step
   const handleNext = () => {
     if (activeStep === totalSteps - 1) {
@@ -118,6 +123,13 @@ export default function EmiJobcard() {
 
     if (!stepOneFormData.customerPhone) {
       toast.warning("Please Enter Customer Phone in Step 1");
+      return;
+    }
+
+    if (!hasPerformanceCriteria) {
+      toast.warning(
+        "Please Enter the Performance Criteria for Immunity Test in Step 1"
+      );
       return;
     }
 
@@ -456,21 +468,36 @@ export default function EmiJobcard() {
           </Button>
         )}
 
-        <Button
-          sx={{
-            borderRadius: 1,
-            bgcolor: "orange",
-            color: "white",
-            borderColor: "black",
-            padding: { xs: "8px 16px", md: "6px 12px" }, // Adjust padding for different screen sizes
-            fontSize: { xs: "0.875rem", md: "1rem" }, // Adjust font size for different screen sizes
-          }}
-          variant="contained"
-          color="primary"
-          onClick={handleNext}
+        <Tooltip
+          title={
+            isNextDisabled
+              ? "Please enter the Performance Criteria for Immunity Test in Step 1"
+              : ""
+          }
         >
-          {activeStep === steps.length - 1 ? "Submit" : "Next"}
-        </Button>
+          <span>
+            <Button
+              sx={{
+                borderRadius: 1,
+                bgcolor: "orange",
+                color: "white",
+                borderColor: "black",
+                padding: { xs: "8px 16px", md: "6px 12px" }, // Adjust padding for different screen sizes
+                fontSize: { xs: "0.875rem", md: "1rem" }, // Adjust font size for different screen sizes
+                "&.Mui-disabled": {
+                  bgcolor: "grey.400",
+                  color: "grey.100",
+                },
+              }}
+              variant="contained"
+              color="primary"
+              onClick={handleNext}
+              disabled={isNextDisabled}
+            >
+              {activeStep === steps.length - 1 ? "Submit" : "Next"}
+            </Button>
+          </span>
+        </Tooltip>
       </Box>
 
       <Card sx={{ width: "100%", mt: "10px", mb: "10px" }}>

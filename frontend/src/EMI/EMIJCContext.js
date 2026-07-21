@@ -15,9 +15,11 @@ const EMIJCContextProvider = ({ children }) => {
   const initialTestPerformedTableRows = [];
   const initialDeletedIds = [];
 
+  const initialCs101TableRows = [];
   const initialCs114TableRows = [];
   const initialCs115TableRows = [];
   const initialCs116TableRows = [];
+  const initialRs101TableRows = [];
   const initialRs103TableRows = [];
   const initialCs118TableRows = {};
   const initialCs118ADTableRows = [];
@@ -46,9 +48,11 @@ const EMIJCContextProvider = ({ children }) => {
   const [deletedTestPerformedIds, setDeletedTestPerformedIds] =
     useState(initialDeletedIds);
 
+  const [cs101TableRows, setCs101TableRows] = useState(initialCs101TableRows);
   const [cs114TableRows, setCs114TableRows] = useState(initialCs114TableRows);
   const [cs115TableRows, setCs115TableRows] = useState(initialCs115TableRows);
   const [cs116TableRows, setCs116TableRows] = useState(initialCs116TableRows);
+  const [rs101TableRows, setRs101TableRows] = useState(initialRs101TableRows);
   const [rs103TableRows, setRs103TableRows] = useState(initialRs103TableRows);
   const [cs118ADTableRows, setCs118ADTableRows] = useState(
     initialCs118ADTableRows
@@ -137,6 +141,12 @@ const EMIJCContextProvider = ({ children }) => {
     }));
   };
 
+  const updateCs101TableRows = (rows) => {
+    setCs101TableRows(rows);
+    // Update the observationFormData with the new table data
+    updateObservationFormData("CS101TableData", rows);
+  };
+
   const updateCs114TableRows = (rows) => {
     setCs114TableRows(rows);
     // Update the observationFormData with the new table data
@@ -177,6 +187,12 @@ const EMIJCContextProvider = ({ children }) => {
     setCs116TableRows(rows);
     // Update the observationFormData with the new table data
     updateObservationFormData("CS116TableData", rows);
+  };
+
+  const updateRs101TableRows = (rows) => {
+    setRs101TableRows(rows);
+    // Update the observationFormData with the new table data
+    updateObservationFormData("RS101TableData", rows);
   };
 
   const updateRs103TableRows = (rows) => {
@@ -244,6 +260,9 @@ const EMIJCContextProvider = ({ children }) => {
         observationFormData,
         setObservationFormData,
         updateObservationFormData,
+        initialCs101TableRows,
+        cs101TableRows,
+        updateCs101TableRows,
         initialCs114TableRows,
         cs114TableRows,
         updateCs114TableRows,
@@ -253,6 +272,9 @@ const EMIJCContextProvider = ({ children }) => {
         initialCs116TableRows,
         cs116TableRows,
         updateCs116TableRows,
+        initialRs101TableRows,
+        rs101TableRows,
+        updateRs101TableRows,
         initialRs103TableRows,
         rs103TableRows,
         updateRs103TableRows,
@@ -267,9 +289,11 @@ const EMIJCContextProvider = ({ children }) => {
         initialCs118TableRows,
         cs118TableRows,
 
+        setCs101TableRows,
         setCs114TableRows,
         setCs115TableRows,
         setCs116TableRows,
+        setRs101TableRows,
         setRs103TableRows,
         setCs118ADTableRows,
         setCs118CDTableRows,

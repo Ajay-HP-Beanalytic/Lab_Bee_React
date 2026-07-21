@@ -65,6 +65,9 @@ const DownloadObservationForm = ({ formType, observationFormData }) => {
       const doc = new Docxtemplater(zip, {
         paragraphLoop: true,
         linebreaks: true,
+        // Without this, any tag missing from the data renders the literal text
+        // "undefined" in the downloaded form (docxtemplater's default nullGetter).
+        nullGetter: () => "",
       });
 
       const templateData = {

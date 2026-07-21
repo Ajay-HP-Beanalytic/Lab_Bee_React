@@ -1,21 +1,21 @@
 import React, { useContext } from "react";
 import {
   Grid,
-  TextField,
-  FormControl,
-  FormControlLabel,
-  FormLabel,
-  Radio,
-  RadioGroup,
+  // TextField,
+  // FormControl,
+  // FormControlLabel,
+  // FormLabel,
+  // Radio,
+  // RadioGroup,
 } from "@mui/material";
 
 import { EMIJCContext } from "../EMIJCContext";
 import RenderTable from "../../functions/RenderTable";
 
-const CS118Form = ({ formType }) => {
+const CS118Form = ({ _formType }) => {
   const {
-    observationFormData,
-    updateObservationFormData,
+    // observationFormData,
+    // updateObservationFormData,
     updateCs118ADTableRows,
     cs118ADTableRows,
     updateCs118CDTableRows,
@@ -23,21 +23,21 @@ const CS118Form = ({ formType }) => {
     // cs118TableRows,
   } = useContext(EMIJCContext);
 
-  const performanceCreteriaOptions = [
-    "Criteria A - Normal EUT performance during and after the test as intended",
-    "Criteria B -Temporary loss of function is allowed, EUT should be recoverable without operator intervention",
-    "Criteria C -Temporary loss of function is not allowed, EUT should not be recoverable without operator intervention",
-    "Criteria D -Loss of function is not allowed, EUT should not be recoverable without operator intervention",
-  ];
+  // const performanceCreteriaOptions = [
+  //   "Criteria A - Normal EUT performance during and after the test as intended",
+  //   "Criteria B -Temporary loss of function is allowed, EUT should be recoverable without operator intervention",
+  //   "Criteria C -Temporary loss of function is not allowed, EUT should not be recoverable without operator intervention",
+  //   "Criteria D -Loss of function is not allowed, EUT should not be recoverable without operator intervention",
+  // ];
 
-  const handleCriteriaChange = (event) => {
-    const selectedCriteria = event.target.value;
+  // const handleCriteriaChange = (event) => {
+  //   const selectedCriteria = event.target.value;
 
-    updateObservationFormData(formType, "selectedCriteria", selectedCriteria);
+  //   updateObservationFormData(formType, "selectedCriteria", selectedCriteria);
 
-    const updatedCS118FormData = `${selectedCriteria}`;
-    updateObservationFormData(formType, "CS118FormData", updatedCS118FormData);
-  };
+  //   const updatedCS118FormData = `${selectedCriteria}`;
+  //   updateObservationFormData(formType, "CS118FormData", updatedCS118FormData);
+  // };
 
   const cs118ADTableColumns = [
     { id: "serialNumber", label: "SL No", width: "20", align: "left" },
@@ -329,7 +329,7 @@ const CS118Form = ({ formType }) => {
         />
       </Grid>
 
-      <Grid
+      {/* <Grid
         item
         xs={12}
         sx={{
@@ -370,7 +370,7 @@ const CS118Form = ({ formType }) => {
             updateObservationFormData(formType, "CS118FormData", e.target.value)
           }
         />
-      </Grid>
+      </Grid> */}
     </Grid>
   );
 };
