@@ -5,8 +5,12 @@ node_modules/
 .env
 Backend/.env
 
-# Exclude shared files
+# Exclude shared files (runtime file storage / uploaded documents)
 .shared-files
+shared-files/
+
+# Uploaded job-card / calibration files (runtime artifacts)
+Backend/FilesUploaded/
 
 # Claude Code files
 .claude/

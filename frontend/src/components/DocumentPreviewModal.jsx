@@ -30,7 +30,7 @@ import { saveAs } from "file-saver";
  * @param {function} onPrevious - Callback when Previous button is clicked (optional)
  * @param {Blob} documentBlob - The document blob to preview
  * @param {string} fileName - Suggested filename for download
- * @param {string} fileType - File extension (docx, png, jpg, etc.)
+ * @param {string} fileType - File extension (pdf, docx, png, jpg, etc.)
  * @param {string} title - Modal title (optional)
  */
 const DocumentPreviewModal = ({
@@ -46,17 +46,19 @@ const DocumentPreviewModal = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [imageUrl, setImageUrl] = useState(null);
+  const [pdfUrl, setPdfUrl] = useState(null);
 
   const isImage = ["jpg", "jpeg", "png", "gif", "bmp", "webp"].includes(
     fileType.toLowerCase()
   );
+  const isPdf = fileType.toLowerCase() === "pdf";
 
   // Handle Image Previews
   useEffect(() => {
     if (open && documentBlob && isImage) {
       const url = URL.createObjectURL(documentBlob);
       setImageUrl(url);
-      
+
       // Cleanup
       return () => {
         URL.revokeObjectURL(url);
@@ -65,9 +67,23 @@ const DocumentPreviewModal = ({
     }
   }, [open, documentBlob, isImage]);
 
+  // Handle PDF Previews (rendered inline via an iframe)
+  useEffect(() => {
+    if (open && documentBlob && isPdf) {
+      const url = URL.createObjectURL(documentBlob);
+      setPdfUrl(url);
+
+      // Cleanup
+      return () => {
+        URL.revokeObjectURL(url);
+        setPdfUrl(null);
+      };
+    }
+  }, [open, documentBlob, isPdf]);
+
   // Handle DOCX Previews
   useEffect(() => {
-    if (!open || !documentBlob || isImage) return;
+    if (!open || !documentBlob || isImage || isPdf) return;
 
     // Capture the ref value at the time of effect execution
     const containerElement = previewContainerRef.current;
@@ -153,7 +169,7 @@ const DocumentPreviewModal = ({
         containerElement.innerHTML = "";
       }
     };
-  }, [open, documentBlob, isImage]);
+  }, [open, documentBlob, isImage, isPdf]);
 
   const handleDownload = () => {
     if (documentBlob) {
@@ -209,7 +225,8 @@ const DocumentPreviewModal = ({
           position: "relative",
           display: 'flex',
           justifyContent: 'center',
-          alignItems: isImage ? 'center' : 'flex-start'
+          alignItems: isImage ? 'center' : 'flex-start',
+          p: isPdf ? 0 : 2,
         }}
       >
         {/* Loading Overlay - positioned absolutely on top */}
@@ -268,20 +285,33 @@ const DocumentPreviewModal = ({
 
         {/* Image Preview */}
         {isImage && imageUrl && (
-           <img 
-             src={imageUrl} 
-             alt={fileName} 
-             style={{ 
-               maxWidth: '100%', 
-               maxHeight: '100%', 
+           <img
+             src={imageUrl}
+             alt={fileName}
+             style={{
+               maxWidth: '100%',
+               maxHeight: '100%',
                objectFit: 'contain',
-               boxShadow: "0 0 10px rgba(0,0,0,0.1)" 
-             }} 
+               boxShadow: "0 0 10px rgba(0,0,0,0.1)"
+             }}
            />
         )}
 
+        {/* PDF Preview - rendered inline in an iframe */}
+        {isPdf && pdfUrl && (
+          <iframe
+            src={pdfUrl}
+            title={fileName}
+            style={{
+              width: "100%",
+              height: "100%",
+              border: "none",
+            }}
+          />
+        )}
+
         {/* DOCX Preview Container - conditionally rendered but ref is needed */}
-        {!isImage && (
+        {!isImage && !isPdf && (
           <Box
             ref={previewContainerRef}
             sx={{

@@ -17,15 +17,21 @@ import {
   Box,
   Tooltip,
   Checkbox,
+  CircularProgress,
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
 import SouthEastIcon from "@mui/icons-material/SouthEast";
 import NorthEastIcon from "@mui/icons-material/NorthEast";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
 import AssignmentIcon from "@mui/icons-material/Assignment";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import DownloadIcon from "@mui/icons-material/Download";
+import AttachFileIcon from "@mui/icons-material/AttachFile";
 import dayjs from "dayjs";
+import axios from "axios";
 
 import Slide from "@mui/material/Slide";
+import { serverBaseAddress } from "../Pages/APIPage";
 import { UserContext } from "../Pages/UserContext";
 // import { useNavigate } from "react-router-dom";
 import JobCardComponent from "./JobCardComponent";
@@ -60,11 +66,19 @@ export default function JCPreview({
   eutRows,
   testRows,
   testDetailsRows,
+  attachedFiles = [],
   onEdit,
   editJc,
   jcId,
 }) {
   const { loggedInUserDepartment, loggedInUserRole } = useContext(UserContext);
+
+  // State for attached-document preview
+  const [attachmentPreviewOpen, setAttachmentPreviewOpen] = useState(false);
+  const [attachmentBlob, setAttachmentBlob] = useState(null);
+  const [attachmentName, setAttachmentName] = useState("");
+  const [attachmentType, setAttachmentType] = useState("");
+  const [attachmentLoading, setAttachmentLoading] = useState(false);
 
   // State for document preview modal
   const [previewModalOpen, setPreviewModalOpen] = useState(false);
@@ -277,6 +291,81 @@ export default function JCPreview({
     setConfigDialogOpen(true);
   };
 
+  // ---------- Attached document handlers ----------
+
+  // Build the serve URL for an attachment (uses the timestamped file basename)
+  const getAttachmentUrl = (file) => {
+    const fileName = file.file_path.split("/").pop();
+    return `${serverBaseAddress}/api/FilesUploaded/${encodeURIComponent(
+      fileName,
+    )}`;
+  };
+
+  // Fetch an attachment and preview it inline in a dialog
+  const handleViewAttachment = async (file) => {
+    if (!file?.file_path) {
+      toast.error("File path not found");
+      return;
+    }
+
+    const fileName = file.file_name || file.file_path.split("/").pop();
+    const fileType = (fileName.split(".").pop() || "").toLowerCase();
+
+    setAttachmentLoading(true);
+    setAttachmentName(fileName);
+    setAttachmentType(fileType);
+    setAttachmentPreviewOpen(true);
+    setAttachmentBlob(null);
+
+    try {
+      const response = await axios.get(getAttachmentUrl(file), {
+        responseType: "blob",
+      });
+      setAttachmentBlob(response.data);
+    } catch (error) {
+      console.error("Error loading attachment preview:", error);
+      toast.error("Failed to load the attached file");
+      setAttachmentPreviewOpen(false);
+    } finally {
+      setAttachmentLoading(false);
+    }
+  };
+
+  // Download an attachment as a file
+  const handleDownloadAttachment = async (file) => {
+    if (!file?.file_path) {
+      toast.error("File path not found");
+      return;
+    }
+    try {
+      const response = await axios.get(getAttachmentUrl(file), {
+        responseType: "blob",
+      });
+      const downloadUrl = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.setAttribute(
+        "download",
+        file.file_name || file.file_path.split("/").pop(),
+      );
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (error) {
+      console.error("Error downloading attachment:", error);
+      toast.error("Failed to download the attached file");
+    }
+  };
+
+  // Close the attachment preview dialog
+  const closeAttachmentPreview = () => {
+    setAttachmentPreviewOpen(false);
+    setAttachmentBlob(null);
+    setAttachmentName("");
+    setAttachmentType("");
+  };
+
   //Handle ESS checkbox :
   const handleESSCheckboxChange = (rowIndex, isChecked) => {
     if (isChecked) {
@@ -401,6 +490,68 @@ export default function JCPreview({
         </Grid>
 
         <Divider />
+
+        {/* Attached Documents */}
+        {attachedFiles && attachedFiles.length > 0 && (
+          <TableContainer
+            component={Paper}
+            sx={{ padding: 2, mt: 2, backgroundColor: "#f5f5f0" }}
+          >
+            <Typography variant="h6" align="center">
+              Attached Documents
+            </Typography>
+            <Table
+              size="small"
+              aria-label="attached documents table"
+              sx={{ minWidth: "100%" }}
+            >
+              <TableHead sx={tableHeaderStyle}>
+                <TableRow>
+                  <TableCell sx={tableCellStyle}>Sl No</TableCell>
+                  <TableCell sx={tableCellStyle}>File Name</TableCell>
+                  <TableCell sx={tableCellStyle} align="center">
+                    Actions
+                  </TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {attachedFiles.map((file, index) => (
+                  <TableRow key={file.id || index}>
+                    <TableCell>{index + 1}</TableCell>
+                    <TableCell>
+                      <Box
+                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                      >
+                        <AttachFileIcon fontSize="small" color="action" />
+                        {file.file_name || file.file_path?.split("/").pop()}
+                      </Box>
+                    </TableCell>
+                    <TableCell align="center">
+                      <Tooltip title="View">
+                        <IconButton
+                          size="small"
+                          color="primary"
+                          onClick={() => handleViewAttachment(file)}
+                        >
+                          <VisibilityIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Download">
+                        <IconButton
+                          size="small"
+                          color="success"
+                          onClick={() => handleDownloadAttachment(file)}
+                        >
+                          <DownloadIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        )}
 
         {jcCategory === "TS1" &&
           (isTS1Testing || isReportsAndScrutiny || isAdminOrAccounts) && (
@@ -783,6 +934,28 @@ export default function JCPreview({
         fileName={previewFileName}
         title="Test Report Preview"
       />
+
+      {/* Loading indicator shown while an attachment is being fetched */}
+      <Dialog
+        open={attachmentPreviewOpen && attachmentLoading && !attachmentBlob}
+      >
+        <Box sx={{ display: "flex", alignItems: "center", gap: 2, p: 4 }}>
+          <CircularProgress size={24} />
+          <Typography variant="body1">Loading document...</Typography>
+        </Box>
+      </Dialog>
+
+      {/* Attached Document Preview Modal (PDF / Word / image) */}
+      {attachmentBlob && (
+        <DocumentPreviewModal
+          open={attachmentPreviewOpen}
+          onClose={closeAttachmentPreview}
+          documentBlob={attachmentBlob}
+          fileName={attachmentName}
+          fileType={attachmentType}
+          title="Attached Document"
+        />
+      )}
 
       {/* Audit History Dialog */}
       <AuditHistoryDialog

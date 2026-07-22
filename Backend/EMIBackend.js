@@ -6,9 +6,34 @@ const moment = require("moment");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
+const fileStorageService = require("./services/fileStorageService");
 require("dotenv").config(); // Ensure .env is loaded
 
+// Add the calibration certificate columns to an existing emi_calibrations_table
+// (older databases won't have them). Idempotent: ignores "duplicate column".
+function migrateEmiCalibrationCertificateColumns() {
+  const columns = [
+    "ADD COLUMN calibration_certificate_name VARCHAR(1000)",
+    "ADD COLUMN calibration_certificate_path VARCHAR(2000)",
+  ];
+
+  columns.forEach((columnDef) => {
+    db.query(`ALTER TABLE emi_calibrations_table ${columnDef}`, (error) => {
+      // 1060 = duplicate column name -> already migrated, safe to ignore
+      if (error && error.errno !== 1060) {
+        console.log(
+          "Error adding EMI calibration certificate column:",
+          error.sqlMessage || error,
+        );
+      }
+    });
+  });
+}
+
 function emiJobcardsAPIs(app, io, labbeeUsers) {
+  // Ensure the calibration certificate columns exist on startup
+  migrateEmiCalibrationCertificateColumns();
+
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   function convertDateTime(originalTimestamp) {
@@ -1985,6 +2010,8 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
       equipment_status,
       remarks,
       last_updated_by,
+      calibration_certificate_name,
+      calibration_certificate_path,
       -- Auto-calculated calibration status based on due date
       CASE 
         WHEN calibration_due_date < CURDATE() THEN 'Expired'
@@ -2082,6 +2109,86 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
           .json({ error: "Error while fetching single EMI Equipment data" });
       }
       res.status(200).json(result);
+    });
+  });
+
+  // API to link an uploaded calibration certificate (already stored in
+  // shared-files via /api/files/upload) to an EMI equipment row:
+  app.put("/api/emiCalibrationCertificate/:id", (req, res) => {
+    const { id } = req.params;
+    const { certificateName, certificatePath } = req.body;
+
+    if (!certificatePath) {
+      return res.status(400).json({ message: "certificatePath is required" });
+    }
+
+    // Look up any previously stored certificate so it can be cleaned up
+    const selectSql =
+      "SELECT calibration_certificate_path FROM emi_calibrations_table WHERE id = ?";
+    db.query(selectSql, [id], (selectError, rows) => {
+      if (selectError) {
+        console.log(selectError);
+        return res.status(500).json({ message: "Internal server error" });
+      }
+
+      const previousPath =
+        rows && rows[0] ? rows[0].calibration_certificate_path : null;
+
+      const updateSql =
+        "UPDATE emi_calibrations_table SET calibration_certificate_name = ?, calibration_certificate_path = ? WHERE id = ?";
+      db.query(
+        updateSql,
+        [certificateName || null, certificatePath, id],
+        (updateError) => {
+          if (updateError) {
+            console.log(updateError);
+            return res.status(500).json({ message: "Internal server error" });
+          }
+
+          // Best-effort removal of the replaced file (ignore failures)
+          if (previousPath && previousPath !== certificatePath) {
+            fileStorageService.deleteFile(previousPath).catch(() => {});
+          }
+
+          res
+            .status(200)
+            .json({ message: "Calibration certificate saved successfully" });
+        },
+      );
+    });
+  });
+
+  // API to remove a calibration certificate from an EMI equipment row (deletes the file too):
+  app.delete("/api/emiCalibrationCertificate/:id", (req, res) => {
+    const { id } = req.params;
+
+    const selectSql =
+      "SELECT calibration_certificate_path FROM emi_calibrations_table WHERE id = ?";
+    db.query(selectSql, [id], (selectError, rows) => {
+      if (selectError) {
+        console.log(selectError);
+        return res.status(500).json({ message: "Internal server error" });
+      }
+
+      const filePath =
+        rows && rows[0] ? rows[0].calibration_certificate_path : null;
+
+      const updateSql =
+        "UPDATE emi_calibrations_table SET calibration_certificate_name = NULL, calibration_certificate_path = NULL WHERE id = ?";
+      db.query(updateSql, [id], (updateError) => {
+        if (updateError) {
+          console.log(updateError);
+          return res.status(500).json({ message: "Internal server error" });
+        }
+
+        if (filePath) {
+          fileStorageService.deleteFile(filePath).catch(() => {});
+        }
+
+        res
+          .status(200)
+          .json({ message: "Calibration certificate removed successfully" });
+      });
     });
   });
 
