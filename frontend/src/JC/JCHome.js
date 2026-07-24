@@ -886,6 +886,7 @@ export default function JCHome() {
             eutRows={eutRows}
             testRows={testRows}
             testDetailsRows={testDetailsRows}
+            attachedFiles={referanceDocs}
             onEdit={() => editSelectedJC(jcId)}
             editJc={editJc}
             jcId={jcId}

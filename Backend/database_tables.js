@@ -195,6 +195,8 @@ function createChamberCalibrationTable() {
         calibration_status VARCHAR(250),
         chamber_status VARCHAR(250),
         remarks VARCHAR(2000),
+        calibration_certificate_name VARCHAR(1000),
+        calibration_certificate_path VARCHAR(2000),
         PRIMARY KEY(id)
     )`;
 
@@ -864,6 +866,8 @@ const createEMICalibrationsTable = () => {
      equipment_status VARCHAR(255),
      remarks VARCHAR(2000),
      last_updated_by VARCHAR(100),
+     calibration_certificate_name VARCHAR(1000),
+     calibration_certificate_path VARCHAR(2000),
      PRIMARY KEY(id)
      );
   `;

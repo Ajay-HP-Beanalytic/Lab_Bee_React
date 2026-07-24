@@ -34,6 +34,15 @@ function withFallback(value) {
   return normalized === "" ? "N/A" : normalized;
 }
 
+// Full wording of each acceptance rule, keyed by the value stored from the
+// "Select the Acceptance Rule" radio group in emiJcConformity.jsx.
+const ACCEPTANCE_RULE_TEXT = {
+  "Simple Acceptance":
+    "Simple acceptance rule without considering Measurement Uncertainty (MU): Pass when measured value <= limit specified by the standard; Fail when measured value > limit specified by the standard.",
+  "Considering Measurement Uncertainty":
+    "Acceptance rule considering Measurement Uncertainty (MU): Pass when measured value + MU <= limit specified by the standard; Fail when measured value + MU > limit specified by the standard.",
+};
+
 export const generateEmiDocxBlob = (id) =>
   new Promise(async (resolve, reject) => {
     try {
@@ -58,10 +67,18 @@ export const generateEmiDocxBlob = (id) =>
         }
       }
 
+      // Expand the selected acceptance rule into its full wording for the document,
+      // so the printed jobcard is self-explanatory to the customer.
       const decisionRuleOptions = [
+        ACCEPTANCE_RULE_TEXT[conformityData.decisionRuleOption] || conformityData.decisionRuleOption || null,
         conformityData.decisionRuleOptionStandardRequirement ? "As per standard requirement" : null,
         conformityData.decisionRuleOptionIncludesLabUncertainty ? "Includes Lab Uncertainty" : null,
       ].filter(Boolean).join(", ");
+
+      const decisionRuleText =
+        conformityData.decisionRuleApplicable === "Not Applicable"
+          ? "Statement of Conformity will not be provided."
+          : decisionRuleOptions;
 
       const testResultOptions = [
         conformityData.testResultReportRequired ? "Report Required" : null,
@@ -101,8 +118,9 @@ export const generateEmiDocxBlob = (id) =>
         observations, lastUpdatedBy,
         conformityStatement: withFallback(conformityData.conformityStatement),
         conformityDecisionRule: withFallback(conformityData.decisionRuleApplicable),
-        conformityDecisionRuleOptions: withFallback(decisionRuleOptions),
+        conformityDecisionRuleOptions: withFallback(decisionRuleText),
         conformityTestResultOptions: withFallback(testResultOptions),
+        performanceCriteria: withFallback(conformityData.performanceCriteria),
         customerWitness: withFallback(conformityData.customerWitness),
         customerWitness1: withFallback(conformityData.customerWitness1),
         customerWitness2: withFallback(conformityData.customerWitness2),

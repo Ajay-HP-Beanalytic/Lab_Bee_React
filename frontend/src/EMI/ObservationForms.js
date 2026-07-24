@@ -40,16 +40,20 @@ const ObservationForms = ({
     setObservationFormData,
     updateObservationFormData,
     updateTestPerformedTableRows,
+    cs101TableRows,
     cs114TableRows,
     cs115TableRows,
     cs116TableRows,
     cs118ADTableRows,
     cs118CDTableRows,
     // cs118TableRows,
+    rs101TableRows,
     rs103TableRows,
+    setCs101TableRows,
     setCs114TableRows,
     setCs115TableRows,
     setCs116TableRows,
+    setRs101TableRows,
     setRs103TableRows,
     setCs118ADTableRows,
     setCs118CDTableRows,
@@ -185,7 +189,11 @@ const ObservationForms = ({
         [formType]: parsedStoredObservationFormData,
       }));
 
-      if (formType === "CS114") {
+      if (formType === "CS101") {
+        setCs101TableRows(
+          parsedStoredObservationFormData.observationFormTableData || []
+        );
+      } else if (formType === "CS114") {
         setCs114TableRows(
           parsedStoredObservationFormData.observationFormTableData || []
         );
@@ -195,6 +203,10 @@ const ObservationForms = ({
         );
       } else if (formType === "CS116") {
         setCs116TableRows(
+          parsedStoredObservationFormData.observationFormTableData || []
+        );
+      } else if (formType === "RS101") {
+        setRs101TableRows(
           parsedStoredObservationFormData.observationFormTableData || []
         );
       } else if (formType === "RS103") {
@@ -221,9 +233,11 @@ const ObservationForms = ({
     formType,
     setValue,
     setObservationFormData,
+    setCs101TableRows,
     setCs114TableRows,
     setCs115TableRows,
     setCs116TableRows,
+    setRs101TableRows,
     setRs103TableRows,
     setCs118ADTableRows,
     setCs118CDTableRows,
@@ -280,6 +294,10 @@ const ObservationForms = ({
     try {
       let observationFormTableData = [];
       switch (formType) {
+        case "CS101":
+          observationFormTableData = cs101TableRows;
+          break;
+
         case "CS114":
           observationFormTableData = cs114TableRows;
           break;
@@ -304,6 +322,10 @@ const ObservationForms = ({
               serialNumberCounter: index + 1,
             })),
           };
+          break;
+
+        case "RS101":
+          observationFormTableData = rs101TableRows;
           break;
 
         case "RS103":

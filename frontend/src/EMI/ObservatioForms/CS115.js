@@ -1,45 +1,45 @@
 import {
   Grid,
-  TextField,
-  FormControl,
-  FormControlLabel,
-  FormLabel,
-  Radio,
-  RadioGroup,
+  // TextField,
+  // FormControl,
+  // FormControlLabel,
+  // FormLabel,
+  // Radio,
+  // RadioGroup,
 } from "@mui/material";
 import React, { useContext } from "react";
 import { EMIJCContext } from "../EMIJCContext";
 import RenderTable from "../../functions/RenderTable";
 
-const CS115Form = ({ formType }) => {
+const CS115Form = ({ _formType }) => {
   const {
-    observationFormData,
+    // observationFormData,
     updateCs115TableRows,
-    updateObservationFormData,
+    // updateObservationFormData,
     cs115TableRows,
   } = useContext(EMIJCContext);
 
-  const performanceCreteriaOptions = [
-    "Criteria A - Normal EUT performance during and after the test as intended",
-    "Criteria B -Temporary loss of function is allowed, EUT should be recoverable without operator intervention",
-    "Criteria C -Temporary loss of function is not allowed, EUT should not be recoverable without operator intervention",
-    "Criteria D -Loss of function is not allowed, EUT should not be recoverable without operator intervention",
-  ];
+  // const performanceCreteriaOptions = [
+  //   "Criteria A - Normal EUT performance during and after the test as intended",
+  //   "Criteria B -Temporary loss of function is allowed, EUT should be recoverable without operator intervention",
+  //   "Criteria C -Temporary loss of function is not allowed, EUT should not be recoverable without operator intervention",
+  //   "Criteria D -Loss of function is not allowed, EUT should not be recoverable without operator intervention",
+  // ];
 
-  const handleCriteriaChange = (event) => {
-    const selectedCriteria = event.target.value;
+  // const handleCriteriaChange = (event) => {
+  //   const selectedCriteria = event.target.value;
 
-    updateObservationFormData(formType, "selectedCriteria", selectedCriteria);
+  //   updateObservationFormData(formType, "selectedCriteria", selectedCriteria);
 
-    const updatedCS115FormData = `${selectedCriteria}`;
-    updateObservationFormData(formType, "CS115FormData", updatedCS115FormData);
-  };
+  //   const updatedCS115FormData = `${selectedCriteria}`;
+  //   updateObservationFormData(formType, "CS115FormData", updatedCS115FormData);
+  // };
 
   const cs115TableColumns = [
     { id: "serialNumber", label: "SL No", width: "20", align: "left" },
     {
       id: "cables",
-      label: "Cables",
+      label: "Cable Details",
       width: 250,
       type: "textField",
       align: "center",
@@ -48,7 +48,12 @@ const CS115Form = ({ formType }) => {
       id: "leads",
       label: "Leads",
       width: 250,
-      type: "textField",
+      type: "select",
+      options: [
+        { id: "BUNDLE", label: "BUNDLE" },
+        { id: "HIGH LINE", label: "HIGH LINE" },
+        { id: "LOW LINE", label: "LOW LINE" },
+      ],
       align: "center",
     },
     {
@@ -85,7 +90,7 @@ const CS115Form = ({ formType }) => {
         />
       </Grid>
 
-      <Grid
+      {/* <Grid
         item
         xs={12}
         sx={{
@@ -126,7 +131,7 @@ const CS115Form = ({ formType }) => {
             updateObservationFormData(formType, "CS115FormData", e.target.value)
           }
         />
-      </Grid>
+      </Grid> */}
     </Grid>
   );
 };

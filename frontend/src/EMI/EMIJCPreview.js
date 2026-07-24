@@ -182,6 +182,14 @@ const EMIJCPreview = ({
     //     .join(", "),
     // },
     {
+      label: "Acceptance Rule",
+      value: conformityData.decisionRuleOption || "",
+    },
+    {
+      label: "Performance Criteria",
+      value: conformityData.performanceCriteria || "",
+    },
+    {
       label: "Test Result Options",
       value: [
         conformityData.testResultReportRequired ? "Report Required" : null,

@@ -28,16 +28,21 @@ import {
   ListItemIcon,
   ListItemText,
   Divider,
+  Tooltip,
 } from "@mui/material";
 import { useForm } from "react-hook-form";
-import FileUploadIcon from "@mui/icons-material/FileUpload";
+import UploadFileIcon from "@mui/icons-material/UploadFile";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import DownloadIcon from "@mui/icons-material/Download";
+import DescriptionIcon from "@mui/icons-material/Description";
 import dayjs from "dayjs";
 import SearchBar from "../common/SearchBar";
 import EmptyCard from "../common/EmptyCard";
+import DocumentPreviewModal from "../components/DocumentPreviewModal";
 import { DataGrid } from "@mui/x-data-grid";
 import RenderComponents from "../functions/RenderComponents";
 import axios from "axios";
@@ -52,6 +57,26 @@ import {
   Business,
 } from "@mui/icons-material";
 import * as XLSX from "xlsx";
+
+// Base folder (inside shared-files) where EMI calibration certificates are
+// stored. ChamberCalibration -> TS1, EMICalibration -> TS2.
+const CALIBRATION_FILES_BASE_FOLDER = "TS2/Calibration Reports";
+
+// Encode each path segment so folder/file names with spaces are URL-safe.
+const encodeStoragePath = (filePath) =>
+  filePath
+    .split("/")
+    .map((segment) => encodeURIComponent(segment))
+    .join("/");
+
+// Safely format a date value, returning a dash for null/empty/invalid dates
+// (prevents "Invalid Date" from showing in the table/export). Handles the
+// "N/A" placeholder that addSerialNumbersToRows assigns to missing dates.
+const formatDate = (value) => {
+  if (!value) return "-";
+  const parsed = dayjs(value);
+  return parsed.isValid() ? parsed.format("DD-MM-YYYY") : "-";
+};
 
 const EMICalibration = () => {
   const { loggedInUser } = useContext(UserContext);
@@ -88,6 +113,20 @@ const EMICalibration = () => {
 
   const [dialogLoading, setDialogLoading] = useState(false);
   const [loading, setLoading] = useState(true);
+
+  // Calibration certificate upload/view states
+  const [certDialogOpen, setCertDialogOpen] = useState(false);
+  const [certificateRow, setCertificateRow] = useState(null);
+  const [selectedCertFile, setSelectedCertFile] = useState(null);
+  const [uploadingCert, setUploadingCert] = useState(false);
+  const certFileInputRef = useRef(null);
+
+  // In-dialog certificate preview states
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewBlob, setPreviewBlob] = useState(null);
+  const [previewName, setPreviewName] = useState("");
+  const [previewType, setPreviewType] = useState("");
+  const [previewLoading, setPreviewLoading] = useState(false);
 
   const addSerialNumbersToRows = (data) => {
     // Handle different data structures properly
@@ -199,6 +238,165 @@ const EMICalibration = () => {
     setFilteredEMICalibrationData(emiCalibrationData);
   };
 
+  // ---------- Calibration certificate handlers ----------
+
+  // Open the upload/view dialog for an equipment row
+  const openCertDialog = useCallback((row) => {
+    setCertificateRow(row);
+    setSelectedCertFile(null);
+    setCertDialogOpen(true);
+  }, []);
+
+  // Close and reset the certificate dialog
+  const closeCertDialog = () => {
+    setCertDialogOpen(false);
+    setCertificateRow(null);
+    setSelectedCertFile(null);
+    if (certFileInputRef.current) {
+      certFileInputRef.current.value = "";
+    }
+  };
+
+  // Fetch the stored certificate and preview it inline in a dialog
+  const viewCertificate = useCallback(async (row) => {
+    if (!row?.calibration_certificate_path) {
+      toast.error("No calibration certificate found");
+      return;
+    }
+
+    const fileName =
+      row.calibration_certificate_name ||
+      row.calibration_certificate_path.split("/").pop();
+    const fileType = fileName.split(".").pop().toLowerCase();
+
+    setPreviewLoading(true);
+    setPreviewName(fileName);
+    setPreviewType(fileType);
+    setPreviewOpen(true);
+    setPreviewBlob(null);
+
+    try {
+      const response = await axios.get(
+        `${serverBaseAddress}/api/files/serve/${encodeStoragePath(
+          row.calibration_certificate_path,
+        )}`,
+        { responseType: "blob" },
+      );
+      setPreviewBlob(response.data);
+    } catch (error) {
+      console.error("Error loading certificate preview:", error);
+      toast.error("Failed to load the calibration certificate");
+      setPreviewOpen(false);
+    } finally {
+      setPreviewLoading(false);
+    }
+  }, []);
+
+  // Close the certificate preview dialog
+  const closePreview = () => {
+    setPreviewOpen(false);
+    setPreviewBlob(null);
+    setPreviewName("");
+    setPreviewType("");
+  };
+
+  // Download the stored certificate as a file
+  const downloadCertificate = useCallback(async (row) => {
+    if (!row?.calibration_certificate_path) {
+      toast.error("No calibration certificate found");
+      return;
+    }
+    try {
+      const response = await axios.get(
+        `${serverBaseAddress}/api/files/download/${encodeStoragePath(
+          row.calibration_certificate_path,
+        )}`,
+        { responseType: "blob" },
+      );
+      const downloadUrl = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.setAttribute(
+        "download",
+        row.calibration_certificate_name ||
+          row.calibration_certificate_path.split("/").pop(),
+      );
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (error) {
+      console.error("Error downloading certificate:", error);
+      toast.error("Failed to download the calibration certificate");
+    }
+  }, []);
+
+  // Upload (or replace) the calibration certificate for the selected equipment
+  const handleUploadCertificate = async () => {
+    if (!selectedCertFile || !certificateRow) {
+      toast.error("Please select a file to upload");
+      return;
+    }
+
+    setUploadingCert(true);
+    try {
+      // 1) Store the file in shared-files under a per-equipment subfolder
+      const formData = new FormData();
+      formData.append("file", selectedCertFile);
+      formData.append(
+        "folder",
+        `${CALIBRATION_FILES_BASE_FOLDER}/${certificateRow.id}`,
+      );
+
+      const uploadResponse = await axios.post(
+        `${serverBaseAddress}/api/files/upload`,
+        formData,
+        { headers: { "Content-Type": "multipart/form-data" } },
+      );
+
+      const uploadedPath = uploadResponse?.data?.file?.path;
+      if (!uploadedPath) {
+        throw new Error("Upload did not return a file path");
+      }
+
+      // 2) Link the stored file to the equipment row
+      await axios.put(
+        `${serverBaseAddress}/api/emiCalibrationCertificate/${certificateRow.id}`,
+        {
+          certificateName: selectedCertFile.name,
+          certificatePath: uploadedPath,
+        },
+      );
+
+      toast.success("Calibration certificate uploaded successfully");
+      await fetchEMIEquipmentData();
+      closeCertDialog();
+    } catch (error) {
+      console.error("Error uploading certificate:", error);
+      toast.error("Failed to upload the calibration certificate");
+    } finally {
+      setUploadingCert(false);
+    }
+  };
+
+  // Remove the stored certificate from the selected equipment row
+  const handleDeleteCertificate = async () => {
+    if (!certificateRow?.calibration_certificate_path) {
+      return;
+    }
+    try {
+      await axios.delete(
+        `${serverBaseAddress}/api/emiCalibrationCertificate/${certificateRow.id}`,
+      );
+      toast.success("Calibration certificate removed");
+      await fetchEMIEquipmentData();
+      closeCertDialog();
+    } catch (error) {
+      console.error("Error removing certificate:", error);
+      toast.error("Failed to remove the calibration certificate");
+    }
+  };
+
   //EMI Calibration table columns: (FIXED: Memoized to prevent recreation)
   const emiCalibrationTableColumns = useMemo(
     () => [
@@ -241,11 +439,7 @@ const EMICalibration = () => {
         align: "center",
         headerAlign: "center",
         headerClassName: "custom-header-color",
-        renderCell: (params) => {
-          if (!params.value) return "-";
-          const date = dayjs(params.value).format("DD-MM-YYYY");
-          return date;
-        },
+        renderCell: (params) => formatDate(params.value),
       },
       {
         field: "calibration_due_date",
@@ -254,11 +448,7 @@ const EMICalibration = () => {
         align: "center",
         headerAlign: "center",
         headerClassName: "custom-header-color",
-        renderCell: (params) => {
-          if (!params.value) return "-";
-          const date = dayjs(params.value).format("DD-MM-YYYY");
-          return date;
-        },
+        renderCell: (params) => formatDate(params.value),
       },
       {
         field: "calibration_done_by",
@@ -286,6 +476,56 @@ const EMICalibration = () => {
         headerClassName: "custom-header-color",
       },
       {
+        field: "calibration_certificate",
+        headerName: "Calibration Certificate",
+        width: 190,
+        align: "center",
+        headerAlign: "center",
+        headerClassName: "custom-header-color",
+        sortable: false,
+        renderCell: (params) =>
+          params.row.calibration_certificate_path ? (
+            <Box>
+              <Tooltip title="View Certificate">
+                <IconButton
+                  size="small"
+                  color="primary"
+                  onClick={() => viewCertificate(params.row)}
+                >
+                  <VisibilityIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Download Certificate">
+                <IconButton
+                  size="small"
+                  color="success"
+                  onClick={() => downloadCertificate(params.row)}
+                >
+                  <DownloadIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Replace Certificate">
+                <IconButton
+                  size="small"
+                  color="warning"
+                  onClick={() => openCertDialog(params.row)}
+                >
+                  <UploadFileIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            </Box>
+          ) : (
+            <Button
+              size="small"
+              variant="outlined"
+              startIcon={<UploadFileIcon />}
+              onClick={() => openCertDialog(params.row)}
+            >
+              Upload
+            </Button>
+          ),
+      },
+      {
         field: "action",
         headerName: "Action",
         width: 150,
@@ -310,7 +550,13 @@ const EMICalibration = () => {
         ),
       },
     ],
-    [handleOpenDeleteEqipmentDialog, handleOpenEquimentDialog],
+    [
+      handleOpenDeleteEqipmentDialog,
+      handleOpenEquimentDialog,
+      openCertDialog,
+      viewCertificate,
+      downloadCertificate,
+    ],
   );
 
   //EMI Calibration form fields:
@@ -846,12 +1092,8 @@ const EMICalibration = () => {
       "Equipment Name": row.equipment_name || "",
       "Equipment Serial Number": row.equipment_serial_number || "",
       "UID Number": row.uid_number || "",
-      "Calibration Date": row.calibration_date
-        ? dayjs(row.calibration_date).format("DD-MM-YYYY")
-        : "-",
-      "Calibration Due Date": row.calibration_due_date
-        ? dayjs(row.calibration_due_date).format("DD-MM-YYYY")
-        : "-",
+      "Calibration Date": formatDate(row.calibration_date),
+      "Calibration Due Date": formatDate(row.calibration_due_date),
       "Calibration Done By": row.calibration_done_by || "",
       "Calibration Status": row.calibration_status || "",
       "Equipment Status": row.equipment_status || "",
@@ -1017,10 +1259,7 @@ const EMICalibration = () => {
                             Model: {equipment.model_number}
                           </Typography>
                           <Typography variant="body2">
-                            Due Date:{" "}
-                            {dayjs(equipment.calibration_due_date).format(
-                              "DD-MM-YYYY",
-                            )}
+                            Due Date: {formatDate(equipment.calibration_due_date)}
                           </Typography>
                           {getStatusChip(equipment, dialogData.type)}
                         </Box>
@@ -1134,7 +1373,7 @@ const EMICalibration = () => {
           variant="contained"
           color="primary"
           onClick={() => fileInputRef.current.click()}
-          startIcon={<FileUploadIcon />}
+          startIcon={<UploadFileIcon />}
         >
           Import Excel
         </Button>
@@ -1264,6 +1503,164 @@ const EMICalibration = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Calibration Certificate Upload / View Dialog */}
+      <Dialog
+        open={certDialogOpen}
+        onClose={closeCertDialog}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <DescriptionIcon color="primary" />
+            <Typography variant="h6">
+              Calibration Certificate
+              {certificateRow?.equipment_name
+                ? ` - ${certificateRow.equipment_name}`
+                : ""}
+            </Typography>
+            <IconButton sx={{ ml: "auto" }} onClick={closeCertDialog}>
+              <Close />
+            </IconButton>
+          </Box>
+        </DialogTitle>
+
+        <DialogContent dividers>
+          {/* Existing certificate (if any) */}
+          {certificateRow?.calibration_certificate_path && (
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 1,
+                p: 1,
+                mb: 2,
+                border: "1px solid #ccc",
+                borderRadius: 1,
+              }}
+            >
+              <DescriptionIcon color="action" />
+              <Typography
+                variant="body2"
+                sx={{
+                  flex: 1,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {certificateRow.calibration_certificate_name ||
+                  certificateRow.calibration_certificate_path.split("/").pop()}
+              </Typography>
+              <Tooltip title="View">
+                <IconButton
+                  size="small"
+                  color="primary"
+                  onClick={() => viewCertificate(certificateRow)}
+                >
+                  <VisibilityIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Download">
+                <IconButton
+                  size="small"
+                  color="success"
+                  onClick={() => downloadCertificate(certificateRow)}
+                >
+                  <DownloadIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Remove">
+                <IconButton
+                  size="small"
+                  color="error"
+                  onClick={handleDeleteCertificate}
+                >
+                  <DeleteIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+            </Box>
+          )}
+
+          <Typography variant="body2" sx={{ mb: 1, color: "text.secondary" }}>
+            {certificateRow?.calibration_certificate_path
+              ? "Choose a new file to replace the existing certificate:"
+              : "Choose a calibration certificate to upload (PDF, Word or image):"}
+          </Typography>
+
+          <input
+            type="file"
+            accept=".pdf,.doc,.docx,image/png,image/jpeg,image/webp,image/gif"
+            ref={certFileInputRef}
+            style={{ display: "none" }}
+            onChange={(e) => setSelectedCertFile(e.target.files[0] || null)}
+          />
+
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+            <Button
+              variant="outlined"
+              startIcon={<UploadFileIcon />}
+              onClick={() => certFileInputRef.current?.click()}
+            >
+              Choose File
+            </Button>
+            <Typography
+              variant="body2"
+              sx={{
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {selectedCertFile ? selectedCertFile.name : "No file selected"}
+            </Typography>
+          </Box>
+        </DialogContent>
+
+        <DialogActions>
+          <Button onClick={closeCertDialog} disabled={uploadingCert}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={handleUploadCertificate}
+            disabled={!selectedCertFile || uploadingCert}
+            startIcon={
+              uploadingCert ? (
+                <CircularProgress size={18} color="inherit" />
+              ) : (
+                <UploadFileIcon />
+              )
+            }
+          >
+            {uploadingCert ? "Uploading..." : "Upload"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Loading indicator shown while the certificate is being fetched */}
+      <Dialog open={previewOpen && previewLoading && !previewBlob}>
+        <DialogContent
+          sx={{ display: "flex", alignItems: "center", gap: 2, p: 4 }}
+        >
+          <CircularProgress size={24} />
+          <Typography variant="body1">Loading certificate...</Typography>
+        </DialogContent>
+      </Dialog>
+
+      {/* In-dialog certificate preview (PDF / Word / image) */}
+      {previewBlob && (
+        <DocumentPreviewModal
+          open={previewOpen}
+          onClose={closePreview}
+          documentBlob={previewBlob}
+          fileName={previewName}
+          fileType={previewType}
+          title="Calibration Certificate"
+        />
+      )}
     </>
   );
 };

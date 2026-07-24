@@ -2,31 +2,31 @@ import React, { useContext } from "react";
 
 import {
   Grid,
-  TextField,
-  FormControl,
-  FormControlLabel,
-  FormLabel,
-  Radio,
-  RadioGroup,
+  // TextField,
+  // FormControl,
+  // FormControlLabel,
+  // FormLabel,
+  // Radio,
+  // RadioGroup,
 } from "@mui/material";
 
 import { EMIJCContext } from "../EMIJCContext";
 import RenderTable from "../../functions/RenderTable";
 
-const RS103Form = ({ formType }) => {
+const RS103Form = ({ _formType }) => {
   const {
-    observationFormData,
-    updateObservationFormData,
+    // observationFormData,
+    // updateObservationFormData,
     updateRs103TableRows,
     rs103TableRows,
   } = useContext(EMIJCContext);
 
-  const performanceCreteriaOptions = [
-    "Criteria A - Normal EUT performance during and after the test as intended",
-    "Criteria B -Temporary loss of function is allowed, EUT should be recoverable without operator intervention",
-    "Criteria C -Temporary loss of function is not allowed, EUT should not be recoverable without operator intervention",
-    "Criteria D -Loss of function is not allowed, EUT should not be recoverable without operator intervention",
-  ];
+  // const performanceCreteriaOptions = [
+  //   "Criteria A - Normal EUT performance during and after the test as intended",
+  //   "Criteria B -Temporary loss of function is allowed, EUT should be recoverable without operator intervention",
+  //   "Criteria C -Temporary loss of function is not allowed, EUT should not be recoverable without operator intervention",
+  //   "Criteria D -Loss of function is not allowed, EUT should not be recoverable without operator intervention",
+  // ];
 
   const antennasOptions = [
     "Electric Field Antenna",
@@ -40,14 +40,14 @@ const RS103Form = ({ formType }) => {
   //   { id: "Double Ridged Horn Antenna", label: "Double Ridged Horn Antenna" },
   // ];
 
-  const handleCriteriaChange = (event) => {
-    const selectedCriteria = event.target.value;
+  // const handleCriteriaChange = (event) => {
+  //   const selectedCriteria = event.target.value;
 
-    updateObservationFormData(formType, "selectedCriteria", selectedCriteria);
+  //   updateObservationFormData(formType, "selectedCriteria", selectedCriteria);
 
-    const updatedRS103FormData = `${selectedCriteria}`;
-    updateObservationFormData(formType, "RS103FormData", updatedRS103FormData);
-  };
+  //   const updatedRS103FormData = `${selectedCriteria}`;
+  //   updateObservationFormData(formType, "RS103FormData", updatedRS103FormData);
+  // };
 
   const rs103TableColumns = [
     { id: "serialNumber", label: "SL No", width: "20", align: "left" },
@@ -110,7 +110,7 @@ const RS103Form = ({ formType }) => {
         />
       </Grid>
 
-      <Grid
+      {/* <Grid
         item
         xs={12}
         sx={{
@@ -136,9 +136,9 @@ const RS103Form = ({ formType }) => {
             ))}
           </RadioGroup>
         </FormControl>
-      </Grid>
+      </Grid> */}
 
-      <Grid item xs={12}>
+      {/* <Grid item xs={12}>
         <TextField
           variant="outlined"
           label="RS103 Observation Form"
@@ -150,7 +150,7 @@ const RS103Form = ({ formType }) => {
             updateObservationFormData(formType, "RS103FormData", e.target.value)
           }
         />
-      </Grid>
+      </Grid> */}
     </Grid>
   );
 };

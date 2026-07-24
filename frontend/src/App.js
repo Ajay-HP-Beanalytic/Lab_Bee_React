@@ -13,7 +13,7 @@ import SidenavigationBar from "./components/sidenavbar";
 
 import NotFoundPage from "./Pages/NotFoundPage";
 
-import ChamberAndCalibration from "./Pages/ChamberCalibration";
+import ChamberAndCalibration from "./JC/TS1ChamberCalibration";
 
 import JCHome from "./JC/JCHome";
 import JobcardRequirements from "./JC/JobcardRequirements";
