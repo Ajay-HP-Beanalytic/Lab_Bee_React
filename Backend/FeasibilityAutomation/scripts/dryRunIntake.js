@@ -117,7 +117,11 @@ const loadFolder = (dir) => {
     );
 
     if (out.usage) {
-      totals.input += out.usage.input_tokens || 0;
+      // input_tokens excludes the cached prompt, so add cache writes and reads
+      totals.input +=
+        (out.usage.input_tokens || 0) +
+        (out.usage.cache_creation_input_tokens || 0) +
+        (out.usage.cache_read_input_tokens || 0);
       totals.output += out.usage.output_tokens || 0;
     }
 
@@ -142,7 +146,11 @@ const loadFolder = (dir) => {
   console.log("");
   console.table(rows);
   if (useAi) {
-    console.log(`Tokens used: ${totals.input} input, ${totals.output} output`);
+    // Approximate, at Claude Opus 5.5 list prices ($4 / $20 per million tokens)
+    const cost = (totals.input * 4 + totals.output * 20) / 1e6;
+    console.log(
+      `Tokens used: ${totals.input} input (incl. cached prompt), ${totals.output} output ≈ $${cost.toFixed(3)} at Opus 5.5 prices`,
+    );
   }
   console.log(`Full results: ${RESULTS_DIR}`);
 })();

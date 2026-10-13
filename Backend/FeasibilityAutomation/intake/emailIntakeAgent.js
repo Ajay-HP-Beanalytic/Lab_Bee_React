@@ -70,7 +70,7 @@ The lab's main test disciplines are:
 - EMI/EMC testing (TS2): conducted/radiated emission and susceptibility (e.g. MIL-STD-461, DO-160 EMI sections), ESD, surge, EFT, lightning induced transients, etc.
 Customers send requests for quotation (RFQ), clarifications, purchase orders and other mail. Staff reply and forward mails internally.
 
-Your job: classify the email and extract the details needed to check feasibility and prepare a quotation. Always answer by calling the record_email_analysis tool.
+Your job: classify the email and extract the details needed to check feasibility and prepare a quotation. Answer only with the JSON object described by the output schema.
 
 Classification:
 - new_enquiry: a customer asks for a quotation, budgetary quote, feasibility or availability of a test/service for the first time.
@@ -81,7 +81,7 @@ Classification:
 - not_rfq: anything else (facility visit requests, support requests, reminders, newsletters, spam).
 
 Extraction rules:
-- Copy values exactly as written. Never guess, estimate or convert units. If a value is not stated, use null.
+- Copy values exactly as written. Never guess, estimate or convert units. If a text value is not stated, use an empty string ""; if a number is not stated, use null.
 - Record dimensions as three numbers with the unit as written. If the order is given (e.g. WxDxH), map it to length/width/height and keep the original text in dimensions_as_written.
 - When a mail was forwarded, the customer is the ORIGINAL external sender, not the staff member who forwarded it.
 - Create one tests[] entry per distinct test (and per procedure if they are priced separately). Put severities, temperatures, durations, levels, categories and procedures in the fields provided.
@@ -91,117 +91,90 @@ Extraction rules:
 - requested_info: list what the customer wants in the reply besides the price (e.g. NABL certificate, lead time, earliest start date, payment terms, validity).
 - non_testing_service: true when they ask for design, consultancy, analysis, calibration or other non-testing work.`;
 
-const nullableString = { type: ["string", "null"] };
-const nullableNumber = { type: ["number", "null"] };
+// Structured-output schema. Rules of the API: every object lists all its fields
+// as required and sets additionalProperties:false, and at most 16 nullable
+// fields are allowed. So text fields use "" for "not stated" (turned into null
+// in code) and only the numeric fields are nullable.
+const str = (description) => ({ type: "string", ...(description && { description }) });
+const num = (description) => ({ type: ["number", "null"], ...(description && { description }) });
+const strList = (description) => ({ type: "array", items: { type: "string" }, description });
+const obj = (properties) => ({
+  type: "object",
+  properties,
+  required: Object.keys(properties),
+  additionalProperties: false,
+});
 
-const ANALYSIS_TOOL = {
-  name: "record_email_analysis",
-  description: "Record the classification and the extracted RFQ details of the email.",
-  input_schema: {
-    type: "object",
-    properties: {
-      classification: {
-        type: "string",
-        enum: [
-          "new_enquiry",
-          "enquiry_followup",
-          "po_or_approval",
-          "tender_notice",
-          "internal_discussion",
-          "not_rfq",
-        ],
-      },
-      classification_reason: { type: "string" },
-      summary: { type: "string", description: "One or two sentences." },
-      customer: {
-        type: "object",
-        properties: {
-          company_name: nullableString,
-          contact_person: nullableString,
-          contact_email: nullableString,
-          contact_phone: nullableString,
-        },
-        required: ["company_name", "contact_person", "contact_email", "contact_phone"],
-      },
-      customer_reference: {
-        ...nullableString,
-        description: "Customer's RFQ / bid / opportunity / PO number, if any.",
-      },
-      deadline: {
-        ...nullableString,
-        description: "Quote or bid due date as written, if any.",
-      },
-      requested_test_window: {
-        ...nullableString,
-        description: "When they want testing done, as written.",
-      },
-      eut_items: {
-        type: "array",
-        items: {
-          type: "object",
-          properties: {
-            name: { type: "string" },
-            model_or_part_no: nullableString,
-            quantity: nullableNumber,
-            dimensions_as_written: nullableString,
-            length: nullableNumber,
-            width: nullableNumber,
-            height: nullableNumber,
-            dimension_unit: { type: ["string", "null"], enum: ["mm", "cm", "m", "in", "ft", null] },
-            weight: nullableNumber,
-            weight_unit: { type: ["string", "null"], enum: ["g", "kg", "lb", "t", null] },
-            weight_as_written: nullableString,
-            notes: nullableString,
-          },
-          required: ["name", "quantity", "length", "width", "height", "dimension_unit", "weight", "weight_unit"],
-        },
-      },
-      tests: {
-        type: "array",
-        items: {
-          type: "object",
-          properties: {
-            test_name: { type: "string", description: "As written by the customer." },
-            discipline: {
-              type: "string",
-              enum: ["environmental", "mechanical", "emi_emc", "electrical", "rf", "ingress_protection", "other"],
-            },
-            standard: nullableString,
-            method_or_section: nullableString,
-            procedure_or_category: nullableString,
-            conditions: {
-              ...nullableString,
-              description: "Severity, temperatures, levels, durations, cycles, operating state, as written.",
-            },
-            applies_to: {
-              ...nullableString,
-              description: "Which EUT item(s) / version(s) this test is for.",
-            },
-            source: {
-              type: "string",
-              description: "'body', 'forwarded mail' or the attachment file name.",
-            },
-          },
-          required: ["test_name", "discipline", "standard", "conditions", "source"],
-        },
-      },
-      requested_info: { type: "array", items: { type: "string" } },
-      missing_fields: { type: "array", items: { type: "string" } },
-      urgent: { type: "boolean" },
-      non_testing_service: { type: "boolean" },
-    },
-    required: [
-      "classification",
-      "classification_reason",
-      "summary",
-      "customer",
-      "eut_items",
-      "tests",
-      "missing_fields",
-      "urgent",
-      "non_testing_service",
+const ANALYSIS_SCHEMA = obj({
+  classification: {
+    type: "string",
+    enum: [
+      "new_enquiry",
+      "enquiry_followup",
+      "po_or_approval",
+      "tender_notice",
+      "internal_discussion",
+      "not_rfq",
     ],
   },
+  classification_reason: str(),
+  summary: str("One or two sentences."),
+  customer: obj({
+    company_name: str(),
+    contact_person: str(),
+    contact_email: str(),
+    contact_phone: str(),
+  }),
+  customer_reference: str("Customer's RFQ / bid / opportunity / PO number."),
+  deadline: str("Quote or bid due date as written."),
+  requested_test_window: str("When they want testing done, as written."),
+  eut_items: {
+    type: "array",
+    items: obj({
+      name: str(),
+      model_or_part_no: str(),
+      quantity: num(),
+      dimensions_as_written: str(),
+      length: num(),
+      width: num(),
+      height: num(),
+      dimension_unit: { type: "string", enum: ["mm", "cm", "m", "in", "ft", ""] },
+      weight: num(),
+      weight_unit: { type: "string", enum: ["g", "kg", "lb", "t", ""] },
+      weight_as_written: str(),
+      notes: str(),
+    }),
+  },
+  tests: {
+    type: "array",
+    items: obj({
+      test_name: str("As written by the customer."),
+      discipline: {
+        type: "string",
+        enum: ["environmental", "mechanical", "emi_emc", "electrical", "rf", "ingress_protection", "other"],
+      },
+      standard: str(),
+      method_or_section: str(),
+      procedure_or_category: str(),
+      conditions: str("Severity, temperatures, levels, durations, cycles, operating state, as written."),
+      applies_to: str("Which EUT item(s) / version(s) this test is for."),
+      source: str("'body', 'forwarded mail' or the attachment file name."),
+    }),
+  },
+  requested_info: strList("What the customer wants in the reply besides the price."),
+  missing_fields: strList("What the lab still needs to prepare a quotation."),
+  urgent: { type: "boolean" },
+  non_testing_service: { type: "boolean" },
+});
+
+//Turn "" (not stated) into null, recursively.
+const emptyToNull = (v) => {
+  if (v === "") return null;
+  if (Array.isArray(v)) return v.map(emptyToNull);
+  if (v && typeof v === "object") {
+    return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, emptyToNull(x)]));
+  }
+  return v;
 };
 
 const formatAddress = (a) =>
@@ -281,8 +254,7 @@ const analyzeEmail = async (bundle, { useAi = true } = {}) => {
     model,
     max_tokens: 8192,
     system: [{ type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } }],
-    tools: [ANALYSIS_TOOL],
-    tool_choice: { type: "tool", name: ANALYSIS_TOOL.name },
+    output_config: { format: { type: "json_schema", schema: ANALYSIS_SCHEMA } },
     messages: [
       {
         role: "user",
@@ -297,12 +269,12 @@ const analyzeEmail = async (bundle, { useAi = true } = {}) => {
     ],
   });
 
-  const toolUse = response.content.find((c) => c.type === "tool_use");
-  if (!toolUse || response.stop_reason === "max_tokens") {
+  const textBlock = response.content.find((c) => c.type === "text");
+  if (!textBlock || response.stop_reason !== "end_turn") {
     throw new Error(`No complete analysis returned (stop_reason: ${response.stop_reason})`);
   }
 
-  const result = toolUse.input;
+  const result = emptyToNull(JSON.parse(textBlock.text));
   result.eut_items = (result.eut_items || []).map(normalizeEut);
   const contactEmail = result.customer?.contact_email || fromAddress;
   result.free_mail_sender = FREE_MAIL_DOMAINS.test(contactEmail);
