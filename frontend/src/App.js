@@ -45,6 +45,7 @@ import FeasibilityRequestForm from "./test_feasibility_automation/FeasibilityReq
 import FeasibilityRequestSuccess from "./test_feasibility_automation/FeasibilityRequestSuccess";
 import ChamberSpecsManager from "./test_feasibility_automation/ChamberSpecsManager";
 import TestPricingManager from "./test_feasibility_automation/TestPricingManager";
+import RfqInbox from "./test_feasibility_automation/RfqInbox";
 import JCPrintPage from "./JC/JCPrintPage";
 import EMIJCPrintPage from "./EMI/EMIJCPrintPage";
 
@@ -346,6 +347,23 @@ function App() {
                 allowedRoles={[]}
               >
                 <TestPricingManager />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="rfq_inbox"
+            element={
+              <ProtectedRoute
+                allowedDepartments={[
+                  "Administration",
+                  "Accounts",
+                  "Marketing",
+                  "TS1 Testing",
+                  "TS2 Testing",
+                ]}
+                allowedRoles={[]}
+              >
+                <RfqInbox />
               </ProtectedRoute>
             }
           />
