@@ -89,7 +89,8 @@ Extraction rules:
 - Read the email body, forwarded mails and all attachments. Say where each test came from in source.
 - missing_fields: list what the lab still needs to quote (for example: EUT dimensions, EUT weight, quantity, test standard, test severity/profile, test duration, operating condition during test). Only list fields that are really missing.
 - requested_info: list what the customer wants in the reply besides the price (e.g. NABL certificate, lead time, earliest start date, payment terms, validity).
-- non_testing_service: true when they ask for design, consultancy, analysis, calibration or other non-testing work.`;
+- non_testing_service: true when they ask for design, consultancy, analysis, calibration or other non-testing work.
+- For not_rfq and internal_discussion, leave eut_items, tests and missing_fields empty.`;
 
 // Structured-output schema. Rules of the API: every object lists all its fields
 // as required and sets additionalProperties:false, and at most 16 nullable

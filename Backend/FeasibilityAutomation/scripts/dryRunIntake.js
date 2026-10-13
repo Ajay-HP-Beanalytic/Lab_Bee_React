@@ -9,8 +9,11 @@
 //        -> also calls Claude for every mail that passes the checks
 //   node FeasibilityAutomation/scripts/dryRunIntake.js --only "soak load"
 //        -> only folders whose name contains the text
+//   node FeasibilityAutomation/scripts/dryRunIntake.js --model claude-sonnet-5-5
+//        -> use another model than CLAUDE_INTAKE_MODEL
 //
-// Results: scripts/output/_intake_results/<folder>.json
+// Results: scripts/output/_intake_results/<model>/<folder>.json
+// Compare two models with compareIntake.js.
 
 const path = require("path");
 const fs = require("fs");
@@ -18,15 +21,25 @@ const envFile =
   process.env.NODE_ENV === "production" ? ".env.production" : ".env.development";
 require("dotenv").config({ path: path.join(__dirname, "..", "..", envFile) });
 
+const args = process.argv.slice(2);
+const getArg = (name) => {
+  const i = args.indexOf(`--${name}`);
+  return i !== -1 ? args[i + 1] || null : null;
+};
+const useAi = !args.includes("--no-ai");
+const only = (getArg("only") || "").toLowerCase() || null;
+if (getArg("model")) process.env.CLAUDE_INTAKE_MODEL = getArg("model");
+const model = process.env.CLAUDE_INTAKE_MODEL || "claude-opus-5-5";
+
 const { analyzeEmail } = require("../intake/emailIntakeAgent");
+const { inputTokens, estimateCost } = require("../intake/modelPrices");
 
 const OUTPUT_DIR = path.join(__dirname, "output");
-const RESULTS_DIR = path.join(OUTPUT_DIR, "_intake_results");
-
-const args = process.argv.slice(2);
-const useAi = !args.includes("--no-ai");
-const onlyIdx = args.indexOf("--only");
-const only = onlyIdx !== -1 ? (args[onlyIdx + 1] || "").toLowerCase() : null;
+const RESULTS_DIR = path.join(
+  OUTPUT_DIR,
+  "_intake_results",
+  useAi ? model : "no-ai",
+);
 
 const splitList = (s) =>
   (s || "")
@@ -117,11 +130,7 @@ const loadFolder = (dir) => {
     );
 
     if (out.usage) {
-      // input_tokens excludes the cached prompt, so add cache writes and reads
-      totals.input +=
-        (out.usage.input_tokens || 0) +
-        (out.usage.cache_creation_input_tokens || 0) +
-        (out.usage.cache_read_input_tokens || 0);
+      totals.input += inputTokens(out.usage);
       totals.output += out.usage.output_tokens || 0;
     }
 
@@ -146,10 +155,10 @@ const loadFolder = (dir) => {
   console.log("");
   console.table(rows);
   if (useAi) {
-    // Approximate, at Claude Opus 5.5 list prices ($4 / $20 per million tokens)
-    const cost = (totals.input * 4 + totals.output * 20) / 1e6;
+    const cost = estimateCost(model, totals.input, totals.output);
     console.log(
-      `Tokens used: ${totals.input} input (incl. cached prompt), ${totals.output} output ≈ $${cost.toFixed(3)} at Opus 5.5 prices`,
+      `Model ${model}: ${totals.input} input tokens (incl. cached prompt), ${totals.output} output` +
+        (cost === null ? "" : ` ≈ $${cost.toFixed(3)}`),
     );
   }
   console.log(`Full results: ${RESULTS_DIR}`);
