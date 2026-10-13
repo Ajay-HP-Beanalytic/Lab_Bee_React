@@ -4,6 +4,8 @@
 //   node FeasibilityAutomation/scripts/testGraphMail.js                 -> last 7 days, max 50 mails
 //   node FeasibilityAutomation/scripts/testGraphMail.js --days 30 --top 25
 //   node FeasibilityAutomation/scripts/testGraphMail.js --rfq           -> only mails that look like RFQ/PO
+//   node FeasibilityAutomation/scripts/testGraphMail.js --since 2026-10-01 --rfq --top 20 --save-all
+//                                  -> newest 20 RFQ-like mails received since 1 Oct
 //   node FeasibilityAutomation/scripts/testGraphMail.js --id <messageId> --save
 //                                  -> show one mail and save it to scripts/output/
 //   node FeasibilityAutomation/scripts/testGraphMail.js --days 30 --rfq --save-all
@@ -220,13 +222,22 @@ const processMessage = async (id, { print = true, save = false } = {}) => {
   }
 
   // Step 3: list recent messages
-  const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+  // --since YYYY-MM-DD wins over --days
+  const sinceArg = getArg("since", null);
+  const since = sinceArg
+    ? new Date(`${sinceArg}T00:00:00`)
+    : new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+  if (isNaN(since)) fail("Arguments", new Error("--since must be YYYY-MM-DD"));
+
+  // With --rfq the keyword filter runs after fetching, so fetch a wider window
+  // and apply --top to the filtered list instead.
+  const fetchCount = hasFlag("rfq") ? 999 : top;
   console.log(
-    `\n2. Reading ${process.env.RFQ_MAILBOX} inbox (last ${days} days, max ${top})...`,
+    `\n2. Reading ${process.env.RFQ_MAILBOX} inbox (since ${since.toDateString()}, max ${top}${hasFlag("rfq") ? " RFQ-like" : ""})...`,
   );
   let messages;
   try {
-    messages = await graph.listMessages({ since, top });
+    messages = await graph.listMessages({ since, top: fetchCount });
   } catch (err) {
     fail("Listing messages", err);
   }
@@ -241,7 +252,8 @@ const processMessage = async (id, { print = true, save = false } = {}) => {
       looksRfq: RFQ_KEYWORDS.test(`${m.subject} ${m.bodyPreview}`) ? "✔" : "",
       id: m.id,
     }))
-    .filter((r) => !hasFlag("rfq") || r.looksRfq);
+    .filter((r) => !hasFlag("rfq") || r.looksRfq)
+    .slice(0, top);
 
   console.table(rows.map(({ id, ...rest }) => rest));
 
