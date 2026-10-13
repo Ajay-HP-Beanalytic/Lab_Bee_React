@@ -227,6 +227,11 @@ const EMAIL_INTAKE_COLUMNS = {
     missing_fields: "JSON DEFAULT NULL",
     request_flags: "JSON DEFAULT NULL",
     is_confidential: "TINYINT(1) NOT NULL DEFAULT 0",
+    // For confidential requests: 'pending' (staff to choose), 'ai' (staff sent it
+    // to the AI) or 'manual' (staff enter the details themselves)
+    confidential_handling: "VARCHAR(20) DEFAULT NULL",
+    confidential_handled_by: "INT DEFAULT NULL",
+    confidential_handled_at: "DATETIME DEFAULT NULL",
   },
   feasibility_request_tests: {
     eut_id: "INT DEFAULT NULL",
@@ -238,6 +243,9 @@ const EMAIL_INTAKE_COLUMNS = {
   inbound_emails: {
     // created | duplicate | followup | linked | ignored (NULL = not handled yet)
     request_action: "VARCHAR(30) DEFAULT NULL",
+    // Set when staff sent a confidential email to the AI (audit trail)
+    ai_released_by: "INT DEFAULT NULL",
+    ai_released_at: "DATETIME DEFAULT NULL",
   },
 };
 
@@ -268,6 +276,10 @@ async function migrateFeasibilityForEmailIntake() {
     if (!idx.length) {
       await q("ALTER TABLE feasibility_requests ADD INDEX idx_fr_conversation_id (conversation_id(191))");
     }
+    // Confidential requests created before confidential_handling existed
+    await q(
+      "UPDATE feasibility_requests SET confidential_handling = 'pending' WHERE is_confidential = 1 AND confidential_handling IS NULL",
+    );
     return true;
   } catch (err) {
     console.log("Error migrating feasibility tables for email intake", err);

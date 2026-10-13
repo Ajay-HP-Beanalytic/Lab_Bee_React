@@ -265,6 +265,7 @@ const createRequest = async (q, row, { confidential = false } = {}) => {
           },
     ),
     is_confidential: confidential ? 1 : 0,
+    confidential_handling: confidential ? "pending" : null,
   };
 
   const res = await q("INSERT INTO feasibility_requests SET ?", [request]);
@@ -278,7 +279,7 @@ const createRequest = async (q, row, { confidential = false } = {}) => {
 
 //Add information from a duplicate or follow-up email to an existing request.
 //Only empty fields are filled; nothing the team entered is overwritten.
-const mergeIntoRequest = async (q, requestId, row, { followup }) => {
+const mergeIntoRequest = async (q, requestId, row, { followup, noteLabel = "Follow-up" }) => {
   const x = row.extracted;
   if (row.decision !== "analysed" || !x) return [];
   const [req] = await q("SELECT * FROM feasibility_requests WHERE id = ?", [requestId]);
@@ -305,7 +306,7 @@ const mergeIntoRequest = async (q, requestId, row, { followup }) => {
   if (followup) {
     updates.missing_fields = JSON.stringify(x.missing_fields || []);
     const date = (row.received_at ? new Date(row.received_at) : new Date()).toISOString().slice(0, 10);
-    updates.technical_notes = `${req.technical_notes ? `${req.technical_notes}\n` : ""}[Follow-up ${date}] ${x.summary || ""}`;
+    updates.technical_notes = `${req.technical_notes ? `${req.technical_notes}\n` : ""}[${noteLabel} ${date}] ${x.summary || ""}`;
     changes.push("missing_fields", "notes");
 
     // EUTs: fill empty sizes of a matching EUT, or add new ones
@@ -402,4 +403,4 @@ const handleEmail = async (conn, row, { dryRun = false, virtual = [] } = {}) => 
   }
 };
 
-module.exports = { handleEmail, normalizeSubject, planFor };
+module.exports = { handleEmail, mergeIntoRequest, normalizeSubject, planFor };

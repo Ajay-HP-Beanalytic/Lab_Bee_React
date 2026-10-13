@@ -177,10 +177,10 @@ const sessionStore = new MySQLStore({
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_DATABASE,
-  clearExpired: true,           // automatically delete expired sessions
+  clearExpired: true, // automatically delete expired sessions
   checkExpirationInterval: 15 * 60 * 1000, // check every 15 minutes
   expiration: 540 * 60 * 1000, // match cookie maxAge (9 hours)
-  createDatabaseTable: true,    // auto-create sessions table if missing
+  createDatabaseTable: true, // auto-create sessions table if missing
   connectionLimit: 3,
   schema: {
     tableName: "user_sessions",
@@ -423,6 +423,9 @@ openaiAPIs(app, io, labbeeUsers);
 const { feasibilityAPIs } = require("./FeasibilityAutomation/FeasibilityAPI");
 feasibilityAPIs(app);
 
+const { intakeAPIs } = require("./FeasibilityAutomation/IntakeAPI");
+intakeAPIs(app);
+
 const { chamberSpecsAPIs } = require("./FeasibilityAutomation/ChamberSpecsAPI");
 chamberSpecsAPIs(app);
 
@@ -527,7 +530,9 @@ process.on("unhandledRejection", (reason) => {
   const timestamp = new Date().toISOString();
   console.error("=".repeat(60));
   console.error(`[unhandledRejection] ${timestamp}`);
-  console.error(`Reason : ${reason instanceof Error ? reason.message : reason}`);
+  console.error(
+    `Reason : ${reason instanceof Error ? reason.message : reason}`,
+  );
   if (reason instanceof Error) {
     console.error(`Stack  :\n${reason.stack}`);
   }

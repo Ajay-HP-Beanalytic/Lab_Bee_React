@@ -227,22 +227,29 @@ const flatten = (bundle, acc = { attachments: [], markers: [], texts: [] }) => {
 //Analyse one email bundle:
 //{ subject, from:{name,address}, to[], cc[], received, body, sensitivity,
 //  categories[], sensitivityLabels[], attachments[{name, content}], forwarded[] }
-//Options: { useAi: false } runs only the local checks (nothing is sent anywhere).
-const analyzeEmail = async (bundle, { useAi = true } = {}) => {
+//Options:
+//  useAi: false          -> only the local checks (nothing is sent anywhere)
+//  staffApproved: true   -> a staff member chose to send this confidential email
+//                           to the AI: skip the confidentiality and internal-mail
+//                           checks and send scanned PDFs/images as well
+const analyzeEmail = async (bundle, { useAi = true, staffApproved = false } = {}) => {
   const { attachments, markers, texts } = flatten(bundle);
-  const prepared = await prepareAttachments(attachments);
+  const prepared = await prepareAttachments(
+    attachments,
+    staffApproved ? { sendUnscannable: true } : {},
+  );
   const base = { attachmentNotes: prepared.notes };
   const notSent = (why) => ({
     attachmentNotes: attachments.map((a) => `${a.name}: not sent (${why})`),
   });
 
   const policy = checkConfidential({ markers, texts: [...texts, ...prepared.texts] });
-  if (policy.confidential) {
+  if (policy.confidential && !staffApproved) {
     return { ...notSent("confidential mail"), decision: "confidential", reasons: policy.reasons };
   }
 
   const fromAddress = bundle.from?.address || "";
-  if (isInternal(fromAddress) && !isForward(bundle.subject)) {
+  if (!staffApproved && isInternal(fromAddress) && !isForward(bundle.subject)) {
     return { ...notSent("internal mail"), decision: "internal", reasons: ["sent by lab staff"] };
   }
 

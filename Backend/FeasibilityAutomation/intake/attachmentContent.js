@@ -71,8 +71,11 @@ const textBlock = (name, text) => ({
   text: `--- Attachment: ${name} ---\n${truncate(text)}`,
 });
 
-const prepareAttachments = async (attachments) => {
-  const sendUnscannable = process.env.INTAKE_SEND_UNSCANNABLE === "true";
+//Options: { sendUnscannable } overrides INTAKE_SEND_UNSCANNABLE (used when staff
+//have approved sending a confidential email to the AI).
+const prepareAttachments = async (attachments, options = {}) => {
+  const sendUnscannable =
+    options.sendUnscannable ?? process.env.INTAKE_SEND_UNSCANNABLE === "true";
   const texts = [];
   const blocks = [];
   const notes = [];
