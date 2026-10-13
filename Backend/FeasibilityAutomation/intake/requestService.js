@@ -403,4 +403,27 @@ const handleEmail = async (conn, row, { dryRun = false, virtual = [] } = {}) => 
   }
 };
 
-module.exports = { handleEmail, mergeIntoRequest, normalizeSubject, planFor };
+//Handle every stored email not handled yet (oldest first).
+//`onEmail(row, result)` is called for each one. Returns counts per action.
+const processPendingEmails = async (pool, { dryRun = false, onEmail = () => {} } = {}) => {
+  const conn = await pool.promise().getConnection();
+  try {
+    const [rows] = await conn.query(
+      `SELECT * FROM inbound_emails
+       WHERE request_action IS NULL AND decision <> 'error'
+       ORDER BY received_at, id`,
+    );
+    const virtual = [];
+    const counts = {};
+    for (const row of rows) {
+      const r = await handleEmail(conn, row, { dryRun, virtual });
+      counts[r.plan.action] = (counts[r.plan.action] || 0) + 1;
+      onEmail(row, r);
+    }
+    return { total: rows.length, counts };
+  } finally {
+    conn.release();
+  }
+};
+
+module.exports = { handleEmail, processPendingEmails, mergeIntoRequest, normalizeSubject, planFor };

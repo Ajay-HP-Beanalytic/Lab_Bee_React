@@ -542,3 +542,7 @@ process.on("unhandledRejection", (reason) => {
 server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
+
+// Scheduled reading of the RFQ mailbox (off unless EMAIL_INTAKE_ENABLED=true)
+const { startEmailIntake } = require("./FeasibilityAutomation/intake/intakeScheduler");
+startEmailIntake().catch((err) => console.error("[email-intake] failed to start:", err.message));

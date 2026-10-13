@@ -15,41 +15,33 @@ require("dotenv").config({ path: path.join(__dirname, "..", "..", envFile) });
 
 const { db } = require("../../db");
 const { migrateFeasibilityForEmailIntake } = require("../feasibility_tables");
-const { handleEmail } = require("../intake/requestService");
+const { processPendingEmails } = require("../intake/requestService");
 
 const dryRun = process.argv.includes("--dry");
 
 (async () => {
-  const conn = await db.promise().getConnection();
   try {
     if (!(await migrateFeasibilityForEmailIntake())) {
       throw new Error("Table migration failed (see error above)");
     }
-    const [rows] = await conn.query(
-      `SELECT * FROM inbound_emails
-       WHERE request_action IS NULL AND decision <> 'error'
-       ORDER BY received_at, id`,
-    );
-    console.log(`${rows.length} email(s) to handle${dryRun ? " (DRY RUN, nothing saved)" : ""}\n`);
+    if (dryRun) console.log("DRY RUN, nothing saved\n");
 
-    const virtual = [];
-    const counts = {};
-    for (const row of rows) {
-      const r = await handleEmail(conn, row, { dryRun, virtual });
-      counts[r.plan.action] = (counts[r.plan.action] || 0) + 1;
-      const target = r.requestId ? ` → request ${r.requestId}` : "";
-      const why = r.existing ? ` (${r.existing.by})` : r.plan.why ? ` (${r.plan.why})` : "";
-      const conf = r.plan.confidential ? " [confidential]" : "";
-      console.log(`#${row.id} ${r.plan.action.toUpperCase()}${conf}${target}${why}`);
-      console.log(`     ${row.decision}/${row.classification || "-"} | ${row.from_address} | ${(row.subject || "").slice(0, 70)}`);
-      if (r.changes.length) console.log(`     updated: ${r.changes.join(", ")}`);
-    }
-    console.log("\nSummary:", counts);
+    const { total, counts } = await processPendingEmails(db, {
+      dryRun,
+      onEmail: (row, r) => {
+        const target = r.requestId ? ` → request ${r.requestId}` : "";
+        const why = r.existing ? ` (${r.existing.by})` : r.plan.why ? ` (${r.plan.why})` : "";
+        const conf = r.plan.confidential ? " [confidential]" : "";
+        console.log(`#${row.id} ${r.plan.action.toUpperCase()}${conf}${target}${why}`);
+        console.log(`     ${row.decision}/${row.classification || "-"} | ${row.from_address} | ${(row.subject || "").slice(0, 70)}`);
+        if (r.changes.length) console.log(`     updated: ${r.changes.join(", ")}`);
+      },
+    });
+    console.log(`\n${total} email(s) handled. Summary:`, counts);
   } catch (err) {
     console.error("\n❌ Failed:", err.message);
     process.exitCode = 1;
   } finally {
-    conn.release();
     db.end();
   }
 })();

@@ -100,11 +100,53 @@ const processMessage = async (graphMessageId, { dryRun = false } = {}) => {
   };
 
   if (existing.length) {
-    await query("UPDATE inbound_emails SET ? WHERE id = ?", [row, existing[0].id]);
+    await query("UPDATE inbound_emails SET ?, attempts = attempts + 1 WHERE id = ?", [row, existing[0].id]);
     return { status: "saved", id: existing[0].id, retried: true, subject: msg.subject, ...out };
   }
-  const result = await query("INSERT INTO inbound_emails SET ?", [row]);
+  const result = await query("INSERT INTO inbound_emails SET ?, attempts = 1", [row]);
   return { status: "saved", id: result.insertId, subject: msg.subject, ...out };
 };
 
-module.exports = { fetchBundle, processMessage };
+const MAX_ATTEMPTS = 3;
+
+//Process all mails received since `since` (oldest first, so a forward comes after
+//the mail it forwards), then retry mails whose earlier analysis failed.
+//Returns counts and token usage. `onMail(result)` is called for every mail.
+const runIntakeOnce = async ({ since, top = 100, dryRun = false, onMail = () => {} }) => {
+  const messages = (await graph.listMessages({ since, top })).reverse();
+  const summary = { seen: messages.length, counts: {}, input: 0, output: 0 };
+
+  const record = (r) => {
+    const key = r.status === "skipped" ? "skipped" : r.status === "failed" ? "failed" : r.decision;
+    summary.counts[key] = (summary.counts[key] || 0) + 1;
+    if (r.usage && r.status !== "skipped") {
+      summary.input += inputTokens(r.usage);
+      summary.output += r.usage.output_tokens || 0;
+    }
+    onMail(r);
+  };
+
+  const run = async (graphId, subject) => {
+    try {
+      return await processMessage(graphId, { dryRun });
+    } catch (err) {
+      // e.g. mail deleted or moved before we read it, Graph or DB outage
+      return { status: "failed", decision: "-", subject, error: err.message };
+    }
+  };
+
+  for (const m of messages) record(await run(m.id, m.subject));
+
+  if (!dryRun) {
+    const failed = await query(
+      `SELECT graph_message_id, subject FROM inbound_emails
+       WHERE decision = 'error' AND attempts < ? AND updated_at < NOW() - INTERVAL 10 MINUTE
+       ORDER BY id LIMIT 10`,
+      [MAX_ATTEMPTS],
+    );
+    for (const f of failed) record({ ...(await run(f.graph_message_id, f.subject)), retried: true });
+  }
+  return summary;
+};
+
+module.exports = { fetchBundle, processMessage, runIntakeOnce };

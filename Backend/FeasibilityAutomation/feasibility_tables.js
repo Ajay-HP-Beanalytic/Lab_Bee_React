@@ -246,8 +246,36 @@ const EMAIL_INTAKE_COLUMNS = {
     // Set when staff sent a confidential email to the AI (audit trail)
     ai_released_by: "INT DEFAULT NULL",
     ai_released_at: "DATETIME DEFAULT NULL",
+    // How many times analysis was tried (failed mails are retried up to 3 times)
+    attempts: "INT NOT NULL DEFAULT 1",
   },
 };
+
+//One row per scheduled intake run (shown on the dashboard as "last checked").
+function createIntakeRunsTable() {
+  const sqlQuery = `
+    CREATE TABLE IF NOT EXISTS intake_runs (
+      id                INT NOT NULL AUTO_INCREMENT,
+      started_at        DATETIME NOT NULL,
+      finished_at       DATETIME DEFAULT NULL,
+      checked_since     DATETIME DEFAULT NULL,
+      status            ENUM('running','success','failed') NOT NULL DEFAULT 'running',
+      mails_seen        INT DEFAULT 0,
+      mail_counts       JSON DEFAULT NULL,
+      request_counts    JSON DEFAULT NULL,
+      input_tokens      INT DEFAULT 0,
+      output_tokens     INT DEFAULT 0,
+      error             TEXT DEFAULT NULL,
+      PRIMARY KEY(id),
+      KEY idx_started_at (started_at)
+    )`;
+  return new Promise((resolve) => {
+    db.query(sqlQuery, (err) => {
+      if (err) console.log("Error creating intake_runs table", err);
+      resolve(!err);
+    });
+  });
+}
 
 async function migrateFeasibilityForEmailIntake() {
   await Promise.all([
@@ -255,6 +283,7 @@ async function migrateFeasibilityForEmailIntake() {
     createFeasibilityRequestTestsTable(),
     createInboundEmailsTable(),
     createFeasibilityRequestEutsTable(),
+    createIntakeRunsTable(),
   ]);
   const q = (sql, params) => db.promise().query(sql, params).then(([rows]) => rows);
   try {

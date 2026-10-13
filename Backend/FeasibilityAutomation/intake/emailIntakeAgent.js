@@ -258,9 +258,11 @@ const analyzeEmail = async (bundle, { useAi = true, staffApproved = false } = {}
   }
 
   const model = process.env.CLAUDE_INTAKE_MODEL || "claude-opus-5-5";
-  const response = await getClient().messages.create({
+  // Large RFQ sheets (dozens of tests) need a big output budget; the SDK requires
+  // streaming for requests that may run long, so stream and wait for the result.
+  const stream = getClient().messages.stream({
     model,
-    max_tokens: 8192,
+    max_tokens: 32000,
     system: [{ type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } }],
     output_config: { format: { type: "json_schema", schema: ANALYSIS_SCHEMA } },
     messages: [
@@ -276,6 +278,7 @@ const analyzeEmail = async (bundle, { useAi = true, staffApproved = false } = {}
       },
     ],
   });
+  const response = await stream.finalMessage();
 
   const textBlock = response.content.find((c) => c.type === "text");
   if (!textBlock || response.stop_reason !== "end_turn") {
