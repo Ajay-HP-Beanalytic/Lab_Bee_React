@@ -15,6 +15,14 @@ const parseEmail = async (mimeBuffer, depth = 0) => {
     to: mail.to?.text || "",
     date: mail.date ? mail.date.toISOString() : null,
     messageId: mail.messageId || null,
+    // "Sensitivity: Company-Confidential / Private / Personal" (set in Outlook)
+    sensitivity: String(mail.headers.get("sensitivity") || "normal"),
+    // Microsoft Purview label names from the msip_labels header
+    sensitivityLabels: [
+      ...String(mail.headers.get("msip_labels") || "").matchAll(
+        /MSIP_Label_[^_]+_Name=([^;]+)/gi,
+      ),
+    ].map((m) => m[1].trim()),
     // Fall back to the HTML version converted to text when there is no text part
     text: (mail.text || mail.html?.replace(/<[^>]+>/g, " ") || "").trim(),
     attachments: [],

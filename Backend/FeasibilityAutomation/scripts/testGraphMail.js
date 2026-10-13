@@ -100,6 +100,8 @@ const saveParsedEmail = (dir, mail, indent) => {
     `From    : ${mail.from}`,
     `To      : ${mail.to}`,
     `Date    : ${mail.date}`,
+    `Sensitivity: ${mail.sensitivity}`,
+    `Labels  : ${mail.sensitivityLabels.join(", ")}`,
     `Files   : ${mail.attachments.map((a) => a.name).join(", ") || "(none)"}`,
   ].join("\n");
   fs.writeFileSync(path.join(dir, "mail.txt"), `${header}\n\n${mail.text}\n`);
@@ -159,6 +161,9 @@ const processMessage = async (id, { print = true, save = false } = {}) => {
       `Received  : ${msg.receivedDateTime}`,
       `Thread ID : ${msg.conversationId}`,
       `Graph ID  : ${msg.id}`,
+      `Sensitivity: ${msg.sensitivity || "normal"}`,
+      `Categories: ${(msg.categories || []).join(", ")}`,
+      `Labels    : ${(msg.sensitivityLabels || []).join(", ")}`,
       `Files     : ${files.map((f) => f.name).join(", ") || "(none)"}`,
       `Forwarded : ${emails.map((e) => e.name).join(", ") || "(none)"}`,
     ].join("\n");

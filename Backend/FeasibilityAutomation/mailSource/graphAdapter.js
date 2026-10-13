@@ -130,12 +130,27 @@ const listMessages = async ({
   return data.value;
 };
 
-//Get one message including its full (plain-text) body.
-const getMessage = async (messageId) =>
-  graphGet(`/messages/${messageId}`, {
+//Read Microsoft Purview sensitivity label names from the msip_labels header,
+//e.g. "MSIP_Label_<guid>_Enabled=true; MSIP_Label_<guid>_Name=Confidential; ..."
+const parseSensitivityLabels = (msipHeader) =>
+  [...(msipHeader || "").matchAll(/MSIP_Label_[^_]+_Name=([^;]+)/gi)].map(
+    (m) => m[1].trim(),
+  );
+
+//Get one message including its full (plain-text) body and confidentiality markers
+//(sensitivity flag, Outlook categories, sensitivity labels).
+const getMessage = async (messageId) => {
+  const msg = await graphGet(`/messages/${messageId}`, {
     $select:
-      "id,internetMessageId,conversationId,subject,from,toRecipients,ccRecipients,receivedDateTime,hasAttachments,body",
+      "id,internetMessageId,conversationId,subject,from,toRecipients,ccRecipients,receivedDateTime,hasAttachments,body,sensitivity,categories,internetMessageHeaders",
   });
+  const msip = (msg.internetMessageHeaders || []).find(
+    (h) => h.name.toLowerCase() === "msip_labels",
+  );
+  msg.sensitivityLabels = parseSensitivityLabels(msip?.value);
+  delete msg.internetMessageHeaders;
+  return msg;
+};
 
 //List attachments with their content.
 // kind = "file"  -> PDF, Excel, Word, images, inline screenshots (content = file bytes)
@@ -180,6 +195,7 @@ const getAttachments = async (messageId) => {
 };
 
 module.exports = {
+  parseSensitivityLabels,
   getAccessToken,
   getTokenRoles,
   listMessages,
