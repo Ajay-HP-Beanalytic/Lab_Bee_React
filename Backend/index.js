@@ -273,6 +273,7 @@ const {
   createTS1ChamberSpecTable,
   createTS1TestPricingTable,
   createInboundEmailsTable,
+  migrateFeasibilityForEmailIntake,
 } = require("./FeasibilityAutomation/feasibility_tables");
 
 //Get db connection from the db.js file
@@ -346,6 +347,7 @@ db.getConnection(function (err, connection) {
   createTS1ChamberSpecTable();
   createTS1TestPricingTable();
   createInboundEmailsTable();
+  migrateFeasibilityForEmailIntake(); // also creates feasibility_request_euts
 
   connection.release(); // Release the connection back to the pool when done
 });

@@ -290,4 +290,4 @@ const analyzeEmail = async (bundle, { useAi = true } = {}) => {
   };
 };
 
-module.exports = { analyzeEmail, isInternal, isForward };
+module.exports = { analyzeEmail, isInternal, isForward, FREE_MAIL_DOMAINS };

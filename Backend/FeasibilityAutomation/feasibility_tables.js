@@ -48,8 +48,11 @@ function createFeasibilityRequestsTable() {
       updated_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       PRIMARY KEY(id)
     )`;
-  db.query(sqlQuery, (err) => {
-    if (err) console.log("Error creating feasibility_requests table", err);
+  return new Promise((resolve) => {
+    db.query(sqlQuery, (err) => {
+      if (err) console.log("Error creating feasibility_requests table", err);
+      resolve(!err);
+    });
   });
 }
 
@@ -76,8 +79,11 @@ function createFeasibilityRequestTestsTable() {
       created_at            TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       PRIMARY KEY(id)
     )`;
-  db.query(sqlQuery, (err) => {
-    if (err) console.log("Error creating feasibility_request_tests table", err);
+  return new Promise((resolve) => {
+    db.query(sqlQuery, (err) => {
+      if (err) console.log("Error creating feasibility_request_tests table", err);
+      resolve(!err);
+    });
   });
 }
 
@@ -177,7 +183,101 @@ function createInboundEmailsTable() {
   });
 }
 
+//EUTs of a request. One request can have several units/versions, and each
+//test row points to its EUT through feasibility_request_tests.eut_id.
+function createFeasibilityRequestEutsTable() {
+  const sqlQuery = `
+    CREATE TABLE IF NOT EXISTS feasibility_request_euts (
+      id                    INT NOT NULL AUTO_INCREMENT,
+      request_id            INT NOT NULL,
+      eut_name              VARCHAR(500),
+      model_or_part_no      VARCHAR(500),
+      quantity              INT DEFAULT NULL,
+      dimensions_as_written VARCHAR(500),
+      length_cm             DECIMAL(10,2),
+      width_cm              DECIMAL(10,2),
+      height_cm             DECIMAL(10,2),
+      weight_kg             DECIMAL(10,3),
+      weight_as_written     VARCHAR(255),
+      notes                 TEXT,
+      created_at            TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at            TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      PRIMARY KEY(id),
+      KEY idx_request_id (request_id)
+    )`;
+  return new Promise((resolve) => {
+    db.query(sqlQuery, (err) => {
+      if (err) console.log("Error creating feasibility_request_euts table", err);
+      resolve(!err);
+    });
+  });
+}
+
+//Columns added for email intake. MySQL 8.0 has no "ADD COLUMN IF NOT EXISTS",
+//so each column is added only when information_schema says it is missing.
+const EMAIL_INTAKE_COLUMNS = {
+  feasibility_requests: {
+    source: "ENUM('portal','email') NOT NULL DEFAULT 'portal'",
+    source_email_id: "INT DEFAULT NULL",
+    conversation_id: "VARCHAR(512) DEFAULT NULL",
+    email_subject: "VARCHAR(1000) DEFAULT NULL",
+    customer_reference: "VARCHAR(255) DEFAULT NULL",
+    quote_deadline: "VARCHAR(255) DEFAULT NULL",
+    requested_test_window: "VARCHAR(255) DEFAULT NULL",
+    missing_fields: "JSON DEFAULT NULL",
+    request_flags: "JSON DEFAULT NULL",
+    is_confidential: "TINYINT(1) NOT NULL DEFAULT 0",
+  },
+  feasibility_request_tests: {
+    eut_id: "INT DEFAULT NULL",
+    method_or_section: "VARCHAR(500) DEFAULT NULL",
+    procedure_or_category: "VARCHAR(500) DEFAULT NULL",
+    applies_to: "VARCHAR(500) DEFAULT NULL",
+    source: "VARCHAR(500) DEFAULT NULL",
+  },
+  inbound_emails: {
+    // created | duplicate | followup | linked | ignored (NULL = not handled yet)
+    request_action: "VARCHAR(30) DEFAULT NULL",
+  },
+};
+
+async function migrateFeasibilityForEmailIntake() {
+  await Promise.all([
+    createFeasibilityRequestsTable(),
+    createFeasibilityRequestTestsTable(),
+    createInboundEmailsTable(),
+    createFeasibilityRequestEutsTable(),
+  ]);
+  const q = (sql, params) => db.promise().query(sql, params).then(([rows]) => rows);
+  try {
+    for (const [table, columns] of Object.entries(EMAIL_INTAKE_COLUMNS)) {
+      const existing = await q(
+        "SELECT column_name AS c FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = ?",
+        [table],
+      );
+      const have = new Set(existing.map((r) => r.c.toLowerCase()));
+      for (const [column, definition] of Object.entries(columns)) {
+        if (!have.has(column)) {
+          await q(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+        }
+      }
+    }
+    const idx = await q(
+      "SELECT 1 FROM information_schema.statistics WHERE table_schema = DATABASE() AND table_name = 'feasibility_requests' AND index_name = 'idx_fr_conversation_id'",
+    );
+    if (!idx.length) {
+      await q("ALTER TABLE feasibility_requests ADD INDEX idx_fr_conversation_id (conversation_id(191))");
+    }
+    return true;
+  } catch (err) {
+    console.log("Error migrating feasibility tables for email intake", err);
+    return false;
+  }
+}
+
 module.exports = {
+  createFeasibilityRequestEutsTable,
+  migrateFeasibilityForEmailIntake,
   createInboundEmailsTable,
   createFeasibilityLinkTokensTable,
   createFeasibilityRequestsTable,
