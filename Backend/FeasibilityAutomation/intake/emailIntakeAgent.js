@@ -7,6 +7,7 @@
 //
 // Claude is reached through Microsoft Foundry when ANTHROPIC_FOUNDRY_API_KEY is
 // set, otherwise through the Claude API with ANTHROPIC_API_KEY.
+//   CLAUDE_PROVIDER      - "anthropic" or "foundry" (optional, see getClient)
 //   ANTHROPIC_FOUNDRY_API_KEY, ANTHROPIC_FOUNDRY_RESOURCE (or ANTHROPIC_FOUNDRY_BASE_URL)
 //   CLAUDE_INTAKE_MODEL  - model ID or Foundry deployment name (default claude-opus-5-5)
 //   INTERNAL_DOMAINS     - staff email domains (default beanalytic.com)
@@ -38,7 +39,15 @@ const isForward = (subject) => /^\s*(fw|fwd)\s*:/i.test(subject || "");
 let client = null;
 const getClient = () => {
   if (client) return client;
-  if (process.env.ANTHROPIC_FOUNDRY_API_KEY) {
+  // CLAUDE_PROVIDER=anthropic | foundry. Without it, Foundry is used when its key is set.
+  const provider =
+    process.env.CLAUDE_PROVIDER ||
+    (process.env.ANTHROPIC_FOUNDRY_API_KEY ? "foundry" : "anthropic");
+
+  if (provider === "foundry") {
+    if (!process.env.ANTHROPIC_FOUNDRY_API_KEY) {
+      throw new Error("CLAUDE_PROVIDER=foundry but ANTHROPIC_FOUNDRY_API_KEY is not set");
+    }
     client = new AnthropicFoundry({
       apiKey: process.env.ANTHROPIC_FOUNDRY_API_KEY,
       ...(process.env.ANTHROPIC_FOUNDRY_BASE_URL
