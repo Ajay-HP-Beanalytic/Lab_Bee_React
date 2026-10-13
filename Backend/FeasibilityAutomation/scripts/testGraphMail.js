@@ -1,7 +1,7 @@
 // Read-only test for the Microsoft Graph mailbox connection.
 //
 // Usage (from the Backend folder):
-//   node FeasibilityAutomation/scripts/testGraphMail.js                 -> last 7 days, 10 mails
+//   node FeasibilityAutomation/scripts/testGraphMail.js                 -> last 7 days, max 50 mails
 //   node FeasibilityAutomation/scripts/testGraphMail.js --days 30 --top 25
 //   node FeasibilityAutomation/scripts/testGraphMail.js --rfq           -> only mails that look like RFQ/PO
 //   node FeasibilityAutomation/scripts/testGraphMail.js --id <messageId> --save
@@ -34,7 +34,7 @@ const getArg = (name, fallback) => {
 const hasFlag = (name) => args.includes(`--${name}`);
 
 const days = parseInt(getArg("days", "7"));
-const top = parseInt(getArg("top", "10"));
+const top = parseInt(getArg("top", "50"));
 const messageId = getArg("id", null);
 const OUTPUT_DIR = path.join(__dirname, "output");
 
@@ -119,7 +119,9 @@ const saveParsedEmail = (dir, mail, indent) => {
 const processMessage = async (id, { print = true, save = false } = {}) => {
   const msg = await graph.getMessage(id);
   const from = `${msg.from?.emailAddress?.name} <${msg.from?.emailAddress?.address}>`;
-  const attachments = msg.hasAttachments ? await graph.getAttachments(id) : [];
+  // Always ask for attachments: Graph reports hasAttachments=false when a mail only
+  // has inline images (pasted screenshots), so that flag can't be trusted.
+  const attachments = await graph.getAttachments(id);
   const files = attachments.filter((a) => a.kind === "file");
   const emails = attachments.filter((a) => a.kind === "email");
   const others = attachments.filter((a) => !["file", "email"].includes(a.kind));
