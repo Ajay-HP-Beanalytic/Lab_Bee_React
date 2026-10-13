@@ -142,13 +142,20 @@ const parseSensitivityLabels = (msipHeader) =>
 const getMessage = async (messageId) => {
   const msg = await graphGet(`/messages/${messageId}`, {
     $select:
-      "id,internetMessageId,conversationId,subject,from,toRecipients,ccRecipients,receivedDateTime,hasAttachments,body,sensitivity,categories,internetMessageHeaders",
+      "id,internetMessageId,conversationId,subject,from,toRecipients,ccRecipients,receivedDateTime,hasAttachments,body,categories,internetMessageHeaders",
+    // The Outlook sensitivity flag is not a normal Graph field; it is the MAPI
+    // property PidTagSensitivity (0x0036): 0 normal, 1 personal, 2 private, 3 confidential
+    $expand: "singleValueExtendedProperties($filter=id eq 'Integer 0x0036')",
   });
   const msip = (msg.internetMessageHeaders || []).find(
     (h) => h.name.toLowerCase() === "msip_labels",
   );
   msg.sensitivityLabels = parseSensitivityLabels(msip?.value);
+  const sensitivityValue = (msg.singleValueExtendedProperties || [])[0]?.value;
+  msg.sensitivity =
+    ["normal", "personal", "private", "confidential"][Number(sensitivityValue)] || "normal";
   delete msg.internetMessageHeaders;
+  delete msg.singleValueExtendedProperties;
   return msg;
 };
 

@@ -135,7 +135,50 @@ function createTS1TestPricingTable() {
   });
 }
 
+//One row per email read from the RFQ mailbox by the intake agent.
+//internet_message_id is unique, so the same email is never processed twice.
+function createInboundEmailsTable() {
+  const sqlQuery = `
+    CREATE TABLE IF NOT EXISTS inbound_emails (
+      id                  INT NOT NULL AUTO_INCREMENT,
+      internet_message_id VARCHAR(512) NOT NULL,
+      graph_message_id    VARCHAR(512) NOT NULL,
+      conversation_id     VARCHAR(512),
+      mailbox             VARCHAR(255),
+      from_name           VARCHAR(500),
+      from_address        VARCHAR(500),
+      subject             VARCHAR(1000),
+      body_preview        TEXT,
+      received_at         DATETIME,
+      attachment_names    JSON DEFAULT NULL,
+      decision            ENUM('confidential','internal','analysed','error') NOT NULL,
+      decision_reasons    JSON DEFAULT NULL,
+      classification      VARCHAR(50) DEFAULT NULL,
+      extracted           JSON DEFAULT NULL,
+      attachment_notes    JSON DEFAULT NULL,
+      model               VARCHAR(100) DEFAULT NULL,
+      input_tokens        INT DEFAULT NULL,
+      output_tokens       INT DEFAULT NULL,
+      request_id          INT DEFAULT NULL,
+      error               TEXT DEFAULT NULL,
+      created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      PRIMARY KEY(id),
+      UNIQUE KEY uq_internet_message_id (internet_message_id),
+      KEY idx_conversation_id (conversation_id(191)),
+      KEY idx_received_at (received_at)
+    )`;
+  // Returns a promise so scripts can wait for the table; index.js ignores it.
+  return new Promise((resolve) => {
+    db.query(sqlQuery, (err) => {
+      if (err) console.log("Error creating inbound_emails table", err);
+      resolve(!err);
+    });
+  });
+}
+
 module.exports = {
+  createInboundEmailsTable,
   createFeasibilityLinkTokensTable,
   createFeasibilityRequestsTable,
   createFeasibilityRequestTestsTable,
