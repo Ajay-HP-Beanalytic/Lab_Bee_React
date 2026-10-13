@@ -58,25 +58,67 @@ const findExisting = async (q, row, virtual = []) => {
   const subject = normalizeSubject(row.subject);
   if (!subject) return null;
   const contact = contactOf(row);
+  // Subjects of requests and of every email already attached to a request, so a
+  // reply can match any mail of the conversation, not only the first one.
   const candidates = await q(
-    "SELECT id, email_subject, contact_email FROM feasibility_requests WHERE source = 'email' AND created_at >= NOW() - INTERVAL ? DAY ORDER BY id",
-    [MATCH_WINDOW_DAYS],
+    `SELECT id, email_subject, contact_email FROM feasibility_requests
+       WHERE source = 'email' AND created_at >= NOW() - INTERVAL ? DAY
+     UNION ALL
+     SELECT ie.request_id, ie.subject, fr.contact_email
+       FROM inbound_emails ie JOIN feasibility_requests fr ON fr.id = ie.request_id
+       WHERE ie.request_action <> 'ignored' AND fr.created_at >= NOW() - INTERVAL ? DAY`,
+    [MATCH_WINDOW_DAYS, MATCH_WINDOW_DAYS],
   );
-  for (const c of [...candidates, ...virtual]) {
+  const all = [...candidates, ...virtual];
+  for (const c of all) {
     if (normalizeSubject(c.email_subject) !== subject) continue;
     const sameContact = !!contact && (c.contact_email || "").toLowerCase() === contact;
     const generic = subject.length < GENERIC_SUBJECT_LENGTH;
     if (sameContact) return { id: c.id, by: "same subject and customer" };
     if (!generic && isInternal(row.from_address)) return { id: c.id, by: "same subject (staff mail)" };
   }
+
+  // Same reference number (bid / RFx / opportunity no.) from the same customer domain,
+  // e.g. "RFx 7000674212" and "Bid Invitation - 7000674212"
+  // Staff replies have no customer address, so for them the number alone decides.
+  const refs = referenceNumbers(row.subject);
+  const domain = domainOf(contact);
+  const staff = isInternal(row.from_address);
+  if (refs.length && (domain || staff)) {
+    for (const c of all) {
+      if (!staff && domainOf(c.contact_email) !== domain) continue;
+      const theirs = referenceNumbers(c.email_subject);
+      if (refs.some((r) => theirs.includes(r))) {
+        return { id: c.id, by: "same reference number and customer" };
+      }
+    }
+  }
   return null;
 };
+
+const domainOf = (email) => (email || "").split("@")[1]?.toLowerCase() || null;
+
+//Long numbers in a subject (7+ digits), e.g. bid/RFx/PO/opportunity numbers.
+const referenceNumbers = (subject) => (subject || "").match(/\d{7,}/g) || [];
+
+// Confidential mails never reach the AI, so whether they are an enquiry is
+// decided from the subject only.
+const CONFIDENTIAL_ENQUIRY_SUBJECT =
+  /\b(rfq|rfx|rfp|quot(e|ation)s?|enquiry|enquiries|inquiry|bid|tender|feasibility|testing|tests?|requirement)\b/i;
+const CONFIDENTIAL_NOTICE_SUBJECT =
+  /\b(pending po|po information|purchase order|payment|invoice|statement|newsletter|webinar|seminar|introduction|unsubscribe)\b/i;
+
+const confidentialLooksLikeEnquiry = (subject) =>
+  CONFIDENTIAL_ENQUIRY_SUBJECT.test(subject || "") && !CONFIDENTIAL_NOTICE_SUBJECT.test(subject || "");
 
 //Decide what to do with one inbound email.
 const planFor = (row, existing) => {
   const id = existing?.id;
   if (row.decision === "confidential") {
     if (existing) return { action: "linked", requestId: id };
+    if (!confidentialLooksLikeEnquiry(row.subject)) {
+      return { action: "ignored", why: "confidential, subject does not look like an enquiry" };
+    }
     if (!isInternal(row.from_address) || isForward(row.subject)) {
       return { action: "create", confidential: true };
     }
@@ -88,7 +130,12 @@ const planFor = (row, existing) => {
   switch (row.classification) {
     case "new_enquiry":
     case "tender_notice":
-      return existing ? { action: "duplicate", requestId: id } : { action: "create" };
+      if (!existing) return { action: "create" };
+      // A customer writing again on the same enquiry may add details: merge them.
+      // A staff forward of the same enquiry adds nothing new.
+      return isInternal(row.from_address)
+        ? { action: "duplicate", requestId: id }
+        : { action: "followup", requestId: id };
     case "enquiry_followup":
       return existing ? { action: "followup", requestId: id } : { action: "create" };
     case "po_or_approval":
@@ -311,14 +358,24 @@ const handleEmail = async (conn, row, { dryRun = false, virtual = [] } = {}) => 
 
   if (dryRun) {
     if (plan.action === "create") {
-      const id = `new#${virtual.length + 1}`;
+      const id = `new#${virtual.filter((v) => v.created).length + 1}`;
       virtual.push({
         id,
+        created: true,
         conversation_id: row.conversation_id,
         email_subject: row.subject,
         contact_email: contactOf(row),
       });
       return { plan, existing, requestId: id, changes: [] };
+    }
+    // Remember attached mails too, like the real run does through inbound_emails
+    if (plan.requestId) {
+      virtual.push({
+        id: plan.requestId,
+        conversation_id: row.conversation_id,
+        email_subject: row.subject,
+        contact_email: virtual.find((v) => v.id === plan.requestId)?.contact_email || null,
+      });
     }
     return { plan, existing, requestId: plan.requestId || null, changes: [] };
   }
