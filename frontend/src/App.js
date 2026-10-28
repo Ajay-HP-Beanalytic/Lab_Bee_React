@@ -46,6 +46,8 @@ import FeasibilityRequestSuccess from "./test_feasibility_automation/Feasibility
 import ChamberSpecsManager from "./test_feasibility_automation/ChamberSpecsManager";
 import TestPricingManager from "./test_feasibility_automation/TestPricingManager";
 import RfqInbox from "./test_feasibility_automation/RfqInbox";
+import LabScopeManager from "./test_feasibility_automation/LabScopeManager";
+import TestTypesManager from "./test_feasibility_automation/TestTypesManager";
 import JCPrintPage from "./JC/JCPrintPage";
 import EMIJCPrintPage from "./EMI/EMIJCPrintPage";
 
@@ -364,6 +366,28 @@ function App() {
                 allowedRoles={[]}
               >
                 <RfqInbox />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="nabl_scope"
+            element={
+              <ProtectedRoute
+                allowedDepartments={["Administration", "TS1 Testing", "TS2 Testing"]}
+                allowedRoles={["Quality Engineer"]}
+              >
+                <LabScopeManager />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="test_types"
+            element={
+              <ProtectedRoute
+                allowedDepartments={["Administration", "Accounts", "TS1 Testing", "TS2 Testing"]}
+                allowedRoles={["Quality Engineer"]}
+              >
+                <TestTypesManager />
               </ProtectedRoute>
             }
           />

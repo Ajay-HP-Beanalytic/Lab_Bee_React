@@ -115,8 +115,51 @@ function createTS1ChamberSpecTable() {
       updated_at            TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       PRIMARY KEY(id)
     )`;
-  db.query(sqlQuery, (err) => {
-    if (err) console.log("Error creating ts1_chamber_spec table", err);
+  return new Promise((resolve) => {
+    db.query(sqlQuery, (err) => {
+      if (err) console.log("Error creating ts1_chamber_spec table", err);
+      resolve(!err);
+    });
+  });
+}
+
+//Columns added to ts1_chamber_spec for the chamber master (feasibility step 3).
+//chamber_id is the code, the same ID as in chamber_calibration.
+//supported_tests / supported_standards are no longer used: chamber_test_types
+//links chambers to test types instead.
+const CHAMBER_COLUMNS = {
+  // Other spellings used in job cards and the test/chamber mapping (HUMID-01, CATH CHAMBER …)
+  aliases: "TEXT",
+  // Heavier loads need a slower ramp: "20@10; 100@5" = up to 20 kg at 10 °C/min, up to 100 kg at 5 °C/min
+  load_limits: "VARCHAR(255) DEFAULT NULL",
+  altitude_max_m: "DECIMAL(10,2) DEFAULT NULL",
+  vib_force_kgf: "DECIMAL(10,2) DEFAULT NULL",
+  vib_table_length_mm: "DECIMAL(10,2) DEFAULT NULL",
+  vib_table_width_mm: "DECIMAL(10,2) DEFAULT NULL",
+  // Peak-to-peak
+  vib_displacement_mm: "DECIMAL(10,2) DEFAULT NULL",
+  // How the linked test types were set: NULL = not yet, 'auto' = from the job card mapping, 'reviewed'
+  test_types_status: "VARCHAR(10) DEFAULT NULL",
+  is_active: "TINYINT(1) NOT NULL DEFAULT 1",
+  sort_order: "INT DEFAULT NULL",
+  updated_by: "INT DEFAULT NULL",
+};
+
+//Which test types a chamber can run (TCC-1 -> HT, LT, TC …).
+function createChamberTestTypesTable() {
+  const sqlQuery = `
+    CREATE TABLE IF NOT EXISTS chamber_test_types (
+      chamber_spec_id INT NOT NULL,
+      test_type_id    INT NOT NULL,
+      created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY(chamber_spec_id, test_type_id),
+      KEY idx_test_type_id (test_type_id)
+    )`;
+  return new Promise((resolve) => {
+    db.query(sqlQuery, (err) => {
+      if (err) console.log("Error creating chamber_test_types table", err);
+      resolve(!err);
+    });
   });
 }
 
@@ -277,6 +320,243 @@ function createIntakeRunsTable() {
   });
 }
 
+//NABL accreditation certificates (e.g. TC-5078) and their validity.
+function createNablCertificatesTable() {
+  const sqlQuery = `
+    CREATE TABLE IF NOT EXISTS nabl_certificates (
+      id                     INT NOT NULL AUTO_INCREMENT,
+      certificate_no         VARCHAR(50) NOT NULL,
+      accreditation_standard VARCHAR(100) DEFAULT NULL,
+      valid_from             DATE DEFAULT NULL,
+      valid_to               DATE DEFAULT NULL,
+      last_amended_on        DATE DEFAULT NULL,
+      notes                  TEXT,
+      updated_by             INT DEFAULT NULL,
+      created_at             TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at             TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      PRIMARY KEY(id),
+      UNIQUE KEY uq_certificate_no (certificate_no)
+    )`;
+  return new Promise((resolve) => {
+    db.query(sqlQuery, (err) => {
+      if (err) console.log("Error creating nabl_certificates table", err);
+      resolve(!err);
+    });
+  });
+}
+
+//One row per line of the NABL scope annexure (TS1 environmental and TS2 EMC).
+//A line is identified by certificate + location + S.No, which is how re-imports
+//of an amended scope find the existing row. Lines dropped from the certificate
+//are set inactive, not deleted.
+function createLabScopeTable() {
+  const sqlQuery = `
+    CREATE TABLE IF NOT EXISTS lab_scope (
+      id              INT NOT NULL AUTO_INCREMENT,
+      certificate_no  VARCHAR(50) NOT NULL,
+      location        ENUM('permanent','site') NOT NULL DEFAULT 'permanent',
+      s_no            INT NOT NULL,
+      department      ENUM('TS1','TS2') NOT NULL,
+      discipline      VARCHAR(255) DEFAULT NULL,
+      product_group   VARCHAR(500) DEFAULT NULL,
+      test_name       VARCHAR(500) NOT NULL,
+      standard        VARCHAR(500) NOT NULL,
+      is_withdrawn    TINYINT(1) NOT NULL DEFAULT 0,
+      is_active       TINYINT(1) NOT NULL DEFAULT 1,
+      -- How the linked test types (lab_scope_test_types) were set:
+      -- NULL = not yet, 'ai' = suggested by AI, not checked, 'reviewed' = confirmed by staff
+      test_types_status VARCHAR(10) DEFAULT NULL,
+      notes           TEXT,
+      source          VARCHAR(20) DEFAULT NULL,
+      updated_by      INT DEFAULT NULL,
+      created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      PRIMARY KEY(id),
+      UNIQUE KEY uq_scope_line (certificate_no, location, s_no),
+      KEY idx_department (department)
+    )`;
+  return new Promise((resolve) => {
+    db.query(sqlQuery, (err) => {
+      if (err) console.log("Error creating lab_scope table", err);
+      resolve(!err);
+    });
+  });
+}
+
+//Catalogue of test types (High temperature, Vibration, IPX5, CE102 …): the level
+//at which tests are priced and matched to chambers. Scope lines link to it.
+function createTestTypesTable() {
+  const sqlQuery = `
+    CREATE TABLE IF NOT EXISTS test_types (
+      id          INT NOT NULL AUTO_INCREMENT,
+      code        VARCHAR(30) NOT NULL,
+      name        VARCHAR(255) NOT NULL,
+      department  ENUM('TS1','TS2') NOT NULL,
+      category    VARCHAR(100) DEFAULT NULL,
+      description TEXT,
+      aliases     TEXT,
+      sort_order  INT DEFAULT NULL,
+      is_active   TINYINT(1) NOT NULL DEFAULT 1,
+      notes       TEXT,
+      updated_by  INT DEFAULT NULL,
+      created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      PRIMARY KEY(id),
+      UNIQUE KEY uq_test_type_code (code)
+    )`;
+  return new Promise((resolve) => {
+    db.query(sqlQuery, (err) => {
+      if (err) console.log("Error creating test_types table", err);
+      resolve(!err);
+    });
+  });
+}
+
+//Which test types a scope line covers. One line can cover several
+//("Drop test, toppling and bench handling" -> DROP, TOPPLE, BENCH).
+function createLabScopeTestTypesTable() {
+  const sqlQuery = `
+    CREATE TABLE IF NOT EXISTS lab_scope_test_types (
+      scope_id     INT NOT NULL,
+      test_type_id INT NOT NULL,
+      created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY(scope_id, test_type_id),
+      KEY idx_test_type_id (test_type_id)
+    )`;
+  return new Promise((resolve) => {
+    db.query(sqlQuery, (err) => {
+      if (err) console.log("Error creating lab_scope_test_types table", err);
+      resolve(!err);
+    });
+  });
+}
+
+//Which test types a job card test name (test_names_table for TS1,
+//emi_test_names_table for TS2) belongs to. Keyed by the name text because job
+//cards store the name, not an id. status: 'auto' (matched by name, to be
+//checked) or 'reviewed'; match_rule says how an auto link was found.
+function createTestNameLinksTable() {
+  const sqlQuery = `
+    CREATE TABLE IF NOT EXISTS test_name_links (
+      id           INT AUTO_INCREMENT PRIMARY KEY,
+      department   ENUM('TS1','TS2') NOT NULL,
+      test_name    VARCHAR(255) NOT NULL,
+      test_type_id INT NOT NULL,
+      status       VARCHAR(10) NOT NULL DEFAULT 'auto',
+      match_rule   VARCHAR(10) DEFAULT NULL,
+      updated_by   INT DEFAULT NULL,
+      created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY uq_name_type (department, test_name, test_type_id),
+      KEY idx_test_type_id (test_type_id)
+    )`;
+  return new Promise((resolve) => {
+    db.query(sqlQuery, (err) => {
+      if (err) console.log("Error creating test_name_links table", err);
+      resolve(!err);
+    });
+  });
+}
+
+//Price list for TS1 and TS2 (prices exclude GST; NABL and non-NABL cost the same).
+//charged_per: 'hour' (rate x hours), 'test' (rate x tests) or 'unit' (rate x
+//units named by unit_label, e.g. per chemical). min_qty is the minimum charged
+//(TS1: 1 hour or 1 test); for hourly TS2 tests the minimum can depend on the
+//purpose (pre-compliance / compliance). add_on_rate is charged per extra item,
+//e.g. CS114: 18,000 per power cable + 6,500 per add-on cable.
+function createTestPricesTable() {
+  const sqlQuery = `
+    CREATE TABLE IF NOT EXISTS test_prices (
+      id                      INT NOT NULL AUTO_INCREMENT,
+      code                    VARCHAR(40) NOT NULL,
+      department              ENUM('TS1','TS2') NOT NULL,
+      name                    VARCHAR(255) NOT NULL,
+      charged_per             VARCHAR(10) NOT NULL DEFAULT 'test',
+      unit_label              VARCHAR(50) DEFAULT NULL,
+      rate                    DECIMAL(12,2) NOT NULL,
+      min_qty                 DECIMAL(10,2) DEFAULT 1,
+      min_hours_precompliance DECIMAL(10,2) DEFAULT NULL,
+      min_hours_compliance    DECIMAL(10,2) DEFAULT NULL,
+      add_on_rate             DECIMAL(12,2) DEFAULT NULL,
+      add_on_label            VARCHAR(50) DEFAULT NULL,
+      sort_order              INT DEFAULT NULL,
+      is_active               TINYINT(1) NOT NULL DEFAULT 1,
+      notes                   TEXT,
+      updated_by              INT DEFAULT NULL,
+      created_at              TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at              TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      PRIMARY KEY(id),
+      UNIQUE KEY uq_price_code (code)
+    )`;
+  return new Promise((resolve) => {
+    db.query(sqlQuery, (err) => {
+      if (err) console.log("Error creating test_prices table", err);
+      resolve(!err);
+    });
+  });
+}
+
+//Which test types a price covers ("Vibration, shock and bump" -> VIB, SHOCK, BUMP).
+function createTestPriceTestTypesTable() {
+  const sqlQuery = `
+    CREATE TABLE IF NOT EXISTS test_price_test_types (
+      price_id     INT NOT NULL,
+      test_type_id INT NOT NULL,
+      created_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY(price_id, test_type_id),
+      KEY idx_test_type_id (test_type_id)
+    )`;
+  return new Promise((resolve) => {
+    db.query(sqlQuery, (err) => {
+      if (err) console.log("Error creating test_price_test_types table", err);
+      resolve(!err);
+    });
+  });
+}
+
+//Creates the master data tables (NABL scope, test types, chambers, prices), updates older
+//versions of them and loads the starting test type list into an empty table.
+async function migrateMasterData() {
+  await Promise.all([
+    createNablCertificatesTable(), createLabScopeTable(), createTestTypesTable(), createLabScopeTestTypesTable(),
+    createTestNameLinksTable(), createTS1ChamberSpecTable(), createChamberTestTypesTable(),
+    createTestPricesTable(), createTestPriceTestTypesTable(),
+  ]);
+  const q = (sql, params) => db.promise().query(sql, params).then(([rows]) => rows);
+  try {
+    const cols = await q(
+      "SELECT column_name AS c FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'lab_scope'",
+    );
+    const have = new Set(cols.map((r) => r.c.toLowerCase()));
+    if (!have.has("test_types_status")) {
+      await q("ALTER TABLE lab_scope ADD COLUMN test_types_status VARCHAR(10) DEFAULT NULL AFTER is_active");
+    }
+    // First version had a single test type per line (never used)
+    if (have.has("test_type_id")) await q("ALTER TABLE lab_scope DROP COLUMN test_type_id");
+
+    const chamberCols = await q(
+      "SELECT column_name AS c FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'ts1_chamber_spec'",
+    );
+    const haveChamber = new Set(chamberCols.map((r) => r.c.toLowerCase()));
+    for (const [column, definition] of Object.entries(CHAMBER_COLUMNS)) {
+      if (!haveChamber.has(column)) await q(`ALTER TABLE ts1_chamber_spec ADD COLUMN ${column} ${definition}`);
+    }
+
+    const [{ n }] = await q("SELECT COUNT(*) AS n FROM test_types");
+    if (!n) {
+      const { TEST_TYPES } = require("./masterData/testTypesSeed");
+      await q(
+        "INSERT INTO test_types (code, name, department, category, description, aliases, sort_order) VALUES ?",
+        [TEST_TYPES.map((tt, i) => [tt.code, tt.name, tt.department, tt.category, tt.description, tt.aliases, (i + 1) * 10])],
+      );
+    }
+    return true;
+  } catch (err) {
+    console.log("Error migrating master data tables", err);
+    return false;
+  }
+}
+
 async function migrateFeasibilityForEmailIntake() {
   await Promise.all([
     createFeasibilityRequestsTable(),
@@ -317,6 +597,9 @@ async function migrateFeasibilityForEmailIntake() {
 }
 
 module.exports = {
+  createNablCertificatesTable,
+  createLabScopeTable,
+  migrateMasterData,
   createFeasibilityRequestEutsTable,
   migrateFeasibilityForEmailIntake,
   createInboundEmailsTable,

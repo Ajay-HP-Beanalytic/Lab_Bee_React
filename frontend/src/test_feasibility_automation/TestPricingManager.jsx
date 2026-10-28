@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
-import * as XLSX from "xlsx";
 import {
   Alert,
+  Autocomplete,
   Box,
   Button,
   Chip,
@@ -16,10 +16,8 @@ import {
   FormControlLabel,
   Grid,
   IconButton,
-  InputAdornment,
   InputLabel,
   MenuItem,
-  Paper,
   Select,
   Snackbar,
   Switch,
@@ -33,60 +31,83 @@ import { DataGrid } from "@mui/x-data-grid";
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import CancelIcon from "@mui/icons-material/Cancel";
 import DownloadIcon from "@mui/icons-material/Download";
 import UploadIcon from "@mui/icons-material/Upload";
-import AccessTimeIcon from "@mui/icons-material/AccessTime";
-import ScienceIcon from "@mui/icons-material/Science";
 import { serverBaseAddress } from "../Pages/APIPage";
 import SearchBar from "../common/SearchBar";
-
-const CATEGORIES = [
-  "Thermal",
-  "Humidity",
-  "Altitude",
-  "Vibration",
-  "Salt",
-  "Rain",
-  "Dust",
-];
+import MasterImportDialog from "./MasterImportDialog";
 
 const EMPTY_FORM = {
-  test_name: "",
-  test_category: "",
-  pricing_type: "per_hour",
-  charge_amount: "",
-  min_hours: "",
-  is_nabl_accredited: false,
+  code: "",
+  department: "TS1",
+  name: "",
+  codes: [],
+  charged_per: "hour",
+  unit_label: "",
+  rate: "",
+  min_qty: 1,
+  min_hours_precompliance: "",
+  min_hours_compliance: "",
+  add_on_rate: "",
+  add_on_label: "",
+  sort_order: "",
   is_active: true,
   notes: "",
 };
 
-const EXCEL_COLUMNS = [
-  { header: "Test Name*", key: "test_name" },
-  { header: "Category", key: "test_category" },
-  { header: "Pricing Type (per_hour/per_test)*", key: "pricing_type" },
-  { header: "Charge Amount (₹)*", key: "charge_amount" },
-  { header: "Min Hours (per_hour only)", key: "min_hours" },
-  { header: "NABL Accredited (1/0)", key: "is_nabl_accredited" },
-  { header: "Active (1/0)", key: "is_active" },
-  { header: "Notes", key: "notes" },
+const FIELD_LABELS = {
+  department: "Department",
+  name: "Name",
+  test_type_codes: "Test types",
+  charged_per: "Charged per",
+  unit_label: "Unit name",
+  rate: "Rate",
+  min_qty: "Minimum",
+  min_hours_precompliance: "Min hours pre-compliance",
+  min_hours_compliance: "Min hours compliance",
+  add_on_rate: "Add-on rate",
+  add_on_label: "Add-on name",
+  sort_order: "Sort order",
+  is_active: "Active",
+  notes: "Notes",
+};
+
+const IMPORT_COLUMNS = [
+  { field: "code", headerName: "Code", width: 130 },
+  { field: "name", headerName: "Name", flex: 1, minWidth: 220 },
+  { field: "department", headerName: "Dept", width: 70 },
+  { field: "rate", headerName: "Rate", width: 110 },
+  { field: "charged_per", headerName: "Per", width: 80 },
 ];
 
+const rupees = (n) =>
+  n == null || n === ""
+    ? ""
+    : `₹${Number(n).toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
+
+const unitName = (row) =>
+  row.charged_per === "unit" ? row.unit_label || "unit" : row.charged_per;
+
+//Price list for TS1 and TS2, excluding GST. Each price is linked to the test
+//types it covers; the quotation uses it to price a feasible test.
 export default function TestPricingManager() {
   const [rows, setRows] = useState([]);
+  const [warnings, setWarnings] = useState([]);
+  const [testTypes, setTestTypes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchText, setSearchText] = useState("");
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editId, setEditId] = useState(null);
-  const [form, setForm] = useState({ ...EMPTY_FORM });
+  const [department, setDepartment] = useState("all");
+  const [form, setForm] = useState(null); // {...price, codes, id?} while the dialog is open
   const [saving, setSaving] = useState(false);
-  const [deleteId, setDeleteId] = useState(null);
-  const [importDialogOpen, setImportDialogOpen] = useState(false);
-  const [importPreview, setImportPreview] = useState([]);
-  const [importing, setImporting] = useState(false);
-  const [importErrors, setImportErrors] = useState([]);
+  const [trial, setTrial] = useState({
+    quantity: "",
+    hours: "",
+    addOns: "",
+    purpose: "",
+  });
+  const [trialResult, setTrialResult] = useState(null);
+  const [deleteRow, setDeleteRow] = useState(null);
+  const [importFile, setImportFile] = useState(null);
   const [snackbar, setSnackbar] = useState({
     open: false,
     msg: "",
@@ -94,88 +115,96 @@ export default function TestPricingManager() {
   });
   const fileInputRef = useRef(null);
 
-  const fetchPricing = async () => {
+  const showSnackbar = (msg, severity = "success") =>
+    setSnackbar({ open: true, msg, severity });
+
+  const fetchPrices = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${serverBaseAddress}/api/ts1_test_pricing`);
-      setRows(res.data);
+      const [prices, types] = await Promise.all([
+        axios.get(`${serverBaseAddress}/api/test_prices`),
+        axios.get(`${serverBaseAddress}/api/test_types`),
+      ]);
+      setRows(prices.data.prices);
+      setWarnings(prices.data.warnings);
+      setTestTypes(types.data);
     } catch {
-      showSnackbar("Failed to load test pricing", "error");
+      showSnackbar("Failed to load prices", "error");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchPricing();
+    fetchPrices();
   }, []);
 
-  const showSnackbar = (msg, severity = "success") =>
-    setSnackbar({ open: true, msg, severity });
+  const typeByCode = useMemo(
+    () => new Map(testTypes.map((t) => [t.code, t])),
+    [testTypes],
+  );
 
-  const filteredRows = rows.filter((row) => {
-    if (!searchText.trim()) return true;
-    const q = searchText.toLowerCase();
-    return (
-      (row.test_name || "").toLowerCase().includes(q) ||
-      (row.test_category || "").toLowerCase().includes(q) ||
-      (row.pricing_type || "").toLowerCase().includes(q)
-    );
-  });
+  const unpriced = useMemo(
+    () =>
+      testTypes.filter(
+        (t) =>
+          t.is_active &&
+          !t.price_count &&
+          (department === "all" || t.department === department),
+      ),
+    [testTypes, department],
+  );
 
-  const handleOpenAdd = () => {
-    setEditId(null);
-    setForm({ ...EMPTY_FORM });
-    setDialogOpen(true);
-  };
-
-  const handleOpenEdit = (row) => {
-    setEditId(row.id);
-    setForm({
-      ...EMPTY_FORM,
-      ...row,
-      is_nabl_accredited: !!row.is_nabl_accredited,
-      is_active: !!row.is_active,
+  const filteredRows = useMemo(() => {
+    const q = searchText.trim().toLowerCase();
+    return rows.filter((r) => {
+      if (department !== "all" && r.department !== department) return false;
+      if (!q) return true;
+      return [r.code, r.name, r.test_type_codes, r.notes].some((v) =>
+        (v || "").toLowerCase().includes(q),
+      );
     });
-    setDialogOpen(true);
+  }, [rows, searchText, department]);
+
+  const setField = (name, value) => setForm((f) => ({ ...f, [name]: value }));
+
+  const openForm = (row) => {
+    setTrial({ quantity: "", hours: "", addOns: "", purpose: "" });
+    setTrialResult(null);
+    setForm(
+      row
+        ? {
+            ...EMPTY_FORM,
+            ...Object.fromEntries(
+              Object.entries(row).map(([k, v]) => [k, v ?? ""]),
+            ),
+            codes: (row.test_type_codes || "").split(", ").filter(Boolean),
+            is_active: !!row.is_active,
+          }
+        : {
+            ...EMPTY_FORM,
+            department: department === "TS2" ? "TS2" : "TS1",
+          },
+    );
   };
-
-  const handleChange = (name, value) =>
-    setForm((prev) => ({ ...prev, [name]: value }));
-
-  const buildPayload = (f = form) => ({
-    ...f,
-    is_nabl_accredited: f.is_nabl_accredited ? 1 : 0,
-    is_active: f.is_active ? 1 : 0,
-    min_hours: f.pricing_type === "per_hour" ? f.min_hours || null : null,
-  });
 
   const handleSave = async () => {
-    if (!form.test_name.trim()) {
-      showSnackbar("Test name is required", "error");
-      return;
-    }
-    if (!form.charge_amount || isNaN(Number(form.charge_amount))) {
-      showSnackbar("A valid charge amount is required", "error");
+    if (!form.code.trim() || !form.name.trim() || form.rate === "") {
+      showSnackbar("Code, name and rate are required", "error");
       return;
     }
     setSaving(true);
     try {
-      if (editId) {
+      const payload = { ...form, test_type_codes: form.codes };
+      if (form.id)
         await axios.put(
-          `${serverBaseAddress}/api/ts1_test_pricing/${editId}`,
-          buildPayload(),
+          `${serverBaseAddress}/api/test_prices/${form.id}`,
+          payload,
         );
-        showSnackbar("Test pricing updated successfully");
-      } else {
-        await axios.post(
-          `${serverBaseAddress}/api/ts1_test_pricing`,
-          buildPayload(),
-        );
-        showSnackbar("Test pricing added successfully");
-      }
-      setDialogOpen(false);
-      fetchPricing();
+      else await axios.post(`${serverBaseAddress}/api/test_prices`, payload);
+      showSnackbar(form.id ? "Price updated" : "Price added");
+      setForm(null);
+      fetchPrices();
     } catch (err) {
       showSnackbar(err.response?.data?.error || "Save failed", "error");
     } finally {
@@ -183,239 +212,179 @@ export default function TestPricingManager() {
     }
   };
 
+  const handleTrial = async () => {
+    try {
+      const res = await axios.post(
+        `${serverBaseAddress}/api/test_prices/calculate`,
+        {
+          id: form.id,
+          quantity: trial.quantity === "" ? undefined : trial.quantity,
+          hours: trial.hours === "" ? undefined : trial.hours,
+          addOns: trial.addOns || 0,
+          purpose: trial.purpose || undefined,
+        },
+      );
+      setTrialResult(res.data);
+    } catch (err) {
+      showSnackbar(err.response?.data?.error || "Failed", "error");
+    }
+  };
+
   const handleDelete = async () => {
     try {
       await axios.delete(
-        `${serverBaseAddress}/api/ts1_test_pricing/${deleteId}`,
+        `${serverBaseAddress}/api/test_prices/${deleteRow.id}`,
       );
-      showSnackbar("Entry deleted");
-      setDeleteId(null);
-      fetchPricing();
+      showSnackbar("Price deleted");
+      setDeleteRow(null);
+      fetchPrices();
     } catch {
       showSnackbar("Delete failed", "error");
     }
   };
 
-  // ─── Export ───────────────────────────────────────────────────────────────
-  const handleExport = () => {
-    const data = filteredRows.map((row) => {
-      const out = {};
-      EXCEL_COLUMNS.forEach(({ header, key }) => {
-        out[header] = row[key] ?? "";
-      });
-      return out;
-    });
-    const ws = XLSX.utils.json_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Test Pricing");
-    XLSX.writeFile(wb, "TS1_Test_Pricing.xlsx");
-    showSnackbar(
-      `Exported ${data.length} entr${data.length === 1 ? "y" : "ies"} to Excel`,
-    );
-  };
-
-  // ─── Import ───────────────────────────────────────────────────────────────
-  const handleImportTemplate = () => {
-    const ws = XLSX.utils.json_to_sheet([
-      EXCEL_COLUMNS.reduce((acc, { header }) => ({ ...acc, [header]: "" }), {}),
-    ]);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Test Pricing");
-    XLSX.writeFile(wb, "TS1_Test_Pricing_Template.xlsx");
-    showSnackbar("Template downloaded");
-  };
-
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    e.target.value = "";
-
-    const reader = new FileReader();
-    reader.onload = (evt) => {
-      try {
-        const wb = XLSX.read(evt.target.result, { type: "binary" });
-        const ws = wb.Sheets[wb.SheetNames[0]];
-        const raw = XLSX.utils.sheet_to_json(ws, { defval: "" });
-
-        const errors = [];
-        const parsed = raw.map((row, idx) => {
-          const mapped = {};
-          EXCEL_COLUMNS.forEach(({ header, key }) => {
-            mapped[key] =
-              row[header] !== undefined ? String(row[header]).trim() : "";
-          });
-          mapped.is_nabl_accredited = ["1", "true", "yes"].includes(
-            mapped.is_nabl_accredited.toLowerCase(),
-          );
-          mapped.is_active =
-            mapped.is_active === "" ||
-            ["1", "true", "yes"].includes(mapped.is_active.toLowerCase());
-
-          if (!mapped.test_name)
-            errors.push(`Row ${idx + 2}: Test Name is required`);
-          if (!mapped.charge_amount || isNaN(Number(mapped.charge_amount)))
-            errors.push(`Row ${idx + 2}: Valid charge amount is required`);
-          if (!["per_hour", "per_test"].includes(mapped.pricing_type))
-            errors.push(
-              `Row ${idx + 2}: Pricing type must be 'per_hour' or 'per_test'`,
-            );
-          return mapped;
-        });
-
-        setImportErrors(errors);
-        setImportPreview(parsed);
-        setImportDialogOpen(true);
-      } catch {
-        showSnackbar("Failed to read Excel file", "error");
-      }
-    };
-    reader.readAsBinaryString(file);
-  };
-
-  const handleConfirmImport = async () => {
-    if (importErrors.length > 0) return;
-    setImporting(true);
-    let success = 0,
-      failed = 0;
-    for (const row of importPreview) {
-      try {
-        await axios.post(
-          `${serverBaseAddress}/api/ts1_test_pricing`,
-          buildPayload(row),
-        );
-        success++;
-      } catch {
-        failed++;
-      }
+  const handleExport = async () => {
+    try {
+      const res = await axios.get(
+        `${serverBaseAddress}/api/test_prices/export`,
+        { responseType: "blob" },
+      );
+      const url = URL.createObjectURL(res.data);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "Test_Prices.xlsx";
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      showSnackbar("Export failed", "error");
     }
-    setImporting(false);
-    setImportDialogOpen(false);
-    setImportPreview([]);
-    fetchPricing();
-    showSnackbar(
-      `Import complete: ${success} added${failed ? `, ${failed} failed` : ""}`,
-      failed ? "warning" : "success",
-    );
   };
 
-  // ─── Columns ──────────────────────────────────────────────────────────────
   const columns = [
     {
-      field: "test_name",
-      headerName: "Test Name",
-      width: 220,
-      headerClassName: "header",
-    },
-    {
-      field: "test_category",
-      headerName: "Category",
-      width: 120,
-      headerClassName: "header",
-      valueGetter: (p) => p.row.test_category || "–",
-    },
-    {
-      field: "pricing_type",
-      headerName: "Pricing Type",
+      field: "code",
+      headerName: "Code",
       width: 130,
       headerClassName: "header",
-      renderCell: (params) =>
-        params.value === "per_hour" ? (
-          <Chip
-            icon={<AccessTimeIcon />}
-            label="Per Hour"
-            size="small"
-            color="primary"
-            variant="outlined"
-          />
-        ) : (
-          <Chip
-            icon={<ScienceIcon />}
-            label="Per Test"
-            size="small"
-            color="secondary"
-            variant="outlined"
-          />
-        ),
+      renderCell: ({ row }) => (
+        <Box>
+          <strong>{row.code}</strong>
+          {!row.is_active && (
+            <Chip size="small" label="Inactive" sx={{ ml: 0.5 }} />
+          )}
+        </Box>
+      ),
     },
     {
-      field: "charge_amount",
-      headerName: "Charge (₹)",
-      width: 130,
+      field: "name",
+      headerName: "Name on quotation",
+      flex: 1.5,
+      minWidth: 220,
       headerClassName: "header",
-      valueGetter: (p) =>
-        `₹ ${Number(p.row.charge_amount).toLocaleString("en-IN")}`,
+      renderCell: ({ row }) => (
+        <Box>
+          {row.name}
+          {row.notes && (
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              display="block"
+            >
+              {row.notes}
+            </Typography>
+          )}
+        </Box>
+      ),
     },
     {
-      field: "min_hours",
-      headerName: "Min Hours",
-      width: 110,
+      field: "department",
+      headerName: "Dept",
+      width: 70,
       headerClassName: "header",
-      valueGetter: (p) =>
-        p.row.pricing_type === "per_hour" && p.row.min_hours
-          ? `${p.row.min_hours} hr`
-          : "–",
+      renderCell: ({ value }) => (
+        <Chip
+          size="small"
+          label={value}
+          color={value === "TS1" ? "primary" : "secondary"}
+          variant="outlined"
+        />
+      ),
     },
     {
-      field: "is_nabl_accredited",
-      headerName: "NABL",
-      width: 80,
-      headerClassName: "header",
-      align: "center",
-      headerAlign: "center",
-      renderCell: (params) =>
-        params.value ? (
-          <CheckCircleIcon fontSize="small" color="success" />
-        ) : (
-          <CancelIcon fontSize="small" color="disabled" />
-        ),
-    },
-    {
-      field: "is_active",
-      headerName: "Active",
-      width: 90,
-      headerClassName: "header",
-      align: "center",
-      headerAlign: "center",
-      renderCell: (params) =>
-        params.value ? (
-          <Chip
-            label="Active"
-            size="small"
-            color="success"
-            variant="outlined"
-          />
-        ) : (
-          <Chip
-            label="Inactive"
-            size="small"
-            color="default"
-            variant="outlined"
-          />
-        ),
-    },
-    {
-      field: "notes",
-      headerName: "Notes",
+      field: "test_type_codes",
+      headerName: "Test types",
       flex: 1,
-      minWidth: 150,
+      minWidth: 170,
       headerClassName: "header",
-      valueGetter: (p) => p.row.notes || "–",
+      renderCell: ({ row }) => {
+        const codes = (row.test_type_codes || "").split(", ").filter(Boolean);
+        if (!codes.length)
+          return (
+            <Typography variant="caption" color="error">
+              None - not used for quotations
+            </Typography>
+          );
+        return (
+          <Box display="flex" gap={0.5} flexWrap="wrap" py={0.5}>
+            {codes.map((c) => (
+              <Tooltip key={c} title={typeByCode.get(c)?.name || c}>
+                <Chip size="small" label={c} />
+              </Tooltip>
+            ))}
+          </Box>
+        );
+      },
+    },
+    {
+      field: "rate",
+      headerName: "Rate (excl. GST)",
+      width: 170,
+      headerClassName: "header",
+      renderCell: ({ row }) => (
+        <Box>
+          <strong>{rupees(row.rate)}</strong> per {unitName(row)}
+          {row.add_on_rate != null && (
+            <Typography variant="caption" display="block">
+              + {rupees(row.add_on_rate)} per {row.add_on_label}
+            </Typography>
+          )}
+        </Box>
+      ),
+    },
+    {
+      field: "min_qty",
+      headerName: "Minimum",
+      width: 150,
+      headerClassName: "header",
+      renderCell: ({ row }) => (
+        <Box>
+          {row.min_qty ?? 1} {unitName(row)}
+          {row.charged_per === "hour" &&
+            (row.min_hours_precompliance != null ||
+              row.min_hours_compliance != null) && (
+              <Typography variant="caption" display="block">
+                Pre-compliance {row.min_hours_precompliance ?? "-"} h,
+                compliance {row.min_hours_compliance ?? "-"} h
+              </Typography>
+            )}
+        </Box>
+      ),
     },
     {
       field: "actions",
       headerName: "Actions",
-      width: 100,
+      width: 95,
       headerClassName: "header",
       sortable: false,
-      renderCell: (params) => (
+      renderCell: ({ row }) => (
         <Box>
           <Tooltip title="Edit">
-            <IconButton size="small" onClick={() => handleOpenEdit(params.row)}>
+            <IconButton size="small" onClick={() => openForm(row)}>
               <EditIcon fontSize="small" color="primary" />
             </IconButton>
           </Tooltip>
           <Tooltip title="Delete">
-            <IconButton size="small" onClick={() => setDeleteId(params.row.id)}>
+            <IconButton size="small" onClick={() => setDeleteRow(row)}>
               <DeleteIcon fontSize="small" color="error" />
             </IconButton>
           </Tooltip>
@@ -424,104 +393,129 @@ export default function TestPricingManager() {
     },
   ];
 
+  const editOptions = testTypes.filter(
+    (t) =>
+      t.department === form?.department &&
+      (t.is_active || form?.codes.includes(t.code)),
+  );
+
   return (
     <Box>
-      {/* Header */}
-      <Box
-        display="flex"
-        justifyContent="space-between"
-        alignItems="flex-start"
-        mb={2}
-        flexWrap="wrap"
-        gap={1}
-      >
-        <Box>
-          <Typography variant="h5" fontWeight={700} color="#003366">
-            TS1 Test Pricing
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Configure per-hour and per-test charges for all TS1 tests. Used by
-            the AI engine to generate quotations.
-          </Typography>
-        </Box>
+      <Box mb={2}>
+        <Typography variant="h5" fontWeight={700} color="#003366">
+          Test Pricing
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          Prices for TS1 and TS2 tests, excluding GST (GST is added on the
+          quotation). NABL and non-NABL tests cost the same. Each price is
+          linked to the test types it covers, which is how a quotation finds the
+          price of a feasible test.
+        </Typography>
       </Box>
 
-      {/* Search */}
       <Box
         mb={2}
         display="flex"
         alignItems="center"
         justifyContent="space-between"
         gap={1}
+        flexWrap="wrap"
       >
-        <Box sx={{ width: "50%" }}>
-          <SearchBar
-            placeholder="Search by test name, category, or pricing type…"
-            searchInputText={searchText}
-            onChangeOfSearchInput={(e) => setSearchText(e.target.value)}
-            onClearSearchInput={() => setSearchText("")}
-          />
+        <Box
+          display="flex"
+          alignItems="center"
+          gap={2}
+          flexWrap="wrap"
+          sx={{ flex: 1 }}
+        >
+          <ToggleButtonGroup
+            exclusive
+            size="small"
+            value={department}
+            onChange={(_, v) => v && setDepartment(v)}
+          >
+            <ToggleButton value="all">All</ToggleButton>
+            <ToggleButton value="TS1">TS1</ToggleButton>
+            <ToggleButton value="TS2">TS2</ToggleButton>
+          </ToggleButtonGroup>
+          <Box sx={{ minWidth: 260, flex: 1, maxWidth: 420 }}>
+            <SearchBar
+              placeholder="Search code, name or test type…"
+              searchInputText={searchText}
+              onChangeOfSearchInput={(e) => setSearchText(e.target.value)}
+              onClearSearchInput={() => setSearchText("")}
+            />
+          </Box>
         </Box>
-        {searchText && (
-          <Typography variant="caption" color="text.secondary">
-            {filteredRows.length} of {rows.length} result(s)
-          </Typography>
-        )}
         <Box display="flex" gap={1} flexWrap="wrap" alignItems="center">
-          <Tooltip title="Download import template">
+          <Tooltip title="Import an Excel file exported from here">
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<UploadIcon />}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              Import
+            </Button>
+          </Tooltip>
+          <Tooltip title="Download as Excel (edit it and import it back)">
             <Button
               variant="outlined"
               size="small"
               startIcon={<DownloadIcon />}
-              onClick={handleImportTemplate}
+              onClick={handleExport}
             >
-              Template
+              Export
             </Button>
           </Tooltip>
           <Button
-            variant="outlined"
-            size="small"
-            startIcon={<UploadIcon />}
-            onClick={() => fileInputRef.current?.click()}
-          >
-            Import
-          </Button>
-          <Button
-            variant="outlined"
-            size="small"
-            startIcon={<DownloadIcon />}
-            onClick={handleExport}
-          >
-            Export
-          </Button>
-          <Button
             variant="contained"
             startIcon={<AddIcon />}
-            onClick={handleOpenAdd}
+            onClick={() => openForm(null)}
             sx={{
-              "bgcolor": "orange",
-              "color": "white",
+              bgcolor: "orange",
+              color: "white",
               "&:hover": { bgcolor: "#e65c00" },
             }}
           >
-            Add Pricing
+            Add Price
           </Button>
         </Box>
       </Box>
 
+      {!loading && unpriced.length > 0 && (
+        <Alert severity="warning" sx={{ mb: 1 }}>
+          {unpriced.length} active test type(s) have no price, so requests for
+          them can't be quoted automatically:{" "}
+          {unpriced.map((t) => t.code).join(", ")}
+        </Alert>
+      )}
+      {warnings.length > 0 && (
+        <Alert severity="warning" sx={{ mb: 1 }}>
+          {warnings.map((w) => (
+            <Typography key={w} variant="caption" display="block">
+              {w}
+            </Typography>
+          ))}
+        </Alert>
+      )}
+
       <input
         ref={fileInputRef}
         type="file"
-        accept=".xlsx,.xls"
+        accept=".xlsx"
         style={{ display: "none" }}
-        onChange={handleFileChange}
+        onChange={(e) => {
+          const file = e.target.files[0];
+          e.target.value = "";
+          if (file) setImportFile(file);
+        }}
       />
 
-      {/* Table */}
       <Box
         sx={{
-          "height": 520,
-          "width": "100%",
+          height: 600,
+          width: "100%",
           "& .header": {
             backgroundColor: "#476f95",
             color: "whitesmoke",
@@ -543,285 +537,354 @@ export default function TestPricingManager() {
           <DataGrid
             rows={filteredRows}
             columns={columns}
+            getRowHeight={() => "auto"}
+            onRowDoubleClick={({ row }) => openForm(row)}
             pageSizeOptions={[25, 50, 100]}
-            initialState={{ pagination: { paginationModel: { pageSize: 25 } } }}
+            initialState={{
+              pagination: { paginationModel: { pageSize: 100 } },
+            }}
             disableRowSelectionOnClick
-            sx={{ "& .MuiDataGrid-cell": { fontSize: "13px" } }}
+            sx={{
+              "& .MuiDataGrid-cell": {
+                fontSize: "13px",
+                py: 0.75,
+                whiteSpace: "normal",
+                lineHeight: 1.4,
+              },
+            }}
+            localeText={{ noRowsLabel: "No prices yet - add or import them" }}
           />
         )}
       </Box>
 
-      {/* ─── Add / Edit Dialog ─────────────────────────────────────────────── */}
+      {/* ─── Add / Edit ──────────────────────────────────────────────────── */}
       <Dialog
-        open={dialogOpen}
-        onClose={() => setDialogOpen(false)}
-        maxWidth="sm"
+        open={!!form}
+        onClose={() => setForm(null)}
+        maxWidth="md"
         fullWidth
       >
         <DialogTitle fontWeight={700}>
-          {editId ? "Edit Test Pricing" : "Add Test Pricing"}
+          {form?.id ? `Edit ${form.code}` : "Add Price"}
         </DialogTitle>
-
-        <DialogContent dividers>
-          <Grid container spacing={2}>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                required
-                label="Test Name"
-                size="small"
-                value={form.test_name}
-                onChange={(e) => handleChange("test_name", e.target.value)}
-              />
-            </Grid>
-
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Category</InputLabel>
-                <Select
-                  label="Category"
-                  value={form.test_category}
-                  onChange={(e) =>
-                    handleChange("test_category", e.target.value)
-                  }
-                >
-                  <MenuItem value="">
-                    <em>— Select —</em>
-                  </MenuItem>
-                  {CATEGORIES.map((c) => (
-                    <MenuItem key={c} value={c}>
-                      {c}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-
-            <Grid item xs={12} sm={6}>
-              {/* Pricing type toggle */}
-              <Box>
-                <Typography
-                  variant="caption"
-                  color="text.secondary"
-                  display="block"
-                  mb={0.5}
-                >
-                  Pricing Type
-                </Typography>
-                <ToggleButtonGroup
-                  exclusive
-                  value={form.pricing_type}
-                  onChange={(_, val) =>
-                    val && handleChange("pricing_type", val)
-                  }
+        {form && (
+          <DialogContent dividers>
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={3}>
+                <TextField
+                  fullWidth
+                  required
                   size="small"
-                >
-                  <ToggleButton value="per_hour">
-                    <AccessTimeIcon fontSize="small" sx={{ mr: 0.5 }} /> Per
-                    Hour
-                  </ToggleButton>
-                  <ToggleButton value="per_test">
-                    <ScienceIcon fontSize="small" sx={{ mr: 0.5 }} /> Per Test
-                  </ToggleButton>
-                </ToggleButtonGroup>
-              </Box>
-            </Grid>
-
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                required
-                label="Charge Amount"
-                size="small"
-                type="number"
-                value={form.charge_amount}
-                onChange={(e) => handleChange("charge_amount", e.target.value)}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Typography variant="caption" color="text.secondary">
-                        ₹
-                      </Typography>
-                    </InputAdornment>
-                  ),
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <Typography variant="caption" color="text.secondary">
-                        {form.pricing_type === "per_hour" ? "/ hr" : "/ test"}
-                      </Typography>
-                    </InputAdornment>
-                  ),
-                }}
-              />
-            </Grid>
-
-            {/* Min hours — only relevant for per_hour */}
-            {form.pricing_type === "per_hour" && (
+                  label="Price code"
+                  value={form.code}
+                  onChange={(e) =>
+                    setField(
+                      "code",
+                      e.target.value.toUpperCase().replace(/[^A-Z0-9_-]/g, ""),
+                    )
+                  }
+                  helperText="e.g. TS1-HT"
+                />
+              </Grid>
+              <Grid item xs={12} sm={3}>
+                <FormControl fullWidth size="small">
+                  <InputLabel>Department</InputLabel>
+                  <Select
+                    label="Department"
+                    value={form.department}
+                    onChange={(e) =>
+                      setForm((f) => ({
+                        ...f,
+                        department: e.target.value,
+                        codes: [],
+                      }))
+                    }
+                  >
+                    <MenuItem value="TS1">TS1 - Environmental</MenuItem>
+                    <MenuItem value="TS2">TS2 - EMC</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
               <Grid item xs={12} sm={6}>
                 <TextField
                   fullWidth
-                  label="Minimum Hours"
+                  required
                   size="small"
-                  type="number"
-                  value={form.min_hours}
-                  onChange={(e) => handleChange("min_hours", e.target.value)}
-                  helperText="Minimum billable hours per booking"
-                  InputProps={{
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <Typography variant="caption" color="text.secondary">
-                          hr
-                        </Typography>
-                      </InputAdornment>
-                    ),
-                  }}
+                  label="Name on quotation"
+                  value={form.name}
+                  onChange={(e) => setField("name", e.target.value)}
                 />
               </Grid>
-            )}
+              <Grid item xs={12}>
+                <Autocomplete
+                  multiple
+                  options={editOptions.map((t) => t.code)}
+                  value={form.codes}
+                  onChange={(_, v) => setField("codes", v)}
+                  getOptionLabel={(c) =>
+                    `${c} - ${typeByCode.get(c)?.name || ""}`
+                  }
+                  renderTags={(value, getTagProps) =>
+                    value.map((c, i) => (
+                      <Chip
+                        size="small"
+                        label={c}
+                        {...getTagProps({ index: i })}
+                        key={c}
+                      />
+                    ))
+                  }
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      size="small"
+                      label="Test types this price covers"
+                    />
+                  )}
+                />
+              </Grid>
 
-            <Grid item xs={12}>
-              <Divider />
-            </Grid>
-
-            <Grid item xs={12} sm={6}>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={form.is_nabl_accredited}
-                    onChange={(e) =>
-                      handleChange("is_nabl_accredited", e.target.checked)
-                    }
-                    color="success"
+              <Grid item xs={6} sm={3}>
+                <FormControl fullWidth size="small">
+                  <InputLabel>Charged per</InputLabel>
+                  <Select
+                    label="Charged per"
+                    value={form.charged_per}
+                    onChange={(e) => setField("charged_per", e.target.value)}
+                  >
+                    <MenuItem value="hour">Hour</MenuItem>
+                    <MenuItem value="test">Test</MenuItem>
+                    <MenuItem value="unit">Other unit…</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+              {form.charged_per === "unit" && (
+                <Grid item xs={6} sm={3}>
+                  <TextField
+                    fullWidth
+                    required
+                    size="small"
+                    label="Unit name"
+                    value={form.unit_label}
+                    onChange={(e) => setField("unit_label", e.target.value)}
+                    helperText="e.g. chemical, power cable"
                   />
-                }
-                label="NABL Accredited Pricing"
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={form.is_active}
-                    onChange={(e) =>
-                      handleChange("is_active", e.target.checked)
-                    }
-                    color="primary"
-                  />
-                }
-                label="Active"
-              />
-            </Grid>
+                </Grid>
+              )}
+              <Grid item xs={6} sm={3}>
+                <TextField
+                  fullWidth
+                  required
+                  size="small"
+                  type="number"
+                  label="Rate (₹, excl. GST)"
+                  value={form.rate}
+                  onChange={(e) => setField("rate", e.target.value)}
+                />
+              </Grid>
+              <Grid item xs={6} sm={3}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  type="number"
+                  label={`Minimum (${unitName(form)}s)`}
+                  value={form.min_qty}
+                  onChange={(e) => setField("min_qty", e.target.value)}
+                />
+              </Grid>
+              {form.charged_per === "hour" && (
+                <>
+                  <Grid item xs={6} sm={3}>
+                    <TextField
+                      fullWidth
+                      size="small"
+                      type="number"
+                      label="Min hours, pre-compliance"
+                      value={form.min_hours_precompliance}
+                      onChange={(e) =>
+                        setField("min_hours_precompliance", e.target.value)
+                      }
+                    />
+                  </Grid>
+                  <Grid item xs={6} sm={3}>
+                    <TextField
+                      fullWidth
+                      size="small"
+                      type="number"
+                      label="Min hours, compliance"
+                      value={form.min_hours_compliance}
+                      onChange={(e) =>
+                        setField("min_hours_compliance", e.target.value)
+                      }
+                    />
+                  </Grid>
+                </>
+              )}
+              <Grid item xs={6} sm={3}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  type="number"
+                  label="Add-on rate (₹)"
+                  value={form.add_on_rate}
+                  onChange={(e) => setField("add_on_rate", e.target.value)}
+                />
+              </Grid>
+              <Grid item xs={6} sm={3}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Add-on name"
+                  value={form.add_on_label}
+                  onChange={(e) => setField("add_on_label", e.target.value)}
+                  helperText="e.g. add-on cable"
+                />
+              </Grid>
+              <Grid item xs={6} sm={3}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Sort order"
+                  type="number"
+                  value={form.sort_order}
+                  onChange={(e) => setField("sort_order", e.target.value)}
+                />
+              </Grid>
+              <Grid item xs={6} sm={3}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={form.is_active}
+                      onChange={(e) => setField("is_active", e.target.checked)}
+                    />
+                  }
+                  label="Active"
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  multiline
+                  minRows={2}
+                  size="small"
+                  label="Notes"
+                  value={form.notes}
+                  onChange={(e) => setField("notes", e.target.value)}
+                  helperText="e.g. up to 26 drops, 28 days"
+                />
+              </Grid>
 
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Notes"
-                size="small"
-                multiline
-                rows={2}
-                placeholder="Any additional notes or conditions"
-                value={form.notes}
-                onChange={(e) => handleChange("notes", e.target.value)}
-              />
+              {form.id && (
+                <>
+                  <Grid item xs={12}>
+                    <Divider>
+                      <Typography variant="caption">
+                        Try it (uses the saved price)
+                      </Typography>
+                    </Divider>
+                  </Grid>
+                  <Grid item xs={6} sm={2}>
+                    <TextField
+                      fullWidth
+                      size="small"
+                      type="number"
+                      label={form.charged_per === "hour" ? "Hours" : "Quantity"}
+                      value={
+                        form.charged_per === "hour"
+                          ? trial.hours
+                          : trial.quantity
+                      }
+                      onChange={(e) =>
+                        setTrial((t) => ({
+                          ...t,
+                          [form.charged_per === "hour" ? "hours" : "quantity"]:
+                            e.target.value,
+                        }))
+                      }
+                    />
+                  </Grid>
+                  <Grid item xs={6} sm={2}>
+                    <TextField
+                      fullWidth
+                      size="small"
+                      type="number"
+                      label="Add-ons"
+                      value={trial.addOns}
+                      onChange={(e) =>
+                        setTrial((t) => ({ ...t, addOns: e.target.value }))
+                      }
+                    />
+                  </Grid>
+                  <Grid item xs={6} sm={3}>
+                    <FormControl fullWidth size="small">
+                      <InputLabel>Purpose</InputLabel>
+                      <Select
+                        label="Purpose"
+                        value={trial.purpose}
+                        onChange={(e) =>
+                          setTrial((t) => ({ ...t, purpose: e.target.value }))
+                        }
+                      >
+                        <MenuItem value="">Not given</MenuItem>
+                        <MenuItem value="precompliance">
+                          Pre-compliance
+                        </MenuItem>
+                        <MenuItem value="compliance">Compliance</MenuItem>
+                      </Select>
+                    </FormControl>
+                  </Grid>
+                  <Grid item xs={6} sm={2}>
+                    <Button variant="outlined" onClick={handleTrial}>
+                      Calculate
+                    </Button>
+                  </Grid>
+                  {trialResult && (
+                    <Grid item xs={12}>
+                      <Alert severity="info">
+                        {trialResult.lines.map((l) => (
+                          <Typography key={l.label} variant="body2">
+                            {l.label}: {l.qty} × {rupees(l.rate)} ={" "}
+                            {rupees(l.amount)}
+                          </Typography>
+                        ))}
+                        <Typography variant="body2" fontWeight={700}>
+                          Total {rupees(trialResult.amount)} + GST
+                          {trialResult.minimumApplied && " (minimum charged)"}
+                        </Typography>
+                      </Alert>
+                    </Grid>
+                  )}
+                </>
+              )}
             </Grid>
-          </Grid>
-        </DialogContent>
-
+          </DialogContent>
+        )}
         <DialogActions sx={{ px: 3, py: 2 }}>
-          <Button onClick={() => setDialogOpen(false)} color="inherit">
+          <Button onClick={() => setForm(null)} color="inherit">
             Cancel
           </Button>
-          <Button
-            variant="contained"
-            onClick={handleSave}
-            disabled={saving}
-            startIcon={
-              saving ? <CircularProgress size={16} color="inherit" /> : null
-            }
-          >
-            {saving ? "Saving…" : editId ? "Update" : "Add Pricing"}
+          <Button variant="contained" onClick={handleSave} disabled={saving}>
+            {saving ? "Saving…" : form?.id ? "Update" : "Add"}
           </Button>
         </DialogActions>
       </Dialog>
 
-      {/* ─── Import Preview Dialog ─────────────────────────────────────────── */}
+      {/* ─── Delete ──────────────────────────────────────────────────────── */}
       <Dialog
-        open={importDialogOpen}
-        onClose={() => setImportDialogOpen(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle fontWeight={700}>Import Preview</DialogTitle>
-        <DialogContent dividers>
-          {importErrors.length > 0 && (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              <Typography variant="body2" fontWeight={600} gutterBottom>
-                Fix these errors and re-import:
-              </Typography>
-              {importErrors.map((e, i) => (
-                <Typography key={i} variant="caption" display="block">
-                  {e}
-                </Typography>
-              ))}
-            </Alert>
-          )}
-          <Typography variant="body2" color="text.secondary" mb={1}>
-            {importPreview.length} entr
-            {importPreview.length === 1 ? "y" : "ies"} found.
-          </Typography>
-          <Box sx={{ maxHeight: 300, overflowY: "auto" }}>
-            {importPreview.map((row, idx) => (
-              <Paper key={idx} variant="outlined" sx={{ p: 1.5, mb: 1 }}>
-                <Typography variant="body2">
-                  <strong>{row.test_name}</strong>
-                  {row.test_category ? ` — ${row.test_category}` : ""}
-                  {" · "}
-                  {row.pricing_type === "per_hour" ? "Per Hour" : "Per Test"}
-                  {" · "}₹{" "}
-                  {Number(row.charge_amount || 0).toLocaleString("en-IN")}
-                </Typography>
-              </Paper>
-            ))}
-          </Box>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, py: 2 }}>
-          <Button onClick={() => setImportDialogOpen(false)} color="inherit">
-            Cancel
-          </Button>
-          <Button
-            variant="contained"
-            onClick={handleConfirmImport}
-            disabled={importing || importErrors.length > 0}
-            startIcon={
-              importing ? (
-                <CircularProgress size={16} color="inherit" />
-              ) : (
-                <UploadIcon />
-              )
-            }
-          >
-            {importing
-              ? "Importing…"
-              : `Import ${importPreview.length} Entr${importPreview.length === 1 ? "y" : "ies"}`}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* ─── Delete Confirmation ───────────────────────────────────────────── */}
-      <Dialog
-        open={!!deleteId}
-        onClose={() => setDeleteId(null)}
+        open={!!deleteRow}
+        onClose={() => setDeleteRow(null)}
         maxWidth="xs"
         fullWidth
       >
-        <DialogTitle>Delete Pricing Entry?</DialogTitle>
+        <DialogTitle>Delete Price?</DialogTitle>
         <DialogContent>
           <Typography variant="body2">
-            This will permanently remove this test pricing entry.
+            {deleteRow?.code}: {deleteRow?.name}. To keep it for reference,
+            switch off "Active" instead.
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteId(null)} color="inherit">
+          <Button onClick={() => setDeleteRow(null)} color="inherit">
             Cancel
           </Button>
           <Button variant="contained" color="error" onClick={handleDelete}>
@@ -830,7 +893,23 @@ export default function TestPricingManager() {
         </DialogActions>
       </Dialog>
 
-      {/* ─── Snackbar ──────────────────────────────────────────────────────── */}
+      <MasterImportDialog
+        file={importFile}
+        apiBase="/api/test_prices"
+        rowKey="code"
+        columns={IMPORT_COLUMNS}
+        fieldLabels={FIELD_LABELS}
+        itemName="price"
+        onClose={() => setImportFile(null)}
+        onImported={(r) => {
+          setImportFile(null);
+          fetchPrices();
+          showSnackbar(
+            `Import saved: ${r.added} new, ${r.changed} changed${r.deactivated ? `, ${r.deactivated} set inactive` : ""}`,
+          );
+        }}
+      />
+
       <Snackbar
         open={snackbar.open}
         autoHideDuration={3500}

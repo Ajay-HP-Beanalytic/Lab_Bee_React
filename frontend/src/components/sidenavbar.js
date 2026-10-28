@@ -37,6 +37,8 @@ import ElectricBoltIcon from "@mui/icons-material/ElectricBolt";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import MarkEmailUnreadIcon from "@mui/icons-material/MarkEmailUnread";
+import VerifiedIcon from "@mui/icons-material/Verified";
+import CategoryIcon from "@mui/icons-material/Category";
 
 import {
   Avatar,
@@ -249,6 +251,20 @@ const ALL_ITEMS = [
     path: "/rfq_inbox",
     gradientId: "rfqInboxGradient",
   },
+  {
+    i: 19,
+    label: "NABL Scope",
+    icon: <VerifiedIcon />,
+    path: "/nabl_scope",
+    gradientId: "nablScopeGradient",
+  },
+  {
+    i: 20,
+    label: "Test Types",
+    icon: <CategoryIcon />,
+    path: "/test_types",
+    gradientId: "testTypesGradient",
+  },
 ];
 
 const GROUPS = [
@@ -285,21 +301,21 @@ const GROUPS = [
     label: "Administration",
     icon: <AdminPanelSettingsIcon />,
     gradientId: "grpAdminGrad",
-    itemIds: [13, 14, 15],
+    itemIds: [13, 14, 15, 19, 20],
   },
 ];
 
 const ACCESS_RULES = {
-  "Accounts": [1, 2, 3, 4, 5, 6, 8, 9, 10, 17, 18],
+  "Accounts": [1, 2, 3, 4, 5, 6, 8, 9, 10, 17, 18, 20],
   "Marketing": [2, 3, 8, 9, 10, 18],
-  "TS1 Testing": [4, 5, 6, 7, 8, 16, 18],
-  "TS2 Testing": [9, 10, 11, 18],
+  "TS1 Testing": [4, 5, 6, 7, 8, 16, 18, 19, 20],
+  "TS2 Testing": [9, 10, 11, 18, 19, 20],
   "Reliability": [12],
   "Software": [12],
   "Reports & Scrutiny": [4, 5, 6, 7, 8, 9, 11],
   "Reports & Scrutiny Manager": [4, 5, 6, 7, 8, 9, 11],
   "Technical Support Writer": [4, 5, 6, 7, 8, 9, 11],
-  "Quality Engineer": [4, 6, 7, 8, 9, 10, 11, 13],
+  "Quality Engineer": [4, 6, 7, 8, 9, 10, 11, 13, 19, 20],
 };
 
 const DEFAULT_GROUP_OPEN = GROUPS.reduce(

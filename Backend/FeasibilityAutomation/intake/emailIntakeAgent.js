@@ -12,8 +12,7 @@
 //   CLAUDE_INTAKE_MODEL  - model ID or Foundry deployment name (default claude-opus-5-5)
 //   INTERNAL_DOMAINS     - staff email domains (default beanalytic.com)
 
-const Anthropic = require("@anthropic-ai/sdk");
-const { AnthropicFoundry } = require("@anthropic-ai/foundry-sdk");
+const { getClient } = require("./claudeClient");
 const { checkConfidential } = require("./confidentialityPolicy");
 const { prepareAttachments } = require("./attachmentContent");
 const { normalizeEut } = require("./normalize");
@@ -35,34 +34,6 @@ const isInternal = (address) => {
 };
 
 const isForward = (subject) => /^\s*(fw|fwd)\s*:/i.test(subject || "");
-
-let client = null;
-const getClient = () => {
-  if (client) return client;
-  // CLAUDE_PROVIDER=anthropic | foundry. Without it, Foundry is used when its key is set.
-  const provider =
-    process.env.CLAUDE_PROVIDER ||
-    (process.env.ANTHROPIC_FOUNDRY_API_KEY ? "foundry" : "anthropic");
-
-  if (provider === "foundry") {
-    if (!process.env.ANTHROPIC_FOUNDRY_API_KEY) {
-      throw new Error("CLAUDE_PROVIDER=foundry but ANTHROPIC_FOUNDRY_API_KEY is not set");
-    }
-    client = new AnthropicFoundry({
-      apiKey: process.env.ANTHROPIC_FOUNDRY_API_KEY,
-      ...(process.env.ANTHROPIC_FOUNDRY_BASE_URL
-        ? { baseURL: process.env.ANTHROPIC_FOUNDRY_BASE_URL }
-        : { resource: process.env.ANTHROPIC_FOUNDRY_RESOURCE }),
-    });
-  } else if (process.env.ANTHROPIC_API_KEY) {
-    client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
-  } else {
-    throw new Error(
-      "Set ANTHROPIC_FOUNDRY_API_KEY + ANTHROPIC_FOUNDRY_RESOURCE (Microsoft Foundry) or ANTHROPIC_API_KEY (Claude API)",
-    );
-  }
-  return client;
-};
 
 const SYSTEM_PROMPT = `You read emails received by the sales mailbox of BE Analytic Solutions, an NABL-accredited testing laboratory in Bangalore, India.
 The lab's main test disciplines are:

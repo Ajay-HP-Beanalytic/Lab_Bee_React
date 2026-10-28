@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import axios from "axios";
-import * as XLSX from "xlsx";
 import {
   Alert,
+  Autocomplete,
   Box,
   Button,
   Chip,
@@ -19,7 +19,6 @@ import {
   InputAdornment,
   InputLabel,
   MenuItem,
-  Paper,
   Select,
   Snackbar,
   Switch,
@@ -31,93 +30,120 @@ import { DataGrid } from "@mui/x-data-grid";
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import CancelIcon from "@mui/icons-material/Cancel";
 import DownloadIcon from "@mui/icons-material/Download";
 import UploadIcon from "@mui/icons-material/Upload";
+import DoneAllIcon from "@mui/icons-material/DoneAll";
+import AutoFixHighIcon from "@mui/icons-material/AutoFixHigh";
 import { serverBaseAddress } from "../Pages/APIPage";
 import SearchBar from "../common/SearchBar";
-
-const CATEGORIES = [
-  "Thermal",
-  "Humidity",
-  "Altitude",
-  "Vibration",
-  "Salt",
-  "Rain",
-  "Dust",
-];
-
-// Which field sections to show per category
-const CATEGORY_FIELDS = {
-  Thermal: { showTemp: true, showHumidity: false, showVibration: false },
-  Humidity: { showTemp: true, showHumidity: true, showVibration: false },
-  Altitude: { showTemp: true, showHumidity: false, showVibration: false },
-  Vibration: { showTemp: false, showHumidity: false, showVibration: true },
-  Salt: { showTemp: false, showHumidity: false, showVibration: false },
-  Rain: { showTemp: false, showHumidity: false, showVibration: false },
-  Dust: { showTemp: false, showHumidity: false, showVibration: false },
-};
+import MasterImportDialog from "./MasterImportDialog";
 
 const EMPTY_FORM = {
-  chamber_name: "",
   chamber_id: "",
+  chamber_name: "",
   chamber_category: "",
+  aliases: "",
+  codes: [],
   length_cm: "",
   width_cm: "",
   height_cm: "",
   max_load_kg: "",
+  load_limits: "",
   temp_min_celsius: "",
   temp_max_celsius: "",
+  temp_ramp_rate: "",
   humidity_min_rh: "",
   humidity_max_rh: "",
-  temp_ramp_rate: "",
   humidity_ramp_rate: "",
+  altitude_max_m: "",
+  vib_force_kgf: "",
+  vib_table_length_mm: "",
+  vib_table_width_mm: "",
+  vib_displacement_mm: "",
   vibration_freq_min_hz: "",
   vibration_freq_max_hz: "",
   vibration_max_g: "",
-  supported_tests: "",
-  supported_standards: "",
   is_nabl_accredited: false,
+  sort_order: "",
+  is_active: true,
   special_notes: "",
 };
 
-// Excel column headers and their mapping to form fields
-const EXCEL_COLUMNS = [
-  { header: "Chamber Name*", key: "chamber_name" },
-  { header: "Chamber ID*", key: "chamber_id" },
-  { header: "Category", key: "chamber_category" },
-  { header: "Length (cm)", key: "length_cm" },
-  { header: "Width (cm)", key: "width_cm" },
-  { header: "Height (cm)", key: "height_cm" },
-  { header: "Max Load (kg)", key: "max_load_kg" },
-  { header: "Temp Min (°C)", key: "temp_min_celsius" },
-  { header: "Temp Max (°C)", key: "temp_max_celsius" },
-  { header: "Humidity Min (%RH)", key: "humidity_min_rh" },
-  { header: "Humidity Max (%RH)", key: "humidity_max_rh" },
-  { header: "Temp Ramp Rate (°C/min)", key: "temp_ramp_rate" },
-  { header: "Humidity Ramp Rate (%RH/min)", key: "humidity_ramp_rate" },
-  { header: "Vibration Freq Min (Hz)", key: "vibration_freq_min_hz" },
-  { header: "Vibration Freq Max (Hz)", key: "vibration_freq_max_hz" },
-  { header: "Vibration Max G", key: "vibration_max_g" },
-  { header: "Supported Tests (comma-separated)", key: "supported_tests" },
+const FIELD_LABELS = {
+  chamber_name: "Name",
+  chamber_category: "Category",
+  aliases: "Other names",
+  test_type_codes: "Test types",
+  length_cm: "Length (cm)",
+  width_cm: "Width (cm)",
+  height_cm: "Height (cm)",
+  max_load_kg: "Max load (kg)",
+  load_limits: "Load limits",
+  temp_min_celsius: "Min temp",
+  temp_max_celsius: "Max temp",
+  temp_ramp_rate: "Temp ramp",
+  humidity_min_rh: "Min humidity",
+  humidity_max_rh: "Max humidity",
+  humidity_ramp_rate: "Humidity ramp",
+  altitude_max_m: "Max altitude",
+  vib_force_kgf: "Force (kgf)",
+  vib_table_length_mm: "Table length",
+  vib_table_width_mm: "Table width",
+  vib_displacement_mm: "Displacement",
+  vibration_freq_min_hz: "Min frequency",
+  vibration_freq_max_hz: "Max frequency",
+  vibration_max_g: "Max g",
+  is_nabl_accredited: "NABL",
+  sort_order: "Sort order",
+  is_active: "Active",
+  special_notes: "Notes",
+};
+
+const IMPORT_COLUMNS = [
+  { field: "chamber_id", headerName: "Chamber ID", width: 140 },
+  { field: "chamber_name", headerName: "Name", flex: 1, minWidth: 200 },
+  { field: "chamber_category", headerName: "Category", width: 140 },
   {
-    header: "Supported Standards (comma-separated)",
-    key: "supported_standards",
+    field: "test_type_codes",
+    headerName: "Test types",
+    flex: 1,
+    minWidth: 200,
   },
-  { header: "NABL Accredited (1/0)", key: "is_nabl_accredited" },
-  { header: "Special Notes", key: "special_notes" },
 ];
 
-const numField = (label, name, unit, form, onChange) => (
-  <Grid item xs={12} sm={6} md={4}>
+const CAL_CHIP = {
+  valid: { label: "Valid", color: "success" },
+  expired: { label: "Expired", color: "error" },
+  no_date: { label: "No due date", color: "warning" },
+  none: { label: "Not found", color: "default" },
+};
+
+const statusOf = (row) => row.test_types_status || "none";
+
+const range = (lo, hi, unit) =>
+  lo == null && hi == null ? "" : `${lo ?? "?"} to ${hi ?? "?"} ${unit}`;
+
+// "20@10; 100@5" -> "≤20 kg at 10 °C/min, ≤100 kg at 5 °C/min"
+const loadLimitsText = (text) =>
+  (text || "")
+    .split(";")
+    .map((p) => p.trim())
+    .filter(Boolean)
+    .map((p) => {
+      const [kg, rate] = p.split("@").map((x) => x.trim());
+      return `≤${kg} kg at ${rate} °C/min`;
+    })
+    .join(", ");
+
+const numField = (label, name, unit, form, setField, sm = 4) => (
+  <Grid item xs={6} sm={sm}>
     <TextField
       fullWidth
       label={label}
       type="number"
       size="small"
       value={form[name]}
-      onChange={(e) => onChange(name, e.target.value)}
+      onChange={(e) => setField(name, e.target.value)}
       InputProps={
         unit
           ? {
@@ -135,19 +161,28 @@ const numField = (label, name, unit, form, onChange) => (
   </Grid>
 );
 
+const section = (title) => (
+  <Grid item xs={12}>
+    <Divider>
+      <Typography variant="caption">{title}</Typography>
+    </Divider>
+  </Grid>
+);
+
+//TS1 chambers: size, load, temperature/humidity/vibration limits, the test types
+//each chamber can run and its calibration status. Used by the feasibility check.
 export default function ChamberSpecsManager() {
   const [rows, setRows] = useState([]);
+  const [testTypes, setTestTypes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchText, setSearchText] = useState("");
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editId, setEditId] = useState(null);
-  const [form, setForm] = useState({ ...EMPTY_FORM });
-  const [saving, setSaving] = useState(false);
-  const [deleteId, setDeleteId] = useState(null);
-  const [importDialogOpen, setImportDialogOpen] = useState(false);
-  const [importPreview, setImportPreview] = useState([]);
-  const [importing, setImporting] = useState(false);
-  const [importErrors, setImportErrors] = useState([]);
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [selection, setSelection] = useState([]);
+  const [busy, setBusy] = useState(false);
+  const [autoResult, setAutoResult] = useState(null);
+  const [form, setForm] = useState(null); // {...chamber, codes, id?} while the dialog is open
+  const [deleteRow, setDeleteRow] = useState(null);
+  const [importFile, setImportFile] = useState(null);
   const [snackbar, setSnackbar] = useState({
     open: false,
     msg: "",
@@ -155,389 +190,366 @@ export default function ChamberSpecsManager() {
   });
   const fileInputRef = useRef(null);
 
-  const fetchSpecs = async () => {
+  const showSnackbar = (msg, severity = "success") =>
+    setSnackbar({ open: true, msg, severity });
+
+  const fetchChambers = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${serverBaseAddress}/api/ts1_chamber_specs`);
-      setRows(res.data);
+      const [chambers, types] = await Promise.all([
+        axios.get(`${serverBaseAddress}/api/ts1_chamber_specs`),
+        axios.get(`${serverBaseAddress}/api/test_types`),
+      ]);
+      setRows(chambers.data);
+      setTestTypes(types.data.filter((t) => t.department === "TS1"));
+      setSelection([]);
     } catch {
-      showSnackbar("Failed to load chamber specs", "error");
+      showSnackbar("Failed to load chambers", "error");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchSpecs();
+    fetchChambers();
   }, []);
 
-  const showSnackbar = (msg, severity = "success") =>
-    setSnackbar({ open: true, msg, severity });
+  const typeByCode = useMemo(
+    () => new Map(testTypes.map((t) => [t.code, t])),
+    [testTypes],
+  );
 
-  // Filtered rows based on search
-  const filteredRows = rows.filter((row) => {
-    if (!searchText.trim()) return true;
-    const q = searchText.toLowerCase();
-    return (
-      (row.chamber_name || "").toLowerCase().includes(q) ||
-      (row.chamber_id || "").toLowerCase().includes(q) ||
-      (row.chamber_category || "").toLowerCase().includes(q) ||
-      (row.chamber_status || "").toLowerCase().includes(q)
-    );
-  });
+  const categories = useMemo(
+    () =>
+      [...new Set(rows.map((r) => r.chamber_category).filter(Boolean))].sort(),
+    [rows],
+  );
 
-  const handleOpenAdd = () => {
-    setEditId(null);
-    setForm({ ...EMPTY_FORM });
-    setDialogOpen(true);
-  };
+  const counts = useMemo(() => {
+    const c = { all: rows.length, none: 0, auto: 0, reviewed: 0 };
+    for (const r of rows) c[statusOf(r)]++;
+    return c;
+  }, [rows]);
 
-  const handleOpenEdit = (row) => {
-    setEditId(row.id);
+  const filteredRows = useMemo(() => {
+    const q = searchText.trim().toLowerCase();
+    return rows.filter((r) => {
+      if (statusFilter !== "all" && statusOf(r) !== statusFilter) return false;
+      if (!q) return true;
+      return [
+        r.chamber_id,
+        r.chamber_name,
+        r.chamber_category,
+        r.aliases,
+        r.test_type_codes,
+        r.chamber_status,
+      ].some((v) => (v || "").toLowerCase().includes(q));
+    });
+  }, [rows, searchText, statusFilter]);
+
+  const selectedAuto = selection.filter(
+    (id) => rows.find((r) => r.id === id)?.test_types_status === "auto",
+  );
+
+  const setField = (name, value) => setForm((f) => ({ ...f, [name]: value }));
+
+  const handleOpenEdit = (row) =>
     setForm({
       ...EMPTY_FORM,
-      ...row,
-      supported_tests: Array.isArray(row.supported_tests)
-        ? row.supported_tests.join(", ")
-        : row.supported_tests || "",
-      supported_standards: Array.isArray(row.supported_standards)
-        ? row.supported_standards.join(", ")
-        : row.supported_standards || "",
+      ...Object.fromEntries(Object.entries(row).map(([k, v]) => [k, v ?? ""])),
+      codes: (row.test_type_codes || "").split(", ").filter(Boolean),
+      is_active: !!row.is_active,
       is_nabl_accredited: !!row.is_nabl_accredited,
     });
-    setDialogOpen(true);
-  };
-
-  const handleChange = (name, value) =>
-    setForm((prev) => ({ ...prev, [name]: value }));
-
-  const buildPayload = (f = form) => ({
-    ...f,
-    supported_tests:
-      typeof f.supported_tests === "string"
-        ? f.supported_tests
-            .split(",")
-            .map((s) => s.trim())
-            .filter(Boolean)
-        : f.supported_tests || [],
-    supported_standards:
-      typeof f.supported_standards === "string"
-        ? f.supported_standards
-            .split(",")
-            .map((s) => s.trim())
-            .filter(Boolean)
-        : f.supported_standards || [],
-    is_nabl_accredited: f.is_nabl_accredited ? 1 : 0,
-  });
 
   const handleSave = async () => {
-    if (!form.chamber_name.trim() || !form.chamber_id.trim()) {
-      showSnackbar("Chamber Name and Chamber ID are required", "error");
+    if (!form.chamber_id.trim() || !form.chamber_name.trim()) {
+      showSnackbar("Chamber ID and name are required", "error");
       return;
     }
-    setSaving(true);
+    setBusy(true);
     try {
-      if (editId) {
+      const payload = { ...form, test_type_codes: form.codes };
+      if (form.id)
         await axios.put(
-          `${serverBaseAddress}/api/ts1_chamber_specs/${editId}`,
-          buildPayload(),
+          `${serverBaseAddress}/api/ts1_chamber_specs/${form.id}`,
+          payload,
         );
-        showSnackbar("Chamber spec updated successfully");
-      } else {
-        await axios.post(
-          `${serverBaseAddress}/api/ts1_chamber_specs`,
-          buildPayload(),
-        );
-        showSnackbar("Chamber spec added successfully");
-      }
-      setDialogOpen(false);
-      fetchSpecs();
+      else
+        await axios.post(`${serverBaseAddress}/api/ts1_chamber_specs`, payload);
+      showSnackbar(form.id ? "Chamber updated" : "Chamber added");
+      setForm(null);
+      fetchChambers();
     } catch (err) {
       showSnackbar(err.response?.data?.error || "Save failed", "error");
     } finally {
-      setSaving(false);
+      setBusy(false);
     }
   };
 
   const handleDelete = async () => {
     try {
       await axios.delete(
-        `${serverBaseAddress}/api/ts1_chamber_specs/${deleteId}`,
+        `${serverBaseAddress}/api/ts1_chamber_specs/${deleteRow.id}`,
       );
-      showSnackbar("Chamber spec deleted");
-      setDeleteId(null);
-      fetchSpecs();
+      showSnackbar("Chamber deleted");
+      setDeleteRow(null);
+      fetchChambers();
     } catch {
       showSnackbar("Delete failed", "error");
     }
   };
 
-  // ─── Export ───────────────────────────────────────────────────────────────
-  const handleExport = () => {
-    const data = filteredRows.map((row) => {
-      const out = {};
-      EXCEL_COLUMNS.forEach(({ header, key }) => {
-        let val = row[key];
-        if (Array.isArray(val)) val = val.join(", ");
-        out[header] = val ?? "";
-      });
-      return out;
-    });
-
-    const ws = XLSX.utils.json_to_sheet(data);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Chamber Specs");
-    XLSX.writeFile(wb, "TS1_Chamber_Specs.xlsx");
-    showSnackbar(`Exported ${data.length} chamber(s) to Excel`);
-  };
-
-  // ─── Import ───────────────────────────────────────────────────────────────
-  const handleImportTemplate = () => {
-    const ws = XLSX.utils.json_to_sheet([
-      EXCEL_COLUMNS.reduce((acc, { header }) => ({ ...acc, [header]: "" }), {}),
-    ]);
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, "Chamber Specs");
-    XLSX.writeFile(wb, "TS1_Chamber_Specs_Template.xlsx");
-    showSnackbar("Template downloaded");
-  };
-
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    e.target.value = ""; // allow re-selecting same file
-
-    const reader = new FileReader();
-    reader.onload = (evt) => {
-      try {
-        const wb = XLSX.read(evt.target.result, { type: "binary" });
-        const ws = wb.Sheets[wb.SheetNames[0]];
-        const raw = XLSX.utils.sheet_to_json(ws, { defval: "" });
-
-        const errors = [];
-        const parsed = raw.map((row, idx) => {
-          const mapped = {};
-          EXCEL_COLUMNS.forEach(({ header, key }) => {
-            mapped[key] =
-              row[header] !== undefined ? String(row[header]).trim() : "";
-          });
-          mapped.is_nabl_accredited =
-            mapped.is_nabl_accredited === "1" ||
-            mapped.is_nabl_accredited === "true" ||
-            mapped.is_nabl_accredited === "Yes";
-          if (!mapped.chamber_name)
-            errors.push(`Row ${idx + 2}: Chamber Name is required`);
-          if (!mapped.chamber_id)
-            errors.push(`Row ${idx + 2}: Chamber ID is required`);
-          return mapped;
-        });
-
-        setImportErrors(errors);
-        setImportPreview(parsed);
-        setImportDialogOpen(true);
-      } catch {
-        showSnackbar(
-          "Failed to read Excel file. Make sure it is a valid .xlsx file.",
-          "error",
-        );
-      }
-    };
-    reader.readAsBinaryString(file);
-  };
-
-  const handleConfirmImport = async () => {
-    if (importErrors.length > 0) {
-      showSnackbar("Fix validation errors before importing", "error");
-      return;
+  const handleAccept = async () => {
+    setBusy(true);
+    try {
+      const res = await axios.post(
+        `${serverBaseAddress}/api/ts1_chamber_specs/review`,
+        { ids: selectedAuto },
+      );
+      showSnackbar(`${res.data.reviewed} chamber(s) marked checked`);
+      fetchChambers();
+    } catch (err) {
+      showSnackbar(err.response?.data?.error || "Failed", "error");
+    } finally {
+      setBusy(false);
     }
-    setImporting(true);
-    let success = 0,
-      failed = 0;
-    for (const row of importPreview) {
-      try {
-        await axios.post(
-          `${serverBaseAddress}/api/ts1_chamber_specs`,
-          buildPayload(row),
-        );
-        success++;
-      } catch {
-        failed++;
-      }
-    }
-    setImporting(false);
-    setImportDialogOpen(false);
-    setImportPreview([]);
-    fetchSpecs();
-    showSnackbar(
-      `Import complete: ${success} added${failed ? `, ${failed} failed (duplicate IDs skipped)` : ""}`,
-      failed ? "warning" : "success",
-    );
   };
 
-  // ─── Columns ──────────────────────────────────────────────────────────────
+  const handleAutoFill = async () => {
+    setBusy(true);
+    try {
+      const res = await axios.post(
+        `${serverBaseAddress}/api/ts1_chamber_specs/auto`,
+        {},
+      );
+      setAutoResult(res.data);
+      fetchChambers();
+    } catch (err) {
+      showSnackbar(err.response?.data?.error || "Auto-fill failed", "error");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleExport = async () => {
+    try {
+      const res = await axios.get(
+        `${serverBaseAddress}/api/ts1_chamber_specs/export`,
+        { responseType: "blob" },
+      );
+      const url = URL.createObjectURL(res.data);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "TS1_Chambers.xlsx";
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      showSnackbar("Export failed", "error");
+    }
+  };
+
   const columns = [
-    {
-      field: "chamber_name",
-      headerName: "Chamber Name",
-      width: 180,
-      headerClassName: "header",
-    },
     {
       field: "chamber_id",
       headerName: "Chamber ID",
       width: 130,
       headerClassName: "header",
+      renderCell: ({ row }) => (
+        <Tooltip
+          title={row.aliases ? `Other names: ${row.aliases}` : "No other names"}
+        >
+          <Box>
+            <strong>{row.chamber_id}</strong>
+            {!row.is_active && (
+              <Chip size="small" label="Inactive" sx={{ ml: 0.5 }} />
+            )}
+          </Box>
+        </Tooltip>
+      ),
     },
     {
-      field: "chamber_category",
-      headerName: "Category",
-      width: 120,
+      field: "chamber_name",
+      headerName: "Name",
+      flex: 1,
+      minWidth: 170,
       headerClassName: "header",
+      renderCell: ({ row }) => (
+        <Box>
+          {row.chamber_name}
+          {row.chamber_category && (
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              display="block"
+            >
+              {row.chamber_category}
+            </Typography>
+          )}
+        </Box>
+      ),
     },
     {
-      field: "dimensions",
-      headerName: "Dimensions (L×W×H cm)",
-      width: 180,
+      field: "test_type_codes",
+      headerName: "Test types",
+      flex: 1.3,
+      minWidth: 220,
       headerClassName: "header",
-      valueGetter: (params) => {
-        const { length_cm, width_cm, height_cm } = params.row;
-        if (!length_cm && !width_cm && !height_cm) return "–";
-        return `${length_cm ?? "–"} × ${width_cm ?? "–"} × ${height_cm ?? "–"}`;
+      renderCell: ({ row }) => {
+        const codes = (row.test_type_codes || "").split(", ").filter(Boolean);
+        if (!codes.length)
+          return (
+            <Typography variant="caption" color="text.secondary">
+              None
+            </Typography>
+          );
+        const auto = row.test_types_status === "auto";
+        return (
+          <Box display="flex" gap={0.5} flexWrap="wrap" py={0.5}>
+            {codes.map((c) => (
+              <Tooltip key={c} title={typeByCode.get(c)?.name || c}>
+                <Chip
+                  size="small"
+                  label={c}
+                  color={auto ? "warning" : "success"}
+                  variant={auto ? "outlined" : "filled"}
+                />
+              </Tooltip>
+            ))}
+            {auto && (
+              <Typography variant="caption" color="warning.main">
+                Auto - to check
+              </Typography>
+            )}
+          </Box>
+        );
       },
     },
     {
-      field: "max_load_kg",
-      headerName: "Max Load (kg)",
-      width: 120,
+      field: "size",
+      headerName: "Size L×W×H (cm) / load",
+      width: 175,
       headerClassName: "header",
-    },
-    {
-      field: "temp_range",
-      headerName: "Temp Range (°C)",
-      width: 150,
-      headerClassName: "header",
-      valueGetter: (params) => {
-        const { temp_min_celsius, temp_max_celsius } = params.row;
-        if (temp_min_celsius == null && temp_max_celsius == null) return "–";
-        return `${temp_min_celsius ?? "–"} to ${temp_max_celsius ?? "–"}`;
+      sortable: false,
+      renderCell: ({ row }) => {
+        const vib = row.vib_table_length_mm || row.vib_table_width_mm;
+        const size = vib
+          ? `Table ${row.vib_table_length_mm ?? "?"}×${row.vib_table_width_mm ?? "?"} mm`
+          : row.length_cm || row.width_cm || row.height_cm
+            ? `${row.length_cm ?? "?"}×${row.width_cm ?? "?"}×${row.height_cm ?? "?"}`
+            : "";
+        return (
+          <Box>
+            {size}
+            {row.max_load_kg != null && (
+              <Tooltip title={loadLimitsText(row.load_limits)}>
+                <Typography variant="caption" display="block">
+                  Max {row.max_load_kg} kg{row.load_limits ? " *" : ""}
+                </Typography>
+              </Tooltip>
+            )}
+          </Box>
+        );
       },
     },
     {
-      field: "humidity_range",
-      headerName: "Humidity Range (%RH)",
-      width: 165,
+      field: "limits",
+      headerName: "Limits",
+      flex: 1,
+      minWidth: 210,
       headerClassName: "header",
-      valueGetter: (params) => {
-        const { humidity_min_rh, humidity_max_rh } = params.row;
-        if (humidity_min_rh == null && humidity_max_rh == null) return "–";
-        return `${humidity_min_rh ?? "–"} to ${humidity_max_rh ?? "–"}`;
+      sortable: false,
+      renderCell: ({ row }) => {
+        const lines = [
+          range(row.temp_min_celsius, row.temp_max_celsius, "°C") +
+            (row.temp_ramp_rate != null
+              ? `, ${row.temp_ramp_rate} °C/min`
+              : ""),
+          range(row.humidity_min_rh, row.humidity_max_rh, "%RH"),
+          row.altitude_max_m != null ? `Up to ${row.altitude_max_m} m` : "",
+          row.vib_force_kgf != null
+            ? `${row.vib_force_kgf} kgf` +
+              (row.vib_displacement_mm != null
+                ? `, ${row.vib_displacement_mm} mm p-p`
+                : "")
+            : "",
+          range(row.vibration_freq_min_hz, row.vibration_freq_max_hz, "Hz") +
+            (row.vibration_max_g != null ? `, ${row.vibration_max_g} g` : ""),
+        ].filter((l) => l && !l.startsWith(","));
+        return (
+          <Box>
+            {lines.map((l) => (
+              <Typography key={l} variant="caption" display="block">
+                {l}
+              </Typography>
+            ))}
+          </Box>
+        );
       },
     },
     {
-      field: "temp_ramp_rate",
-      headerName: "Temp Ramp (°C/min)",
-      width: 155,
+      field: "calibration_due_date",
+      headerName: "Calibration",
+      width: 140,
       headerClassName: "header",
-      valueGetter: (p) =>
-        p.row.temp_ramp_rate != null ? p.row.temp_ramp_rate : "–",
-    },
-    {
-      field: "humidity_ramp_rate",
-      headerName: "Humidity Ramp (%/min)",
-      width: 165,
-      headerClassName: "header",
-      valueGetter: (p) =>
-        p.row.humidity_ramp_rate != null ? p.row.humidity_ramp_rate : "–",
-    },
-    {
-      field: "vibration_range",
-      headerName: "Vibration (Hz / G)",
-      width: 160,
-      headerClassName: "header",
-      valueGetter: (params) => {
-        const {
-          vibration_freq_min_hz,
-          vibration_freq_max_hz,
-          vibration_max_g,
-        } = params.row;
-        if (!vibration_freq_min_hz && !vibration_max_g) return "–";
-        return `${vibration_freq_min_hz}–${vibration_freq_max_hz} Hz, ${vibration_max_g}g`;
+      renderCell: ({ row }) => {
+        const chip = CAL_CHIP[row.calibration_state] || CAL_CHIP.none;
+        return (
+          <Tooltip
+            title={
+              row.calibration_state === "none"
+                ? "No calibration record with this Chamber ID (or one of its other names)"
+                : `Done ${row.calibration_done_date || "?"}, due ${row.calibration_due_date || "?"}`
+            }
+          >
+            <Box>
+              <Chip
+                size="small"
+                label={chip.label}
+                color={chip.color}
+                variant="outlined"
+              />
+              {row.calibration_due_date && (
+                <Typography variant="caption" display="block">
+                  Due {row.calibration_due_date}
+                </Typography>
+              )}
+              {row.chamber_status && (
+                <Typography
+                  variant="caption"
+                  display="block"
+                  color="text.secondary"
+                >
+                  {row.chamber_status}
+                </Typography>
+              )}
+            </Box>
+          </Tooltip>
+        );
       },
     },
     {
       field: "is_nabl_accredited",
       headerName: "NABL",
-      width: 80,
+      width: 70,
       headerClassName: "header",
-      align: "center",
-      headerAlign: "center",
-      renderCell: (params) =>
-        params.value ? (
-          <CheckCircleIcon fontSize="small" color="success" />
-        ) : (
-          <CancelIcon fontSize="small" color="disabled" />
-        ),
-    },
-    {
-      field: "is_calibrated",
-      headerName: "Calibrated",
-      width: 100,
-      headerClassName: "header",
-      align: "center",
-      headerAlign: "center",
-      renderCell: (params) =>
-        params.value ? (
-          <CheckCircleIcon fontSize="small" color="success" />
-        ) : (
-          <CancelIcon fontSize="small" color="error" />
-        ),
-    },
-    {
-      field: "is_active",
-      headerName: "Active",
-      width: 90,
-      headerClassName: "header",
-      align: "center",
-      headerAlign: "center",
-      renderCell: (params) =>
-        params.value ? (
-          <Chip
-            label="Active"
-            size="small"
-            color="success"
-            variant="outlined"
-          />
-        ) : (
-          <Chip
-            label="Inactive"
-            size="small"
-            color="default"
-            variant="outlined"
-          />
-        ),
-    },
-    {
-      field: "chamber_status",
-      headerName: "Status",
-      width: 120,
-      headerClassName: "header",
-      valueGetter: (p) => p.row.chamber_status ?? "–",
+      renderCell: ({ value }) => (value ? "Yes" : "No"),
     },
     {
       field: "actions",
       headerName: "Actions",
-      width: 100,
+      width: 95,
       headerClassName: "header",
       sortable: false,
-      renderCell: (params) => (
+      renderCell: ({ row }) => (
         <Box>
           <Tooltip title="Edit">
-            <IconButton size="small" onClick={() => handleOpenEdit(params.row)}>
+            <IconButton size="small" onClick={() => handleOpenEdit(row)}>
               <EditIcon fontSize="small" color="primary" />
             </IconButton>
           </Tooltip>
           <Tooltip title="Delete">
-            <IconButton size="small" onClick={() => setDeleteId(params.row.id)}>
+            <IconButton size="small" onClick={() => setDeleteRow(row)}>
               <DeleteIcon fontSize="small" color="error" />
             </IconButton>
           </Tooltip>
@@ -546,91 +558,116 @@ export default function ChamberSpecsManager() {
     },
   ];
 
-  // Determine which sections to show in the form
-  const catFields = CATEGORY_FIELDS[form.chamber_category] || {
-    showTemp: true,
-    showHumidity: true,
-    showVibration: true,
-  };
+  const editOptions = testTypes.filter(
+    (t) => t.is_active || form?.codes.includes(t.code),
+  );
 
   return (
     <Box>
-      {/* Header */}
-      <Box
-        display="flex"
-        alignItems="center"
-        justifyContent="space-between"
-        mb={2}
-        // flexWrap="wrap"
-        gap={1}
-      >
-        <Box>
-          <Typography variant="h5" fontWeight={700} color="#003366">
-            TS1 Chamber Specifications
-          </Typography>
-          <Typography variant="body2" color="text.secondary">
-            Manage physical and technical specifications for all TS1 chambers.
-            Calibration status is read from the Chamber Calibration module.
-          </Typography>
-        </Box>
+      <Box mb={2}>
+        <Typography variant="h5" fontWeight={700} color="#003366">
+          TS1 Chambers
+        </Typography>
+        <Typography variant="body2" color="text.secondary">
+          Size, load and limits of each chamber and the test types it can run,
+          used to check whether a request fits. The Chamber ID is the one used
+          in Chamber Calibration; "Other names" are the spellings used in job
+          cards and the Tests & Chambers Mapping (e.g. HUMID-01, CATH CHAMBER).
+        </Typography>
       </Box>
 
-      {/* Search bar */}
       <Box
         mb={2}
         display="flex"
         alignItems="center"
         justifyContent="space-between"
         gap={1}
+        flexWrap="wrap"
       >
-        <Box sx={{ width: "50%" }}>
-          <SearchBar
-            placeholder="Search by name, ID, category, or status…"
-            searchInputText={searchText}
-            onChangeOfSearchInput={(e) => setSearchText(e.target.value)}
-            onClearSearchInput={() => setSearchText("")}
-          />
+        <Box
+          display="flex"
+          alignItems="center"
+          gap={2}
+          flexWrap="wrap"
+          sx={{ flex: 1 }}
+        >
+          <FormControl size="small" sx={{ minWidth: 210 }}>
+            <InputLabel>Test types</InputLabel>
+            <Select
+              label="Test types"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
+              <MenuItem value="all">All ({counts.all})</MenuItem>
+              <MenuItem value="none">None yet ({counts.none})</MenuItem>
+              <MenuItem value="auto">Auto - to check ({counts.auto})</MenuItem>
+              <MenuItem value="reviewed">Checked ({counts.reviewed})</MenuItem>
+            </Select>
+          </FormControl>
+          <Box sx={{ minWidth: 260, flex: 1, maxWidth: 420 }}>
+            <SearchBar
+              placeholder="Search ID, name, other names or test type…"
+              searchInputText={searchText}
+              onChangeOfSearchInput={(e) => setSearchText(e.target.value)}
+              onClearSearchInput={() => setSearchText("")}
+            />
+          </Box>
         </Box>
-        {searchText && (
-          <Typography variant="caption" color="text.secondary">
-            {filteredRows.length} of {rows.length} result(s)
-          </Typography>
-        )}
-
-        <Box display="flex" gap={1} alignItems="space-between">
-          <Tooltip title="Download import template">
+        <Box display="flex" gap={1} flexWrap="wrap" alignItems="center">
+          {selectedAuto.length > 0 && (
+            <Button
+              variant="contained"
+              color="success"
+              size="small"
+              startIcon={<DoneAllIcon />}
+              onClick={handleAccept}
+              disabled={busy}
+            >
+              Mark checked ({selectedAuto.length})
+            </Button>
+          )}
+          <Tooltip title="Give chambers without test types the test types of the job card categories they are listed under (Tests & Chambers Mapping). Link the job card test names first. Checked chambers are not changed.">
+            <span>
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={
+                  busy ? <CircularProgress size={14} /> : <AutoFixHighIcon />
+                }
+                onClick={handleAutoFill}
+                disabled={busy || !counts.none}
+              >
+                Fill test types ({counts.none})
+              </Button>
+            </span>
+          </Tooltip>
+          <Tooltip title="Import an Excel file exported from here">
+            <Button
+              variant="outlined"
+              size="small"
+              startIcon={<UploadIcon />}
+              onClick={() => fileInputRef.current?.click()}
+            >
+              Import
+            </Button>
+          </Tooltip>
+          <Tooltip title="Download as Excel (edit it and import it back)">
             <Button
               variant="outlined"
               size="small"
               startIcon={<DownloadIcon />}
-              onClick={handleImportTemplate}
+              onClick={handleExport}
             >
-              Template
+              Export
             </Button>
           </Tooltip>
           <Button
-            variant="outlined"
-            size="small"
-            startIcon={<UploadIcon />}
-            onClick={() => fileInputRef.current?.click()}
-          >
-            Import
-          </Button>
-          <Button
-            variant="outlined"
-            size="small"
-            startIcon={<DownloadIcon />}
-            onClick={handleExport}
-          >
-            Export
-          </Button>
-          <Button
             variant="contained"
             startIcon={<AddIcon />}
-            onClick={handleOpenAdd}
+            onClick={() => setForm({ ...EMPTY_FORM })}
             sx={{
-              "bgcolor": "orange",
-              "color": "white",
+              bgcolor: "orange",
+              color: "white",
               "&:hover": { bgcolor: "#e65c00" },
             }}
           >
@@ -639,20 +676,55 @@ export default function ChamberSpecsManager() {
         </Box>
       </Box>
 
-      {/* Hidden file input */}
+      {autoResult && (
+        <Alert
+          severity={
+            autoResult.unknownChambers.length || autoResult.notInMapping.length
+              ? "info"
+              : "success"
+          }
+          sx={{ mb: 2 }}
+          onClose={() => setAutoResult(null)}
+        >
+          Filled test types for {autoResult.linked} of {autoResult.checked}{" "}
+          chamber(s). Check them with the "Auto - to check" filter.
+          {autoResult.notInMapping.length > 0 && (
+            <Typography variant="caption" display="block">
+              Not found in the mapping (set by hand):{" "}
+              {autoResult.notInMapping.join(", ")}
+            </Typography>
+          )}
+          {autoResult.unknownChambers.length > 0 && (
+            <Typography variant="caption" display="block">
+              Chamber names in the mapping that match no chamber (add them as
+              other names): {autoResult.unknownChambers.join("; ")}
+            </Typography>
+          )}
+          {autoResult.categoriesWithoutTypes.length > 0 && (
+            <Typography variant="caption" display="block">
+              Categories whose test names are not linked to test types yet:{" "}
+              {autoResult.categoriesWithoutTypes.join("; ")}
+            </Typography>
+          )}
+        </Alert>
+      )}
+
       <input
         ref={fileInputRef}
         type="file"
-        accept=".xlsx,.xls"
+        accept=".xlsx"
         style={{ display: "none" }}
-        onChange={handleFileChange}
+        onChange={(e) => {
+          const file = e.target.files[0];
+          e.target.value = "";
+          if (file) setImportFile(file);
+        }}
       />
 
-      {/* Table */}
       <Box
         sx={{
-          "height": 520,
-          "width": "100%",
+          height: 640,
+          width: "100%",
           "& .header": {
             backgroundColor: "#476f95",
             color: "whitesmoke",
@@ -674,350 +746,323 @@ export default function ChamberSpecsManager() {
           <DataGrid
             rows={filteredRows}
             columns={columns}
+            getRowHeight={() => "auto"}
+            checkboxSelection
+            rowSelectionModel={selection}
+            onRowSelectionModelChange={setSelection}
+            isRowSelectable={({ row }) => row.test_types_status === "auto"}
+            onRowDoubleClick={({ row }) => handleOpenEdit(row)}
             pageSizeOptions={[25, 50, 100]}
-            initialState={{ pagination: { paginationModel: { pageSize: 25 } } }}
+            initialState={{
+              pagination: { paginationModel: { pageSize: 100 } },
+            }}
             disableRowSelectionOnClick
-            sx={{ "& .MuiDataGrid-cell": { fontSize: "13px" } }}
+            sx={{
+              "& .MuiDataGrid-cell": {
+                fontSize: "13px",
+                py: 0.75,
+                whiteSpace: "normal",
+                lineHeight: 1.4,
+              },
+            }}
+            localeText={{ noRowsLabel: "No chambers yet - add or import them" }}
           />
         )}
       </Box>
+      <Typography variant="caption" color="text.secondary">
+        Double-click a row to edit it. Tick "Auto - to check" rows to mark their
+        test types checked.
+      </Typography>
 
-      {/* ─── Add / Edit Dialog ─────────────────────────────────────────────── */}
+      {/* ─── Add / Edit ──────────────────────────────────────────────────── */}
       <Dialog
-        open={dialogOpen}
-        onClose={() => setDialogOpen(false)}
+        open={!!form}
+        onClose={() => setForm(null)}
         maxWidth="md"
         fullWidth
       >
         <DialogTitle fontWeight={700}>
-          {editId ? "Edit Chamber Spec" : "Add New Chamber Spec"}
+          {form?.id ? `Edit ${form.chamber_id}` : "Add Chamber"}
         </DialogTitle>
-
-        <DialogContent dividers>
-          <Grid container spacing={2}>
-            {/* Basic Info */}
-            <Grid item xs={12}>
-              <Typography variant="subtitle2" color="primary" fontWeight={600}>
-                Basic Information
-              </Typography>
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                required
-                label="Chamber Name"
-                size="small"
-                value={form.chamber_name}
-                onChange={(e) => handleChange("chamber_name", e.target.value)}
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <TextField
-                fullWidth
-                required
-                label="Chamber ID"
-                size="small"
-                value={form.chamber_id}
-                onChange={(e) => handleChange("chamber_id", e.target.value)}
-                helperText="Must match the Chamber ID in the Calibration module"
-              />
-            </Grid>
-            <Grid item xs={12} sm={6}>
-              <FormControl fullWidth size="small">
-                <InputLabel>Chamber Category</InputLabel>
-                <Select
-                  label="Chamber Category"
-                  value={form.chamber_category}
+        {form && (
+          <DialogContent dividers>
+            <Grid container spacing={2}>
+              <Grid item xs={12} sm={4}>
+                <TextField
+                  fullWidth
+                  required
+                  size="small"
+                  label="Chamber ID"
+                  value={form.chamber_id}
                   onChange={(e) =>
-                    handleChange("chamber_category", e.target.value)
+                    setField("chamber_id", e.target.value.toUpperCase())
                   }
-                >
-                  <MenuItem value="">
-                    <em>— Select —</em>
-                  </MenuItem>
-                  {CATEGORIES.map((c) => (
-                    <MenuItem key={c} value={c}>
-                      {c}
-                    </MenuItem>
+                  helperText="As in Chamber Calibration"
+                />
+              </Grid>
+              <Grid item xs={12} sm={8}>
+                <TextField
+                  fullWidth
+                  required
+                  size="small"
+                  label="Name"
+                  value={form.chamber_name}
+                  onChange={(e) => setField("chamber_name", e.target.value)}
+                />
+              </Grid>
+              <Grid item xs={12} sm={4}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Category"
+                  value={form.chamber_category}
+                  onChange={(e) => setField("chamber_category", e.target.value)}
+                  inputProps={{ list: "chamber-categories" }}
+                />
+                <datalist id="chamber-categories">
+                  {categories.map((c) => (
+                    <option key={c} value={c} />
                   ))}
-                </Select>
-              </FormControl>
+                </datalist>
+              </Grid>
+              <Grid item xs={12} sm={8}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Other names (comma separated)"
+                  value={form.aliases}
+                  onChange={(e) => setField("aliases", e.target.value)}
+                  helperText="Spellings used in job cards and the mapping, e.g. HUMID-01"
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <Autocomplete
+                  multiple
+                  options={editOptions.map((t) => t.code)}
+                  value={form.codes}
+                  onChange={(_, v) => setField("codes", v)}
+                  getOptionLabel={(c) =>
+                    `${c} - ${typeByCode.get(c)?.name || ""}`
+                  }
+                  renderTags={(value, getTagProps) =>
+                    value.map((c, i) => (
+                      <Chip
+                        size="small"
+                        label={c}
+                        {...getTagProps({ index: i })}
+                        key={c}
+                      />
+                    ))
+                  }
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      size="small"
+                      label="Test types this chamber can run"
+                      helperText="Saving marks them as checked"
+                    />
+                  )}
+                />
+              </Grid>
+
+              {section("Inside size and load")}
+              {numField("Length", "length_cm", "cm", form, setField, 3)}
+              {numField("Width", "width_cm", "cm", form, setField, 3)}
+              {numField("Height", "height_cm", "cm", form, setField, 3)}
+              {numField("Max load", "max_load_kg", "kg", form, setField, 3)}
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Load limits by ramp rate"
+                  value={form.load_limits}
+                  onChange={(e) => setField("load_limits", e.target.value)}
+                  placeholder="20@10; 100@5"
+                  helperText={
+                    loadLimitsText(form.load_limits) ||
+                    'kg@°C/min, e.g. "20@10; 100@5" = up to 20 kg at 10 °C/min, up to 100 kg at 5 °C/min'
+                  }
+                />
+              </Grid>
+
+              {section("Temperature, humidity and altitude")}
+              {numField(
+                "Min temperature",
+                "temp_min_celsius",
+                "°C",
+                form,
+                setField,
+              )}
+              {numField(
+                "Max temperature",
+                "temp_max_celsius",
+                "°C",
+                form,
+                setField,
+              )}
+              {numField(
+                "Temp ramp rate",
+                "temp_ramp_rate",
+                "°C/min",
+                form,
+                setField,
+              )}
+              {numField(
+                "Min humidity",
+                "humidity_min_rh",
+                "%RH",
+                form,
+                setField,
+              )}
+              {numField(
+                "Max humidity",
+                "humidity_max_rh",
+                "%RH",
+                form,
+                setField,
+              )}
+              {numField(
+                "Humidity ramp rate",
+                "humidity_ramp_rate",
+                "%RH/min",
+                form,
+                setField,
+              )}
+              {numField("Max altitude", "altitude_max_m", "m", form, setField)}
+
+              {section("Vibration")}
+              {numField("Force", "vib_force_kgf", "kgf", form, setField, 3)}
+              {numField(
+                "Table length",
+                "vib_table_length_mm",
+                "mm",
+                form,
+                setField,
+                3,
+              )}
+              {numField(
+                "Table width",
+                "vib_table_width_mm",
+                "mm",
+                form,
+                setField,
+                3,
+              )}
+              {numField(
+                "Max displacement",
+                "vib_displacement_mm",
+                "mm p-p",
+                form,
+                setField,
+                3,
+              )}
+              {numField(
+                "Min frequency",
+                "vibration_freq_min_hz",
+                "Hz",
+                form,
+                setField,
+              )}
+              {numField(
+                "Max frequency",
+                "vibration_freq_max_hz",
+                "Hz",
+                form,
+                setField,
+              )}
+              {numField(
+                "Max acceleration",
+                "vibration_max_g",
+                "g",
+                form,
+                setField,
+              )}
+
+              {section("Other")}
+              <Grid item xs={6} sm={3}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Sort order"
+                  type="number"
+                  value={form.sort_order}
+                  onChange={(e) => setField("sort_order", e.target.value)}
+                />
+              </Grid>
+              <Grid item xs={6} sm={3}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={form.is_nabl_accredited}
+                      onChange={(e) =>
+                        setField("is_nabl_accredited", e.target.checked)
+                      }
+                      color="success"
+                    />
+                  }
+                  label="NABL"
+                />
+              </Grid>
+              <Grid item xs={6} sm={3}>
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={form.is_active}
+                      onChange={(e) => setField("is_active", e.target.checked)}
+                    />
+                  }
+                  label="Active"
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  multiline
+                  minRows={2}
+                  size="small"
+                  label="Notes"
+                  value={form.special_notes}
+                  onChange={(e) => setField("special_notes", e.target.value)}
+                  helperText="Limitations, e.g. ramp rates a standard needs that the chamber can't reach"
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <Alert severity="info" sx={{ fontSize: "12px" }}>
+                  Calibration status comes from Chamber Calibration, matched by
+                  Chamber ID or one of the other names. Switch off "Active" for
+                  a chamber that is out of service.
+                </Alert>
+              </Grid>
             </Grid>
-
-            <Grid item xs={12}>
-              <Divider>
-                <Typography variant="caption">Internal Dimensions</Typography>
-              </Divider>
-            </Grid>
-            {numField("Length", "length_cm", "cm", form, handleChange)}
-            {numField("Width", "width_cm", "cm", form, handleChange)}
-            {numField("Height", "height_cm", "cm", form, handleChange)}
-            {numField("Max Load", "max_load_kg", "kg", form, handleChange)}
-
-            {/* Temperature — shown for: Thermal, Humidity, Altitude, or no category selected */}
-            {catFields.showTemp && (
-              <>
-                <Grid item xs={12}>
-                  <Divider>
-                    <Typography variant="caption">Temperature Range</Typography>
-                  </Divider>
-                </Grid>
-                {numField(
-                  "Min Temperature",
-                  "temp_min_celsius",
-                  "°C",
-                  form,
-                  handleChange,
-                )}
-                {numField(
-                  "Max Temperature",
-                  "temp_max_celsius",
-                  "°C",
-                  form,
-                  handleChange,
-                )}
-                {numField(
-                  "Temp Ramp Rate",
-                  "temp_ramp_rate",
-                  "°C/min",
-                  form,
-                  handleChange,
-                )}
-              </>
-            )}
-
-            {/* Humidity — shown for: Humidity only */}
-            {catFields.showHumidity && (
-              <>
-                <Grid item xs={12}>
-                  <Divider>
-                    <Typography variant="caption">Humidity Range</Typography>
-                  </Divider>
-                </Grid>
-                {numField(
-                  "Min Humidity",
-                  "humidity_min_rh",
-                  "%RH",
-                  form,
-                  handleChange,
-                )}
-                {numField(
-                  "Max Humidity",
-                  "humidity_max_rh",
-                  "%RH",
-                  form,
-                  handleChange,
-                )}
-                {numField(
-                  "Humidity Ramp Rate",
-                  "humidity_ramp_rate",
-                  "%RH/min",
-                  form,
-                  handleChange,
-                )}
-              </>
-            )}
-
-            {/* Vibration — shown for: Vibration only */}
-            {catFields.showVibration && (
-              <>
-                <Grid item xs={12}>
-                  <Divider>
-                    <Typography variant="caption">Vibration Range</Typography>
-                  </Divider>
-                </Grid>
-                {numField(
-                  "Min Frequency",
-                  "vibration_freq_min_hz",
-                  "Hz",
-                  form,
-                  handleChange,
-                )}
-                {numField(
-                  "Max Frequency",
-                  "vibration_freq_max_hz",
-                  "Hz",
-                  form,
-                  handleChange,
-                )}
-                {numField(
-                  "Max Acceleration",
-                  "vibration_max_g",
-                  "g",
-                  form,
-                  handleChange,
-                )}
-              </>
-            )}
-
-            {/* Tests & Standards */}
-            <Grid item xs={12}>
-              <Divider>
-                <Typography variant="caption">Tests & Standards</Typography>
-              </Divider>
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Supported Tests"
-                size="small"
-                multiline
-                rows={2}
-                placeholder="Comma-separated: Dry Heat, Cold, Damp Heat, Thermal Shock"
-                value={form.supported_tests}
-                onChange={(e) =>
-                  handleChange("supported_tests", e.target.value)
-                }
-                helperText="Enter test names separated by commas"
-              />
-            </Grid>
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Supported Standards"
-                size="small"
-                multiline
-                rows={2}
-                placeholder="Comma-separated: IEC 60068-2-1, IEC 60068-2-2, MIL-STD-810H"
-                value={form.supported_standards}
-                onChange={(e) =>
-                  handleChange("supported_standards", e.target.value)
-                }
-                helperText="Enter standard references separated by commas"
-              />
-            </Grid>
-
-            <Grid item xs={12} sm={6}>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={form.is_nabl_accredited}
-                    onChange={(e) =>
-                      handleChange("is_nabl_accredited", e.target.checked)
-                    }
-                    color="success"
-                  />
-                }
-                label="NABL Accredited"
-              />
-            </Grid>
-
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Special Notes"
-                size="small"
-                multiline
-                rows={3}
-                placeholder="Any special capabilities, restrictions, or notes"
-                value={form.special_notes}
-                onChange={(e) => handleChange("special_notes", e.target.value)}
-              />
-            </Grid>
-
-            <Grid item xs={12}>
-              <Alert severity="info" sx={{ fontSize: "12px" }}>
-                <strong>Calibrated, Active, and Chamber Status</strong> are
-                fetched automatically from the Chamber Calibration module using
-                the Chamber ID. Make sure the Chamber ID above matches exactly
-                what is entered in the Calibration module.
-              </Alert>
-            </Grid>
-          </Grid>
-        </DialogContent>
-
+          </DialogContent>
+        )}
         <DialogActions sx={{ px: 3, py: 2 }}>
-          <Button onClick={() => setDialogOpen(false)} color="inherit">
+          <Button onClick={() => setForm(null)} color="inherit">
             Cancel
           </Button>
-          <Button
-            variant="contained"
-            onClick={handleSave}
-            disabled={saving}
-            startIcon={
-              saving ? <CircularProgress size={16} color="inherit" /> : null
-            }
-          >
-            {saving ? "Saving…" : editId ? "Update" : "Add Chamber"}
+          <Button variant="contained" onClick={handleSave} disabled={busy}>
+            {busy ? "Saving…" : form?.id ? "Update" : "Add"}
           </Button>
         </DialogActions>
       </Dialog>
 
-      {/* ─── Import Preview Dialog ─────────────────────────────────────────── */}
+      {/* ─── Delete ──────────────────────────────────────────────────────── */}
       <Dialog
-        open={importDialogOpen}
-        onClose={() => setImportDialogOpen(false)}
-        maxWidth="md"
-        fullWidth
-      >
-        <DialogTitle fontWeight={700}>Import Preview</DialogTitle>
-        <DialogContent dividers>
-          {importErrors.length > 0 && (
-            <Alert severity="error" sx={{ mb: 2 }}>
-              <Typography variant="body2" fontWeight={600} gutterBottom>
-                Validation Errors — fix these in the file and re-import:
-              </Typography>
-              {importErrors.map((e, i) => (
-                <Typography key={i} variant="caption" display="block">
-                  {e}
-                </Typography>
-              ))}
-            </Alert>
-          )}
-          <Typography variant="body2" color="text.secondary" mb={1}>
-            {importPreview.length} chamber(s) found. Rows with duplicate Chamber
-            IDs will be skipped.
-          </Typography>
-          <Box sx={{ maxHeight: 300, overflowY: "auto" }}>
-            {importPreview.map((row, idx) => (
-              <Paper key={idx} variant="outlined" sx={{ p: 1.5, mb: 1 }}>
-                <Typography variant="body2">
-                  <strong>{row.chamber_name}</strong> ({row.chamber_id})
-                  {row.chamber_category ? ` — ${row.chamber_category}` : ""}
-                </Typography>
-              </Paper>
-            ))}
-          </Box>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, py: 2 }}>
-          <Button onClick={() => setImportDialogOpen(false)} color="inherit">
-            Cancel
-          </Button>
-          <Button
-            variant="contained"
-            onClick={handleConfirmImport}
-            disabled={importing || importErrors.length > 0}
-            startIcon={
-              importing ? (
-                <CircularProgress size={16} color="inherit" />
-              ) : (
-                <UploadIcon />
-              )
-            }
-          >
-            {importing
-              ? "Importing…"
-              : `Import ${importPreview.length} Chamber(s)`}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* ─── Delete Confirmation ───────────────────────────────────────────── */}
-      <Dialog
-        open={!!deleteId}
-        onClose={() => setDeleteId(null)}
+        open={!!deleteRow}
+        onClose={() => setDeleteRow(null)}
         maxWidth="xs"
         fullWidth
       >
-        <DialogTitle>Delete Chamber Spec?</DialogTitle>
+        <DialogTitle>Delete Chamber?</DialogTitle>
         <DialogContent>
           <Typography variant="body2">
-            This will permanently remove the chamber spec. Calibration data in
-            the Chamber Calibration module will not be affected.
+            {deleteRow?.chamber_id}: {deleteRow?.chamber_name}. Its test type
+            links are removed too; calibration records are not affected. To keep
+            it, switch off "Active" instead.
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteId(null)} color="inherit">
+          <Button onClick={() => setDeleteRow(null)} color="inherit">
             Cancel
           </Button>
           <Button variant="contained" color="error" onClick={handleDelete}>
@@ -1026,7 +1071,23 @@ export default function ChamberSpecsManager() {
         </DialogActions>
       </Dialog>
 
-      {/* ─── Snackbar ──────────────────────────────────────────────────────── */}
+      <MasterImportDialog
+        file={importFile}
+        apiBase="/api/ts1_chamber_specs"
+        rowKey="chamber_id"
+        columns={IMPORT_COLUMNS}
+        fieldLabels={FIELD_LABELS}
+        itemName="chamber"
+        onClose={() => setImportFile(null)}
+        onImported={(r) => {
+          setImportFile(null);
+          fetchChambers();
+          showSnackbar(
+            `Import saved: ${r.added} new, ${r.changed} changed${r.deactivated ? `, ${r.deactivated} set inactive` : ""}`,
+          );
+        }}
+      />
+
       <Snackbar
         open={snackbar.open}
         autoHideDuration={3500}

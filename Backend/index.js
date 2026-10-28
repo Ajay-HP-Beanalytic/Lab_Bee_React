@@ -274,6 +274,7 @@ const {
   createTS1TestPricingTable,
   createInboundEmailsTable,
   migrateFeasibilityForEmailIntake,
+  migrateMasterData,
 } = require("./FeasibilityAutomation/feasibility_tables");
 
 //Get db connection from the db.js file
@@ -348,6 +349,7 @@ db.getConnection(function (err, connection) {
   createTS1TestPricingTable();
   createInboundEmailsTable();
   migrateFeasibilityForEmailIntake(); // also creates feasibility_request_euts
+  migrateMasterData(); // NABL scope, certificates, test types
 
   connection.release(); // Release the connection back to the pool when done
 });
@@ -431,6 +433,15 @@ chamberSpecsAPIs(app);
 
 const { testPricingAPIs } = require("./FeasibilityAutomation/TestPricingAPI");
 testPricingAPIs(app);
+
+const { labScopeAPIs } = require("./FeasibilityAutomation/LabScopeAPI");
+labScopeAPIs(app);
+
+const { testTypesAPIs } = require("./FeasibilityAutomation/TestTypesAPI");
+testTypesAPIs(app);
+
+const { testNameLinksAPIs } = require("./FeasibilityAutomation/TestNameLinksAPI");
+testNameLinksAPIs(app);
 
 //Backend connection to acess bea_marketing_APIs:
 const {
