@@ -34,6 +34,8 @@ import DownloadIcon from "@mui/icons-material/Download";
 import UploadIcon from "@mui/icons-material/Upload";
 import DoneAllIcon from "@mui/icons-material/DoneAll";
 import AutoFixHighIcon from "@mui/icons-material/AutoFixHigh";
+import EventAvailableIcon from "@mui/icons-material/EventAvailable";
+import { Link as RouterLink } from "react-router-dom";
 import { serverBaseAddress } from "../Pages/APIPage";
 import SearchBar from "../common/SearchBar";
 import MasterImportDialog from "./MasterImportDialog";
@@ -181,6 +183,7 @@ export default function ChamberSpecsManager() {
   const [busy, setBusy] = useState(false);
   const [autoResult, setAutoResult] = useState(null);
   const [form, setForm] = useState(null); // {...chamber, codes, id?} while the dialog is open
+  const [cal, setCal] = useState(null); // {row, ...calibration fields} while the calibration dialog is open
   const [deleteRow, setDeleteRow] = useState(null);
   const [importFile, setImportFile] = useState(null);
   const [snackbar, setSnackbar] = useState({
@@ -279,6 +282,36 @@ export default function ChamberSpecsManager() {
         await axios.post(`${serverBaseAddress}/api/ts1_chamber_specs`, payload);
       showSnackbar(form.id ? "Chamber updated" : "Chamber added");
       setForm(null);
+      fetchChambers();
+    } catch (err) {
+      showSnackbar(err.response?.data?.error || "Save failed", "error");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleOpenCalibration = (row) =>
+    setCal({
+      row,
+      calibration_done_date: row.calibration_done_date || "",
+      calibration_due_date: row.calibration_due_date || "",
+      calibration_done_by: row.calibration_done_by || "",
+      chamber_status: row.chamber_status || "Good",
+      remarks: row.calibration_remarks || "",
+    });
+
+  const setCalField = (name, value) => setCal((c) => ({ ...c, [name]: value }));
+
+  const handleSaveCalibration = async () => {
+    setBusy(true);
+    try {
+      const { row, ...body } = cal;
+      await axios.put(
+        `${serverBaseAddress}/api/ts1_chamber_specs/${row.id}/calibration`,
+        body,
+      );
+      showSnackbar(`Calibration of ${row.chamber_id} saved`);
+      setCal(null);
       fetchChambers();
     } catch (err) {
       showSnackbar(err.response?.data?.error || "Save failed", "error");
@@ -497,12 +530,16 @@ export default function ChamberSpecsManager() {
         return (
           <Tooltip
             title={
-              row.calibration_state === "none"
+              (row.calibration_state === "none"
                 ? "No calibration record with this Chamber ID (or one of its other names)"
-                : `Done ${row.calibration_done_date || "?"}, due ${row.calibration_due_date || "?"}`
+                : `Done ${row.calibration_done_date || "?"}, due ${row.calibration_due_date || "?"}`) +
+              ". Click to update."
             }
           >
-            <Box>
+            <Box
+              onClick={() => handleOpenCalibration(row)}
+              sx={{ cursor: "pointer" }}
+            >
               <Chip
                 size="small"
                 label={chip.label}
@@ -538,7 +575,7 @@ export default function ChamberSpecsManager() {
     {
       field: "actions",
       headerName: "Actions",
-      width: 95,
+      width: 125,
       headerClassName: "header",
       sortable: false,
       renderCell: ({ row }) => (
@@ -546,6 +583,11 @@ export default function ChamberSpecsManager() {
           <Tooltip title="Edit">
             <IconButton size="small" onClick={() => handleOpenEdit(row)}>
               <EditIcon fontSize="small" color="primary" />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Update calibration">
+            <IconButton size="small" onClick={() => handleOpenCalibration(row)}>
+              <EventAvailableIcon fontSize="small" color="success" />
             </IconButton>
           </Tooltip>
           <Tooltip title="Delete">
@@ -987,6 +1029,7 @@ export default function ChamberSpecsManager() {
                   type="number"
                   value={form.sort_order}
                   onChange={(e) => setField("sort_order", e.target.value)}
+                  helperText="Position in lists: lower comes first"
                 />
               </Grid>
               <Grid item xs={6} sm={3}>
@@ -1028,9 +1071,10 @@ export default function ChamberSpecsManager() {
               </Grid>
               <Grid item xs={12}>
                 <Alert severity="info" sx={{ fontSize: "12px" }}>
-                  Calibration status comes from Chamber Calibration, matched by
-                  Chamber ID or one of the other names. Switch off "Active" for
-                  a chamber that is out of service.
+                  Calibration is kept in Chamber Calibration, matched by Chamber
+                  ID or one of the other names. Update it with the calendar
+                  button in the list. Switch off "Active" for a chamber that is
+                  out of service.
                 </Alert>
               </Grid>
             </Grid>
@@ -1042,6 +1086,124 @@ export default function ChamberSpecsManager() {
           </Button>
           <Button variant="contained" onClick={handleSave} disabled={busy}>
             {busy ? "Saving…" : form?.id ? "Update" : "Add"}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* ─── Calibration ─────────────────────────────────────────────────── */}
+      <Dialog
+        open={!!cal}
+        onClose={() => setCal(null)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle fontWeight={700}>
+          Calibration of {cal?.row.chamber_id}
+        </DialogTitle>
+        {cal && (
+          <DialogContent dividers>
+            <Grid container spacing={2}>
+              <Grid item xs={12}>
+                <Alert
+                  severity={cal.row.calibration_shared ? "warning" : "info"}
+                  sx={{ fontSize: "12px" }}
+                >
+                  {cal.row.calibration_record_id
+                    ? `Saved to the Chamber Calibration record "${cal.row.calibration_record_chamber_id}".`
+                    : `There is no Chamber Calibration record for this chamber yet. Saving adds one under ${cal.row.chamber_id}.`}
+                  {cal.row.calibration_shared &&
+                    " That record covers more than one chamber, so the change applies to all of them."}
+                </Alert>
+              </Grid>
+              <Grid item xs={6}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  type="date"
+                  label="Calibration done on"
+                  InputLabelProps={{ shrink: true }}
+                  value={cal.calibration_done_date}
+                  onChange={(e) =>
+                    setCalField("calibration_done_date", e.target.value)
+                  }
+                />
+              </Grid>
+              <Grid item xs={6}>
+                <TextField
+                  fullWidth
+                  required
+                  size="small"
+                  type="date"
+                  label="Calibration due on"
+                  InputLabelProps={{ shrink: true }}
+                  value={cal.calibration_due_date}
+                  onChange={(e) =>
+                    setCalField("calibration_due_date", e.target.value)
+                  }
+                  helperText="Expired / up to date is worked out from this"
+                />
+              </Grid>
+              <Grid item xs={6}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Calibration done by"
+                  value={cal.calibration_done_by}
+                  onChange={(e) =>
+                    setCalField("calibration_done_by", e.target.value)
+                  }
+                />
+              </Grid>
+              <Grid item xs={6}>
+                <FormControl fullWidth size="small">
+                  <InputLabel>Chamber status</InputLabel>
+                  <Select
+                    label="Chamber status"
+                    value={cal.chamber_status}
+                    onChange={(e) =>
+                      setCalField("chamber_status", e.target.value)
+                    }
+                  >
+                    <MenuItem value="Good">Good</MenuItem>
+                    <MenuItem value="Under Maintenance">
+                      Under Maintenance
+                    </MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+              <Grid item xs={12}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  label="Remarks"
+                  value={cal.remarks}
+                  onChange={(e) => setCalField("remarks", e.target.value)}
+                />
+              </Grid>
+              <Grid item xs={12}>
+                <Typography variant="caption" color="text.secondary">
+                  Certificate:{" "}
+                  {cal.row.calibration_certificate_name || "none uploaded"}.
+                  Certificates are uploaded and viewed on the{" "}
+                  <RouterLink to="/chamber-calibration">
+                    Chamber Calibration
+                  </RouterLink>{" "}
+                  page.
+                </Typography>
+              </Grid>
+            </Grid>
+          </DialogContent>
+        )}
+        <DialogActions sx={{ px: 3, py: 2 }}>
+          <Button onClick={() => setCal(null)} color="inherit">
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleSaveCalibration}
+            disabled={busy || !cal?.calibration_due_date}
+          >
+            {busy ? "Saving…" : "Save"}
           </Button>
         </DialogActions>
       </Dialog>

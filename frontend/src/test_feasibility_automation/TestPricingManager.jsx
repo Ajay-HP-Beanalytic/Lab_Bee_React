@@ -45,9 +45,8 @@ const EMPTY_FORM = {
   charged_per: "hour",
   unit_label: "",
   rate: "",
+  rate_precompliance: "",
   min_qty: 1,
-  min_hours_precompliance: "",
-  min_hours_compliance: "",
   add_on_rate: "",
   add_on_label: "",
   sort_order: "",
@@ -62,9 +61,8 @@ const FIELD_LABELS = {
   charged_per: "Charged per",
   unit_label: "Unit name",
   rate: "Rate",
+  rate_precompliance: "Pre-compliance rate",
   min_qty: "Minimum",
-  min_hours_precompliance: "Min hours pre-compliance",
-  min_hours_compliance: "Min hours compliance",
   add_on_rate: "Add-on rate",
   add_on_label: "Add-on name",
   sort_order: "Sort order",
@@ -343,6 +341,11 @@ export default function TestPricingManager() {
       renderCell: ({ row }) => (
         <Box>
           <strong>{rupees(row.rate)}</strong> per {unitName(row)}
+          {row.rate_precompliance != null && (
+            <Typography variant="caption" display="block">
+              Compliance; pre-compliance {rupees(row.rate_precompliance)}
+            </Typography>
+          )}
           {row.add_on_rate != null && (
             <Typography variant="caption" display="block">
               + {rupees(row.add_on_rate)} per {row.add_on_label}
@@ -359,14 +362,6 @@ export default function TestPricingManager() {
       renderCell: ({ row }) => (
         <Box>
           {row.min_qty ?? 1} {unitName(row)}
-          {row.charged_per === "hour" &&
-            (row.min_hours_precompliance != null ||
-              row.min_hours_compliance != null) && (
-              <Typography variant="caption" display="block">
-                Pre-compliance {row.min_hours_precompliance ?? "-"} h,
-                compliance {row.min_hours_compliance ?? "-"} h
-              </Typography>
-            )}
         </Box>
       ),
     },
@@ -692,34 +687,19 @@ export default function TestPricingManager() {
                   onChange={(e) => setField("min_qty", e.target.value)}
                 />
               </Grid>
-              {form.charged_per === "hour" && (
-                <>
-                  <Grid item xs={6} sm={3}>
-                    <TextField
-                      fullWidth
-                      size="small"
-                      type="number"
-                      label="Min hours, pre-compliance"
-                      value={form.min_hours_precompliance}
-                      onChange={(e) =>
-                        setField("min_hours_precompliance", e.target.value)
-                      }
-                    />
-                  </Grid>
-                  <Grid item xs={6} sm={3}>
-                    <TextField
-                      fullWidth
-                      size="small"
-                      type="number"
-                      label="Min hours, compliance"
-                      value={form.min_hours_compliance}
-                      onChange={(e) =>
-                        setField("min_hours_compliance", e.target.value)
-                      }
-                    />
-                  </Grid>
-                </>
-              )}
+              <Grid item xs={6} sm={3}>
+                <TextField
+                  fullWidth
+                  size="small"
+                  type="number"
+                  label="Pre-compliance rate (₹)"
+                  value={form.rate_precompliance}
+                  onChange={(e) =>
+                    setField("rate_precompliance", e.target.value)
+                  }
+                  helperText="Only if pre-compliance costs less; Rate is then the compliance rate"
+                />
+              </Grid>
               <Grid item xs={6} sm={3}>
                 <TextField
                   fullWidth
@@ -748,6 +728,7 @@ export default function TestPricingManager() {
                   type="number"
                   value={form.sort_order}
                   onChange={(e) => setField("sort_order", e.target.value)}
+                  helperText="Position in lists: lower comes first"
                 />
               </Grid>
               <Grid item xs={6} sm={3}>
@@ -851,6 +832,13 @@ export default function TestPricingManager() {
                           Total {rupees(trialResult.amount)} + GST
                           {trialResult.minimumApplied && " (minimum charged)"}
                         </Typography>
+                        {trialResult.missing && (
+                          <Typography variant="caption" display="block">
+                            Not given: {trialResult.missing}
+                            {trialResult.missing.includes("purpose") &&
+                              " - the compliance rate was used"}
+                          </Typography>
+                        )}
                       </Alert>
                     </Grid>
                   )}

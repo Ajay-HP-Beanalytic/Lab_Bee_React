@@ -73,6 +73,29 @@ const testTypesAPIs = (app) => {
       ORDER BY t.department, t.sort_order IS NULL, t.sort_order, t.code`),
   ));
 
+  // What one type is linked to. The links are edited on the other side
+  // (NABL Scope, Job card test names, TS1 Chambers, Test Pricing).
+  app.get("/api/test_types/:id/links", handle(async (req) => {
+    const id = req.params.id;
+    const [scope, names, chambers, prices] = await Promise.all([
+      query(
+        `SELECT s.id, s.certificate_no, s.location, s.s_no, s.test_name, s.standard, s.test_types_status
+         FROM lab_scope_test_types l JOIN lab_scope s ON s.id = l.scope_id
+         WHERE l.test_type_id = ? ORDER BY s.certificate_no, s.location, s.s_no`, [id]),
+      query("SELECT id, test_name, status FROM test_name_links WHERE test_type_id = ? ORDER BY test_name", [id]),
+      query(
+        `SELECT s.id, s.chamber_id, s.chamber_name, s.test_types_status
+         FROM chamber_test_types l JOIN ts1_chamber_spec s ON s.id = l.chamber_spec_id
+         WHERE l.test_type_id = ? ORDER BY s.sort_order IS NULL, s.sort_order, s.chamber_id`, [id]),
+      query(
+        `SELECT p.id, p.code, p.name, p.charged_per, p.rate, p.is_active
+         FROM test_price_test_types l JOIN test_prices p ON p.id = l.price_id
+         WHERE l.test_type_id = ? ORDER BY p.code`, [id]),
+    ]);
+    for (const p of prices) p.rate = Number(p.rate);
+    return { scope, names, chambers, prices };
+  }));
+
   app.post("/api/test_types", handle(async (req, userId) => {
     const result = await query(`INSERT INTO test_types (${FIELDS.join(", ")}, updated_by) VALUES (?)`, [[...values(req.body), userId]]);
     return { success: true, id: result.insertId };

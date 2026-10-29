@@ -95,31 +95,52 @@ async function loadChambers() {
   return rows;
 }
 
-// Latest calibration of each chamber, found by the calibration's chamber ID
-async function addCalibration(chambers) {
+// Latest calibration record (chamber_calibration row) of each chamber, found by
+// the record's chamber ID. matchCount > 1 when one record covers several
+// chambers, e.g. "VIB-1 & VIB-2".
+async function latestCalibrations(chambers) {
   const cals = await query(
-    "SELECT chamber_id, calibration_done_date, calibration_due_date, chamber_status FROM chamber_calibration WHERE chamber_id IS NOT NULL AND chamber_id <> ''",
+    `SELECT id, chamber_id, calibration_done_date, calibration_due_date, calibration_done_by, chamber_status, remarks,
+       calibration_certificate_name, calibration_certificate_path
+     FROM chamber_calibration WHERE chamber_id IS NOT NULL AND chamber_id <> ''`,
   );
   const match = createChamberMatcher(chambers);
   const latest = new Map();
   for (const c of cals) {
-    for (const id of match(c.chamber_id)) {
+    const ids = match(c.chamber_id);
+    c.matchCount = ids.length;
+    for (const id of ids) {
       const prev = latest.get(id);
       if (!prev || (c.calibration_due_date && (!prev.calibration_due_date || c.calibration_due_date > prev.calibration_due_date))) {
         latest.set(id, c);
       }
     }
   }
+  return latest;
+}
+
+async function addCalibration(chambers) {
+  const latest = await latestCalibrations(chambers);
   const today = toIsoDate(new Date());
   for (const ch of chambers) {
     const c = latest.get(ch.id);
+    ch.calibration_record_id = c?.id || null;
+    ch.calibration_record_chamber_id = c?.chamber_id || null;
+    ch.calibration_shared = (c?.matchCount || 0) > 1;
     ch.calibration_due_date = c ? toIsoDate(c.calibration_due_date) : null;
     ch.calibration_done_date = c ? toIsoDate(c.calibration_done_date) : null;
+    ch.calibration_done_by = c?.calibration_done_by || null;
+    ch.calibration_remarks = c?.remarks || null;
+    ch.calibration_certificate_name = c?.calibration_certificate_name || null;
+    ch.calibration_certificate_path = c?.calibration_certificate_path || null;
     ch.chamber_status = c?.chamber_status || null;
     ch.calibration_state = !c ? "none" : !ch.calibration_due_date ? "no_date" : ch.calibration_due_date < today ? "expired" : "valid";
   }
   return chambers;
 }
+
+const CHAMBER_STATUSES = ["Good", "Under Maintenance"];
+const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 // Replaces the test types of one chamber (TS1 codes only); empty codes clear it
 async function setChamberTestTypes(conn, chamberId, codes, status) {
@@ -266,6 +287,42 @@ const chamberSpecsAPIs = (app) => {
       return { success: true };
     }),
   ));
+
+  // Saves the chamber's calibration into chamber_calibration, the same record the
+  // Chamber Calibration page shows (and slot booking reads). Updates the linked
+  // record, or adds one under this chamber's ID when there is none.
+  app.put("/api/ts1_chamber_specs/:id/calibration", handle(async (req) => {
+    const b = req.body || {};
+    const done = b.calibration_done_date || null;
+    const due = b.calibration_due_date || null;
+    if (!due || !ISO_DATE_RE.test(due)) throw badRequest("Calibration due date is required");
+    if (done && !ISO_DATE_RE.test(done)) throw badRequest("Calibration done date is not a valid date");
+    if (done && done > due) throw badRequest("Calibration done date is after the due date");
+    if (!CHAMBER_STATUSES.includes(b.chamber_status)) throw badRequest(`Chamber status must be ${CHAMBER_STATUSES.join(" or ")}`);
+    const doneBy = String(b.calibration_done_by || "").trim() || null;
+    const remarks = String(b.remarks || "").trim() || null;
+    const status = due < toIsoDate(new Date()) ? "Expired" : "Up to Date";
+
+    const chambers = await query("SELECT id, chamber_id, chamber_name, aliases FROM ts1_chamber_spec");
+    const chamber = chambers.find((c) => String(c.id) === String(req.params.id));
+    if (!chamber) throw Object.assign(new Error("Not found"), { status: 404 });
+    const record = (await latestCalibrations(chambers)).get(chamber.id);
+
+    if (record) {
+      await query(
+        `UPDATE chamber_calibration SET calibration_done_date = ?, calibration_due_date = ?, calibration_done_by = ?,
+           calibration_status = ?, chamber_status = ?, remarks = ? WHERE id = ?`,
+        [done, due, doneBy, status, b.chamber_status, remarks, record.id],
+      );
+      return { success: true, updated: record.id };
+    }
+    const res = await query(
+      `INSERT INTO chamber_calibration (chamber_name, chamber_id, calibration_done_date, calibration_due_date,
+         calibration_done_by, calibration_status, chamber_status, remarks) VALUES (?,?,?,?,?,?,?,?)`,
+      [chamber.chamber_name, chamber.chamber_id, done, due, doneBy, status, b.chamber_status, remarks],
+    );
+    return { success: true, added: res.insertId };
+  }));
 
   // Marks auto-filled test types as checked
   app.post("/api/ts1_chamber_specs/review", handle(async (req, userId) => {

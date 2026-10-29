@@ -20,9 +20,8 @@ const COLUMNS = [
   { header: "Charged Per (hour/test/unit)", key: "charged_per", width: 14, required: true, type: "enum", values: CHARGED_PER },
   { header: "Unit Name (for unit)", key: "unit_label", width: 14 },
   { header: "Rate (Rs, excl. GST)", key: "rate", width: 14, required: true, type: "number" },
+  { header: "Pre-compliance Rate (Rs, if different)", key: "rate_precompliance", width: 16, type: "number" },
   { header: "Minimum (hours/tests/units)", key: "min_qty", width: 14, type: "number", default: 1 },
-  { header: "Min Hours Pre-compliance", key: "min_hours_precompliance", width: 14, type: "number" },
-  { header: "Min Hours Compliance", key: "min_hours_compliance", width: 14, type: "number" },
   { header: "Add-on Rate (Rs)", key: "add_on_rate", width: 12, type: "number" },
   { header: "Add-on Name", key: "add_on_label", width: 16 },
   { header: "Sort Order", key: "sort_order", width: 10, type: "int" },
@@ -41,10 +40,9 @@ function rowProblems(r) {
   if (r.code && !CODE_RE.test(r.code)) problems.push("Price code may only use A-Z, 0-9, _ and -");
   if (r.charged_per === "unit" && !r.unit_label) problems.push('Give a unit name (e.g. "chemical") for prices charged per unit');
   if (r.rate != null && Number(r.rate) < 0) problems.push("Rate can't be negative");
+  if (r.rate_precompliance != null && Number(r.rate_precompliance) < 0) problems.push("Pre-compliance rate can't be negative");
   if (r.add_on_rate != null && !r.add_on_label) problems.push("Give the add-on a name (e.g. \"add-on cable\")");
-  for (const f of ["min_qty", "min_hours_precompliance", "min_hours_compliance"]) {
-    if (r[f] != null && Number(r[f]) < 0) problems.push("Minimums can't be negative");
-  }
+  if (r.min_qty != null && Number(r.min_qty) < 0) problems.push("Minimum can't be negative");
   return problems;
 }
 

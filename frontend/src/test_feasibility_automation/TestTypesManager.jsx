@@ -28,7 +28,9 @@ import {
   Typography,
 } from "@mui/material";
 import { DataGrid } from "@mui/x-data-grid";
+import { useNavigate } from "react-router-dom";
 import AddIcon from "@mui/icons-material/Add";
+import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import DownloadIcon from "@mui/icons-material/Download";
@@ -67,6 +69,128 @@ const IMPORT_COLUMNS = [
   { field: "department", headerName: "Dept", width: 70 },
   { field: "category", headerName: "Category", width: 130 },
 ];
+
+const rupees = (n) =>
+  `₹${Number(n).toLocaleString("en-IN", { maximumFractionDigits: 2 })}`;
+
+//Read-only list of what one type is linked to, each with a button to the page
+//where those links are changed.
+function TypeLinks({ typeId, onOpenNameLinks }) {
+  const navigate = useNavigate();
+  const [links, setLinks] = useState(null);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    setLinks(null);
+    setError(false);
+    axios
+      .get(`${serverBaseAddress}/api/test_types/${typeId}/links`)
+      .then((res) => setLinks(res.data))
+      .catch(() => setError(true));
+  }, [typeId]);
+
+  if (error) return <Alert severity="error">Could not load the links</Alert>;
+  if (!links) return <CircularProgress size={20} />;
+
+  const unchecked = (
+    <Chip
+      label="not checked"
+      size="small"
+      color="warning"
+      variant="outlined"
+      sx={{ ml: 0.5, height: 18, fontSize: 11 }}
+    />
+  );
+
+  const sections = [
+    {
+      title: "NABL scope lines",
+      why: "Tells the quotation whether this test can be offered under NABL, and against which standards.",
+      page: "NABL Scope",
+      go: () => navigate("/nabl_scope"),
+      items: links.scope.map((s) => (
+        <span key={s.id}>
+          {s.certificate_no}
+          {s.location === "site" ? " (site)" : ""} #{s.s_no}: {s.test_name} -{" "}
+          {s.standard}
+          {s.test_types_status === "ai" && unchecked}
+        </span>
+      )),
+    },
+    {
+      title: "Job card test names",
+      why: "Names used on past job cards. Used to fill chamber test types and to read history.",
+      page: "the Job card test names tab",
+      go: onOpenNameLinks,
+      items: links.names.map((n) => (
+        <span key={n.id}>
+          {n.test_name}
+          {n.status === "auto" && unchecked}
+        </span>
+      )),
+    },
+    {
+      title: "TS1 chambers",
+      why: "Chambers that can run this test. The feasibility check only looks at these.",
+      page: "TS1 Chambers",
+      go: () => navigate("/ts1_chamber_specs"),
+      items: links.chambers.map((c) => (
+        <span key={c.id}>
+          {c.chamber_id} - {c.chamber_name}
+          {c.test_types_status === "auto" && unchecked}
+        </span>
+      )),
+    },
+    {
+      title: "Prices",
+      why: "The price used on the quotation for this test.",
+      page: "Test Pricing",
+      go: () => navigate("/ts1_test_pricing"),
+      items: links.prices.map((p) => (
+        <span key={p.id}>
+          {p.code}: {p.name} - {rupees(p.rate)} per {p.charged_per}
+          {!p.is_active && " (inactive)"}
+        </span>
+      )),
+    },
+  ];
+
+  return (
+    <Box>
+      {sections.map((s) => (
+        <Box key={s.title} mb={1.5}>
+          <Box display="flex" alignItems="center" gap={1}>
+            <Typography variant="subtitle2" fontWeight={700}>
+              {s.title} ({s.items.length})
+            </Typography>
+            <Button
+              size="small"
+              endIcon={<OpenInNewIcon fontSize="small" />}
+              onClick={s.go}
+              sx={{ textTransform: "none", py: 0 }}
+            >
+              Change in {s.page}
+            </Button>
+          </Box>
+          <Typography variant="caption" color="text.secondary" component="div">
+            {s.why}
+          </Typography>
+          {s.items.length ? (
+            <Box component="ul" sx={{ m: 0, pl: 2.5, fontSize: 13 }}>
+              {s.items.map((item) => (
+                <li key={item.key}>{item}</li>
+              ))}
+            </Box>
+          ) : (
+            <Typography variant="body2" color="text.disabled">
+              None
+            </Typography>
+          )}
+        </Box>
+      ))}
+    </Box>
+  );
+}
 
 //Catalogue of test types (High temperature, Vibration, IPX5, CE102 …). Scope lines,
 //chambers and prices are linked to these.
@@ -223,6 +347,8 @@ export default function TestTypesManager() {
     {
       field: "scope_count",
       headerName: "Scope lines",
+      description:
+        "NABL scope lines of this type (set on the NABL Scope page). None = not NABL accredited.",
       width: 100,
       type: "number",
       headerClassName: "header",
@@ -230,6 +356,8 @@ export default function TestTypesManager() {
     {
       field: "name_count",
       headerName: "Job card names",
+      description:
+        "Test names on past job cards that mean this type (set on the Job card test names tab)",
       width: 120,
       type: "number",
       headerClassName: "header",
@@ -237,6 +365,8 @@ export default function TestTypesManager() {
     {
       field: "chamber_count",
       headerName: "Chambers",
+      description:
+        "TS1 chambers that can run this type (set on the TS1 Chambers page)",
       width: 95,
       type: "number",
       headerClassName: "header",
@@ -244,6 +374,7 @@ export default function TestTypesManager() {
     {
       field: "price_count",
       headerName: "Priced",
+      description: "Has an active price on the Test Pricing page",
       width: 80,
       headerClassName: "header",
       renderCell: ({ value }) =>
@@ -524,6 +655,7 @@ export default function TestTypesManager() {
                   type="number"
                   value={form.sort_order}
                   onChange={(e) => setField("sort_order", e.target.value)}
+                  helperText="Position in lists: lower comes first"
                 />
               </Grid>
               <Grid item xs={6} sm={3}>
@@ -570,6 +702,33 @@ export default function TestTypesManager() {
                   onChange={(e) => setField("notes", e.target.value)}
                 />
               </Grid>
+              {form.id && (
+                <Grid item xs={12}>
+                  <Typography
+                    variant="subtitle1"
+                    fontWeight={700}
+                    color="#003366"
+                    sx={{ borderTop: 1, borderColor: "divider", pt: 1.5 }}
+                  >
+                    Linked to
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    gutterBottom
+                  >
+                    These links are set on their own pages, so each one is kept
+                    in one place.
+                  </Typography>
+                  <TypeLinks
+                    typeId={form.id}
+                    onOpenNameLinks={() => {
+                      setForm(null);
+                      setView("links");
+                    }}
+                  />
+                </Grid>
+              )}
             </Grid>
           </DialogContent>
         )}

@@ -55,6 +55,7 @@ import UserProfile from "../LoginRegister/UserProfile";
 import { UserContext } from "../Pages/UserContext";
 import { Source } from "@mui/icons-material";
 import NotificationDialog from "./NotificationDialog";
+import HelpButton from "./help/HelpButton";
 
 // ─── Layout constants ─────────────────────────────────────────────────────────
 
@@ -607,6 +608,7 @@ export default function SidenavigationBar() {
               Lab Bee
             </Typography>
             <Box sx={{ flexGrow: 1 }} />
+            <HelpButton />
             <NotificationDialog />
             <IconButton onClick={handleClickAvatar}>
               <Avatar sx={{ backgroundColor: "#ff3333", fontWeight: 700 }}>

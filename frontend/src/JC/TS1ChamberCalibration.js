@@ -54,6 +54,7 @@ import SearchBar from "../common/SearchBar";
 import EmptyCard from "../common/EmptyCard";
 import DocumentPreviewModal from "../components/DocumentPreviewModal";
 import { DataGrid } from "@mui/x-data-grid";
+import { Link as RouterLink } from "react-router-dom";
 
 // Base folder (inside shared-files) where chamber calibration certificates are
 // stored. ChamberCalibration -> TS1, EMICalibration -> TS2.
@@ -896,8 +897,14 @@ export default function ChamberAndCalibration() {
   return (
     <>
       <Box>
-        <Typography variant="h4" sx={{ color: "#003366", mb: "10px" }}>
+        <Typography variant="h4" sx={{ color: "#003366", mb: "4px" }}>
           Chambers and Calibration Dashboard
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: "10px" }}>
+          Calibration of all chambers and equipment. Size, limits and test types
+          of the TS1 test chambers are on the{" "}
+          <RouterLink to="/ts1_chamber_specs">TS1 Chambers</RouterLink> page,
+          which reads the calibration from here and can also update it.
         </Typography>
 
         <Grid container spacing={3} sx={{ mb: 3 }}>

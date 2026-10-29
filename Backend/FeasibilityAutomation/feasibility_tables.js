@@ -461,9 +461,10 @@ function createTestNameLinksTable() {
 //Price list for TS1 and TS2 (prices exclude GST; NABL and non-NABL cost the same).
 //charged_per: 'hour' (rate x hours), 'test' (rate x tests) or 'unit' (rate x
 //units named by unit_label, e.g. per chemical). min_qty is the minimum charged
-//(TS1: 1 hour or 1 test); for hourly TS2 tests the minimum can depend on the
-//purpose (pre-compliance / compliance). add_on_rate is charged per extra item,
-//e.g. CS114: 18,000 per power cable + 6,500 per add-on cable.
+//(TS1: 1 hour or 1 test). rate is the normal (compliance) rate; when
+//rate_precompliance is set, pre-compliance testing uses it instead (TS2 EMC:
+//80,000 compliance / 40,000 pre-compliance per test). add_on_rate is charged
+//per extra item, e.g. CS114: 18,000 per power cable + 6,500 per add-on cable.
 function createTestPricesTable() {
   const sqlQuery = `
     CREATE TABLE IF NOT EXISTS test_prices (
@@ -475,9 +476,8 @@ function createTestPricesTable() {
       unit_label              VARCHAR(50) DEFAULT NULL,
       rate                    DECIMAL(12,2) NOT NULL,
       min_qty                 DECIMAL(10,2) DEFAULT 1,
-      min_hours_precompliance DECIMAL(10,2) DEFAULT NULL,
-      min_hours_compliance    DECIMAL(10,2) DEFAULT NULL,
-      add_on_rate             DECIMAL(12,2) DEFAULT NULL,
+      rate_precompliance      DECIMAL(12,2) DEFAULT NULL,
+      add_on_rate            DECIMAL(12,2) DEFAULT NULL,
       add_on_label            VARCHAR(50) DEFAULT NULL,
       sort_order              INT DEFAULT NULL,
       is_active               TINYINT(1) NOT NULL DEFAULT 1,
@@ -540,6 +540,18 @@ async function migrateMasterData() {
     const haveChamber = new Set(chamberCols.map((r) => r.c.toLowerCase()));
     for (const [column, definition] of Object.entries(CHAMBER_COLUMNS)) {
       if (!haveChamber.has(column)) await q(`ALTER TABLE ts1_chamber_spec ADD COLUMN ${column} ${definition}`);
+    }
+
+    // First version priced pre-compliance / compliance by minimum hours (never used)
+    const priceCols = await q(
+      "SELECT column_name AS c FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'test_prices'",
+    );
+    const havePrice = new Set(priceCols.map((r) => r.c.toLowerCase()));
+    if (!havePrice.has("rate_precompliance")) {
+      await q("ALTER TABLE test_prices ADD COLUMN rate_precompliance DECIMAL(12,2) DEFAULT NULL AFTER min_qty");
+    }
+    for (const old of ["min_hours_precompliance", "min_hours_compliance"]) {
+      if (havePrice.has(old)) await q(`ALTER TABLE test_prices DROP COLUMN ${old}`);
     }
 
     const [{ n }] = await q("SELECT COUNT(*) AS n FROM test_types");
