@@ -81,6 +81,53 @@ Add it to `sidenavbar.js` and `App.js`, following the Chamber Specs and Test Pri
 
 ---
 
+## Part C — Enquiry workflow: email → feasibility → quote → follow-up → won/lost (agreed 2026-10-29)
+
+This replaces A3, A4 and A6 above with a simpler flow built on what exists: the email intake (A1, done), the master data (NABL scope, test types, TS1 chambers, test pricing, done) and the existing Quotation page and notifications. The RFQ Inbox becomes **Enquiries**.
+
+### C1. One pipeline, each stage with an owner
+
+| # | Stage | Who acts | What happens | Notified |
+|---|---|---|---|---|
+| 1 | **New** | System + AI | Email read, attachments stored, short summary written, each test pre-checked (test type, chamber, NABL, price estimate) | TS1 or TS2 team, by the tests' department |
+| 2 | **Feasibility check** | A tester clicks **Take it** | Confirms each test: Feasible / Not feasible / Need info. The pre-check is only a suggestion | – |
+| 2a | *Waiting for customer* | Tester | Missing details listed | Accounts / Marketing, who ask the customer |
+| 3 | **Reply to customer** | Accounts / Marketing | Confirmation (or regret) email drafted by the app; they check it, copy it into Outlook and send it, then click **Mark as sent** | – |
+| 4 | **Quote** | Accounts / Marketing | Draft quote ready when requested; finalised in the existing Quotation page and sent | – |
+| 5 | **Follow-up** | Whoever prepared / sent the quote | Follow-up dates, call/email log, revised quotes | Owner, on each due date |
+| 6 | **Closed** | Owner | **Won** (PO no., value) / **Lost** (reason) / Not feasible / Not an enquiry | Management summary |
+
+### C2. Decisions (user, 2026-10-29)
+- **Confirmation email: option 2.** Accounts / Marketing are notified and send it; nothing goes to a customer automatically. Automatic sending for simple cases may become a setting later.
+- **No sending from the app yet.** The app drafts the email; staff copy it into Outlook, send it, and click "Mark as sent". Graph **Mail.Send** (reply in the customer's thread from the RFQ mailbox) can be added later.
+- **Combined reply:** when the customer already asked for a quote, the feasibility confirmation and the quote go in one reply (stages 3 and 4 merge).
+- **Follow-up owner:** the person who prepared / sent the quote (today Accounts and Marketing).
+- **Attachments are stored** in file storage under `RFQ/<year>/RFQ-00012/` and viewable in the app (PDF, Word, Excel, images, text, CSV). Logos/signatures skipped. Confidential mails' files are stored too (they stay on our server; they are just not sent to the AI).
+- **Draft quote = the existing Quotation page, pre-filled** (customer, reference, one line per test with description, duration/quantity, unit Hour/Test, rate and amount from Test Pricing). Saving links the quotation to the enquiry. No second quotation screen.
+
+### C3. Data
+- `feasibility_requests`: `stage`, `owner_id`, `next_followup_at`, `outcome`, `outcome_reason`, `po_number`, `won_value`.
+- `rfq_events` (new): request, event, from/to stage, user, note, data JSON, time. The audit trail ("who did what"), the Timeline and all time / conversion figures come from it.
+- `rfq_attachments` (new): request, email, file name, storage path, size, type.
+- `rfq_followups` (new): date, method (call / email / visit), note, user, next date.
+- `bea_quotations_table`: `rfq_id`, `sent_at`, `sent_by`.
+- `rfqWorkflow.js`: the allowed stage changes and which department may make each; every change goes through it (writes the event, updates the stage, sends the notification). New stages (PO received, slot booking) are added there.
+- Notifications reuse `notifications_table` + socket messages, by department (TS1 Testing, TS2 Testing, Accounts, Marketing).
+
+### C4. Screens
+- **List:** default tab **My work** (what needs my action, by department and owner); tabs All open · Feasibility · Reply · Quote · Follow-up · Closed. Row: RFQ no., customer, summary, stage, owner, age / overdue, quote value.
+- **Details:** Summary · Email & attachments · Tests & feasibility · Quote · Follow-up · Timeline.
+- **Dashboard:** count and value per stage; enquiry → quote and quote → won rates; value won; time email → feasibility and email → quote; lost reasons; open follow-ups per person; filters by month, department, customer.
+
+### C5. Build order (each phase tested before the next)
+1. **Foundation:** stages, events log, Take it / assign, stage notifications; attachment storage + viewer; AI summary; new list and details with Timeline.
+2. **Feasibility:** engine pre-check per test (test type → chamber → calibration → NABL → price), tester confirm screen, drafted confirmation / regret email to copy, Mark as sent.
+3. **Quote:** pre-filled Quotation page, quote linked to the enquiry, mark quote sent.
+4. **Follow-up and conversion:** follow-up log, daily reminders, customer-replied detection (same email thread), Won / Lost, dashboard.
+5. **Later:** PO detection from replies (A5), slot booking; optional sending through Graph Mail.Send.
+
+---
+
 ## Part B — Report Automation (TS1 + TS2 EMI)
 
 ### B1. TS1: remove the manual inputs from the existing generator
@@ -109,6 +156,8 @@ The generator is `JC/TS1ReportDocument.js` (`prepareReportData`) feeding `Report
 ---
 
 ## Suggested Build Order
+> Superseded for Part A by **C5** (A1 email intake and the master data are done; the enquiry workflow is built next). Part B order is unchanged.
+
 1. **A2 + A3**: the engine and auto quotation work with today's portal. This gives the biggest time saving and no IT dependency.
 2. **A4 + A6**: approval UI and sending.
 3. **B1, then B2, then B3**: reports. These can run in parallel with step 2.
