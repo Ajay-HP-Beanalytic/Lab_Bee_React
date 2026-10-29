@@ -66,10 +66,11 @@ const getTokenRoles = async () => {
   return { roles: payload.roles || [], appName: payload.app_displayname };
 };
 
-//GET a Graph path relative to the mailbox, e.g. "/messages".
-const graphGet = async (path, params = {}) => {
+//GET a Graph path relative to the mailbox, e.g. "/messages". mailbox defaults
+//to RFQ_MAILBOX; old mails are read from the mailbox they were stored from.
+const graphGet = async (path, params = {}, mailbox = process.env.RFQ_MAILBOX) => {
   const token = await getAccessToken();
-  const mailbox = encodeURIComponent(process.env.RFQ_MAILBOX);
+  mailbox = encodeURIComponent(mailbox);
   const qs = new URLSearchParams(params).toString();
   const url = `${GRAPH_BASE}/users/${mailbox}${path}${qs ? `?${qs}` : ""}`;
 
@@ -93,9 +94,9 @@ const graphGet = async (path, params = {}) => {
 };
 
 //GET a Graph path and return the raw bytes (used for $value MIME downloads).
-const graphGetRaw = async (path) => {
+const graphGetRaw = async (path, mailbox = process.env.RFQ_MAILBOX) => {
   const token = await getAccessToken();
-  const mailbox = encodeURIComponent(process.env.RFQ_MAILBOX);
+  mailbox = encodeURIComponent(mailbox);
   const res = await fetch(`${GRAPH_BASE}/users/${mailbox}${path}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -139,14 +140,14 @@ const parseSensitivityLabels = (msipHeader) =>
 
 //Get one message including its full (plain-text) body and confidentiality markers
 //(sensitivity flag, Outlook categories, sensitivity labels).
-const getMessage = async (messageId) => {
+const getMessage = async (messageId, mailbox) => {
   const msg = await graphGet(`/messages/${messageId}`, {
     $select:
       "id,internetMessageId,conversationId,subject,from,toRecipients,ccRecipients,receivedDateTime,hasAttachments,body,categories,internetMessageHeaders",
     // The Outlook sensitivity flag is not a normal Graph field; it is the MAPI
     // property PidTagSensitivity (0x0036): 0 normal, 1 personal, 2 private, 3 confidential
     $expand: "singleValueExtendedProperties($filter=id eq 'Integer 0x0036')",
-  });
+  }, mailbox);
   const msip = (msg.internetMessageHeaders || []).find(
     (h) => h.name.toLowerCase() === "msip_labels",
   );
@@ -164,8 +165,8 @@ const getMessage = async (messageId) => {
 // kind = "email" -> mail forwarded as an attachment (content = raw MIME / .eml bytes,
 //                   parse it with mailSource/parseEmail.js to get its body and files)
 // kind = "link"  -> OneDrive/SharePoint link attachment (no content)
-const getAttachments = async (messageId) => {
-  const data = await graphGet(`/messages/${messageId}/attachments`);
+const getAttachments = async (messageId, mailbox) => {
+  const data = await graphGet(`/messages/${messageId}/attachments`, {}, mailbox);
   const result = [];
 
   for (const a of data.value) {
@@ -189,6 +190,7 @@ const getAttachments = async (messageId) => {
       try {
         const mime = await graphGetRaw(
           `/messages/${messageId}/attachments/${a.id}/$value`,
+          mailbox,
         );
         result.push({ ...base, kind: "email", content: mime });
       } catch (err) {

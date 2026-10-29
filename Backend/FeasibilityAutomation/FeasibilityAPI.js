@@ -1,6 +1,7 @@
 const crypto = require("crypto");
 const nodemailer = require("nodemailer");
 const { db } = require("../db");
+const { onCreated } = require("./enquiry/workflow");
 
 //Create a transporter function to send emails.
 const createTransporter = () =>
@@ -218,6 +219,9 @@ const feasibilityAPIs = (app) => {
             ).catch((emailErr) =>
               console.error("Confirmation email failed:", emailErr),
             );
+
+            // Enquiry workflow: event + notify the testing team
+            onCreated(requestId, { by: "portal" }).catch((e) => console.error("enquiry workflow:", e.message));
 
             res.json({ success: true, request_id: requestId, reference });
           });

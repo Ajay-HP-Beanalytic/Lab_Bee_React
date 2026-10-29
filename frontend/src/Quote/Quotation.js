@@ -35,7 +35,7 @@ import { styled } from "@mui/material/styles";
 import AddIcon from "@mui/icons-material/Add";
 import RemoveIcon from "@mui/icons-material/Remove";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 
 import { serverBaseAddress } from "../Pages/APIPage";
 import DocToPdf from "./DocToPdf";
@@ -127,6 +127,9 @@ export default function Quotation() {
   const [totalAmountAfterDiscount, setTotalAmountAfterDiscount] = useState(0);
 
   const { id } = useParams("id");
+  // Opened from an enquiry's draft quote: /quotation?rfq=12
+  const [searchParams] = useSearchParams();
+  const rfqId = !id ? parseInt(searchParams.get("rfq")) || null : null;
 
   const [companyIdList, setCompanyIdList] = useState([]);
   const [selectedCompanyId, setSelectedCompanyId] = useState("");
@@ -184,6 +187,65 @@ export default function Quotation() {
     // Set initial quotation ID when the component mounts
     // setInitialQuotationId(initialCompanyName);
   }, [id, initialCompanyName]);
+
+  // Pre-fill a new quotation from an enquiry's draft quote (customer and test lines)
+  useEffect(() => {
+    if (!rfqId) return;
+    axios
+      .get(`${serverBaseAddress}/api/enquiries/${rfqId}/draft-quote`)
+      .then(async ({ data }) => {
+        const { request, draft } = data;
+        if (!draft) {
+          toast.warning("This enquiry has no draft quote yet");
+          return;
+        }
+        const c = draft.customer || {};
+        if (c.company_id) {
+          try {
+            const res = await axios.get(`${serverBaseAddress}/api/getCompanyDetails/` + c.company_id);
+            const m = res.data[0] || {};
+            setSelectedCompanyId(c.company_id);
+            setToCompanyAddress(m.company_address || c.company_address || "");
+            setCustomerreferance(m.customer_referance || "");
+          } catch (err) {
+            console.error(err);
+          }
+        } else {
+          setToCompanyAddress(c.company_address || "");
+        }
+        setCompanyName(c.company_name || "");
+        setCustomerId((c.company_id || "").toUpperCase());
+        setKindAttention(c.kind_attention || "");
+        setCustomerEmail(c.email || "");
+        setCustomerContactNumber(c.phone || "");
+        if (request.customer_reference) setCustomerreferance(request.customer_reference);
+        setProjectName(request.email_subject || `Enquiry RFQ-${String(rfqId).padStart(5, "0")}`);
+        const ts2Only = String(request.departments || "") === "TS2";
+        setQuoteCategory(ts2Only ? "EMI & EMC" : "Environmental Testing");
+        setCatCode(ts2Only ? "TS2" : "TS1");
+        setSelectedDate(formattedDate);
+        setTableData(
+          draft.lines.map((l, i) => ({
+            id: i + 1,
+            slno: i + 1,
+            testDescription: l.testDescription || "",
+            sacNo: l.sacNo || "",
+            duration: l.duration ?? "",
+            unit: l.unit || "",
+            perUnitCharge: l.perUnitCharge ?? "",
+            amount: l.amount ?? "",
+            module_id: 0,
+          })),
+        );
+        const toCheck = draft.lines.filter((l) => l.problems.length).length;
+        toast.info(
+          `Filled from the draft quote of RFQ-${String(rfqId).padStart(5, "0")}.${toCheck ? ` ${toCheck} line(s) need checking (see the enquiry's Quote tab).` : ""}${c.company_id ? "" : " Choose the company (customer ID) before saving."}`,
+          { autoClose: 9000 },
+        );
+      })
+      .catch(() => toast.error("Couldn't load the draft quote"));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rfqId]);
 
   // To prefill the primary company details on selecting company name:
   const prefillTextFields = (selectedCompanyId) => {
@@ -421,6 +483,7 @@ export default function Quotation() {
 
         // Update the state with successful ID
         setQuotationIDString(freshQuotationId);
+        submitResponse.quotationId = freshQuotationId;
         return submitResponse; // Success!
       } catch (error) {
         // Check if it's a duplicate ID error
@@ -543,6 +606,15 @@ export default function Quotation() {
 
       if (response.status === 200) {
         toast.success(editId ? "Changes Saved" : "Quotation Added");
+        // Made from an enquiry's draft: link the quotation to the enquiry
+        if (rfqId && !editId && response.quotationId) {
+          await axios
+            .post(`${serverBaseAddress}/api/enquiries/${rfqId}/draft-quote/link`, {
+              quotation_ids: response.quotationId,
+              value: taxableAmount,
+            })
+            .catch(() => toast.warning("Quotation saved, but it couldn't be linked to the enquiry"));
+        }
       }
     } catch (error) {
       console.error("Error submitting quotation:", error);

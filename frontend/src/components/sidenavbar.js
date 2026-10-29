@@ -20,6 +20,7 @@ import Divider from "@mui/material/Divider";
 import CalculateIcon from "@mui/icons-material/Calculate";
 import NewspaperIcon from "@mui/icons-material/Newspaper";
 import TuneIcon from "@mui/icons-material/Tune";
+import TimerIcon from "@mui/icons-material/Timer";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
 import EventRepeatIcon from "@mui/icons-material/EventRepeat";
@@ -247,7 +248,7 @@ const ALL_ITEMS = [
   },
   {
     i: 18,
-    label: "RFQ Inbox",
+    label: "Enquiries",
     icon: <MarkEmailUnreadIcon />,
     path: "/rfq_inbox",
     gradientId: "rfqInboxGradient",
@@ -266,6 +267,13 @@ const ALL_ITEMS = [
     path: "/test_types",
     gradientId: "testTypesGradient",
   },
+  {
+    i: 21,
+    label: "Test Durations",
+    icon: <TimerIcon />,
+    path: "/test_durations",
+    gradientId: "testDurationsGradient",
+  },
 ];
 
 const GROUPS = [
@@ -281,7 +289,7 @@ const GROUPS = [
     label: "TS1 Testing",
     icon: <ScienceIcon />,
     gradientId: "grpTS1Grad",
-    itemIds: [4, 5, 6, 7, 8, 16],
+    itemIds: [4, 5, 6, 7, 8, 16, 21],
   },
   {
     id: "TS2 Testing",
@@ -307,9 +315,9 @@ const GROUPS = [
 ];
 
 const ACCESS_RULES = {
-  "Accounts": [1, 2, 3, 4, 5, 6, 8, 9, 10, 17, 18, 20],
+  "Accounts": [1, 2, 3, 4, 5, 6, 8, 9, 10, 17, 18, 20, 21],
   "Marketing": [2, 3, 8, 9, 10, 18],
-  "TS1 Testing": [4, 5, 6, 7, 8, 16, 18, 19, 20],
+  "TS1 Testing": [4, 5, 6, 7, 8, 16, 18, 19, 20, 21],
   "TS2 Testing": [9, 10, 11, 18, 19, 20],
   "Reliability": [12],
   "Software": [12],

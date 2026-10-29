@@ -7,6 +7,7 @@ const graph = require("../mailSource/graphAdapter");
 const { parseEmail } = require("../mailSource/parseEmail");
 const { analyzeEmail } = require("./emailIntakeAgent");
 const { inputTokens } = require("./modelPrices");
+const { storeEmailFiles } = require("../enquiry/attachments");
 
 const query = (sql, params) => db.promise().query(sql, params).then(([rows]) => rows);
 
@@ -25,9 +26,10 @@ const toForwardedBundle = (p) => ({
 });
 
 //Fetch a Graph message with its attachments and forwarded mails as a bundle.
-const fetchBundle = async (graphMessageId) => {
-  const msg = await graph.getMessage(graphMessageId);
-  const attachments = await graph.getAttachments(graphMessageId);
+//mailbox: the mailbox it was read from (default RFQ_MAILBOX).
+const fetchBundle = async (graphMessageId, mailbox) => {
+  const msg = await graph.getMessage(graphMessageId, mailbox);
+  const attachments = await graph.getAttachments(graphMessageId, mailbox);
   const forwarded = [];
   for (const a of attachments.filter((x) => x.kind === "email")) {
     forwarded.push(toForwardedBundle(await parseEmail(a.content)));
@@ -99,12 +101,20 @@ const processMessage = async (graphMessageId, { dryRun = false } = {}) => {
     error: out.error || null,
   };
 
+  let id;
   if (existing.length) {
-    await query("UPDATE inbound_emails SET ?, attempts = attempts + 1 WHERE id = ?", [row, existing[0].id]);
-    return { status: "saved", id: existing[0].id, retried: true, subject: msg.subject, ...out };
+    id = existing[0].id;
+    await query("UPDATE inbound_emails SET ?, attempts = attempts + 1 WHERE id = ?", [row, id]);
+  } else {
+    id = (await query("INSERT INTO inbound_emails SET ?, attempts = 1", [row])).insertId;
   }
-  const result = await query("INSERT INTO inbound_emails SET ?, attempts = 1", [row]);
-  return { status: "saved", id: result.insertId, subject: msg.subject, ...out };
+  // Keep the files so staff can open them from the enquiry (also for confidential mails)
+  try {
+    await storeEmailFiles(id, row.received_at, bundle);
+  } catch (err) {
+    console.error(`[email-intake] could not store attachments of email ${id}:`, err.message);
+  }
+  return { status: "saved", id, retried: !!existing.length, subject: msg.subject, ...out };
 };
 
 const MAX_ATTEMPTS = 3;

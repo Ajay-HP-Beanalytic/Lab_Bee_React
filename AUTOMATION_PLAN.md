@@ -109,9 +109,9 @@ This replaces A3, A4 and A6 above with a simpler flow built on what exists: the 
 - `feasibility_requests`: `stage`, `owner_id`, `next_followup_at`, `outcome`, `outcome_reason`, `po_number`, `won_value`.
 - `rfq_events` (new): request, event, from/to stage, user, note, data JSON, time. The audit trail ("who did what"), the Timeline and all time / conversion figures come from it.
 - `rfq_attachments` (new): request, email, file name, storage path, size, type.
-- `rfq_followups` (new): date, method (call / email / visit), note, user, next date.
+- Follow-ups are `rfq_events` rows (`followup_note`: method, note, next date), so no separate table is needed.
 - `bea_quotations_table`: `rfq_id`, `sent_at`, `sent_by`.
-- `rfqWorkflow.js`: the allowed stage changes and which department may make each; every change goes through it (writes the event, updates the stage, sends the notification). New stages (PO received, slot booking) are added there.
+- `enquiry/workflow.js`: the allowed stage changes and which department may make each; every change goes through it (writes the event, updates the stage, sends the notification). New stages (PO received, slot booking) are added there.
 - Notifications reuse `notifications_table` + socket messages, by department (TS1 Testing, TS2 Testing, Accounts, Marketing).
 
 ### C4. Screens
@@ -121,8 +121,8 @@ This replaces A3, A4 and A6 above with a simpler flow built on what exists: the 
 
 ### C5. Build order (each phase tested before the next)
 1. **Foundation:** stages, events log, Take it / assign, stage notifications; attachment storage + viewer; AI summary; new list and details with Timeline.
-2. **Feasibility:** engine pre-check per test (test type → chamber → calibration → NABL → price), tester confirm screen, drafted confirmation / regret email to copy, Mark as sent.
-3. **Quote:** pre-filled Quotation page, quote linked to the enquiry, mark quote sent.
+2. **Feasibility:** **Test Durations** master (`test_duration_rules`: method + defaults per test type, values per standard such as ramp rate; `masterData/durationCalculator.js`, same formulas as the Quote/TestHoursCalculator page: every cycle returns to ambient, +1 h buffer, rounded up, ramp capped by the chamber's load limits) - built first. Then the engine pre-check per test (test type → chamber → calibration → NABL → price), tester confirm screen, drafted confirmation / regret email to copy, Mark as sent.
+3. **Quote:** draft quote built when the enquiry reaches the Quote stage (`enquiry/draftQuote.js`, table `rfq_quote_drafts`, no quotation number): AI reads test type + duration values per test (only values stated), hours from Test Durations without buffer, price from Test Pricing; problems listed per line. Enquiry Quote tab -> "Open in Quotation page" (`/quotation?rfq=<id>`) pre-fills the existing page; saving there links the quotation number and value back to the enquiry for "Quote sent". Confidential enquiries not released to the AI get name matching only.
 4. **Follow-up and conversion:** follow-up log, daily reminders, customer-replied detection (same email thread), Won / Lost, dashboard.
 5. **Later:** PO detection from replies (A5), slot booking; optional sending through Graph Mail.Send.
 

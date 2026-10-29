@@ -61,6 +61,7 @@ Extraction rules:
 - missing_fields: list what the lab still needs to quote (for example: EUT dimensions, EUT weight, quantity, test standard, test severity/profile, test duration, operating condition during test). Only list fields that are really missing.
 - requested_info: list what the customer wants in the reply besides the price (e.g. NABL certificate, lead time, earliest start date, payment terms, validity).
 - non_testing_service: true when they ask for design, consultancy, analysis, calibration or other non-testing work.
+- asks_for_quote: true when they ask for a price, quotation, budgetary quote or offer (not only feasibility or availability).
 - For not_rfq and internal_discussion, leave eut_items, tests and missing_fields empty.`;
 
 // Structured-output schema. Rules of the API: every object lists all its fields
@@ -137,6 +138,7 @@ const ANALYSIS_SCHEMA = obj({
   missing_fields: strList("What the lab still needs to prepare a quotation."),
   urgent: { type: "boolean" },
   non_testing_service: { type: "boolean" },
+  asks_for_quote: { type: "boolean" },
 });
 
 //Turn "" (not stated) into null, recursively.

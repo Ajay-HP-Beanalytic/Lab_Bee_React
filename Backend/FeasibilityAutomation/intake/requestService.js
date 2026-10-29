@@ -15,6 +15,9 @@
 
 const crypto = require("crypto");
 const { isInternal, isForward, FREE_MAIL_DOMAINS } = require("./emailIntakeAgent");
+const { db } = require("../../db");
+const workflow = require("../enquiry/workflow");
+const { notify } = require("../enquiry/notify");
 
 const MATCH_WINDOW_DAYS = 60;
 const GENERIC_SUBJECT_LENGTH = 12; // "rfq", "quotation", "enquiry" etc. need a customer match
@@ -243,6 +246,7 @@ const createRequest = async (q, row, { confidential = false } = {}) => {
     contact_email: trunc(contactEmail, 500),
     contact_phone: trunc(x?.customer?.contact_phone, 50),
     status: confidential || x?.non_testing_service ? "needs_review" : "pending",
+    quote_requested: x?.asks_for_quote ? 1 : 0,
     ai_result: x ? JSON.stringify(x) : null,
     technical_notes: confidential
       ? `Confidential email - not sent to AI (${reasons}). Please enter the test details manually.`
@@ -403,6 +407,29 @@ const handleEmail = async (conn, row, { dryRun = false, virtual = [] } = {}) => 
   }
 };
 
+//Enquiry workflow after an email was handled: a new enquiry is announced to its
+//testing team; a customer writing again on an open enquiry is put on its
+//timeline and its owner (or the stage's team) is told.
+const afterEmail = async (row, { plan, requestId, changes }) => {
+  if (!requestId) return;
+  if (plan.action === "create") return workflow.onCreated(requestId);
+  if (changes?.some((c) => /new test/.test(c))) await workflow.refreshDepartments(requestId);
+  if (isInternal(row.from_address) || !["followup", "linked", "duplicate"].includes(plan.action)) return;
+
+  const [req] = await db.promise().query("SELECT * FROM feasibility_requests WHERE id = ?", [requestId]).then(([r]) => r);
+  if (!req || !workflow.OPEN_STAGES.includes(req.stage)) return;
+  await workflow.logEvent(requestId, "customer_email", {
+    note: row.subject || null,
+    data: { inbound_email_id: row.id, changes: changes || [] },
+  });
+  await notify({
+    ...(req.owner_id ? { userIds: [req.owner_id] } : { departments: workflow.stageTeam(req) }),
+    sender: "Lab Bee",
+    requestId,
+    message: `${workflow.reference(requestId)}${req.company_name ? ` (${req.company_name})` : ""}: the customer wrote again - "${(row.subject || "").slice(0, 120)}"`,
+  });
+};
+
 //Handle every stored email not handled yet (oldest first).
 //`onEmail(row, result)` is called for each one. Returns counts per action.
 const processPendingEmails = async (pool, { dryRun = false, onEmail = () => {} } = {}) => {
@@ -418,6 +445,7 @@ const processPendingEmails = async (pool, { dryRun = false, onEmail = () => {} }
     for (const row of rows) {
       const r = await handleEmail(conn, row, { dryRun, virtual });
       counts[r.plan.action] = (counts[r.plan.action] || 0) + 1;
+      if (!dryRun) await afterEmail(row, r).catch((e) => console.error("[email-intake] workflow:", e.message));
       onEmail(row, r);
     }
     return { total: rows.length, counts };

@@ -275,6 +275,20 @@ const EMAIL_INTAKE_COLUMNS = {
     confidential_handling: "VARCHAR(20) DEFAULT NULL",
     confidential_handled_by: "INT DEFAULT NULL",
     confidential_handled_at: "DATETIME DEFAULT NULL",
+    // Enquiry workflow (enquiry/workflow.js): stage, who has it, outcome
+    stage: "VARCHAR(30) NOT NULL DEFAULT 'new'",
+    stage_changed_at: "DATETIME DEFAULT NULL",
+    departments: "VARCHAR(20) DEFAULT NULL", // testing teams needed: 'TS1', 'TS2' or 'TS1,TS2'
+    owner_id: "INT DEFAULT NULL",
+    quote_requested: "TINYINT(1) NOT NULL DEFAULT 0",
+    feasibility_result: "VARCHAR(20) DEFAULT NULL",
+    quotation_ref: "VARCHAR(255) DEFAULT NULL",
+    quote_value: "DECIMAL(14,2) DEFAULT NULL",
+    next_followup_at: "DATE DEFAULT NULL",
+    outcome_reason: "VARCHAR(255) DEFAULT NULL",
+    po_number: "VARCHAR(100) DEFAULT NULL",
+    won_value: "DECIMAL(14,2) DEFAULT NULL",
+    closed_at: "DATETIME DEFAULT NULL",
   },
   feasibility_request_tests: {
     eut_id: "INT DEFAULT NULL",
@@ -292,7 +306,87 @@ const EMAIL_INTAKE_COLUMNS = {
     // How many times analysis was tried (failed mails are retried up to 3 times)
     attempts: "INT NOT NULL DEFAULT 1",
   },
+  intake_runs: {
+    mailbox: "VARCHAR(255) DEFAULT NULL", // RFQ_MAILBOX at the time of the run
+  },
 };
+
+//Enquiry history: one row per action (who did what, when). The timeline and the
+//time / conversion figures are built from it.
+function createRfqEventsTable() {
+  const sqlQuery = `
+    CREATE TABLE IF NOT EXISTS rfq_events (
+      id          INT NOT NULL AUTO_INCREMENT,
+      request_id  INT NOT NULL,
+      action      VARCHAR(40) NOT NULL,
+      from_stage  VARCHAR(30) DEFAULT NULL,
+      to_stage    VARCHAR(30) DEFAULT NULL,
+      user_id     INT DEFAULT NULL,
+      note        TEXT,
+      data        JSON DEFAULT NULL,
+      created_at  TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY(id),
+      KEY idx_request_id (request_id),
+      KEY idx_action_created (action, created_at)
+    )`;
+  return new Promise((resolve) => {
+    db.query(sqlQuery, (err) => {
+      if (err) console.log("Error creating rfq_events table", err);
+      resolve(!err);
+    });
+  });
+}
+
+//Files attached to enquiry emails, stored by enquiry/attachments.js
+//Draft quotation of an enquiry (enquiry/draftQuote.js): one per enquiry, opened
+//pre-filled in the Quotation page. quotation_ids is set once it was saved there.
+function createRfqQuoteDraftsTable() {
+  const sqlQuery = `
+    CREATE TABLE IF NOT EXISTS rfq_quote_drafts (
+      id             INT NOT NULL AUTO_INCREMENT,
+      request_id     INT NOT NULL,
+      status         VARCHAR(10) NOT NULL DEFAULT 'draft',
+      test_lines     JSON DEFAULT NULL,
+      total          DECIMAL(14,2) DEFAULT NULL,
+      customer       JSON DEFAULT NULL,
+      notes          JSON DEFAULT NULL,
+      ai_model       VARCHAR(100) DEFAULT NULL,
+      built_by       INT DEFAULT NULL,
+      quotation_ids  VARCHAR(255) DEFAULT NULL,
+      created_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at     TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      PRIMARY KEY(id),
+      UNIQUE KEY uq_request_id (request_id)
+    )`;
+  return new Promise((resolve) => {
+    db.query(sqlQuery, (err) => {
+      if (err) console.log("Error creating rfq_quote_drafts table", err);
+      resolve(!err);
+    });
+  });
+}
+
+function createRfqAttachmentsTable() {
+  const sqlQuery = `
+    CREATE TABLE IF NOT EXISTS rfq_attachments (
+      id               INT NOT NULL AUTO_INCREMENT,
+      inbound_email_id INT NOT NULL,
+      file_name        VARCHAR(255) NOT NULL,
+      stored_path      VARCHAR(500) NOT NULL,
+      size_bytes       INT DEFAULT NULL,
+      content_type     VARCHAR(150) DEFAULT NULL,
+      from_forwarded   VARCHAR(500) DEFAULT NULL,
+      created_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY(id),
+      KEY idx_inbound_email_id (inbound_email_id)
+    )`;
+  return new Promise((resolve) => {
+    db.query(sqlQuery, (err) => {
+      if (err) console.log("Error creating rfq_attachments table", err);
+      resolve(!err);
+    });
+  });
+}
 
 //One row per scheduled intake run (shown on the dashboard as "last checked").
 function createIntakeRunsTable() {
@@ -514,13 +608,42 @@ function createTestPriceTestTypesTable() {
   });
 }
 
+//How the chamber hours of a test type are worked out (masterData/durationCalculator.js).
+//standard = '' is the test type's rule (method and default values); a row with a
+//standard (e.g. "IEC 60068-2-14") only overrides values, e.g. the ramp rate that
+//standard asks for, and is used when the customer's standard contains it.
+function createTestDurationRulesTable() {
+  const sqlQuery = `
+    CREATE TABLE IF NOT EXISTS test_duration_rules (
+      id            INT NOT NULL AUTO_INCREMENT,
+      test_type_id  INT NOT NULL,
+      standard      VARCHAR(100) NOT NULL DEFAULT '',
+      method        VARCHAR(20) DEFAULT NULL,
+      params        JSON DEFAULT NULL,
+      checked       TINYINT(1) NOT NULL DEFAULT 0,
+      is_active     TINYINT(1) NOT NULL DEFAULT 1,
+      notes         TEXT,
+      updated_by    INT DEFAULT NULL,
+      created_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at    TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      PRIMARY KEY(id),
+      UNIQUE KEY uq_type_standard (test_type_id, standard)
+    )`;
+  return new Promise((resolve) => {
+    db.query(sqlQuery, (err) => {
+      if (err) console.log("Error creating test_duration_rules table", err);
+      resolve(!err);
+    });
+  });
+}
+
 //Creates the master data tables (NABL scope, test types, chambers, prices), updates older
 //versions of them and loads the starting test type list into an empty table.
 async function migrateMasterData() {
   await Promise.all([
     createNablCertificatesTable(), createLabScopeTable(), createTestTypesTable(), createLabScopeTestTypesTable(),
     createTestNameLinksTable(), createTS1ChamberSpecTable(), createChamberTestTypesTable(),
-    createTestPricesTable(), createTestPriceTestTypesTable(),
+    createTestPricesTable(), createTestPriceTestTypesTable(), createTestDurationRulesTable(),
   ]);
   const q = (sql, params) => db.promise().query(sql, params).then(([rows]) => rows);
   try {
@@ -562,6 +685,18 @@ async function migrateMasterData() {
         [TEST_TYPES.map((tt, i) => [tt.code, tt.name, tt.department, tt.category, tt.description, tt.aliases, (i + 1) * 10])],
       );
     }
+
+    // Starting duration rules (shown as "to check" until someone saves them)
+    const [{ rules }] = await q("SELECT COUNT(*) AS rules FROM test_duration_rules");
+    if (!rules) {
+      const { DURATION_RULES } = require("./masterData/durationRulesSeed");
+      const types = await q("SELECT id, code FROM test_types");
+      const idOf = new Map(types.map((t) => [t.code, t.id]));
+      const rows = DURATION_RULES.filter((r) => idOf.has(r.code)).map((r) => [
+        idOf.get(r.code), r.standard || "", r.method || null, JSON.stringify(r.params || {}), r.notes || null,
+      ]);
+      if (rows.length) await q("INSERT INTO test_duration_rules (test_type_id, standard, method, params, notes) VALUES ?", [rows]);
+    }
     return true;
   } catch (err) {
     console.log("Error migrating master data tables", err);
@@ -576,6 +711,9 @@ async function migrateFeasibilityForEmailIntake() {
     createInboundEmailsTable(),
     createFeasibilityRequestEutsTable(),
     createIntakeRunsTable(),
+    createRfqEventsTable(),
+    createRfqAttachmentsTable(),
+    createRfqQuoteDraftsTable(),
   ]);
   const q = (sql, params) => db.promise().query(sql, params).then(([rows]) => rows);
   try {
@@ -597,6 +735,24 @@ async function migrateFeasibilityForEmailIntake() {
     if (!idx.length) {
       await q("ALTER TABLE feasibility_requests ADD INDEX idx_fr_conversation_id (conversation_id(191))");
     }
+    const stageIdx = await q(
+      "SELECT 1 FROM information_schema.statistics WHERE table_schema = DATABASE() AND table_name = 'feasibility_requests' AND index_name = 'idx_fr_stage'",
+    );
+    if (!stageIdx.length) await q("ALTER TABLE feasibility_requests ADD INDEX idx_fr_stage (stage)");
+    // Enquiries created before the workflow: teams from their tests, stage age from creation
+    const { departmentsFor } = require("./enquiry/workflow");
+    for (const r of await q("SELECT id FROM feasibility_requests WHERE departments IS NULL")) {
+      const tests = await q("SELECT test_category FROM feasibility_request_tests WHERE request_id = ?", [r.id]);
+      await q("UPDATE feasibility_requests SET departments = ? WHERE id = ?", [departmentsFor(tests), r.id]);
+    }
+    await q("UPDATE feasibility_requests SET stage_changed_at = created_at WHERE stage_changed_at IS NULL");
+    // New enquiries start at 'new' (a trial of a shorter workflow had changed the default)
+    await q("ALTER TABLE feasibility_requests ALTER COLUMN stage SET DEFAULT 'new'");
+    // Runs from before intake_runs.mailbox: they read the mailbox the stored mails came from
+    await q(
+      `UPDATE intake_runs SET mailbox = (SELECT mailbox FROM inbound_emails WHERE mailbox IS NOT NULL ORDER BY id DESC LIMIT 1)
+       WHERE mailbox IS NULL`,
+    );
     // Confidential requests created before confidential_handling existed
     await q(
       "UPDATE feasibility_requests SET confidential_handling = 'pending' WHERE is_confidential = 1 AND confidential_handling IS NULL",

@@ -10,7 +10,7 @@ export const PROCESS_HELP = {
     {
       heading: "The steps",
       points: [
-        "1. Enquiry - arrives by email or through the customer portal and appears in the RFQ Inbox.",
+        "1. Enquiry - arrives by email or through the customer portal and appears in Enquiries. The testing team (TS1 or TS2, by the tests) is notified.",
         "2. Feasibility - each requested test is matched to a test type, then to a chamber that is big and strong enough, covers the temperature / humidity / vibration needed and has valid calibration.",
         "3. Quotation - the matched tests are priced from Test Pricing and a draft quotation is made.",
         "4. Approval - a person checks and approves everything before it goes to the customer.",
@@ -26,6 +26,7 @@ export const PROCESS_HELP = {
         "TS1 Chambers - size, load and limits of each chamber and the test types it can run.",
         "Chamber Calibration - calibration dates and status of all chambers and equipment.",
         "Test Pricing - the price of each test type (per hour, per test or per unit).",
+        "Test Durations - how the chamber hours of each hourly test are worked out (cycles, dwell, ramp rate by standard, buffer).",
       ],
     },
     {
@@ -42,25 +43,37 @@ export const PROCESS_HELP = {
 
 export const PAGE_HELP = {
   rfq_inbox: {
-    title: "RFQ Inbox",
+    title: "Enquiries",
     summary:
-      "Every enquiry, whether it came by email or from the customer portal, in one list.",
+      "Every enquiry, from the RFQ mailbox or the customer portal, followed from feasibility to quote to order. Every step records who did it and when.",
     sections: [
       {
-        heading: "Using it",
+        heading: "Stages and who acts",
         points: [
-          "New - not looked at yet. Needs review - the system could not decide, a person must check it.",
-          "Confidential - the email looks confidential. Choose whether it may be sent to the AI or must be handled by hand.",
-          "Click a row to see the email, the details read from it and the tests requested.",
-          "The list refreshes every minute.",
+          "New / Feasibility check - TS1 or TS2 testing team. Click \"Take it\", check the tests, then \"Feasibility done\" (or \"Need details from customer\").",
+          "Waiting for customer - Accounts / Marketing get the missing details from the customer, then click \"Customer sent the details\". It goes back to the same tester.",
+          "Reply to customer - Accounts / Marketing send the feasibility confirmation (or regret) from Outlook, then click \"Reply sent\".",
+          "Quote - prepare and send the quote, then click \"Quote sent\" with the quotation number. If the customer already asked for a quote, feasibility goes straight here: one reply with the confirmation and the quote.",
+          "Follow-up - the person who sent the quote follows it up (\"Log follow-up\") until it is Won or Lost.",
         ],
       },
       {
-        heading: "Chips",
+        heading: "Using the list",
         points: [
+          "My work - only what waits for you: your enquiries, and unassigned ones at your team's stage.",
+          "Red time in the Stage column - the enquiry has been in that stage too long, or a follow-up is overdue.",
+          "Click a row: Summary (what the customer wants), Emails & files (open the attachments), Timeline (who did what).",
+          "Confidential emails are not sent to the AI. Choose \"Send to AI\" or \"Handle manually\" in the enquiry.",
+          "The list refreshes every minute. You also get a notification when something needs your team.",
+        ],
+      },
+      {
+        heading: "Icons and chips",
+        points: [
+          "Quote icon - the customer asked for a price.",
           "Free mail - sent from Gmail / Yahoo etc., so the company may need confirming.",
-          "Non-testing - asks for design, consultancy, analysis, calibration or other non-testing work. These go to Needs review.",
-          "Urgent - the customer asked for a quick answer.",
+          "Non-testing - asks for design, consultancy, analysis, calibration or other non-testing work.",
+          "Urgent - the customer asked for a quick answer. \"n missing\" - details still needed to quote.",
         ],
       },
     ],
@@ -167,6 +180,35 @@ export const PAGE_HELP = {
         points: [
           "Test types without a price are listed at the top - they cannot be quoted automatically.",
           "A test type in more than one active price is flagged, because the quote would not know which to use.",
+        ],
+      },
+    ],
+  },
+
+  test_durations: {
+    title: "Test Durations",
+    summary:
+      "How the chamber hours of each test type are worked out for quotations. The enquiry engine uses this to estimate hours from the customer's spec; the tester checks them before the quote.",
+    sections: [
+      {
+        heading: "How hours are worked out",
+        points: [
+          "Steady (high / low temperature, damp heat, altitude): ramp to the temperature + time there + ramp back, × number of cycles.",
+          "Temperature cycling: start → first extreme, dwell, → other extreme, dwell, → back to ambient, for every cycle.",
+          "Thermal shock: transition + time to reach temperature + dwell at each extreme, per cycle.",
+          "Per axis (vibration, shock, bump): axes × minutes per axis × units tested one after another.",
+          "Fixed: the given duration × runs (salt fog, dust, temperature steps).",
+          "The buffer (maintenance / setup) is added only when you tick it. The hours to quote are rounded up to whole hours, and at least the minimum.",
+        ],
+      },
+      {
+        heading: "Where the values come from",
+        points: [
+          "First the customer's spec, then the test type's defaults.",
+          "The ramp rate comes from the customer's spec or standard and has no default: if it isn't given, it is listed as missing - never guessed.",
+          "The ramp is limited to what the chosen chamber can do at that load (TS1 Chambers - load limits).",
+          "Rules filled in by the system show amber (Auto - to check). Saving a rule, or ticking rows and Mark checked, confirms it.",
+          "Use Try it in an open test type to check the hours for a spec.",
         ],
       },
     ],

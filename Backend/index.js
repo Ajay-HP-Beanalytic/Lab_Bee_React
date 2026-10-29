@@ -428,11 +428,19 @@ feasibilityAPIs(app);
 const { intakeAPIs } = require("./FeasibilityAutomation/IntakeAPI");
 intakeAPIs(app);
 
+// Enquiry workflow notifications (bell + live "rfq_notification")
+const { initEnquiryNotifications } = require("./FeasibilityAutomation/enquiry/notify");
+initEnquiryNotifications(io, labbeeUsers);
+
 const { chamberSpecsAPIs } = require("./FeasibilityAutomation/ChamberSpecsAPI");
 chamberSpecsAPIs(app);
 
 const { testPricingAPIs } = require("./FeasibilityAutomation/TestPricingAPI");
 testPricingAPIs(app);
+
+// How the chamber hours of each test type are worked out
+const { testDurationsAPIs } = require("./FeasibilityAutomation/TestDurationsAPI");
+testDurationsAPIs(app);
 
 const { labScopeAPIs } = require("./FeasibilityAutomation/LabScopeAPI");
 labScopeAPIs(app);

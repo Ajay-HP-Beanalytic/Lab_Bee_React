@@ -19,10 +19,12 @@ const query = (sql, params) => db.promise().query(sql, params).then(([rows]) => 
 
 let running = false;
 
-//Start of the window to check: shortly before the last successful run.
-const checkSince = async () => {
+//Start of the window to check: shortly before the last successful run of this
+//mailbox, so switching RFQ_MAILBOX and back does not skip the mails in between.
+const checkSince = async (mailbox) => {
   const [last] = await query(
-    "SELECT started_at FROM intake_runs WHERE status = 'success' ORDER BY id DESC LIMIT 1",
+    "SELECT started_at FROM intake_runs WHERE status = 'success' AND mailbox = ? ORDER BY id DESC LIMIT 1",
+    [mailbox],
   );
   if (last) return new Date(new Date(last.started_at).getTime() - OVERLAP_MIN * 60 * 1000);
   const hours = parseInt(process.env.EMAIL_INTAKE_FIRST_LOOKBACK_H || "24");
@@ -36,10 +38,11 @@ const runScheduledIntake = async () => {
   const startedAt = new Date();
   let runId = null;
   try {
-    const since = await checkSince();
+    const mailbox = process.env.RFQ_MAILBOX;
+    const since = await checkSince(mailbox);
     const res = await query(
-      "INSERT INTO intake_runs (started_at, checked_since, status) VALUES (?, ?, 'running')",
-      [startedAt, since],
+      "INSERT INTO intake_runs (started_at, checked_since, mailbox, status) VALUES (?, ?, ?, 'running')",
+      [startedAt, since, mailbox],
     );
     runId = res.insertId;
 

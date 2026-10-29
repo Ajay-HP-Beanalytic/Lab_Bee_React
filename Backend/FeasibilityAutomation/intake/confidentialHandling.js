@@ -9,6 +9,7 @@ const { fetchBundle } = require("./intakeService");
 const { analyzeEmail, isInternal, isForward } = require("./emailIntakeAgent");
 const { mergeIntoRequest } = require("./requestService");
 const { inputTokens } = require("./modelPrices");
+const workflow = require("../enquiry/workflow");
 
 class HandlingError extends Error {
   constructor(status, message) {
@@ -46,7 +47,7 @@ const sendToAi = async (requestId, userId) => {
     // AI calls first, outside the transaction (they take several seconds each)
     const analysed = [];
     for (const mail of toSend) {
-      const { bundle } = await fetchBundle(mail.graph_message_id);
+      const { bundle } = await fetchBundle(mail.graph_message_id, mail.mailbox || undefined);
       const out = await analyzeEmail(bundle, { staffApproved: true });
       analysed.push({ mail, out });
     }
@@ -99,7 +100,10 @@ const sendToAi = async (requestId, userId) => {
           requestId,
         ],
       );
+      if (first.asks_for_quote) await q("UPDATE feasibility_requests SET quote_requested = 1 WHERE id = ?", [requestId]);
       await conn.commit();
+      await workflow.refreshDepartments(requestId);
+      await workflow.logEvent(requestId, "sent_to_ai", { userId, note: "Confidential email sent to the AI with staff approval" });
       return { requestId, mails: analysed.length, changes };
     } catch (err) {
       await conn.rollback();
@@ -121,6 +125,7 @@ const markManual = async (requestId, userId) => {
        WHERE id = ?`,
       [userId, requestId],
     );
+    await workflow.logEvent(requestId, "handle_manually", { userId, note: "Confidential email: details to be entered by staff" });
     return { requestId };
   } finally {
     conn.release();

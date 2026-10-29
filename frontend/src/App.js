@@ -45,6 +45,7 @@ import FeasibilityRequestForm from "./test_feasibility_automation/FeasibilityReq
 import FeasibilityRequestSuccess from "./test_feasibility_automation/FeasibilityRequestSuccess";
 import ChamberSpecsManager from "./test_feasibility_automation/ChamberSpecsManager";
 import TestPricingManager from "./test_feasibility_automation/TestPricingManager";
+import TestDurationsManager from "./test_feasibility_automation/TestDurationsManager";
 import RfqInbox from "./test_feasibility_automation/RfqInbox";
 import LabScopeManager from "./test_feasibility_automation/LabScopeManager";
 import TestTypesManager from "./test_feasibility_automation/TestTypesManager";
@@ -349,6 +350,17 @@ function App() {
                 allowedRoles={[]}
               >
                 <TestPricingManager />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="test_durations"
+            element={
+              <ProtectedRoute
+                allowedDepartments={["Administration", "TS1 Testing", "Accounts"]}
+                allowedRoles={[]}
+              >
+                <TestDurationsManager />
               </ProtectedRoute>
             }
           />
