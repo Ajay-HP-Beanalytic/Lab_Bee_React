@@ -369,6 +369,8 @@ chambersAndCalibrationAPIs(app);
 // backend connection from 'AddCustomerDetails' page:
 const { customerDetailsAPIs } = require("./CustomerDetails");
 customerDetailsAPIs(app);
+const { customerLogosAPIs } = require("./CustomerLogos");
+customerLogosAPIs(app);
 
 // backend connection of ItemSoftModules API's from 'ItemSoftModules' page:
 const { itemSoftModulesAPIs } = require("./ItemSoftModules");

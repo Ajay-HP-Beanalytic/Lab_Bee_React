@@ -289,6 +289,15 @@ const EMAIL_INTAKE_COLUMNS = {
     po_number: "VARCHAR(100) DEFAULT NULL",
     won_value: "DECIMAL(14,2) DEFAULT NULL",
     closed_at: "DATETIME DEFAULT NULL",
+    // Company details the AI read from the emails, until staff save them as a customer
+    customer_suggestion: "JSON DEFAULT NULL",
+  },
+  // Customer list (Quote/AddCustomerDetails.js): extra details for customers added from enquiries
+  customers_details: {
+    gstin: "VARCHAR(20) DEFAULT NULL",
+    website: "VARCHAR(255) DEFAULT NULL",
+    created_from_request: "INT DEFAULT NULL",
+    created_by: "INT DEFAULT NULL",
   },
   feasibility_request_tests: {
     eut_id: "INT DEFAULT NULL",
@@ -361,6 +370,27 @@ function createRfqQuoteDraftsTable() {
   return new Promise((resolve) => {
     db.query(sqlQuery, (err) => {
       if (err) console.log("Error creating rfq_quote_drafts table", err);
+      resolve(!err);
+    });
+  });
+}
+
+//Customer logos, one per customer (customers_details.id). Kept in the database so
+//the quotation download (Quote/DocToPdf.js) puts the logo in without an upload.
+function createCustomerLogosTable() {
+  const sqlQuery = `
+    CREATE TABLE IF NOT EXISTS customer_logos (
+      customer_id  INT NOT NULL,
+      mime         VARCHAR(50) NOT NULL,
+      data         MEDIUMBLOB NOT NULL,
+      file_name    VARCHAR(255) DEFAULT NULL,
+      updated_by   INT DEFAULT NULL,
+      updated_at   TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      PRIMARY KEY(customer_id)
+    )`;
+  return new Promise((resolve) => {
+    db.query(sqlQuery, (err) => {
+      if (err) console.log("Error creating customer_logos table", err);
       resolve(!err);
     });
   });
@@ -714,6 +744,7 @@ async function migrateFeasibilityForEmailIntake() {
     createRfqEventsTable(),
     createRfqAttachmentsTable(),
     createRfqQuoteDraftsTable(),
+    createCustomerLogosTable(),
   ]);
   const q = (sql, params) => db.promise().query(sql, params).then(([rows]) => rows);
   try {
@@ -722,6 +753,7 @@ async function migrateFeasibilityForEmailIntake() {
         "SELECT column_name AS c FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = ?",
         [table],
       );
+      if (!existing.length) continue; // table not created yet (customers_details: database_tables.js)
       const have = new Set(existing.map((r) => r.c.toLowerCase()));
       for (const [column, definition] of Object.entries(columns)) {
         if (!have.has(column)) {

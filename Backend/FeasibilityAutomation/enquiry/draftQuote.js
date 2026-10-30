@@ -127,6 +127,7 @@ async function customerFor(request) {
     [c] = await query("SELECT * FROM customers_details WHERE LOWER(TRIM(company_name)) = LOWER(TRIM(?)) LIMIT 1", [request.company_name]);
   }
   return {
+    customer_id: c?.id || null,
     company_id: c?.company_id || "",
     company_name: c?.company_name || request.company_name || "",
     company_address: c?.company_address || "",
@@ -223,7 +224,14 @@ async function buildDraft(requestId, { by = null, useAi = true } = {}) {
 
   const total = lines.reduce((s, l) => s + (Number(l.amount) || 0), 0);
   const customer = await customerFor(request);
-  if (!customer.in_customer_master) notes.push("Customer not in the customer list - choose or add the company in the Quotation page.");
+  if (!customer.in_customer_master) {
+    notes.push("Customer not in the customer list - check the company details the AI read and save them above.");
+    // New company: the AI reads its details from the emails for staff to check (in the background)
+    if (aiAllowed && !request.customer_suggestion) {
+      const { readCompany } = require("./customerProfile");
+      readCompany(requestId).catch((err) => console.error("[customer] read failed:", err.message));
+    }
+  }
   const draft = {
     request_id: requestId,
     test_lines: JSON.stringify(lines),
@@ -261,4 +269,4 @@ async function linkQuotation(requestId, quotationIds, value) {
   await query("UPDATE feasibility_requests SET quotation_ref = ?, quote_value = ? WHERE id = ?", [quotationIds, value ?? null, requestId]);
 }
 
-module.exports = { buildDraft, getDraft, linkQuotation };
+module.exports = { buildDraft, getDraft, linkQuotation, customerFor };

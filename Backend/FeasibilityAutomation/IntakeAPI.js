@@ -5,6 +5,7 @@ const { fetchBundle } = require("./intake/intakeService");
 const workflow = require("./enquiry/workflow");
 const { storeEmailFiles, listForRequest, filePath } = require("./enquiry/attachments");
 const { getDraft, linkQuotation } = require("./enquiry/draftQuote");
+const customerProfile = require("./enquiry/customerProfile");
 
 const query = (sql, params) => db.promise().query(sql, params).then(([rows]) => rows);
 
@@ -214,6 +215,26 @@ const intakeAPIs = (app) => {
       res.status(500).json({ error: "Failed to link the quotation" });
     }
   });
+
+  // Customer of the enquiry: linked company, or possible matches and the details the AI read
+  const customerRoute = (method, path, action, what) =>
+    app[method](`/api/enquiries/:id/customer${path}`, async (req, res) => {
+      const userId = requireUser(req, res);
+      if (!userId) return;
+      try {
+        res.json(await action(parseInt(req.params.id), req.body || {}, userId));
+      } catch (err) {
+        if (!err.status) console.error(`enquiry customer ${what} error:`, err);
+        res.status(err.status || 500).json({ error: err.status ? err.message : `Failed to ${what}` });
+      }
+    });
+  customerRoute("get", "", (id) => customerProfile.customerState(id), "load the customer");
+  // Read the company details from the emails again (AI)
+  customerRoute("post", "/read", (id, body, userId) => customerProfile.readCompany(id, { by: userId }), "read the company details");
+  // Save the checked details as a new customer: {company_name, company_id, company_address, ...}
+  customerRoute("post", "", (id, body, userId) => customerProfile.saveCustomer(id, body, userId), "save the customer");
+  // Use a company already in the customer list: {customer_id}
+  customerRoute("post", "/link", (id, body, userId) => customerProfile.linkCustomer(id, parseInt(body.customer_id), userId), "link the customer");
 
   // Store the attachments of this enquiry's emails that were read before
   // attachments were kept (downloads them again from the mailbox)

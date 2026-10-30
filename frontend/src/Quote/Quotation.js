@@ -239,7 +239,7 @@ export default function Quotation() {
         );
         const toCheck = draft.lines.filter((l) => l.problems.length).length;
         toast.info(
-          `Filled from the draft quote of RFQ-${String(rfqId).padStart(5, "0")}.${toCheck ? ` ${toCheck} line(s) need checking (see the enquiry's Quote tab).` : ""}${c.company_id ? "" : " Choose the company (customer ID) before saving."}`,
+          `Filled from the draft quote of RFQ-${String(rfqId).padStart(5, "0")}.${toCheck ? ` ${toCheck} line(s) need checking (see the enquiry's Quote tab).` : ""}${c.company_id ? "" : " New customer: save it in the enquiry's Quote tab (or choose the company here) before saving."}`,
           { autoClose: 9000 },
         );
       })

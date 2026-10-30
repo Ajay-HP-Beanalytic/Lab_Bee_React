@@ -54,6 +54,7 @@ export const PAGE_HELP = {
           "Waiting for customer - Accounts / Marketing get the missing details from the customer, then click \"Customer sent the details\". It goes back to the same tester.",
           "Reply to customer - Accounts / Marketing send the feasibility confirmation (or regret) from Outlook, then click \"Reply sent\".",
           "Quote - prepare and send the quote, then click \"Quote sent\" with the quotation number. If the customer already asked for a quote, feasibility goes straight here: one reply with the confirmation and the quote.",
+          "New customer - the Quote tab shows the company details the AI read from the emails (address, GSTIN, contact). Check them and click \"Save to customer list\"; nothing is added before that. Then add the logo there (choose, drop or paste); it goes on every quotation download for that customer.",
           "Follow-up - the person who sent the quote follows it up (\"Log follow-up\") until it is Won or Lost.",
         ],
       },

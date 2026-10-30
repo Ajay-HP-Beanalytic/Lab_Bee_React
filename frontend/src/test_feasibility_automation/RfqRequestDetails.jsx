@@ -50,6 +50,7 @@ import AutorenewIcon from "@mui/icons-material/Autorenew";
 import { useNavigate } from "react-router-dom";
 import { serverBaseAddress } from "../Pages/APIPage";
 import DocumentPreviewModal from "../components/DocumentPreviewModal";
+import EnquiryCustomer from "./EnquiryCustomer";
 import { STAGES, lateness, rupees, rfqReference, formatDateTime } from "./rfqInboxHelpers";
 
 const EMAIL_ACTION_LABELS = {
@@ -99,6 +100,9 @@ const EVENT_TEXT = {
   note: () => "Note",
   customer_email: () => "Customer wrote again",
   draft_quote: () => "Draft quote prepared",
+  customer_read: (e) => `Company details read from the emails: ${e.note || ""}`,
+  customer_added: (e) => `Added to the customer list: ${e.note || ""}`,
+  customer_linked: (e) => `Customer: ${e.note || ""}`,
   draft_quote_failed: () => "Draft quote could not be prepared",
   quotation_saved: (e) => `Quotation saved: ${e.data?.quotation_ref || ""}${e.data?.quote_value != null ? `, ${rupees(e.data.quote_value)}` : ""}`,
   sent_to_ai: () => "Confidential email sent to the AI",
@@ -817,6 +821,7 @@ export default function RfqRequestDetails({ requestId, open, onClose, onChanged 
 
         {r && tab === "quote" && (
           <Box>
+            <EnquiryCustomer requestId={requestId} onChanged={load} />
             <Box display="flex" gap={1} alignItems="center" flexWrap="wrap" mb={1.5}>
               {draft && (
                 <Button variant="contained" startIcon={<RequestQuoteIcon />} onClick={() => navigate(`/quotation?rfq=${requestId}`)}>
