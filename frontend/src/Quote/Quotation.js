@@ -47,6 +47,7 @@ import { UserContext } from "../Pages/UserContext";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs from "dayjs";
+import { rfqReference } from "../test_feasibility_automation/rfqInboxHelpers";
 
 const StyledTableRow = styled(TableRow)(({ theme }) => ({
   "&:nth-of-type(odd)": {
@@ -134,6 +135,7 @@ export default function Quotation() {
   // Opened from an enquiry's draft quote: /quotation?rfq=12
   const [searchParams] = useSearchParams();
   const rfqId = !id ? parseInt(searchParams.get("rfq")) || null : null;
+  const [rfqRef, setRfqRef] = useState(""); // RFQ/DDMMYYYY/NN, from the draft quote
 
   const [companyIdList, setCompanyIdList] = useState([]);
   const [selectedCompanyId, setSelectedCompanyId] = useState("");
@@ -199,6 +201,7 @@ export default function Quotation() {
       .get(`${serverBaseAddress}/api/enquiries/${rfqId}/draft-quote`)
       .then(async ({ data }) => {
         const { request, draft } = data;
+        if (request) setRfqRef(rfqReference(request));
         if (!draft) {
           toast.warning("This enquiry has no draft quote yet");
           return;
@@ -223,7 +226,7 @@ export default function Quotation() {
         setCustomerEmail(c.email || "");
         setCustomerContactNumber(c.phone || "");
         if (request.customer_reference) setCustomerreferance(request.customer_reference);
-        setProjectName(request.email_subject || `Enquiry RFQ-${String(rfqId).padStart(5, "0")}`);
+        setProjectName(request.email_subject || `Enquiry ${rfqReference(request)}`);
         const ts2Only = String(request.departments || "") === "TS2";
         setQuoteCategory(ts2Only ? "EMI & EMC" : "Environmental Testing");
         setCatCode(ts2Only ? "TS2" : "TS1");
@@ -243,7 +246,7 @@ export default function Quotation() {
         );
         const toCheck = draft.lines.filter((l) => l.problems.length).length;
         toast.info(
-          `Filled from the draft quote of RFQ-${String(rfqId).padStart(5, "0")}.${toCheck ? ` ${toCheck} line(s) need checking (see the enquiry's Quote tab).` : ""}${c.company_id ? "" : " New customer: save it in the enquiry's Quote tab (or choose the company here) before saving."}`,
+          `Filled from the draft quote of ${rfqReference(request)}.${toCheck ? ` ${toCheck} line(s) need checking (see the enquiry's Quote tab).` : ""}${c.company_id ? "" : " New customer: save it in the enquiry's Quote tab (or choose the company here) before saving."}`,
           { autoClose: 9000 },
         );
       })
@@ -832,7 +835,7 @@ export default function Quotation() {
         quote_value: enquiryNext.value,
         next_followup_at: enquiryNext.followup,
       });
-      toast.success(`RFQ-${String(rfqId).padStart(5, "0")} marked as Quote sent`);
+      toast.success(`${rfqRef || rfqReference(rfqId)} marked as Quote sent`);
       leaveEnquiryNext();
     } catch (err) {
       toast.error(err.response?.data?.error || "Couldn't mark the quote as sent");
@@ -1724,7 +1727,7 @@ export default function Quotation() {
             <DialogTitle>Quotation {enquiryNext?.quotationId} saved</DialogTitle>
             <DialogContent dividers>
               <Typography variant="body2" gutterBottom>
-                It is linked to enquiry RFQ-{String(rfqId || "").padStart(5, "0")}.
+                It is linked to enquiry {rfqRef || rfqReference(rfqId)}.
               </Typography>
               <Typography variant="body2" fontWeight={600} mt={1}>
                 1. Download the document

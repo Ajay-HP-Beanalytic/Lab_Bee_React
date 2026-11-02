@@ -62,8 +62,12 @@ export const lateness = (r) => {
 export const rupees = (n) =>
   n === null || n === undefined || n === "" ? "–" : `₹${Number(n).toLocaleString("en-IN", { maximumFractionDigits: 0 })}`;
 
-// Same reference format as the customer portal (FeasibilityAPI.js)
-export const rfqReference = (id) => `RFQ-${String(id).padStart(5, "0")}`;
+// RFQ number of an enquiry: RFQ/DDMMYYYY/NN (Backend enquiry/rfqNumber.js).
+// Takes the enquiry (or a row with request_id + rfq_number); an id alone, or an
+// enquiry without a number, gives the old RFQ-00058 form.
+const legacyReference = (id) => `RFQ-${String(id ?? "").padStart(5, "0")}`;
+export const rfqReference = (x) =>
+  x && typeof x === "object" ? x.rfq_number || legacyReference(x.request_id ?? x.id) : legacyReference(x);
 
 export const formatDateTime = (value) => (value ? moment(value).format("DD MMM YYYY, HH:mm") : "–");
 
@@ -82,4 +86,37 @@ export const inPeriod = (r, { year = "all", month = "all", range = null }) => {
   if (year !== "all" && d.year() !== Number(year)) return false;
   if (year !== "all" && month !== "all" && d.month() + 1 !== Number(month)) return false;
   return true;
+};
+
+// The steps of preparing a quotation, in order, and the workflow stages in each.
+// "waiting" stages wait for the customer; view: the Enquiries tab of the step.
+export const QUOTE_STEPS = [
+  { key: "received", label: "Received", stages: ["new"], view: "feasibility", hint: "Not taken by the testing team yet" },
+  { key: "feasibility", label: "Feasibility", stages: ["feasibility", "waiting_customer"], view: "feasibility", hint: "Testing team checks the tests (or waits for details from the customer)" },
+  { key: "reply", label: "Reply", stages: ["reply", "confirmed"], view: "reply", hint: "Accounts / Marketing send the feasibility reply (then wait for the quote request)" },
+  { key: "quote", label: "Quote", stages: ["quote"], view: "quote", hint: "Accounts / Marketing prepare and send the quotation" },
+  { key: "followup", label: "Follow-up", stages: ["followup"], view: "followup", hint: "Quote sent: follow up until the customer decides" },
+  { key: "decision", label: "Order", stages: ["won", "lost"], view: "closed", hint: "Won (order received) or lost" },
+];
+const WAITING_STAGES = ["waiting_customer", "confirmed"];
+
+// Where an enquiry is in QUOTE_STEPS: {index, state} where state is
+// "active" | "waiting" | "won" | "lost" | "stopped" (not feasible / closed)
+export const quoteStepOf = (r) => {
+  const index = QUOTE_STEPS.findIndex((s) => s.stages.includes(r.stage));
+  if (r.stage === "won") return { index: QUOTE_STEPS.length - 1, state: "won" };
+  if (r.stage === "lost") return { index: QUOTE_STEPS.length - 1, state: "lost" };
+  if (r.stage === "not_feasible") return { index: 2, state: "stopped" };
+  if (r.stage === "closed") return { index: -1, state: "stopped" };
+  return { index, state: WAITING_STAGES.includes(r.stage) ? "waiting" : "active" };
+};
+
+// The period as {from, to} dates (YYYY-MM-DD) for the API, from the same
+// filters as inPeriod; {} for all years
+export const periodDates = ({ year = "all", month = "all", range = null }) => {
+  if (range?.startDate && range?.endDate) return { from: moment(range.startDate).format("YYYY-MM-DD"), to: moment(range.endDate).format("YYYY-MM-DD") };
+  if (year === "all") return {};
+  const start = month === "all" ? moment({ year, month: 0, day: 1 }) : moment({ year, month: month - 1, day: 1 });
+  const end = month === "all" ? start.clone().endOf("year") : start.clone().endOf("month");
+  return { from: start.format("YYYY-MM-DD"), to: end.format("YYYY-MM-DD") };
 };

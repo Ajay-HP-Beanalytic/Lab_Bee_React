@@ -50,7 +50,7 @@ export const PAGE_HELP = {
       {
         heading: "Stages and who acts",
         points: [
-          "New / Feasibility check - TS1 or TS2 testing team. Click \"Take it\": the AI reads each test's type and the customer's values. Check them in \"Tests & hours\", then \"Feasibility done\" (or \"Need details from customer\").",
+          "New / Feasibility check - TS1 or TS2 testing team. Click \"Take it\": the AI reads each test's type and the customer's values. Check them in \"Tests & hours\", then \"Feasibility done\" (or \"Need details from customer\"). For partly / not feasible, tick the tests you can't do and why: they are left out of the quote and saved in Future Scope for management.",
           "Tests & hours - how each test's hours are worked out, step by step, from the customer's values only (nothing is assumed from a standard; a missing value is listed to ask the customer). Correct the type or values, enter the hours yourself with a reason, split a combined request (IP67 = dust + immersion) or leave a test out of the quote. Your changes are kept and the draft quote follows them.",
           "Waiting for customer - Accounts / Marketing get the missing details from the customer, then click \"Customer sent the details\". It goes back to the same tester.",
           "Reply to customer - Accounts / Marketing send the feasibility confirmation (or regret) from Outlook, then click \"Reply sent\".",
@@ -66,6 +66,8 @@ export const PAGE_HELP = {
           "Year / Month or a date range - shows only enquiries received in that period (the date range is used instead of year / month). The tab counts follow the filter.",
           "Team column - TS1 / TS2 from the tests. \"Team?\" means Lab Bee could not tell (e.g. an electrical test, or no tests read): open it and use \"Change team\". Anyone in TS1, TS2, Accounts or Marketing can change it, and a team chosen by a person is kept.",
           "Dashboard - the Enquiry Dashboard button shows received, quoted and won, speeds and reasons for losing.",
+          "Steps bar (Stage column) - the 6 steps of a quotation: 1 Received, 2 Feasibility, 3 Reply, 4 Quote, 5 Follow-up, 6 Order. Green = done, blue = now, amber = waiting for the customer, red = late or lost. Point at it to see the steps.",
+          "Export Excel - every enquiry received in the selected period (all tabs), with sheets for the tests and their hours / prices, the timeline and the future scope items.",
           "Red time in the Stage column - the enquiry has been in that stage too long, or a follow-up is overdue.",
           "Click a row: Summary (what the customer wants), Emails & files (open the attachments), Timeline (who did what).",
           "Confidential emails are not sent to the AI. Choose \"Send to AI\" or \"Handle manually\" in the enquiry.",
@@ -97,6 +99,44 @@ export const PAGE_HELP = {
           "Open quotes - value of quotes being prepared or followed up: what can still be won.",
           "Now figures (open by stage, overdue follow-ups, not taken, team unclear) are for all open enquiries, whatever the period.",
           "Mails closed as \"Not an enquiry\" or \"Duplicate\" are not counted.",
+        ],
+      },
+      {
+        heading: "Where the quotations are now",
+        points: [
+          "The 6 steps of preparing a quotation: Received (not taken yet) → Feasibility (testing team; or waiting for details from the customer) → Reply (feasibility reply; then waiting for the quote request) → Quote (Accounts / Marketing prepare and send it) → Follow-up → Order (won / lost).",
+          "Each step shows the open enquiries in it now and how many are late. Click a step to open those enquiries.",
+        ],
+      },
+      {
+        heading: "Future scope and export",
+        points: [
+          "Future scope - tests and requirements we could not do (marked at the feasibility check, or a quote lost on capability): why, how often they are asked for and by how many customers.",
+          "Export Excel - the dashboard figures plus every enquiry of the period, its tests, timeline and future scope items, one sheet each, ready to filter and pivot.",
+          "The page fits phones and tablets: tables scroll sideways.",
+        ],
+      },
+    ],
+  },
+
+  future_scope: {
+    title: "Future Scope",
+    summary:
+      "Tests and requirements customers asked for that the lab could not do, so management can decide on adding the facility.",
+    sections: [
+      {
+        heading: "Where the items come from",
+        points: [
+          "Feasibility done as partly / not feasible: the tester ticks each test that can't be done and chooses why (no chamber, too big, beyond range, standard not in scope, not NABL, other), and can add requirements that aren't a test.",
+          "A quote marked Lost for \"Capability\": what the customer needed.",
+        ],
+      },
+      {
+        heading: "For management",
+        points: [
+          "Click an item to set the status (Not reviewed, Under review, Planned, Facility added, Not planned) and write a note: decision, budget, target date. Select several to change their status together.",
+          "Only Administration can change the status; everyone else can see the register.",
+          "The Enquiry Dashboard shows the most asked-for items; Export Excel downloads the list as shown.",
         ],
       },
     ],

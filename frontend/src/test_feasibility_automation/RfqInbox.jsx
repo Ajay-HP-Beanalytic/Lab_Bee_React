@@ -26,11 +26,15 @@ import LanguageIcon from "@mui/icons-material/Language";
 import AttachFileIcon from "@mui/icons-material/AttachFile";
 import RequestQuoteIcon from "@mui/icons-material/RequestQuote";
 import InsightsIcon from "@mui/icons-material/Insights";
+import FileDownloadIcon from "@mui/icons-material/FileDownload";
+import { toast } from "react-toastify";
 import { serverBaseAddress } from "../Pages/APIPage";
 import SearchBar from "../common/SearchBar";
 import DateRangeFilter from "../common/DateRangeFilter";
 import RfqRequestDetails from "./RfqRequestDetails";
-import { STAGES, VIEWS, MONTHS, lateness, rupees, rfqReference, formatDateTime, receivedOf, inPeriod } from "./rfqInboxHelpers";
+import StageTrack from "./StageTrack";
+import { downloadEnquiriesExcel } from "./enquiryExport";
+import { STAGES, VIEWS, MONTHS, lateness, rupees, rfqReference, formatDateTime, receivedOf, inPeriod, periodDates } from "./rfqInboxHelpers";
 
 const REFRESH_MS = 60 * 1000;
 
@@ -49,16 +53,30 @@ export default function RfqInbox() {
   const [range, setRange] = useState(null);
   const navigate = useNavigate();
   const [openId, setOpenId] = useState(null);
+  const [exporting, setExporting] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
 
-  // Opened from a notification: /rfq_inbox?open=12
+  // Opened from a notification (/rfq_inbox?open=12) or the dashboard (/rfq_inbox?view=quote)
   useEffect(() => {
     const id = parseInt(searchParams.get("open"));
-    if (id) {
-      setOpenId(id);
-      setSearchParams({}, { replace: true });
-    }
+    const tab = searchParams.get("view");
+    if (id) setOpenId(id);
+    if (VIEWS.some((v) => v.key === tab)) setView(tab);
+    if (id || tab) setSearchParams({}, { replace: true });
   }, [searchParams, setSearchParams]);
+
+  // Every enquiry received in the period (all tabs), with tests, timeline and future scope
+  const exportExcel = async () => {
+    setExporting(true);
+    try {
+      const n = await downloadEnquiriesExcel(periodDates({ year, month, range }));
+      toast.success(`Exported ${n} enquiries`);
+    } catch (err) {
+      toast.error(err.response?.data?.error || "Export failed");
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const load = async () => {
     setError("");
@@ -95,7 +113,7 @@ export default function RfqInbox() {
     return periodRows.filter(test).filter(
       (r) =>
         !q ||
-        [rfqReference(r.id), r.company_name, r.contact_person, r.contact_email, r.email_subject, r.customer_reference, r.owner_name, r.quotation_ref]
+        [rfqReference(r), rfqReference(r.id), r.company_name, r.contact_person, r.contact_email, r.email_subject, r.customer_reference, r.owner_name, r.quotation_ref]
           .filter(Boolean)
           .some((v) => v.toLowerCase().includes(q)),
     );
@@ -105,9 +123,10 @@ export default function RfqInbox() {
     {
       field: "id",
       headerName: "Ref",
-      width: 100,
+      width: 140,
       headerClassName: "header",
-      valueGetter: (value) => rfqReference(value),
+      // sorted by the id (the order they were saved), shown as the RFQ number
+      valueFormatter: (value, row) => rfqReference(row),
     },
     {
       field: "received_at",
@@ -185,7 +204,7 @@ export default function RfqInbox() {
     {
       field: "stage",
       headerName: "Stage",
-      width: 205,
+      width: 215,
       headerClassName: "header",
       valueGetter: (value) => STAGES[value]?.label || value,
       renderCell: (params) => {
@@ -212,6 +231,7 @@ export default function RfqInbox() {
                 </Tooltip>
               )}
             </Box>
+            <StageTrack request={r} late={!!late?.late} />
             {late && (
               <Typography variant="caption" color={late.late ? "error" : "text.secondary"} fontWeight={late.late ? 700 : 400}>
                 {late.text}
@@ -305,10 +325,17 @@ export default function RfqInbox() {
             order. Click a row to open it.
           </Typography>
         </Box>
-        <Box display="flex" alignItems="center" gap={1}>
+        <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
           <Button size="small" variant="outlined" startIcon={<InsightsIcon />} onClick={() => navigate("/rfq_dashboard")}>
             Dashboard
           </Button>
+          <Tooltip title="Every enquiry received in the selected period (all tabs) with its tests, timeline and future scope items, in Excel">
+            <span>
+              <Button size="small" variant="outlined" color="success" startIcon={exporting ? <CircularProgress size={16} /> : <FileDownloadIcon />} disabled={exporting} onClick={exportExcel}>
+                Export Excel
+              </Button>
+            </span>
+          </Tooltip>
           {status && (
             <Tooltip title={status.mailbox ? `Mailbox: ${status.mailbox}` : ""}>
               <Chip

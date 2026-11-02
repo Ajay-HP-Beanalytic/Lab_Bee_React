@@ -43,3 +43,24 @@
   margin: 0;
   /* Remove any margin */
 }
+/* Phones and small tablets: the two months one under the other, inside the screen */
+@media (max-width: 700px) {
+  .date-range-picker {
+    position: fixed;
+    top: 72px;
+    left: 8px;
+    right: 8px;
+    width: auto;
+    max-height: calc(100vh - 88px);
+    overflow-y: auto;
+    background: white;
+  }
+
+  .date-range-picker .rdrMonthsHorizontal {
+    flex-direction: column;
+  }
+
+  .date-range-picker .rdrMonth {
+    width: 100%;
+  }
+}

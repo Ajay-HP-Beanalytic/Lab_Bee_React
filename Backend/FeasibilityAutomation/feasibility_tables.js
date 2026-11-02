@@ -260,6 +260,8 @@ function createFeasibilityRequestEutsTable() {
 //so each column is added only when information_schema says it is missing.
 const EMAIL_INTAKE_COLUMNS = {
   feasibility_requests: {
+    // RFQ/DDMMYYYY/NN: day received + serial of the day (enquiry/rfqNumber.js)
+    rfq_number: "VARCHAR(30) DEFAULT NULL",
     source: "ENUM('portal','email') NOT NULL DEFAULT 'portal'",
     source_email_id: "INT DEFAULT NULL",
     conversation_id: "VARCHAR(512) DEFAULT NULL",
@@ -408,6 +410,54 @@ function createCustomerLogosTable() {
   return new Promise((resolve) => {
     db.query(sqlQuery, (err) => {
       if (err) console.log("Error creating customer_logos table", err);
+      resolve(!err);
+    });
+  });
+}
+
+//Future scope register (enquiry/futureScope.js): tests and requirements the lab
+//could not do, for management to decide on adding the facility
+function createRfqFutureScopeTable() {
+  const sqlQuery = `
+    CREATE TABLE IF NOT EXISTS rfq_future_scope (
+      id               INT NOT NULL AUTO_INCREMENT,
+      request_id       INT NOT NULL,
+      test_id          INT DEFAULT NULL,
+      requirement      VARCHAR(500) NOT NULL,
+      department       VARCHAR(10) DEFAULT NULL,
+      reason           VARCHAR(100) NOT NULL,
+      detail           TEXT DEFAULT NULL,
+      customer         VARCHAR(255) DEFAULT NULL,
+      source           VARCHAR(20) NOT NULL DEFAULT 'feasibility',
+      status           VARCHAR(20) NOT NULL DEFAULT 'new',
+      management_note  TEXT DEFAULT NULL,
+      reviewed_by      INT DEFAULT NULL,
+      reviewed_at      DATETIME DEFAULT NULL,
+      created_by       INT DEFAULT NULL,
+      created_at       TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY(id),
+      INDEX idx_fs_request (request_id),
+      INDEX idx_fs_status (status)
+    )`;
+  return new Promise((resolve) => {
+    db.query(sqlQuery, (err) => {
+      if (err) console.log("Error creating rfq_future_scope table", err);
+      resolve(!err);
+    });
+  });
+}
+
+// Serial of the RFQ numbers per day (enquiry/rfqNumber.js)
+function createRfqNumberCountersTable() {
+  const sqlQuery = `
+    CREATE TABLE IF NOT EXISTS rfq_number_counters (
+      day          DATE NOT NULL,
+      last_serial  INT NOT NULL DEFAULT 0,
+      PRIMARY KEY(day)
+    )`;
+  return new Promise((resolve) => {
+    db.query(sqlQuery, (err) => {
+      if (err) console.log("Error creating rfq_number_counters table", err);
       resolve(!err);
     });
   });
@@ -762,6 +812,8 @@ async function migrateFeasibilityForEmailIntake() {
     createRfqAttachmentsTable(),
     createRfqQuoteDraftsTable(),
     createCustomerLogosTable(),
+    createRfqFutureScopeTable(),
+    createRfqNumberCountersTable(),
   ]);
   const q = (sql, params) => db.promise().query(sql, params).then(([rows]) => rows);
   try {
@@ -790,6 +842,12 @@ async function migrateFeasibilityForEmailIntake() {
       "SELECT 1 FROM information_schema.statistics WHERE table_schema = DATABASE() AND table_name = 'feasibility_requests' AND index_name = 'idx_fr_stage'",
     );
     if (!stageIdx.length) await q("ALTER TABLE feasibility_requests ADD INDEX idx_fr_stage (stage)");
+    // RFQ numbers: enquiries without one are numbered, then the number must be unique
+    await require("./enquiry/rfqNumber").backfill(q);
+    const numberIdx = await q(
+      "SELECT 1 FROM information_schema.statistics WHERE table_schema = DATABASE() AND table_name = 'feasibility_requests' AND index_name = 'uq_fr_rfq_number'",
+    );
+    if (!numberIdx.length) await q("ALTER TABLE feasibility_requests ADD UNIQUE INDEX uq_fr_rfq_number (rfq_number)");
     // Enquiries created before the workflow: teams from their tests, stage age from creation
     const { departmentsFor } = require("./enquiry/workflow");
     for (const r of await q("SELECT id FROM feasibility_requests WHERE departments IS NULL")) {

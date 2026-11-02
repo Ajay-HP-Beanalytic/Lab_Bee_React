@@ -7,7 +7,8 @@ const { storeEmailFiles, listForRequest, filePath } = require("./enquiry/attachm
 const { getDraft, linkQuotation } = require("./enquiry/draftQuote");
 const customerProfile = require("./enquiry/customerProfile");
 const testLines = require("./enquiry/testLines");
-const { dashboard } = require("./enquiry/dashboard");
+const { dashboard, exportData } = require("./enquiry/dashboard");
+const futureScope = require("./enquiry/futureScope");
 
 const query = (sql, params) => db.promise().query(sql, params).then(([rows]) => rows);
 
@@ -41,7 +42,7 @@ const intakeAPIs = (app) => {
     try {
       const user = await workflow.loadUser(userId);
       const rows = await query(
-        `SELECT fr.id, fr.created_at, fr.updated_at, fr.status, fr.source,
+        `SELECT fr.id, fr.rfq_number, fr.created_at, fr.updated_at, fr.status, fr.source,
                 fr.company_name, fr.contact_person, fr.contact_email, fr.email_subject,
                 fr.is_confidential, fr.confidential_handling, fr.missing_fields,
                 fr.request_flags, fr.quote_deadline, fr.customer_reference,
@@ -128,6 +129,7 @@ const intakeAPIs = (app) => {
           stages: workflow.STAGES,
           feasibilityResults: workflow.FEASIBILITY_RESULTS,
           lostReasons: workflow.LOST_REASONS,
+          notFeasibleReasons: futureScope.REASONS,
           closeReasons: workflow.CLOSE_REASONS,
           defaultFollowup: workflow.addWorkingDays(new Date(), 3),
         },
@@ -174,7 +176,7 @@ const intakeAPIs = (app) => {
     try {
       const id = parseInt(req.params.id);
       const [request] = await query(
-        "SELECT id, company_name, contact_person, email_subject, customer_reference, departments, stage, quotation_ref FROM feasibility_requests WHERE id = ?",
+        "SELECT id, rfq_number, company_name, contact_person, email_subject, customer_reference, departments, stage, quotation_ref FROM feasibility_requests WHERE id = ?",
         [id],
       );
       if (!request) return res.status(404).json({ error: "Enquiry not found" });
@@ -280,15 +282,49 @@ const intakeAPIs = (app) => {
   linesRoute("post", "/:testId/split", (id, testId, body, userId) => testLines.splitLine(id, testId, body.names, userId), "split the test", { edit: true });
   linesRoute("delete", "/:testId", (id, testId, _b, userId) => testLines.removeLine(id, testId, userId), "remove the test", { edit: true });
 
-  // Enquiry dashboard: ?from=YYYY-MM-DD&to=YYYY-MM-DD&department=TS1|TS2
+  // Enquiry dashboard and its Excel export: ?from=YYYY-MM-DD&to=YYYY-MM-DD&department=TS1|TS2
+  const date = (v) => (/^\d{4}-\d{2}-\d{2}$/.test(String(v || "")) ? v : undefined);
+  const periodOf = (q) => ({ from: date(q.from), to: date(q.to), department: q.department });
   app.get("/api/enquiries/dashboard", async (req, res) => {
     if (!requireUser(req, res)) return;
-    const date = (v) => (/^\d{4}-\d{2}-\d{2}$/.test(String(v || "")) ? v : undefined);
     try {
-      res.json(await dashboard({ from: date(req.query.from), to: date(req.query.to), department: req.query.department }));
+      res.json(await dashboard(periodOf(req.query)));
     } catch (err) {
       console.error("enquiry dashboard error:", err);
       res.status(500).json({ error: "Failed to load the dashboard" });
+    }
+  });
+  app.get("/api/enquiries/export", async (req, res) => {
+    if (!requireUser(req, res)) return;
+    try {
+      res.json(await exportData(periodOf(req.query)));
+    } catch (err) {
+      console.error("enquiry export error:", err);
+      res.status(500).json({ error: "Failed to export the enquiries" });
+    }
+  });
+
+  // Future scope register: ?department=TS1|TS2&status=new|reviewing|planned|added|not_planned
+  app.get("/api/future-scope", async (req, res) => {
+    if (!requireUser(req, res)) return;
+    try {
+      const items = await futureScope.withTypes(await futureScope.listItems({ department: req.query.department, status: req.query.status }));
+      res.json({ items, reasons: futureScope.REASONS, statuses: futureScope.STATUSES, managers: futureScope.MANAGERS });
+    } catch (err) {
+      console.error("future scope error:", err);
+      res.status(500).json({ error: "Failed to load the future scope register" });
+    }
+  });
+  // Management: {ids: [..], status?, note?}
+  app.put("/api/future-scope", async (req, res) => {
+    const userId = requireUser(req, res);
+    if (!userId) return;
+    try {
+      const user = await workflow.loadUser(userId);
+      res.json(await futureScope.updateItems(req.body?.ids, { status: req.body?.status, note: req.body?.note }, user));
+    } catch (err) {
+      if (!err.status) console.error("future scope update error:", err);
+      res.status(err.status || 500).json({ error: err.status ? err.message : "Failed to save" });
     }
   });
 

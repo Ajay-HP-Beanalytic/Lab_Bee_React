@@ -344,6 +344,11 @@ export default function TestLinesEditor({ requestId, readOnly, onChanged }) {
                   <Chip size="small" color={l.test_type_code ? "primary" : "warning"} label={l.test_type_code ? `${l.test_type_code} · ${l.test_type_name}` : "Type?"} />
                   {l.type_by === "name" && <Chip size="small" variant="outlined" label="Type matched by name - check" />}
                   {sourceChip(l)}
+                  {l.not_feasible && (
+                    <Tooltip title="Marked at the feasibility check; saved in the Future Scope register">
+                      <Chip size="small" color="error" variant="outlined" label={`Can't do: ${l.not_feasible}`} />
+                    </Tooltip>
+                  )}
                 </Box>
               </Box>
               <Box textAlign="right" minWidth={170}>

@@ -2,6 +2,7 @@ const crypto = require("crypto");
 const nodemailer = require("nodemailer");
 const { db } = require("../db");
 const { onCreated } = require("./enquiry/workflow");
+const { assignNumber, reference: rfqReference } = require("./enquiry/rfqNumber");
 
 //Create a transporter function to send emails.
 const createTransporter = () =>
@@ -172,7 +173,6 @@ const feasibilityAPIs = (app) => {
           }
 
           const requestId = requestResult.insertId;
-          const reference = `RFQ-${String(requestId).padStart(5, "0")}`;
 
           // Insert all tests in a single bulk query
           const testValues = tests.map((t) => [
@@ -196,13 +196,18 @@ const feasibilityAPIs = (app) => {
                eut_weight_kg, eut_quantity, special_requirements)
             VALUES ?`;
 
-          db.query(testSql, [testValues], (err) => {
+          db.query(testSql, [testValues], async (err) => {
             if (err) {
               console.error("submit – insert tests error:", err);
               return res
                 .status(500)
                 .json({ error: "Failed to save test details" });
             }
+
+            const reference = await assignNumber(requestId).catch((e) => {
+              console.error("submit – RFQ number:", e.message);
+              return rfqReference(requestId);
+            });
 
             // Mark token as used so the link can't be resubmitted
             db.query(
@@ -235,7 +240,7 @@ const feasibilityAPIs = (app) => {
     const { token } = req.params;
 
     const sql = `
-      SELECT id, company_name, contact_person, status, created_at, updated_at
+      SELECT id, rfq_number, company_name, contact_person, status, created_at, updated_at
       FROM feasibility_requests
       WHERE request_token = ?`;
 
@@ -250,7 +255,7 @@ const feasibilityAPIs = (app) => {
 
       const r = results[0];
       res.json({
-        reference: `RFQ-${String(r.id).padStart(5, "0")}`,
+        reference: rfqReference(r),
         company_name: r.company_name,
         contact_person: r.contact_person,
         status: r.status,

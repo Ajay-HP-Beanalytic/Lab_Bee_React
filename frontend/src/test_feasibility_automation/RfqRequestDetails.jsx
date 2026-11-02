@@ -53,6 +53,7 @@ import { serverBaseAddress } from "../Pages/APIPage";
 import DocumentPreviewModal from "../components/DocumentPreviewModal";
 import EnquiryCustomer from "./EnquiryCustomer";
 import TestLinesEditor from "./TestLinesEditor";
+import StageTrack from "./StageTrack";
 import { STAGES, lateness, rupees, rfqReference, formatDateTime } from "./rfqInboxHelpers";
 
 const EMAIL_ACTION_LABELS = {
@@ -72,13 +73,14 @@ const ACTION_HELP = {
   assign: "Give this enquiry to someone in the team for this stage.",
   need_info: "Accounts / Marketing will be asked to get these details from the customer.",
   info_received: "It goes back to the tester who asked for the details.",
-  feasibility_done: "Accounts / Marketing will be asked to reply to the customer (with the quote, if the customer asked for one).",
+  feasibility_done:
+    "Accounts / Marketing will be asked to reply to the customer (with the quote, if the customer asked for one). What can't be done is saved in the Future Scope register for management and left out of the quote.",
   reply_sent: "Send the reply from Outlook first, then record it here.",
   quote_requested: "Use this when the customer asks for a price.",
   quote_sent: "Send the quote from Outlook first. You will follow it up until it is won or lost.",
   followup_note: "Record a call or email with the customer and when to follow up next.",
   won: "The customer placed the order.",
-  lost: "The customer will not order. The reason is used in the conversion report.",
+  lost: "The customer will not order. The reason is used in the dashboard; for Capability, what we couldn't do goes to the Future Scope register.",
   close: "For mails that are not real enquiries, duplicates or cancelled requests.",
   reopen: "The enquiry goes back to the stage it was closed from.",
   note: "A note on the timeline, visible to everyone.",
@@ -150,6 +152,85 @@ const Field = ({ label, value }) => (
   </Grid>
 );
 
+// Feasibility done (partly / not feasible): which tests can't be done and why,
+// plus requirements that aren't a test line (saved to the Future Scope register)
+function NotPossibleList({ form, setForm, reasons }) {
+  const setRow = (list, i, patch) => setForm((f) => ({ ...f, [list]: f[list].map((x, j) => (j === i ? { ...x, ...patch } : x)) }));
+  const reasonField = (list, i, x) => (
+    <FormControl fullWidth size="small" required>
+      <InputLabel>Why not</InputLabel>
+      <Select label="Why not" value={x.reason} onChange={(e) => setRow(list, i, { reason: e.target.value })}>
+        {reasons.map((reason) => (
+          <MenuItem key={reason} value={reason}>
+            {reason}
+          </MenuItem>
+        ))}
+      </Select>
+    </FormControl>
+  );
+  const detailField = (list, i, x) => (
+    <TextField
+      fullWidth
+      size="small"
+      label={x.reason === "Other" ? "Why (required)" : "Detail (optional)"}
+      placeholder="e.g. needs -70 °C, our minimum is -40 °C"
+      value={x.detail}
+      onChange={(e) => setRow(list, i, { detail: e.target.value })}
+    />
+  );
+  return (
+    <Paper variant="outlined" sx={{ p: 1.5, mt: 1 }}>
+      <Typography variant="body2" fontWeight={700}>
+        What can't we do?
+      </Typography>
+      <Typography variant="caption" color="text.secondary" display="block" mb={1}>
+        Tick the tests we can't do and say why. They are left out of the quote and saved in the Future Scope register, so management can plan the facility.
+      </Typography>
+      {(form.nf || []).map((x, i) => (
+        <Grid container spacing={1} key={x.test_id} alignItems="center" mb={0.5}>
+          <Grid item xs={12} sm={x.on ? 4 : 12}>
+            <FormControlLabel
+              control={<Checkbox size="small" checked={x.on} onChange={(e) => setRow("nf", i, { on: e.target.checked })} />}
+              label={<Typography variant="body2">{x.requirement || "(test)"}</Typography>}
+            />
+          </Grid>
+          {x.on && (
+            <>
+              <Grid item xs={12} sm={4}>
+                {reasonField("nf", i, x)}
+              </Grid>
+              <Grid item xs={12} sm={4}>
+                {detailField("nf", i, x)}
+              </Grid>
+            </>
+          )}
+        </Grid>
+      ))}
+      {(form.extra || []).map((x, i) => (
+        <Grid container spacing={1} key={`extra-${i}`} alignItems="center" mb={0.5}>
+          <Grid item xs={12} sm={4}>
+            <TextField fullWidth size="small" label="Requirement" placeholder="e.g. Salt fog 1000 h" value={x.requirement} onChange={(e) => setRow("extra", i, { requirement: e.target.value })} />
+          </Grid>
+          <Grid item xs={12} sm={4}>
+            {reasonField("extra", i, x)}
+          </Grid>
+          <Grid item xs={10} sm={3}>
+            {detailField("extra", i, x)}
+          </Grid>
+          <Grid item xs={2} sm={1}>
+            <IconButton size="small" onClick={() => setForm((f) => ({ ...f, extra: f.extra.filter((_, j) => j !== i) }))}>
+              <CloseIcon fontSize="small" />
+            </IconButton>
+          </Grid>
+        </Grid>
+      ))}
+      <Button size="small" onClick={() => setForm((f) => ({ ...f, extra: [...(f.extra || []), { requirement: "", reason: "", detail: "" }] }))}>
+        + Another requirement (not in the tests)
+      </Button>
+    </Paper>
+  );
+}
+
 //Form for one workflow action
 function ActionDialog({ action, data, onClose, onDone }) {
   const r = data.request;
@@ -173,14 +254,18 @@ function ActionDialog({ action, data, onClose, onDone }) {
           : action.key === "followup_note"
             ? { method: "call" }
             : action.key === "feasibility_done"
-              ? { result: "feasible" }
+              ? {
+                  result: "feasible",
+                  nf: (data.tests || []).map((t) => ({ test_id: t.id, requirement: t.test_name, on: false, reason: "", detail: "" })),
+                  extra: [],
+                }
               : action.key === "won" && r.quote_value != null
                 ? { won_value: Number(r.quote_value) }
                 : action.key === "set_departments"
                   ? { departments: r.departments_unsure ? [] : (r.departments || "").split(",").filter(Boolean) }
                   : {},
     );
-  }, [action, r, wf]);
+  }, [action, r, wf, data.tests]);
 
   if (!action) return null;
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
@@ -189,7 +274,12 @@ function ActionDialog({ action, data, onClose, onDone }) {
     setSaving(true);
     setError("");
     try {
-      await axios.post(`${serverBaseAddress}/api/enquiries/${r.id}/actions/${action.key}`, form);
+      const { nf, extra, ...rest } = form;
+      const body =
+        action.key === "feasibility_done"
+          ? { ...rest, not_feasible: rest.result === "feasible" ? [] : [...(nf || []).filter((x) => x.on), ...(extra || []).filter((x) => x.requirement?.trim())] }
+          : form;
+      await axios.post(`${serverBaseAddress}/api/enquiries/${r.id}/actions/${action.key}`, body);
       onDone(action);
     } catch (err) {
       setError(err.response?.data?.error || "Failed");
@@ -235,12 +325,21 @@ function ActionDialog({ action, data, onClose, onDone }) {
     info_received: note("What the customer sent (optional)"),
     feasibility_done: (
       <>
-        <RadioGroup row value={form.result || ""} onChange={set("result")}>
+        <RadioGroup
+          row
+          value={form.result || ""}
+          onChange={(e) => {
+            const result = e.target.value;
+            // Not feasible: every test is marked (they can be unmarked)
+            setForm((f) => ({ ...f, result, nf: (f.nf || []).map((x) => ({ ...x, on: result === "not_feasible" ? true : result === "feasible" ? false : x.on })) }));
+          }}
+        >
           {Object.entries(wf.feasibilityResults).map(([k, label]) => (
             <FormControlLabel key={k} value={k} control={<Radio size="small" />} label={label} />
           ))}
         </RadioGroup>
-        {note(form.result === "feasible" ? "Note (optional): chamber, conditions, lead time…" : "What can't be done, and why", form.result !== "feasible", 3)}
+        {form.result && form.result !== "feasible" && <NotPossibleList form={form} setForm={setForm} reasons={wf.notFeasibleReasons || []} />}
+        {note(form.result === "feasible" ? "Note (optional): chamber, conditions, lead time…" : "Note (optional): anything else for Accounts / Marketing", false, 2)}
         {r.quote_requested === 1 && form.result !== "not_feasible" && (
           <Alert severity="info" sx={{ mt: 1 }}>
             The customer asked for a quote, so this goes straight to Quote: one reply with the confirmation and the quote.
@@ -308,7 +407,10 @@ function ActionDialog({ action, data, onClose, onDone }) {
     lost: (
       <>
         {reasonSelect(wf.lostReasons)}
-        {note(form.reason === "Other" ? "The reason" : "Note (optional)", form.reason === "Other")}
+        {note(
+          form.reason === "Other" ? "The reason" : form.reason === "Capability" ? "What the customer needed that we can't do (goes to Future Scope)" : "Note (optional)",
+          ["Other", "Capability"].includes(form.reason),
+        )}
       </>
     ),
     close: (
@@ -349,9 +451,9 @@ function ActionDialog({ action, data, onClose, onDone }) {
   }[action.key];
 
   return (
-    <Dialog open onClose={() => !saving && onClose()} maxWidth="sm" fullWidth>
+    <Dialog open onClose={() => !saving && onClose()} maxWidth={action.key === "feasibility_done" ? "md" : "sm"} fullWidth>
       <DialogTitle fontWeight={700}>
-        {action.label} - {rfqReference(r.id)}
+        {action.label} - {rfqReference(r)}
       </DialogTitle>
       <DialogContent dividers>
         <Typography variant="body2" color="text.secondary" mb={1}>
@@ -557,7 +659,7 @@ export default function RfqRequestDetails({ requestId, open, onClose, onChanged 
       <DialogTitle sx={{ pr: 6, pb: 1 }}>
         <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
           <Typography variant="h6" fontWeight={700} color="#003366" component="span">
-            {rfqReference(requestId)}
+            {r ? rfqReference(r) : "Enquiry"}
           </Typography>
           {r && (
             <>
@@ -591,6 +693,7 @@ export default function RfqRequestDetails({ requestId, open, onClose, onChanged 
             {r.outcome_reason && ` · ${r.outcome_reason}`}
           </Typography>
         )}
+        {r && <StageTrack request={r} late={!!late?.late} compact={false} />}
         <IconButton onClick={onClose} sx={{ position: "absolute", right: 8, top: 8 }}>
           <CloseIcon />
         </IconButton>

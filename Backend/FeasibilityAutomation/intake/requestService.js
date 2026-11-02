@@ -17,6 +17,7 @@ const crypto = require("crypto");
 const { isInternal, isForward, FREE_MAIL_DOMAINS } = require("./emailIntakeAgent");
 const { db } = require("../../db");
 const workflow = require("../enquiry/workflow");
+const { assignWith } = require("../enquiry/rfqNumber");
 const { notify } = require("../enquiry/notify");
 
 const MATCH_WINDOW_DAYS = 60;
@@ -274,6 +275,7 @@ const createRequest = async (q, row, { confidential = false } = {}) => {
 
   const res = await q("INSERT INTO feasibility_requests SET ?", [request]);
   const requestId = res.insertId;
+  await assignWith(q, requestId, row.received_at);
   if (x) {
     const euts = await insertEuts(q, requestId, x.eut_items);
     await insertTests(q, requestId, x.tests || [], euts);
@@ -426,7 +428,7 @@ const afterEmail = async (row, { plan, requestId, changes }) => {
     ...(req.owner_id ? { userIds: [req.owner_id] } : { departments: workflow.stageTeam(req) }),
     sender: "Lab Bee",
     requestId,
-    message: `${workflow.reference(requestId)}${req.company_name ? ` (${req.company_name})` : ""}: the customer wrote again - "${(row.subject || "").slice(0, 120)}"`,
+    message: `${workflow.reference(req)}${req.company_name ? ` (${req.company_name})` : ""}: the customer wrote again - "${(row.subject || "").slice(0, 120)}"`,
   });
 };
 

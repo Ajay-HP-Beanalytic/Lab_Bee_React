@@ -5,6 +5,7 @@
 
 const { db } = require("../../db");
 const { STAGES, OPEN_STAGES } = require("./workflow");
+const futureScope = require("./futureScope");
 
 const query = (sql, params) => db.promise().query(sql, params).then(([rows]) => rows);
 
@@ -24,10 +25,9 @@ const monthKey = (d) => {
   return `${x.getFullYear()}-${String(x.getMonth() + 1).padStart(2, "0")}`;
 };
 
-/**
- * @param {{from?: string, to?: string, department?: 'TS1'|'TS2'}} filter dates YYYY-MM-DD, inclusive
- */
-async function dashboard({ from, to, department } = {}) {
+// Enquiries received in the period (without mails closed as not an enquiry),
+// with the first feasibility / quote / decision event of each
+async function loadPeriod({ from, to, department } = {}) {
   const where = [];
   const params = [];
   if (from) {
@@ -44,11 +44,13 @@ async function dashboard({ from, to, department } = {}) {
   }
   const all = await query(
     `SELECT * FROM (
-       SELECT fr.id, fr.company_name, fr.source, fr.stage, fr.departments, fr.departments_unsure, fr.owner_id,
-              fr.quote_requested, fr.feasibility_result, fr.quotation_ref, fr.quote_value, fr.won_value,
-              fr.outcome_reason, fr.next_followup_at, fr.stage_changed_at, fr.closed_at, fr.created_at,
+       SELECT fr.id, fr.rfq_number, fr.company_name, fr.contact_person, fr.contact_email, fr.contact_phone, fr.email_subject,
+              fr.customer_reference, fr.source, fr.stage, fr.departments, fr.departments_unsure, fr.owner_id,
+              o.name AS owner_name, fr.quote_requested, fr.feasibility_result, fr.quotation_ref, fr.quote_value,
+              fr.won_value, fr.po_number, fr.outcome_reason, fr.next_followup_at, fr.stage_changed_at, fr.closed_at,
+              fr.created_at, fr.technical_notes,
               COALESCE((SELECT MIN(ie.received_at) FROM inbound_emails ie WHERE ie.request_id = fr.id), fr.created_at) AS received
-       FROM feasibility_requests fr) x
+       FROM feasibility_requests fr LEFT JOIN labbee_users o ON o.id = fr.owner_id) x
      ${where.length ? `WHERE ${where.join(" AND ")}` : ""}`,
     params,
   );
@@ -79,6 +81,14 @@ async function dashboard({ from, to, department } = {}) {
     r.decided_at = (ev.won || ev.lost)?.created_at || null;
     r.value_won = r.stage === "won" ? Number(r.won_value ?? r.quote_value) || 0 : 0;
   }
+  return { rows, ids, first };
+}
+
+/**
+ * @param {{from?: string, to?: string, department?: 'TS1'|'TS2'}} filter dates YYYY-MM-DD, inclusive
+ */
+async function dashboard({ from, to, department } = {}) {
+  const { rows, ids, first } = await loadPeriod({ from, to, department });
   const won = rows.filter((r) => r.stage === "won");
   const lost = rows.filter((r) => r.stage === "lost");
   const quoted = rows.filter((r) => r.quoted);
@@ -179,9 +189,11 @@ async function dashboard({ from, to, department } = {}) {
   }
 
   // Now: all open enquiries, whatever the period
+  const team = department === "TS1" || department === "TS2" ? department : null;
   const open = await query(
-    `SELECT stage, owner_id, departments_unsure, next_followup_at, stage_changed_at FROM feasibility_requests WHERE stage IN (?)`,
-    [OPEN_STAGES],
+    `SELECT id, stage, owner_id, departments_unsure, next_followup_at, stage_changed_at, created_at, quote_value
+     FROM feasibility_requests WHERE stage IN (?)${team ? " AND FIND_IN_SET(?, departments)" : ""}`,
+    team ? [OPEN_STAGES, team] : [OPEN_STAGES],
   );
   const today = new Date().toISOString().slice(0, 10);
   const now = {
@@ -192,15 +204,23 @@ async function dashboard({ from, to, department } = {}) {
         label: STAGES[s].label,
         count: list.length,
         over_3_days: list.filter((r) => r.stage_changed_at && hoursBetween(r.stage_changed_at, new Date()) > 72).length,
+        quote_value: sum(list.map((r) => r.quote_value)),
       };
     }),
+    // For the stage tracker (late is worked out like the Enquiries list)
+    open: open.map(({ id, stage, stage_changed_at, created_at, next_followup_at }) => ({ id, stage, stage_changed_at, created_at, next_followup_at })),
     unassigned_feasibility: open.filter((r) => ["new", "feasibility"].includes(r.stage) && !r.owner_id).length,
     team_unclear: open.filter((r) => r.departments_unsure).length,
     followups_overdue: open.filter((r) => r.stage === "followup" && r.next_followup_at && String(r.next_followup_at instanceof Date ? r.next_followup_at.toISOString() : r.next_followup_at).slice(0, 10) < today).length,
   };
 
+  const scopeItems = await futureScope.withTypes(await futureScope.listItems({ requestIds: ids }));
+
   return {
     kpis,
+    // Closed in the period, by how they ended (for the stage tracker)
+    ended: { won: won.length, lost: lost.length, not_feasible: rows.filter((r) => r.stage === "not_feasible").length, closed: rows.filter((r) => r.stage === "closed").length },
+    future_scope: futureScope.summary(scopeItems),
     funnel: [
       { step: "Received", value: rows.length },
       { step: "Feasibility done", value: feasibilityDone.length },
@@ -219,4 +239,35 @@ async function dashboard({ from, to, department } = {}) {
   };
 }
 
-module.exports = { dashboard };
+/**
+ * Everything about the enquiries received in the period, for the Excel export:
+ * the enquiries, their tests (quote lines), timeline and future scope items.
+ */
+async function exportData(filter = {}) {
+  const { rows, ids } = await loadPeriod(filter);
+  const { linesForMany } = require("./testLines");
+  const [tests, events, scope] = await Promise.all([
+    linesForMany(ids),
+    ids.length
+      ? query(
+          `SELECT e.request_id, e.action, e.from_stage, e.to_stage, e.note, e.created_at, u.name AS user_name, u.department
+           FROM rfq_events e LEFT JOIN labbee_users u ON u.id = e.user_id
+           WHERE e.request_id IN (?) ORDER BY e.request_id, e.created_at, e.id`,
+          [ids],
+        )
+      : [],
+    futureScope.listItems({ requestIds: ids }),
+  ]);
+  const testCount = new Map();
+  for (const t of tests) testCount.set(t.request_id, (testCount.get(t.request_id) || 0) + 1);
+  const enquiries = rows.map((r) => ({
+    ...r,
+    tests: testCount.get(r.id) || 0,
+    not_feasible_items: scope.filter((f) => f.request_id === r.id).length,
+    hours_to_feasibility: hoursBetween(r.received, r.feasibility_at),
+    hours_to_quote: hoursBetween(r.received, r.quote_at),
+  }));
+  return { enquiries, tests, events, future_scope: scope };
+}
+
+module.exports = { dashboard, exportData };

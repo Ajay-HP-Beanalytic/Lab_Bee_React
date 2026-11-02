@@ -10,6 +10,7 @@
 
 const { db } = require("../../db");
 const { notify } = require("./notify");
+const futureScope = require("./futureScope");
 
 const query = (sql, params) => db.promise().query(sql, params).then(([rows]) => rows);
 
@@ -41,7 +42,7 @@ const FEASIBILITY_RESULTS = { feasible: "Feasible", partly_feasible: "Partly fea
 const LOST_REASONS = ["Price", "Timeline", "Capability", "No response", "Went to another lab", "Other"];
 const CLOSE_REASONS = ["Not an enquiry", "Duplicate", "Cancelled by customer", "Other"];
 
-const reference = (id) => `RFQ-${String(id).padStart(5, "0")}`;
+const { reference } = require("./rfqNumber"); // RFQ/DDMMYYYY/NN
 
 // Which testing departments an enquiry needs, per test, in this order:
 //  1. the test type (chosen by the AI or a tester) - its department
@@ -135,7 +136,7 @@ const ACTIONS = {
         set: { owner_id: owner.id },
         note: text(body.note),
         data: { owner_name: owner.name },
-        notify: { userIds: [owner.id], message: `${reference(request.id)} was assigned to you` },
+        notify: { userIds: [owner.id], message: `${reference(request)} was assigned to you` },
       };
     },
   },
@@ -150,7 +151,7 @@ const ACTIONS = {
         to: "waiting_customer",
         set: { owner_id: null },
         note,
-        notify: { departments: SALES, message: `${reference(request.id)}${who(request)}: details needed from the customer - ${note}` },
+        notify: { departments: SALES, message: `${reference(request)}${who(request)}: details needed from the customer - ${note}` },
       };
     },
   },
@@ -171,8 +172,8 @@ const ACTIONS = {
         set: { owner_id: ownerId },
         note: text(body.note),
         notify: ownerId
-          ? { userIds: [ownerId], message: `${reference(request.id)}${who(request)}: the customer sent the details you asked for` }
-          : { departments: stageTeam(request, "feasibility"), message: `${reference(request.id)}${who(request)}: the customer sent more details` },
+          ? { userIds: [ownerId], message: `${reference(request)}${who(request)}: the customer sent the details you asked for` }
+          : { departments: stageTeam(request, "feasibility"), message: `${reference(request)}${who(request)}: the customer sent more details` },
       };
     },
   },
@@ -181,19 +182,34 @@ const ACTIONS = {
     label: "Feasibility done",
     from: ["new", "feasibility"],
     who: "stage",
-    run: ({ request, body }) => {
+    run: async ({ request, user, body }) => {
       const result = body.result;
       if (!FEASIBILITY_RESULTS[result]) throw fail(400, "Choose feasible, partly feasible or not feasible");
-      const note = result === "feasible" ? text(body.note) : required(body.note, "The reason");
+      // What can't be done goes to the future scope register (and out of the quote)
+      let items = [];
+      if (result !== "feasible") {
+        const tests = await query("SELECT * FROM feasibility_request_tests WHERE request_id = ?", [request.id]);
+        items = futureScope.cleanItems(body.not_feasible, tests);
+        if (!items.length) throw fail(400, "Mark the tests or requirements that can't be done, and why");
+        if (result === "partly_feasible" && tests.length && items.filter((i) => i.test).length >= tests.length) {
+          throw fail(400, "Every test is marked as not possible: choose Not feasible");
+        }
+      }
       const withQuote = !!request.quote_requested && result !== "not_feasible";
+      const cannot = items.map((i) => i.requirement);
       return {
         to: withQuote ? "quote" : "reply",
         set: { feasibility_result: result, owner_id: null },
-        note,
-        data: { result },
+        note: [cannot.length ? `Can't do: ${items.map((i) => `${i.requirement} (${i.reason}${i.detail ? ` - ${i.detail}` : ""})`).join("; ")}` : "", text(body.note)]
+          .filter(Boolean)
+          .join(". "),
+        data: { result, not_feasible: cannot },
+        after: () => futureScope.recordItems(request, items, { userId: user.id }),
         notify: {
           departments: SALES,
-          message: `${reference(request.id)}${who(request)}: ${FEASIBILITY_RESULTS[result]}. ${
+          message: `${reference(request)}${who(request)}: ${FEASIBILITY_RESULTS[result]}.${
+            result === "partly_feasible" ? ` Can't do: ${cannot.join(", ")} (left out of the quote).` : ""
+          } ${
             result === "not_feasible"
               ? "Please send the regret email."
               : withQuote
@@ -232,7 +248,7 @@ const ACTIONS = {
         to: "quote",
         set: { quote_requested: 1 },
         note: text(body.note),
-        notify: { departments: SALES, message: `${reference(request.id)}${who(request)}: the customer asked for a quote` },
+        notify: { departments: SALES, message: `${reference(request)}${who(request)}: the customer asked for a quote` },
       };
     },
   },
@@ -280,7 +296,7 @@ const ACTIONS = {
         set: { po_number: po, won_value: value, next_followup_at: null, closed_at: new Date() },
         note: text(body.note),
         data: { po_number: po, won_value: value },
-        notify: { departments: [ADMIN], message: `${reference(request.id)}${who(request)} won${po ? ` (PO ${po})` : ""}` },
+        notify: { departments: [ADMIN], message: `${reference(request)}${who(request)} won${po ? ` (PO ${po})` : ""}` },
       };
     },
   },
@@ -289,13 +305,18 @@ const ACTIONS = {
     label: "Lost",
     from: ["waiting_customer", "reply", "confirmed", "quote", "followup"],
     who: "stage",
-    run: ({ body }) => {
+    run: ({ request, user, body }) => {
       if (!LOST_REASONS.includes(body.reason)) throw fail(400, "Choose a reason");
+      // Lost on capability: what we couldn't do goes to the future scope register
+      const capability = body.reason === "Capability";
       return {
         to: "lost",
         set: { outcome_reason: body.reason, next_followup_at: null, closed_at: new Date() },
-        note: body.reason === "Other" ? required(body.note, "The reason") : text(body.note),
+        note: ["Other", "Capability"].includes(body.reason)
+          ? required(body.note, capability ? "What the customer needed that we can't do" : "The reason")
+          : text(body.note),
         data: { reason: body.reason },
+        after: capability ? () => futureScope.recordLost(request, body.note, user.id) : null,
       };
     },
   },
@@ -330,7 +351,7 @@ const ACTIONS = {
         to,
         set: { outcome_reason: null, closed_at: null, owner_id: null },
         note: required(body.note, "Why it is reopened"),
-        notify: { departments: stageTeam(request, to), message: `${reference(request.id)}${who(request)} was reopened` },
+        notify: { departments: stageTeam(request, to), message: `${reference(request)}${who(request)} was reopened` },
       };
     },
   },
@@ -365,7 +386,7 @@ const ACTIONS = {
           testingStage && added.length
             ? {
                 departments: added.map((d) => TESTING[d]),
-                message: `${reference(request.id)}${who(request)} is for ${departments.replace(",", " + ")}: please check feasibility.`,
+                message: `${reference(request)}${who(request)} is for ${departments.replace(",", " + ")}: please check feasibility.`,
               }
             : null,
       };
@@ -442,6 +463,7 @@ const applyAction = async (requestId, action, userId, body = {}) => {
     [set, requestId, request.stage, request.owner_id],
   );
   if (!res.affectedRows) throw fail(409, "Someone else changed this enquiry just now. Refresh and try again.");
+  if (out.after) await out.after();
   await recordEvent(query, {
     requestId,
     action,
@@ -489,7 +511,7 @@ const prepareDraft = (requestId, request, by = null, { lead = null, sender = "La
         data: { total: draft.total, lines: lines.length, to_check: lines.filter((l) => l.problems.length).length },
       });
       if (!by) {
-        await tell(lead ? `${lead} Draft quote ready: ${summary}.` : `Draft quote ready for ${reference(requestId)}${who(request)}: ${summary}.`);
+        await tell(lead ? `${lead} Draft quote ready: ${summary}.` : `Draft quote ready for ${reference(request || requestId)}${who(request)}: ${summary}.`);
       }
       return draft;
     })
@@ -533,7 +555,7 @@ const onCreated = async (requestId, { by = "system" } = {}) => {
     departments: stageTeam(request),
     sender: "Lab Bee",
     requestId,
-    message: `New enquiry ${reference(requestId)}${who(request)}${flags.length ? ` [${flags.join(", ")}]` : ""}: ${testsText}.${summary ? ` ${summary}` : ""}`,
+    message: `New enquiry ${reference(request || requestId)}${who(request)}${flags.length ? ` [${flags.join(", ")}]` : ""}: ${testsText}.${summary ? ` ${summary}` : ""}`,
   }).catch((e) => console.error("enquiry notify:", e.message));
 };
 

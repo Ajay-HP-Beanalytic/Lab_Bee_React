@@ -293,6 +293,7 @@ async function computeLine(t, ctx) {
     amount: price && qty != null ? priced.amount : null,
     minimum_applied: !!priced?.minimumApplied,
     excluded: !!t.quote_excluded,
+    not_feasible: t.not_feasible || null,
     values_source: t.values_source || null,
     values_note: t.values_note || null,
     values_by_name: t.values_by_name || null,
@@ -312,18 +313,37 @@ async function context() {
   };
 }
 
-const loadTests = (requestId) =>
+// not_feasible: why the testing team said the test can't be done (future scope register)
+const loadTests = (requestIds) =>
   query(
-    `SELECT t.*, u.name AS values_by_name FROM feasibility_request_tests t LEFT JOIN labbee_users u ON u.id = t.values_by
-     WHERE t.request_id = ? ORDER BY COALESCE(t.split_from, t.id), t.id`,
-    [requestId],
+    `SELECT t.*, u.name AS values_by_name,
+            (SELECT CONCAT(f.reason, IF(f.detail IS NULL, '', CONCAT(' - ', f.detail)))
+             FROM rfq_future_scope f WHERE f.test_id = t.id ORDER BY f.id DESC LIMIT 1) AS not_feasible
+     FROM feasibility_request_tests t LEFT JOIN labbee_users u ON u.id = t.values_by
+     WHERE t.request_id IN (?) ORDER BY t.request_id, COALESCE(t.split_from, t.id), t.id`,
+    [requestIds],
   );
 
 // All lines of an enquiry
 async function linesFor(requestId) {
-  const [tests, ctx] = await Promise.all([loadTests(requestId), context()]);
+  const [tests, ctx] = await Promise.all([loadTests([requestId]), context()]);
   const lines = [];
   for (const t of tests) lines.push(await computeLine(t, ctx));
+  return lines;
+}
+
+// The lines of several enquiries (Excel export), each with its request_id
+async function linesForMany(requestIds) {
+  if (!requestIds.length) return [];
+  const [tests, ctx] = await Promise.all([loadTests(requestIds), context()]);
+  const lines = [];
+  for (const t of tests) {
+    try {
+      lines.push({ request_id: t.request_id, ...(await computeLine(t, ctx)) });
+    } catch (err) {
+      lines.push({ request_id: t.request_id, test_id: t.id, requested: t.requested_as || t.test_name, name: t.test_name, excluded: !!t.quote_excluded, not_feasible: t.not_feasible, problems: [err.message] });
+    }
+  }
   return lines;
 }
 
@@ -457,6 +477,7 @@ async function editorMeta() {
 module.exports = {
   readValues,
   linesFor,
+  linesForMany,
   previewLine,
   updateLine,
   splitLine,

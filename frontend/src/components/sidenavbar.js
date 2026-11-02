@@ -39,6 +39,7 @@ import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import MarkEmailUnreadIcon from "@mui/icons-material/MarkEmailUnread";
 import InsightsIcon from "@mui/icons-material/Insights";
+import TipsAndUpdatesIcon from "@mui/icons-material/TipsAndUpdates";
 import VerifiedIcon from "@mui/icons-material/Verified";
 import CategoryIcon from "@mui/icons-material/Category";
 
@@ -282,6 +283,13 @@ const ALL_ITEMS = [
     path: "/rfq_dashboard",
     gradientId: "rfqDashboardGradient",
   },
+  {
+    i: 23,
+    label: "Future Scope",
+    icon: <TipsAndUpdatesIcon />,
+    path: "/future_scope",
+    gradientId: "futureScopeGradient",
+  },
 ];
 
 const GROUPS = [
@@ -290,7 +298,7 @@ const GROUPS = [
     label: "Finance",
     icon: <AccountBalanceIcon />,
     gradientId: "grpFinanceGrad",
-    itemIds: [1, 18, 22, 2, 3, 17],
+    itemIds: [1, 18, 22, 23, 2, 3, 17],
   },
   {
     id: "TS1 Testing",
@@ -323,10 +331,10 @@ const GROUPS = [
 ];
 
 const ACCESS_RULES = {
-  "Accounts": [1, 2, 3, 4, 5, 6, 8, 9, 10, 17, 18, 20, 21, 22],
-  "Marketing": [2, 3, 8, 9, 10, 18, 22],
-  "TS1 Testing": [4, 5, 6, 7, 8, 16, 18, 19, 20, 21, 22],
-  "TS2 Testing": [9, 10, 11, 18, 19, 20, 22],
+  "Accounts": [1, 2, 3, 4, 5, 6, 8, 9, 10, 17, 18, 20, 21, 22, 23],
+  "Marketing": [2, 3, 8, 9, 10, 18, 22, 23],
+  "TS1 Testing": [4, 5, 6, 7, 8, 16, 18, 19, 20, 21, 22, 23],
+  "TS2 Testing": [9, 10, 11, 18, 19, 20, 22, 23],
   "Reliability": [12],
   "Software": [12],
   "Reports & Scrutiny": [4, 5, 6, 7, 8, 9, 11],

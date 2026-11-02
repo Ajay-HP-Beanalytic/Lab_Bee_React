@@ -48,7 +48,7 @@ const POLL_MS = 2 * 60 * 1000; // in case a live (socket) message was missed
 
 // Icon and colour by what the notification is about
 const CATEGORIES = [
-  { key: "enquiry", test: (n) => n.link?.startsWith("/rfq_inbox") || /\bRFQ-\d+|enquiry/i.test(n.message), icon: MarkunreadMailboxIcon, color: "#6a1b9a" },
+  { key: "enquiry", test: (n) => n.link?.startsWith("/rfq_inbox") || /\bRFQ[-/]\d+|enquiry/i.test(n.message), icon: MarkunreadMailboxIcon, color: "#6a1b9a" },
   { key: "quote", test: (n) => /quot/i.test(n.message), icon: RequestQuoteIcon, color: "#2e7d32" },
   { key: "slot", test: (n) => /slot|booking/i.test(n.message), icon: EventIcon, color: "#ef6c00" },
   { key: "report", test: (n) => /report/i.test(n.message), icon: DescriptionIcon, color: "#00838f" },

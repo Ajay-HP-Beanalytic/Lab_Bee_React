@@ -2,10 +2,12 @@ import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import moment from "moment";
 import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 import {
   Alert,
   Box,
   Button,
+  Chip,
   CircularProgress,
   FormControl,
   Grid,
@@ -20,8 +22,13 @@ import {
   TableRow,
   Tooltip as MuiTooltip,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import MarkEmailUnreadIcon from "@mui/icons-material/MarkEmailUnread";
+import FileDownloadIcon from "@mui/icons-material/FileDownload";
+import TipsAndUpdatesIcon from "@mui/icons-material/TipsAndUpdates";
+import ArrowForwardIosIcon from "@mui/icons-material/ArrowForwardIos";
 import {
   Bar,
   BarChart,
@@ -35,7 +42,8 @@ import {
 } from "recharts";
 import { serverBaseAddress } from "../Pages/APIPage";
 import DateRangeFilter from "../common/DateRangeFilter";
-import { MONTHS, rupees } from "./rfqInboxHelpers";
+import { MONTHS, QUOTE_STEPS, STAGES, lateness, periodDates, rupees } from "./rfqInboxHelpers";
+import { downloadEnquiriesExcel } from "./enquiryExport";
 
 // Categorical slots in fixed order (validated palette): received, quoted, won
 const C = { received: "#2a78d6", quoted: "#eb6834", won: "#1baf7a", value: "#2a78d6" };
@@ -49,11 +57,11 @@ const lakh = (n) => (n >= 1e5 ? `₹${Math.round(n / 1e4) / 10} L` : n >= 1e3 ? 
 function Tile({ label, value, hint, onClick }) {
   return (
     <MuiTooltip title={hint || ""}>
-      <Paper variant="outlined" onClick={onClick} sx={{ p: 1.5, height: "100%", cursor: onClick ? "pointer" : "default" }}>
-        <Typography variant="caption" color="text.secondary">
+      <Paper variant="outlined" onClick={onClick} sx={{ p: { xs: 1, sm: 1.5 }, height: "100%", cursor: onClick ? "pointer" : "default" }}>
+        <Typography variant="caption" color="text.secondary" display="block" lineHeight={1.3}>
           {label}
         </Typography>
-        <Typography variant="h5" fontWeight={700} color="#003366">
+        <Typography fontWeight={700} color="#003366" sx={{ fontSize: { xs: "1.1rem", sm: "1.4rem" }, wordBreak: "break-word" }}>
           {value}
         </Typography>
       </Paper>
@@ -61,12 +69,15 @@ function Tile({ label, value, hint, onClick }) {
   );
 }
 
-function Panel({ title, note, children }) {
+function Panel({ title, note, action, children }) {
   return (
-    <Paper variant="outlined" sx={{ p: 1.5, height: "100%" }}>
-      <Typography variant="subtitle1" fontWeight={700} color="#003366">
-        {title}
-      </Typography>
+    <Paper variant="outlined" sx={{ p: { xs: 1, sm: 1.5 }, height: "100%", minWidth: 0 }}>
+      <Box display="flex" justifyContent="space-between" alignItems="flex-start" gap={1} flexWrap="wrap">
+        <Typography variant="subtitle1" fontWeight={700} color="#003366">
+          {title}
+        </Typography>
+        {action}
+      </Box>
       {note && (
         <Typography variant="caption" color="text.secondary" display="block" mb={1}>
           {note}
@@ -77,14 +88,96 @@ function Panel({ title, note, children }) {
   );
 }
 
-const axisProps = { tick: { fontSize: 12, fill: INK }, axisLine: { stroke: GRID }, tickLine: false };
+// A table that scrolls sideways on a narrow screen instead of squeezing
+function WideTable({ minWidth = 520, children }) {
+  return (
+    <Box sx={{ overflowX: "auto", WebkitOverflowScrolling: "touch" }}>
+      <Table size="small" sx={{ minWidth }}>
+        {children}
+      </Table>
+    </Box>
+  );
+}
+
+const Empty = ({ children }) => (
+  <Typography variant="body2" color="text.secondary">
+    {children}
+  </Typography>
+);
+
+// The steps of preparing a quotation with the open enquiries in each (now)
+function QuoteSteps({ data, onOpen }) {
+  const steps = QUOTE_STEPS.map((s, i) => {
+    if (s.key === "decision") {
+      return { ...s, i, count: data.ended.won + data.ended.lost, sub: `${data.ended.won} won · ${data.ended.lost} lost`, note: "in the period" };
+    }
+    const list = data.now.open.filter((r) => s.stages.includes(r.stage));
+    const late = list.filter((r) => lateness(r)?.late).length;
+    const waiting = list.filter((r) => ["waiting_customer", "confirmed"].includes(r.stage)).length;
+    const value = data.now.by_stage.filter((b) => s.stages.includes(b.stage)).reduce((t, b) => t + (b.quote_value || 0), 0);
+    return {
+      ...s,
+      i,
+      count: list.length,
+      late,
+      sub: [waiting ? `${waiting} waiting for customer` : "", ["quote", "followup"].includes(s.key) && value ? rupees(value) : ""].filter(Boolean).join(" · "),
+      note: "open now",
+    };
+  });
+  return (
+    <Grid container spacing={1}>
+      {steps.map((s) => (
+        <Grid item xs={6} sm={4} md={2} key={s.key}>
+          <MuiTooltip title={`${s.hint}. Click to open these enquiries.`}>
+            <Paper
+              variant="outlined"
+              onClick={() => onOpen(s.view)}
+              sx={{
+                "p": { xs: 1, sm: 1.25 },
+                "height": "100%",
+                "cursor": "pointer",
+                "position": "relative",
+                "borderTop": `4px solid ${s.key === "decision" ? C.won : C.received}`,
+                "&:hover": { bgcolor: "action.hover" },
+              }}
+            >
+              <Box display="flex" alignItems="center" justifyContent="space-between">
+                <Typography variant="caption" color="text.secondary" fontWeight={700} noWrap>
+                  {s.i + 1}. {s.label}
+                </Typography>
+                {s.i < QUOTE_STEPS.length - 1 && <ArrowForwardIosIcon sx={{ fontSize: 12, color: "text.disabled", display: { xs: "none", md: "block" } }} />}
+              </Box>
+              <Box display="flex" alignItems="baseline" gap={0.75} flexWrap="wrap">
+                <Typography fontWeight={700} color="#003366" sx={{ fontSize: { xs: "1.3rem", sm: "1.6rem" } }}>
+                  {s.count}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {s.note}
+                </Typography>
+              </Box>
+              {s.late > 0 && <Chip size="small" color="error" label={`${s.late} late`} sx={{ height: 18, fontSize: 11, mb: 0.25 }} />}
+              {s.sub && (
+                <Typography variant="caption" color="text.secondary" display="block" lineHeight={1.3}>
+                  {s.sub}
+                </Typography>
+              )}
+            </Paper>
+          </MuiTooltip>
+        </Grid>
+      ))}
+    </Grid>
+  );
+}
 
 /**
- * Enquiry dashboard: how many enquiries come in, how many are quoted and won,
- * how fast, why they are lost, and what is waiting now.
+ * Enquiry dashboard: where the quotations are now, how many enquiries come in,
+ * how many are quoted and won, how fast, why they are lost, what the lab
+ * could not do (future scope), and the Excel export of it all.
  */
 export default function EnquiryDashboard() {
   const navigate = useNavigate();
+  const theme = useTheme();
+  const small = useMediaQuery(theme.breakpoints.down("sm"));
   const [year, setYear] = useState(moment().year());
   const [month, setMonth] = useState("all");
   const [range, setRange] = useState(null);
@@ -92,140 +185,207 @@ export default function EnquiryDashboard() {
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   // The period as from / to dates (on the date received)
-  const period = useMemo(() => {
-    if (range?.startDate && range?.endDate) return { from: moment(range.startDate).format("YYYY-MM-DD"), to: moment(range.endDate).format("YYYY-MM-DD") };
-    if (year === "all") return {};
-    const start = month === "all" ? moment({ year, month: 0, day: 1 }) : moment({ year, month: month - 1, day: 1 });
-    const end = month === "all" ? start.clone().endOf("year") : start.clone().endOf("month");
-    return { from: start.format("YYYY-MM-DD"), to: end.format("YYYY-MM-DD") };
-  }, [year, month, range]);
+  const period = useMemo(() => periodDates({ year, month, range }), [year, month, range]);
+  const department = team === "all" ? undefined : team;
 
   useEffect(() => {
     setLoading(true);
     axios
-      .get(`${serverBaseAddress}/api/enquiries/dashboard`, { params: { ...period, department: team === "all" ? undefined : team } })
+      .get(`${serverBaseAddress}/api/enquiries/dashboard`, { params: { ...period, department } })
       .then((res) => {
         setData(res.data);
         setError("");
       })
       .catch((err) => setError(err.response?.data?.error || "Failed to load the dashboard"))
       .finally(() => setLoading(false));
-  }, [period, team]);
+  }, [period, department]);
 
   const years = [];
   for (let y = moment().year(); y >= 2024; y--) years.push(y);
 
   const k = data?.kpis;
+  const fs = data?.future_scope;
   const funnel = (data?.funnel || []).map((f, i, all) => ({ ...f, label: i === 0 || !all[0].value ? `${f.value}` : `${f.value} (${Math.round((f.value / all[0].value) * 100)}%)` }));
   const months = (data?.months || []).map((m) => ({ ...m, name: moment(m.month, "YYYY-MM").format("MMM YY") }));
-  const openNow = (data?.now.by_stage || []).filter((s) => s.count > 0);
+  const axisProps = { tick: { fontSize: small ? 11 : 12, fill: INK }, axisLine: { stroke: GRID }, tickLine: false };
+  const labelWidth = small ? 92 : 130;
+  const openInbox = (view) => navigate(`/rfq_inbox${view ? `?view=${view}` : ""}`);
+
+  // The dashboard figures as sheets in front of the enquiry data
+  const exportExcel = async () => {
+    setExporting(true);
+    try {
+      const steps = QUOTE_STEPS.filter((s) => s.key !== "decision").map((s) => {
+        const list = data.now.open.filter((r) => s.stages.includes(r.stage));
+        return { "Step": s.label, "Stages": s.stages.map((x) => STAGES[x]?.label).join(", "), "Open now": list.length, "Late": list.filter((r) => lateness(r)?.late).length };
+      });
+      const summary = [
+        ["Enquiries received", k.received],
+        ["Feasibility done", k.feasibility_done],
+        ["Not feasible", k.not_feasible],
+        ["Quoted", k.quoted],
+        ["Quoted %", k.quote_rate],
+        ["Won", k.won],
+        ["Lost", k.lost],
+        ["Win rate % (won ÷ won + lost)", k.win_rate],
+        ["Quoted value (excl. GST)", k.quoted_value],
+        ["Won value (excl. GST)", k.won_value],
+        ["Open quotes value (excl. GST)", k.pipeline_value],
+        ["Median hours: received → feasibility", k.median_hours_to_feasibility],
+        ["Median hours: received → quote sent", k.median_hours_to_quote],
+        ["Median days: quote → decision", k.median_days_to_decision],
+        ["Follow-ups overdue (now)", data.now.followups_overdue],
+        ["Not taken for feasibility (now)", data.now.unassigned_feasibility],
+        ["Team unclear (now)", data.now.team_unclear],
+        ["Not possible: items (future scope)", fs.items],
+        ["Not possible: enquiries", fs.enquiries],
+      ].map(([figure, value]) => ({ Figure: figure, Value: value }));
+      const n = await downloadEnquiriesExcel(
+        { ...period, department },
+        {
+          fileName: "Enquiry_dashboard",
+          extraSheets: [
+            ["Summary", [{ Figure: "Period", Value: period.from ? `${period.from} to ${period.to}` : "All years" }, { Figure: "Team", Value: team === "all" ? "TS1 + TS2" : team }, ...summary]],
+            ["Quotation steps now", steps],
+            ["By month", data.months.map((m) => ({ "Month": m.month, "Received": m.received, "Quoted": m.quoted, "Won": m.won, "Quoted value": m.quoted_value, "Won value": m.won_value }))],
+            ["By team", data.teams.map((t) => ({ "Team": t.team, "Received": t.received, "Quoted": t.quoted, "Won": t.won, "Win rate %": t.win_rate, "Won value": t.won_value, "Median hours to feasibility": t.median_hours_to_feasibility }))],
+            ["Top customers", data.customers.map((c) => ({ "Customer": c.company, "Enquiries": c.enquiries, "Quoted": c.quoted, "Won": c.won, "Quoted value": c.quoted_value, "Won value": c.won_value }))],
+            ["People", data.people.map((p) => ({ "Person": p.name, "Department": p.department, "Feasibility checks": p.feasibility, "Median hours to feasibility": p.median_hours_to_feasibility, "Quotes sent": p.quotes, "Orders won": p.won }))],
+            ["Lost reasons", data.lost_reasons.map((r) => ({ Reason: r.name, Lost: r.value }))],
+            ["Most asked, can't do", fs.top.map((t) => ({ "Requirement": t.requirement, "Team": t.department || "", "Times asked": t.times, "Customers": t.customers, "Last asked": t.last_asked ? new Date(t.last_asked) : null, "Why": t.reasons, "Status": t.status }))],
+          ],
+        },
+      );
+      toast.success(`Exported the dashboard and ${n} enquiries`);
+    } catch (err) {
+      toast.error(err.response?.data?.error || "Export failed");
+    } finally {
+      setExporting(false);
+    }
+  };
 
   return (
-    <Box>
+    <Box sx={{ minWidth: 0, px: { xs: 0.5, sm: 0 } }}>
       <Box display="flex" justifyContent="space-between" alignItems="flex-start" flexWrap="wrap" gap={1} mb={1}>
-        <Box>
-          <Typography variant="h5" fontWeight={700} color="#003366">
+        <Box minWidth={0}>
+          <Typography fontWeight={700} color="#003366" sx={{ fontSize: { xs: "1.25rem", sm: "1.5rem" } }}>
             Enquiry Dashboard
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Enquiries received in the period: how many were quoted and won, how fast, and why they were lost.
+            Where the quotations are now, and for enquiries received in the period: how many were quoted and won, how fast, why they were lost, and what we could not do.
           </Typography>
         </Box>
-        <Button variant="outlined" startIcon={<MarkEmailUnreadIcon />} onClick={() => navigate("/rfq_inbox")}>
-          Enquiries
-        </Button>
+        <Box display="flex" gap={1} flexWrap="wrap">
+          <Button size="small" variant="outlined" startIcon={<MarkEmailUnreadIcon />} onClick={() => openInbox()}>
+            Enquiries
+          </Button>
+          <Button size="small" variant="outlined" startIcon={<TipsAndUpdatesIcon />} onClick={() => navigate("/future_scope")}>
+            Future scope
+          </Button>
+          <MuiTooltip title="The figures on this page plus every enquiry of the period with its tests, timeline and future scope items, in Excel">
+            <span>
+              <Button size="small" variant="contained" color="success" startIcon={exporting ? <CircularProgress size={16} color="inherit" /> : <FileDownloadIcon />} disabled={!data || exporting} onClick={exportExcel}>
+                Export Excel
+              </Button>
+            </span>
+          </MuiTooltip>
+        </Box>
       </Box>
 
-      {/* Filters, in one row */}
-      <Box display="flex" gap={1.5} alignItems="center" flexWrap="wrap" mb={2}>
-        <FormControl size="small" sx={{ minWidth: 120 }} disabled={!!range}>
-          <InputLabel>Year</InputLabel>
-          <Select
-            label="Year"
-            value={year}
-            onChange={(e) => {
-              setYear(e.target.value);
-              if (e.target.value === "all") setMonth("all");
-            }}
-          >
-            <MenuItem value="all">All years</MenuItem>
-            {years.map((y) => (
-              <MenuItem key={y} value={y}>
-                {y}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-        <FormControl size="small" sx={{ minWidth: 140 }} disabled={!!range || year === "all"}>
-          <InputLabel>Month</InputLabel>
-          <Select label="Month" value={month} onChange={(e) => setMonth(e.target.value)}>
-            <MenuItem value="all">All months</MenuItem>
-            {MONTHS.map((m, i) => (
-              <MenuItem key={m} value={i + 1}>
-                {m}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-        <FormControl size="small" sx={{ minWidth: 120 }}>
-          <InputLabel>Team</InputLabel>
-          <Select label="Team" value={team} onChange={(e) => setTeam(e.target.value)}>
-            <MenuItem value="all">TS1 + TS2</MenuItem>
-            <MenuItem value="TS1">TS1</MenuItem>
-            <MenuItem value="TS2">TS2</MenuItem>
-          </Select>
-        </FormControl>
-        <DateRangeFilter onClickDateRangeSelectDoneButton={(r) => setRange(r || null)} onClickDateRangeSelectClearButton={() => setRange(null)} />
-        {loading && <CircularProgress size={20} />}
-      </Box>
+      {/* Filters: two per row on a phone, one row on a wide screen */}
+      <Grid container spacing={1.5} alignItems="center" mb={2}>
+        <Grid item xs={6} sm="auto">
+          <FormControl size="small" fullWidth sx={{ minWidth: { sm: 120 } }} disabled={!!range}>
+            <InputLabel>Year</InputLabel>
+            <Select
+              label="Year"
+              value={year}
+              onChange={(e) => {
+                setYear(e.target.value);
+                if (e.target.value === "all") setMonth("all");
+              }}
+            >
+              <MenuItem value="all">All years</MenuItem>
+              {years.map((y) => (
+                <MenuItem key={y} value={y}>
+                  {y}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Grid>
+        <Grid item xs={6} sm="auto">
+          <FormControl size="small" fullWidth sx={{ minWidth: { sm: 140 } }} disabled={!!range || year === "all"}>
+            <InputLabel>Month</InputLabel>
+            <Select label="Month" value={month} onChange={(e) => setMonth(e.target.value)}>
+              <MenuItem value="all">All months</MenuItem>
+              {MONTHS.map((m, i) => (
+                <MenuItem key={m} value={i + 1}>
+                  {m}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+        </Grid>
+        <Grid item xs={6} sm="auto">
+          <FormControl size="small" fullWidth sx={{ minWidth: { sm: 120 } }}>
+            <InputLabel>Team</InputLabel>
+            <Select label="Team" value={team} onChange={(e) => setTeam(e.target.value)}>
+              <MenuItem value="all">TS1 + TS2</MenuItem>
+              <MenuItem value="TS1">TS1</MenuItem>
+              <MenuItem value="TS2">TS2</MenuItem>
+            </Select>
+          </FormControl>
+        </Grid>
+        <Grid item xs={12} sm="auto">
+          <DateRangeFilter onClickDateRangeSelectDoneButton={(r) => setRange(r || null)} onClickDateRangeSelectClearButton={() => setRange(null)} />
+        </Grid>
+        {loading && (
+          <Grid item>
+            <CircularProgress size={20} />
+          </Grid>
+        )}
+      </Grid>
 
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
 
       {data && (
         <>
+          {/* Steps of preparing a quotation */}
+          <Panel title="Where the quotations are now" note="Open enquiries in each step of preparing a quotation (whatever the period); late = longer in the step than expected. Click a step to see them.">
+            <QuoteSteps data={data} onOpen={openInbox} />
+          </Panel>
+
           {/* Headline figures */}
-          <Grid container spacing={1.5} mb={2}>
-            <Grid item xs={6} sm={4} md={2}>
-              <Tile label="Enquiries received" value={k.received} hint="Without mails closed as not an enquiry or duplicate" />
+          <Grid container spacing={1.5} my={0.5}>
+            {[
+              ["Enquiries received", k.received, "Without mails closed as not an enquiry or duplicate"],
+              ["Quoted", `${k.quoted} · ${pctText(k.quote_rate)}`, "Enquiries that got a quote, and the share of all received"],
+              ["Won", `${k.won} · ${pctText(k.win_rate)}`, "Orders, and the win rate: won ÷ (won + lost)"],
+              ["Won value", rupees(k.won_value), "Order value (or quote value) of the enquiries won, excl. GST"],
+              ["Quoted value", rupees(k.quoted_value), "Total of the quotes sent, excl. GST"],
+              ["Open quotes", rupees(k.pipeline_value), "Quotes being prepared or followed up: what can still be won"],
+              ["Received → feasibility", hoursText(k.median_hours_to_feasibility), "Median time from receiving the enquiry to Feasibility done"],
+              ["Received → quote sent", hoursText(k.median_hours_to_quote), "Median time from receiving the enquiry to Quote sent"],
+              ["Quote → decision", k.median_days_to_decision == null ? "–" : `${k.median_days_to_decision} days`, "Median days from Quote sent to Won or Lost"],
+              ["Not feasible", k.not_feasible, "Enquiries the lab could not do at all"],
+            ].map(([label, value, hint]) => (
+              <Grid item xs={6} sm={4} md={3} lg={2} key={label}>
+                <Tile label={label} value={value} hint={hint} />
+              </Grid>
+            ))}
+            <Grid item xs={6} sm={4} md={3} lg={2}>
+              <Tile label="Follow-ups overdue (now)" value={data.now.followups_overdue} hint="Quotes whose follow-up date has passed. Click to open them." onClick={() => openInbox("followup")} />
             </Grid>
-            <Grid item xs={6} sm={4} md={2}>
-              <Tile label="Quoted" value={`${k.quoted} · ${pctText(k.quote_rate)}`} hint="Enquiries that got a quote, and the share of all received" />
-            </Grid>
-            <Grid item xs={6} sm={4} md={2}>
-              <Tile label="Won" value={`${k.won} · ${pctText(k.win_rate)}`} hint="Orders, and the win rate: won ÷ (won + lost)" />
-            </Grid>
-            <Grid item xs={6} sm={4} md={2}>
-              <Tile label="Won value" value={rupees(k.won_value)} hint="Order value (or quote value) of the enquiries won, excl. GST" />
-            </Grid>
-            <Grid item xs={6} sm={4} md={2}>
-              <Tile label="Quoted value" value={rupees(k.quoted_value)} hint="Total of the quotes sent, excl. GST" />
-            </Grid>
-            <Grid item xs={6} sm={4} md={2}>
-              <Tile label="Open quotes" value={rupees(k.pipeline_value)} hint="Quotes being prepared or followed up: what can still be won" />
-            </Grid>
-            <Grid item xs={6} sm={4} md={2}>
-              <Tile label="Received → feasibility" value={hoursText(k.median_hours_to_feasibility)} hint="Median time from receiving the enquiry to Feasibility done" />
-            </Grid>
-            <Grid item xs={6} sm={4} md={2}>
-              <Tile label="Received → quote sent" value={hoursText(k.median_hours_to_quote)} hint="Median time from receiving the enquiry to Quote sent" />
-            </Grid>
-            <Grid item xs={6} sm={4} md={2}>
-              <Tile label="Quote → decision" value={k.median_days_to_decision == null ? "–" : `${k.median_days_to_decision} days`} hint="Median days from Quote sent to Won or Lost" />
-            </Grid>
-            <Grid item xs={6} sm={4} md={2}>
-              <Tile label="Not feasible" value={k.not_feasible} hint="Enquiries the lab could not do" />
-            </Grid>
-            <Grid item xs={6} sm={4} md={2}>
-              <Tile label="Follow-ups overdue (now)" value={data.now.followups_overdue} hint="Quotes whose follow-up date has passed. Click to open Enquiries." onClick={() => navigate("/rfq_inbox")} />
-            </Grid>
-            <Grid item xs={6} sm={4} md={2}>
+            <Grid item xs={6} sm={4} md={3} lg={2}>
               <Tile
                 label="Not taken / team unclear (now)"
                 value={`${data.now.unassigned_feasibility} / ${data.now.team_unclear}`}
                 hint="Enquiries nobody has taken for the feasibility check, and those whose team (TS1 / TS2) must be chosen"
-                onClick={() => navigate("/rfq_inbox")}
+                onClick={() => openInbox("feasibility")}
               />
             </Grid>
           </Grid>
@@ -234,10 +394,10 @@ export default function EnquiryDashboard() {
             <Grid item xs={12} md={5}>
               <Panel title="From enquiry to order" note="Enquiries received in the period and how far they got">
                 <ResponsiveContainer width="100%" height={220}>
-                  <BarChart data={funnel} layout="vertical" margin={{ left: 10, right: 60 }}>
+                  <BarChart data={funnel} layout="vertical" margin={{ left: 0, right: small ? 52 : 60 }}>
                     <CartesianGrid horizontal={false} stroke={GRID} />
                     <XAxis type="number" allowDecimals={false} {...axisProps} />
-                    <YAxis type="category" dataKey="step" width={110} {...axisProps} />
+                    <YAxis type="category" dataKey="step" width={labelWidth - 10} {...axisProps} />
                     <Tooltip cursor={{ fill: "rgba(0,0,0,0.04)" }} />
                     <Bar dataKey="value" name="Enquiries" fill={C.received} radius={[0, 4, 4, 0]} barSize={22}>
                       <LabelList dataKey="label" position="right" style={{ fontSize: 12, fill: INK }} />
@@ -249,10 +409,10 @@ export default function EnquiryDashboard() {
             <Grid item xs={12} md={7}>
               <Panel title="By month received" note="Enquiries received, quoted and won">
                 <ResponsiveContainer width="100%" height={220}>
-                  <BarChart data={months} barGap={2}>
+                  <BarChart data={months} barGap={2} margin={{ left: -10, right: 4 }}>
                     <CartesianGrid vertical={false} stroke={GRID} />
-                    <XAxis dataKey="name" {...axisProps} />
-                    <YAxis allowDecimals={false} {...axisProps} width={30} />
+                    <XAxis dataKey="name" {...axisProps} interval={small ? "preserveStartEnd" : 0} />
+                    <YAxis allowDecimals={false} {...axisProps} width={40} />
                     <Tooltip cursor={{ fill: "rgba(0,0,0,0.04)" }} />
                     <Legend wrapperStyle={{ fontSize: 12 }} />
                     <Bar dataKey="received" name="Received" fill={C.received} radius={[4, 4, 0, 0]} />
@@ -265,12 +425,12 @@ export default function EnquiryDashboard() {
           </Grid>
 
           <Grid container spacing={1.5} mb={1.5}>
-            <Grid item xs={12} md={4}>
+            <Grid item xs={12} sm={6} md={6}>
               <Panel title="Won value by month" note="Excl. GST">
                 <ResponsiveContainer width="100%" height={200}>
-                  <BarChart data={months}>
+                  <BarChart data={months} margin={{ left: 0, right: 4 }}>
                     <CartesianGrid vertical={false} stroke={GRID} />
-                    <XAxis dataKey="name" {...axisProps} />
+                    <XAxis dataKey="name" {...axisProps} interval={small ? "preserveStartEnd" : 0} />
                     <YAxis tickFormatter={lakh} {...axisProps} width={56} />
                     <Tooltip formatter={(v) => rupees(v)} cursor={{ fill: "rgba(0,0,0,0.04)" }} />
                     <Bar dataKey="won_value" name="Won value" fill={C.value} radius={[4, 4, 0, 0]} />
@@ -278,17 +438,15 @@ export default function EnquiryDashboard() {
                 </ResponsiveContainer>
               </Panel>
             </Grid>
-            <Grid item xs={12} md={4}>
+            <Grid item xs={12} sm={6} md={6}>
               <Panel title="Why quotes were lost" note="Reason given when marked Lost">
                 {data.lost_reasons.length === 0 ? (
-                  <Typography variant="body2" color="text.secondary">
-                    None lost in the period.
-                  </Typography>
+                  <Empty>None lost in the period.</Empty>
                 ) : (
                   <ResponsiveContainer width="100%" height={200}>
                     <BarChart data={data.lost_reasons} layout="vertical" margin={{ right: 30 }}>
                       <XAxis type="number" allowDecimals={false} hide />
-                      <YAxis type="category" dataKey="name" width={130} {...axisProps} />
+                      <YAxis type="category" dataKey="name" width={labelWidth} {...axisProps} />
                       <Tooltip cursor={{ fill: "rgba(0,0,0,0.04)" }} />
                       <Bar dataKey="value" name="Lost" fill={C.quoted} radius={[0, 4, 4, 0]} barSize={18}>
                         <LabelList dataKey="value" position="right" style={{ fontSize: 12, fill: INK }} />
@@ -298,32 +456,88 @@ export default function EnquiryDashboard() {
                 )}
               </Panel>
             </Grid>
-            <Grid item xs={12} md={4}>
-              <Panel title="Open now, by stage" note="All open enquiries, whatever the period; more than 3 days in the stage in brackets">
-                {openNow.length === 0 ? (
-                  <Typography variant="body2" color="text.secondary">
-                    Nothing open.
-                  </Typography>
-                ) : (
-                  <ResponsiveContainer width="100%" height={200}>
-                    <BarChart data={openNow.map((s) => ({ ...s, text: s.over_3_days ? `${s.count} (${s.over_3_days})` : `${s.count}` }))} layout="vertical" margin={{ right: 40 }}>
-                      <XAxis type="number" allowDecimals={false} hide />
-                      <YAxis type="category" dataKey="label" width={140} {...axisProps} />
-                      <Tooltip cursor={{ fill: "rgba(0,0,0,0.04)" }} />
-                      <Bar dataKey="count" name="Open" fill={C.received} radius={[0, 4, 4, 0]} barSize={18}>
-                        <LabelList dataKey="text" position="right" style={{ fontSize: 12, fill: INK }} />
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                )}
-              </Panel>
-            </Grid>
           </Grid>
 
+          {/* What the lab could not do */}
+          <Box mb={1.5}>
+            <Panel
+              title="Future scope: what we could not do"
+              note="Tests and requirements the testing team marked as not possible (and quotes lost on capability), for enquiries received in the period"
+              action={
+                <Button size="small" startIcon={<TipsAndUpdatesIcon />} onClick={() => navigate("/future_scope")}>
+                  Open the register
+                </Button>
+              }
+            >
+              {fs.items === 0 ? (
+                <Empty>Nothing marked as not possible in the period.</Empty>
+              ) : (
+                <Grid container spacing={1.5}>
+                  <Grid item xs={12} md={4}>
+                    <Grid container spacing={1} mb={1}>
+                      <Grid item xs={4}>
+                        <Tile label="Items" value={fs.items} hint="Tests / requirements marked as not possible" />
+                      </Grid>
+                      <Grid item xs={4}>
+                        <Tile label="Enquiries" value={fs.enquiries} hint="Enquiries with something we could not do" />
+                      </Grid>
+                      <Grid item xs={4}>
+                        <Tile label="Not reviewed" value={fs.not_reviewed} hint="Not looked at by management yet" onClick={() => navigate("/future_scope")} />
+                      </Grid>
+                    </Grid>
+                    <ResponsiveContainer width="100%" height={Math.max(120, fs.by_reason.length * 34)}>
+                      <BarChart data={fs.by_reason} layout="vertical" margin={{ right: 30 }}>
+                        <XAxis type="number" allowDecimals={false} hide />
+                        <YAxis type="category" dataKey="name" width={small ? 120 : 150} {...axisProps} tick={{ fontSize: 11, fill: INK }} />
+                        <Tooltip cursor={{ fill: "rgba(0,0,0,0.04)" }} />
+                        <Bar dataKey="value" name="Items" fill={C.quoted} radius={[0, 4, 4, 0]} barSize={16}>
+                          <LabelList dataKey="value" position="right" style={{ fontSize: 12, fill: INK }} />
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </Grid>
+                  <Grid item xs={12} md={8}>
+                    <Typography variant="body2" fontWeight={600} mb={0.5}>
+                      Most asked for
+                    </Typography>
+                    <WideTable minWidth={560}>
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>Requirement</TableCell>
+                          <TableCell>Team</TableCell>
+                          <TableCell align="right">Times asked</TableCell>
+                          <TableCell align="right">Customers</TableCell>
+                          <TableCell>Last asked</TableCell>
+                          <TableCell>Status</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {fs.top.map((t) => (
+                          <TableRow key={t.requirement}>
+                            <TableCell>
+                              <MuiTooltip title={t.reasons}>
+                                <span>{t.requirement}</span>
+                              </MuiTooltip>
+                            </TableCell>
+                            <TableCell>{t.department || "–"}</TableCell>
+                            <TableCell align="right">{t.times}</TableCell>
+                            <TableCell align="right">{t.customers}</TableCell>
+                            <TableCell>{t.last_asked ? moment(t.last_asked).format("DD MMM YY") : "–"}</TableCell>
+                            <TableCell>{t.status}</TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </WideTable>
+                  </Grid>
+                </Grid>
+              )}
+            </Panel>
+          </Box>
+
           <Grid container spacing={1.5}>
-            <Grid item xs={12} md={5}>
+            <Grid item xs={12} lg={5}>
               <Panel title="By team">
-                <Table size="small">
+                <WideTable minWidth={500}>
                   <TableHead>
                     <TableRow>
                       <TableCell>Team</TableCell>
@@ -348,15 +562,15 @@ export default function EnquiryDashboard() {
                       </TableRow>
                     ))}
                   </TableBody>
-                </Table>
+                </WideTable>
                 <Typography variant="caption" color="text.secondary" display="block" mt={1}>
                   Enquiries by source: {data.sources.map((s) => `${s.name} ${s.value}`).join(", ") || "–"}
                 </Typography>
               </Panel>
             </Grid>
-            <Grid item xs={12} md={7}>
+            <Grid item xs={12} lg={7}>
               <Panel title="Top customers" note="By number of enquiries in the period">
-                <Table size="small">
+                <WideTable minWidth={520}>
                   <TableHead>
                     <TableRow>
                       <TableCell>Customer</TableCell>
@@ -368,6 +582,13 @@ export default function EnquiryDashboard() {
                     </TableRow>
                   </TableHead>
                   <TableBody>
+                    {data.customers.length === 0 && (
+                      <TableRow>
+                        <TableCell colSpan={6}>
+                          <Empty>No enquiries in the period.</Empty>
+                        </TableCell>
+                      </TableRow>
+                    )}
                     {data.customers.map((c) => (
                       <TableRow key={c.company}>
                         <TableCell>{c.company}</TableCell>
@@ -379,12 +600,12 @@ export default function EnquiryDashboard() {
                       </TableRow>
                     ))}
                   </TableBody>
-                </Table>
+                </WideTable>
               </Panel>
             </Grid>
             <Grid item xs={12}>
               <Panel title="People" note="Feasibility checks done (and the median time from receiving the enquiry), quotes sent and orders won, for enquiries in the period">
-                <Table size="small">
+                <WideTable minWidth={560}>
                   <TableHead>
                     <TableRow>
                       <TableCell>Person</TableCell>
@@ -399,9 +620,7 @@ export default function EnquiryDashboard() {
                     {data.people.length === 0 && (
                       <TableRow>
                         <TableCell colSpan={6}>
-                          <Typography variant="body2" color="text.secondary">
-                            Nothing recorded in the period.
-                          </Typography>
+                          <Empty>Nothing recorded in the period.</Empty>
                         </TableCell>
                       </TableRow>
                     )}
@@ -416,7 +635,7 @@ export default function EnquiryDashboard() {
                       </TableRow>
                     ))}
                   </TableBody>
-                </Table>
+                </WideTable>
               </Panel>
             </Grid>
           </Grid>
