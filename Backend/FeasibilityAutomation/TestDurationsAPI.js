@@ -30,9 +30,12 @@ const chargedPer = async () => {
  * Chamber hours for one test: the test type's rule, the rule of the customer's
  * standard (if there is one) and the customer's values, in that order.
  * Used by the Test Durations page and by the enquiry engine.
+ * customerSpecOnly: take only the lab's own values (buffer, minimum) from the
+ * test type's rule; test conditions (axes, start from …) must come from the
+ * customer's spec, so a missing one is listed instead of assumed (enquiries).
  * @returns calculateDuration() result plus {rule, standardRule}
  */
-async function durationFor({ testTypeId, standard = "", params = {}, chamber = null, loadKg = null, addBuffer = false }) {
+async function durationFor({ testTypeId, standard = "", params = {}, chamber = null, loadKg = null, addBuffer = false, customerSpecOnly = false }) {
   const rules = (await loadRules(testTypeId)).filter((r) => r.is_active);
   const base = rules.find((r) => r.standard === "");
   // Values by standard are switched off for now: customers apply the same
@@ -53,7 +56,7 @@ async function durationFor({ testTypeId, standard = "", params = {}, chamber = n
   const result = calculateDuration({
     method,
     layers: [
-      { source: "test type default", values: base?.params || {} },
+      { source: "test type default", values: customerSpecOnly ? labValues(base?.params) : base?.params || {} },
       { source: standardRule?.standard, values: standardRule?.params || {} },
       { source: "customer", values: params },
     ],
@@ -63,6 +66,9 @@ async function durationFor({ testTypeId, standard = "", params = {}, chamber = n
   });
   return { ...result, rule: base || null, standardRule };
 }
+
+const LAB_KEYS = COMMON.map(([k]) => k);
+const labValues = (params) => Object.fromEntries(Object.entries(params || {}).filter(([k]) => LAB_KEYS.includes(k)));
 
 const ALL_KEYS = new Map([...Object.values(PARAMS).flat(), ...COMMON].map(([k, , unit]) => [k, unit]));
 
@@ -180,4 +186,4 @@ const testDurationsAPIs = (app) => {
   }));
 };
 
-module.exports = { testDurationsAPIs, durationFor };
+module.exports = { testDurationsAPIs, durationFor, cleanParams };

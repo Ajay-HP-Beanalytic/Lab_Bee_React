@@ -50,10 +50,11 @@ export const PAGE_HELP = {
       {
         heading: "Stages and who acts",
         points: [
-          "New / Feasibility check - TS1 or TS2 testing team. Click \"Take it\", check the tests, then \"Feasibility done\" (or \"Need details from customer\").",
+          "New / Feasibility check - TS1 or TS2 testing team. Click \"Take it\": the AI reads each test's type and the customer's values. Check them in \"Tests & hours\", then \"Feasibility done\" (or \"Need details from customer\").",
+          "Tests & hours - how each test's hours are worked out, step by step, from the customer's values only (nothing is assumed from a standard; a missing value is listed to ask the customer). Correct the type or values, enter the hours yourself with a reason, split a combined request (IP67 = dust + immersion) or leave a test out of the quote. Your changes are kept and the draft quote follows them.",
           "Waiting for customer - Accounts / Marketing get the missing details from the customer, then click \"Customer sent the details\". It goes back to the same tester.",
           "Reply to customer - Accounts / Marketing send the feasibility confirmation (or regret) from Outlook, then click \"Reply sent\".",
-          "Quote - prepare and send the quote, then click \"Quote sent\" with the quotation number. If the customer already asked for a quote, feasibility goes straight here: one reply with the confirmation and the quote.",
+          "Quote - open the draft in the Quotation page from the Quote tab and save it. The page then offers \"Download\" and \"Mark as Quote sent\", so there is no need to come back here. If the customer already asked for a quote, feasibility goes straight here: one reply with the confirmation and the quote.",
           "New customer - the Quote tab shows the company details the AI read from the emails (address, GSTIN, contact). Check them and click \"Save to customer list\"; nothing is added before that. Then add the logo there (choose, drop or paste); it goes on every quotation download for that customer.",
           "Follow-up - the person who sent the quote follows it up (\"Log follow-up\") until it is Won or Lost.",
         ],
@@ -61,7 +62,10 @@ export const PAGE_HELP = {
       {
         heading: "Using the list",
         points: [
-          "My work - only what waits for you: your enquiries, and unassigned ones at your team's stage.",
+          "My work - only what waits for you: enquiries that are with you (you took them or they were given to you), and ones nobody has taken yet at your team's stage. Start each day here; the red count on the tab is what you still have to do.",
+          "Year / Month or a date range - shows only enquiries received in that period (the date range is used instead of year / month). The tab counts follow the filter.",
+          "Team column - TS1 / TS2 from the tests. \"Team?\" means Lab Bee could not tell (e.g. an electrical test, or no tests read): open it and use \"Change team\". Anyone in TS1, TS2, Accounts or Marketing can change it, and a team chosen by a person is kept.",
+          "Dashboard - the Enquiry Dashboard button shows received, quoted and won, speeds and reasons for losing.",
           "Red time in the Stage column - the enquiry has been in that stage too long, or a follow-up is overdue.",
           "Click a row: Summary (what the customer wants), Emails & files (open the attachments), Timeline (who did what).",
           "Confidential emails are not sent to the AI. Choose \"Send to AI\" or \"Handle manually\" in the enquiry.",
@@ -75,6 +79,24 @@ export const PAGE_HELP = {
           "Free mail - sent from Gmail / Yahoo etc., so the company may need confirming.",
           "Non-testing - asks for design, consultancy, analysis, calibration or other non-testing work.",
           "Urgent - the customer asked for a quick answer. \"n missing\" - details still needed to quote.",
+        ],
+      },
+    ],
+  },
+
+  rfq_dashboard: {
+    title: "Enquiry Dashboard",
+    summary:
+      "How many enquiries came in, how many were quoted and won, how fast, why quotes were lost and what is waiting now. The period is on the date the enquiry was received.",
+    sections: [
+      {
+        heading: "The figures",
+        points: [
+          "Quoted % - enquiries that got a quote, of all received. Win rate - won ÷ (won + lost); open quotes are not counted.",
+          "Received → feasibility / quote sent - median time, from the timeline. Quote → decision - median days to Won or Lost.",
+          "Open quotes - value of quotes being prepared or followed up: what can still be won.",
+          "Now figures (open by stage, overdue follow-ups, not taken, team unclear) are for all open enquiries, whatever the period.",
+          "Mails closed as \"Not an enquiry\" or \"Duplicate\" are not counted.",
         ],
       },
     ],

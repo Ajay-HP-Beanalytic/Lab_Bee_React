@@ -5,6 +5,7 @@ import {
   Alert,
   Box,
   Button,
+  Checkbox,
   Chip,
   CircularProgress,
   Dialog,
@@ -51,6 +52,7 @@ import { useNavigate } from "react-router-dom";
 import { serverBaseAddress } from "../Pages/APIPage";
 import DocumentPreviewModal from "../components/DocumentPreviewModal";
 import EnquiryCustomer from "./EnquiryCustomer";
+import TestLinesEditor from "./TestLinesEditor";
 import { STAGES, lateness, rupees, rfqReference, formatDateTime } from "./rfqInboxHelpers";
 
 const EMAIL_ACTION_LABELS = {
@@ -80,6 +82,8 @@ const ACTION_HELP = {
   close: "For mails that are not real enquiries, duplicates or cancelled requests.",
   reopen: "The enquiry goes back to the stage it was closed from.",
   note: "A note on the timeline, visible to everyone.",
+  set_departments:
+    "Choose which testing team checks this enquiry. Lab Bee decides from the tests (their type, or the kind of test the AI read from the email); when a test fits neither team it marks the team as unclear. A team you choose here is kept.",
 };
 
 const EVENT_TEXT = {
@@ -99,6 +103,11 @@ const EVENT_TEXT = {
   reopen: () => "Reopened",
   note: () => "Note",
   customer_email: () => "Customer wrote again",
+  set_departments: (e) => `Team set to ${(e.data?.departments || "").replace(",", " + ")}${e.data?.before ? ` (was ${e.data.before.replace(",", " + ")})` : ""}`,
+  tests_read: (e) => `Tests read by the AI: ${e.note || ""}`,
+  test_edited: (e) => `Test checked / corrected - ${e.note || ""}`,
+  test_split: (e) => `Test split: ${e.note || ""}`,
+  test_removed: (e) => `Test part removed: ${e.note || ""}`,
   draft_quote: () => "Draft quote prepared",
   customer_read: (e) => `Company details read from the emails: ${e.note || ""}`,
   customer_added: (e) => `Added to the customer list: ${e.note || ""}`,
@@ -167,7 +176,9 @@ function ActionDialog({ action, data, onClose, onDone }) {
               ? { result: "feasible" }
               : action.key === "won" && r.quote_value != null
                 ? { won_value: Number(r.quote_value) }
-                : {},
+                : action.key === "set_departments"
+                  ? { departments: r.departments_unsure ? [] : (r.departments || "").split(",").filter(Boolean) }
+                  : {},
     );
   }, [action, r, wf]);
 
@@ -307,6 +318,33 @@ function ActionDialog({ action, data, onClose, onDone }) {
       </>
     ),
     reopen: note("Why it is reopened", true),
+    set_departments: (
+      <>
+        {r.departments_unsure === 1 && (
+          <Alert severity="warning" sx={{ mb: 1 }}>
+            Lab Bee could not tell from the tests which team this is for. Choose one or both.
+          </Alert>
+        )}
+        {["TS1", "TS2"].map((d) => (
+          <FormControlLabel
+            key={d}
+            control={
+              <Checkbox
+                checked={(form.departments || []).includes(d)}
+                onChange={(e) =>
+                  setForm((x) => ({
+                    ...x,
+                    departments: e.target.checked ? [...(x.departments || []), d] : (x.departments || []).filter((y) => y !== d),
+                  }))
+                }
+              />
+            }
+            label={d === "TS1" ? "TS1 - Environmental, mechanical, IP" : "TS2 - EMI / EMC"}
+          />
+        ))}
+        {note("Note (optional)")}
+      </>
+    ),
     note: note("Note", true, 3),
   }[action.key];
 
@@ -527,9 +565,13 @@ export default function RfqRequestDetails({ requestId, open, onClose, onChanged 
                 {r.company_name || r.contact_email || ""}
               </Typography>
               <Chip size="small" label={STAGES[r.stage]?.label || r.stage} color={STAGES[r.stage]?.color || "default"} />
-              {(r.departments || "").split(",").filter(Boolean).map((d) => (
-                <Chip key={d} size="small" variant="outlined" label={d} />
-              ))}
+              {r.departments_unsure === 1 ? (
+                <Tooltip title="Lab Bee could not tell from the tests whether this is for TS1 or TS2. Use Change team.">
+                  <Chip size="small" color="warning" label="Team? TS1 / TS2" />
+                </Tooltip>
+              ) : (
+                (r.departments || "").split(",").filter(Boolean).map((d) => <Chip key={d} size="small" variant="outlined" label={d} />)
+              )}
               {r.is_confidential === 1 && <Chip size="small" icon={<LockIcon />} label="Confidential" color="error" variant="outlined" />}
               {r.quote_requested === 1 && <Chip size="small" variant="outlined" color="secondary" label="Quote asked for" />}
             </>
@@ -589,6 +631,7 @@ export default function RfqRequestDetails({ requestId, open, onClose, onChanged 
 
       <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ px: 2, borderBottom: 1, borderColor: "divider", minHeight: 40, "& .MuiTab-root": { minHeight: 40, textTransform: "none" } }}>
         <Tab value="summary" label="Summary" />
+        <Tab value="tests" label="Tests & hours" />
         <Tab value="emails" label={`Emails & files${data ? ` (${data.emails.length} / ${data.attachments.length})` : ""}`} />
         <Tab value="quote" label={draft ? `Quote (${rupees(draft.total)})` : "Quote"} />
         <Tab value="timeline" label="Timeline" />
@@ -742,6 +785,8 @@ export default function RfqRequestDetails({ requestId, open, onClose, onChanged 
             </Section>
           </>
         )}
+
+        {r && tab === "tests" && <TestLinesEditor requestId={requestId} readOnly={!!STAGES[r.stage]?.closed} onChanged={load} />}
 
         {r && tab === "emails" && (
           <>

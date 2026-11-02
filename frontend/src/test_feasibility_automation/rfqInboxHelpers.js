@@ -66,3 +66,20 @@ export const rupees = (n) =>
 export const rfqReference = (id) => `RFQ-${String(id).padStart(5, "0")}`;
 
 export const formatDateTime = (value) => (value ? moment(value).format("DD MMM YYYY, HH:mm") : "–");
+
+export const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+// Date an enquiry was received: its first email, or when it was created (portal)
+export const receivedOf = (r) => r.received_at || r.created_at;
+
+// Whether an enquiry was received in the period: a date range {startDate, endDate}
+// if given, otherwise year ("all" or 2026) and month ("all" or 1-12)
+export const inPeriod = (r, { year = "all", month = "all", range = null }) => {
+  const d = moment(receivedOf(r));
+  if (range?.startDate && range?.endDate) {
+    return d.isBetween(moment(range.startDate).startOf("day"), moment(range.endDate).endOf("day"), null, "[]");
+  }
+  if (year !== "all" && d.year() !== Number(year)) return false;
+  if (year !== "all" && month !== "all" && d.month() + 1 !== Number(month)) return false;
+  return true;
+};

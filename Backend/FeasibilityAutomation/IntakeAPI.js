@@ -6,6 +6,8 @@ const workflow = require("./enquiry/workflow");
 const { storeEmailFiles, listForRequest, filePath } = require("./enquiry/attachments");
 const { getDraft, linkQuotation } = require("./enquiry/draftQuote");
 const customerProfile = require("./enquiry/customerProfile");
+const testLines = require("./enquiry/testLines");
+const { dashboard } = require("./enquiry/dashboard");
 
 const query = (sql, params) => db.promise().query(sql, params).then(([rows]) => rows);
 
@@ -43,7 +45,7 @@ const intakeAPIs = (app) => {
                 fr.company_name, fr.contact_person, fr.contact_email, fr.email_subject,
                 fr.is_confidential, fr.confidential_handling, fr.missing_fields,
                 fr.request_flags, fr.quote_deadline, fr.customer_reference,
-                fr.stage, fr.stage_changed_at, fr.departments, fr.owner_id, u.name AS owner_name,
+                fr.stage, fr.stage_changed_at, fr.departments, fr.departments_unsure, fr.departments_by, fr.owner_id, u.name AS owner_name,
                 fr.quote_requested, fr.feasibility_result, fr.quotation_ref, fr.quote_value,
                 fr.next_followup_at, fr.won_value, fr.closed_at,
                 LEFT(fr.technical_notes, 300) AS summary,
@@ -235,6 +237,60 @@ const intakeAPIs = (app) => {
   customerRoute("post", "", (id, body, userId) => customerProfile.saveCustomer(id, body, userId), "save the customer");
   // Use a company already in the customer list: {customer_id}
   customerRoute("post", "/link", (id, body, userId) => customerProfile.linkCustomer(id, parseInt(body.customer_id), userId), "link the customer");
+
+  // Tests & hours: the quote line of each test (type, the customer's values, hours, price).
+  // Testers and Accounts / Marketing can correct them while the enquiry is open.
+  const EDITORS = ["TS1 Testing", "TS2 Testing", "Accounts", "Marketing", "Administration"];
+  const linesRoute = (method, path, action, what, { edit = false } = {}) =>
+    app[method](`/api/enquiries/:id/test-lines${path}`, async (req, res) => {
+      const userId = requireUser(req, res);
+      if (!userId) return;
+      try {
+        const id = parseInt(req.params.id);
+        const [request] = await query("SELECT id, stage FROM feasibility_requests WHERE id = ?", [id]);
+        if (!request) return res.status(404).json({ error: "Enquiry not found" });
+        if (edit) {
+          const user = await workflow.loadUser(userId);
+          if (!EDITORS.includes(user.department)) return res.status(403).json({ error: "Your department can't change the tests" });
+          if (workflow.STAGES[request.stage]?.closed) return res.status(409).json({ error: "The enquiry is closed. Reopen it to change the tests." });
+        }
+        res.json(await action(id, parseInt(req.params.testId), req.body || {}, userId));
+      } catch (err) {
+        if (!err.status) console.error(`test lines ${what} error:`, err);
+        res.status(err.status || 500).json({ error: err.status ? err.message : `Failed to ${what}` });
+      }
+    });
+  linesRoute("get", "", async (id) => ({ lines: await testLines.linesFor(id), ...(await testLines.editorMeta()) }), "load the tests");
+  // AI reads the tests not read yet (force: again, except those a person checked)
+  linesRoute(
+    "post",
+    "/read",
+    async (id, _t, body, userId) => {
+      const result = await testLines.readValues(id, { by: userId, force: !!body.force });
+      await workflow.refreshDepartments(id);
+      return { ...result, lines: await testLines.linesFor(id) };
+    },
+    "read the tests",
+    { edit: true },
+  );
+  // Work a line out with these values without saving (live while editing)
+  linesRoute("post", "/:testId/preview", (id, testId, body) => testLines.previewLine(id, testId, body), "work out the line");
+  linesRoute("put", "/:testId", (id, testId, body, userId) => testLines.updateLine(id, testId, body, userId), "save the test", { edit: true });
+  // {names: ["IP6X dust", "IPX7 immersion"]}
+  linesRoute("post", "/:testId/split", (id, testId, body, userId) => testLines.splitLine(id, testId, body.names, userId), "split the test", { edit: true });
+  linesRoute("delete", "/:testId", (id, testId, _b, userId) => testLines.removeLine(id, testId, userId), "remove the test", { edit: true });
+
+  // Enquiry dashboard: ?from=YYYY-MM-DD&to=YYYY-MM-DD&department=TS1|TS2
+  app.get("/api/enquiries/dashboard", async (req, res) => {
+    if (!requireUser(req, res)) return;
+    const date = (v) => (/^\d{4}-\d{2}-\d{2}$/.test(String(v || "")) ? v : undefined);
+    try {
+      res.json(await dashboard({ from: date(req.query.from), to: date(req.query.to), department: req.query.department }));
+    } catch (err) {
+      console.error("enquiry dashboard error:", err);
+      res.status(500).json({ error: "Failed to load the dashboard" });
+    }
+  });
 
   // Store the attachments of this enquiry's emails that were read before
   // attachments were kept (downloads them again from the mailbox)

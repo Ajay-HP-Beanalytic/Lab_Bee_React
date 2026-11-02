@@ -43,20 +43,36 @@ const CLOSE_REASONS = ["Not an enquiry", "Duplicate", "Cancelled by customer", "
 
 const reference = (id) => `RFQ-${String(id).padStart(5, "0")}`;
 
-// Which testing departments an enquiry needs, from its tests' discipline
-// (set by the email AI or the portal). Unknown -> both teams.
-// (portal form: "TS1" / "TS2_EMI")
+// Which testing departments an enquiry needs, per test, in this order:
+//  1. the test type (chosen by the AI or a tester) - its department
+//  2. the test's discipline, set by the email AI (environmental, mechanical,
+//     ingress protection -> TS1; EMI/EMC, RF -> TS2) or the portal form (TS1 / TS2_EMI)
+//  3. the test name matched to the test type catalogue, when it fits one department only
+// A test none of these place (discipline "electrical" / "other", or no tests at
+// all) makes the enquiry "unsure": both teams see it and a person chooses with
+// "Change team". A team chosen by a person is never changed automatically.
 const TS1_DISCIPLINES = ["environmental", "mechanical", "ingress_protection", "climatic", "ts1"];
 const TS2_DISCIPLINES = ["emi_emc", "rf", "emi", "emc", "ts2_emi", "ts2"];
-const departmentsFor = (tests) => {
+const departmentsCheck = (tests, { typeById = new Map(), match = null } = {}) => {
   const found = new Set();
+  const unclear = [];
   for (const t of tests) {
+    const type = t.test_type_id ? typeById.get(Number(t.test_type_id)) : null;
     const d = String(t.test_category || "").toLowerCase();
-    if (TS1_DISCIPLINES.includes(d)) found.add("TS1");
-    if (TS2_DISCIPLINES.includes(d)) found.add("TS2");
+    if (type) found.add(type.department);
+    else if (TS1_DISCIPLINES.includes(d)) found.add("TS1");
+    else if (TS2_DISCIPLINES.includes(d)) found.add("TS2");
+    else {
+      const hits = match ? ["TS1", "TS2"].filter((dep) => match(t.test_name || "", dep).codes.length) : [];
+      if (hits.length === 1) found.add(hits[0]);
+      else unclear.push(t.test_name || "unnamed test");
+    }
   }
-  return found.size ? [...found].sort().join(",") : "TS1,TS2";
+  if (!tests.length) return { departments: "TS1,TS2", unsure: true, unclear: [] };
+  if (unclear.length) return { departments: "TS1,TS2", unsure: true, unclear };
+  return { departments: [...found].sort().join(","), unsure: false, unclear };
 };
+const departmentsFor = (tests) => departmentsCheck(tests).departments;
 
 const teamDepartments = (request, team) => {
   if (team === "sales") return SALES;
@@ -319,6 +335,43 @@ const ACTIONS = {
     },
   },
 
+  set_departments: {
+    label: "Change team",
+    from: OPEN_STAGES,
+    who: "anyone",
+    run: async ({ request, user, body }) => {
+      const chosen = (Array.isArray(body.departments) ? body.departments : String(body.departments || "").split(","))
+        .map((d) => String(d).trim().toUpperCase())
+        .filter((d) => TESTING[d]);
+      const departments = [...new Set(chosen)].sort().join(",");
+      if (!departments) throw fail(400, "Choose TS1, TS2 or both");
+      if (departments === request.departments && !request.departments_unsure && request.departments_by) {
+        throw fail(409, `Already set to ${departments.replace(",", " + ")}`);
+      }
+      const before = (request.departments || "").split(",");
+      const testingStage = STAGES[request.stage]?.team === "testing";
+      const set = { departments, departments_by: user.id, departments_unsure: 0 };
+      // The tester who has it stays only if their team still does it
+      if (testingStage && request.owner_id) {
+        const [owner] = await query("SELECT department FROM labbee_users WHERE id = ?", [request.owner_id]);
+        if (!departments.split(",").some((d) => TESTING[d] === owner?.department)) set.owner_id = null;
+      }
+      const added = departments.split(",").filter((d) => !before.includes(d) || request.departments_unsure);
+      return {
+        set,
+        note: text(body.note) || `Team: ${departments.replace(",", " + ")}`,
+        data: { departments, before: request.departments },
+        notify:
+          testingStage && added.length
+            ? {
+                departments: added.map((d) => TESTING[d]),
+                message: `${reference(request.id)}${who(request)} is for ${departments.replace(",", " + ")}: please check feasibility.`,
+              }
+            : null,
+      };
+    },
+  },
+
   note: {
     label: "Add note",
     from: Object.keys(STAGES),
@@ -339,6 +392,7 @@ const allowedDepartments = (request, action) => {
   const def = ACTIONS[action];
   if (def.who === "sales") return SALES;
   if (def.who === "involved") return [...teamDepartments(request, "testing"), ...SALES];
+  if (def.who === "anyone") return [...Object.values(TESTING), ...SALES];
   return stageTeam(request);
 };
 
@@ -397,38 +451,52 @@ const applyAction = async (requestId, action, userId, body = {}) => {
     note: out.note,
     data: out.data,
   });
+  // Reaching the Quote stage: the draft quotation is prepared in the background and
+  // Accounts / Marketing get one notification with the action's message and the draft
+  const toQuote = to === "quote" && request.stage !== "quote";
+  let lead = null;
+  if (toQuote && out.notify?.departments === SALES) {
+    lead = out.notify.message;
+    out.notify = null;
+  }
   if (out.notify) await notify({ ...out.notify, sender: user.name, requestId }).catch((e) => console.error("enquiry notify:", e.message));
-  // Reaching the Quote stage: prepare the draft quotation in the background
-  if (to === "quote" && request.stage !== "quote") prepareDraft(requestId, { ...request, stage: to });
+  if (toQuote) prepareDraft(requestId, { ...request, stage: to }, null, { lead, sender: user.name });
+  // Taken for the feasibility check: the AI reads the tests' types and values for the testers to check
+  if (request.stage === "new" && to === "feasibility") {
+    const { readValues, aiAllowedFor } = require("./testLines");
+    if (aiAllowedFor(request)) {
+      readValues(requestId)
+        .then(() => refreshDepartments(requestId))
+        .catch((err) => console.error("[tests] read failed:", err.message));
+    }
+  }
   return { stage: to };
 };
 
-// Build the draft quotation and tell Accounts / Marketing (never fails the action)
-const prepareDraft = (requestId, request, by = null) => {
-  const { buildDraft } = require("./draftQuote"); // loaded here: draftQuote uses the master data APIs
+// Build the draft quotation and tell Accounts / Marketing (never fails the action).
+// lead: the message of the action that reached the Quote stage, sent in the same notification.
+const prepareDraft = (requestId, request, by = null, { lead = null, sender = "Lab Bee" } = {}) => {
+  const { buildDraft, draftSummary } = require("./draftQuote"); // loaded here: draftQuote uses the master data APIs
+  const tell = (message) =>
+    notify({ departments: SALES, sender, requestId, message }).catch((e) => console.error("enquiry notify:", e.message));
   return buildDraft(requestId, { by })
     .then(async (draft) => {
       const lines = draft.lines || [];
-      const open = lines.filter((l) => l.problems.length).length;
-      const total = `₹${Number(draft.total).toLocaleString("en-IN")}`;
+      const summary = draftSummary(draft);
       await logEvent(requestId, "draft_quote", {
         userId: by,
-        note: `${lines.length} line(s), ${total}${open ? `, ${open} to check` : ""}`,
-        data: { total: draft.total, lines: lines.length, to_check: open },
+        note: summary,
+        data: { total: draft.total, lines: lines.length, to_check: lines.filter((l) => l.problems.length).length },
       });
       if (!by) {
-        await notify({
-          departments: SALES,
-          sender: "Lab Bee",
-          requestId,
-          message: `Draft quote ready for ${reference(requestId)}${who(request)}: ${lines.length} line(s), ${total}${open ? `, ${open} to check` : ""}`,
-        });
+        await tell(lead ? `${lead} Draft quote ready: ${summary}.` : `Draft quote ready for ${reference(requestId)}${who(request)}: ${summary}.`);
       }
       return draft;
     })
     .catch(async (err) => {
       console.error("[draft-quote]", err.message);
       await logEvent(requestId, "draft_quote_failed", { userId: by, note: err.message }).catch(() => {});
+      if (lead) await tell(`${lead} (The draft quote could not be prepared: open the enquiry's Quote tab.)`);
       if (by) throw err;
     });
 };
@@ -438,12 +506,10 @@ const onCreated = async (requestId, { by = "system" } = {}) => {
   const [request] = await query("SELECT * FROM feasibility_requests WHERE id = ?", [requestId]);
   if (!request) return;
   const tests = await query("SELECT test_name, test_category FROM feasibility_request_tests WHERE request_id = ? ORDER BY id", [requestId]);
-  const departments = departmentsFor(tests);
-  await query("UPDATE feasibility_requests SET departments = ?, stage_changed_at = COALESCE(stage_changed_at, created_at) WHERE id = ?", [
-    departments,
-    requestId,
-  ]);
-  request.departments = departments;
+  await query("UPDATE feasibility_requests SET stage_changed_at = COALESCE(stage_changed_at, created_at) WHERE id = ?", [requestId]);
+  const check = await refreshDepartments(requestId);
+  request.departments = check?.departments || "TS1,TS2";
+  request.departments_unsure = check?.unsure ? 1 : 0;
   await recordEvent(query, {
     requestId,
     action: "created",
@@ -458,7 +524,11 @@ const onCreated = async (requestId, { by = "system" } = {}) => {
     ? `${names.length} test(s): ${names.slice(0, 4).join(", ")}${names.length > 4 ? ", …" : ""}`
     : "no tests read yet";
   const summary = String(request.technical_notes || "").split("\n")[0].slice(0, 200);
-  const flags = [request.is_confidential ? "CONFIDENTIAL" : null, request.request_flags?.urgent ? "URGENT" : null].filter(Boolean);
+  const flags = [
+    request.is_confidential ? "CONFIDENTIAL" : null,
+    request.request_flags?.urgent ? "URGENT" : null,
+    request.departments_unsure ? "TEAM UNCLEAR: TS1 or TS2?" : null,
+  ].filter(Boolean);
   await notify({
     departments: stageTeam(request),
     sender: "Lab Bee",
@@ -467,10 +537,17 @@ const onCreated = async (requestId, { by = "system" } = {}) => {
   }).catch((e) => console.error("enquiry notify:", e.message));
 };
 
-// Recompute which testing teams an enquiry needs (after tests were added)
+// Recompute which testing teams an enquiry needs (tests added, read or changed).
+// Not when a person chose the team. Returns {departments, unsure, unclear} or null.
 const refreshDepartments = async (requestId) => {
-  const tests = await query("SELECT test_category FROM feasibility_request_tests WHERE request_id = ?", [requestId]);
-  if (tests.length) await query("UPDATE feasibility_requests SET departments = ? WHERE id = ?", [departmentsFor(tests), requestId]);
+  const [request] = await query("SELECT departments_by FROM feasibility_requests WHERE id = ?", [requestId]);
+  if (!request || request.departments_by) return null;
+  const tests = await query("SELECT test_name, test_category, test_type_id FROM feasibility_request_tests WHERE request_id = ?", [requestId]);
+  const types = await query("SELECT id, code, name, department, aliases FROM test_types WHERE is_active = 1");
+  const { createMatcher } = require("../masterData/testNameMatcher");
+  const check = departmentsCheck(tests, { typeById: new Map(types.map((t) => [t.id, t])), match: createMatcher(types) });
+  await query("UPDATE feasibility_requests SET departments = ?, departments_unsure = ? WHERE id = ?", [check.departments, check.unsure ? 1 : 0, requestId]);
+  return check;
 };
 
 // System events (no user), e.g. a confidential email sent to the AI

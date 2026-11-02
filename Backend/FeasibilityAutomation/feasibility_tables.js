@@ -279,6 +279,8 @@ const EMAIL_INTAKE_COLUMNS = {
     stage: "VARCHAR(30) NOT NULL DEFAULT 'new'",
     stage_changed_at: "DATETIME DEFAULT NULL",
     departments: "VARCHAR(20) DEFAULT NULL", // testing teams needed: 'TS1', 'TS2' or 'TS1,TS2'
+    departments_unsure: "TINYINT(1) NOT NULL DEFAULT 0", // some tests could not be placed: a person should choose
+    departments_by: "INT DEFAULT NULL", // set by a person (then never changed automatically)
     owner_id: "INT DEFAULT NULL",
     quote_requested: "TINYINT(1) NOT NULL DEFAULT 0",
     feasibility_result: "VARCHAR(20) DEFAULT NULL",
@@ -305,6 +307,21 @@ const EMAIL_INTAKE_COLUMNS = {
     procedure_or_category: "VARCHAR(500) DEFAULT NULL",
     applies_to: "VARCHAR(500) DEFAULT NULL",
     source: "VARCHAR(500) DEFAULT NULL",
+    // Quote line of the test (enquiry/testLines.js): test type, the customer's
+    // values for the hours, hours / quantity entered by a person
+    test_type_id: "INT DEFAULT NULL",
+    quote_values: "JSON DEFAULT NULL",
+    values_source: "VARCHAR(10) DEFAULT NULL", // 'ai' (read by the AI) | 'person' (checked / edited)
+    values_note: "VARCHAR(500) DEFAULT NULL",
+    values_by: "INT DEFAULT NULL",
+    values_at: "DATETIME DEFAULT NULL",
+    hours_override: "DECIMAL(8,2) DEFAULT NULL",
+    hours_reason: "VARCHAR(255) DEFAULT NULL",
+    quote_qty: "DECIMAL(10,2) DEFAULT NULL",
+    quote_excluded: "TINYINT(1) NOT NULL DEFAULT 0",
+    // Split of a combined request ("IP67" -> dust + immersion): the customer's wording and the first part
+    requested_as: "VARCHAR(500) DEFAULT NULL",
+    split_from: "INT DEFAULT NULL",
   },
   inbound_emails: {
     // created | duplicate | followup | linked | ignored (NULL = not handled yet)
@@ -748,6 +765,7 @@ async function migrateFeasibilityForEmailIntake() {
   ]);
   const q = (sql, params) => db.promise().query(sql, params).then(([rows]) => rows);
   try {
+    const added = new Set(); // "table.column" added now
     for (const [table, columns] of Object.entries(EMAIL_INTAKE_COLUMNS)) {
       const existing = await q(
         "SELECT column_name AS c FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = ?",
@@ -758,6 +776,7 @@ async function migrateFeasibilityForEmailIntake() {
       for (const [column, definition] of Object.entries(columns)) {
         if (!have.has(column)) {
           await q(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
+          added.add(`${table}.${column}`);
         }
       }
     }
@@ -789,6 +808,11 @@ async function migrateFeasibilityForEmailIntake() {
     await q(
       "UPDATE feasibility_requests SET confidential_handling = 'pending' WHERE is_confidential = 1 AND confidential_handling IS NULL",
     );
+    // Once, when departments_unsure arrives: mark open enquiries whose team is unclear
+    if (added.has("feasibility_requests.departments_unsure")) {
+      const { refreshDepartments, OPEN_STAGES } = require("./enquiry/workflow");
+      for (const r of await q("SELECT id FROM feasibility_requests WHERE stage IN (?)", [OPEN_STAGES])) await refreshDepartments(r.id);
+    }
     return true;
   } catch (err) {
     console.log("Error migrating feasibility tables for email intake", err);

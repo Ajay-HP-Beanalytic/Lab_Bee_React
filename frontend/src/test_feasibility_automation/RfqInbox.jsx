@@ -1,13 +1,18 @@
 import { useEffect, useMemo, useState } from "react";
 import axios from "axios";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import moment from "moment";
 import {
   Alert,
   Box,
+  Button,
   Chip,
   CircularProgress,
+  FormControl,
   IconButton,
+  InputLabel,
+  MenuItem,
+  Select,
   Tab,
   Tabs,
   Tooltip,
@@ -20,10 +25,12 @@ import EmailIcon from "@mui/icons-material/Email";
 import LanguageIcon from "@mui/icons-material/Language";
 import AttachFileIcon from "@mui/icons-material/AttachFile";
 import RequestQuoteIcon from "@mui/icons-material/RequestQuote";
+import InsightsIcon from "@mui/icons-material/Insights";
 import { serverBaseAddress } from "../Pages/APIPage";
 import SearchBar from "../common/SearchBar";
+import DateRangeFilter from "../common/DateRangeFilter";
 import RfqRequestDetails from "./RfqRequestDetails";
-import { STAGES, VIEWS, lateness, rupees, rfqReference, formatDateTime } from "./rfqInboxHelpers";
+import { STAGES, VIEWS, MONTHS, lateness, rupees, rfqReference, formatDateTime, receivedOf, inPeriod } from "./rfqInboxHelpers";
 
 const REFRESH_MS = 60 * 1000;
 
@@ -36,6 +43,11 @@ export default function RfqInbox() {
   const [error, setError] = useState("");
   const [view, setView] = useState("mine");
   const [searchText, setSearchText] = useState("");
+  // Period (on the date received): year / month, or a date range (which takes over)
+  const [year, setYear] = useState("all");
+  const [month, setMonth] = useState("all");
+  const [range, setRange] = useState(null);
+  const navigate = useNavigate();
   const [openId, setOpenId] = useState(null);
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -70,22 +82,24 @@ export default function RfqInbox() {
     return () => clearInterval(timer);
   }, []);
 
+  const years = useMemo(() => [...new Set(rows.map((r) => moment(receivedOf(r)).year()))].sort((a, b) => b - a), [rows]);
+  const periodRows = useMemo(() => rows.filter((r) => inPeriod(r, { year, month, range })), [rows, year, month, range]);
   const counts = useMemo(
-    () => Object.fromEntries(VIEWS.map((v) => [v.key, rows.filter(v.test).length])),
-    [rows],
+    () => Object.fromEntries(VIEWS.map((v) => [v.key, periodRows.filter(v.test).length])),
+    [periodRows],
   );
 
   const visibleRows = useMemo(() => {
     const test = VIEWS.find((v) => v.key === view)?.test || (() => true);
     const q = searchText.trim().toLowerCase();
-    return rows.filter(test).filter(
+    return periodRows.filter(test).filter(
       (r) =>
         !q ||
         [rfqReference(r.id), r.company_name, r.contact_person, r.contact_email, r.email_subject, r.customer_reference, r.owner_name, r.quotation_ref]
           .filter(Boolean)
           .some((v) => v.toLowerCase().includes(q)),
     );
-  }, [rows, view, searchText]);
+  }, [periodRows, view, searchText]);
 
   const columns = [
     {
@@ -155,13 +169,18 @@ export default function RfqInbox() {
       headerName: "Team",
       width: 95,
       headerClassName: "header",
-      renderCell: (params) => (
-        <Box display="flex" gap={0.5}>
-          {(params.value || "").split(",").filter(Boolean).map((d) => (
-            <Chip key={d} size="small" variant="outlined" label={d} color={d === "TS1" ? "primary" : "secondary"} />
-          ))}
-        </Box>
-      ),
+      renderCell: (params) =>
+        params.row.departments_unsure && !STAGES[params.row.stage]?.closed ? (
+          <Tooltip title="Lab Bee could not tell from the tests whether this is for TS1 or TS2. Open it and use Change team.">
+            <Chip size="small" color="warning" label="Team?" />
+          </Tooltip>
+        ) : (
+          <Box display="flex" gap={0.5}>
+            {(params.value || "").split(",").filter(Boolean).map((d) => (
+              <Chip key={d} size="small" variant="outlined" label={d} color={d === "TS1" ? "primary" : "secondary"} />
+            ))}
+          </Box>
+        ),
     },
     {
       field: "stage",
@@ -287,6 +306,9 @@ export default function RfqInbox() {
           </Typography>
         </Box>
         <Box display="flex" alignItems="center" gap={1}>
+          <Button size="small" variant="outlined" startIcon={<InsightsIcon />} onClick={() => navigate("/rfq_dashboard")}>
+            Dashboard
+          </Button>
           {status && (
             <Tooltip title={status.mailbox ? `Mailbox: ${status.mailbox}` : ""}>
               <Chip
@@ -312,6 +334,45 @@ export default function RfqInbox() {
       </Box>
 
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+
+      {/* Period: year / month or a date range */}
+      <Box mb={1} display="flex" alignItems="center" gap={1.5} flexWrap="wrap">
+        <FormControl size="small" sx={{ minWidth: 120 }} disabled={!!range}>
+          <InputLabel>Year</InputLabel>
+          <Select
+            label="Year"
+            value={year}
+            onChange={(e) => {
+              setYear(e.target.value);
+              if (e.target.value === "all") setMonth("all");
+            }}
+          >
+            <MenuItem value="all">All years</MenuItem>
+            {years.map((y) => (
+              <MenuItem key={y} value={y}>
+                {y}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+        <FormControl size="small" sx={{ minWidth: 140 }} disabled={!!range || year === "all"}>
+          <InputLabel>Month</InputLabel>
+          <Select label="Month" value={month} onChange={(e) => setMonth(e.target.value)}>
+            <MenuItem value="all">All months</MenuItem>
+            {MONTHS.map((m, i) => (
+              <MenuItem key={m} value={i + 1}>
+                {m}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
+        <DateRangeFilter onClickDateRangeSelectDoneButton={(r) => setRange(r || null)} onClickDateRangeSelectClearButton={() => setRange(null)} />
+        {(year !== "all" || range) && (
+          <Typography variant="caption" color="text.secondary">
+            {periodRows.length} of {rows.length} enquiries (by date received){range ? "; the date range is used instead of year / month" : ""}
+          </Typography>
+        )}
+      </Box>
 
       {/* Views and search */}
       <Box mb={1.5} display="flex" alignItems="center" justifyContent="space-between" gap={1} flexWrap="wrap">

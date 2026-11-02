@@ -23,6 +23,10 @@ import {
   Card,
   Chip,
   CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
 } from "@mui/material";
 // LoadingButton removed - using manual implementation instead
 import axios from "axios";
@@ -606,7 +610,7 @@ export default function Quotation() {
 
       if (response.status === 200) {
         toast.success(editId ? "Changes Saved" : "Quotation Added");
-        // Made from an enquiry's draft: link the quotation to the enquiry
+        // Made from an enquiry's draft: link the quotation to the enquiry, then offer the next steps
         if (rfqId && !editId && response.quotationId) {
           await axios
             .post(`${serverBaseAddress}/api/enquiries/${rfqId}/draft-quote/link`, {
@@ -614,6 +618,9 @@ export default function Quotation() {
               value: taxableAmount,
             })
             .catch(() => toast.warning("Quotation saved, but it couldn't be linked to the enquiry"));
+          setIsSubmitting(false);
+          setEnquiryNext({ quotationId: response.quotationId, dbId: response.data?.insertId, value: taxableAmount, followup: nextWorkingDay(3) });
+          return;
         }
       }
     } catch (error) {
@@ -798,6 +805,40 @@ export default function Quotation() {
   // Function to handle download action
   const handleDownloadQuote = () => {
     setShowPdfDialog(true); // Show the PDF generation dialog
+  };
+
+  // After saving a quotation made from an enquiry: download it, then mark the enquiry "Quote sent"
+  const [enquiryNext, setEnquiryNext] = useState(null); // {quotationId, dbId, value, followup}
+  const [pdfId, setPdfId] = useState(null);
+  const [markingSent, setMarkingSent] = useState(false);
+  const nextWorkingDay = (days) => {
+    const d = moment();
+    let left = days;
+    while (left > 0) {
+      d.add(1, "day");
+      if (d.day() !== 0 && d.day() !== 6) left--;
+    }
+    return d.format("YYYY-MM-DD");
+  };
+  const leaveEnquiryNext = () => {
+    setEnquiryNext(null);
+    navigate(-1);
+  };
+  const markQuoteSent = async () => {
+    setMarkingSent(true);
+    try {
+      await axios.post(`${serverBaseAddress}/api/enquiries/${rfqId}/actions/quote_sent`, {
+        quotation_ref: enquiryNext.quotationId,
+        quote_value: enquiryNext.value,
+        next_followup_at: enquiryNext.followup,
+      });
+      toast.success(`RFQ-${String(rfqId).padStart(5, "0")} marked as Quote sent`);
+      leaveEnquiryNext();
+    } catch (err) {
+      toast.error(err.response?.data?.error || "Couldn't mark the quote as sent");
+    } finally {
+      setMarkingSent(false);
+    }
   };
 
   return (
@@ -1675,8 +1716,54 @@ export default function Quotation() {
 
           {/* Dialog for PDF generation */}
           {showPdfDialog && (
-            <DocToPdf id={editId} onClose={() => setShowPdfDialog(false)} />
+            <DocToPdf id={pdfId || editId} onClose={() => setShowPdfDialog(false)} />
           )}
+
+          {/* Saved from an enquiry: the next steps without going back to the enquiry */}
+          <Dialog open={!!enquiryNext} onClose={() => !markingSent && leaveEnquiryNext()} maxWidth="xs" fullWidth>
+            <DialogTitle>Quotation {enquiryNext?.quotationId} saved</DialogTitle>
+            <DialogContent dividers>
+              <Typography variant="body2" gutterBottom>
+                It is linked to enquiry RFQ-{String(rfqId || "").padStart(5, "0")}.
+              </Typography>
+              <Typography variant="body2" fontWeight={600} mt={1}>
+                1. Download the document
+              </Typography>
+              <Button
+                size="small"
+                variant="outlined"
+                startIcon={<FileDownloadIcon />}
+                disabled={!enquiryNext?.dbId}
+                onClick={() => {
+                  setPdfId(enquiryNext.dbId);
+                  setShowPdfDialog(true);
+                }}
+                sx={{ mt: 0.5 }}
+              >
+                Download
+              </Button>
+              <Typography variant="body2" fontWeight={600} mt={2}>
+                2. Send it to the customer from Outlook, then mark it sent
+              </Typography>
+              <TextField
+                size="small"
+                type="date"
+                label="First follow-up on"
+                InputLabelProps={{ shrink: true }}
+                value={enquiryNext?.followup || ""}
+                onChange={(e) => setEnquiryNext({ ...enquiryNext, followup: e.target.value })}
+                sx={{ mt: 1 }}
+              />
+            </DialogContent>
+            <DialogActions>
+              <Button color="inherit" onClick={leaveEnquiryNext} disabled={markingSent}>
+                Later
+              </Button>
+              <Button variant="contained" color="success" onClick={markQuoteSent} disabled={markingSent}>
+                {markingSent ? "Saving…" : "Mark as Quote sent"}
+              </Button>
+            </DialogActions>
+          </Dialog>
         </Box>
       </form>
     </div>

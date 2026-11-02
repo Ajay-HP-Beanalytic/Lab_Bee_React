@@ -38,6 +38,7 @@ import ElectricBoltIcon from "@mui/icons-material/ElectricBolt";
 import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 import MarkEmailUnreadIcon from "@mui/icons-material/MarkEmailUnread";
+import InsightsIcon from "@mui/icons-material/Insights";
 import VerifiedIcon from "@mui/icons-material/Verified";
 import CategoryIcon from "@mui/icons-material/Category";
 
@@ -274,6 +275,13 @@ const ALL_ITEMS = [
     path: "/test_durations",
     gradientId: "testDurationsGradient",
   },
+  {
+    i: 22,
+    label: "Enquiry Dashboard",
+    icon: <InsightsIcon />,
+    path: "/rfq_dashboard",
+    gradientId: "rfqDashboardGradient",
+  },
 ];
 
 const GROUPS = [
@@ -282,7 +290,7 @@ const GROUPS = [
     label: "Finance",
     icon: <AccountBalanceIcon />,
     gradientId: "grpFinanceGrad",
-    itemIds: [1, 18, 2, 3, 17],
+    itemIds: [1, 18, 22, 2, 3, 17],
   },
   {
     id: "TS1 Testing",
@@ -315,10 +323,10 @@ const GROUPS = [
 ];
 
 const ACCESS_RULES = {
-  "Accounts": [1, 2, 3, 4, 5, 6, 8, 9, 10, 17, 18, 20, 21],
-  "Marketing": [2, 3, 8, 9, 10, 18],
-  "TS1 Testing": [4, 5, 6, 7, 8, 16, 18, 19, 20, 21],
-  "TS2 Testing": [9, 10, 11, 18, 19, 20],
+  "Accounts": [1, 2, 3, 4, 5, 6, 8, 9, 10, 17, 18, 20, 21, 22],
+  "Marketing": [2, 3, 8, 9, 10, 18, 22],
+  "TS1 Testing": [4, 5, 6, 7, 8, 16, 18, 19, 20, 21, 22],
+  "TS2 Testing": [9, 10, 11, 18, 19, 20, 22],
   "Reliability": [12],
   "Software": [12],
   "Reports & Scrutiny": [4, 5, 6, 7, 8, 9, 11],
