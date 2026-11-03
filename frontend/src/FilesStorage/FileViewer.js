@@ -1,6 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
+import { encodeStoragePath, fileServeUrl, fileDownloadUrl } from "./useFileStorage";
 
-const FileViewer = ({ filePath, onClose, serverBaseAddress }) => {
+// page: open a PDF at this page
+const FileViewer = ({ filePath, onClose, serverBaseAddress, page }) => {
   const [fileInfo, setFileInfo] = useState(null);
   const [fileContent, setFileContent] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -13,7 +15,7 @@ const FileViewer = ({ filePath, onClose, serverBaseAddress }) => {
 
       // Get file information
       const response = await fetch(
-        `${serverBaseAddress}/api/files/view/${filePath}`,
+        `${serverBaseAddress}/api/files/view/${encodeStoragePath(filePath)}`,
         {
           credentials: "include",
           headers: {
@@ -23,7 +25,8 @@ const FileViewer = ({ filePath, onClose, serverBaseAddress }) => {
       );
 
       if (!response.ok) {
-        throw new Error("Failed to load file information");
+        const body = await response.json().catch(() => ({}));
+        throw new Error(body.error || "Failed to load file information");
       }
 
       const data = await response.json();
@@ -33,7 +36,7 @@ const FileViewer = ({ filePath, onClose, serverBaseAddress }) => {
       if (data.file && data.file.viewType === "text") {
         try {
           const contentResponse = await fetch(
-            `${serverBaseAddress}/api/files/content/${filePath}`,
+            `${serverBaseAddress}/api/files/content/${encodeStoragePath(filePath)}`,
             {
               credentials: "include",
               headers: {
@@ -66,16 +69,15 @@ const FileViewer = ({ filePath, onClose, serverBaseAddress }) => {
 
   const downloadFile = () => {
     const link = document.createElement("a");
-    link.href = `${serverBaseAddress}/api/files/download/${filePath}`;
+    link.href = fileDownloadUrl(filePath);
     link.download = fileInfo?.name || "file";
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
 
-  const getFileUrl = () => {
-    return `${serverBaseAddress}/api/files/serve/${filePath}`;
-  };
+  const getFileUrl = () =>
+    fileServeUrl(filePath, fileInfo?.viewType === "pdf" ? page : null);
 
   // Handle escape key to close viewer
   useEffect(() => {
@@ -296,6 +298,7 @@ const FileViewer = ({ filePath, onClose, serverBaseAddress }) => {
       case "pdf":
         return (
           <iframe
+            key={fileUrl} // a new page number reloads the viewer at that page
             src={fileUrl}
             style={styles.pdfViewer}
             title={fileInfo.name}

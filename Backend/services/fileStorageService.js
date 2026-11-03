@@ -1,109 +1,86 @@
 const fs = require("fs-extra");
 const path = require("path");
+const crypto = require("crypto");
 const mime = require("mime-types");
+
+// An error with the HTTP status the API should answer with
+const fail = (status, message) => Object.assign(new Error(message), { status });
+
+// Folders created on start; Standards holds the standards library (see FeasibilityAutomation/standards)
+const ROOT_FOLDERS = ["Quotation", "TS1", "TS2", "Standards"];
+
+// Deleted items are moved here (hidden: names starting with "." are never listed)
+const TRASH = ".trash";
+
+// File types that can be uploaded, by extension (browsers do not always send the right MIME type)
+const ALLOWED_EXTENSIONS = [
+  "pdf", "doc", "docx", "xls", "xlsx", "ppt", "pptx", "txt", "csv", "json",
+  "jpg", "jpeg", "png", "gif", "webp", "mp4", "mp3", "wav", "ogg",
+];
+
+const isHidden = (name) => name.startsWith(".");
+
+// A file or folder name that is safe on Windows and Linux
+const safeName = (name) => {
+  let base = path
+    .basename(String(name || "").replace(/\\/g, "/"))
+    .normalize("NFC")
+    .replace(/[<>:"/\\|?*\u0000-\u001f]/g, "_")
+    .replace(/^[\s.]+|[\s.]+$/g, "");
+  if (base.length > 200) {
+    const ext = path.extname(base).slice(0, 20);
+    base = base.slice(0, 200 - ext.length) + ext;
+  }
+  if (!base) throw fail(400, "Invalid name");
+  return /^(con|prn|aux|nul|com\d|lpt\d)(\.|$)/i.test(base) ? `_${base}` : base;
+};
+
+const sha256Of = (fullPath) =>
+  new Promise((resolve, reject) => {
+    const hash = crypto.createHash("sha256");
+    fs.createReadStream(fullPath)
+      .on("error", reject)
+      .on("data", (d) => hash.update(d))
+      .on("end", () => resolve(hash.digest("hex")));
+  });
 
 class FileStorageService {
   constructor() {
-    // This is correct for Backend/services/fileStorageService.js
-    this.baseDir = path.join(__dirname, "../../shared-files");
+    // FILE_STORAGE_DIR moves the store (e.g. to a bigger disk); default: <repo>/shared-files
+    this.baseDir = path.resolve(process.env.FILE_STORAGE_DIR || path.join(__dirname, "../../shared-files"));
+    this.allowedExtensions = ALLOWED_EXTENSIONS;
+    this.isHidden = isHidden;
+    this.sha256Of = sha256Of;
 
-    // Initialize directories
-    this.initializeStorage();
+    this.initializeStorage().catch((error) => console.error("❌ Failed to initialize file storage:", error));
   }
 
   async initializeStorage() {
-    try {
-      await this.ensureDirectoriesExist();
-      // await this.createDefaultStructure();  // To  create default sub folders:
-    } catch (error) {
-      console.error("❌ Failed to initialize file storage:", error);
-      throw error;
-    }
+    await this.ensureDirectoriesExist();
   }
 
   async ensureDirectoriesExist() {
-    // Create the main shared-files directory if it doesn't exist
-    if (!fs.existsSync(this.baseDir)) {
-      try {
-        await fs.ensureDir(this.baseDir);
-      } catch (error) {
-        console.error(`❌ Failed to create main directory: ${error.message}`);
-        throw error;
-      }
-    } else {
-      // console.log(`✓ Main directory already exists: ${this.baseDir}`);
-    }
-
-    // Define all subdirectories to create
-    const directories = [
-      {
-        name: "Quotation",
-        description: "Store quotation documents and related files",
-      },
-      {
-        name: "TS1",
-        description: "TS1 testing related files and documents",
-      },
-      {
-        name: "TS2",
-        description: "TS2 testing related files and documents",
-      },
-    ];
-
-    // Create each directory
-    for (const dir of directories) {
-      try {
-        const dirPath = path.join(this.baseDir, dir.name);
-        if (!fs.existsSync(dirPath)) {
-          await fs.ensureDir(dirPath);
-        } else {
-          // console.log(`✓ Directory exists: ${dir.name}`);
-        }
-      } catch (error) {
-        console.error(`❌ Failed to create directory: ${error.message}`);
-      }
+    await fs.ensureDir(this.baseDir);
+    for (const name of ROOT_FOLDERS) {
+      await fs.ensureDir(path.join(this.baseDir, name)).catch((error) =>
+        console.error(`❌ Failed to create directory ${name}: ${error.message}`),
+      );
     }
   }
 
   async createDefaultStructure() {
     try {
-      const directoryInfo = {
-        Quotation: {
-          subdirs: ["drafts", "approved", "archived"],
-        },
-
-        TS1: {
-          subdirs: ["procedures", "templates", "compliance"],
-        },
-
-        TS2: {
-          subdirs: ["procedures", "templates", "compliance"],
-        },
-
-        uploads: {
-          subdirs: [new Date().getFullYear().toString()], // Create current year folder
-        },
-
-        temp: {
-          subdirs: [],
-        },
-
-        archived: {
-          subdirs: [new Date().getFullYear().toString()],
-        },
+      const subdirs = {
+        Quotation: ["drafts", "approved", "archived"],
+        TS1: ["procedures", "templates", "compliance"],
+        TS2: ["procedures", "templates", "compliance"],
+        uploads: [new Date().getFullYear().toString()],
+        archived: [new Date().getFullYear().toString()],
+        temp: [],
       };
-
-      // Create README files and subdirectories
-      for (const [dirName, info] of Object.entries(directoryInfo)) {
-        const mainDirPath = path.join(this.baseDir, dirName);
-
-        // Create subdirectories
-        for (const subdir of info.subdirs) {
-          const subdirPath = path.join(mainDirPath, subdir);
-          if (!fs.existsSync(subdirPath)) {
-            await fs.ensureDir(subdirPath);
-          }
-        }
+      for (const [dirName, list] of Object.entries(subdirs)) {
+        await fs.ensureDir(path.join(this.baseDir, dirName));
+        for (const sub of list) await fs.ensureDir(path.join(this.baseDir, dirName, sub));
       }
     } catch (error) {
       console.error("❌ Error creating default structure:", error);
@@ -111,85 +88,65 @@ class FileStorageService {
     }
   }
 
+  // "a/b.pdf" → absolute path inside the store. Rejects anything that leaves the
+  // store ("../x", or a sibling folder such as shared-files2) and hidden items.
+  resolve(relPath = "") {
+    const rel = String(relPath || "").replace(/\\/g, "/").replace(/^\/+/, "");
+    const fullPath = path.resolve(this.baseDir, rel);
+    if (fullPath !== this.baseDir && !fullPath.startsWith(this.baseDir + path.sep)) {
+      throw fail(400, "Invalid path");
+    }
+    if (path.relative(this.baseDir, fullPath).split(path.sep).some(isHidden)) {
+      throw fail(400, "Invalid path");
+    }
+    return fullPath;
+  }
+
+  // Absolute path → "a/b.pdf"
+  relative(fullPath) {
+    return path.relative(this.baseDir, fullPath).split(path.sep).join("/");
+  }
+
   // Method to verify directory structure
   async verifyDirectoryStructure() {
-    const requiredDirs = ["Quotation-files", "TS1-standards", "TS2-standards"];
-
-    const results = {
-      allExist: true,
-      missing: [],
-      existing: [],
-    };
-
-    for (const dir of requiredDirs) {
-      const dirPath = path.join(this.baseDir, dir);
-      if (fs.existsSync(dirPath)) {
+    const results = { allExist: true, missing: [], existing: [] };
+    for (const dir of ROOT_FOLDERS) {
+      if (await fs.pathExists(path.join(this.baseDir, dir))) {
         results.existing.push(dir);
       } else {
         results.missing.push(dir);
         results.allExist = false;
       }
     }
-
-    if (results.missing.length > 0) {
-      console.log(`❌ Missing directories: ${results.missing.join(", ")}`);
-    }
-
     return results;
   }
 
   // Add method to create new directories on demand
   async createCustomDirectory(dirPath, description = "") {
-    try {
-      const fullPath = path.join(this.baseDir, dirPath);
-
-      if (!fullPath.startsWith(this.baseDir)) {
-        throw new Error("Invalid path");
-      }
-
-      await fs.ensureDir(fullPath);
-
-      // Create a README for the new directory
-      if (description) {
-        const readmePath = path.join(fullPath, "README.md");
-        const readmeContent = `# ${path.basename(
-          dirPath
-        )} Directory ${description} Created: ${new Date().toISOString()}`;
-        await fs.writeFile(readmePath, readmeContent);
-      }
-      console.log(`📁 Created custom directory: ${dirPath}`);
-      return true;
-    } catch (error) {
-      console.error(`❌ Error creating directory ${dirPath}:`, error);
-      throw error;
+    const fullPath = await this.createDirectory(dirPath);
+    if (description) {
+      const readmeContent = `# ${path.basename(fullPath)} Directory ${description} Created: ${new Date().toISOString()}`;
+      await fs.writeFile(path.join(fullPath, "README.md"), readmeContent);
     }
+    return true;
   }
 
   // Cleanup method for temporary files
   async cleanupTempFiles() {
     try {
       const tempDir = path.join(this.baseDir, "temp");
-      if (!fs.existsSync(tempDir)) return;
+      if (!(await fs.pathExists(tempDir))) return 0;
 
-      const files = await fs.readdir(tempDir);
-      const now = Date.now();
       const maxAge = 24 * 60 * 60 * 1000; // 24 hours
-
       let cleanedCount = 0;
-      for (const file of files) {
+      for (const file of await fs.readdir(tempDir)) {
         const filePath = path.join(tempDir, file);
         const stats = await fs.stat(filePath);
-
-        if (now - stats.mtime.getTime() > maxAge) {
+        if (Date.now() - stats.mtime.getTime() > maxAge) {
           await fs.remove(filePath);
           cleanedCount++;
         }
       }
-
-      if (cleanedCount > 0) {
-        console.log(`🧹 Cleaned up ${cleanedCount} temporary files`);
-      }
-
       return cleanedCount;
     } catch (error) {
       console.error("Error cleaning temp files:", error);
@@ -199,137 +156,137 @@ class FileStorageService {
 
   // Method to get storage statistics
   async getStorageInfo() {
-    try {
-      const stats = await fs.stat(this.baseDir);
-      const infoPath = path.join(this.baseDir, "storage-info.json");
-
-      let systemInfo = {};
-      if (fs.existsSync(infoPath)) {
-        systemInfo = await fs.readJSON(infoPath);
-      }
-
-      return {
-        baseDirectory: this.baseDir,
-        created: stats.birthtime,
-        lastModified: stats.mtime,
-        systemInfo,
-        directoryStructure: await this.verifyDirectoryStructure(),
-      };
-    } catch (error) {
-      console.error("Error getting storage info:", error);
-      throw error;
-    }
+    const stats = await fs.stat(this.baseDir);
+    const infoPath = path.join(this.baseDir, "storage-info.json");
+    const systemInfo = (await fs.pathExists(infoPath)) ? await fs.readJSON(infoPath) : {};
+    return {
+      baseDirectory: this.baseDir,
+      created: stats.birthtime,
+      lastModified: stats.mtime,
+      systemInfo,
+      directoryStructure: await this.verifyDirectoryStructure(),
+    };
   }
 
-  // Method to list files
+  // One entry of a listing
+  async describe(fullPath, dirent) {
+    const stats = await fs.stat(fullPath);
+    const isFolder = dirent ? dirent.isDirectory() : stats.isDirectory();
+    const relPath = this.relative(fullPath);
+    return {
+      id: relPath,
+      name: path.basename(fullPath),
+      type: isFolder ? "folder" : "file",
+      size: isFolder ? null : stats.size,
+      mimeType: isFolder ? null : mime.lookup(fullPath) || null,
+      lastModified: stats.mtime,
+      path: relPath,
+    };
+  }
+
+  // Folder contents: folders first, then by name (numbers in natural order)
   async listFiles(folderPath = "") {
-    try {
-      const fullPath = path.join(this.baseDir, folderPath);
-
-      if (!fullPath.startsWith(this.baseDir)) {
-        throw new Error("Invalid path");
-      }
-
-      if (!(await fs.pathExists(fullPath))) {
+    const fullPath = this.resolve(folderPath);
+    if (!(await fs.pathExists(fullPath))) {
+      if (fullPath === this.baseDir) {
         await fs.ensureDir(fullPath);
         return [];
       }
-
-      const items = await fs.readdir(fullPath, { withFileTypes: true });
-
-      const files = await Promise.all(
-        items.map(async (item) => {
-          const itemPath = path.join(fullPath, item.name);
-          const stats = await fs.stat(itemPath);
-
-          return {
-            id: path.join(folderPath, item.name).replace(/\\/g, "/"),
-            name: item.name,
-            type: item.isDirectory() ? "folder" : "file",
-            size: item.isFile() ? stats.size : null,
-            mimeType: item.isFile() ? mime.lookup(item.name) : null,
-            lastModified: stats.mtime,
-            path: path.join(folderPath, item.name).replace(/\\/g, "/"),
-          };
-        })
-      );
-
-      return files;
-    } catch (error) {
-      console.error("❌ Error listing files:", error);
-      throw error;
+      throw fail(404, "Folder not found");
     }
+    if (!(await fs.stat(fullPath)).isDirectory()) throw fail(400, "Not a folder");
+
+    const items = (await fs.readdir(fullPath, { withFileTypes: true })).filter((d) => !isHidden(d.name));
+    const files = await Promise.all(
+      // An item that cannot be read (removed meanwhile, broken link) is left out
+      items.map((d) => this.describe(path.join(fullPath, d.name), d).catch(() => null)),
+    );
+    return files
+      .filter(Boolean)
+      .sort((a, b) => (a.type === b.type ? a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: "base" }) : a.type === "folder" ? -1 : 1));
   }
 
-  // Method to upload a file
+  // Free name in the folder: "x.pdf", else "x (1).pdf", "x (2).pdf" …
+  async freeName(dirPath, name) {
+    const ext = path.extname(name);
+    const stem = name.slice(0, name.length - ext.length);
+    let candidate = name;
+    for (let i = 1; await fs.pathExists(path.join(dirPath, candidate)); i++) candidate = `${stem} (${i})${ext}`;
+    return candidate;
+  }
+
+  // Moves an uploaded temp file into the folder. originalName may carry
+  // sub-folders ("IEC/Part 2/60068-2-6.pdf", from a folder upload); they are created.
+  // The same file uploaded again (same name, same content) is skipped; a different
+  // file never overwrites an existing one: it gets a free name ("x (1).pdf").
   async uploadFile(file, destinationPath, originalName) {
-    try {
-      const fullDestPath = path.join(
-        this.baseDir,
-        destinationPath,
-        originalName
-      );
+    const parts = String(originalName || "").replace(/\\/g, "/").split("/").filter(Boolean);
+    const wanted = safeName(parts.pop());
+    const subFolders = parts.map(safeName);
+    const ext = path.extname(wanted).slice(1).toLowerCase();
+    if (!ALLOWED_EXTENSIONS.includes(ext)) throw fail(400, `Files of type .${ext || "?"} cannot be uploaded`);
+    const dirPath = this.resolve([destinationPath, ...subFolders].filter(Boolean).join("/"));
 
-      if (!fullDestPath.startsWith(this.baseDir)) {
-        throw new Error("Invalid destination path");
-      }
+    await fs.ensureDir(dirPath);
+    if (!(await fs.stat(dirPath)).isDirectory()) throw fail(400, "Not a folder");
+    const sha256 = await sha256Of(file.path);
 
-      await fs.ensureDir(path.dirname(fullDestPath));
-      await fs.move(file.path, fullDestPath);
-
+    const existing = path.join(dirPath, wanted);
+    const existingStats = await fs.stat(existing).catch(() => null);
+    if (existingStats?.isFile() && existingStats.size === file.size && (await sha256Of(existing)) === sha256) {
+      await fs.remove(file.path);
       return {
-        name: originalName,
-        path: path.join(destinationPath, originalName).replace(/\\/g, "/"),
-        size: file.size,
-        mimeType: mime.lookup(originalName),
+        name: wanted,
+        path: this.relative(existing),
+        size: existingStats.size,
+        mimeType: mime.lookup(wanted) || null,
+        lastModified: existingStats.mtime,
+        sha256,
+        renamed: false,
+        skipped: true,
       };
-    } catch (error) {
-      console.error("❌ Error uploading file:", error);
-      throw error;
     }
+
+    const name = await this.freeName(dirPath, wanted);
+    const fullPath = path.join(dirPath, name);
+    await fs.move(file.path, fullPath, { overwrite: false });
+    const stats = await fs.stat(fullPath);
+
+    return {
+      name,
+      path: this.relative(fullPath),
+      size: stats.size,
+      mimeType: mime.lookup(name) || null,
+      lastModified: stats.mtime,
+      sha256,
+      renamed: name !== wanted,
+    };
   }
 
   //Method to view a file:
   async viewFile(filePath) {
-    try {
-      const fullPath = path.join(this.baseDir, filePath);
+    const fullPath = this.resolve(filePath);
+    if (!(await fs.pathExists(fullPath))) throw fail(404, "File not found");
+    const stats = await fs.stat(fullPath);
+    if (!stats.isFile()) throw fail(400, "Not a file");
+    const mimeType = mime.lookup(fullPath) || "application/octet-stream";
 
-      if (!fullPath.startsWith(this.baseDir)) {
-        throw new Error("Invalid path");
-      }
-
-      if (!(await fs.pathExists(fullPath))) {
-        throw new Error("File not found");
-      }
-
-      const stats = await fs.stat(fullPath);
-      const mimeType = mime.lookup(fullPath);
-
-      return {
-        name: path.basename(fullPath),
-        path: filePath,
-        fullPath: fullPath,
-        size: stats.size,
-        mimeType: mimeType,
-        lastModified: stats.mtime,
-        isViewable: this.isViewableFile(mimeType),
-        viewType: this.getViewType(mimeType),
-      };
-    } catch (error) {
-      console.error("❌ Error viewing file:", error);
-      throw error;
-    }
+    return {
+      name: path.basename(fullPath),
+      path: this.relative(fullPath),
+      fullPath,
+      size: stats.size,
+      mimeType,
+      lastModified: stats.mtime,
+      isViewable: this.isViewableFile(mimeType),
+      viewType: this.getViewType(mimeType),
+    };
   }
 
   // Check if file can be viewed in browser:
   isViewableFile(mimeType) {
     const viewableTypes = [
       "application/pdf",
-      "text/plain",
-      "text/csv",
-      "text/html",
-      "text/css",
-      "text/javascript",
       "application/json",
       "image/jpg",
       "image/jpeg",
@@ -339,12 +296,12 @@ class FileStorageService {
       "image/webp",
       "video/mp4",
       "video/webm",
+      "audio/mpeg",
       "audio/mp3",
       "audio/wav",
       "audio/ogg",
     ];
-
-    return viewableTypes.includes(mimeType) || mimeType.startsWith("text/");
+    return viewableTypes.includes(mimeType) || !!mimeType?.startsWith("text/");
   }
 
   // Get view type for different file formats
@@ -353,177 +310,108 @@ class FileStorageService {
     if (mimeType?.startsWith("video/")) return "video";
     if (mimeType?.startsWith("audio/")) return "audio";
     if (mimeType === "application/pdf") return "pdf";
-    if (mimeType?.startsWith("text/") || mimeType === "application/json")
-      return "text";
+    if (mimeType?.startsWith("text/") || mimeType === "application/json") return "text";
     return "download";
   }
 
   //Method to download the file:
-  // Alternative: Direct download stream method
   async downloadFile(filePath) {
-    try {
-      const fullPath = path.join(this.baseDir, filePath);
-
-      // Security check - prevent directory traversal
-      if (!fullPath.startsWith(this.baseDir)) {
-        throw new Error("Invalid file path - security violation");
-      }
-
-      // Check if file exists
-      if (!(await fs.pathExists(fullPath))) {
-        throw new Error(`File not found: ${filePath}`);
-      }
-
-      // Get file stats
-      const stats = await fs.stat(fullPath);
-
-      // Check if it's a file (not a directory)
-      if (!stats.isFile()) {
-        throw new Error(`Path is not a file: ${filePath}`);
-      }
-
-      return {
-        success: true,
-        name: path.basename(filePath),
-        path: filePath,
-        fullPath: fullPath,
-        size: stats.size,
-        mimeType: mime.lookup(filePath),
-        lastModified: stats.mtime,
-        downloadInfo: {
-          originalPath: filePath,
-          fileName: path.basename(filePath),
-          fileSize: stats.size,
-          contentType: mime.lookup(filePath) || "application/octet-stream",
-        },
-      };
-    } catch (error) {
-      console.error("❌ Error preparing file download:", error);
-      throw error;
-    }
+    const info = await this.viewFile(filePath);
+    return { success: true, ...info };
   }
 
-  // Get file content for text files
+  // Get file content for text files (the viewer shows at most 2 MB)
   async getFileContent(filePath, encoding = "utf8") {
-    try {
-      const fullPath = path.join(this.baseDir, filePath);
-
-      if (!fullPath.startsWith(this.baseDir)) {
-        throw new Error("Invalid path");
-      }
-
-      const mimeType = mime.lookup(filePath);
-
-      // Only read content for text files
-      if (!this.isTextFile(mimeType)) {
-        throw new Error("File is not a text file");
-      }
-
-      const content = await fs.readFile(fullPath, encoding);
-
-      return {
-        content,
-        mimeType,
-        encoding,
-      };
-    } catch (error) {
-      console.error("❌ Error reading file content:", error);
-      throw error;
-    }
+    const info = await this.viewFile(filePath);
+    if (!this.isTextFile(info.mimeType)) throw fail(400, "File is not a text file");
+    if (info.size > 2 * 1024 * 1024) throw fail(413, "File is too large to show; download it instead");
+    const content = await fs.readFile(info.fullPath, encoding);
+    return { content, mimeType: info.mimeType, encoding };
   }
 
   // Check if file is text-based
   isTextFile(mimeType) {
-    const textTypes = [
-      "text/plain",
-      "text/csv",
-      "text/html",
-      "text/css",
-      "text/javascript",
-      "application/json",
-      "application/xml",
-      "text/xml",
-    ];
-
-    return textTypes.includes(mimeType) || mimeType?.startsWith("text/");
+    const textTypes = ["application/json", "application/xml"];
+    return textTypes.includes(mimeType) || !!mimeType?.startsWith("text/");
   }
 
-  // Method to delete a file:
+  // Delete a file or an empty folder. It is moved to .trash/<time>/<path>, so
+  // a file deleted by mistake can still be got back on the server.
   async deleteFile(filePath) {
-    try {
-      const fullPath = path.join(this.baseDir, filePath);
-
-      if (!fullPath.startsWith(this.baseDir)) {
-        throw new Error("Invalid path");
-      }
-
+    const fullPath = this.resolve(filePath);
+    if (fullPath === this.baseDir) throw fail(400, "The root folder cannot be deleted");
+    if (!(await fs.pathExists(fullPath))) throw fail(404, "File not found");
+    const stats = await fs.stat(fullPath);
+    if (stats.isDirectory()) {
+      if ((await fs.readdir(fullPath)).length) throw fail(409, "Only empty folders can be deleted");
+      if (ROOT_FOLDERS.includes(this.relative(fullPath))) throw fail(400, "This folder cannot be deleted");
       await fs.remove(fullPath);
-      return true;
-    } catch (error) {
-      console.error("❌ Error deleting file:", error);
-      throw error;
+      return { folder: true };
     }
+    const stamp = new Date().toISOString().replace(/[-:]/g, "").replace(/\..*/, "");
+    const target = path.join(this.baseDir, TRASH, `${stamp}-${crypto.randomBytes(3).toString("hex")}`, this.relative(fullPath));
+    await fs.move(fullPath, target);
+    return { folder: false };
   }
 
+  // Creates the folder (each part of the path must be a valid name)
   async createDirectory(dirPath) {
-    try {
-      const fullPath = path.join(this.baseDir, dirPath);
-
-      if (!fullPath.startsWith(this.baseDir)) {
-        throw new Error("Invalid path");
-      }
-
-      await fs.ensureDir(fullPath);
-      return true;
-    } catch (error) {
-      console.error("❌ Error creating directory:", error);
-      throw error;
+    const parts = String(dirPath || "").replace(/\\/g, "/").split("/").filter(Boolean);
+    if (!parts.length) throw fail(400, "Directory path required");
+    if (parts.some((p) => safeName(p) !== p)) throw fail(400, 'Folder names cannot contain \\ / : * ? " < > | or start/end with a dot');
+    const fullPath = this.resolve(parts.join("/"));
+    if ((await fs.pathExists(fullPath)) && !(await fs.stat(fullPath)).isDirectory()) {
+      throw fail(409, "A file with that name already exists");
     }
+    await fs.ensureDir(fullPath);
+    return fullPath;
   }
 
-  async searchFiles(query) {
-    try {
-      const results = [];
-      await this.searchInDirectory(this.baseDir, query.toLowerCase(), results);
-      return results;
-    } catch (error) {
-      console.error("❌ Error searching files:", error);
-      throw error;
+  // Moves or copies a file/folder into another folder. A name already taken
+  // there gets a free one ("x (1).pdf"). Returns the new path.
+  async transfer(fromPath, toFolder, mode = "move") {
+    const source = this.resolve(fromPath);
+    if (source === this.baseDir) throw fail(400, "The root folder cannot be moved");
+    if (!(await fs.pathExists(source))) throw fail(404, "File not found");
+    const destDir = this.resolve(toFolder);
+    if (!(await fs.pathExists(destDir)) || !(await fs.stat(destDir)).isDirectory()) throw fail(404, "Target folder not found");
+
+    const isFolder = (await fs.stat(source)).isDirectory();
+    if (isFolder && (destDir === source || destDir.startsWith(source + path.sep))) {
+      throw fail(400, "A folder cannot go inside itself");
     }
+    if (mode === "move") {
+      if (ROOT_FOLDERS.includes(this.relative(source))) throw fail(400, "This folder cannot be moved");
+      if (path.dirname(source) === destDir) throw fail(400, "Already in that folder");
+    }
+
+    const name = await this.freeName(destDir, path.basename(source));
+    const target = path.join(destDir, name);
+    if (mode === "copy") await fs.copy(source, target, { overwrite: false, errorOnExist: true });
+    else await fs.move(source, target, { overwrite: false });
+    return { from: this.relative(source), path: this.relative(target), name, isFolder, renamed: name !== path.basename(source) };
   }
 
-  async searchInDirectory(dirPath, query, results, relativePath = "") {
-    const items = await fs.readdir(dirPath, { withFileTypes: true });
-
-    for (const item of items) {
-      const itemPath = path.join(dirPath, item.name);
-      const itemRelativePath = path
-        .join(relativePath, item.name)
-        .replace(/\\/g, "/");
-
-      if (item.name.toLowerCase().includes(query)) {
-        const stats = await fs.stat(itemPath);
-        results.push({
-          id: itemRelativePath,
-          name: item.name,
-          type: item.isDirectory() ? "folder" : "file",
-          size: item.isFile() ? stats.size : null,
-          mimeType: item.isFile() ? mime.lookup(item.name) : null,
-          lastModified: stats.mtime,
-          path: itemRelativePath,
-        });
-      }
-
-      if (item.isDirectory()) {
-        await this.searchInDirectory(
-          itemPath,
-          query,
-          results,
-          itemRelativePath
-        );
-      }
+  // Every folder and file in the store (hidden ones left out), for the search index
+  async walk(onItem, dirPath = this.baseDir) {
+    let items;
+    try {
+      items = await fs.readdir(dirPath, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    for (const d of items) {
+      if (isHidden(d.name)) continue;
+      const fullPath = path.join(dirPath, d.name);
+      const item = await this.describe(fullPath, d).catch(() => null);
+      if (!item) continue;
+      await onItem(item);
+      if (d.isDirectory()) await this.walk(onItem, fullPath);
     }
   }
 }
 
-module.exports = new FileStorageService();
+const service = new FileStorageService();
+service.fail = fail;
+service.safeName = safeName;
+module.exports = service;

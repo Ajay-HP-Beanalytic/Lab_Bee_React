@@ -423,6 +423,13 @@ fileStorageAPIs(app, io, labbeeUsers);
 const { openaiAPIs } = require("./OpenaiAPI");
 openaiAPIs(app, io, labbeeUsers);
 
+// An enquiry route called without an id (e.g. while a dialog closes) answers 400
+// instead of reaching MySQL as "WHERE id = NaN"
+const MISSING_ENQUIRY_ID = /^\/api\/(enquiries|feasibility\/requests)\/(undefined|null|NaN)(\/|$)/;
+app.use((req, res, next) =>
+  MISSING_ENQUIRY_ID.test(req.path) ? res.status(400).json({ error: "Enquiry id missing" }) : next(),
+);
+
 // Feasibility Automation APIs:
 const { feasibilityAPIs } = require("./FeasibilityAutomation/FeasibilityAPI");
 feasibilityAPIs(app);
@@ -452,6 +459,10 @@ testTypesAPIs(app);
 
 const { testNameLinksAPIs } = require("./FeasibilityAutomation/TestNameLinksAPI");
 testNameLinksAPIs(app);
+
+// Standards library (PDFs in Org Documents → Standards)
+const { standardsAPIs } = require("./FeasibilityAutomation/standards/StandardsAPI");
+standardsAPIs(app);
 
 //Backend connection to acess bea_marketing_APIs:
 const {

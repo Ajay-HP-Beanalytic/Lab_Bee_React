@@ -889,7 +889,7 @@ export default function RfqRequestDetails({ requestId, open, onClose, onChanged 
           </>
         )}
 
-        {r && tab === "tests" && <TestLinesEditor requestId={requestId} readOnly={!!STAGES[r.stage]?.closed} onChanged={load} />}
+        {r && requestId && tab === "tests" && <TestLinesEditor requestId={requestId} readOnly={!!STAGES[r.stage]?.closed} onChanged={load} />}
 
         {r && tab === "emails" && (
           <>

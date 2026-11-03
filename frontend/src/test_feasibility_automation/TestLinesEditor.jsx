@@ -172,6 +172,7 @@ export default function TestLinesEditor({ requestId, readOnly, onChanged }) {
   const previewTimer = useRef(null);
 
   const load = async () => {
+    if (!requestId) return; // dialog closing
     try {
       const res = await axios.get(`${serverBaseAddress}/api/enquiries/${requestId}/test-lines`);
       setData(res.data);
