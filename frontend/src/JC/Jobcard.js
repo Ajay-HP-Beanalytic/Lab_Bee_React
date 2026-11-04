@@ -1,14 +1,27 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useMemo, useState } from "react";
 import {
+  Alert,
   Box,
-  Typography,
   Button,
-  Tooltip,
   Card,
+  Chip,
+  CircularProgress,
+  Divider,
+  Stack,
   Step,
-  Stepper,
   StepButton,
+  StepLabel,
+  Stepper,
+  Tooltip,
+  Typography,
 } from "@mui/material";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
+import ChevronRightIcon from "@mui/icons-material/ChevronRight";
+import SaveIcon from "@mui/icons-material/Save";
+import UploadFileIcon from "@mui/icons-material/UploadFile";
+import HistoryIcon from "@mui/icons-material/History";
+import EventRepeatIcon from "@mui/icons-material/EventRepeat";
 
 import { toast } from "react-toastify";
 import axios from "axios";
@@ -16,8 +29,7 @@ import dayjs from "dayjs";
 import { io } from "socket.io-client";
 
 import { serverBaseAddress } from "../Pages/APIPage";
-import { useParams } from "react-router-dom";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { UserContext } from "../Pages/UserContext";
 
 import useJobCardStore from "./stores/jobCardStore";
@@ -26,214 +38,138 @@ import TS1JCStepOne from "./TS1StepOne";
 import TS1JCStepTwo from "./TS1StepTwo";
 import TS1JCStepThree from "./TS1StepThree";
 import SRFImportDialog from "../components/SRFImportDialog";
+import AuditHistoryDialog from "../components/AuditHistoryDialog";
 
-// const Jobcard = () => {
+export const JC_STATUS_COLORS = {
+  "Open": "warning",
+  "Running": "info",
+  "Test Completed": "secondary",
+  "Closed": "success",
+};
+
+const STEPS = ["SRF Form", "Tests Performed", "JC Status & Reports"];
+
+const filled = (rows, field) => (rows || []).filter((r) => String(r?.[field] ?? "").trim()).length;
+
+// "2025-26/10" for a date
+const finYearOf = (date) => {
+  const year = date.year();
+  const month = date.month() + 1;
+  const short = (y) => (y % 100).toString().padStart(2, "0");
+  return month > 3 ? `${year}-${short(year + 1)}/${month}` : `${year - 1}-${short(year)}/${month}`;
+};
+
+// A create-mode draft left in the browser from an earlier visit
+const draftOf = (s) =>
+  !s.editJc && (String(s.companyName || "").trim() || filled(s.eutRows, "nomenclature") || filled(s.testRows, "test") || filled(s.testDetailsRows, "testName"))
+    ? { company: String(s.companyName || "").trim() }
+    : null;
+
 const Jobcard = () => {
   const jobcardStore = useJobCardStore();
-  // Select stable store actions for effects to avoid depending on the whole store
-  const setJcCreatedBy = useJobCardStore((s) => s.setJcCreatedBy);
-  const setJcLastModifiedBy = useJobCardStore((s) => s.setJcLastModifiedBy);
-  const loadAllJobCardData = useJobCardStore((s) => s.loadAllJobCardData);
   const { submitJobCard, isSaving, navigateToDashboard } = useJobCardSubmit();
-
   const navigate = useNavigate();
+  const { loggedInUser, loggedInUserDepartment, loggedInUserRole } = useContext(UserContext);
 
-  const activeStep = jobcardStore.activeStep;
-  const setActiveStep = jobcardStore.setActiveStep;
-  const editJc = jobcardStore.editJc;
-  const setEditJc = jobcardStore.setEditJc;
-  const jcStatus = jobcardStore.jcStatus;
+  const { activeStep, setActiveStep, editJc, jcStatus } = jobcardStore;
 
-  const steps = [
-    "SRF Form",
-    "Test Details & Observations",
-    "JC Status & Reports",
-  ];
-  const totalSteps = steps.length;
-
-  ////////////////////////
-
-  const { loggedInUser, loggedInUserDepartment, loggedInUserRole } =
-    useContext(UserContext);
-
-  const [addNewJcToLastMonth, setAddNewJcToLastMonth] = useState(false);
-
-  const [newJcNumberStringForLastMonth, setNewJcNumberStringForLastMonth] =
-    useState("");
-  const [newSrfNumberForLastMonth, setNewSrfNumberForLastMonth] = useState("");
-
-  // SRF Import Dialog state
+  const [forPreviousMonth, setForPreviousMonth] = useState(false);
   const [srfImportDialogOpen, setSrfImportDialogOpen] = useState(false);
+  const [auditOpen, setAuditOpen] = useState(false);
+  const [draft, setDraft] = useState(null); // an earlier unsaved draft, offered on "new"
+  const [loadError, setLoadError] = useState("");
 
   let { id } = useParams("id");
-  if (!id) {
-    id = "";
-  }
+  if (!id) id = "";
 
-  // Only set these values when creating a NEW job card, not when editing
+  // Load dynamic data (users, chambers, test names) on mount
   useEffect(() => {
-    if (!id) {
-      // CREATE MODE: Set current user as default
-      setJcCreatedBy(loggedInUser);
-      setJcLastModifiedBy(loggedInUser);
-    }
-    // In EDIT mode, these values will be loaded from the database
-  }, [id, loggedInUser, setJcCreatedBy, setJcLastModifiedBy]);
+    useJobCardStore.getState().loadAllJobCardData();
+  }, []);
 
-  // Load dynamic data (users, chambers, test names) on component mount
+  // Refresh the users lists when someone logs in or out (one socket for the page)
   useEffect(() => {
-    loadAllJobCardData();
-  }, [loadAllJobCardData]);
-
-  // Socket.IO: Listen for real-time user login/logout events
-  useEffect(() => {
-    const socket = io(serverBaseAddress, {
-      withCredentials: true,
-      transports: ["websocket", "polling"],
-    });
-
-    // Listen for user login events
-    socket.on("user_logged_in", (data) => {
-      console.log("User logged in:", data.name);
-      // Refresh the users list when a new user logs in
-      jobcardStore.refreshUsers();
-    });
-
-    // Listen for user logout events
-    socket.on("user_logged_out", (data) => {
-      console.log("User logged out:", data.name);
-      // Refresh the users list when a user logs out
-      jobcardStore.refreshUsers();
-    });
-
-    // Cleanup on unmount
+    const socket = io(serverBaseAddress, { withCredentials: true, transports: ["websocket", "polling"] });
+    const refresh = () => useJobCardStore.getState().refreshUsers();
+    socket.on("user_logged_in", refresh);
+    socket.on("user_logged_out", refresh);
     return () => {
-      socket.off("user_logged_in");
-      socket.off("user_logged_out");
+      socket.off("user_logged_in", refresh);
+      socket.off("user_logged_out", refresh);
       socket.disconnect();
     };
-  });
+  }, []);
 
-  // Function to get the current year and month:
-  const getCurrentYearAndMonth = () => {
-    const currentDate = new Date();
-    const currentYear = currentDate.getFullYear();
-    const currentMonth = currentDate.getMonth() + 1; // Adding 1 because months are zero-indexed
-
-    return { currentYear, currentMonth };
+  // The next JC number shown before saving (the server gives the real one on save)
+  const previewNumber = async (previousMonth) => {
+    const finYear = finYearOf(previousMonth ? dayjs().subtract(1, "month") : dayjs());
+    try {
+      const res = await axios.post(`${serverBaseAddress}/api/getJCCount`, { finYear });
+      const next = `${finYear}-${(Number(res.data) + 1).toString().padStart(3, "0")}`;
+      const store = useJobCardStore.getState();
+      store.setJcNumberString(next);
+      store.setSrfNumber(`BEA/TR/SRF/${next}`);
+    } catch (error) {
+      console.error("Error fetching JC count:", error);
+    }
   };
 
-  // Initialize data based on mode (create new or edit existing)
+  const startNew = () => {
+    const store = useJobCardStore.getState();
+    store.resetJobCard();
+    store.setJcCreatedBy(loggedInUser);
+    store.setJcLastModifiedBy(loggedInUser);
+    setForPreviousMonth(false);
+    previewNumber(false);
+  };
+
+  // Edit: load the saved job card. New: offer an earlier draft, or start empty.
   useEffect(() => {
+    const store = useJobCardStore.getState();
     if (id) {
-      // EDIT MODE: Load existing job card from database
+      setDraft(null);
+      setLoadError("");
       axios
         .get(`${serverBaseAddress}/api/jobcard/${id}`)
         .then((res) => {
-          // Load all job card data using the store's built-in method
-          jobcardStore.loadJobCardData(res.data.jobcard);
-
-          // Load table rows if they exist
-          if (res.data.eut_details) {
-            jobcardStore.setEutRows(res.data.eut_details);
-          }
-          if (res.data.tests) {
-            jobcardStore.setTestRows(res.data.tests);
-          }
-          if (res.data.tests_details) {
-            // Convert date strings to dayjs objects
-            const testDetailsWithDates = res.data.tests_details.map((row) => ({
-              ...row,
-              startDate: row.startDate ? dayjs(row.startDate) : null,
-              endDate: row.endDate ? dayjs(row.endDate) : null,
-            }));
-            jobcardStore.setTestDetailsRows(testDetailsWithDates);
-          }
-          if (res.data.attachments) {
-            jobcardStore.setReferanceDocs(res.data.attachments);
-          }
-
-          setEditJc(true);
+          store.loadJobCardData(res.data.jobcard);
+          store.setEutRows(res.data.eut_details?.length ? res.data.eut_details : [{ id: 0, temporary: true }]);
+          store.setTestRows(res.data.tests?.length ? res.data.tests : [{ id: 0, temporary: true }]);
+          store.setTestDetailsRows(
+            res.data.tests_details?.length
+              ? res.data.tests_details.map((row) => ({
+                  ...row,
+                  startDate: row.startDate ? dayjs(row.startDate) : null,
+                  endDate: row.endDate ? dayjs(row.endDate) : null,
+                }))
+              : [{ id: 0, temporary: true }],
+          );
+          store.setReferanceDocs(res.data.attachments || []);
+          store.setEditJc(true);
+          store.setActiveStep(0);
         })
         .catch((error) => {
           console.error(error);
-          toast.error("Failed to load job card");
+          setLoadError(error.response?.status === 404 ? "This job card no longer exists." : "Could not load the job card.");
         });
     } else {
-      // CREATE MODE: Reset store and generate new JC number
-      // IMPORTANT: Clear all old data from localStorage first
-      jobcardStore.resetJobCard();
-
-      const { currentYear, currentMonth } = getCurrentYearAndMonth();
-
-      let finYear = "";
-
-      const shortNextYear = ((currentYear + 1) % 100)
-        .toString()
-        .padStart(2, "0");
-      const shortCurrentYear = (currentYear % 100).toString().padStart(2, "0");
-
-      if (currentMonth > 3) {
-        // April to December: Current FY (e.g., Oct 2025 → 2025-26)
-        finYear = `${currentYear}-${shortNextYear}/${currentMonth}`;
+      const earlier = draftOf(store);
+      if (earlier) {
+        setDraft(earlier);
+        previewNumber(false);
       } else {
-        // January to March: Previous FY (e.g., Feb 2025 → 2024-25)
-        finYear = `${currentYear - 1}-${shortCurrentYear}/${currentMonth}`;
+        startNew();
       }
-
-      //fetch the latest jcnumber count
-      const fetchJCCount = async () => {
-        axios
-          .post(`${serverBaseAddress}/api/getJCCount`, { finYear })
-          .then((res) => {
-            if (res.status === 200) {
-              const count = res.data;
-
-              //generate jcnumber dynamically
-              const dynamicJcNumberString = `${finYear}-${(count + 1)
-                .toString()
-                .padStart(3, "0")}`;
-
-              jobcardStore.setJcNumberString(dynamicJcNumberString);
-
-              //generate srf number
-              jobcardStore.setSrfNumber(`BEA/TR/SRF/${dynamicJcNumberString}`);
-            }
-            if (res.status === 500) {
-              console.log(res.status);
-            }
-          })
-          .catch((error) => {
-            console.error("❌ [Jobcard.js] Error fetching JC count:", error);
-          });
-      };
-
-      fetchJCCount();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]); // Only depend on id
+  }, [id]);
 
-  //Add color to the JC Status based on the JC Status:
-  // derive color from status (no setState inside effects/memo)
-  const mapJCStatusColor = {
-    "Open": "#ff5722",
-    "Running": "#2196f3",
-    "Closed": "#4caf50",
-    "Test Completed": "#800000",
-  };
-  const jcStatusStringColor = mapJCStatusColor[jcStatus] ?? "#000000";
-
-  // To submit the Job-card data and store it in a database:
   const handleSubmitJobcard = async () => {
-    // Get form data from store
     const formData = jobcardStore.getFormData();
-
-    // Add additional fields
     formData.jcNumber = jobcardStore.jcNumberString;
     formData.srfNumber = jobcardStore.srfNumber;
     formData.lastModifiedBy = loggedInUser;
 
-    // Submit using the hook
     const result = await submitJobCard(
       formData,
       jobcardStore.eutRows,
@@ -241,414 +177,266 @@ const Jobcard = () => {
       jobcardStore.testDetailsRows,
       loggedInUserDepartment,
       loggedInUserRole,
-      id
+      id,
+      { forPreviousMonth },
     );
 
     if (result.success) {
-      // Update store with the actual JC number returned from backend
-      if (result.jcNumber) {
-        jobcardStore.setJcNumberString(result.jcNumber);
-      }
-
-      // Clear persisted data from localStorage after successful submission
       jobcardStore.resetJobCard();
-
-      // Navigate to dashboard
       navigateToDashboard();
+    } else if (result.step !== undefined) {
+      setActiveStep(result.step);
+    } else if (result.created && result.createdId) {
+      // Created, but its rows failed: continue on the saved job card, not a second new one
+      navigate(`/jobcard/${result.createdId}`);
     }
   };
 
-  //Function to add new jc to the last month:
+  // Administration: number a late job card in the previous month
   const handleAddJcForPreviousMonth = async () => {
-    try {
-      const response = await axios.get(
-        `${serverBaseAddress}/api/getPreviousMonthJC`
-      );
-      const lastJCNumber = response.data[0]?.jc_number;
-      if (lastJCNumber) {
-        //Extract the number part from the last jc number:
-        const lastJCNumberArray = lastJCNumber.split("-");
-
-        // Extract year parts (handle both old and new formats)
-        const firstYear = lastJCNumberArray[0]; // e.g., "2025"
-        const secondPart = lastJCNumberArray[1]; // e.g., "2026/10" or "26/10"
-
-        // Convert to short format if it's in old format (4 digits)
-        let shortSecondYear;
-        if (secondPart.includes("/")) {
-          const [yearPart, monthPart] = secondPart.split("/");
-          // Check if year is in old format (4 digits) or new format (2 digits)
-          if (yearPart.length === 4) {
-            // Old format: convert 2026 to 26
-            shortSecondYear = (parseInt(yearPart) % 100)
-              .toString()
-              .padStart(2, "0");
-          } else {
-            // Already in new format
-            shortSecondYear = yearPart;
-          }
-          // Reconstruct with short format
-          const finYearMonth = `${firstYear}-${shortSecondYear}/${monthPart}`;
-
-          const jcNumberPart = lastJCNumberArray[2];
-          const jcNumberToIncrement = parseInt(jcNumberPart, 10);
-
-          // Increment the JC number
-          const newJcNumber = jcNumberToIncrement + 1;
-          const newJcNumberPadded = newJcNumber.toString().padStart(3, "0");
-
-          // Construct the new JC number in short format
-          const newJCNumberForLastMonth = `${finYearMonth}-${newJcNumberPadded}`;
-
-          toast.info(
-            "Last JC Number for Previous Month: " +
-              lastJCNumber +
-              "\n" +
-              "New JC Number for Previous Month: " +
-              newJCNumberForLastMonth
-          );
-          setAddNewJcToLastMonth(true);
-          jobcardStore.setJcNumberString(newJCNumberForLastMonth);
-          jobcardStore.setSrfNumber(`BEA/TR/SRF/${newJCNumberForLastMonth}`);
-          setNewJcNumberStringForLastMonth(newJCNumberForLastMonth);
-          setNewSrfNumberForLastMonth(`BEA/TR/SRF/${newJCNumberForLastMonth}`);
-        } else {
-          toast.error("Error: Invalid JC Number format");
-        }
-      } else {
-        toast.error("Error: Last JC Number of Previous Month not found");
-      }
-    } catch (error) {
-      console.error("Error fetching last JC number of previous month:", error);
-    }
+    const next = !forPreviousMonth;
+    setForPreviousMonth(next);
+    await previewNumber(next);
+    toast.info(next ? "This job card will be numbered in the previous month" : "Back to this month's numbering");
   };
 
-  // Go to next step or handle form submit on last step
-  const handleNext = () => {
-    if (activeStep === totalSteps - 1) {
-      // Handle form submission here
-      handleSubmitJobcard();
-    } else {
-      setActiveStep(activeStep + 1);
-    }
-  };
-
-  const handleCancel = () => {
-    setActiveStep(Math.max(activeStep - 1, 0));
-  };
-
-  const handleGoToJCDashboard = () => {
-    navigate("/jobcard_dashboard");
-  };
-
-  //Import SRF data and map into SRF fields
-  const handleImportSRFData = () => {
-    setSrfImportDialogOpen(true);
-  };
-
-  /**
-   * Handle SRF data import - populate form fields with extracted data
-   */
+  // Map SRF document data into the form
   const handleSRFDataImport = (extractedData) => {
-    // Populate customer information
+    const store = useJobCardStore.getState();
     if (extractedData.srfDate) {
-      // Convert date string to dayjs object
-      // Support multiple date formats commonly found in DOCX files
-      const dateFormats = [
-        "DD-MM-YYYY",
-        "DD/MM/YYYY",
-        "YYYY-MM-DD",
-        "DD.MM.YYYY",
-        "D-M-YYYY",
-        "D/M/YYYY",
-      ];
-
-      let parsedDate = null;
-      for (const format of dateFormats) {
-        const testDate = dayjs(extractedData.srfDate, format, true);
-        if (testDate.isValid()) {
-          parsedDate = testDate;
+      const formats = ["DD-MM-YYYY", "DD/MM/YYYY", "YYYY-MM-DD", "DD.MM.YYYY", "D-M-YYYY", "D/M/YYYY"];
+      let parsed = null;
+      for (const format of formats) {
+        const d = dayjs(extractedData.srfDate, format, true);
+        if (d.isValid()) {
+          parsed = d;
           break;
         }
       }
+      if (!parsed) parsed = dayjs(extractedData.srfDate);
+      if (parsed?.isValid()) store.setSrfDate(parsed);
+      else console.warn("Could not read the SRF date:", extractedData.srfDate);
+    }
+    const setters = {
+      companyName: store.setCompanyName,
+      companyAddress: store.setCompanyAddress,
+      customerName: store.setCustomerName,
+      testWitnessedBy: store.setTestWitnessedBy,
+      customerEmail: store.setCustomerEmail,
+      customerNumber: store.setCustomerNumber,
+      projectName: store.setProjectName,
+      testInstructions: store.setTestInstructions,
+      poNumber: store.setPoNumber,
+      testCategory: store.setTestCategory,
+      testDiscipline: store.setTestDiscipline,
+      typeOfRequest: store.setTypeOfRequest,
+      sampleCondition: store.setSampleCondition,
+      reportType: store.setReportType,
+    };
+    Object.entries(setters).forEach(([key, set]) => extractedData[key] && set(extractedData[key]));
+    if (Array.isArray(extractedData.eutDetails)) store.setEutRows(extractedData.eutDetails);
+    if (Array.isArray(extractedData.testDetails)) store.setTestRows(extractedData.testDetails);
 
-      // If none of the specific formats worked, try default parsing
-      if (!parsedDate) {
-        parsedDate = dayjs(extractedData.srfDate);
-      }
-
-      // Only set if we have a valid date
-      if (parsedDate && parsedDate.isValid()) {
-        jobcardStore.setSrfDate(parsedDate);
-      } else {
-        console.warn("⚠️ Could not parse srfDate:", extractedData.srfDate);
-      }
-    }
-    if (extractedData.companyName) {
-      jobcardStore.setCompanyName(extractedData.companyName);
-    }
-    if (extractedData.companyAddress) {
-      jobcardStore.setCompanyAddress(extractedData.companyAddress);
-    }
-    if (extractedData.customerName) {
-      jobcardStore.setCustomerName(extractedData.customerName);
-    }
-    if (extractedData.testWitnessedBy) {
-      jobcardStore.setTestWitnessedBy(extractedData.testWitnessedBy);
-    }
-    if (extractedData.customerEmail) {
-      jobcardStore.setCustomerEmail(extractedData.customerEmail);
-    }
-    if (extractedData.customerNumber) {
-      jobcardStore.setCustomerNumber(extractedData.customerNumber);
-    }
-
-    // Populate project and test information
-    if (extractedData.projectName) {
-      jobcardStore.setProjectName(extractedData.projectName);
-    }
-    if (extractedData.testInstructions) {
-      jobcardStore.setTestInstructions(extractedData.testInstructions);
-    }
-    if (extractedData.poNumber) {
-      jobcardStore.setPoNumber(extractedData.poNumber);
-    }
-    if (extractedData.testCategory) {
-      jobcardStore.setTestCategory(extractedData.testCategory);
-    }
-    if (extractedData.testDiscipline) {
-      jobcardStore.setTestDiscipline(extractedData.testDiscipline);
-    }
-    if (extractedData.typeOfRequest) {
-      jobcardStore.setTypeOfRequest(extractedData.typeOfRequest);
-    }
-    if (extractedData.sampleCondition) {
-      jobcardStore.setSampleCondition(extractedData.sampleCondition);
-    }
-    if (extractedData.reportType) {
-      jobcardStore.setReportType(extractedData.reportType);
-    }
-
-    // Populate EUT details table if available
-    if (extractedData.eutDetails && Array.isArray(extractedData.eutDetails)) {
-      jobcardStore.setEutRows(extractedData.eutDetails);
-    }
-
-    // Populate Test details table if available
-    if (extractedData.testDetails && Array.isArray(extractedData.testDetails)) {
-      jobcardStore.setTestRows(extractedData.testDetails);
-    }
-
-    // Count imported items
-    const fieldCount = Object.keys(extractedData).filter(
-      (key) => key !== "eutDetails" && key !== "testDetails"
-    ).length;
-    const eutCount = extractedData.eutDetails
-      ? extractedData.eutDetails.length
-      : 0;
-    const testCount = extractedData.testDetails
-      ? extractedData.testDetails.length
-      : 0;
-
-    // Build success message
-    let message = `Successfully imported ${fieldCount} field(s)`;
-    if (eutCount > 0) {
-      message += `, ${eutCount} EUT row(s)`;
-    }
-    if (testCount > 0) {
-      message += `, ${testCount} Test row(s)`;
-    }
-    message += " from SRF document";
-
-    toast.success(message, {
-      position: "top-center",
-      autoClose: 4000,
-    });
+    const fieldCount = Object.keys(extractedData).filter((k) => k !== "eutDetails" && k !== "testDetails").length;
+    const eutCount = extractedData.eutDetails?.length || 0;
+    const testCount = extractedData.testDetails?.length || 0;
+    toast.success(
+      `Imported ${fieldCount} field(s)${eutCount ? `, ${eutCount} EUT row(s)` : ""}${testCount ? `, ${testCount} test row(s)` : ""} from the SRF`,
+      { position: "top-center", autoClose: 4000 },
+    );
   };
 
-  //Button style options:
-  const buttonStyle = {
-    borderRadius: 1,
-    bgcolor: "orange",
-    color: "white",
-    borderColor: "black",
-    padding: { xs: "8px 16px", md: "6px 12px" },
-    fontSize: { xs: "0.875rem", md: "1rem" },
-    mr: 1,
-  };
+  // What each step holds, shown under its label
+  const stepInfo = useMemo(() => {
+    const eut = filled(jobcardStore.eutRows, "nomenclature");
+    const tests = filled(jobcardStore.testRows, "test");
+    const performed = (jobcardStore.testDetailsRows || []).filter((r) => String(r?.testName ?? "").trim());
+    const ended = performed.filter((r) => r.endDate).length;
+    const reports = performed.filter((r) => String(r.reportNumber ?? "").trim()).length;
+    return [
+      `${eut} EUT · ${tests} test${tests === 1 ? "" : "s"}`,
+      performed.length ? `${performed.length} test${performed.length === 1 ? "" : "s"} · ${ended} ended` : "None yet",
+      performed.length ? `${reports}/${performed.length} reports numbered` : jcStatus || "Open",
+    ];
+  }, [jobcardStore.eutRows, jobcardStore.testRows, jobcardStore.testDetailsRows, jcStatus]);
+
+  const stepIncomplete = [!jobcardStore.jcNote1Checked || !jobcardStore.jcNote2Checked || !String(jobcardStore.companyName || "").trim(), false, false];
+
+  const isAdmin = loggedInUserDepartment === "Administration";
+  const lastStep = activeStep === STEPS.length - 1;
+
+  if (loadError) {
+    return (
+      <Box p={2}>
+        <Alert severity="error" action={<Button onClick={() => navigate("/jobcard_dashboard")}>Back to job cards</Button>}>
+          {loadError}
+        </Alert>
+      </Box>
+    );
+  }
 
   return (
-    <Box sx={{ pb: "120px" }}>
-      {/* Navigation Buttons */}
-      <Box
-        sx={{
-          position: "fixed",
-          bottom: 0,
-          left: 0,
-          right: 0,
-          p: 2,
-          bgcolor: "background.paper",
-          boxShadow:
-            "0px -2px 4px -1px rgba(0,0,0,0.2), 0px -4px 5px 0px rgba(0,0,0,0.14), 0px -1px 10px 0px rgba(0,0,0,0.12)", // Shadow on top
-          zIndex: (theme) => theme.zIndex.appBar, // Use a standard z-index
-          display: "flex",
-          justifyContent: "space-between",
-        }}
-      >
-        <Box>
-          {loggedInUserDepartment === "Administration" && !editJc && (
-            <Tooltip title="Add JC for previous month">
-              <Button
-                sx={buttonStyle}
-                variant="contained"
-                onClick={handleAddJcForPreviousMonth}
-              >
-                Add JC
+    <Box sx={{ pb: "96px" }}>
+      {/* Summary */}
+      <Card variant="outlined" sx={{ p: { xs: 1.5, md: 2 }, mb: 1.5 }}>
+        <Box display="flex" alignItems="flex-start" gap={2} flexWrap="wrap">
+          <Box flex={1} minWidth={240}>
+            <Box display="flex" alignItems="center" gap={1} flexWrap="wrap">
+              <Typography variant="h5" fontWeight={700} color="#003366">
+                {editJc ? "TS1 Job Card" : "New TS1 Job Card"}
+              </Typography>
+              {editJc && <Chip size="small" color={JC_STATUS_COLORS[jcStatus] || "default"} label={jcStatus || "Open"} />}
+              {forPreviousMonth && <Chip size="small" color="warning" variant="outlined" icon={<EventRepeatIcon />} label="Previous month" />}
+            </Box>
+            <Stack direction="row" divider={<Divider orientation="vertical" flexItem />} gap={1.5} mt={0.75} flexWrap="wrap">
+              <Typography variant="body2">
+                <Box component="span" color="text.secondary">
+                  JC{" "}
+                </Box>
+                <b>{jobcardStore.jcNumberString || "…"}</b>
+                {!editJc && (
+                  <Tooltip title="The number is confirmed when you save (someone else may save first)">
+                    <Box component="span" color="text.secondary">
+                      {" "}
+                      (next)
+                    </Box>
+                  </Tooltip>
+                )}
+              </Typography>
+              <Typography variant="body2">
+                <Box component="span" color="text.secondary">
+                  SRF{" "}
+                </Box>
+                {jobcardStore.srfNumber || "…"}
+              </Typography>
+              {jobcardStore.companyName && (
+                <Typography variant="body2" fontWeight={600} noWrap maxWidth={320}>
+                  {jobcardStore.companyName}
+                </Typography>
+              )}
+              {editJc && jobcardStore.jcLastModifiedBy && (
+                <Typography variant="body2" color="text.secondary">
+                  Last updated by {jobcardStore.jcLastModifiedBy}
+                </Typography>
+              )}
+            </Stack>
+            <Typography variant="caption" color="text.secondary">
+              ISO/IEC 17025:2017
+            </Typography>
+          </Box>
+          <Stack direction="row" gap={1} flexWrap="wrap">
+            {activeStep === 0 && (
+              <Button variant="outlined" startIcon={<UploadFileIcon />} onClick={() => setSrfImportDialogOpen(true)}>
+                Import SRF
               </Button>
-            </Tooltip>
-          )}
+            )}
+            {editJc && (
+              <Button variant="outlined" startIcon={<HistoryIcon />} onClick={() => setAuditOpen(true)}>
+                History
+              </Button>
+            )}
+            {isAdmin && !editJc && (
+              <Tooltip title="Number this job card in the previous month (late entry)">
+                <Button variant={forPreviousMonth ? "contained" : "outlined"} color="warning" startIcon={<EventRepeatIcon />} onClick={handleAddJcForPreviousMonth}>
+                  Previous month
+                </Button>
+              </Tooltip>
+            )}
+          </Stack>
         </Box>
 
-        <Box>
-          <Button
-            sx={buttonStyle}
-            variant="contained"
-            onClick={handleGoToJCDashboard}
+        {draft && (
+          <Alert
+            severity="info"
+            sx={{ mt: 1.5 }}
+            action={
+              <Stack direction="row" gap={1}>
+                <Button color="inherit" size="small" onClick={() => setDraft(null)}>
+                  Continue draft
+                </Button>
+                <Button color="inherit" size="small" onClick={() => {
+                    setDraft(null);
+                    startNew();
+                  }}>
+                  Start empty
+                </Button>
+              </Stack>
+            }
           >
-            Go to Dashboard
-          </Button>
-
-          {activeStep !== 0 && (
-            <Button sx={buttonStyle} variant="contained" onClick={handleCancel}>
-              Previous
-            </Button>
-          )}
-
-          {activeStep !== totalSteps - 1 && (
-            <Button variant="contained" sx={buttonStyle} onClick={handleNext}>
-              Next
-            </Button>
-          )}
-
-          <Button
-            sx={buttonStyle}
-            variant="contained"
-            onClick={handleSubmitJobcard}
-            disabled={isSaving}
-          >
-            Submit
-          </Button>
-        </Box>
-      </Box>
-
-      <Box sx={{ justifyContent: "space-between", display: "flex" }}>
-        {/* ISO text */}
-        <Typography variant="caption">ISO/IEC 17025:2017 Doc. No.</Typography>
-
-        {/* Import SRF button */}
-        {activeStep === 0 && (
-          <Button
-            sx={buttonStyle}
-            variant="contained"
-            onClick={handleImportSRFData}
-          >
-            Import SRF Data
-          </Button>
+            You have an unsaved job card from earlier{draft.company ? ` for ${draft.company}` : ""}.
+          </Alert>
         )}
-      </Box>
 
-      <Card sx={{ width: "100%", mt: "10px", mb: "10px" }}>
-        <Stepper activeStep={activeStep} alternativeLabel nonLinear>
-          {steps.map((label, index) => (
-            <Step key={label} sx={{ mt: "10px", mb: "10px" }}>
+        <Stepper activeStep={activeStep} nonLinear alternativeLabel sx={{ mt: 2 }}>
+          {STEPS.map((label, index) => (
+            <Step key={label} completed={false}>
               <StepButton color="inherit" onClick={() => setActiveStep(index)}>
-                {label}
+                <StepLabel
+                  error={stepIncomplete[index] && activeStep !== index}
+                  optional={
+                    <Typography variant="caption" color="text.secondary">
+                      {stepInfo[index]}
+                    </Typography>
+                  }
+                >
+                  {label}
+                </StepLabel>
               </StepButton>
             </Step>
           ))}
         </Stepper>
       </Card>
 
-      <Card sx={{ p: 2 }}>
-        <Box
-          sx={{
-            display: "flex",
-            flexDirection: { xs: "column", sm: "row" }, // Column layout on small screens, row on larger
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: 2, // Spacing between items
-          }}
-        >
-          <Typography
-            variant="body1"
-            sx={{
-              fontWeight: "bold",
-              textAlign: { xs: "center", sm: "left" },
-            }}
-          >
-            <span>JC Number:</span>
-            <Typography
-              component="span"
-              variant="h6"
-              sx={{ color: "#003399", fontWeight: "bold", ml: 1 }}
-            >
-              {addNewJcToLastMonth
-                ? newJcNumberStringForLastMonth
-                : jobcardStore.jcNumberString}
-            </Typography>
-          </Typography>
-
-          <Typography
-            variant="body1"
-            sx={{
-              fontWeight: "bold",
-              textAlign: { xs: "center", sm: "left" },
-            }}
-          >
-            <span>SRF Number:</span>
-
-            <Typography
-              component="span"
-              variant="h6"
-              sx={{ color: "#003399", fontWeight: "bold", ml: 1 }}
-            >
-              {addNewJcToLastMonth
-                ? newSrfNumberForLastMonth
-                : jobcardStore.srfNumber}
-            </Typography>
-          </Typography>
-
-          {editJc && (
-            <Typography
-              variant="body1"
-              sx={{
-                fontWeight: "bold",
-                textAlign: { xs: "center", sm: "left" },
-              }}
-            >
-              <span>JC Status:</span>
-              <Typography
-                component="span"
-                variant="h6"
-                sx={{ color: jcStatusStringColor, fontWeight: "bold", ml: 1 }}
-              >
-                {jobcardStore.jcStatus}
-              </Typography>
-            </Typography>
-          )}
-        </Box>
-      </Card>
-
       {activeStep === 0 && <TS1JCStepOne />}
       {activeStep === 1 && <TS1JCStepTwo />}
       {activeStep === 2 && <TS1JCStepThree />}
 
-      {/* SRF Import Dialog */}
-      <SRFImportDialog
-        open={srfImportDialogOpen}
-        onClose={() => setSrfImportDialogOpen(false)}
-        onImport={handleSRFDataImport}
-      />
+      {/* Actions */}
+      <Box
+        sx={{
+          position: "fixed",
+          bottom: 0,
+          left: 0,
+          right: 0,
+          px: 2,
+          py: 1.25,
+          bgcolor: "background.paper",
+          borderTop: 1,
+          borderColor: "divider",
+          boxShadow: "0 -2px 8px rgba(0,0,0,0.08)",
+          zIndex: (theme) => theme.zIndex.appBar,
+          display: "flex",
+          alignItems: "center",
+          gap: 1,
+        }}
+      >
+        <Button startIcon={<ArrowBackIcon />} onClick={() => navigate("/jobcard_dashboard")}>
+          Job cards
+        </Button>
+        <Box flex={1} />
+        <Typography variant="body2" color="text.secondary" sx={{ display: { xs: "none", sm: "block" } }}>
+          Step {activeStep + 1} of {STEPS.length}
+        </Typography>
+        <Button variant="outlined" startIcon={<ChevronLeftIcon />} disabled={activeStep === 0} onClick={() => setActiveStep(Math.max(activeStep - 1, 0))}>
+          Previous
+        </Button>
+        {!lastStep && (
+          <Button variant="outlined" endIcon={<ChevronRightIcon />} onClick={() => setActiveStep(activeStep + 1)}>
+            Next
+          </Button>
+        )}
+        <Button
+          variant="contained"
+          startIcon={isSaving ? <CircularProgress size={16} color="inherit" /> : <SaveIcon />}
+          onClick={handleSubmitJobcard}
+          disabled={isSaving || !!draft}
+        >
+          {editJc ? "Save changes" : "Create job card"}
+        </Button>
+      </Box>
+
+      <SRFImportDialog open={srfImportDialogOpen} onClose={() => setSrfImportDialogOpen(false)} onImport={handleSRFDataImport} />
+      {editJc && <AuditHistoryDialog open={auditOpen} onClose={() => setAuditOpen(false)} jcNumber={jobcardStore.jcNumberString} />}
     </Box>
   );
 };

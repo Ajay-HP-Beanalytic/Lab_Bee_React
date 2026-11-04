@@ -70,6 +70,7 @@ export default function JCPreview({
   onEdit,
   editJc,
   jcId,
+  jobcard = null, // the saved bea_jobcards row (report data is taken from it)
 }) {
   const { loggedInUserDepartment, loggedInUserRole } = useContext(UserContext);
 
@@ -89,6 +90,7 @@ export default function JCPreview({
   const [configDialogOpen, setConfigDialogOpen] = useState(false);
   const [pendingReportData, setPendingReportData] = useState(null);
   const [lastReportConfig, setLastReportConfig] = useState(null); // Store last config for Previous button
+  const [reportPrefill, setReportPrefill] = useState(null); // what the report dialog fills in itself
 
   // State for audit history dialog
   const [auditHistoryOpen, setAuditHistoryOpen] = useState(false);
@@ -162,48 +164,56 @@ export default function JCPreview({
     onEdit(item);
   };
 
-  const handleGenerateReport = (rowIndex) => {
-    const currentTestRow = testDetailsRows[rowIndex];
+  // Job card fields for the report, from the saved row (dates stay dates, so the
+  // report formats them itself)
+  const jobcardFields = () => {
+    const j = jobcard || {};
+    return {
+      jcNumber: jcNumber,
+      jcCategory: jcCategory,
+      srfNumber: j.srf_number || "",
+      dcNumber: j.dcform_number || "",
+      poNumber: j.po_number || "",
+      jcOpenDate: j.jc_open_date || "",
+      srfDate: j.srf_date || "",
+      itemReceivedDate: j.item_received_date || "",
+      jcCloseDate: j.jc_closed_date || "",
+      jcStatus: j.jc_status || jcStatus || "",
+      companyName: j.company_name || "",
+      companyAddress: j.company_address || "",
+      customerName: j.customer_name || "",
+      customerEmail: j.customer_email || "",
+      customerNumber: j.customer_number || "",
+      projectName: j.project_name || "",
+      testCategory: j.test_category || "",
+      testDiscipline: j.test_discipline || "",
+      typeOfRequest: j.type_of_request || "",
+      jcCreatedBy: j.jc_created_by || "",
+      testInstructions: j.test_instructions || "",
+      sampleCondition: j.sample_condition || "",
+      reportType: j.report_type || "",
+      observations: j.observations || "",
+    };
+  };
 
-    // Convert primaryJCDetails array to object format
-    const primaryData = {};
-    primaryJCDetails.forEach((detail) => {
-      // Extract the key from the label (e.g., "JC Number: " -> "jcNumber")
-      const key = detail.label.split(": ")[0].trim();
-      primaryData[key] = detail.value;
-    });
+  // Report number, NABL, chambers, logo... filled in from the job card / last issue
+  const loadReportPrefill = async (row) => {
+    setReportPrefill(null);
+    if (!row?.id) return;
+    try {
+      const res = await axios.get(`${serverBaseAddress}/api/ts1/report-context/${row.id}`);
+      setReportPrefill(res.data);
+    } catch (error) {
+      console.error("Error loading report data:", error);
+    }
+  };
+
+  const handleGenerateReport = async (rowIndex) => {
+    const currentTestRow = testDetailsRows[rowIndex];
 
     // Prepare comprehensive report data
     const comprehensiveReportData = {
-      // Primary Job Card Information
-      jcNumber: jcNumber,
-      jcCategory: jcCategory,
-      srfNumber: primaryData["SRF Number"] || "",
-      dcNumber: primaryData["DC Number"] || "",
-      poNumber: primaryData["PO Number"] || "",
-      jcOpenDate: primaryData["JC Open Date"] || "",
-      srfDate: primaryData["SRF Date"] || "",
-      itemReceivedDate: primaryData["Item Received Date"] || "",
-      jcCloseDate: primaryData["JC Close Date"] || "",
-      jcStatus: primaryData["JC Status"] || "",
-
-      // Customer Information
-      companyName: primaryData["Company Name"] || "",
-      companyAddress: primaryData["Company Address"] || "",
-      customerName: primaryData["Customer Name"] || "",
-      customerEmail: primaryData["Customer Email"] || "",
-      customerNumber: primaryData["Customer Number"] || "",
-      projectName: primaryData["Project Name"] || "",
-
-      // Test Configuration
-      testCategory: primaryData["Test Category"] || "",
-      testDiscipline: primaryData["Test Discipline"] || "",
-      typeOfRequest: primaryData["Type of Request"] || "",
-      jcCreatedBy: primaryData["Test Incharge"] || "",
-      testInstructions: primaryData["Test Instructions"] || "",
-      sampleCondition: primaryData["Sample Condition"] || "",
-      reportType: primaryData["Report Type"] || "",
-      observations: primaryData["Observations"] || "",
+      ...jobcardFields(),
 
       // Table Data
       eutRows: eutRows || [],
@@ -224,7 +234,9 @@ export default function JCPreview({
     //   formattedReportData
     // );
 
-    // Store data and open config dialog
+    // Store data and open config dialog (once its prefill is in)
+    setLastReportConfig(null);
+    await loadReportPrefill(currentTestRow);
     setPendingReportData(formattedReportData);
     setConfigDialogOpen(true);
   };
@@ -253,10 +265,30 @@ export default function JCPreview({
       setPreviewFileName(fileName);
       setPreviewModalOpen(true);
 
+      // Record it in the report register (number, ULR, chambers...) for next time
+      const testDetailId = pendingReportData.currentTestRow?.id;
+      if (testDetailId) {
+        axios
+          .post(`${serverBaseAddress}/api/ts1/report-register/${testDetailId}`, {
+            reportNumber: reportConfig.testReportNumber,
+            ulrNumber: reportConfig.reportType === "NABL" ? reportConfig.ulrNumber : "",
+            reportType: reportConfig.reportType,
+            testCode: reportConfig.testCode,
+            issueDate: reportConfig.originalReportIssueDateISO || null,
+            chambers: reportConfig.chambers,
+          })
+          .then((res) => {
+            if (res.data.warning) toast.warning(res.data.warning, { autoClose: 8000 });
+            else toast.success(`Report recorded (version ${res.data.version})`, { autoClose: 2500 });
+          })
+          .catch((error) => console.error("Error recording the report:", error));
+      }
+
       // Don't clear pendingReportData - keep it for Previous button
       // setPendingReportData(null);
     } catch (error) {
       console.error("Error generating report:", error);
+      toast.error("Could not generate the report");
       // Don't clear pending data on error either
     }
   };
@@ -265,6 +297,7 @@ export default function JCPreview({
   const handleReportConfigCancel = () => {
     setConfigDialogOpen(false);
     setPendingReportData(null);
+    setReportPrefill(null);
   };
 
   // Handler for closing preview modal
@@ -376,7 +409,7 @@ export default function JCPreview({
   };
 
   //Handle ESS Test Report Generation:
-  const handleGenerateESSTestReport = () => {
+  const handleGenerateESSTestReport = async () => {
     // Validation: At least one ESS test must be selected
     if (selectedESSTests.length === 0) {
       toast.warning(
@@ -390,44 +423,9 @@ export default function JCPreview({
       .sort((a, b) => a - b)
       .map((index) => testDetailsRows[index]);
 
-    // Convert primaryJCDetails array to object format
-    const primaryData = {};
-    primaryJCDetails.forEach((detail) => {
-      const key = detail.label.split(": ")[0].trim();
-      primaryData[key] = detail.value;
-    });
-
     // Create comprehensive ESS report data
     const comprehensiveReportData = {
-      // Primary Job Card Information
-      jcNumber: jcNumber,
-      jcCategory: jcCategory,
-      srfNumber: primaryData["SRF Number"] || "",
-      dcNumber: primaryData["DC Number"] || "",
-      poNumber: primaryData["PO Number"] || "",
-      jcOpenDate: primaryData["JC Open Date"] || "",
-      srfDate: primaryData["SRF Date"] || "",
-      itemReceivedDate: primaryData["Item Received Date"] || "",
-      jcCloseDate: primaryData["JC Close Date"] || "",
-      jcStatus: primaryData["JC Status"] || "",
-
-      // Customer Information
-      companyName: primaryData["Company Name"] || "",
-      companyAddress: primaryData["Company Address"] || "",
-      customerName: primaryData["Customer Name"] || "",
-      customerEmail: primaryData["Customer Email"] || "",
-      customerNumber: primaryData["Customer Number"] || "",
-      projectName: primaryData["Project Name"] || "",
-
-      // Test Configuration
-      testCategory: primaryData["Test Category"] || "",
-      testDiscipline: primaryData["Test Discipline"] || "",
-      typeOfRequest: primaryData["Type of Request"] || "",
-      jcCreatedBy: primaryData["Test Incharge"] || "",
-      testInstructions: primaryData["Test Instructions"] || "",
-      sampleCondition: primaryData["Sample Condition"] || "",
-      reportType: primaryData["Report Type"] || "",
-      observations: primaryData["Observations"] || "",
+      ...jobcardFields(),
 
       // Table Data
       eutRows: eutRows || [],
@@ -445,6 +443,8 @@ export default function JCPreview({
     const formattedReportData = prepareReportData(comprehensiveReportData);
 
     // Store data and open config dialog
+    setLastReportConfig(null);
+    await loadReportPrefill(essTestRows[0]);
     setPendingReportData(formattedReportData);
     setConfigDialogOpen(true);
   };
@@ -921,6 +921,7 @@ export default function JCPreview({
         onClose={handleReportConfigCancel}
         onConfirm={handleReportConfigConfirm}
         initialConfig={lastReportConfig}
+        prefill={reportPrefill}
         testCategory={pendingReportData?.currentTestRow?.testCategory || ""}
         isVibrationTest={pendingReportData?.isVibrationTest || false}
       />

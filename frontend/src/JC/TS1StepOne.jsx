@@ -94,6 +94,8 @@ export default function TS1StepOne() {
     }
   };
 
+  const notesDone = jobcardStore.jcNote1Checked && jobcardStore.jcNote2Checked;
+
   const theme = useTheme();
   const isSmallScreen = useMediaQuery(theme.breakpoints.down("sm"));
 
@@ -181,13 +183,15 @@ export default function TS1StepOne() {
                   sx={{
                     mt: 1,
                     mb: 1,
-                    padding: 2,
-                    border: "1px solid black",
-                    backgroundColor: "#fff9e6",
+                    p: 2,
+                    borderRadius: 2,
+                    border: 1,
+                    borderColor: notesDone ? "success.light" : "warning.main",
+                    bgcolor: notesDone ? "#f1f8f2" : "#fff9e6",
                   }}
                 >
-                  <Typography variant="h5" sx={{ color: "#d32f2f", mb: 1 }}>
-                    ⚠️ Important Notes - Customer Acknowledgment
+                  <Typography variant="subtitle1" fontWeight={700} sx={{ color: notesDone ? "success.dark" : "#b26a00", mb: 0.5 }}>
+                    {notesDone ? "Customer acknowledgment recorded" : "Customer acknowledgment (required before saving)"}
                   </Typography>
                   {TS1_JC_NOTES.map((note) => (
                     <Grid key={note.value}>

@@ -120,6 +120,36 @@ const compressImage = (
   });
 };
 
+// What was filled in, and what the job card is still missing for this report
+const PrefillNotes = ({ prefill }) => {
+  const last = prefill.last;
+  const sug = prefill.suggested || {};
+  const expired = (sug.chambers || []).filter((c) => c.calibrationExpired);
+  return (
+    <Box sx={{ mb: 2, display: "grid", gap: 1 }}>
+      <Alert severity="info" variant="outlined">
+        {last
+          ? `Filled in from the last issue of this report (v${last.version}, ${last.generatedBy || ""}${
+              last.generatedAt ? `, ${dayjs(last.generatedAt).format("DD-MM-YYYY")}` : ""
+            }). Generating again records version ${last.version + 1}.`
+          : `Filled in from the job card${sug.reportTypeFrom ? `: report type from ${sug.reportTypeFrom}` : ""}${
+              sug.companyLogo ? ", customer logo from Customers" : ""
+            }${(sug.chambers || []).some((c) => c.chamberMake) ? ", chamber make from earlier reports" : ""}.`}
+      </Alert>
+      {prefill.missing?.length > 0 && (
+        <Alert severity="warning">
+          The job card has no {prefill.missing.join(", ").toLowerCase()} for this test. Add them in the job card so the report is complete.
+        </Alert>
+      )}
+      {expired.length > 0 && (
+        <Alert severity="error">
+          Calibration was due before the test for {expired.map((c) => `${c.chamberInfo} (due ${c.calibrationDue})`).join(", ")}.
+        </Alert>
+      )}
+    </Box>
+  );
+};
+
 /**
  * ReportConfigDialogV2 - Multi-step Report Configuration Dialog
  *
@@ -142,6 +172,7 @@ const ReportConfigDialogV2 = ({
   initialConfig = null,
   testCategory = "",
   isVibrationTest = false,
+  prefill = null, // from /api/ts1/report-context: last issue of this report, or suggestions
 }) => {
   const [activeStep, setActiveStep] = useState(0);
   const [testCode, setTestCode] = useState("");
@@ -199,8 +230,8 @@ const ReportConfigDialogV2 = ({
       setTestReportNumber(initialConfig.testReportNumber || "");
       setUlrNumber(initialConfig.ulrNumber || "");
       setOriginalReportIssueDate(
-        initialConfig.originalReportIssueDate
-          ? dayjs(initialConfig.originalReportIssueDate, "Do MMM YYYY")
+        initialConfig.originalReportIssueDateISO
+          ? dayjs(initialConfig.originalReportIssueDateISO)
           : null
       );
       setChambers(
@@ -256,6 +287,33 @@ const ReportConfigDialogV2 = ({
       });
     }
   }, [initialConfig, open, defaultReportType]);
+
+  // A new report (not "Previous") starts from the last issue, else from the job card
+  useEffect(() => {
+    if (!open || initialConfig || !prefill) return;
+    const last = prefill.last;
+    const sug = prefill.suggested || {};
+    setReportType(last?.reportType || sug.reportType || defaultReportType);
+    setTestCode(last?.testCode || "");
+    setTestReportNumber(last?.reportNumber || sug.reportNumber || "");
+    setUlrNumber(last?.ulrNumber || "");
+    setOriginalReportIssueDate(last?.issueDate ? dayjs(last.issueDate) : dayjs());
+    const chambersFrom = last?.chambers?.length ? last.chambers : sug.chambers || [];
+    setChambers(
+      chambersFrom.length
+        ? chambersFrom.map((c) => ({ chamberInfo: c.chamberInfo || "", chamberMake: c.chamberMake || "" }))
+        : [{ chamberInfo: "", chamberMake: "" }]
+    );
+    if (sug.companyLogo) {
+      setImageRequirements((r) => ({ ...r, companyLogo: true }));
+      setImages((prev) => ({
+        ...prev,
+        companyLogo: { name: "Customer logo" },
+        companyLogoPreview: sug.companyLogo,
+        companyLogoBase64: sug.companyLogo,
+      }));
+    }
+  }, [open, initialConfig, prefill, defaultReportType]);
 
   const steps = [
     "Report Info",
@@ -675,6 +733,9 @@ const ReportConfigDialogV2 = ({
       originalReportIssueDate: originalReportIssueDate
         ? originalReportIssueDate.format("Do MMM YYYY")
         : "",
+      originalReportIssueDateISO: originalReportIssueDate
+        ? originalReportIssueDate.format("YYYY-MM-DD")
+        : null,
       chambers, // Array of chamber objects
       // Image requirements - tracks which image types user wants to include
       imageRequirements,
@@ -742,6 +803,7 @@ const ReportConfigDialogV2 = ({
         // Step 1: Report Type
         return (
           <Box>
+            {prefill && <PrefillNotes prefill={prefill} />}
             <Typography variant="h6" gutterBottom>
               Select Report Type
             </Typography>

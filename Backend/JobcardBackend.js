@@ -7,6 +7,8 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 require("dotenv").config(); // Ensure .env is loaded
+const { saveRows, jobcardUser } = require("./ts1/jobcardRows");
+const { ts1ReportAPIs } = require("./ts1/TS1ReportAPI");
 
 // function of jobcard api's:
 function jobcardsAPIs(app, io, labbeeUsers) {
@@ -54,13 +56,6 @@ function jobcardsAPIs(app, io, labbeeUsers) {
     }
   }
 
-  const getCurrentYearAndMonth = () => {
-    const currentDate = new Date();
-    const currentYear = currentDate.getFullYear();
-    const currentMonth = currentDate.getMonth() + 1; // Adding 1 because months are zero-indexed
-
-    return { currentYear, currentMonth };
-  };
 
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -197,7 +192,23 @@ function jobcardsAPIs(app, io, labbeeUsers) {
     process.env.USERS_TO_BE_NOTIFY_ABOUT_TS1_JC_CREATION
   );
 
+  // Financial-year part of a JC number for a date: "2025-26/10"
+  const finYearOf = (date) => {
+    const year = date.year();
+    const month = date.month() + 1;
+    const short = (y) => (y % 100).toString().padStart(2, "0");
+    return month > 3 ? `${year}-${short(year + 1)}/${month}` : `${year - 1}-${short(year)}/${month}`;
+  };
+
+  ts1ReportAPIs(app);
+
   app.post("/api/jobcard", async (req, res) => {
+    let me;
+    try {
+      me = await jobcardUser(req);
+    } catch (err) {
+      return res.status(err.status || 500).json({ message: err.message });
+    }
     const {
       srfDate,
       dcNumber,
@@ -209,7 +220,6 @@ function jobcardsAPIs(app, io, labbeeUsers) {
       sampleCondition,
       typeOfRequest,
       reportType,
-      jcCreatedBy,
       testWitnessedBy,
       jcCategory,
       companyName,
@@ -223,12 +233,11 @@ function jobcardsAPIs(app, io, labbeeUsers) {
       reliabilityReportStatus,
       jcCloseDate,
       observations,
-      jcLastModifiedBy,
       jcNote1Checked,
       jcNote2Checked,
-      loggedInUser,
-      loggedInUserDepartment,
+      forPreviousMonth,
     } = req.body;
+    const loggedInUser = me.user.name;
 
     const formattedSrfDate = srfDate
       ? dayjs(srfDate).format("YYYY-MM-DD")
@@ -257,19 +266,12 @@ function jobcardsAPIs(app, io, labbeeUsers) {
       // Start a transaction
       await connection.beginTransaction();
 
-      // Extract financial year and month part (short format)
-      const { currentYear, currentMonth } = getCurrentYearAndMonth();
-
-      // Calculate short year format (e.g., 2026 → 26)
-      const shortNextYear = ((currentYear + 1) % 100)
-        .toString()
-        .padStart(2, "0");
-      const shortCurrentYear = (currentYear % 100).toString().padStart(2, "0");
-
-      let finYear =
-        currentMonth > 3
-          ? `${currentYear}-${shortNextYear}/${currentMonth}` // e.g., "2025-26/10"
-          : `${currentYear - 1}-${shortCurrentYear}/${currentMonth}`; // e.g., "2024-25/2"
+      // Number from this month, or (Administration only) the previous month for a late entry
+      if (forPreviousMonth && !me.isAdmin) {
+        await connection.rollback();
+        return res.status(403).json({ message: "Only Administration can add a JC to the previous month" });
+      }
+      const finYear = finYearOf(forPreviousMonth ? dayjs().subtract(1, "month") : dayjs()); // e.g. "2025-26/10"
 
       let newSequenceNumber;
 
@@ -287,19 +289,16 @@ function jobcardsAPIs(app, io, labbeeUsers) {
       const [recentJCs] = await connection.query(
         `SELECT jc_number FROM bea_jobcards
          WHERE jc_number LIKE ? OR jc_number LIKE ?
-         ORDER BY jc_number DESC LIMIT 1
          FOR UPDATE`,
         [newFormatPattern, oldFormatPattern]
       );
 
-      if (recentJCs.length > 0) {
-        // Extract the sequence number part from the last job card number
-        const lastJcNumber = recentJCs[0].jc_number;
-        const lastSequence = parseInt(lastJcNumber.split("-")[2], 10);
-        newSequenceNumber = lastSequence + 1;
-      } else {
-        newSequenceNumber = 1;
-      }
+      // Highest sequence as a number ("-999" < "-1000" as text)
+      const lastSequence = Math.max(
+        0,
+        ...recentJCs.map((r) => parseInt(String(r.jc_number).split("-")[2], 10) || 0)
+      );
+      newSequenceNumber = lastSequence + 1;
 
       // Generate the new jcNumber and srfNumber
       const newJcNumber = `${finYear}-${newSequenceNumber
@@ -330,7 +329,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
         notesAcknowledged,
         loggedInUser || "",
         testWitnessedBy || "",
-        jcCategory || "",
+        jcCategory || "TS1",
         companyName || "",
         companyAddress || "",
         customerName || "",
@@ -342,13 +341,15 @@ function jobcardsAPIs(app, io, labbeeUsers) {
         reliabilityReportStatus || "",
         formattedCloseDate || null,
         observations || "",
-        jcLastModifiedBy || loggedInUser,
+        loggedInUser,
       ];
 
-      await connection.query(sql, values);
+      const [inserted] = await connection.query(sql, values);
 
       // Commit the transaction
       await connection.commit();
+      logAuditTrail("bea_jobcards", inserted.insertId, newJcNumber, null, "CREATE", null,
+        { company_name: companyName, project_name: projectName }, loggedInUser, me.role, me.department, req.ip);
 
       const currentTimestampForJCCreation = new Date().toISOString(); // Get the current timestamp
 
@@ -389,6 +390,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
 
       return res.status(200).json({
         message: "Jobcard added successfully",
+        id: inserted.insertId,
         jcNumber: newJcNumber,
         srfNumber: newSrfNumber,
       });
@@ -418,7 +420,18 @@ function jobcardsAPIs(app, io, labbeeUsers) {
   app.delete("/api/jobcard/:id", async (req, res) => {
     const { id } = req.params;
 
+    let me;
+    try {
+      me = await jobcardUser(req);
+    } catch (err) {
+      return res.status(err.status || 500).json({ message: err.message });
+    }
+    if (!me.isAdmin) {
+      return res.status(403).json({ message: "Only Administration can delete job cards" });
+    }
+
     let connection;
+    let files = [];
     try {
       // Establish a connection
       connection = await db.promise().getConnection();
@@ -450,12 +463,26 @@ function jobcardsAPIs(app, io, labbeeUsers) {
       await connection.query("DELETE FROM tests_details WHERE jc_number = ?", [
         jc_number,
       ]);
+      [files] = await connection.query(
+        "SELECT file_path FROM attachments WHERE jc_number = ?",
+        [jc_number]
+      );
+      await connection.query("DELETE FROM attachments WHERE jc_number = ?", [
+        jc_number,
+      ]);
 
       // Delete the main job card
       await connection.query("DELETE FROM bea_jobcards WHERE id = ?", [id]);
 
       // Commit the transaction
       await connection.commit();
+
+      // The attached files go with it (best effort, after the commit)
+      for (const f of files) {
+        fs.unlink(path.resolve(f.file_path), () => {});
+      }
+      logAuditTrail("bea_jobcards", Number(id), jc_number, null, "DELETE", null, null,
+        me.user.name, me.role, me.department, req.ip);
 
       return res.status(200).json({
         message: "TS1 Job-Card and all related data deleted successfully",
@@ -627,7 +654,13 @@ function jobcardsAPIs(app, io, labbeeUsers) {
   // });
   //////////////////////////////////////////////////////////////////////////////////////////
 
-  app.post("/api/jobcard/:id", (req, res) => {
+  app.post("/api/jobcard/:id", async (req, res) => {
+    let me;
+    try {
+      me = await jobcardUser(req);
+    } catch (err) {
+      return res.status(err.status || 500).json({ message: err.message });
+    }
     const {
       jcNumber,
       srfNumber,
@@ -655,11 +688,11 @@ function jobcardsAPIs(app, io, labbeeUsers) {
       reliabilityReportStatus,
       jcCloseDate,
       observations,
-      jcLastModifiedBy,
-      loggedInUser,
-      loggedInUserDepartment,
-      loggedInUserRole,
     } = req.body;
+    // Who is changing it comes from the login, not from the request
+    const loggedInUser = me.user.name;
+    const loggedInUserDepartment = me.department;
+    const loggedInUserRole = me.role;
 
     const formattedSrfDate = srfDate ? convertDateTime(srfDate) : null;
     const formattedItemReceivedDate = itemReceivedDate
@@ -683,7 +716,26 @@ function jobcardsAPIs(app, io, labbeeUsers) {
       }
 
       const existingRow = fetchResult[0] || null;
+      if (!existingRow || String(existingRow.id) !== String(req.params.id)) {
+        return res.status(404).json({ message: "Jobcard not found" });
+      }
       const existingJcStatus = existingRow?.jc_status;
+      // The TS1 form doesn't send these; keep what is stored
+      const reliabilityStatusToSave =
+        reliabilityReportStatus === undefined ? existingRow.reliability_report_status : reliabilityReportStatus;
+      const categoryToSave = jcCategory || existingRow.jc_category;
+
+      // TS1 Testing (other than the Lab Manager) can't change a closed JC
+      if (
+        existingJcStatus === "Closed" &&
+        loggedInUserDepartment === "TS1 Testing" &&
+        loggedInUserRole !== "Lab Manager"
+      ) {
+        return res.status(403).json({
+          message: "This job card is closed. Only the Lab Manager can change it.",
+          error: "UNAUTHORIZED_STATUS_CHANGE",
+        });
+      }
 
       // Backend validation: Only Lab Manager can CHANGE status TO "Closed"
       // Allow if status is already "Closed" and not being changed
@@ -749,7 +801,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
         { newVal: reportType, oldVal: existingRow?.report_type },
         // jc_created_by is immutable - not included in change detection
         { newVal: testWitnessedBy, oldVal: existingRow?.test_witnessed_by },
-        { newVal: jcCategory, oldVal: existingRow?.jc_category },
+        { newVal: categoryToSave, oldVal: existingRow?.jc_category },
         { newVal: companyName, oldVal: existingRow?.company_name },
         { newVal: companyAddress, oldVal: existingRow?.company_address },
         { newVal: customerName, oldVal: existingRow?.customer_name },
@@ -759,7 +811,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
         { newVal: testInstructions, oldVal: existingRow?.test_instructions },
         { newVal: jcStatus, oldVal: existingRow?.jc_status },
         {
-          newVal: reliabilityReportStatus,
+          newVal: reliabilityStatusToSave,
           oldVal: existingRow?.reliability_report_status,
         },
         {
@@ -848,7 +900,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
         typeOfRequest,
         reportType,
         testWitnessedBy,
-        jcCategory,
+        categoryToSave,
         companyName,
         companyAddress,
         customerName,
@@ -857,7 +909,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
         projectName,
         testInstructions,
         jcStatus,
-        reliabilityReportStatus,
+        reliabilityStatusToSave,
         formattedCloseDate,
         observations,
         lastUpdatedByValue,
@@ -950,7 +1002,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
             },
             {
               name: "jc_category",
-              newVal: jcCategory,
+              newVal: categoryToSave,
               oldVal: existingRow.jc_category,
             },
             {
@@ -995,7 +1047,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
             },
             {
               name: "reliability_report_status",
-              newVal: reliabilityReportStatus,
+              newVal: reliabilityStatusToSave,
               oldVal: existingRow.reliability_report_status,
             },
             {
@@ -1245,7 +1297,8 @@ function jobcardsAPIs(app, io, labbeeUsers) {
 
       let existingIds = result.map((item) => item.id);
       let toDelete = existingIds.filter((id) => !eutRowIds.includes(id));
-      let toAddCount = eutRowIds.length - existingIds.length;
+      // Rows the screen has that the table doesn't (new rows have no id yet)
+      let toAddCount = eutRowIds.filter((id) => !existingIds.includes(id)).length;
 
       try {
         // Delete rows
@@ -1497,7 +1550,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
 
   // To Insert or delete Tests based on test name:
   app.post("/api/tests_sync/names/", (req, res) => {
-    let { testRowIds, jcNumberString } = req.body;
+    let { testRowIds, jcNumberString, loggedInUser } = req.body;
 
     // Check if testRowIds and jcNumberString are defined
     if (!testRowIds || !jcNumberString) {
@@ -1513,7 +1566,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
 
       let existingIds = result.map((item) => item.id);
       let toDelete = existingIds.filter((id) => !testRowIds.includes(id));
-      let toAddCount = testRowIds.length - existingIds.length;
+      let toAddCount = testRowIds.filter((id) => !existingIds.includes(id)).length;
 
       try {
         // Delete rows
@@ -1738,7 +1791,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
 
   // To Insert or delete Test Details based on test name:
   app.post("/api/testdetails_sync/names/", async (req, res) => {
-    let { testDetailsRowIds, jcNumberString } = req.body;
+    let { testDetailsRowIds, jcNumberString, loggedInUser } = req.body;
 
     // Check if testDetailsRowIds and jcNumberString are defined
     if (!testDetailsRowIds || !jcNumberString) {
@@ -1756,7 +1809,9 @@ function jobcardsAPIs(app, io, labbeeUsers) {
       let toDelete = existingIds.filter(
         (id) => !testDetailsRowIds.includes(id)
       );
-      let toAddCount = testDetailsRowIds.length - existingIds.length;
+      let toAddCount = testDetailsRowIds.filter(
+        (id) => !existingIds.includes(id)
+      ).length;
 
       try {
         // Delete rows
@@ -2222,6 +2277,48 @@ function jobcardsAPIs(app, io, labbeeUsers) {
   });
 
   ////////////////////////////////////////////////////////////////////////////////////////
+  // Save the EUT, test and tests-performed rows of a TS1 job card in one go (one
+  // transaction, audited, with the logged-in user). Replaces the sync + per-row calls.
+  app.post("/api/ts1/jobcard-rows", async (req, res) => {
+    try {
+      const me = await jobcardUser(req);
+      const { jcNumber, eut, tests, testDetails } = req.body || {};
+      if (!jcNumber) return res.status(400).json({ message: "jcNumber is required" });
+      const result = await saveRows(db, me, jcNumber, { eut, tests, testDetails });
+
+      // Same notifications as the per-row save: report delivery instructions and report status
+      const notifyOn = {
+        testReportInstructions: {
+          roles: ["Lab Manager", "Reports & Scrutiny Manager", "Quality Engineer"],
+          values: ["Send Draft Report Only", "Send Final Report", "Hold Report"],
+          event: "jobcard_report_delivery_notification",
+        },
+        reportStatus: {
+          roles: ["Lab Manager", "Accounts Admin", "Accounts Executive"],
+          values: ["Draft Report Sent", "Final Report Sent", "On-Hold", "Not Sent"],
+          event: "jobcard_report_status_notification",
+        },
+      };
+      const receivedAt = new Date().toISOString();
+      for (const change of result.changes) {
+        const rule = notifyOn[change.field];
+        if (!rule || !rule.values.includes(change.to)) continue;
+        const message = `"${change.to}" of ${change.row.testName || "a test"} of TS1 JC ${jcNumber}, by ${me.user.name}`;
+        for (const socketId in labbeeUsers) {
+          const user = labbeeUsers[socketId];
+          if (rule.roles.includes(user.role) && user.name !== me.user.name) {
+            io.to(socketId).emit(rule.event, { message, sender: me.user.name, receivedAt });
+          }
+        }
+        saveNotificationToDatabase(message, receivedAt, rule.roles, me.user.name);
+      }
+
+      res.json({ message: "Saved", ids: result.ids });
+    } catch (err) {
+      if (!err.status) console.error("Error saving TS1 job card rows:", err);
+      res.status(err.status || 500).json({ message: err.status ? err.message : "Could not save the job card rows" });
+    }
+  });
 
   //To fetch the jcnumber from the table 'tests_details'
   app.get("/api/gettestdetails", (req, res) => {
@@ -3296,7 +3393,9 @@ function jobcardsAPIs(app, io, labbeeUsers) {
       cb(null, uploadDir);
     },
     filename: (req, file, cb) => {
-      cb(null, `${Date.now()}_${file.originalname}`);
+      // No folders or odd characters from the uploaded name
+      const safe = path.basename(file.originalname).replace(/[^\w.\- ()]+/g, "_");
+      cb(null, `${Date.now()}_${safe}`);
     },
   });
 
@@ -3402,9 +3501,11 @@ function jobcardsAPIs(app, io, labbeeUsers) {
   app.get("/api/FilesUploaded/:filename", (req, res) => {
     const fileNameWithTimestamp = req.params.filename;
 
-    // Query should match the exact file_path stored in the database
-    const sqlSelectFile = "SELECT * FROM attachments WHERE file_path LIKE ?";
-    db.query(sqlSelectFile, [`%${fileNameWithTimestamp}`], (err, results) => {
+    // Exact stored name (a "_" or "%" in it is not a wildcard)
+    const sqlSelectFile =
+      "SELECT * FROM attachments WHERE file_path LIKE ? ESCAPE '!' ORDER BY id DESC LIMIT 1";
+    const likeName = `%/${path.basename(fileNameWithTimestamp).replace(/[!%_]/g, "!$&")}`;
+    db.query(sqlSelectFile, [likeName], (err, results) => {
       if (err || results.length === 0) {
         console.error("File not found in database:", err);
         return res.status(404).send("File not found");
@@ -3473,14 +3574,18 @@ function jobcardsAPIs(app, io, labbeeUsers) {
   // To get the month-year of the Job-card
   // To get the last JC number of the previous month
   app.get("/api/getPreviousMonthJC", (req, res) => {
+    // Last JC numbered in the previous month (by its number, either format)
+    const finYear = finYearOf(dayjs().subtract(1, "month"));
+    const [first, rest] = finYear.split("-");
+    const [, month] = rest.split("/");
     const sqlQuery = `
-        SELECT jc_number 
-        FROM bea_jobcards 
-        WHERE MONTH(jc_open_date) = MONTH(CURRENT_DATE - INTERVAL 1 MONTH)
-        ORDER BY jc_open_date DESC 
+        SELECT jc_number
+        FROM bea_jobcards
+        WHERE jc_number LIKE ? OR jc_number LIKE ?
+        ORDER BY CAST(SUBSTRING_INDEX(jc_number, '-', -1) AS UNSIGNED) DESC
         LIMIT 1`;
 
-    db.query(sqlQuery, (error, result) => {
+    db.query(sqlQuery, [`${finYear}-%`, `${first}-${Number(first) + 1}/${month}-%`], (error, result) => {
       if (error) {
         return res.status(500).json({
           error:
