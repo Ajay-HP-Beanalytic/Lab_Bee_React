@@ -19,6 +19,7 @@ const { createMatcher } = require("../masterData/testNameMatcher");
 const { calculatePrice } = require("../masterData/priceCalculator");
 const { PARAMS, METHODS } = require("../masterData/durationCalculator");
 const { durationFor, cleanParams } = require("../TestDurationsAPI");
+const { loadNablContext, nablOf } = require("./nablCheck");
 
 const query = (sql, params) => db.promise().query(sql, params).then(([rows]) => rows);
 const fail = (status, message) => Object.assign(new Error(message), { status });
@@ -265,6 +266,11 @@ async function computeLine(t, ctx) {
   if (t.values_note && t.values_source !== "person") problems.push(t.values_note);
 
   const qty = price?.charged_per === "hour" ? (hours == null ? null : priced.lines[0].qty) : priced ? priced.lines[0].qty : null;
+  const nabl = nablOf(t, type?.id || null, values, ctx.nabl);
+  if (!t.quote_excluded && !t.not_feasible) {
+    if (nabl.suggested === "not_feasible" && !nabl.by) problems.push(`Can we do it? ${nabl.reasons[0]}`);
+    else if (!nabl.status) problems.push("NABL or Non-NABL? Check and choose");
+  }
   return {
     test_id: t.id,
     requested: t.requested_as || t.test_name,
@@ -294,6 +300,7 @@ async function computeLine(t, ctx) {
     minimum_applied: !!priced?.minimumApplied,
     excluded: !!t.quote_excluded,
     not_feasible: t.not_feasible || null,
+    nabl,
     values_source: t.values_source || null,
     values_note: t.values_note || null,
     values_by_name: t.values_by_name || null,
@@ -303,10 +310,11 @@ async function computeLine(t, ctx) {
 }
 
 async function context() {
-  const [types, prices] = await Promise.all([loadTypes(), loadPrices()]);
+  const [types, prices, nabl] = await Promise.all([loadTypes(), loadPrices(), loadNablContext()]);
   return {
     types,
     prices,
+    nabl,
     typeById: new Map(types.map((t) => [t.id, t])),
     typeByCode: new Map(types.map((t) => [t.code, t])),
     match: createMatcher(types),
@@ -381,6 +389,13 @@ async function editedFields(body) {
     out.quote_qty = q;
   }
   if ("excluded" in body) out.quote_excluded = body.excluded ? 1 : 0;
+  if ("nabl_status" in body) {
+    // "" = use the suggestion again
+    const s = body.nabl_status || null;
+    if (s && !["nabl", "non_nabl"].includes(s)) throw fail(400, "NABL status must be NABL or Non-NABL");
+    out.nabl_status = s;
+    out.nabl_note = s ? String(body.nabl_note || "").trim().slice(0, 255) || null : null;
+  }
   return out;
 }
 
@@ -390,7 +405,7 @@ async function previewLine(requestId, testId, body) {
   return computeLine({ ...t, ...(await editedFields(body)), values_source: "person" }, await context());
 }
 
-const CHANGE_LABELS = { test_type_id: "test type", quote_values: "values", hours_override: "hours", quote_qty: "quantity", quote_excluded: "left out of the quote" };
+const CHANGE_LABELS = { test_type_id: "test type", quote_values: "values", hours_override: "hours", quote_qty: "quantity", quote_excluded: "left out of the quote", nabl_status: "NABL" };
 
 /**
  * Save a person's changes to a line; the draft quote (if any) is prepared again.
@@ -402,7 +417,15 @@ async function updateLine(requestId, testId, body, by) {
   await query("UPDATE feasibility_request_tests SET ? WHERE id = ?", [{ ...fields, values_source: "person", values_by: by, values_at: new Date() }, t.id]);
   const changed = Object.keys(fields)
     .filter((k) => CHANGE_LABELS[k])
-    .map((k) => (k === "quote_excluded" ? (fields[k] ? "left out of the quote" : "quoted again") : k === "hours_override" && fields[k] != null ? `hours ${fields[k]} (${fields.hours_reason})` : CHANGE_LABELS[k]));
+    .map((k) =>
+      k === "quote_excluded"
+        ? fields[k] ? "left out of the quote" : "quoted again"
+        : k === "hours_override" && fields[k] != null
+          ? `hours ${fields[k]} (${fields.hours_reason})`
+          : k === "nabl_status"
+            ? fields[k] ? `${fields[k] === "nabl" ? "NABL" : "Non-NABL"}${fields.nabl_note ? ` (${fields.nabl_note})` : ""}` : "NABL as suggested"
+            : CHANGE_LABELS[k],
+    );
   const workflow = require("./workflow");
   await workflow.logEvent(requestId, "test_edited", { userId: by, note: `${t.test_name}: ${changed.join(", ") || "checked"}` });
   if ("test_type_id" in fields) await workflow.refreshDepartments(requestId);
@@ -450,7 +473,9 @@ const toQuoteLine = (l) => ({
   standard: l.standard,
   test_type_code: l.test_type_code,
   price_code: l.price_code,
-  testDescription: l.price_name || l.name,
+  // Non-NABL tests say so on the quotation
+  testDescription: `${l.price_name || l.name}${l.nabl?.status === "non_nabl" ? " (Non-NABL)" : ""}`,
+  nabl: l.nabl?.status || null,
   sacNo: SAC_NO,
   duration: l.qty ?? "",
   unit: l.unit,

@@ -38,6 +38,7 @@ async function ensureTables() {
       text_status     ENUM('pending','reading','done','scanned','failed') NOT NULL DEFAULT 'pending',
       text_error      VARCHAR(500) DEFAULT NULL,
       notes           TEXT,
+      edited_by_person TINYINT(1) NOT NULL DEFAULT 0,
       created_by      INT DEFAULT NULL,
       created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       updated_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
@@ -54,18 +55,31 @@ async function ensureTables() {
       FULLTEXT KEY ft_standard_pages_text (text),
       CONSTRAINT fk_standard_pages_doc FOREIGN KEY (standard_id) REFERENCES standard_documents (id) ON DELETE CASCADE
     )`);
+  const cols = await query(
+    "SELECT column_name AS c FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'standard_documents'",
+  );
+  if (!cols.some((r) => r.c.toLowerCase() === "edited_by_person")) {
+    // details typed by a person are never replaced by a better guess
+    await query("ALTER TABLE standard_documents ADD COLUMN edited_by_person TINYINT(1) NOT NULL DEFAULT 0 AFTER notes");
+  }
 }
 
 // ---- Details from the file name / first page ---------------------------------
 
 const upper = (s) => (s ? s.toUpperCase() : "");
+const ROMAN = { I: 1, V: 5, X: 10 };
+// "XV" -> 15; digits stay as they are
+const arabic = (s) =>
+  /^\d+$/.test(s) ? Number(s) : [...s].reduce((n, c, i, a) => n + (ROMAN[c] < (ROMAN[a[i + 1]] || 0) ? -ROMAN[c] : ROMAN[c]), 0);
 const FAMILIES = [
-  // MIL-STD-810H, MIL STD 461G, MIL-HDBK-217F
-  [/\bMIL[\s_-]*(STD|HDBK|PRF|DTL|SPEC)[\s_-]*(\d{2,5})([A-Z])?(?![A-Z])/i, (m) => ({ family: "MIL", designation: `MIL-${upper(m[1])}-${m[2]}${upper(m[3])}`, edition: upper(m[3]) })],
-  // JSS 55555, JSS 55555 Rev 3
-  [/\bJSS[\s_-]*(\d{5})(?:[\s_:-]*(?:REV(?:ISION)?|R)[\s._-]*(\d+))?/i, (m) => ({ family: "JSS", designation: `JSS ${m[1]}`, edition: m[2] ? `Rev ${m[2]}` : "" })],
+  // MIL-STD-810H, MIL STD 461 G, MIL-HDBK-217F
+  [/\bMIL[\s_-]*(STD|HDBK|PRF|DTL|SPEC)[\s_-]*(\d{2,5})\s?([A-Z])?(?![A-Z])/i, (m) => ({ family: "MIL", designation: `MIL-${upper(m[1])}-${m[2]}${upper(m[3])}`, edition: upper(m[3]) })],
+  // JSS 55555, JSS 55555 Rev 3, JSS 0256-01:2008 (Revision No. 2), JSS-5855-11
+  [/\bJSS[\s_-]*(\d{5}|\d{4}-\d{2})(?:\s*:\s*((?:19|20)\d{2}))?(?:[\s_:(-]*(?:REV(?:ISION)?|R)\.?(?:\s*No\.?)?[\s._-]*(\d+))?/i, (m) => ({ family: "JSS", designation: `JSS ${m[1]}`, edition: m[3] ? `Rev ${m[3]}` : "", year: m[2] })],
   // RTCA DO-160G
   [/\b(?:RTCA[\s_/-]*)?DO[\s_-]*(160|178|254|311)([A-H])?(?![A-Z0-9])/i, (m) => ({ family: "RTCA", designation: `RTCA DO-${m[1]}${upper(m[2])}`, edition: upper(m[2]) })],
+  // AIS-004 (Part 3) (Rev. 1), AIS 156 - Automotive Indian Standard
+  [/\bAIS[\s_-]*(\d{3})(?:\s*\(?\s*Part\s*(\d+)\s*\)?)?(?:\s*\(?\s*Rev\.?\s*(\d+)\s*\)?)?/i, (m) => ({ family: "AIS", designation: `AIS-${m[1]}${m[2] ? ` (Part ${m[2]})` : ""}`, edition: m[3] ? `Rev ${m[3]}` : "" })],
   // IEC 60068-2-6:2007, EN IEC 61000-4-3
   [/\b(?:EN[\s_-]*)?IEC[\s_-]*(\d{5}(?:-\d{1,3}(?!\d)){0,3})(?:\s*[:_ ]\s*((?:19|20)\d{2}))?/i, (m) => ({ family: "IEC", designation: `IEC ${m[1]}`, year: m[2] })],
   // ISO 16750-3:2012
@@ -83,15 +97,18 @@ const FAMILIES = [
   // EN 60529, BS EN 50155 (after IEC so "EN IEC" stays IEC)
   [/\b(?:BS[\s_-]*)?EN[\s_-]*(\d{3,5}(?:-\d{1,3}(?!\d)){0,3})(?:\s*[:_ ]\s*((?:19|20)\d{2}))?/, (m) => ({ family: "EN", designation: `EN ${m[1]}`, year: m[2] })],
   // IS 9000 (Part 2) : 1977 - Indian standard (capital IS only)
-  [/\bIS[\s_:-]*(\d{3,5})(?:\s*\(\s*Part\s*(\d+)\s*\))?(?:\s*:\s*((?:19|20)\d{2}))?/, (m) => ({ family: "IS", designation: `IS ${m[1]}${m[2] ? ` (Part ${m[2]})` : ""}`, year: m[3] })],
+  // (the year may come before the part: IS 9000:1988 (Part 15 Sec I))
+  // and the part may be Roman: IS 9000:1977 (Part II/Sec 1 to 4)
+  [/\bIS[\s_:-]*(\d{3,5})(?:\s*:\s*((?:19|20)\d{2}))?(?:\s*\(?\s*[Pp](?:art|ART)\s*(\d+|[IVX]+)(?![A-Za-z])\s*\)?)?(?:\s*:\s*((?:19|20)\d{2}))?/, (m) => ({ family: "IS", designation: `IS ${m[1]}${m[3] ? ` (Part ${arabic(m[3])})` : ""}`, year: m[2] || m[4] })],
 ];
 
-const FAMILY_NAMES = ["MIL", "JSS", "IEC", "ISO", "EN", "IS", "RTCA", "ASTM", "JEDEC", "SAE", "ISTA", "IPC", "Other"];
+const FAMILY_NAMES = ["MIL", "JSS", "IEC", "ISO", "EN", "IS", "AIS", "RTCA", "ASTM", "JEDEC", "SAE", "ISTA", "IPC", "Other"];
 
+// The first standard number in the text; `matched` is the text it was read from
 const findDesignation = (text) => {
   for (const [re, make] of FAMILIES) {
     const m = String(text || "").match(re);
-    if (m) return make(m);
+    if (m) return { ...make(m), matched: m[0] };
   }
   return null;
 };
@@ -177,7 +194,7 @@ async function readOne(id) {
     const chars = pages.reduce((n, p) => n + p.text.length, 0);
     const status = pages.length && chars / pages.length >= MIN_TEXT_PER_PAGE ? "done" : "scanned";
     const details = {};
-    if (!std.checked) {
+    if (!std.checked && !std.edited_by_person) {
       // a better guess now that the cover page can be read
       const guess = guessDetails(std.file_path, pages.slice(0, 2).map((p) => p.text).join("\n"));
       if (std.family === "Other" || !std.designation) Object.assign(details, guess);
@@ -250,7 +267,22 @@ async function syncWithFiles() {
   const gone = known.filter((k) => !present.has(k.file_path));
   if (gone.length) await query("DELETE FROM standard_documents WHERE id IN (?)", [gone.map((g) => g.id)]);
   for (const k of known) if (present.has(k.file_path) && ["pending", "reading"].includes(k.text_status)) enqueue(k.id);
+  await refreshGuesses();
   return { files: present.size, added: [...present].filter((p) => !knownPaths.has(p)).length, removed: gone.length };
+}
+
+// Details nobody has typed or confirmed are guessed again, so better rules
+// (e.g. a new family) reach the standards already in the register
+async function refreshGuesses() {
+  const rows = await query(
+    "SELECT id, file_path, family, designation, edition, published_year FROM standard_documents WHERE checked = 0 AND edited_by_person = 0",
+  );
+  for (const r of rows) {
+    const first = await query("SELECT text FROM standard_pages WHERE standard_id = ? ORDER BY page_no LIMIT 2", [r.id]);
+    const guess = guessDetails(r.file_path, first.map((p) => p.text || "").join("\n"));
+    if (guess.family === r.family && guess.designation === r.designation && guess.edition === r.edition && guess.published_year === r.published_year) continue;
+    await query("UPDATE standard_documents SET ? WHERE id = ?", [{ ...guess, designation_key: squash(guess.designation) }, r.id]);
+  }
 }
 
 // ---- Register and search -------------------------------------------------------
@@ -284,6 +316,7 @@ async function update(id, body, userId) {
     if (!Number.isInteger(y) || y < 1900 || y > 2100) throw fail(400, "Year must be like 2019");
     change.published_year = y;
   }
+  if (Object.keys(change).length) change.edited_by_person = 1;
   if ("checked" in body) {
     change.checked = body.checked ? 1 : 0;
     change.checked_by = body.checked ? userId : null;
@@ -368,6 +401,9 @@ async function pageText(id, pageNo) {
 module.exports = {
   ROOT,
   FAMILY_NAMES,
+  squash,
+  likeEscape,
+  findDesignation,
   ensureTables,
   guessDetails,
   isStandardFile,

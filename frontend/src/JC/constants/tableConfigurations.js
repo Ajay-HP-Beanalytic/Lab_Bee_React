@@ -79,6 +79,7 @@ export const TEST_TABLE_COLUMNS = [
     type: "textField",
     width: 250,
     align: "center",
+    standardLookup: true,
   },
   {
     id: "testProfile",
@@ -134,6 +135,7 @@ export const TEST_PERFORMED_TABLE_COLUMNS = [
     type: "textField",
     width: "300px",
     align: "center",
+    standardLookup: true,
   },
   {
     id: "testStartedBy",

@@ -37,6 +37,36 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import AddIcon from "@mui/icons-material/Add";
 import { serverBaseAddress } from "../Pages/APIPage";
 import { rupees, formatDateTime } from "./rfqInboxHelpers";
+import StandardRefButton from "../FilesStorage/StandardRefButton";
+
+const NABL_COLOR = { nabl: "success", non_nabl: "info" };
+
+// NABL / Non-NABL of a line: the testing team's choice, or the suggestion (scope + chambers)
+function NablChip({ nabl }) {
+  if (!nabl) return null;
+  const label = nabl.label || (nabl.suggested === "not_feasible" ? "Can we do it?" : "NABL?");
+  const tip = (
+    <>
+      {nabl.by === "person" ? "Chosen by the testing team" : nabl.by === "system" ? "Suggested from the NABL scope and chambers - check" : "Choose NABL or Non-NABL"}
+      {nabl.note ? ` (${nabl.note})` : ""}
+      {nabl.reasons.map((r) => (
+        <Box component="span" display="block" key={r} mt={0.5}>
+          • {r}
+        </Box>
+      ))}
+    </>
+  );
+  return (
+    <Tooltip title={tip}>
+      <Chip
+        size="small"
+        color={NABL_COLOR[nabl.status] || "warning"}
+        variant={nabl.by === "person" ? "filled" : "outlined"}
+        label={`${label}${nabl.by === "system" ? " (suggested)" : ""}`}
+      />
+    </Tooltip>
+  );
+}
 
 const fmtMin = (m) => (m == null ? "–" : m >= 120 ? `${Math.round((m / 60) * 100) / 100} h (${Math.round(m)} min)` : `${Math.round(m * 100) / 100} min`);
 
@@ -230,6 +260,8 @@ export default function TestLinesEditor({ requestId, readOnly, onChanged }) {
       hours_reason: l.hours_reason || "",
       quote_qty: l.quote_qty ?? "",
       excluded: l.excluded,
+      nabl_status: l.nabl?.by === "person" ? l.nabl.status : "",
+      nabl_note: l.nabl?.by === "person" ? l.nabl.note || "" : "",
     });
   };
 
@@ -240,6 +272,8 @@ export default function TestLinesEditor({ requestId, readOnly, onChanged }) {
     hours_reason: f.manual ? f.hours_reason : "",
     quote_qty: f.quote_qty,
     excluded: f.excluded,
+    nabl_status: f.nabl_status,
+    nabl_note: f.nabl_note,
   });
 
   // Live working while editing
@@ -345,6 +379,8 @@ export default function TestLinesEditor({ requestId, readOnly, onChanged }) {
                   <Chip size="small" color={l.test_type_code ? "primary" : "warning"} label={l.test_type_code ? `${l.test_type_code} · ${l.test_type_name}` : "Type?"} />
                   {l.type_by === "name" && <Chip size="small" variant="outlined" label="Type matched by name - check" />}
                   {sourceChip(l)}
+                  <NablChip nabl={l.nabl} />
+                  {l.standard && <StandardRefButton variant="chip" reference={l.standard} />}
                   {l.not_feasible && (
                     <Tooltip title="Marked at the feasibility check; saved in the Future Scope register">
                       <Chip size="small" color="error" variant="outlined" label={`Can't do: ${l.not_feasible}`} />
@@ -484,6 +520,45 @@ export default function TestLinesEditor({ requestId, readOnly, onChanged }) {
                             />
                           </Grid>
                         </Grid>
+                      )}
+                    </Box>
+                  )}
+                  {l.nabl && (
+                    <Box sx={{ border: 1, borderColor: "divider", borderRadius: 1, p: 1, mt: 1 }}>
+                      <Typography variant="caption" color="text.secondary">
+                        NABL or Non-NABL - suggested: {l.nabl.suggested === "nabl" ? "NABL" : l.nabl.suggested === "non_nabl" ? "Non-NABL" : l.nabl.suggested === "not_feasible" ? "can't be done in our chambers" : "check"}
+                      </Typography>
+                      {l.nabl.reasons.map((r) => (
+                        <Typography key={r} variant="body2" sx={{ fontSize: 13 }}>
+                          • {r}
+                        </Typography>
+                      ))}
+                      <Box display="flex" gap={1} mt={1} flexWrap="wrap">
+                        <FormControl size="small" sx={{ minWidth: 200 }}>
+                          <InputLabel>Quote as</InputLabel>
+                          <Select label="Quote as" value={form.nabl_status} onChange={(e) => setForm({ ...form, nabl_status: e.target.value })}>
+                            <MenuItem value="">
+                              {["nabl", "non_nabl"].includes(l.nabl.suggested) ? `As suggested (${l.nabl.suggested === "nabl" ? "NABL" : "Non-NABL"})` : "Not decided"}
+                            </MenuItem>
+                            <MenuItem value="nabl">NABL</MenuItem>
+                            <MenuItem value="non_nabl">Non-NABL</MenuItem>
+                          </Select>
+                        </FormControl>
+                        {form.nabl_status && (
+                          <TextField
+                            size="small"
+                            sx={{ flex: 1, minWidth: 180 }}
+                            label="Why (optional)"
+                            placeholder="e.g. customer accepts Non-NABL"
+                            value={form.nabl_note}
+                            onChange={(e) => setForm({ ...form, nabl_note: e.target.value })}
+                          />
+                        )}
+                      </Box>
+                      {form.nabl_status === "non_nabl" && (
+                        <Typography variant="caption" color="text.secondary" display="block" mt={0.5}>
+                          The quotation will say "(Non-NABL)" for this test, and the report is issued without the NABL logo.
+                        </Typography>
                       )}
                     </Box>
                   )}

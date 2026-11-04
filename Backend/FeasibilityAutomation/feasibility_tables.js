@@ -324,6 +324,10 @@ const EMAIL_INTAKE_COLUMNS = {
     // Split of a combined request ("IP67" -> dust + immersion): the customer's wording and the first part
     requested_as: "VARCHAR(500) DEFAULT NULL",
     split_from: "INT DEFAULT NULL",
+    // NABL or Non-NABL as decided by the testing team (enquiry/nablCheck.js
+    // suggests it); NULL = the suggestion is used
+    nabl_status: "VARCHAR(10) DEFAULT NULL", // 'nabl' | 'non_nabl'
+    nabl_note: "VARCHAR(255) DEFAULT NULL",
   },
   inbound_emails: {
     // created | duplicate | followup | linked | ignored (NULL = not handled yet)

@@ -145,6 +145,8 @@ export default function EMIJCStepOne() {
       width: 300,
       type: "select",
       options: getStandardsAsOptions(),
+      standardLookup: true,
+      methodField: "testName",
     },
     {
       id: "testName",

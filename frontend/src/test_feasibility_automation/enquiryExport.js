@@ -69,6 +69,8 @@ const testRow = (t, byId) => {
     "Team": t.department || "",
     "Test type": t.test_type_name || "",
     "Standard": t.standard || "",
+    "NABL": t.nabl?.label || "",
+    "NABL decided by": t.nabl?.by === "person" ? "Testing team" : t.nabl?.by === "system" ? "Suggested" : "",
     "Customer's values": Object.entries(t.values || {})
       .map(([k, v]) => `${k} = ${v}`)
       .join(", "),

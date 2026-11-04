@@ -1,4 +1,5 @@
 const library = require("./standardsLibrary");
+const locator = require("./standardLocator");
 const { canManageFiles } = require("../../fileStorageAPIs");
 
 const fail = (status, message) => Object.assign(new Error(message), { status });
@@ -30,6 +31,17 @@ const standardsAPIs = (app) => {
     const standardId = req.query.standard_id ? Number(req.query.standard_id) : null;
     return { hits: await library.search(req.query.q, { standardId }) };
   }));
+
+  // Is each test's standard in the library? body: { items: [{ reference, method }] }
+  app.post("/api/standards/match", handle(async (req) => {
+    const items = Array.isArray(req.body?.items) ? req.body.items.slice(0, 300) : [];
+    return { results: await locator.matchMany(items.map((i) => ({ reference: String(i?.reference || ""), method: String(i?.method || "") }))) };
+  }));
+
+  // Where to open a test's standard: ?ref=MIL-STD-810H Method 507.6&method=Procedure II[&standard_id=3]
+  app.get("/api/standards/locate", handle((req) =>
+    locator.locate(String(req.query.ref || ""), String(req.query.method || ""), req.query.standard_id ? Number(req.query.standard_id) : null),
+  ));
 
   app.get("/api/standards/:id/pages/:page", handle((req) => library.pageText(Number(req.params.id), Number(req.params.page))));
 

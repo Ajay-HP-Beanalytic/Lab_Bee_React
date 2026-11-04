@@ -237,6 +237,8 @@ export default function EMIJCStepTwo() {
       width: 200,
       type: "textField",
       align: "center",
+      standardLookup: true,
+      methodField: "testName",
     },
     {
       id: "slotDetails",

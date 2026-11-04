@@ -14,7 +14,8 @@ const REASONS = [
   "Unit too big or heavy for our chambers",
   "Beyond our range (temperature, humidity, vibration, frequency…)",
   "Standard or method not in our scope",
-  "Not in our NABL scope",
+  // a test outside the scope that we can do is quoted as Non-NABL, not lost
+  "Customer needs NABL and it's not in our NABL scope",
   "Other",
 ];
 const LOST_REASON = "Quote lost on capability";

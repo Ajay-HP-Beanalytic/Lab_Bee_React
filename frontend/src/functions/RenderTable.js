@@ -24,6 +24,23 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { EMIJCContext } from "../EMI/EMIJCContext";
 import ObservationForms from "../EMI/ObservationForms";
 import ConfirmationDialog from "../common/ConfirmationDialog";
+import StandardRefButton from "../FilesStorage/StandardRefButton";
+
+// A column with `standardLookup: true` gets a button that opens the standard
+// typed in it (at the method's page); `methodField` names a column holding the
+// method separately (EMI test name "CS114")
+const WithStandard = ({ column, row, children }) =>
+  column.standardLookup ? (
+    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+      <Box sx={{ flex: 1, minWidth: 0 }}>{children}</Box>
+      <StandardRefButton
+        reference={row[column.id]}
+        method={column.methodField ? row[column.methodField] : ""}
+      />
+    </Box>
+  ) : (
+    children
+  );
 
 const RenderTable = ({
   tableColumns,
@@ -186,6 +203,7 @@ const RenderTable = ({
                       padding: "5px",
                     }}
                   >
+                    <WithStandard column={column} row={row}>
                     {column.id === "serialNumber" ? (
                       rowIndex + 1
                     ) : column.type === "textField" ? (
@@ -374,6 +392,7 @@ const RenderTable = ({
                     ) : (
                       ""
                     )}
+                    </WithStandard>
                   </TableCell>
                 ))}
                 <TableCell>
