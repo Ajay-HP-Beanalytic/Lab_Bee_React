@@ -9,6 +9,7 @@ const customerProfile = require("./enquiry/customerProfile");
 const testLines = require("./enquiry/testLines");
 const { dashboard, exportData } = require("./enquiry/dashboard");
 const futureScope = require("./enquiry/futureScope");
+const access = require("../access/accessControl");
 
 const query = (sql, params) => db.promise().query(sql, params).then(([rows]) => rows);
 
@@ -35,12 +36,16 @@ const intakeAPIs = (app) => {
     }
   };
 
-  // All enquiries (email and portal), newest first. my_turn = waiting for this user.
+  // The enquiries this user's department sees (all, TS1 or TS2 - Users & Access),
+  // email and portal, newest first. my_turn = waiting for this user.
   app.get("/api/feasibility/inbox", async (req, res) => {
     const userId = requireUser(req, res);
     if (!userId) return;
     try {
       const user = await workflow.loadUser(userId);
+      const me = await access.accessOf(userId);
+      if (!me) return res.status(401).json({ error: "Not logged in", sessionInvalid: true });
+      const seen = access.enquiryFilter(me);
       const rows = await query(
         `SELECT fr.id, fr.rfq_number, fr.created_at, fr.updated_at, fr.status, fr.source,
                 fr.company_name, fr.contact_person, fr.contact_email, fr.email_subject,
@@ -57,8 +62,10 @@ const intakeAPIs = (app) => {
                 (SELECT MIN(ie.received_at) FROM inbound_emails ie WHERE ie.request_id = fr.id) AS received_at
          FROM feasibility_requests fr
          LEFT JOIN labbee_users u ON u.id = fr.owner_id
+         WHERE 1 = 1${seen.sql}
          ORDER BY COALESCE(received_at, fr.created_at) DESC
          LIMIT 2000`,
+        seen.params,
       );
       for (const r of rows) r.my_turn = workflow.isMyTurn(r, user);
       res.json(rows);
@@ -284,11 +291,25 @@ const intakeAPIs = (app) => {
 
   // Enquiry dashboard and its Excel export: ?from=YYYY-MM-DD&to=YYYY-MM-DD&department=TS1|TS2
   const date = (v) => (/^\d{4}-\d{2}-\d{2}$/.test(String(v || "")) ? v : undefined);
-  const periodOf = (q) => ({ from: date(q.from), to: date(q.to), department: q.department });
+  // A department that sees only TS1 or TS2 enquiries gets only those figures
+  const periodOf = async (req, res) => {
+    const me = await access.accessOf(req.session.user_id);
+    if (!me) {
+      res.status(401).json({ error: "Not logged in", sessionInvalid: true });
+      return null;
+    }
+    if (me.enquiryScope === "none") {
+      res.status(403).json({ error: "Your department does not see enquiries" });
+      return null;
+    }
+    const q = req.query;
+    return { from: date(q.from), to: date(q.to), department: me.enquiryScope === "all" ? q.department : me.enquiryScope };
+  };
   app.get("/api/enquiries/dashboard", async (req, res) => {
     if (!requireUser(req, res)) return;
     try {
-      res.json(await dashboard(periodOf(req.query)));
+      const period = await periodOf(req, res);
+      if (period) res.json(await dashboard(period));
     } catch (err) {
       console.error("enquiry dashboard error:", err);
       res.status(500).json({ error: "Failed to load the dashboard" });
@@ -297,7 +318,8 @@ const intakeAPIs = (app) => {
   app.get("/api/enquiries/export", async (req, res) => {
     if (!requireUser(req, res)) return;
     try {
-      res.json(await exportData(periodOf(req.query)));
+      const period = await periodOf(req, res);
+      if (period) res.json(await exportData(period));
     } catch (err) {
       console.error("enquiry export error:", err);
       res.status(500).json({ error: "Failed to export the enquiries" });

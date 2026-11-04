@@ -3,95 +3,142 @@ const saltRounds = 10; // Let saltRoulds be '10' for hasing purpose
 const jwt = require("jsonwebtoken"); // Import jsonwebtoken package in order to create tokens
 const crypto = require("crypto");
 
-const session = require("express-session"); // Import 'express-session' module to create user session
 const { db } = require("./db");
 
 const nodemailer = require("nodemailer");
 
-const jwtSecret = "RANDOM-TOKEN"; // To create a random token
+const jwtSecret = process.env.JWT_SECRET || "RANDOM-TOKEN"; // To create a random token
 
 const { isSameDay } = require("date-fns");
+const access = require("./access/accessControl");
+const { requireAdmin } = require("./access/AccessAPI");
+
+const query = (sql, params) => db.promise().query(sql, params).then(([rows]) => rows);
+
+// 8-15 characters with an upper case letter, a lower case letter, a digit and a special character (as in the forms)
+const PASSWORD_RE = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[^a-zA-Z0-9])(?!.*\s).{8,15}$/;
+const PASSWORD_RULE =
+  "Password must be between 8 to 15 characters, contain at least one uppercase letter, one lowercase letter, one digit, and one special character.";
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const STATUSES = ["Enable", "Disable"];
+
+const cleanEmail = (v) => String(v || "").trim().toLowerCase();
+const cleanName = (v) => String(v || "").trim().replace(/\s+/g, " ").slice(0, 255);
+
+// Columns of a user that may be sent to the browser (never the password hash)
+const USER_FIELDS = "id, name, email, department, role, user_status";
+
+// End all sessions of a user (after a change of department, role, status or password)
+const revokeSessions = (userId) =>
+  query("UPDATE active_users_session SET revoked = 1 WHERE user_id = ? AND revoked = 0", [userId]);
+
+// Enabled Administration users other than this one (so the last one can't be removed)
+const otherAdmins = async (userId) => {
+  const admins = await query(
+    `SELECT u.id FROM labbee_users u JOIN labbee_departments d ON d.name = u.department
+     WHERE d.is_admin = 1 AND u.user_status = 'Enable' AND u.id <> ?`,
+    [userId],
+  );
+  return admins.length;
+};
+
+// Express handler that answers with the action's result or its error ({message} like the old routes)
+const handle = (action) => async (req, res) => {
+  try {
+    res.status(200).json(await action(req));
+  } catch (err) {
+    if (!err.status) console.error("Users API error:", err);
+    const message = err.status ? err.message : "Internal server error";
+    res.status(err.status || 500).json({ message, error: message });
+  }
+};
+const fail = (status, message) => Object.assign(new Error(message), { status });
+
+// Checked fields of a user from the Users & Access form
+async function userFields(body, { id = null, withPassword = false } = {}) {
+  const name = cleanName(body.name);
+  const email = cleanEmail(body.email);
+  if (!name) throw fail(400, "Name is required");
+  if (!EMAIL_RE.test(email)) throw fail(400, "Enter a valid email address");
+  const [taken] = await query("SELECT id FROM labbee_users WHERE email = ? AND id <> ?", [email, id || 0]);
+  if (taken) throw fail(400, "Email already exists");
+  await access.checkDepartmentRole(body.department, body.role);
+  if (!STATUSES.includes(body.user_status)) throw fail(400, "Choose Enable or Disable");
+  const out = { name, email, department: body.department, role: body.role, user_status: body.user_status };
+  if (withPassword) {
+    if (!PASSWORD_RE.test(String(body.password || ""))) throw fail(400, PASSWORD_RULE);
+    out.password = await bcrypt.hash(body.password, saltRounds);
+  }
+  return out;
+}
 
 // Function to handle the operations of the User Registraion and Login process:
 
 function usersDataAPIs(app, io, labbeeUsers) {
-  //api to add or register the new user:
-  app.post("/api/addUser", (req, res) => {
-    //const { name, email, password } = req.body;
-    const { name, email, password, department, role, user_status } = req.body;
+  // Sign up (public): the account stays disabled until Administration enables it
+  // and gives it a department and role
+  app.post("/api/addUser", handle(async (req) => {
+    const name = cleanName(req.body.name);
+    const email = cleanEmail(req.body.email);
+    const password = String(req.body.password || "");
+    if (!name) throw fail(400, "Name is required");
+    if (!EMAIL_RE.test(email)) throw fail(400, "Enter a valid email address");
+    if (!PASSWORD_RE.test(password)) throw fail(400, PASSWORD_RULE);
+    const [taken] = await query("SELECT id FROM labbee_users WHERE email = ?", [email]);
+    if (taken) throw fail(400, "Email already exists");
+    const hash = await bcrypt.hash(password, saltRounds);
+    await query("INSERT INTO labbee_users (name, email, password, department, role, user_status) VALUES (?, ?, ?, NULL, NULL, 'Disable')", [
+      name,
+      email,
+      hash,
+    ]);
+    return { message: "Registration Success" };
+  }));
 
-    const default_user_status = "Disable";
+  // Users & Access: add a user (Administration)
+  app.post("/api/admin/users", requireAdmin, handle(async (req) => {
+    const user = await userFields(req.body, { withPassword: true });
+    const res = await query("INSERT INTO labbee_users SET ?", [user]);
+    return { message: "User added", id: res.insertId };
+  }));
 
-    const sqlCheckEmail = "SELECT * FROM labbee_users WHERE email=?";
-    const sqlInsertUser =
-      "INSERT INTO labbee_users (name, email, password, department, role, user_status) VALUES (?,?,?,?,?,?)";
+  // Users & Access: change a user (Administration). Their sessions end when the
+  // department, role, status or email changes, so the new access applies at once.
+  app.post("/api/addUser/:id", requireAdmin, handle(async (req) => {
+    const id = Number(req.params.id);
+    const [old] = await query(`SELECT ${USER_FIELDS} FROM labbee_users WHERE id = ?`, [id]);
+    if (!old) throw fail(404, "User not found");
+    const user = await userFields(req.body, { id });
+    const wasAdmin = !!(await query("SELECT id FROM labbee_departments WHERE name = ? AND is_admin = 1", [old.department])).length;
+    const isAdmin = !!(await query("SELECT id FROM labbee_departments WHERE name = ? AND is_admin = 1", [user.department])).length;
+    if (wasAdmin && old.user_status === "Enable" && (!isAdmin || user.user_status !== "Enable") && !(await otherAdmins(id))) {
+      throw fail(400, "This is the last enabled Administration user - keep at least one");
+    }
+    if (id === req.access.user.id && (!isAdmin || user.user_status !== "Enable")) {
+      throw fail(400, "You can't take Administration away from yourself or disable yourself");
+    }
+    await query("UPDATE labbee_users SET ? WHERE id = ?", [user, id]);
+    const changed = ["department", "role", "user_status", "email"].some((k) => old[k] !== user[k]);
+    if (changed && id !== req.access.user.id) await revokeSessions(id);
+    if (changed && io) io.emit("user_access_changed", { user_id: id });
+    return { message: "User data updated successfully", sessions_ended: changed && id !== req.access.user.id };
+  }));
 
-    db.query(sqlCheckEmail, [email], (error, result) => {
-      if (error) {
-        console.error("Error checking email:", error);
-        return res.status(500).json({ message: "Internal server error" });
-      }
-
-      if (result.length > 0) {
-        //Email already exists:
-        return res.status(400).json({ message: "Email already exists" });
-      }
-
-      //If email is not exists then continue and encrypt the password:
-      bcrypt
-        .genSalt(saltRounds)
-        .then((salt) => {
-          return bcrypt.hash(password, salt);
-        })
-        .then((hash) => {
-          //db.query(sqlInsertUser, [name, email, hash], (error) => {
-
-          db.query(
-            sqlInsertUser,
-            [name, email, hash, department, role, default_user_status],
-            (error) => {
-              if (error) {
-                console.error("Error inserting user:", error);
-                return res
-                  .status(500)
-                  .json({ message: "Internal server error" });
-              }
-              return res.status(200).json({ message: "Registration Success" });
-            },
-          );
-        })
-        .catch((err) => {
-          console.error("Error hashing password:", err);
-          return res.status(500).json({ message: "Internal server error" });
-        });
-    });
-  });
-
-  //api to update the data of a registered user:
-  app.post("/api/addUser/:id", (req, res) => {
-    //const { name, email, password } = req.body;
-    const { name, email, department, role, user_status } = req.body;
-    const id = req.params.id;
-
-    const sqlUpdateUser = `
-                UPDATE labbee_users 
-                SET name='${name}', email='${email}', department='${department}', role='${role}', user_status='${user_status}'
-                WHERE id=${id}
-                `;
-
-    db.query(sqlUpdateUser, (error, result) => {
-      if (error) {
-        console.error(error);
-        return res.status(500).json({ message: "Internal server error" });
-      } else {
-        res.status(200).json({ message: "User data updated successfully" });
-      }
-    });
-  });
+  // Users & Access: set a new password for a user (Administration)
+  app.post("/api/admin/users/:id/password", requireAdmin, handle(async (req) => {
+    const id = Number(req.params.id);
+    const password = String(req.body.password || "");
+    if (!PASSWORD_RE.test(password)) throw fail(400, PASSWORD_RULE);
+    const res = await query("UPDATE labbee_users SET password = ? WHERE id = ?", [await bcrypt.hash(password, saltRounds), id]);
+    if (!res.affectedRows) throw fail(404, "User not found");
+    if (id !== req.access.user.id) await revokeSessions(id);
+    return { message: "Password changed" };
+  }));
 
   /// To allow an user to access the application on succesfull login:
   app.post("/api/login", (req, res) => {
-    const { email, password } = req.body;
+    const email = cleanEmail(req.body.email);
+    const { password } = req.body;
 
     // Perform a database query to find the user with the provided email
     const usersList = "SELECT * FROM labbee_users WHERE email = ?";
@@ -111,93 +158,98 @@ function usersDataAPIs(app, io, labbeeUsers) {
       const user = result[0];
 
       try {
-        const matched = await bcrypt.compare(password, user.password);
+        const matched = await bcrypt.compare(String(password || ""), user.password);
 
         if (!matched) {
           // Incorrect password
           return res.status(401).json({ message: "Incorrect password" });
         }
 
-        // Password is correct; generate and send JWT token
-        const token = jwt.sign(
-          { userID: user.id, email: user.email },
-          jwtSecret,
-          { expiresIn: "9h" },
-        );
+        // A disabled account (new sign-up, or switched off) can't log in
+        if (user.user_status !== "Enable") {
+          return res.status(403).json({ message: "Your account is not enabled yet. Please ask Administration to enable it." });
+        }
 
-        const SESSION_DURATION_MS = 540 * 60 * 1000; // 9 hours
+        // A new session id at login, so an id known before login can't be used
+        req.session.regenerate((regenErr) => {
+          if (regenErr) {
+            console.error("Error starting session:", regenErr);
+            return res.status(500).json({ message: "Internal server error" });
+          }
 
-        // Set session data
-        req.session.user_id = user.id;
-        req.session.username = user.name;
-        req.session.role = user.role;
-        req.session.department = user.department;
+          // Password is correct; generate and send JWT token
+          const token = jwt.sign(
+            { userID: user.id, email: user.email },
+            jwtSecret,
+            { expiresIn: "9h" },
+          );
 
-        // Track active session
-        const sessionId = req.sessionID;
-        const ipAddress = req.ip || req.connection.remoteAddress;
-        const userAgent = req.headers["user-agent"] || "";
-        const expiresAt = new Date(Date.now() + SESSION_DURATION_MS);
-        // Hash the token for storage
-        const tokenHash = crypto
-          .createHash("sha256")
-          .update(token, "utf8")
-          .digest("hex");
+          const SESSION_DURATION_MS = 540 * 60 * 1000; // 9 hours
 
-        const sqlInsertSession = `
-        INSERT INTO active_users_session 
-        (user_id, user_name, session_id, token_hash, created_at, last_activity, expires_at, ip_address, user_agent, revoked) 
-        VALUES (?, ?, ?, ?, NOW(), NOW(), ?, ?, ?, 0)
-        ON DUPLICATE KEY UPDATE
-          user_id = VALUES(user_id),
-          user_name = VALUES(user_name),
-          token_hash = VALUES(token_hash),
-          last_activity = NOW(),
-          expires_at = VALUES(expires_at),
-          ip_address = VALUES(ip_address),
-          user_agent = VALUES(user_agent),
-          revoked = 0
-      `;
+          // Set session data
+          req.session.user_id = user.id;
+          req.session.username = user.name;
+          req.session.role = user.role;
+          req.session.department = user.department;
 
-        db.query(
-          sqlInsertSession,
-          [
-            user.id,
-            user.name,
-            sessionId,
-            tokenHash,
-            expiresAt,
-            ipAddress,
-            userAgent,
-          ],
-          (err, result) => {
-            if (err) {
-              console.error("Error tracking session:", err);
-              console.error("Failed session data:", {
-                user_id: user.id,
-                user_name: user.name,
-                session_id: sessionId,
-              });
-            } else {
-              console.log(
-                `Session tracked successfully for user: ${user.name} (ID: ${user.id})`,
-              );
-            }
+          // Track active session
+          const sessionId = req.sessionID;
+          const ipAddress = req.ip || req.connection.remoteAddress;
+          const userAgent = req.headers["user-agent"] || "";
+          const expiresAt = new Date(Date.now() + SESSION_DURATION_MS);
+          // Hash the token for storage
+          const tokenHash = crypto
+            .createHash("sha256")
+            .update(token, "utf8")
+            .digest("hex");
 
-            // Emit Socket.IO event to notify all clients about new login
-            if (io) {
-              io.emit("user_logged_in", {
-                user_id: user.id,
-                name: user.name,
-                email: user.email,
-                department: user.department,
-                role: user.role,
-              });
-            }
-          },
-        );
+          const sqlInsertSession = `
+          INSERT INTO active_users_session
+          (user_id, user_name, session_id, token_hash, created_at, last_activity, expires_at, ip_address, user_agent, revoked)
+          VALUES (?, ?, ?, ?, NOW(), NOW(), ?, ?, ?, 0)
+          ON DUPLICATE KEY UPDATE
+            user_id = VALUES(user_id),
+            user_name = VALUES(user_name),
+            token_hash = VALUES(token_hash),
+            last_activity = NOW(),
+            expires_at = VALUES(expires_at),
+            ip_address = VALUES(ip_address),
+            user_agent = VALUES(user_agent),
+            revoked = 0
+        `;
 
-        res.status(200).json({ username: req.session.username, token: token });
+          db.query(
+            sqlInsertSession,
+            [
+              user.id,
+              user.name,
+              sessionId,
+              tokenHash,
+              expiresAt,
+              ipAddress,
+              userAgent,
+            ],
+            (err) => {
+              if (err) {
+                console.error("Error tracking session:", err);
+              }
+
+              // Emit Socket.IO event to notify all clients about new login
+              if (io) {
+                io.emit("user_logged_in", {
+                  user_id: user.id,
+                  name: user.name,
+                  email: user.email,
+                  department: user.department,
+                  role: user.role,
+                });
+              }
+            },
+          );
+
+          // Save before answering, so the next request already has the session
+          req.session.save(() => res.status(200).json({ username: user.name, token: token }));
+        });
       } catch (error) {
         console.error(error);
         return res.status(500).json({ message: "Internal server error" });
@@ -205,33 +257,24 @@ function usersDataAPIs(app, io, labbeeUsers) {
     });
   });
 
-  //Function to delete the user data from the table and database :
-  app.delete("/api/deleteUser/:id", (req, res) => {
-    const id = req.params.id;
-    const deleteQuery = "DELETE FROM labbee_users WHERE id = ?";
-
-    db.query(deleteQuery, [id], (error, result) => {
-      if (error) {
-        return res
-          .status(500)
-          .json({ error: "An error occurred while deleting the user" });
-      }
-      res.status(200).json({ message: "User removed successfully" });
-    });
-  });
+  // Users & Access: remove a user (Administration). Not yourself, and not the last Administration user.
+  app.delete("/api/deleteUser/:id", requireAdmin, handle(async (req) => {
+    const id = Number(req.params.id);
+    if (id === req.access.user.id) throw fail(400, "You can't delete your own account");
+    const [user] = await query(`SELECT ${USER_FIELDS} FROM labbee_users WHERE id = ?`, [id]);
+    if (!user) throw fail(404, "User not found");
+    const [dept] = await query("SELECT is_admin FROM labbee_departments WHERE name = ?", [user.department || ""]);
+    if (dept?.is_admin && user.user_status === "Enable" && !(await otherAdmins(id))) {
+      throw fail(400, "This is the last enabled Administration user - keep at least one");
+    }
+    await revokeSessions(id);
+    await query("DELETE FROM labbee_users WHERE id = ?", [id]);
+    return { message: "User removed successfully" };
+  }));
 
   // api to fetch the logged in user name:
   app.get("/api/getLoggedInUser", (req, res) => {
     if (req.session.username) {
-      // return res.json({ valid: true, user_name: req.session.username, user_role: req.session.role })
-      // return res.json({
-      //   valid: true,
-      //   user_id: req.session.id,
-      //   user_name: req.session.username,
-      //   user_role: req.session.role,
-      //   user_department: req.session.department,
-      // });
-
       const response = {
         valid: true,
         user_id: req.session.user_id,
@@ -247,7 +290,7 @@ function usersDataAPIs(app, io, labbeeUsers) {
 
   // API to fetch the user status:
   app.post("/api/getUserStatus", (req, res) => {
-    const { email } = req.body;
+    const email = cleanEmail(req.body.email);
 
     // Fetch user status from the database
     const user = "SELECT user_status FROM labbee_users WHERE email=? ";
@@ -294,21 +337,23 @@ function usersDataAPIs(app, io, labbeeUsers) {
       }
     });
 
-    // Clear cookie
-    res.clearCookie("connect.sid");
-
-    //req.session.destroy();
-
-    // Set a header indicating session expiration time
-    //res.setHeader("Session-Expired", "true");
-
-    return res.json({ Status: "Logged out successfully " });
+    // End the session itself, then clear the cookie
+    req.session.destroy(() => {
+      res.clearCookie("connect.sid");
+      return res.json({ Status: "Logged out successfully " });
+    });
   });
 
   // Fetch all the users
+  // (logged-in users only, and never the password hashes)
   app.get("/api/getAllUsers", (req, res) => {
-    const usersList = "SELECT * FROM labbee_users";
+    if (!req.session?.user_id) return res.status(401).json({ message: "Not logged in" });
+    const usersList = `SELECT ${USER_FIELDS} FROM labbee_users ORDER BY name`;
     db.query(usersList, (error, result) => {
+      if (error) {
+        console.error("Error fetching users:", error);
+        return res.status(500).json({ message: "Internal server error" });
+      }
       res.send(result);
     });
   });
@@ -416,7 +461,7 @@ function usersDataAPIs(app, io, labbeeUsers) {
 
   ///////////////////////////////////////////////////////////////////////////////////
   //API to fetch the active users
-  app.get("/api/getActiveUsers", (req, res) => {
+  app.get("/api/getActiveUsers", requireAdmin, (req, res) => {
     const query = `
     SELECT
       aus.id,
@@ -473,6 +518,7 @@ function usersDataAPIs(app, io, labbeeUsers) {
       res.json(results);
     });
   });
+
 
   ///////////////////////////////////////////////////////////////////////////////////
   //Password reset api links:
@@ -567,11 +613,15 @@ function usersDataAPIs(app, io, labbeeUsers) {
     return transporter.sendMail(mailOptions);
   };
 
+  // Wrong OTPs per email; after 5 the OTPs of that email are cancelled and a new one must be sent
+  const MAX_OTP_TRIES = 5;
+  const otpTries = new Map();
+
   // API to check if the entered email exists and send OTP
   app.post("/api/checkResetPasswordEmail", async (req, res) => {
-    const { email } = req.body;
+    const email = cleanEmail(req.body.email);
     try {
-      const sqlCheckEmail = "SELECT * FROM labbee_users WHERE email=?";
+      const sqlCheckEmail = "SELECT id FROM labbee_users WHERE email=?";
       const [result] = await db.promise().query(sqlCheckEmail, [email]);
 
       if (result.length === 0) {
@@ -613,6 +663,9 @@ function usersDataAPIs(app, io, labbeeUsers) {
       const otp = generateOtp();
       const otpExpiry = new Date(Date.now() + 2 * 60 * 1000); // OTP valid for 2 minutes
 
+      // Only the newest OTP of an email is valid
+      await db.promise().query("DELETE FROM otp_codes WHERE email = ?", [email]);
+      otpTries.delete(email);
       const sqlSaveOtp =
         "INSERT INTO otp_codes (email, otp_code, otp_expiry) VALUES (?, ?, ?)";
       await db.promise().query(sqlSaveOtp, [email, otp, otpExpiry]);
@@ -626,53 +679,49 @@ function usersDataAPIs(app, io, labbeeUsers) {
     }
   });
 
+  // Is this the email's current OTP? Wrong guesses are counted.
+  const checkOtp = async (email, otp) => {
+    const [rows] = await db
+      .promise()
+      .query("SELECT id FROM otp_codes WHERE email=? AND otp_code=? AND otp_expiry > NOW()", [email, String(otp || "")]);
+    if (rows.length) return true;
+    const tries = (otpTries.get(email) || 0) + 1;
+    otpTries.set(email, tries);
+    if (tries >= MAX_OTP_TRIES) {
+      await db.promise().query("DELETE FROM otp_codes WHERE email = ?", [email]);
+      otpTries.delete(email);
+      throw fail(429, "Too many wrong codes. Please ask for a new OTP.");
+    }
+    return false;
+  };
+
   //API to verify the OTP:
-  app.post("/api/verifyOTP", async (req, res) => {
-    const { email, otp } = req.body;
+  app.post("/api/verifyOTP", handle(async (req) => {
+    const email = cleanEmail(req.body.email);
+    if (!(await checkOtp(email, req.body.otp))) throw fail(400, "Invalid or expired OTP");
+    return { message: "OTP verified successfully" };
+  }));
 
-    try {
-      const sqlCheckOtp =
-        "SELECT * FROM otp_codes WHERE email=? AND otp_code=? AND otp_expiry > NOW()";
-      const [otpResult] = await db.promise().query(sqlCheckOtp, [email, otp]);
+  // API to reset the password: needs the OTP again (the page sends the one it verified)
+  app.post("/api/resetPassword", handle(async (req) => {
+    const email = cleanEmail(req.body.email);
+    const newPassword = String(req.body.newPassword || "");
+    if (!(await checkOtp(email, req.body.otp))) throw fail(400, "Invalid or expired OTP. Please ask for a new one.");
+    if (!PASSWORD_RE.test(newPassword)) throw fail(400, PASSWORD_RULE);
 
-      if (otpResult.length === 0) {
-        return res.status(400).json({ message: "Invalid or expired OTP" });
-      }
+    const hash = await bcrypt.hash(newPassword, saltRounds);
+    const [user] = await query("SELECT id FROM labbee_users WHERE email = ?", [email]);
+    if (!user) throw fail(404, "Email not found");
+    await query("UPDATE labbee_users SET password=? WHERE id=?", [hash, user.id]);
 
-      return res.status(200).json({ message: "OTP verified successfully" });
-    } catch (error) {
-      console.error("Error verifying OTP:", error);
-      return res.status(500).json({ message: "Internal server error" });
-    }
-  });
-
-  // API to reset the password
-  app.post("/api/resetPassword", async (req, res) => {
-    const { email, newPassword } = req.body;
-
-    try {
-      // Hash the new password
-      const salt = await bcrypt.genSalt(saltRounds);
-      const hash = await bcrypt.hash(newPassword, salt);
-
-      // Update the user's password in the database
-      const sqlUpdatePassword =
-        "UPDATE labbee_users SET password=? WHERE email=?";
-      await db.promise().query(sqlUpdatePassword, [hash, email]);
-
-      // Optionally, delete the OTP entry after successful password reset
-      const sqlDeleteOtp = "DELETE FROM otp_codes WHERE email=?";
-      await db.promise().query(sqlDeleteOtp, [email]);
-
-      return res.status(200).json({ message: "Password reset successful" });
-    } catch (error) {
-      console.error("Error resetting password:", error);
-      return res.status(500).json({ message: "Internal server error" });
-    }
-  });
+    // The OTP is used up, and sessions with the old password end
+    await query("DELETE FROM otp_codes WHERE email=?", [email]);
+    otpTries.delete(email);
+    await revokeSessions(user.id);
+    return { message: "Password reset successful" };
+  }));
 
   //Cleanup Expired/Revoked Sessions
-  // Add inside usersDataAPIs function
   // Clean up old sessions periodically (every 9 hours)
   setInterval(
     () => {
@@ -694,26 +743,15 @@ function usersDataAPIs(app, io, labbeeUsers) {
     9 * 60 * 60 * 1000,
   ); // Run every 9 hours (matches inactivity timeout)
 
-  // Force logout a specific user (useful for admin)
-  app.post("/api/revokeUserSessions", (req, res) => {
-    const { user_id } = req.body;
-
-    const sqlRevokeSessions = `
-    UPDATE active_users_session 
-    SET revoked = 1 
-    WHERE user_id = ? AND revoked = 0
-  `;
-
-    db.query(sqlRevokeSessions, [user_id], (err, result) => {
-      if (err) {
-        return res.status(500).json({ error: "Failed to revoke sessions" });
-      }
-      res.json({
-        message: "User sessions revoked successfully",
-        sessionsRevoked: result.affectedRows,
-      });
-    });
-  });
+  // Log out a user everywhere: yourself ("Logout from all devices"), or anyone (Administration)
+  app.post("/api/revokeUserSessions", handle(async (req) => {
+    const me = await access.accessOf(req.session?.user_id);
+    if (!me) throw fail(401, "Not logged in");
+    const userId = Number(req.body.user_id);
+    if (userId !== me.user.id && !me.isAdmin) throw fail(403, "Only Administration can log out other users");
+    const result = await revokeSessions(userId);
+    return { message: "User sessions revoked successfully", sessionsRevoked: result.affectedRows };
+  }));
 }
 
 module.exports = { usersDataAPIs };

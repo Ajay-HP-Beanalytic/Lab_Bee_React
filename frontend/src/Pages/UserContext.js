@@ -23,6 +23,8 @@ export const UserProvider = ({ children }) => {
   const [loggedInUserDepartment, setLoggedInUserDepartment] = useState("");
   const [loggedInUserRole, setLoggedInUserRole] = useState("");
   const [loggedInUserId, setLoggedInUserId] = useState("");
+  // What this user may open and do (side menu, enquiries seen, quotes) - set in Users & Access
+  const [access, setAccess] = useState(null);
   const [isLoading, setIsLoading] = useState(true); // loading state
   const [backendUnavailable, setBackendUnavailable] = useState(false);
   const consecutiveFailures = useRef(0);
@@ -41,6 +43,7 @@ export const UserProvider = ({ children }) => {
     setLoggedInUserDepartment("");
     setLoggedInUserRole("");
     setLoggedInUserId("");
+    setAccess(null);
   }, []);
 
   // Public routes array for useCallback dependency
@@ -86,6 +89,12 @@ export const UserProvider = ({ children }) => {
         setLoggedInUserDepartment(res.data.user_department);
         setLoggedInUserRole(res.data.user_role);
         setLoggedInUserId(res.data.user_id);
+        try {
+          const acc = await axios.get(`${serverBaseAddress}/api/access/me`);
+          setAccess(acc.data);
+        } catch {
+          // a disabled user is logged out by the interceptor; otherwise keep the last access
+        }
       } else {
         handleSessionInvalid();
       }
@@ -169,6 +178,8 @@ export const UserProvider = ({ children }) => {
         setLoggedInUserRole,
         loggedInUserId,
         setLoggedInUserId,
+        access,
+        refreshAccess: () => fetchLoggedInUser({ showLoader: false }),
         isLoading, // Expose loading state
         backendUnavailable,
         retryConnectionCheck,

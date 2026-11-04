@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useContext, useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import moment from "moment";
 import {
@@ -50,9 +50,11 @@ import RequestQuoteIcon from "@mui/icons-material/RequestQuote";
 import AutorenewIcon from "@mui/icons-material/Autorenew";
 import { useNavigate } from "react-router-dom";
 import { serverBaseAddress } from "../Pages/APIPage";
+import { UserContext } from "../Pages/UserContext";
 import DocumentPreviewModal from "../components/DocumentPreviewModal";
 import EnquiryCustomer from "./EnquiryCustomer";
 import TestLinesEditor from "./TestLinesEditor";
+import StandardRefButton from "../FilesStorage/StandardRefButton";
 import StageTrack from "./StageTrack";
 import { STAGES, lateness, rupees, rfqReference, formatDateTime } from "./rfqInboxHelpers";
 
@@ -479,6 +481,9 @@ function ActionDialog({ action, data, onClose, onDone }) {
 }
 
 export default function RfqRequestDetails({ requestId, open, onClose, onChanged }) {
+  // Only departments that create quotes (Accounts, Marketing, Administration - Users & Access) prepare / open them
+  const { access } = useContext(UserContext);
+  const canQuote = !!access?.canCreateQuotes;
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -876,7 +881,12 @@ export default function RfqRequestDetails({ requestId, open, onClose, onChanged 
                       <TableRow key={t.id}>
                         <TableCell>{t.test_name}</TableCell>
                         <TableCell>{t.test_category || "–"}</TableCell>
-                        <TableCell>{[t.standard_reference, t.method_or_section, t.procedure_or_category].filter(Boolean).join(" · ") || "–"}</TableCell>
+                        <TableCell>
+                          {[t.standard_reference, t.method_or_section, t.procedure_or_category].filter(Boolean).join(" · ") || "–"}
+                          {t.standard_reference && (
+                            <StandardRefButton reference={t.standard_reference} method={[t.method_or_section, t.procedure_or_category].filter(Boolean).join(" ")} />
+                          )}
+                        </TableCell>
                         <TableCell sx={{ maxWidth: 320 }}>{t.special_requirements || "–"}</TableCell>
                         <TableCell>{t.eut_name || "–"}</TableCell>
                         <TableCell>{t.source || "–"}</TableCell>
@@ -971,14 +981,20 @@ export default function RfqRequestDetails({ requestId, open, onClose, onChanged 
           <Box>
             <EnquiryCustomer requestId={requestId} onChanged={load} />
             <Box display="flex" gap={1} alignItems="center" flexWrap="wrap" mb={1.5}>
-              {draft && (
+              {draft && canQuote && (
                 <Button variant="contained" startIcon={<RequestQuoteIcon />} onClick={() => navigate(`/quotation?rfq=${requestId}`)}>
                   {draft.quotation_ids ? "Open in Quotation page again" : "Open in Quotation page"}
                 </Button>
               )}
-              <Button variant="outlined" startIcon={<AutorenewIcon />} onClick={rebuildDraft} disabled={working}>
-                {draft ? "Prepare again" : "Prepare draft quote"}
-              </Button>
+              {canQuote ? (
+                <Button variant="outlined" startIcon={<AutorenewIcon />} onClick={rebuildDraft} disabled={working}>
+                  {draft ? "Prepare again" : "Prepare draft quote"}
+                </Button>
+              ) : (
+                <Alert severity="info" sx={{ py: 0 }}>
+                  Quotes are created by Accounts, Marketing and Administration.
+                </Alert>
+              )}
               {working && <CircularProgress size={20} />}
               {draft && (
                 <Typography variant="caption" color="text.secondary">
@@ -988,7 +1004,7 @@ export default function RfqRequestDetails({ requestId, open, onClose, onChanged 
                 </Typography>
               )}
             </Box>
-            {!draft && (
+            {!draft && canQuote && (
               <Typography variant="body2" color="text.secondary">
                 The draft quote is prepared when the enquiry reaches the Quote stage (feasibility done and the customer asked for a
                 quote). You can also prepare it now.

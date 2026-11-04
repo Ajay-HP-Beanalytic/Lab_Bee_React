@@ -430,6 +430,11 @@ app.use((req, res, next) =>
   MISSING_ENQUIRY_ID.test(req.path) ? res.status(400).json({ error: "Enquiry id missing" }) : next(),
 );
 
+// Departments, roles and side-menu access; also checks every enquiry route
+// (department's enquiries only, quotes only by departments that create them)
+const { accessAPIs } = require("./access/AccessAPI");
+accessAPIs(app);
+
 // Feasibility Automation APIs:
 const { feasibilityAPIs } = require("./FeasibilityAutomation/FeasibilityAPI");
 feasibilityAPIs(app);
