@@ -89,8 +89,14 @@ export const prepareReportData = (comprehensiveData) => {
       serialNo: row.serialNo || "",
     }));
 
-  // Filter EUT rows for CURRENT TEST only (based on currentTest.eutSerialNo)
-  const currentTestEutSerialNo = currentTest.eutSerialNo || "";
+  // An ESS report covers all the selected tests, in order
+  const reportTests = (comprehensiveData.essTestRows || []).length
+    ? comprehensiveData.essTestRows
+    : [currentTest];
+
+  // Filter EUT rows for CURRENT TEST only (based on currentTest.eutSerialNo);
+  // for ESS, the EUTs of all its tests
+  const currentTestEutSerialNo = reportTests.map((t) => t.eutSerialNo || "").join(",");
 
   // Split serial numbers if multiple (comma-separated or semicolon-separated)
   const currentTestSerialNumbers = currentTestEutSerialNo
@@ -231,6 +237,15 @@ export const prepareReportData = (comprehensiveData) => {
 
     // Filtered EUT rows for current test only
     currentTestEutRows: currentTestEutRows, // Only EUTs used in this specific test
+
+    // Tests listed in the report's test table (one for a single test, all for ESS)
+    reportTests: reportTests.map((t) => ({
+      testName: t.testName || "",
+      testChamber: t.testChamber || "",
+      eutSerialNo: t.eutSerialNo || "",
+      standard: t.standard || "",
+      remarks: t.remarks || "",
+    })),
 
     // ============= Current Test Row (the specific test for this report) =============
     // Store original currentTestRow for direct access

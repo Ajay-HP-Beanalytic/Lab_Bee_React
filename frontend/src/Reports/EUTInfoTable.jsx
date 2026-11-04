@@ -6,12 +6,13 @@
  * @returns {Array} Array containing the EUT info table
  */
 
-import { AlignmentType, Paragraph, TableRow, TextRun } from "docx";
+import { AlignmentType, Paragraph, TableRow, TextRun, VerticalAlign } from "docx";
 import {
   createCaptionParagraph,
   createCenteredDataCell,
   createDataTable,
   createHeaderCell,
+  createTableCell,
   createTableHeadingParagraph,
 } from "./Report_Functions/docxHelpers";
 
@@ -68,42 +69,38 @@ export const createEUTInfoTable = (comprehensiveData, reportConfig) => {
     // Caption below the table
     createCaptionParagraph(chamberInfoCaption),
 
-    // Chamber Info - displayed as simple paragraphs with line breaks
-    ...(reportConfig?.chambers || []).map((chamber) => {
-      // Split chamber info by line breaks and create TextRuns with breaks
-      const chamberText = chamber.chamberInfo || "N/A";
-      const lines = chamberText.split("\n");
-
-      return new Paragraph({
-        alignment: AlignmentType.LEFT,
-        spacing: {
-          before: 100,
-          after: 100,
-        },
-        // border: {
-        //   top: { style: "single", size: 6, color: "000000" },
-        //   bottom: { style: "single", size: 6, color: "000000" },
-        //   left: { style: "single", size: 6, color: "000000" },
-        //   right: { style: "single", size: 6, color: "000000" },
-        // },
-        // shading: {
-        //   fill: "F9F9F9",
-        // },
-        children: lines.flatMap((line, index) => {
-          const textRun = new TextRun({
-            text: line,
-            size: 20,
-            font: "Calibri(Body)",
-            color: "000000",
-          });
-
-          // Add line break after each line except the last one
-          if (index < lines.length - 1) {
-            return [textRun, new TextRun({ break: 1 })];
-          }
-          return [textRun];
-        }),
-      });
-    }),
+    // Chamber details: a bordered table, two chambers per row
+    ...chamberTable(reportConfig?.chambers || []),
   ];
+};
+
+// One cell per chamber, its lines as printed (first line = chamber name, bold)
+const chamberCell = (chamber) => {
+  const lines = String(chamber?.chamberInfo || "").split("\n");
+  return createTableCell(
+    [
+      new Paragraph({
+        alignment: AlignmentType.LEFT,
+        children: lines.flatMap((line, index) => {
+          const run = new TextRun({ text: line, size: 20, font: "Calibri(Body)", color: "000000", bold: index === 0 });
+          return index < lines.length - 1 ? [run, new TextRun({ break: 1 })] : [run];
+        }),
+      }),
+    ],
+    { width: 50, verticalAlign: VerticalAlign.TOP, margins: { top: 60, bottom: 60, left: 100, right: 100 } }
+  );
+};
+
+const chamberTable = (chambers) => {
+  const filled = chambers.filter((c) => String(c?.chamberInfo || "").trim());
+  if (!filled.length) return [];
+  const rows = [];
+  for (let i = 0; i < filled.length; i += 2) {
+    rows.push(
+      new TableRow({
+        children: [chamberCell(filled[i]), filled[i + 1] ? chamberCell(filled[i + 1]) : createTableCell("", { width: 50 })],
+      })
+    );
+  }
+  return [createDataTable(rows)];
 };

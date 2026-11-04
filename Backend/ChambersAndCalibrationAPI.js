@@ -8,6 +8,10 @@ function migrateCalibrationCertificateColumns() {
     const columns = [
         "ADD COLUMN calibration_certificate_name VARCHAR(1000)",
         "ADD COLUMN calibration_certificate_path VARCHAR(2000)",
+        // printed in the chamber block of test reports
+        "ADD COLUMN chamber_make VARCHAR(255)",
+        "ADD COLUMN chamber_model VARCHAR(255)",
+        "ADD COLUMN chamber_serial_no VARCHAR(255)",
     ];
 
     columns.forEach((columnDef) => {
@@ -29,12 +33,12 @@ function chambersAndCalibrationAPIs(app) {
 
     // To add chamber and calibration data to the table:
     app.post("/api/addChamberData", (req, res) => {
-        const { chamberName, chamberID, formattedCalibrationDoneDate, formattedCalibrationDueDate, calibratedBy, calibrationStatus, chamberStatus, remarks } = req.body;
+        const { chamberName, chamberID, formattedCalibrationDoneDate, formattedCalibrationDueDate, calibratedBy, calibrationStatus, chamberStatus, remarks, chamberMake, chamberModel, chamberSerialNo } = req.body;
 
         // Perform a database query to store the data to the table:
-        const sqlInsertData = "INSERT INTO chamber_calibration (chamber_name, chamber_id, calibration_done_date, calibration_due_date, calibration_done_by, calibration_status, chamber_status, remarks) VALUES (?,?,?,?,?,?,?,?)";
+        const sqlInsertData = "INSERT INTO chamber_calibration (chamber_name, chamber_id, calibration_done_date, calibration_due_date, calibration_done_by, calibration_status, chamber_status, remarks, chamber_make, chamber_model, chamber_serial_no) VALUES (?,?,?,?,?,?,?,?,?,?,?)";
 
-        db.query(sqlInsertData, [chamberName, chamberID, formattedCalibrationDoneDate, formattedCalibrationDueDate, calibratedBy, calibrationStatus, chamberStatus, remarks], (error, result) => {
+        db.query(sqlInsertData, [chamberName, chamberID, formattedCalibrationDoneDate, formattedCalibrationDueDate, calibratedBy, calibrationStatus, chamberStatus, remarks, chamberMake || null, chamberModel || null, chamberSerialNo || null], (error, result) => {
             if (error) {
                 console.log(error)
                 return res.status(500).json({ message: "Internal server error" });
@@ -72,7 +76,10 @@ function chambersAndCalibrationAPIs(app) {
                     ELSE 'Up to Date'
                 END AS urgency_category,
                 calibration_certificate_name,
-                calibration_certificate_path
+                calibration_certificate_path,
+                chamber_make,
+                chamber_model,
+                chamber_serial_no
             FROM chamber_calibration
             ORDER BY calibration_due_date ASC
         `;
@@ -106,13 +113,13 @@ function chambersAndCalibrationAPIs(app) {
 
     // To Edit the selected chamber and calibration data
     app.post("/api/addChamberData/:id", (req, res) => {
-        const { chamberName, chamberID, formattedCalibrationDoneDate, formattedCalibrationDueDate, calibratedBy, calibrationStatus, chamberStatus, remarks } = req.body;
+        const { chamberName, chamberID, formattedCalibrationDoneDate, formattedCalibrationDueDate, calibratedBy, calibrationStatus, chamberStatus, remarks, chamberMake, chamberModel, chamberSerialNo } = req.body;
         const id = req.params.id;
 
         // Perform a database query to store the data to the table:
-        const sqlUpdate = `UPDATE chamber_calibration SET chamber_name = '${chamberName}', chamber_id ='${chamberID}', calibration_done_date = '${formattedCalibrationDoneDate}', calibration_due_date = '${formattedCalibrationDueDate}',calibration_done_by ='${calibratedBy}', calibration_status ='${calibrationStatus}', chamber_status ='${chamberStatus}', remarks ='${remarks}' WHERE id=${id}`;
+        const sqlUpdate = `UPDATE chamber_calibration SET chamber_name = ?, chamber_id = ?, calibration_done_date = ?, calibration_due_date = ?, calibration_done_by = ?, calibration_status = ?, chamber_status = ?, remarks = ?, chamber_make = ?, chamber_model = ?, chamber_serial_no = ? WHERE id = ?`;
 
-        db.query(sqlUpdate, (error, result) => {
+        db.query(sqlUpdate, [chamberName, chamberID, formattedCalibrationDoneDate || null, formattedCalibrationDueDate || null, calibratedBy, calibrationStatus, chamberStatus, remarks, chamberMake || null, chamberModel || null, chamberSerialNo || null, id], (error, result) => {
             if (error) {
                 console.log(error)
                 return res.status(500).json({ message: "Internal server error", result });

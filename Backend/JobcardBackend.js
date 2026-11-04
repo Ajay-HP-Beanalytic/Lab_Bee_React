@@ -9,6 +9,7 @@ const fs = require("fs");
 require("dotenv").config(); // Ensure .env is loaded
 const { saveRows, jobcardUser } = require("./ts1/jobcardRows");
 const { ts1ReportAPIs } = require("./ts1/TS1ReportAPI");
+const { ROW_ORDER, ensureRowOrderColumns } = require("./jobcardRowOrder");
 
 // function of jobcard api's:
 function jobcardsAPIs(app, io, labbeeUsers) {
@@ -201,6 +202,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
   };
 
   ts1ReportAPIs(app);
+  ensureRowOrderColumns().catch((err) => console.error("row_order column error:", err));
 
   app.post("/api/jobcard", async (req, res) => {
     let me;
@@ -2336,7 +2338,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
   //To fetch the data based on the jcnumber from the table 'tests_details'
   app.get("/api/gettestdetailslist/:jc_number", (req, res) => {
     const jcnumber = req.params.jc_number;
-    const sqlQuery = `SELECT  testName,testChamber,eutSerialNo,standard,testStartedBy,startDate,endDate,duration, actualTestDuration, unit,testEndedBy,remarks, testReviewedBy, reportPreparationStatus, testReportInstructions, reportNumber,preparedBy,nablUploaded, reportStatus FROM tests_details  WHERE jc_number = ?`;
+    const sqlQuery = `SELECT  testName,testChamber,eutSerialNo,standard,testStartedBy,startDate,endDate,duration, actualTestDuration, unit,testEndedBy,remarks, testReviewedBy, reportPreparationStatus, testReportInstructions, reportNumber,preparedBy,nablUploaded, reportStatus FROM tests_details  WHERE jc_number = ? ${ROW_ORDER}`;
 
     db.query(sqlQuery, [jcnumber], (error, result) => {
       if (error) {
@@ -2483,19 +2485,19 @@ function jobcardsAPIs(app, io, labbeeUsers) {
       const jc_number = result[0].jc_number;
 
       // Fetch data from eut_details table
-      sqlQuery = "SELECT * FROM eut_details WHERE jc_number = ?";
+      sqlQuery = `SELECT * FROM eut_details WHERE jc_number = ? ${ROW_ORDER}`;
       db.query(sqlQuery, [jc_number], (error, result) => {
         if (error) return res.status(500).json({ error });
         output["eut_details"] = result;
 
         // Fetch data from jc_tests table
-        sqlQuery = "SELECT * FROM jc_tests WHERE jc_number = ?";
+        sqlQuery = `SELECT * FROM jc_tests WHERE jc_number = ? ${ROW_ORDER}`;
         db.query(sqlQuery, [jc_number], (error, result) => {
           if (error) return res.status(500).json({ error });
           output["tests"] = result;
 
           // Fetch data from tests_details table
-          sqlQuery = "SELECT * FROM tests_details WHERE jc_number = ?";
+          sqlQuery = `SELECT * FROM tests_details WHERE jc_number = ? ${ROW_ORDER}`;
           db.query(sqlQuery, [jc_number], (error, result) => {
             if (error) return res.status(500).json({ error });
             output["tests_details"] = result;

@@ -25,6 +25,7 @@ import {
   CardContent,
   Chip,
   Stack,
+  Autocomplete,
 } from "@mui/material";
 import {
   Close as CloseIcon,
@@ -134,16 +135,24 @@ const PrefillNotes = ({ prefill }) => {
             }). Generating again records version ${last.version + 1}.`
           : `Filled in from the job card${sug.reportTypeFrom ? `: report type from ${sug.reportTypeFrom}` : ""}${
               sug.companyLogo ? ", customer logo from Customers" : ""
-            }${(sug.chambers || []).some((c) => c.chamberMake) ? ", chamber make from earlier reports" : ""}.`}
+            }${(sug.chambers || []).some((c) => c.chamberId) ? ", chamber details from Chamber Calibration" : ""}${
+              sug.testCode ? `, test code ${sug.testCode} from the test category` : ""
+            }.`}
       </Alert>
       {prefill.missing?.length > 0 && (
         <Alert severity="warning">
-          The job card has no {prefill.missing.join(", ").toLowerCase()} for this test. Add them in the job card so the report is complete.
+          Still missing for this report (fill them in the job card or Chamber Calibration):
+          <Box component="ul" sx={{ m: 0, pl: 2.5 }}>
+            {prefill.missing.map((m) => (
+              <li key={m}>{m}</li>
+            ))}
+          </Box>
         </Alert>
       )}
       {expired.length > 0 && (
         <Alert severity="error">
-          Calibration was due before the test for {expired.map((c) => `${c.chamberInfo} (due ${c.calibrationDue})`).join(", ")}.
+          Calibration was due before the test for{" "}
+          {expired.map((c) => `${c.chamberId || c.chamberInfo.split("\n")[0]} (due ${c.calibrationDue})`).join(", ")}.
         </Alert>
       )}
     </Box>
@@ -294,14 +303,14 @@ const ReportConfigDialogV2 = ({
     const last = prefill.last;
     const sug = prefill.suggested || {};
     setReportType(last?.reportType || sug.reportType || defaultReportType);
-    setTestCode(last?.testCode || "");
+    setTestCode(last?.testCode || sug.testCode || "");
     setTestReportNumber(last?.reportNumber || sug.reportNumber || "");
     setUlrNumber(last?.ulrNumber || "");
     setOriginalReportIssueDate(last?.issueDate ? dayjs(last.issueDate) : dayjs());
     const chambersFrom = last?.chambers?.length ? last.chambers : sug.chambers || [];
     setChambers(
       chambersFrom.length
-        ? chambersFrom.map((c) => ({ chamberInfo: c.chamberInfo || "", chamberMake: c.chamberMake || "" }))
+        ? chambersFrom.map((c) => ({ chamberId: c.chamberId || "", chamberInfo: c.chamberInfo || "", chamberMake: c.chamberMake || "" }))
         : [{ chamberInfo: "", chamberMake: "" }]
     );
     if (sug.companyLogo) {
@@ -830,14 +839,37 @@ const ReportConfigDialogV2 = ({
             <Grid container spacing={2}>
               {/* Test Code Field */}
               <Grid item xs={12} sm={6} md={4}>
-                <TextField
-                  label="Test Code"
-                  variant="outlined"
-                  fullWidth
-                  margin="normal"
-                  value={testCode}
-                  onChange={(e) => setTestCode(e.target.value.toUpperCase())}
-                  placeholder="e.g., TC, RV, TS, IP"
+                <Autocomplete
+                  freeSolo
+                  options={prefill?.testCodeOptions || []}
+                  groupBy={(o) => o.group}
+                  getOptionLabel={(o) => (typeof o === "string" ? o : o.code)}
+                  renderOption={(props, o) => (
+                    <li {...props} key={`${o.group}-${o.code}-${o.label}`}>
+                      <Box sx={{ display: "flex", gap: 1, width: "100%" }}>
+                        <b>{o.code}</b>
+                        <Typography variant="body2" color="text.secondary" noWrap>
+                          {o.label}
+                        </Typography>
+                      </Box>
+                    </li>
+                  )}
+                  filterOptions={(options, { inputValue }) => {
+                    const q = inputValue.toLowerCase();
+                    return options.filter((o) => o.code.toLowerCase().includes(q) || o.label.toLowerCase().includes(q));
+                  }}
+                  inputValue={testCode}
+                  onInputChange={(e, value) => setTestCode((value || "").toUpperCase())}
+                  onChange={(e, value) => setTestCode(((typeof value === "string" ? value : value?.code) || "").toUpperCase())}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Test Code"
+                      margin="normal"
+                      placeholder="Pick a category or type, e.g. TC, VIB/TC/VIB"
+                      helperText="Pick from the list or type your own"
+                    />
+                  )}
                 />
               </Grid>
 
@@ -887,7 +919,51 @@ const ReportConfigDialogV2 = ({
                 </LocalizationProvider>
               </Grid>
 
-              {/* Multiple Chambers Support */}
+              {/* Chambers used: picked from Chamber Calibration, each fills its own block */}
+              <Grid item xs={12}>
+                <Autocomplete
+                  multiple
+                  options={prefill?.chamberOptions || []}
+                  getOptionLabel={(o) => `${o.chamberId} - ${o.chamberInfo.split("\n")[0]}`}
+                  isOptionEqualToValue={(o, v) => o.chamberId === v.chamberId}
+                  value={(prefill?.chamberOptions || []).filter((o) => chambers.some((c) => c.chamberId && c.chamberId === o.chamberId))}
+                  onChange={(e, picked) => {
+                    const typed = chambers.filter((c) => !c.chamberId && (c.chamberInfo || c.chamberMake));
+                    const next = picked.map(
+                      (o) =>
+                        chambers.find((c) => c.chamberId === o.chamberId) || {
+                          chamberId: o.chamberId,
+                          chamberInfo: o.chamberInfo,
+                          chamberMake: o.chamberMake,
+                        }
+                    );
+                    const all = [...next, ...typed];
+                    setChambers(all.length ? all : [{ chamberId: "", chamberInfo: "", chamberMake: "" }]);
+                  }}
+                  renderOption={(props, o) => (
+                    <li {...props} key={o.chamberId}>
+                      <Box>
+                        <Typography variant="body2">
+                          <b>{o.chamberId}</b> {o.chamberInfo.split("\n")[0]}
+                        </Typography>
+                        <Typography variant="caption" color={o.calibrationExpired ? "error" : "text.secondary"}>
+                          {o.hasDetails ? o.chamberMake : "Make / serial no. not set"}
+                          {o.calibrationDue ? ` · calibration due ${o.calibrationDue}` : ""}
+                        </Typography>
+                      </Box>
+                    </li>
+                  )}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Chambers used"
+                      margin="normal"
+                      helperText="Each chamber picked is added below with its make, serial number and calibration. Several chambers are listed side by side in the report."
+                    />
+                  )}
+                />
+              </Grid>
+
               {chambers.map((chamber, index) => (
                 <Grid
                   container
@@ -905,6 +981,7 @@ const ReportConfigDialogV2 = ({
                     >
                       <Typography variant="subtitle2">
                         Chamber {index + 1}
+                        {chamber.chamberId ? ` · ${chamber.chamberId}` : " · typed"}
                       </Typography>
                       {chambers.length > 1 && (
                         <IconButton
@@ -925,16 +1002,16 @@ const ReportConfigDialogV2 = ({
 
                   <Grid item xs={12} sm={6}>
                     <TextField
-                      label="Chamber Info"
+                      label="Chamber details (as printed)"
                       variant="outlined"
                       fullWidth
                       margin="normal"
                       multiline
-                      rows={3}
+                      minRows={3}
                       value={chamber.chamberInfo}
                       onChange={(e) => {
                         const newChambers = [...chambers];
-                        newChambers[index].chamberInfo = e.target.value;
+                        newChambers[index] = { ...newChambers[index], chamberInfo: e.target.value };
                         setChambers(newChambers);
                       }}
                     />
@@ -942,16 +1019,16 @@ const ReportConfigDialogV2 = ({
 
                   <Grid item xs={12} sm={6}>
                     <TextField
-                      label="Chamber Make"
+                      label="Chamber / Make / SL no. (test table)"
                       variant="outlined"
                       fullWidth
                       margin="normal"
                       multiline
-                      rows={3}
+                      minRows={3}
                       value={chamber.chamberMake}
                       onChange={(e) => {
                         const newChambers = [...chambers];
-                        newChambers[index].chamberMake = e.target.value;
+                        newChambers[index] = { ...newChambers[index], chamberMake: e.target.value };
                         setChambers(newChambers);
                       }}
                     />
@@ -967,11 +1044,11 @@ const ReportConfigDialogV2 = ({
                   onClick={() => {
                     setChambers([
                       ...chambers,
-                      { chamberInfo: "", chamberMake: "" },
+                      { chamberId: "", chamberInfo: "", chamberMake: "" },
                     ]);
                   }}
                 >
-                  Add Another Chamber
+                  Type a chamber not in the list
                 </Button>
               </Grid>
             </Grid>

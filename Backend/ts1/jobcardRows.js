@@ -1,4 +1,5 @@
 const dayjs = require("dayjs");
+const { setRowOrder } = require("../jobcardRowOrder");
 const { accessOf } = require("../access/accessControl");
 
 // TS1 job card rows (EUT, tests, tests performed) saved in one transaction: rows not sent
@@ -147,6 +148,7 @@ async function saveTable(conn, access, jcNumber, key, rows) {
       changed = true;
     }
   }
+  await setRowOrder(conn, spec.table, ids);
   return { ids, changes, changed };
 }
 

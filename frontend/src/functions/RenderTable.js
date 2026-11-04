@@ -14,9 +14,11 @@ import {
   Box,
   Button,
   Autocomplete,
+  Tooltip,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import RemoveIcon from "@mui/icons-material/Remove";
+import PlaylistAddIcon from "@mui/icons-material/PlaylistAdd";
 import { DateTimePicker, TimePicker } from "@mui/x-date-pickers";
 import { DatePicker } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
@@ -64,7 +66,14 @@ const RenderTable = ({
 
   // Function to add a new row
   const addTableRow = () => {
-    setTableRows([...tableRows, rowTemplate]);
+    setTableRows([...tableRows, { ...rowTemplate }]);
+  };
+
+  // Insert an empty row just below the given one
+  const insertRowBelow = (index) => {
+    const updatedRows = [...tableRows];
+    updatedRows.splice(index + 1, 0, { ...rowTemplate });
+    setTableRows(updatedRows);
   };
 
   // Function to remove a row
@@ -185,9 +194,11 @@ const RenderTable = ({
                 </TableCell>
               ))}
               <TableCell>
-                <IconButton onClick={addTableRow}>
-                  <AddIcon sx={{ color: "white" }} size="small" />
-                </IconButton>
+                <Tooltip title="Add a row at the end">
+                  <IconButton onClick={addTableRow}>
+                    <AddIcon sx={{ color: "white" }} size="small" />
+                  </IconButton>
+                </Tooltip>
               </TableCell>
             </TableRow>
           </TableHead>
@@ -395,16 +406,26 @@ const RenderTable = ({
                     </WithStandard>
                   </TableCell>
                 ))}
-                <TableCell>
-                  <IconButton
-                    onClick={() => {
-                      setRowIndexPendingDeletion(rowIndex);
-                      setConfirmDeleteOpen(true);
-                    }}
-                    disabled={tableRows.length === 1}
-                  >
-                    <RemoveIcon />
-                  </IconButton>
+                <TableCell sx={{ whiteSpace: "nowrap", p: "2px" }}>
+                  <Tooltip title="Insert a row below">
+                    <IconButton size="small" onClick={() => insertRowBelow(rowIndex)}>
+                      <PlaylistAddIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Remove this row">
+                    <span>
+                      <IconButton
+                        size="small"
+                        onClick={() => {
+                          setRowIndexPendingDeletion(rowIndex);
+                          setConfirmDeleteOpen(true);
+                        }}
+                        disabled={tableRows.length === 1}
+                      >
+                        <RemoveIcon fontSize="small" />
+                      </IconButton>
+                    </span>
+                  </Tooltip>
                 </TableCell>
               </TableRow>
             ))}

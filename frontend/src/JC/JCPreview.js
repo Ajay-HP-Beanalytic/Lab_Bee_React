@@ -197,11 +197,15 @@ export default function JCPreview({
   };
 
   // Report number, NABL, chambers, logo... filled in from the job card / last issue
-  const loadReportPrefill = async (row) => {
+  // (an ESS report passes its other tests too, for their chambers and test codes)
+  const loadReportPrefill = async (row, otherRows = []) => {
     setReportPrefill(null);
     if (!row?.id) return;
+    const others = otherRows.map((r) => r?.id).filter(Boolean);
     try {
-      const res = await axios.get(`${serverBaseAddress}/api/ts1/report-context/${row.id}`);
+      const res = await axios.get(`${serverBaseAddress}/api/ts1/report-context/${row.id}`, {
+        params: others.length ? { with: others.join(",") } : {},
+      });
       setReportPrefill(res.data);
     } catch (error) {
       console.error("Error loading report data:", error);
@@ -444,7 +448,7 @@ export default function JCPreview({
 
     // Store data and open config dialog
     setLastReportConfig(null);
-    await loadReportPrefill(essTestRows[0]);
+    await loadReportPrefill(essTestRows[0], essTestRows.slice(1));
     setPendingReportData(formattedReportData);
     setConfigDialogOpen(true);
   };

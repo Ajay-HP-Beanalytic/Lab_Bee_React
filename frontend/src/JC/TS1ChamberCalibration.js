@@ -85,6 +85,10 @@ export default function ChamberAndCalibration() {
   // const [calibrationStatus, setCalibrationStatus] = useState("");
   const [chamberStatus, setChamberStatus] = useState("");
   const [remarks, setRemarks] = useState("");
+  // Printed in the chamber block of test reports
+  const [chamberMake, setChamberMake] = useState("");
+  const [chamberModel, setChamberModel] = useState("");
+  const [chamberSerialNo, setChamberSerialNo] = useState("");
 
   // Calibration status is now auto-calculated by backend
 
@@ -175,6 +179,9 @@ export default function ChamberAndCalibration() {
           calibrationStatus: autoCalibrationStatus, // Use auto-calculated status
           chamberStatus,
           remarks,
+          chamberMake,
+          chamberModel,
+          chamberSerialNo,
         },
       );
 
@@ -451,6 +458,9 @@ export default function ChamberAndCalibration() {
     setCalibratedBy(row.calibration_done_by);
     setChamberStatus(row.chamber_status);
     setRemarks(row.remarks);
+    setChamberMake(row.chamber_make || "");
+    setChamberModel(row.chamber_model || "");
+    setChamberSerialNo(row.chamber_serial_no || "");
   };
 
   // Function to operate cancel btn
@@ -462,6 +472,9 @@ export default function ChamberAndCalibration() {
     setCalibratedBy("");
     setChamberStatus("");
     setRemarks("");
+    setChamberMake("");
+    setChamberModel("");
+    setChamberSerialNo("");
 
     setEditId("");
     setEditFields(false);
@@ -712,6 +725,16 @@ export default function ChamberAndCalibration() {
       align: "center",
       headerAlign: "center",
       headerClassName: "custom-header-color",
+    },
+    {
+      field: "chamber_make",
+      headerName: "Make / Model / SL No",
+      width: 220,
+      align: "center",
+      headerAlign: "center",
+      headerClassName: "custom-header-color",
+      valueGetter: (value, row) =>
+        [row.chamber_make, row.chamber_model, row.chamber_serial_no].filter(Boolean).join(" / "),
     },
     {
       field: "calibration_done_date",
@@ -1099,6 +1122,26 @@ export default function ChamberAndCalibration() {
                 variant="outlined"
                 autoComplete="on"
               />
+
+              {/* Printed in the chamber details of test reports */}
+              {[
+                ["Make", chamberMake, setChamberMake, "e.g. Comet Environs"],
+                ["Model", chamberModel, setChamberModel, "e.g. COMETAIR-RTCC"],
+                ["Serial Number", chamberSerialNo, setChamberSerialNo, "e.g. 475"],
+              ].map(([label, value, setValue, placeholder]) => (
+                <TextField
+                  key={label}
+                  sx={{ marginBottom: "16px", marginLeft: "10px", borderRadius: 3 }}
+                  value={value}
+                  onChange={(e) => setValue(e.target.value)}
+                  label={label}
+                  placeholder={placeholder}
+                  helperText={label === "Make" ? "Make, model and serial number are printed in test reports" : undefined}
+                  margin="normal"
+                  fullWidth
+                  variant="outlined"
+                />
+              ))}
 
               <TextField
                 sx={{
