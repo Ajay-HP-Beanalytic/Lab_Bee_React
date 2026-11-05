@@ -6,9 +6,8 @@ import BEA_LOGO from "./BEA_LOGO.png";
 import NABL_LOGO from "./NABL_LOGO.png";
 import { createFirstPage } from "./FirstPage";
 import { createGeneralInfoTable } from "./GeneralInfoTable";
-import { createEUTInfoTable } from "./EUTInfoTable";
+import { createChamberSection, createEUTInfoTable } from "./EUTInfoTable";
 import { createTestDetailsInfoTable } from "./TestDetailsInfoTable";
-import { addGeneralTestImages } from "./GeneralTestImages";
 import { addCompleteTestImages } from "./CompleteTestImages";
 import { addTestGraphImages } from "./TestGraphImages";
 import { endOfTheReportLine } from "./EndOfReportText";
@@ -163,23 +162,17 @@ export const GenerateReportDocument = async (
           // General Info Table
           ...createGeneralInfoTable(comprehensiveData, reportConfig),
 
-          // EUT/DUT Table
+          // "It is certified..." chambers (+ test specifications), as in the lab's reports
+          ...createChamberSection(comprehensiveData, reportConfig),
+
+          // Table 01: EUT/DUT details
           ...createEUTInfoTable(comprehensiveData, reportConfig),
 
-          // Test Details Table
+          // Table 02: tests conducted (columns per test family) and the notes
           ...createTestDetailsInfoTable(comprehensiveData, reportConfig),
 
-          // General Test Images (testImages)
-          ...(reportConfig.imageRequirements?.testImages
-            ? addGeneralTestImages(comprehensiveData, reportConfig)
-            : []),
-
-          // Complete Test Images (before/during/after)
-          ...(reportConfig.imageRequirements?.beforeTestImages ||
-          reportConfig.imageRequirements?.duringTestImages ||
-          reportConfig.imageRequirements?.afterTestImages
-            ? addCompleteTestImages(comprehensiveData, reportConfig)
-            : []),
+          // Appendix A: photos - before, test setup, during, after
+          ...addCompleteTestImages(comprehensiveData, reportConfig),
 
           // Graph Images - include here if NOT landscape mode
           ...(graphContent && !useGraphLandscape ? graphContent : []),

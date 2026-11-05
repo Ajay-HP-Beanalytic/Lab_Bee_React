@@ -25,6 +25,7 @@ import {
   CardContent,
   Chip,
   Stack,
+  Switch,
   Autocomplete,
 } from "@mui/material";
 import {
@@ -37,9 +38,12 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 
 import { toast } from "react-toastify";
-import ImageRequirementsConfig from "./ImageRequirementsConfig";
 import ImageUploadSection from "./ImageUploadSection";
 import ChambersPicker, { toChamber, forReport, startingChambers } from "./ChambersPicker";
+import ReportContentStep from "./ReportContentStep";
+import LivePreview from "./LivePreview";
+import PhotoManager from "../../JC/ReportWorkflow/PhotoManager";
+import { FAMILIES, defaultContent, withFamily } from "../../Reports/reportLayouts";
 import dayjs from "dayjs";
 import advancedFormat from "dayjs/plugin/advancedFormat";
 
@@ -181,6 +185,10 @@ const ReportConfigDialogV2 = ({
   testCategory = "",
   isVibrationTest = false,
   prefill = null, // from /api/ts1/report-context: last issue of this report, or suggestions
+  reportTests = [], // the tests in this report (prepareReportData), for Table 02
+  eutRows = [], // the report's EUTs (Table 03 of salt fog)
+  testDetailId = null, // the report's (first) test row: its photos are kept on the server
+  onPreview = null, // (config) => Promise<Blob>: the draft for the live preview
 }) => {
   const [activeStep, setActiveStep] = useState(0);
   const [testCode, setTestCode] = useState("");
@@ -196,6 +204,9 @@ const ReportConfigDialogV2 = ({
 
   // Chambers in the report (see ChambersPicker): name, details, test-table text
   const [chambers, setChambers] = useState([]);
+
+  // Layout family, Table 02 rows, test specifications and notes (see ReportContentStep)
+  const [content, setContent] = useState(null);
 
   // Upload progress tracking (Option B)
   const [uploadProgress, setUploadProgress] = useState(null); // { current: 0, total: 10, category: 'testImages' }
@@ -241,6 +252,7 @@ const ReportConfigDialogV2 = ({
           : null
       );
       setChambers((initialConfig.chambers || []).map(toChamber));
+      setContent(initialConfig.content || null);
 
       // Restore image requirements (extract from initial config)
       const requirements = {
@@ -314,12 +326,21 @@ const ReportConfigDialogV2 = ({
     }
   }, [open, initialConfig, prefill, defaultReportType]);
 
-  const steps = [
-    "Report Info",
-    "Image Requirements",
-    "Upload Images",
-    "Review",
-  ];
+  // A new report starts from what the last draft of this report said, else from the job card
+  useEffect(() => {
+    if (!open || initialConfig) return;
+    const last = prefill?.last?.content;
+    const start = last?.rows?.length ? withFamily(last, last.family) : defaultContent(reportTests, testCategory, eutRows);
+    setContent(start);
+    // graphs are on for the families whose reports have them (thermal, vibration, ESS...)
+    setImageRequirements((r) => ({ ...r, graphImages: !!FAMILIES[start.family]?.graph }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, initialConfig, prefill]);
+
+  const steps = ["Report Info", "Report Content", "Photos", "Logo & Graphs", "Review"];
+
+  // photos are kept on the server: a change bumps this so the preview is made again
+  const [photosVersion, setPhotosVersion] = useState(0);
 
   // ============================================
   // HELPER FUNCTIONS
@@ -722,8 +743,7 @@ const ReportConfigDialogV2 = ({
     setActiveStep(step);
   };
 
-  const handleConfirm = () => {
-    const config = {
+  const buildConfig = () => ({
       reportType,
       testCode,
       testReportNumber,
@@ -736,6 +756,7 @@ const ReportConfigDialogV2 = ({
         ? originalReportIssueDate.format("YYYY-MM-DD")
         : null,
       chambers: forReport(chambers), // name + details for each chamber
+      content: content || defaultContent(reportTests, testCategory, eutRows),
       // Image requirements - tracks which image types user wants to include
       imageRequirements,
       // Image data
@@ -751,10 +772,16 @@ const ReportConfigDialogV2 = ({
       afterTestImagesBase64: images.afterTestImagesBase64,
       graphImages: images.graphImages,
       graphImagesBase64: images.graphImagesBase64,
-    };
+  });
 
-    // console.log("Report Configuration:", config);
-    onConfirm(config);
+  const previewVersion = JSON.stringify([
+    reportType, testCode, testReportNumber, ulrNumber, originalReportIssueDate ? originalReportIssueDate.format("YYYY-MM-DD") : "",
+    chambers, content, imageRequirements, (images.graphImagesBase64 || []).length, images.companyLogoBase64 ? images.companyLogoBase64.length : 0,
+    photosVersion,
+  ]);
+
+  const handleConfirm = () => {
+    onConfirm(buildConfig());
     // Don't reset here - let parent component handle cleanup
     // handleReset(); // REMOVED: This was clearing data when going to preview
   };
@@ -767,6 +794,7 @@ const ReportConfigDialogV2 = ({
     setUlrNumber("");
     setOriginalReportIssueDate(() => dayjs());
     setChambers([]);
+    setContent(null);
     setImageRequirements({ companyLogo: true });
     setImages({
       companyLogo: null,
@@ -798,6 +826,10 @@ const ReportConfigDialogV2 = ({
   // Render step content
   const renderStepContent = (step) => {
     switch (step) {
+      case 1:
+        // Step 2: what the report says (layout, Table 02, specifications, notes)
+        return <ReportContentStep value={content} onChange={setContent} />;
+
       case 0:
         // Step 1: Report Type
         return (
@@ -922,27 +954,37 @@ const ReportConfigDialogV2 = ({
           </Box>
         );
 
-      case 1:
-        // Step 2: Image Requirements
-        return (
-          <ImageRequirementsConfig
-            config={imageRequirements}
-            onChange={setImageRequirements}
-            testCategory={testCategory}
-            isVibrationTest={isVibration}
-          />
-        );
-
       case 2:
+        // Step 3: photos of Appendix A (kept with the report on the server)
+        return <PhotoManager testDetailId={testDetailId} onChanged={() => setPhotosVersion((v) => v + 1)} />;
+
+      case 3:
         // Step 3: Upload Images
         return (
           <Box>
             <Typography variant="h6" gutterBottom>
-              Upload Images
+              Customer logo and graphs
             </Typography>
-            <Typography variant="body2" color="text.secondary" gutterBottom>
-              Upload images for the selected categories
-            </Typography>
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={3}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={!!imageRequirements.companyLogo}
+                    onChange={(e) => setImageRequirements((r) => ({ ...r, companyLogo: e.target.checked }))}
+                  />
+                }
+                label="Customer logo on the first page"
+              />
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={!!imageRequirements.graphImages}
+                    onChange={(e) => setImageRequirements((r) => ({ ...r, graphImages: e.target.checked }))}
+                  />
+                }
+                label={isVibration ? "Vibration controller documents" : "Graphs"}
+              />
+            </Stack>
 
             {/* Image Limits Info Alert */}
             <Alert severity="info" sx={{ my: 2 }}>
@@ -998,77 +1040,9 @@ const ReportConfigDialogV2 = ({
               />
             )}
 
-            {imageRequirements.testImages && (
-              <ImageUploadSection
-                title="Test Images"
-                type="testImages"
-                images={images.testImages}
-                previews={images.testImagesPreviews}
-                onUpload={(files) => handleImagesUpload(files, "testImages")}
-                onRemove={(index) => handleRemoveImage(index, "testImages")}
-                dragActive={dragActive.testImages}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onDrop={handleDrop}
-              />
-            )}
 
-            {imageRequirements.beforeTestImages && (
-              <ImageUploadSection
-                title="Before Test Images"
-                type="beforeTestImages"
-                images={images.beforeTestImages}
-                previews={images.beforeTestImagesPreviews}
-                onUpload={(files) =>
-                  handleImagesUpload(files, "beforeTestImages")
-                }
-                onRemove={(index) =>
-                  handleRemoveImage(index, "beforeTestImages")
-                }
-                dragActive={dragActive.beforeTestImages}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onDrop={handleDrop}
-              />
-            )}
 
-            {imageRequirements.duringTestImages && (
-              <ImageUploadSection
-                title="During Test Images"
-                type="duringTestImages"
-                images={images.duringTestImages}
-                previews={images.duringTestImagesPreviews}
-                onUpload={(files) =>
-                  handleImagesUpload(files, "duringTestImages")
-                }
-                onRemove={(index) =>
-                  handleRemoveImage(index, "duringTestImages")
-                }
-                dragActive={dragActive.duringTestImages}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onDrop={handleDrop}
-              />
-            )}
 
-            {imageRequirements.afterTestImages && (
-              <ImageUploadSection
-                title="After Test Images"
-                type="afterTestImages"
-                images={images.afterTestImages}
-                previews={images.afterTestImagesPreviews}
-                onUpload={(files) =>
-                  handleImagesUpload(files, "afterTestImages")
-                }
-                onRemove={(index) =>
-                  handleRemoveImage(index, "afterTestImages")
-                }
-                dragActive={dragActive.afterTestImages}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                onDrop={handleDrop}
-              />
-            )}
 
             {imageRequirements.graphImages && (
               <ImageUploadSection
@@ -1094,7 +1068,7 @@ const ReportConfigDialogV2 = ({
           </Box>
         );
 
-      case 3:
+      case 4:
         // Step 4: Review - Improved Design
         return (
           <Box>
@@ -1426,13 +1400,18 @@ const ReportConfigDialogV2 = ({
   };
 
   return (
-    <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
-      <DialogTitle>
+    <Dialog open={open} onClose={handleClose} fullScreen>
+      <DialogTitle sx={{ py: 1.25 }}>
         <Box display="flex" alignItems="center" justifyContent="space-between">
-          <Typography variant="h6">Configure Report</Typography>
-          <IconButton onClick={handleClose} size="small">
-            <CloseIcon />
-          </IconButton>
+          <Typography variant="h6">Report builder</Typography>
+          <Box>
+            <Button onClick={handleConfirm} variant="contained" sx={{ mr: 1 }}>
+              Generate the draft
+            </Button>
+            <IconButton onClick={handleClose} size="small">
+              <CloseIcon />
+            </IconButton>
+          </Box>
         </Box>
       </DialogTitle>
 
@@ -1451,8 +1430,13 @@ const ReportConfigDialogV2 = ({
         ))}
       </Stepper>
 
-      <DialogContent dividers sx={{ minHeight: 400 }}>
-        {renderStepContent(activeStep)}
+      <DialogContent dividers sx={{ p: 0, display: "flex", minHeight: 0 }}>
+        <Box sx={{ flex: onPreview ? "0 0 55%" : 1, overflowY: "auto", p: 3, minWidth: 0 }}>{renderStepContent(activeStep)}</Box>
+        {onPreview && (
+          <Box sx={{ flex: "0 0 45%", borderLeft: "1px solid #e3e8ee", minWidth: 0, display: { xs: "none", md: "flex" }, flexDirection: "column" }}>
+            {open && <LivePreview config={buildConfig()} version={previewVersion} onPreview={onPreview} />}
+          </Box>
+        )}
       </DialogContent>
 
       <DialogActions sx={{ p: 2, justifyContent: "space-between" }}>

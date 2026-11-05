@@ -11,11 +11,10 @@ import {
   authorizedByName,
   preparedByDesignation,
   preparedByName,
-  reportDisclaimerNoteText,
-  reportDisclaimerText,
   reviewedByDesignation,
   reviewedByName,
 } from "./reportConstants";
+import { testTitle } from "./reportLayouts";
 import {
   createTextRun,
   createParagraph,
@@ -57,7 +56,7 @@ const markedCell = (word, text, alignment, width, bottom) =>
   );
 
 const issueDateBlock = (reportConfig) => [
-  createParagraph(`Draft Date: ${reportConfig.originalReportIssueDate || "N/A"}`, {
+  createParagraph(`Draft Issue Date: ${reportConfig.originalReportIssueDate || "N/A"}`, {
     alignment: AlignmentType.LEFT,
     bold: true,
     size: 25,
@@ -100,9 +99,7 @@ export const createFirstPage = (comprehensiveData, reportConfig) => {
   return [
     // Test report heading
     createParagraph(
-      `${
-        (comprehensiveData?.currentTestRow?.testName).toUpperCase() || ""
-      } TEST REPORT`,
+      `${(reportConfig?.content?.title || testTitle(comprehensiveData?.currentTestRow?.testName)).toUpperCase()} TEST REPORT`.trim(),
       {
         alignment: AlignmentType.CENTER,
         bold: true,
@@ -254,42 +251,5 @@ export const createFirstPage = (comprehensiveData, reportConfig) => {
       }
     ),
 
-    // Disclaimer section
-    new Paragraph({
-      alignment: AlignmentType.LEFT,
-      spacing: {
-        before: 400,
-        after: 200,
-      },
-      children: [
-        // Note: underline is not in createTextRun helper, so we use TextRun directly
-        new TextRun({
-          text: "Disclaimer: ",
-          bold: true,
-          size: 21,
-          font: "Calibri(Body)",
-          color: "000000",
-          underline: {},
-        }),
-        createTextRun(reportDisclaimerText, {
-          bold: false,
-          size: 21,
-          font: "Calibri(Body)",
-          color: "000000",
-        }),
-      ],
-    }),
-
-    // Disclaimer note
-    createParagraph(reportDisclaimerNoteText, {
-      alignment: AlignmentType.LEFT,
-      bold: true,
-      size: 21,
-      color: "000000",
-      font: "Calibri(Body)",
-      spacing: {
-        after: 200,
-      },
-    }),
   ];
 };

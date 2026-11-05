@@ -67,10 +67,12 @@ function ItemEditor({ item, onSave, onCancel }) {
               ))}
             </TextField>
           )}
+          {v.scope === "report" && (
           <FormControlLabel
             control={<Checkbox checked={!!v.required} onChange={(e) => setV({ ...v, required: e.target.checked })} />}
-            label={v.scope === "report" ? "Needed before the final is issued" : "Needed before the job card is closed"}
+            label="Needed before the final is issued"
           />
+          )}
         </Stack>
         <Stack direction="row" spacing={1}>
           <Button variant="contained" size="small" onClick={() => onSave(v)}>
@@ -163,7 +165,7 @@ function ChecklistTab({ canManage }) {
                 </Typography>
                 <Stack direction="row" spacing={0.5} sx={{ mt: 0.25, flexWrap: "wrap", rowGap: 0.5 }}>
                   <Chip size="small" variant="outlined" label={it.kind === "auto" ? "Automatic" : WHO.find((w) => w[0] === it.who)?.[1]} />
-                  {it.required ? <Chip size="small" color="warning" label="Required" /> : <Chip size="small" label="Optional" />}
+                  {it.scope === "report" && (it.required ? <Chip size="small" color="warning" label="Required" /> : <Chip size="small" label="Optional" />)}
                   {!it.isActive && <Chip size="small" label="Turned off" />}
                 </Stack>
               </Box>
@@ -197,7 +199,11 @@ function ChecklistTab({ canManage }) {
 
   return (
     <>
-      {section("jobcard", "Job card checklist", "Shown on every TS1 job card. Required items must be done before the Lab Manager closes the job card.")}
+      {section(
+        "jobcard",
+        "Job card checklist",
+        "Shown on every TS1 job card. Every item that is turned on must be done before the job card can be closed; the Lab Manager's review is done by closing it (status Closed and closed date). Turn an item off if it doesn't apply."
+      )}
       {section("report", "Report checks", "Ticked for each report. Required checks must be done before its final report is issued.")}
     </>
   );

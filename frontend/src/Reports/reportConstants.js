@@ -13,6 +13,15 @@ This particular test does not require any statement of conformity or opinion/int
 
 `;
 
+// The disclaimer at the end of every report (as in the lab's current reports)
+export const disclaimerPoints = [
+  "The testing was done carefully and to the lab’s best ability.",
+  "The results reflect the condition of the sample only at the time it was tested.",
+  "The data applies only to the specific sample (DUT – Device Under Test) that was submitted.",
+  "The report does not include any judgment, certification, or interpretation—just raw results.",
+  "The lab (BE Analytic) is responsible for the report’s contents, except for any information that the customer provided.",
+];
+
 export const reportDisclaimerNoteText = `
 NOTE: This report shall not be reproduced except in full without approval of the laboratory 
 can provide assurance that parts of a report are not taken out of context.

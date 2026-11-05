@@ -9,7 +9,7 @@ const fs = require("fs");
 require("dotenv").config(); // Ensure .env is loaded
 const { saveRows, jobcardUser } = require("./ts1/jobcardRows");
 const { ts1ReportAPIs } = require("./ts1/TS1ReportAPI");
-const { openJobcardItems } = require("./ts1/TS1ReportWorkflowAPI");
+const { closeProblems, recordClose, recordReopen } = require("./ts1/TS1ReportWorkflowAPI");
 const { ROW_ORDER, ensureRowOrderColumns } = require("./jobcardRowOrder");
 
 // function of jobcard api's:
@@ -692,30 +692,33 @@ function jobcardsAPIs(app, io, labbeeUsers) {
       jcCloseDate,
       observations,
     } = req.body;
-    // Closing a TS1 job card: the required checklist items must be done (the Lab Manager
-    // can still close it after confirming, which is written to the audit trail)
-    if (jcStatus === "Closed" && jcNumber && me.role === "Lab Manager") {
+    // Closing a TS1 job card: every checklist item done and the closed date given; the Lab
+    // Manager's review is the closing itself (written once the close is saved). Reopening it
+    // takes the review away again.
+    let closing = false;
+    let reopening = false;
+    if (jcNumber) {
       try {
         const [current] = await db.promise().query("SELECT jc_status, jc_category FROM bea_jobcards WHERE jc_number = ?", [jcNumber]).then(([r]) => r);
-        if (current && current.jc_status !== "Closed" && (current.jc_category || jcCategory || "TS1") === "TS1") {
-          const open = await openJobcardItems(req, jcNumber);
-          if (open.length && !req.body.closeWithOpenItems) {
+        const isTS1 = current && (current.jc_category || jcCategory || "TS1") === "TS1";
+        const wasClosed = ["Closed", "Close"].includes(current?.jc_status);
+        closing = isTS1 && !wasClosed && ["Closed", "Close"].includes(jcStatus);
+        reopening = isTS1 && wasClosed && !!jcStatus && !["Closed", "Close"].includes(jcStatus);
+        if (closing) {
+          const open = await closeProblems(req, jcNumber, jcCloseDate);
+          if (open.length) {
             return res.status(409).json({
-              message: `These checklist items are not done yet: ${open.join("; ")}`,
+              message: `The job card can't be closed yet: ${open.join("; ")}`,
               error: "CHECKLIST_OPEN",
               openItems: open,
             });
           }
-          if (open.length) {
-            await db.promise().query(
-              `INSERT INTO ts1_job_card_audit_trail (table_name, record_id, jc_number, field_name, action_type, old_value, new_value, changed_by, user_role, user_department)
-               VALUES ('bea_jobcards', ?, ?, 'Closed with open checklist items', 'STATUS_CHANGE', NULL, ?, ?, ?, ?)`,
-              [req.params.id, jcNumber, open.join("; ").slice(0, 2000), me.user.name, me.role, me.department],
-            );
-          }
         }
       } catch (err) {
         console.error("Checklist check before closing failed:", err);
+        if (["Closed", "Close"].includes(jcStatus)) {
+          return res.status(err.status || 500).json({ message: err.status ? err.message : "The checklist could not be checked. Try again." });
+        }
       }
     }
 
@@ -1223,9 +1226,15 @@ function jobcardsAPIs(app, io, labbeeUsers) {
           }
         }
 
-        res.status(200).json({
-          message: "Jobcard updated successfully",
-        });
+        // the Lab Manager's review is the close (or is undone by reopening)
+        Promise.resolve()
+          .then(() => (closing ? recordClose(req, jcNumber, jcCloseDate) : reopening ? recordReopen(req, jcNumber) : null))
+          .catch((err) => console.error("Recording the job card review failed:", err))
+          .finally(() =>
+            res.status(200).json({
+              message: "Jobcard updated successfully",
+            }),
+          );
       });
     });
   });

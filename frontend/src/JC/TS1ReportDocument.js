@@ -246,6 +246,9 @@ export const prepareReportData = (comprehensiveData) => {
       eutSerialNo: t.eutSerialNo || "",
       standard: t.standard || "",
       remarks: t.remarks || "",
+      testCategory: t.testCategory || "",
+      // total duration for Table 02 (the actual duration, else the planned one)
+      duration: formatDuration(t.actualTestDuration || t.duration, t.actualTestDuration ? t.unit : "Hours"),
     })),
 
     // ============= Current Test Row (the specific test for this report) =============

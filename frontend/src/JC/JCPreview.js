@@ -44,6 +44,7 @@ import { toast } from "react-toastify";
 import JCChecklistPanel from "./ReportWorkflow/JCChecklistPanel";
 import ReportStageButton from "./ReportWorkflow/ReportStageButton";
 import FinalReleaseBox from "./ReportWorkflow/FinalReleaseBox";
+import { loadReportPhotos } from "./ReportWorkflow/reportPhotos";
 import { errorText, loadJcWorkflow, loadReportAssets, reportForRow, uploadReportFile } from "./ReportWorkflow/reportWorkflow";
 
 const Transition = forwardRef(function Transition(props, ref) {
@@ -274,6 +275,17 @@ export default function JCPreview({
     else handleGenerateReport(indices[0]);
   };
 
+  // The draft from the builder's config: company logo (Report images), the report's photos
+  // (kept on the server) and the job card data. Used by "Generate the draft" and the live preview.
+  const buildDraft = async (reportConfig) => {
+    const testDetailId = pendingReportData?.currentTestRow?.id;
+    const [assets, photos] = await Promise.all([
+      loadReportAssets({ date: reportConfig.originalReportIssueDateISO }),
+      testDetailId ? loadReportPhotos(testDetailId) : Promise.resolve([]),
+    ]);
+    return GenerateReportDocument(pendingReportData, { ...reportConfig, assets, photos, issue: { kind: "draft" } });
+  };
+
   // Handler for report config confirmation
   const handleReportConfigConfirm = async (reportConfig) => {
     setConfigDialogOpen(false);
@@ -283,13 +295,11 @@ export default function JCPreview({
       return;
     }
 
-    // Company logo from Reports > Settings > Report images (valid on the report date)
-    let withAssets;
+    let made;
     try {
-      const assets = await loadReportAssets({ date: reportConfig.originalReportIssueDateISO });
-      withAssets = { ...reportConfig, assets };
+      made = await buildDraft(reportConfig);
     } catch (error) {
-      toast.error(errorText(error, "Could not load the report images"), { autoClose: 10000 });
+      toast.error(errorText(error, "Could not make the report"), { autoClose: 10000 });
       setConfigDialogOpen(true);
       return;
     }
@@ -298,11 +308,8 @@ export default function JCPreview({
       // Store the config for the Previous button
       setLastReportConfig(reportConfig);
 
-      // Generate the draft (marked DRAFT, no signatures / QR code)
-      const { blob, fileName } = await GenerateReportDocument(
-        pendingReportData,
-        { ...withAssets, issue: { kind: "draft" } },
-      );
+      // The draft (marked DRAFT, no signatures)
+      const { blob, fileName } = made;
 
       // Set the preview modal state
       setPreviewDocumentBlob(blob);
@@ -320,6 +327,8 @@ export default function JCPreview({
             testCode: reportConfig.testCode,
             issueDate: reportConfig.originalReportIssueDateISO || null,
             chambers: reportConfig.chambers,
+            // layout, Table 02 rows, specifications and notes: the next draft starts from them
+            content: reportConfig.content,
             // an ESS report covers several test rows
             testIds: (pendingReportData.reportTests || []).map((t) => t.id).filter(Boolean),
             testName: pendingReportData.isESSTest
@@ -1001,6 +1010,10 @@ export default function JCPreview({
         prefill={reportPrefill}
         testCategory={pendingReportData?.currentTestRow?.testCategory || ""}
         isVibrationTest={pendingReportData?.isVibrationTest || false}
+        reportTests={pendingReportData?.reportTests || []}
+        eutRows={pendingReportData?.currentTestEutRows || []}
+        testDetailId={pendingReportData?.currentTestRow?.id || null}
+        onPreview={pendingReportData ? (cfg) => buildDraft(cfg).then((r) => r.blob) : null}
       />
 
       {/* Document Preview Modal */}

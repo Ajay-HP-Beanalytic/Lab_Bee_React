@@ -14,6 +14,7 @@ import {
   createHeadingParagraph,
 } from "./Report_Functions/docxHelpers";
 import { createTestGraphTable } from "./TestGraphTable";
+import { FAMILIES } from "./reportLayouts";
 import { parseVibrationDocuments } from "./Report_Functions/vibrationDocParser";
 
 // Note: We no longer need this function because the flag is computed in prepareReportData()
@@ -73,8 +74,10 @@ export const addTestGraphImages = async (
   const imageWidth = isLandscape ? 700 : 550;
   const imageHeight = isLandscape ? 500 : 400;
 
-  // Use the isThermalTest flag from prepareReportData (already computed)
-  const includeThermalTable = comprehensiveData.isThermalTest || false;
+  // The test data page (test description, units under test) for thermal-type tests
+  const family = FAMILIES[reportConfig?.content?.family];
+  const includeThermalTable = family ? !!family.dataPage : comprehensiveData.isThermalTest || false;
+  const graphNote = String(reportConfig?.content?.graphNote || "").trim();
 
   const content = [];
 
@@ -123,6 +126,10 @@ export const addTestGraphImages = async (
         height: imageHeight,
       })
     );
+    // e.g. "NOTE: In the above graph X-axis indicates Date & Time (Hour) and Y-axis ..."
+    for (const line of graphNote.split("\n").filter((x) => x.trim())) {
+      content.push(createCaptionParagraph(line.trim(), { bold: true, size: 20, alignment: "left", before: 100, after: 100 }));
+    }
   }
 
   // // Add end of report line

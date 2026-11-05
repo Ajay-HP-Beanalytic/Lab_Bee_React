@@ -28,9 +28,38 @@ async function ensureReportTables() {
       INDEX idx_jc (jc_number),
       INDEX idx_report_number (report_number)
     ) COMMENT='TS1 test reports generated from job cards (one row per generation)'`);
+  // what the report said: layout family, Table 02 rows, test specifications, notes
+  await query("ALTER TABLE ts1_report_register ADD COLUMN content JSON").catch((e) => {
+    if (e.code !== "ER_DUP_FIELDNAME") throw e;
+  });
 }
 
 const norm = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9]+/g, "");
+
+// The report's own text (layout family, Table 02 rows, specifications, notes), kept small
+const clip = (v, n) => String(v ?? "").slice(0, n);
+function contentOf(c) {
+  if (!c || typeof c !== "object" || !Array.isArray(c.rows)) return null;
+  return JSON.stringify({
+    family: clip(c.family, 20),
+    title: clip(c.title, 300),
+    notes: clip(c.notes, 3000),
+    table3: c.table3 && typeof c.table3 === "object"
+      ? { title: clip(c.table3.title, 300), headers: clip(c.table3.headers, 500), rows: clip(c.table3.rows, 5000) }
+      : null,
+    graphNote: clip(c.graphNote, 1000),
+    rows: c.rows.slice(0, 30).map((r) => ({
+      testId: parseInt(r?.testId) || null,
+      eutSerial: clip(r?.eutSerial, 500),
+      test: clip(r?.test, 300),
+      profile: clip(r?.profile, 1500),
+      medium: clip(r?.medium, 200),
+      duration: clip(r?.duration, 100),
+      observation: clip(r?.observation, 1000),
+      ...(r?.specs ? { specs: { title: clip(r.specs.title, 200), lines: clip(r.specs.lines, 2000) } } : {}),
+    })),
+  });
+}
 const parseJson = (v, fallback) => {
   if (v && typeof v === "object") return v;
   try {
@@ -324,6 +353,7 @@ function ts1ReportAPIs(app) {
         testCode: last.test_code,
         issueDate: last.issue_date ? dayjs(last.issue_date).format("YYYY-MM-DD") : null,
         chambers: parseJson(last.chambers, []),
+        content: (issues.find((r) => r.content) || {}).content ? parseJson(issues.find((r) => r.content).content, null) : null,
         generatedBy: last.generated_by,
         generatedAt: last.generated_at,
       },
@@ -374,10 +404,10 @@ function ts1ReportAPIs(app) {
     const [{ v }] = await query("SELECT COALESCE(MAX(version), 0) + 1 AS v FROM ts1_report_register WHERE test_detail_id = ?", [id]);
     await query(
       `INSERT INTO ts1_report_register
-         (test_detail_id, jc_number, test_name, report_number, ulr_number, report_type, test_code, issue_date, chambers, version, generated_by)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         (test_detail_id, jc_number, test_name, report_number, ulr_number, report_type, test_code, issue_date, chambers, version, generated_by, content)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [id, row.jc_number, row.testName, reportNumber || null, String(b.ulrNumber || "").trim() || null, reportType,
-        String(b.testCode || "").trim() || null, issueDate, JSON.stringify(chambers), v, access.user.name],
+        String(b.testCode || "").trim() || null, issueDate, JSON.stringify(chambers), v, access.user.name, contentOf(b.content)],
     );
 
     const sets = [];

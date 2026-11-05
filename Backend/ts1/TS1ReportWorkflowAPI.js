@@ -255,7 +255,14 @@ async function ensureWorkflowTables() {
       INDEX idx_tick_jc (jc_number)
     ) COMMENT='Manual checklist items ticked on a TS1 job card / report'`);
   await query("ALTER TABLE ts1_report_register ADD COLUMN kind VARCHAR(10) NOT NULL DEFAULT 'draft'").catch(ignoreDup);
+  await require("./TS1ReportPhotosAPI").ensurePhotoTables();
   await seedChecklist();
+  // the Lab Manager's review is now done by closing the job card
+  await query(
+    `UPDATE ts1_checklist_items SET label = 'Job card reviewed and closed by the Lab Manager',
+       help = 'Done by closing the job card (status Closed and closed date)'
+     WHERE item_key = 'jc_reviewed' AND label = 'Job card reviewed by the Lab Manager'`,
+  );
   await seedSignatories();
   await seedMenu();
 }
@@ -269,7 +276,7 @@ async function seedChecklist() {
     ["lab_conditions", "jobcard", "auto", "Start temperature and humidity entered for every test", "Printed as the lab conditions in the report", "anyone", 1],
     ["chambers_valid", "jobcard", "auto", "Chambers found and calibrated on the test date", "From Chamber Calibration / Chamber Specs", "anyone", 1],
     ["reports_final", "jobcard", "auto", "Final report issued for every test", null, "anyone", 1],
-    ["jc_reviewed", "jobcard", "manual", "Job card reviewed by the Lab Manager", null, "lab_manager", 1],
+    ["jc_reviewed", "jobcard", "manual", "Job card reviewed and closed by the Lab Manager", "Done by closing the job card (status Closed and closed date)", "lab_manager", 1],
     [null, "jobcard", "manual", "Samples handed over / returned to the customer", null, "anyone", 0],
     [null, "report", "manual", "Photos and graphs checked", null, "anyone", 0],
     [null, "report", "manual", "Test profile and observations match the job card", null, "anyone", 0],
@@ -1112,7 +1119,8 @@ async function workflowOf(me, jcNumber) {
         who: it.who, whoText: whoText[it.who],
         done: a ? a.done : !!t, detail: a ? a.detail : "",
         doneBy: t?.done_by || null, doneAt: t?.done_at || null, note: t?.note || null,
-        canTick: it.kind === "manual" && canTick(it, me),
+        canTick: it.kind === "manual" && it.item_key !== REVIEW_KEY && canTick(it, me),
+        byClosing: it.item_key === REVIEW_KEY,
       };
     });
 
@@ -1169,13 +1177,13 @@ async function workflowOf(me, jcNumber) {
       onHold: r.testReportInstructions === "Hold Report", issues: [], files: [], events: [], checks: [],
     }));
 
-  const required = checklist.filter((c) => c.required);
   return {
     jcNumber,
     jcId: jc?.id || null,
     company: jc?.company_name || null,
     checklist,
-    progress: { done: checklist.filter((c) => c.done).length, total: checklist.length, requiredOpen: required.filter((c) => !c.done).length },
+    // every active job card item must be done before the job card is closed
+    progress: { done: checklist.filter((c) => c.done).length, total: checklist.length, requiredOpen: checklist.filter((c) => !c.done).length },
     reports,
     toPrepare,
     release,
@@ -1189,6 +1197,7 @@ async function tick(req) {
   const { itemId, jcNumber, testDetailId = 0, done, note } = req.body || {};
   const [item] = await query("SELECT * FROM ts1_checklist_items WHERE id = ? AND is_active = 1", [itemId]);
   if (!item || item.kind !== "manual") throw fail(400, "This item can't be ticked by hand");
+  if (item.item_key === REVIEW_KEY) throw fail(400, "This is done by closing the job card (status Closed and closed date)");
   if (!canTick(item, me)) throw fail(403, `Only ${whoText[item.who]} can tick "${item.label}"`);
   const jc = String(jcNumber || "");
   const [exists] = await query("SELECT id FROM bea_jobcards WHERE jc_number = ?", [jc]);
@@ -1211,10 +1220,51 @@ async function tick(req) {
   return { ok: true };
 }
 
-// Required job card items still open (used to stop closing the job card)
-async function openJobcardItems(req, jcNumber) {
-  const data = await workflowOf(await whoIs(req), jcNumber);
-  return data.checklist.filter((c) => c.required && !c.done).map((c) => c.label);
+// ---- Closing a TS1 job card ----------------------------------------------------------------------
+//
+// Every active job card item must be done, and the closed date given. The Lab Manager's review
+// ("jc_reviewed") is the closing itself: whoever may tick it closes the job card, and the tick is
+// written when the close is saved. Reopening the job card takes the tick away again.
+
+const REVIEW_KEY = "jc_reviewed";
+
+/** What stops closing: [] when the job card can be closed by this user */
+async function closeProblems(req, jcNumber, closedDate) {
+  const me = await whoIs(req);
+  const data = await workflowOf(me, jcNumber);
+  const problems = [];
+  if (!closedDate || !dayjs(closedDate).isValid()) problems.push("JC closed date");
+  const review = data.checklist.find((c) => c.key === REVIEW_KEY);
+  if (review && !canTick({ who: review.who }, me)) problems.push(`Only ${whoText[review.who]} can close the job card (${review.label})`);
+  for (const c of data.checklist) {
+    if (c.done || c.key === REVIEW_KEY) continue;
+    problems.push(c.detail ? `${c.label}: ${c.detail}` : c.label);
+  }
+  return problems;
+}
+
+async function reviewItem() {
+  const [it] = await query("SELECT * FROM ts1_checklist_items WHERE item_key = ? AND is_active = 1", [REVIEW_KEY]);
+  return it || null;
+}
+
+/** The close was saved: the review is done by the person who closed it */
+async function recordClose(req, jcNumber, closedDate) {
+  const me = await whoIs(req);
+  const it = await reviewItem();
+  if (!it) return;
+  await query(
+    `INSERT INTO ts1_checklist_ticks (item_id, jc_number, test_detail_id, note, done_by) VALUES (?, ?, 0, ?, ?)
+     ON DUPLICATE KEY UPDATE note = VALUES(note), done_by = VALUES(done_by), done_at = NOW()`,
+    [it.id, jcNumber, `Reviewed and closed - JC closed date ${dayjs(closedDate).format("DD MMM YYYY")}`, me.name],
+  );
+}
+
+/** The job card was opened again: the review has to be done again at the next close */
+async function recordReopen(req, jcNumber) {
+  const it = await reviewItem();
+  if (!it) return;
+  await query("DELETE FROM ts1_checklist_ticks WHERE item_id = ? AND jc_number = ? AND test_detail_id = 0", [it.id, jcNumber]);
 }
 
 // ---- Reports screen: every report, whose turn, due dates ---------------------------------------
@@ -1597,6 +1647,7 @@ const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 80 
 function ts1ReportWorkflowAPIs(app, { tablesReady = false } = {}) {
   if (!tablesReady) ensureWorkflowTables().catch((err) => console.error("TS1 report workflow tables error:", err));
   startWatcher();
+  require("./TS1ReportPhotosAPI").ts1ReportPhotosAPIs(app);
 
   app.get("/api/ts1/jc-workflow", handle(jcWorkflow));
   app.post("/api/ts1/reports/:testDetailId/action", handle(doAction));
@@ -1632,4 +1683,7 @@ function ts1ReportWorkflowAPIs(app, { tablesReady = false } = {}) {
   app.get("/api/public/reports/:token/pdf", handle(publicPdf));
 }
 
-module.exports = { ts1ReportWorkflowAPIs, ensureWorkflowTables, noteDraft, openJobcardItems, noticeEndedTests, STAGES };
+module.exports = {
+  ts1ReportWorkflowAPIs, ensureWorkflowTables, noteDraft, closeProblems, recordClose, recordReopen, noticeEndedTests, STAGES,
+  whoIs, ISSUED_DIR, safe, relOf, fullOf,
+};

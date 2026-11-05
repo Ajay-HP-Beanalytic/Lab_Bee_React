@@ -21,8 +21,9 @@ import { errorText, fmt, tickItem } from "./reportWorkflow";
 
 /**
  * The job card checklist: items Lab Bee works out itself (tests complete, lab conditions,
- * chambers calibrated, final reports issued) and items ticked by hand. Required items
- * must be done before the Lab Manager closes the job card.
+ * chambers calibrated, final reports issued) and items ticked by hand. Every item must be
+ * done before the job card is closed; the Lab Manager's review is the closing itself
+ * (status Closed with the closed date).
  */
 export default function JCChecklistPanel({ data, jcNumber, onChanged }) {
   const [noteFor, setNoteFor] = useState(null);
@@ -57,7 +58,7 @@ export default function JCChecklistPanel({ data, jcNumber, onChanged }) {
             />
             {progress.requiredOpen > 0 && (
               <Typography variant="body2" color="text.secondary">
-                {progress.requiredOpen} required item{progress.requiredOpen === 1 ? "" : "s"} open before closing
+                {progress.requiredOpen} item{progress.requiredOpen === 1 ? "" : "s"} to finish before the job card can be closed
               </Typography>
             )}
           </Stack>
@@ -75,7 +76,7 @@ export default function JCChecklistPanel({ data, jcNumber, onChanged }) {
             {item.done ? (
               <CheckCircleIcon color="success" sx={{ mt: 0.25 }} />
             ) : (
-              <RadioButtonUncheckedIcon color={item.required ? "warning" : "disabled"} sx={{ mt: 0.25 }} />
+              <RadioButtonUncheckedIcon color="warning" sx={{ mt: 0.25 }} />
             )}
             <Box sx={{ flex: 1, minWidth: 0 }}>
               <Stack direction="row" spacing={1} alignItems="center" sx={{ flexWrap: "wrap" }}>
@@ -86,14 +87,21 @@ export default function JCChecklistPanel({ data, jcNumber, onChanged }) {
                   <Tooltip title="Lab Bee checks this from the job card">
                     <Chip size="small" icon={<AutoModeIcon />} label="Automatic" variant="outlined" />
                   </Tooltip>
+                ) : item.byClosing ? (
+                  <Chip size="small" variant="outlined" label={`By closing: ${item.whoText}`} />
                 ) : (
                   <Chip size="small" variant="outlined" label={`Ticked by: ${item.whoText}`} />
                 )}
-                {!item.required && <Chip size="small" label="Optional" />}
               </Stack>
               {item.help && (
                 <Typography variant="caption" color="text.secondary" component="div">
                   {item.help}
+                </Typography>
+              )}
+              {item.byClosing && !item.done && (
+                <Typography variant="caption" color="text.secondary" component="div">
+                  Done when the {item.whoText} sets the JC status to Closed with the closed date and saves the job card
+                  {progress.requiredOpen > 1 ? " - after everything above is done" : ""}.
                 </Typography>
               )}
               {!item.done && item.detail && (
@@ -126,7 +134,7 @@ export default function JCChecklistPanel({ data, jcNumber, onChanged }) {
                 </Stack>
               )}
             </Box>
-            {item.kind === "manual" && noteFor !== item.id && (
+            {item.kind === "manual" && !item.byClosing && noteFor !== item.id && (
               <Tooltip title={item.canTick ? "" : `Only ${item.whoText} can tick this`}>
                 <span>
                   <Button

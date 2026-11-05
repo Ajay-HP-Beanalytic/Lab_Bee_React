@@ -125,14 +125,21 @@ const useJobCardSubmit = () => {
       try {
         jcResponse = await axios.post(url, jobCardPayload);
       } catch (err) {
-        // Closing with required checklist items open: the Lab Manager can still close it
+        // Closing a TS1 job card: every checklist item must be done first (and the closed date given)
         const open = err.response?.data?.error === "CHECKLIST_OPEN" ? err.response.data.openItems || [] : null;
         if (!open) throw err;
-        const ok = window.confirm(
-          `These checklist items are not done yet:\n\n- ${open.join("\n- ")}\n\nClose the job card anyway? This is recorded in the history.`
+        toast.error(
+          <div>
+            <b>The job card can't be closed yet.</b> Finish these first (see the job card checklist):
+            <ul style={{ margin: "6px 0 0", paddingLeft: 18 }}>
+              {open.map((t) => (
+                <li key={t}>{t}</li>
+              ))}
+            </ul>
+          </div>,
+          { position: "top-center", autoClose: false }
         );
-        if (!ok) return { success: false };
-        jcResponse = await axios.post(url, { ...jobCardPayload, closeWithOpenItems: true });
+        return { success: false };
       }
       jcNumber = jcResponse.data.jcNumber || formData.jcNumber;
       created = !id;

@@ -159,7 +159,7 @@ async function finalizeReport(buffer, { issueDateText, version = 1, signers = []
   if (!draftLines.length) warnings.push('The "DRAFT REPORT" line was not found (already removed?)');
 
   // 2. Final issue date (+ revision)
-  const dateP = findIn((t) => /^\s*Draft Date\s*:/i.test(t));
+  const dateP = findIn((t) => /^\s*Draft (Issue )?Date\s*:/i.test(t));
   if (dateP) {
     let next = withText(dateP.p, `Final Issue Date: ${issueDateText}`);
     if (version > 1) {
@@ -168,7 +168,7 @@ async function finalizeReport(buffer, { issueDateText, version = 1, signers = []
     }
     dateP.part.replace(dateP.p, next);
   } else if (!findIn((t) => /Final Issue Date\s*:/i.test(t))) {
-    warnings.push('"Draft Date" was not found - put the final issue date in by hand');
+    warnings.push('"Draft Issue Date" was not found - put the final issue date in by hand');
   }
 
   // 3. NABL mark in the header
