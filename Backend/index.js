@@ -67,7 +67,9 @@ const validateSession = (req, res, next) => {
   const isFeasibilityPublicRoute =
     req.path.startsWith("/api/feasibility/validate-token/") ||
     req.path.startsWith("/api/feasibility/status/") ||
-    req.path === "/api/feasibility/submit";
+    req.path === "/api/feasibility/submit" ||
+    // the customer's report link / QR code (token-protected)
+    req.path.startsWith("/api/public/reports/");
 
   if (isFeasibilityPublicRoute) return next();
 
@@ -159,7 +161,7 @@ app.use(
 // };
 // app.use(cors(corsOption));
 
-app.use(express.json());
+app.use(express.json({ limit: "50mb" })); // same limit as below (the first parser wins)
 app.use(bodyParser.urlencoded({ extended: true }));
 
 // app.use(express.urlencoded({ extended: false })); // To handle the form data

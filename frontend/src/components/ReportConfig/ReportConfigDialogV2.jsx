@@ -29,8 +29,6 @@ import {
 } from "@mui/material";
 import {
   Close as CloseIcon,
-  Add as AddIcon,
-  Delete as DeleteIcon,
   CheckCircle as CheckCircleIcon,
   Photo as PhotoIcon,
 } from "@mui/icons-material";
@@ -41,6 +39,7 @@ import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import { toast } from "react-toastify";
 import ImageRequirementsConfig from "./ImageRequirementsConfig";
 import ImageUploadSection from "./ImageUploadSection";
+import ChambersPicker, { toChamber, forReport, startingChambers } from "./ChambersPicker";
 import dayjs from "dayjs";
 import advancedFormat from "dayjs/plugin/advancedFormat";
 
@@ -152,7 +151,7 @@ const PrefillNotes = ({ prefill }) => {
       {expired.length > 0 && (
         <Alert severity="error">
           Calibration was due before the test for{" "}
-          {expired.map((c) => `${c.chamberId || c.chamberInfo.split("\n")[0]} (due ${c.calibrationDue})`).join(", ")}.
+          {expired.map((c) => `${c.chamberId || c.name} (due ${c.calibrationDue})`).join(", ")}.
         </Alert>
       )}
     </Box>
@@ -195,10 +194,8 @@ const ReportConfigDialogV2 = ({
   // Determine if it is a vibration test (from prop only)
   const isVibration = isVibrationTest;
 
-  // Changed to array to support multiple chambers
-  const [chambers, setChambers] = useState([
-    { chamberInfo: "", chamberMake: "" },
-  ]);
+  // Chambers in the report (see ChambersPicker): name, details, test-table text
+  const [chambers, setChambers] = useState([]);
 
   // Upload progress tracking (Option B)
   const [uploadProgress, setUploadProgress] = useState(null); // { current: 0, total: 10, category: 'testImages' }
@@ -243,9 +240,7 @@ const ReportConfigDialogV2 = ({
           ? dayjs(initialConfig.originalReportIssueDateISO)
           : null
       );
-      setChambers(
-        initialConfig.chambers || [{ chamberInfo: "", chamberMake: "" }]
-      );
+      setChambers((initialConfig.chambers || []).map(toChamber));
 
       // Restore image requirements (extract from initial config)
       const requirements = {
@@ -307,12 +302,7 @@ const ReportConfigDialogV2 = ({
     setTestReportNumber(last?.reportNumber || sug.reportNumber || "");
     setUlrNumber(last?.ulrNumber || "");
     setOriginalReportIssueDate(last?.issueDate ? dayjs(last.issueDate) : dayjs());
-    const chambersFrom = last?.chambers?.length ? last.chambers : sug.chambers || [];
-    setChambers(
-      chambersFrom.length
-        ? chambersFrom.map((c) => ({ chamberId: c.chamberId || "", chamberInfo: c.chamberInfo || "", chamberMake: c.chamberMake || "" }))
-        : [{ chamberInfo: "", chamberMake: "" }]
-    );
+    setChambers(startingChambers(sug.chambers || [], last?.chambers || []));
     if (sug.companyLogo) {
       setImageRequirements((r) => ({ ...r, companyLogo: true }));
       setImages((prev) => ({
@@ -745,7 +735,7 @@ const ReportConfigDialogV2 = ({
       originalReportIssueDateISO: originalReportIssueDate
         ? originalReportIssueDate.format("YYYY-MM-DD")
         : null,
-      chambers, // Array of chamber objects
+      chambers: forReport(chambers), // name + details for each chamber
       // Image requirements - tracks which image types user wants to include
       imageRequirements,
       // Image data
@@ -776,7 +766,7 @@ const ReportConfigDialogV2 = ({
     setTestReportNumber("");
     setUlrNumber("");
     setOriginalReportIssueDate(() => dayjs());
-    setChambers([{ chamberInfo: "", chamberMake: "" }]);
+    setChambers([]);
     setImageRequirements({ companyLogo: true });
     setImages({
       companyLogo: null,
@@ -919,137 +909,14 @@ const ReportConfigDialogV2 = ({
                 </LocalizationProvider>
               </Grid>
 
-              {/* Chambers used: picked from Chamber Calibration, each fills its own block */}
+              {/* Chambers used: from the job card row, more can be picked or typed */}
               <Grid item xs={12}>
-                <Autocomplete
-                  multiple
+                <ChambersPicker
+                  chambers={chambers}
+                  setChambers={setChambers}
                   options={prefill?.chamberOptions || []}
-                  getOptionLabel={(o) => `${o.chamberId} - ${o.chamberInfo.split("\n")[0]}`}
-                  isOptionEqualToValue={(o, v) => o.chamberId === v.chamberId}
-                  value={(prefill?.chamberOptions || []).filter((o) => chambers.some((c) => c.chamberId && c.chamberId === o.chamberId))}
-                  onChange={(e, picked) => {
-                    const typed = chambers.filter((c) => !c.chamberId && (c.chamberInfo || c.chamberMake));
-                    const next = picked.map(
-                      (o) =>
-                        chambers.find((c) => c.chamberId === o.chamberId) || {
-                          chamberId: o.chamberId,
-                          chamberInfo: o.chamberInfo,
-                          chamberMake: o.chamberMake,
-                        }
-                    );
-                    const all = [...next, ...typed];
-                    setChambers(all.length ? all : [{ chamberId: "", chamberInfo: "", chamberMake: "" }]);
-                  }}
-                  renderOption={(props, o) => (
-                    <li {...props} key={o.chamberId}>
-                      <Box>
-                        <Typography variant="body2">
-                          <b>{o.chamberId}</b> {o.chamberInfo.split("\n")[0]}
-                        </Typography>
-                        <Typography variant="caption" color={o.calibrationExpired ? "error" : "text.secondary"}>
-                          {o.hasDetails ? o.chamberMake : "Make / serial no. not set"}
-                          {o.calibrationDue ? ` · calibration due ${o.calibrationDue}` : ""}
-                        </Typography>
-                      </Box>
-                    </li>
-                  )}
-                  renderInput={(params) => (
-                    <TextField
-                      {...params}
-                      label="Chambers used"
-                      margin="normal"
-                      helperText="Each chamber picked is added below with its make, serial number and calibration. Several chambers are listed side by side in the report."
-                    />
-                  )}
+                  fromRow={prefill?.suggested?.chambers || []}
                 />
-              </Grid>
-
-              {chambers.map((chamber, index) => (
-                <Grid
-                  container
-                  spacing={2}
-                  key={index}
-                  sx={{ padding: "15px", mt: 1, mb: 1 }}
-                >
-                  <Grid item xs={12}>
-                    <Box
-                      sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 1,
-                      }}
-                    >
-                      <Typography variant="subtitle2">
-                        Chamber {index + 1}
-                        {chamber.chamberId ? ` · ${chamber.chamberId}` : " · typed"}
-                      </Typography>
-                      {chambers.length > 1 && (
-                        <IconButton
-                          size="small"
-                          color="error"
-                          onClick={() => {
-                            const newChambers = chambers.filter(
-                              (_, i) => i !== index
-                            );
-                            setChambers(newChambers);
-                          }}
-                        >
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
-                      )}
-                    </Box>
-                  </Grid>
-
-                  <Grid item xs={12} sm={6}>
-                    <TextField
-                      label="Chamber details (as printed)"
-                      variant="outlined"
-                      fullWidth
-                      margin="normal"
-                      multiline
-                      minRows={3}
-                      value={chamber.chamberInfo}
-                      onChange={(e) => {
-                        const newChambers = [...chambers];
-                        newChambers[index] = { ...newChambers[index], chamberInfo: e.target.value };
-                        setChambers(newChambers);
-                      }}
-                    />
-                  </Grid>
-
-                  <Grid item xs={12} sm={6}>
-                    <TextField
-                      label="Chamber / Make / SL no. (test table)"
-                      variant="outlined"
-                      fullWidth
-                      margin="normal"
-                      multiline
-                      minRows={3}
-                      value={chamber.chamberMake}
-                      onChange={(e) => {
-                        const newChambers = [...chambers];
-                        newChambers[index] = { ...newChambers[index], chamberMake: e.target.value };
-                        setChambers(newChambers);
-                      }}
-                    />
-                  </Grid>
-                </Grid>
-              ))}
-
-              {/* Add Chamber Button */}
-              <Grid item xs={12}>
-                <Button
-                  variant="outlined"
-                  startIcon={<AddIcon />}
-                  onClick={() => {
-                    setChambers([
-                      ...chambers,
-                      { chamberId: "", chamberInfo: "", chamberMake: "" },
-                    ]);
-                  }}
-                >
-                  Type a chamber not in the list
-                </Button>
               </Grid>
             </Grid>
           </Box>
@@ -1239,6 +1106,11 @@ const ReportConfigDialogV2 = ({
               Review Configuration
             </Typography>
 
+            <Alert severity="info" sx={{ mb: 3 }}>
+              This makes the draft (marked DRAFT). The final is made later from the report's Word version, on the
+              report's page: signatures, NABL mark and the final issue date are added there.
+            </Alert>
+
             {/* Report Information - Simplified */}
             <Box sx={{ mb: 3, p: 2, bgcolor: "grey.50", borderRadius: 1 }}>
               <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2 }}>
@@ -1314,7 +1186,7 @@ const ReportConfigDialogV2 = ({
 
               {chambers.map((chamber, index) => (
                 <Box
-                  key={index}
+                  key={chamber.key || index}
                   sx={{
                     mb: index < chambers.length - 1 ? 2 : 0,
                     pb: index < chambers.length - 1 ? 2 : 0,
@@ -1332,18 +1204,18 @@ const ReportConfigDialogV2 = ({
                   </Typography>
                   <Box sx={{ display: "flex", flexWrap: "wrap", gap: 2 }}>
                     <Box sx={{ flex: "1 1 200px" }}>
-                      <Typography variant="caption" color="text.secondary">
-                        Info:
+                      <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                        {chamber.name || <em style={{ color: "#999" }}>No name</em>}
                       </Typography>
-                      <Typography variant="body2">
-                        {chamber.chamberInfo || (
-                          <em style={{ color: "#999" }}>Not specified</em>
+                      <Typography variant="body2" sx={{ whiteSpace: "pre-line" }}>
+                        {chamber.details || (
+                          <em style={{ color: "#999" }}>No details</em>
                         )}
                       </Typography>
                     </Box>
                     <Box sx={{ flex: "1 1 200px" }}>
                       <Typography variant="caption" color="text.secondary">
-                        Make:
+                        In the test table:
                       </Typography>
                       <Typography variant="body2">
                         {chamber.chamberMake || (
@@ -1596,8 +1468,11 @@ const ReportConfigDialogV2 = ({
             Back
           </Button>
           {activeStep === steps.length - 1 ? (
-            <Button onClick={handleConfirm} variant="contained" color="primary">
-              Confirm & Generate Report
+            <Button
+              onClick={handleConfirm}
+              variant="contained"
+            >
+              Generate the draft
             </Button>
           ) : (
             <Button onClick={handleNext} variant="contained">

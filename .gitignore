@@ -21,3 +21,6 @@ rfq-files/
 
 # Real customer test reports (samples for report automation) - never commit
 frontend/src/templates/Sample TS1 Testing Reports/
+
+# Report files stored by Lab Bee (customer reports; never commit)
+lab-bee-issued-reports/

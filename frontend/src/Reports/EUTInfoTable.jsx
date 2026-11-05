@@ -69,38 +69,41 @@ export const createEUTInfoTable = (comprehensiveData, reportConfig) => {
     // Caption below the table
     createCaptionParagraph(chamberInfoCaption),
 
-    // Chamber details: a bordered table, two chambers per row
+    // Chamber details: one row per chamber, name (bold) left, details right
     ...chamberTable(reportConfig?.chambers || []),
   ];
 };
 
-// One cell per chamber, its lines as printed (first line = chamber name, bold)
-const chamberCell = (chamber) => {
-  const lines = String(chamber?.chamberInfo || "").split("\n");
+// One row per chamber: the name in bold on the left, its details (one line each) on the right.
+// Older saved chambers only have chamberInfo: its first line is the name.
+const linesCell = (text, width, bold) => {
+  const lines = String(text || "").split("\n");
   return createTableCell(
     [
       new Paragraph({
         alignment: AlignmentType.LEFT,
         children: lines.flatMap((line, index) => {
-          const run = new TextRun({ text: line, size: 20, font: "Calibri(Body)", color: "000000", bold: index === 0 });
+          const run = new TextRun({ text: line, size: 20, font: "Calibri(Body)", color: "000000", bold });
           return index < lines.length - 1 ? [run, new TextRun({ break: 1 })] : [run];
         }),
       }),
     ],
-    { width: 50, verticalAlign: VerticalAlign.TOP, margins: { top: 60, bottom: 60, left: 100, right: 100 } }
+    { width, verticalAlign: bold ? VerticalAlign.CENTER : VerticalAlign.TOP, margins: { top: 60, bottom: 60, left: 100, right: 100 } }
   );
 };
 
-const chamberTable = (chambers) => {
-  const filled = chambers.filter((c) => String(c?.chamberInfo || "").trim());
-  if (!filled.length) return [];
-  const rows = [];
-  for (let i = 0; i < filled.length; i += 2) {
-    rows.push(
-      new TableRow({
-        children: [chamberCell(filled[i]), filled[i + 1] ? chamberCell(filled[i + 1]) : createTableCell("", { width: 50 })],
-      })
-    );
+const nameAndDetails = (chamber) => {
+  if (chamber?.name !== undefined || chamber?.details !== undefined) {
+    return { name: chamber.name || "", details: chamber.details || "" };
   }
-  return [createDataTable(rows)];
+  const [name = "", ...rest] = String(chamber?.chamberInfo || "").split("\n");
+  return { name, details: rest.join("\n") };
+};
+
+const chamberTable = (chambers) => {
+  const rows = chambers
+    .map(nameAndDetails)
+    .filter((c) => (c.name + c.details).trim())
+    .map((c) => new TableRow({ children: [linesCell(c.name, 35, true), linesCell(c.details, 65, false)] }));
+  return rows.length ? [createDataTable(rows)] : [];
 };

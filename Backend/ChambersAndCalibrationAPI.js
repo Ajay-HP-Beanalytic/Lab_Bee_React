@@ -111,6 +111,64 @@ function chambersAndCalibrationAPIs(app) {
 
 
 
+    // Excel import: each row updates the chamber with the same Chamber ID, or is added as a
+    // new chamber. Blank cells leave the saved value as it is. All rows or none are saved.
+    const IMPORT_FIELDS = {
+        chamberName: "chamber_name",
+        calibrationDoneDate: "calibration_done_date",
+        calibrationDueDate: "calibration_due_date",
+        calibratedBy: "calibration_done_by",
+        calibrationStatus: "calibration_status",
+        chamberStatus: "chamber_status",
+        remarks: "remarks",
+        chamberMake: "chamber_make",
+        chamberModel: "chamber_model",
+        chamberSerialNo: "chamber_serial_no",
+    };
+    app.post("/api/chamberData/import", async (req, res) => {
+        if (!req.session?.user_id) return res.status(401).json({ message: "Please log in again" });
+        const rows = Array.isArray(req.body?.rows) ? req.body.rows : [];
+        if (!rows.length) return res.status(400).json({ message: "The file has no chamber rows" });
+        if (rows.some((r) => !String(r.chamberID || "").trim())) {
+            return res.status(400).json({ message: "Every row needs a Chamber/Equipment ID" });
+        }
+        const conn = await db.promise().getConnection();
+        try {
+            await conn.beginTransaction();
+            const [existing] = await conn.query("SELECT id, chamber_id FROM chamber_calibration");
+            const byId = new Map(existing.map((e) => [String(e.chamber_id || "").trim().toUpperCase(), e.id]));
+            let added = 0;
+            let updated = 0;
+            for (const r of rows) {
+                const chamberId = String(r.chamberID).trim();
+                const values = {};
+                for (const [key, column] of Object.entries(IMPORT_FIELDS)) {
+                    const v = r[key] === undefined || r[key] === null ? "" : String(r[key]).trim();
+                    if (v) values[column] = v;
+                }
+                const id = byId.get(chamberId.toUpperCase());
+                if (id) {
+                    if (Object.keys(values).length) {
+                        await conn.query("UPDATE chamber_calibration SET ? WHERE id = ?", [values, id]);
+                    }
+                    updated++;
+                } else {
+                    const [result] = await conn.query("INSERT INTO chamber_calibration SET ?", [{ ...values, chamber_id: chamberId }]);
+                    byId.set(chamberId.toUpperCase(), result.insertId);
+                    added++;
+                }
+            }
+            await conn.commit();
+            res.json({ added, updated });
+        } catch (error) {
+            await conn.rollback();
+            console.error("Chamber import error:", error);
+            res.status(500).json({ message: "The import failed, nothing was saved" });
+        } finally {
+            conn.release();
+        }
+    });
+
     // To Edit the selected chamber and calibration data
     app.post("/api/addChamberData/:id", (req, res) => {
         const { chamberName, chamberID, formattedCalibrationDoneDate, formattedCalibrationDueDate, calibratedBy, calibrationStatus, chamberStatus, remarks, chamberMake, chamberModel, chamberSerialNo } = req.body;

@@ -9,6 +9,7 @@ const fs = require("fs");
 require("dotenv").config(); // Ensure .env is loaded
 const { saveRows, jobcardUser } = require("./ts1/jobcardRows");
 const { ts1ReportAPIs } = require("./ts1/TS1ReportAPI");
+const { openJobcardItems } = require("./ts1/TS1ReportWorkflowAPI");
 const { ROW_ORDER, ensureRowOrderColumns } = require("./jobcardRowOrder");
 
 // function of jobcard api's:
@@ -691,6 +692,33 @@ function jobcardsAPIs(app, io, labbeeUsers) {
       jcCloseDate,
       observations,
     } = req.body;
+    // Closing a TS1 job card: the required checklist items must be done (the Lab Manager
+    // can still close it after confirming, which is written to the audit trail)
+    if (jcStatus === "Closed" && jcNumber && me.role === "Lab Manager") {
+      try {
+        const [current] = await db.promise().query("SELECT jc_status, jc_category FROM bea_jobcards WHERE jc_number = ?", [jcNumber]).then(([r]) => r);
+        if (current && current.jc_status !== "Closed" && (current.jc_category || jcCategory || "TS1") === "TS1") {
+          const open = await openJobcardItems(req, jcNumber);
+          if (open.length && !req.body.closeWithOpenItems) {
+            return res.status(409).json({
+              message: `These checklist items are not done yet: ${open.join("; ")}`,
+              error: "CHECKLIST_OPEN",
+              openItems: open,
+            });
+          }
+          if (open.length) {
+            await db.promise().query(
+              `INSERT INTO ts1_job_card_audit_trail (table_name, record_id, jc_number, field_name, action_type, old_value, new_value, changed_by, user_role, user_department)
+               VALUES ('bea_jobcards', ?, ?, 'Closed with open checklist items', 'STATUS_CHANGE', NULL, ?, ?, ?, ?)`,
+              [req.params.id, jcNumber, open.join("; ").slice(0, 2000), me.user.name, me.role, me.department],
+            );
+          }
+        }
+      } catch (err) {
+        console.error("Checklist check before closing failed:", err);
+      }
+    }
+
     // Who is changing it comes from the login, not from the request
     const loggedInUser = me.user.name;
     const loggedInUserDepartment = me.department;

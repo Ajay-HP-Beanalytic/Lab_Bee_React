@@ -240,6 +240,7 @@ export const prepareReportData = (comprehensiveData) => {
 
     // Tests listed in the report's test table (one for a single test, all for ESS)
     reportTests: reportTests.map((t) => ({
+      id: t.id || null,
       testName: t.testName || "",
       testChamber: t.testChamber || "",
       eutSerialNo: t.eutSerialNo || "",

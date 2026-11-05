@@ -13,6 +13,7 @@ import {
   Select,
   Typography,
   IconButton,
+  Tooltip,
 } from "@mui/material";
 
 import { serverBaseAddress } from "../Pages/APIPage";
@@ -26,6 +27,7 @@ import EmptyCard from "../common/EmptyCard";
 import Loader from "../common/Loader";
 import { UserContext } from "../Pages/UserContext";
 import JCPreview from "./JCPreview";
+import { STAGE_TEXT } from "./ReportWorkflow/reportWorkflow";
 import { CreatePieChart } from "../functions/DashboardFunctions";
 import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
@@ -52,6 +54,8 @@ export default function JCHome() {
   const [filterRow, setFilterRow] = useState([]); //To filter out the table based on search
 
   const [refresh, setRefresh] = useState(false);
+  // Reports of each job card in the table (stage counts, overdue, waiting on me)
+  const [reportSummary, setReportSummary] = useState({});
 
   const { month, year } = getCurrentMonthYear();
 
@@ -372,7 +376,35 @@ export default function JCHome() {
     setFilteredJcData(jcTableData);
   }, [jcTableData, refresh, location.state]);
 
+  // Reports column: one call for the job cards in the table
+  useEffect(() => {
+    const jcNumbers = [...new Set((jcTableData || []).map((r) => r.jc_number).filter(Boolean))];
+    if (!jcNumbers.length) return undefined;
+    let live = true;
+    const load = () =>
+      axios
+        .post(`${serverBaseAddress}/api/ts1/reports/jc-summary`, { jcNumbers })
+        .then((r) => live && setReportSummary(r.data || {}))
+        .catch(() => {});
+    load();
+    window.addEventListener("ts1-reports-changed", load);
+    return () => {
+      live = false;
+      window.removeEventListener("ts1-reports-changed", load);
+    };
+  }, [jcTableData]);
+
   //If data is loading then show Loading text
+  // Opened from the Reports board: show that job card straight away
+  useEffect(() => {
+    const id = location.state?.openJcId;
+    if (!id) return;
+    setJcId(id);
+    setOpenJCPreview(true);
+    navigate(location.pathname, { replace: true, state: {} });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state?.openJcId]);
+
   if (loading) {
     return <Loader />;
   }
@@ -468,6 +500,51 @@ export default function JCHome() {
         ) : (
           ""
         ),
+    },
+    {
+      field: "reports",
+      headerName: "Reports",
+      width: 230,
+      align: "center",
+      headerAlign: "center",
+      headerClassName: "custom-header-color",
+      sortable: false,
+      renderCell: (params) => {
+        const s = reportSummary[params.row.jc_number];
+        if (!s) return "";
+        // the most urgent open stage first
+        const order = ["returned", "changes_requested", "in_review", "accepted", "to_prepare", "prepared", "reviewed", "draft_sent"];
+        const open = order.filter((k) => s.stages[k]);
+        const main = open[0];
+        return (
+          <Tooltip
+            title={[
+              ...Object.entries(s.stages).map(([k, n]) => `${n} ${STAGE_TEXT[k] || k}`),
+              s.overdue ? `${s.overdue} overdue` : "",
+              s.mine ? `${s.mine} waiting on you` : "",
+            ]
+              .filter(Boolean)
+              .join(" · ")}
+          >
+            <Box sx={{ display: "flex", gap: 0.5, alignItems: "center", justifyContent: "center", flexWrap: "wrap" }}>
+              {main ? (
+                <Chip
+                  size="small"
+                  color={s.overdue ? "error" : s.mine ? "primary" : "default"}
+                  variant={s.overdue || s.mine ? "filled" : "outlined"}
+                  label={`${s.stages[main]} ${STAGE_TEXT[main].toLowerCase()}${s.overdue ? ` · ${s.overdue} overdue` : ""}`}
+                />
+              ) : null}
+              <Chip
+                size="small"
+                color={s.final === s.total ? "success" : "default"}
+                variant="outlined"
+                label={`${s.final}/${s.total} final`}
+              />
+            </Box>
+          </Tooltip>
+        );
+      },
     },
     {
       field: "jc_closed_date",

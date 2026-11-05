@@ -120,7 +120,20 @@ const useJobCardSubmit = () => {
         forPreviousMonth: !id && !!options.forPreviousMonth,
       };
 
-      const jcResponse = await axios.post(id ? `${serverBaseAddress}/api/jobcard/${id}` : `${serverBaseAddress}/api/jobcard`, jobCardPayload);
+      const url = id ? `${serverBaseAddress}/api/jobcard/${id}` : `${serverBaseAddress}/api/jobcard`;
+      let jcResponse;
+      try {
+        jcResponse = await axios.post(url, jobCardPayload);
+      } catch (err) {
+        // Closing with required checklist items open: the Lab Manager can still close it
+        const open = err.response?.data?.error === "CHECKLIST_OPEN" ? err.response.data.openItems || [] : null;
+        if (!open) throw err;
+        const ok = window.confirm(
+          `These checklist items are not done yet:\n\n- ${open.join("\n- ")}\n\nClose the job card anyway? This is recorded in the history.`
+        );
+        if (!ok) return { success: false };
+        jcResponse = await axios.post(url, { ...jobCardPayload, closeWithOpenItems: true });
+      }
       jcNumber = jcResponse.data.jcNumber || formData.jcNumber;
       created = !id;
       createdId = jcResponse.data.id || null;

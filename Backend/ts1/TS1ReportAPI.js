@@ -59,48 +59,87 @@ function reportTypeFor(row, tests, jobcard) {
   return { value: null, from: null };
 }
 
-// Chamber block for the report, from the chamber master (make, model and serial number
-// are kept with the calibration record):
-//   THERMAL CYCLING CHAMBER / Make: .. / Model: .. / SL No: 475 (BEA/TCC-01) / Calibration ..
-// and the short form for the "Chamber/Make/Equipment SL no." column.
+// Chamber block for the report: the chamber name (printed bold, left) and its details
+// (printed right) from Chamber Calibration (make, model, serial no., calibration) and
+// Chamber Specs (inside dimensions). chamberInfo = name + details, kept for older code;
+// chamberMake is the short form for the "Chamber/Make/Equipment SL no." column.
 const dmy = (d) => (d && dayjs(d).isValid() ? dayjs(d).format("DD.MM.YYYY") : "");
-function chamberBlock(cal, testStart) {
-  const serial = [cal.chamber_serial_no, cal.chamber_id && `(${cal.chamber_id})`].filter(Boolean).join(" ");
+const cm = (n) => (Number(n) > 0 ? String(Number(n)) : "");
+function chamberBlock(cal, testStart, spec) {
+  cal = cal || {};
+  const chamberId = cal.chamber_id || spec?.chamber_id || "";
+  const serial = [cal.chamber_serial_no, chamberId && `(${chamberId})`].filter(Boolean).join(" ");
   const due = cal.calibration_due_date ? dayjs(cal.calibration_due_date) : null;
+  const size = spec && [spec.length_cm, spec.width_cm, spec.height_cm].map(cm);
+  const name = String(cal.chamber_name || spec?.chamber_name || chamberId).toUpperCase();
+  const details = [
+    cal.chamber_make && `Make: ${cal.chamber_make}`,
+    cal.chamber_model && `Model: ${cal.chamber_model}`,
+    serial && `SL No: ${serial}`,
+    size && size.every(Boolean) && `Inside dimensions (L x W x H): ${size.join(" x ")} cm`,
+    cal.calibration_done_date && `Calibration done on: ${dmy(cal.calibration_done_date)}`,
+    due && `Calibration due on: ${dmy(due)}`,
+  ]
+    .filter(Boolean)
+    .join("\n");
   return {
-    chamberId: cal.chamber_id || "",
-    chamberInfo: [
-      String(cal.chamber_name || "").toUpperCase(),
-      cal.chamber_make && `Make: ${cal.chamber_make}`,
-      cal.chamber_model && `Model: ${cal.chamber_model}`,
-      serial && `SL No: ${serial}`,
-      cal.calibration_done_date && `Calibration done on: ${dmy(cal.calibration_done_date)}`,
-      due && `Calibration due on: ${dmy(due)}`,
-    ]
-      .filter(Boolean)
-      .join("\n"),
-    chamberMake: [cal.chamber_name, cal.chamber_make, serial].filter(Boolean).join("/"),
+    key: cal.id ? `cal-${cal.id}` : `spec-${spec?.id}`,
+    chamberId,
+    name,
+    details,
+    chamberInfo: [name, details].filter(Boolean).join("\n"),
+    chamberMake: [cal.chamber_name || spec?.chamber_name, cal.chamber_make, serial].filter(Boolean).join("/"),
     calibrationDue: due ? due.format("DD-MM-YYYY") : null,
     calibrationExpired: due ? due.isBefore(dayjs(testStart || undefined), "day") : false,
     hasDetails: !!(cal.chamber_make || cal.chamber_serial_no),
+    source: "list",
   };
 }
 
-// Chambers typed in the tests ("BEA/TCC-01", "VIB-01, VIB-02", a chamber name...), matched to
-// the chamber master; ids may contain "/" so the whole text is tried before splitting it
-function matchChambers(text, calibration) {
-  const find = (name) => calibration.find((c) => norm(c.chamber_id) === norm(name) || norm(c.chamber_name) === norm(name));
+// Chamber ids are written many ways in job cards (TSC-1 / TSC-01, HUMID-02 / HUMD-02,
+// "Rain Chamber"): compare without case, punctuation or leading zeros, and also against
+// the names and other names kept in Chamber Specs.
+const chamberKey = (s) =>
+  String(s || "")
+    .toLowerCase()
+    .replace(/(^|\D)0+(?=\d)/g, "$1")
+    .replace(/[^a-z0-9]+/g, "");
+
+async function chamberMaster() {
+  const calibration = await query("SELECT * FROM chamber_calibration ORDER BY chamber_name");
+  const specs = await query(
+    "SELECT id, chamber_id, chamber_name, aliases, length_cm, width_cm, height_cm FROM ts1_chamber_spec",
+  ).catch(() => []);
+  const specFor = (id) => specs.find((sp) => chamberKey(sp.chamber_id) && chamberKey(sp.chamber_id) === chamberKey(id));
+  return { calibration, specs, specFor };
+}
+
+// Chambers typed in a test ("BEA/TCC-01", "VIB-01, VIB-02", a chamber name...); ids may
+// contain "/" so the whole text is tried before splitting it
+function matchChambers(text, master) {
+  const { calibration, specs } = master;
+  const find = (name) => {
+    const k = chamberKey(name);
+    if (!k) return null;
+    const cal = calibration.find((c) => chamberKey(c.chamber_id) === k || chamberKey(c.chamber_name) === k);
+    if (cal) return { cal, spec: master.specFor(cal.chamber_id) };
+    const spec = specs.find((sp) =>
+      [sp.chamber_id, sp.chamber_name, ...String(sp.aliases || "").split(",")].some((x) => chamberKey(x) === k),
+    );
+    if (!spec) return null;
+    return { cal: calibration.find((c) => chamberKey(c.chamber_id) === chamberKey(spec.chamber_id)) || null, spec };
+  };
   const out = [];
   for (const part of String(text || "").split(/[,;&]+|\band\b/i).map((x) => x.trim()).filter(Boolean)) {
     const whole = find(part);
-    if (whole) out.push({ name: part, cal: whole });
-    else for (const bit of part.split("/").map((x) => x.trim()).filter(Boolean)) out.push({ name: bit, cal: find(bit) });
+    if (whole) out.push({ name: part, ...whole });
+    else for (const bit of part.split("/").map((x) => x.trim()).filter(Boolean)) out.push({ name: bit, ...(find(bit) || {}) });
   }
   return out;
 }
 
 async function chambersFor(rows) {
-  const calibration = await query("SELECT * FROM chamber_calibration ORDER BY chamber_name");
+  const master = await chamberMaster();
   const history = await query(
     "SELECT chambers FROM ts1_report_register WHERE chambers IS NOT NULL ORDER BY generated_at DESC LIMIT 300",
   );
@@ -108,93 +147,116 @@ async function chambersFor(rows) {
   for (const h of history) for (const c of parseJson(h.chambers, [])) if (c?.chamberMake) usedMakes.push(c);
   const testStart = rows.map((r) => r.startDate).filter(Boolean).sort()[0];
 
-  const seen = new Set();
-  const chambers = [];
+  const byKey = new Map();
   for (const row of rows) {
-    for (const { name, cal } of matchChambers(row.testChamber, calibration)) {
-      const key = cal ? `id:${cal.id}` : norm(name);
-      if (seen.has(key)) continue;
-      seen.add(key);
-      if (cal) {
-        const block = chamberBlock(cal, testStart);
+    for (const { name, cal, spec } of matchChambers(row.testChamber, master)) {
+      const key = cal ? `cal-${cal.id}` : spec ? `spec-${spec.id}` : `typed-${chamberKey(name)}`;
+      if (byKey.has(key)) {
+        byKey.get(key).forTests.push(row.id);
+        continue;
+      }
+      let block;
+      if (cal || spec) {
+        block = chamberBlock(cal, testStart, spec);
         // No make in the master yet: use what was typed in an earlier report for this chamber
         const used =
           !block.hasDetails &&
-          usedMakes.find((c) => c.chamberId === cal.chamber_id || norm(c.chamberInfo).includes(norm(cal.chamber_id)));
-        chambers.push(used ? { ...block, chamberInfo: used.chamberInfo, chamberMake: used.chamberMake } : block);
+          usedMakes.find((c) => (c.chamberId && c.chamberId === block.chamberId) || norm(c.chamberInfo).includes(norm(block.chamberId)));
+        if (used) {
+          const [first, ...rest] = String(used.chamberInfo || "").split("\n");
+          block = { ...block, name: used.name || first, details: used.details ?? rest.join("\n"), chamberInfo: used.chamberInfo, chamberMake: used.chamberMake };
+        }
       } else {
-        chambers.push({ chamberId: "", chamberInfo: name, chamberMake: "", calibrationDue: null, calibrationExpired: false, hasDetails: false });
+        block = {
+          key, chamberId: "", name: name.toUpperCase(), details: "", chamberInfo: name.toUpperCase(), chamberMake: name,
+          calibrationDue: null, calibrationExpired: false, hasDetails: false, source: "typed",
+        };
       }
+      byKey.set(key, { ...block, typedAs: name, forTests: [row.id] });
     }
   }
-  const options = calibration.filter((c) => c.chamber_id || c.chamber_name).map((c) => chamberBlock(c, testStart));
-  return { chambers, options };
+  // Pickable: chambers from Chamber Calibration, and chambers only in Chamber Specs
+  const options = master.calibration
+    .filter((c) => c.chamber_id || c.chamber_name)
+    .map((c) => chamberBlock(c, testStart, master.specFor(c.chamber_id)));
+  for (const sp of master.specs) {
+    if (!master.calibration.some((c) => chamberKey(c.chamber_id) === chamberKey(sp.chamber_id))) {
+      options.push(chamberBlock(null, testStart, sp));
+    }
+  }
+  return { chambers: [...byKey.values()], options };
 }
 
-// Test code for the report header: IP tests take the code from the test name (IPX7, IP65),
-// others a short code for their category. Only a suggestion; the code can be typed.
-const CATEGORY_CODES = {
-  "THERMAL CYCLING": "TC",
-  "THERMAL SHOCK": "TS",
-  VIBRATION: "VIB",
-  "HIGH TEMPERATURE": "HT",
-  "LOW TEMPERATURE": "LT",
-  COLD: "CT",
-  "DAMP HEAT": "DH",
-  HUMIDITY: "HUM",
-  "SALT SPRAY": "SS",
-  ALTITUDE: "ALT",
-  "TROPICAL EXPOSURE": "TE",
-  DROP: "DROP",
-  "MIXED GAS": "MFG",
-  "MECHANICAL SHOCK": "SHOCK",
-  BUMP: "BUMP",
-  "DRIVING RAIN": "RAIN",
-  SEALING: "SEAL",
-  TEMPERATURE: "TEMP",
-  "BENCH HANDLING": "BH",
-  CHEMICAL: "CHEM",
-  DUST: "DUST",
-  IP: "IP",
-  ESS: "ESS",
-};
-const categoryKey = (category) =>
-  String(category || "").toUpperCase().replace(/\bTESTS?\b/g, "").replace(/\s+/g, " ").trim();
-function codeForCategory(category) {
-  const key = categoryKey(category);
-  if (!key) return "";
-  return CATEGORY_CODES[key] || key.split(" ").map((w) => w[0]).join("");
-}
-function codeFor(row) {
-  const ip = String(row.testName || "").toUpperCase().match(/\bIP\s?([0-9X]{2}[A-Z]?)\b/);
-  if (ip) return `IP${ip[1]}`;
-  if (/vibration/i.test(row.testName || "")) return "VIB";
-  return codeForCategory(row.testCategory);
-}
+// Test code for the report header, from the TS1 Test Types catalogue (code, name and other
+// names). IP tests keep the exact rating from the test name (IPX7, IP65). Only a suggestion;
+// the code can be typed.
+const words = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
 
-async function testCodeOptions() {
-  const categories = await query(
-    "SELECT DISTINCT TRIM(test_category) AS category FROM test_category_table WHERE test_category <> '' ORDER BY category",
+async function ts1TestTypes() {
+  const rows = await query(
+    `SELECT code, name, category, aliases FROM test_types
+     WHERE department = 'TS1' AND is_active = 1 ORDER BY sort_order IS NULL, sort_order, code`,
   );
+  return rows.map((r) => ({
+    ...r,
+    terms: [r.code, r.name, ...String(r.aliases || "").split(",")].map(words).filter((t) => t.length > 1),
+  }));
+}
+
+// The type whose longest name/other name appears in the text (whole words)
+function typeIn(text, types) {
+  const padded = ` ${words(text)} `;
+  if (!padded.trim()) return null;
+  let best = null;
+  let bestLen = 0;
+  for (const t of types) {
+    for (const term of t.terms) {
+      const len = padded.trim() === term ? term.length + 1000 : padded.includes(` ${term} `) ? term.length : 0;
+      if (len > bestLen) [best, bestLen] = [t, len];
+    }
+  }
+  return best;
+}
+
+function codeFor(row, types) {
+  const ip = String(row.testName || "").toUpperCase().match(/\bIP\s?([0-9X]{2}K?)\b/);
+  if (ip) return `IP${ip[1]}`;
+  return (typeIn(row.testName, types) || typeIn(row.testCategory, types))?.code || "";
+}
+
+async function testCodeOptions(types) {
   const used = await query(
     "SELECT test_code, COUNT(*) n FROM ts1_report_register WHERE test_code <> '' GROUP BY test_code ORDER BY n DESC LIMIT 30",
   );
   const options = [];
   for (const u of used) options.push({ code: u.test_code, label: "Used in earlier reports", group: "Used before" });
-  for (const c of categories) {
-    const code = codeForCategory(c.category);
-    if (code) options.push({ code, label: c.category, group: "Test categories" });
-  }
+  for (const t of types) options.push({ code: t.code, label: t.name, group: t.category ? `Test types - ${t.category}` : "Test types" });
   return options;
 }
 
-async function logoFor(companyName) {
-  if (!String(companyName || "").trim()) return null;
-  const [logo] = await query(
-    `SELECT l.mime, l.data FROM customer_logos l JOIN customers_details c ON c.id = l.customer_id
-     WHERE UPPER(TRIM(c.company_name)) = UPPER(TRIM(?)) ORDER BY c.id LIMIT 1`,
-    [companyName],
+// The customer's logo (Customers page): same company name, then the name without
+// "Pvt Ltd" and the like, then the domain of the customer's email
+const companyKey = (s) =>
+  words(s)
+    .replace(/\b(m s|the|pvt|private|ltd|limited|llp|inc|co|company|corporation|corp|india)\b/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+const PUBLIC_MAIL = /^(gmail|yahoo|hotmail|outlook|live|rediffmail|icloud|protonmail)\./i;
+
+async function logoFor(jobcard) {
+  const name = companyKey(jobcard?.company_name);
+  const domain = String(jobcard?.customer_email || "").split(/[,;\s]/)[0].split("@")[1]?.toLowerCase() || "";
+  if (!name && !domain) return null;
+  const withLogo = await query(
+    `SELECT c.id, c.company_name, c.customer_email FROM customer_logos l JOIN customers_details c ON c.id = l.customer_id`,
   );
+  const match =
+    withLogo.find((c) => name && companyKey(c.company_name) === name) ||
+    (domain && !PUBLIC_MAIL.test(domain)
+      ? withLogo.find((c) => String(c.customer_email || "").toLowerCase().includes(`@${domain}`))
+      : null);
+  if (!match) return null;
+  const [logo] = await query("SELECT mime, data FROM customer_logos WHERE customer_id = ?", [match.id]);
   return logo ? `data:${logo.mime};base64,${Buffer.from(logo.data).toString("base64")}` : null;
 }
 
@@ -208,7 +270,10 @@ const handle = (fn) => async (req, res) => {
 };
 
 function ts1ReportAPIs(app) {
-  ensureReportTables().catch((err) => console.error("ts1_report_register table error:", err));
+  ensureReportTables()
+    .then(() => require("./TS1ReportWorkflowAPI").ensureWorkflowTables())
+    .catch((err) => console.error("ts1_report_register table error:", err));
+  require("./TS1ReportWorkflowAPI").ts1ReportWorkflowAPIs(app, { tablesReady: true });
 
   // Everything the report dialog fills in for one performed test
   app.get("/api/ts1/report-context/:testDetailId", handle(async (req) => {
@@ -225,7 +290,8 @@ function ts1ReportAPIs(app) {
       : [];
     const reportRows = [row, ...withIds.map((wid) => others.find((o) => o.id === wid)).filter(Boolean)];
     const chamberData = await chambersFor(reportRows);
-    const codes = reportRows.map(codeFor).filter(Boolean);
+    const types = await ts1TestTypes();
+    const codes = [...new Set(reportRows.map((r) => codeFor(r, types)).filter(Boolean))];
     const [jobcard] = await query("SELECT * FROM bea_jobcards WHERE jc_number = ?", [row.jc_number]);
     const tests = await query("SELECT * FROM jc_tests WHERE jc_number = ?", [row.jc_number]);
     const issues = await query("SELECT * FROM ts1_report_register WHERE test_detail_id = ? ORDER BY version DESC", [row.id]);
@@ -235,13 +301,16 @@ function ts1ReportAPIs(app) {
     const missing = [];
     if (!row.startDate || !row.endDate) missing.push("Test start / end date and time");
     if (!row.testChamber) missing.push("Chamber");
-    const unknown = chamberData.chambers.filter((c) => !c.chamberId).map((c) => c.chamberInfo);
+    const unknown = chamberData.chambers.filter((c) => c.source === "typed").map((c) => c.typedAs);
     if (unknown.length) missing.push(`Chamber not in the chamber list: ${unknown.join(", ")}`);
-    const noDetails = chamberData.chambers.filter((c) => c.chamberId && !c.hasDetails).map((c) => c.chamberId);
+    const noDetails = chamberData.chambers.filter((c) => c.source === "list" && !c.hasDetails).map((c) => c.chamberId || c.name);
     if (noDetails.length) missing.push(`Make / serial number not set in Chamber Calibration for ${noDetails.join(", ")}`);
     if (!row.eutSerialNo) missing.push("EUT serial number");
     if (!row.standard) missing.push("Test standard");
     if (!row.testEndedBy) missing.push("Test ended by");
+    if (!String(row.startTemp ?? "").trim() || !String(row.startRh ?? "").trim() || (Number(row.startTemp) === 0 && Number(row.startRh) === 0)) {
+      missing.push("Start temperature / humidity (printed as the lab conditions)");
+    }
 
     return {
       testDetailId: row.id,
@@ -265,10 +334,10 @@ function ts1ReportAPIs(app) {
         reportNumber: row.reportNumber || "",
         chambers: chamberData.chambers,
         testCode: codes.join("/"),
-        companyLogo: await logoFor(jobcard?.company_name),
+        companyLogo: await logoFor(jobcard),
       },
       chamberOptions: chamberData.options,
-      testCodeOptions: await testCodeOptions(),
+      testCodeOptions: await testCodeOptions(types),
       missing,
     };
   }));
@@ -323,8 +392,16 @@ function ts1ReportAPIs(app) {
       );
     }
 
+    // The report's place in the workflow (first draft -> "Prepared"; after a return -> back to "Prepared")
+    const testIds = Array.isArray(b.testIds) ? b.testIds.map(Number).filter(Boolean) : [];
+    const flow = await require("./TS1ReportWorkflowAPI").noteDraft(req, {
+      testDetailId: id, jcNumber: row.jc_number, testName: String(b.testName || row.testName || "").slice(0, 1000),
+      testIds, reportNumber: reportNumber || null, reportType,
+    });
+
     return {
       version: v,
+      stage: flow.stage,
       updated: Object.fromEntries(sets.map(([f, , to]) => [f, to])),
       warning: clash.length ? `Report number ${reportNumber} is also used for ${clash[0].testName || "a test"} of JC ${clash[0].jc_number}` : null,
     };
@@ -354,4 +431,4 @@ function ts1ReportAPIs(app) {
   }));
 }
 
-module.exports = { ts1ReportAPIs, ensureReportTables };
+module.exports = { ts1ReportAPIs, ensureReportTables, ts1TestTypes, codeFor, chambersFor, chamberMaster, matchChambers };

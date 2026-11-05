@@ -23,6 +23,7 @@ import EventRepeatIcon from "@mui/icons-material/EventRepeat";
 import RequestQuoteIcon from "@mui/icons-material/RequestQuote";
 import SettingsSuggestIcon from "@mui/icons-material/SettingsSuggest";
 import AppsIcon from "@mui/icons-material/Apps";
+import AssignmentTurnedInIcon from "@mui/icons-material/AssignmentTurnedIn";
 import { Source } from "@mui/icons-material";
 
 // Side-menu groups, in their usual order (a department's own group is shown first)
@@ -53,6 +54,7 @@ export const MENU_ITEMS = [
   { key: "marketing", label: "Marketing Content", path: "/marketing", group: "sales", icon: <NewspaperIcon /> },
 
   { key: "ts1_jobcards", label: "Job Cards", path: "/jobcard_dashboard", also: ["jobcard"], group: "ts1", icon: <ArticleIcon /> },
+  { key: "ts1_reports", label: "Reports", path: "/ts1_reports", group: "ts1", icon: <AssignmentTurnedInIcon /> },
   { key: "ts1_slot_booking", label: "Slot Booking", path: "/slot_booking", group: "ts1", icon: <CalendarMonthSharpIcon /> },
   { key: "ts1_chambers", label: "Chambers & Calibration", path: "/chamber-calibration", group: "ts1", icon: <KitchenIcon /> },
   { key: "ts1_hours", label: "Hours Calculation", path: "/ts1_utitlity", group: "ts1", icon: <CalculateIcon /> },

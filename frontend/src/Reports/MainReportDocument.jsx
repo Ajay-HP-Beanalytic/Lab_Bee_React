@@ -72,6 +72,8 @@ export const GenerateReportDocument = async (
       //   comprehensiveData
       // );
       const isNABL = reportConfig.reportType === "NABL";
+      // Draft (for the customer to review) unless this is the signed final issue
+      const isDraft = reportConfig.issue?.kind !== "final";
       // console.log(
       //   `🔹 Generating ${reportConfig.reportType} report with docx package...`
       // );
@@ -82,10 +84,11 @@ export const GenerateReportDocument = async (
       let nablLogoBase64 = null;
 
       try {
-        beaLogoBase64 = await imageUrlToBase64(BEA_LOGO);
+        // Reports > Settings > Report images (valid on the report date), else the built-in files
+        beaLogoBase64 = await imageUrlToBase64(reportConfig.assets?.labLogo || BEA_LOGO);
 
         if (isNABL) {
-          nablLogoBase64 = await imageUrlToBase64(NABL_LOGO);
+          nablLogoBase64 = await imageUrlToBase64(reportConfig.assets?.nablLogo || NABL_LOGO);
         }
       } catch (error) {
         console.error("⚠️ Error loading logos:", error);
@@ -146,7 +149,8 @@ export const GenerateReportDocument = async (
             nablLogoBase64,
             reportConfig.testCode,
             reportConfig.testReportNumber,
-            reportConfig.ulrNumber
+            reportConfig.ulrNumber,
+            isDraft
           ),
         },
         footers: {
@@ -210,7 +214,8 @@ export const GenerateReportDocument = async (
               nablLogoBase64,
               reportConfig.testCode,
               reportConfig.testReportNumber,
-              reportConfig.ulrNumber
+              reportConfig.ulrNumber,
+              isDraft
             ),
           },
           footers: {
@@ -252,7 +257,9 @@ export const GenerateReportDocument = async (
 
       // Get the first 3 letters/numbers of the report number, or use date if not present
       const reportNumber = reportConfig.testReportNumber || customDate;
-      const fileName = `REP_${reportNumber}.docx`;
+      const fileName = isDraft
+        ? `REP_${reportNumber}_DRAFT.docx`
+        : `REP_${reportNumber}${reportConfig.issue?.version > 1 ? `_v${reportConfig.issue.version}` : ""}.docx`;
       resolve({ blob, fileName });
     } catch (error) {
       console.error("❌ Error generating report:", error);

@@ -52,7 +52,8 @@ export const UserProvider = ({ children }) => {
   // Check if current route is public
   const isPublicRoute = useCallback(
     (pathname) => {
-      return publicRoutes.includes(pathname);
+      // /r/<link>: the customer's report download page (QR code on final reports)
+      return publicRoutes.includes(pathname) || String(pathname || "").startsWith("/r/");
     },
     [publicRoutes]
   );

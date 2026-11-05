@@ -4,7 +4,6 @@ import * as XLSX from "xlsx";
 import { toast } from "react-toastify";
 import moment from "moment";
 import CountUp from "react-countup";
-import { format } from "date-fns";
 import dayjs from "dayjs";
 
 import { FcOvertime } from "react-icons/fc";
@@ -73,6 +72,39 @@ const formatDate = (value) => {
   if (!value) return "-";
   const parsed = dayjs(value);
   return parsed.isValid() ? parsed.format("DD-MM-YYYY") : "-";
+};
+
+// Import: which field a column heading is (headings from Export Excel, and close variants)
+const IMPORT_HEADINGS = {
+  chamberName: ["chamber/equipment", "chamber", "chamber name", "equipment", "chamber/equipment name"],
+  chamberID: ["chamber/equipment id", "chamber id", "equipment id", "id"],
+  chamberMake: ["make", "chamber make", "manufacturer"],
+  chamberModel: ["model", "model no", "model number", "chamber model"],
+  chamberSerialNo: ["serial number", "serial no", "sl no.", "s/n", "chamber serial no", "equipment serial no"],
+  calibrationDoneDate: ["calibration done date", "calibration done on", "calibrated on", "done date"],
+  calibrationDueDate: ["calibration due date", "calibration due on", "due date"],
+  calibratedBy: ["calibration done by", "calibrated by"],
+  calibrationStatus: ["calibration status"],
+  chamberStatus: ["chamber status", "status"],
+  remarks: ["remarks/observation", "remarks", "observation"],
+};
+const headingKey = (h) => String(h || "").toLowerCase().replace(/\s+/g, " ").trim();
+const importFieldFor = (heading) => {
+  const key = headingKey(heading);
+  if (!key) return null;
+  return Object.keys(IMPORT_HEADINGS).find((field) => IMPORT_HEADINGS[field].includes(key)) || null;
+};
+
+// Import: a date cell (real date, Excel day number, or DD-MM-YYYY / DD.MM.YYYY / YYYY-MM-DD)
+const importDate = (cell) => {
+  if (cell === "" || cell === null || cell === undefined || cell === "-") return "";
+  if (cell instanceof Date) return dayjs(cell).isValid() ? dayjs(cell).add(1, "minute").format("YYYY-MM-DD") : "";
+  if (typeof cell === "number") return dayjs(new Date(Math.round((cell - 25569) * 86400 * 1000))).format("YYYY-MM-DD");
+  const text = String(cell).trim();
+  const dmy = text.match(/^(\d{1,2})[-./](\d{1,2})[-./](\d{4})$/);
+  if (dmy) return `${dmy[3]}-${dmy[2].padStart(2, "0")}-${dmy[1].padStart(2, "0")}`;
+  const parsed = dayjs(text);
+  return parsed.isValid() ? parsed.format("YYYY-MM-DD") : "";
 };
 
 export default function ChamberAndCalibration() {
@@ -224,114 +256,58 @@ export default function ChamberAndCalibration() {
     fetchChambersList();
   }, [ref, excelDataAdded, deleteItemId]);
 
-  // To read the data of the uploaded excel file  (Keep )
-  const handleFileChange = async (e) => {
+  // Excel import: columns are found by their heading (the same headings as Export Excel),
+  // so an exported sheet can be edited and imported back. A row updates the chamber with
+  // the same Chamber/Equipment ID, or adds it; blank cells keep the saved value.
+  const handleFileChange = (e) => {
     e.preventDefault();
-
     const file = e.target.files[0];
-
-    // Update the uploadedFileName state variable
+    e.target.value = ""; // allow picking the same file again
+    if (!file) return;
     setUploadedFileName(file.name);
 
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const data = e.target.result;
-        const workbook = XLSX.read(data, { type: "binary" });
-
-        const sheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[sheetName];
-
-        // Convert worksheet to an array of arrays & Filter out the first row (headers) from the dataArr
-        const dataArr = XLSX.utils
-          .sheet_to_json(worksheet, { header: 1 })
-          .slice(1);
-
-        // Check if the dataArr has at least one row with two columns (excluding headers)
-        if (dataArr.length > 1 && dataArr[0].length === 8) {
-          if (dataArr.length > 0) {
-            dataArr.forEach(async (row) => {
-              const [
-                chamberName,
-                chamberID,
-                calibrationDoneDate,
-                calibrationDueDate,
-                calibratedBy,
-                calibrationStatus,
-                chamberStatus,
-                remarks,
-              ] = row;
-
-              // Convert Excel date values to JavaScript Date objects
-              const excelDateToJSDate = (serial) => {
-                const utc_days = Math.floor(serial - 25569);
-                const date_info = new Date(utc_days * 86400 * 1000);
-                const fractional_day = serial - Math.floor(serial) + 0.0000001;
-                const total_seconds = Math.floor(86400 * fractional_day);
-                const seconds = total_seconds % 60;
-                const hours = Math.floor(total_seconds / 3600);
-                const minutes = Math.floor(total_seconds / 60) % 60;
-
-                return new Date(
-                  date_info.getFullYear(),
-                  date_info.getMonth(),
-                  date_info.getDate(),
-                  hours,
-                  minutes,
-                  seconds,
-                );
-              };
-
-              const formattedCalibrationDoneDate = calibrationDoneDate
-                ? format(excelDateToJSDate(calibrationDoneDate), "yyyy-MM-dd")
-                : null;
-              const formattedCalibrationDueDate = calibrationDueDate
-                ? format(excelDateToJSDate(calibrationDueDate), "yyyy-MM-dd")
-                : null;
-
-              try {
-                const addChamberRequest = await axios.post(
-                  `${serverBaseAddress}/api/addChamberData`,
-                  {
-                    chamberName,
-                    chamberID,
-                    formattedCalibrationDoneDate,
-                    formattedCalibrationDueDate,
-                    calibratedBy,
-                    calibrationStatus,
-                    chamberStatus,
-                    remarks,
-                  },
-                );
-
-                if (addChamberRequest.status === 200) {
-                } else {
-                  toast.error("An error occurred while saving the data.");
-                }
-              } catch (error) {
-                console.error("Error details:", error);
-                if (error.response && error.response.status === 400) {
-                  toast.error("Database Error");
-                } else {
-                  toast.error("An error occurred while saving the data.");
-                }
-              }
-            });
-
-            setRef(!ref);
-            setExcelDataAdded(true);
-            toast.success("Chamber Calibration Data Added Successfully");
-          } else {
-            toast.error("All rows are empty or invalid.");
-          }
-        } else {
-          toast.error(
-            "The Excel file must have exactly 8 columns (excluding headers). And Don't keep any date format in excel sheet",
-          );
+    const reader = new FileReader();
+    reader.onload = async (evt) => {
+      try {
+        const workbook = XLSX.read(evt.target.result, { type: "array", cellDates: true });
+        const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+        const sheetRows = XLSX.utils.sheet_to_json(worksheet, { header: 1, defval: "", raw: true });
+        const headerIndex = sheetRows.findIndex((r) => r.some((c) => importFieldFor(c) === "chamberID"));
+        if (headerIndex < 0) {
+          toast.error('No "Chamber/Equipment ID" column found. Use the headings from Export Excel.');
+          return;
         }
-      };
-      reader.readAsArrayBuffer(file);
-    }
+        const fields = sheetRows[headerIndex].map(importFieldFor);
+        const rows = sheetRows
+          .slice(headerIndex + 1)
+          .map((cells) => {
+            const row = {};
+            fields.forEach((field, i) => {
+              if (!field) return;
+              row[field] = field.endsWith("Date") ? importDate(cells[i]) : String(cells[i] ?? "").trim();
+            });
+            return row;
+          })
+          .filter((row) => Object.values(row).some(Boolean));
+        if (!rows.length) {
+          toast.error("The file has no chamber rows.");
+          return;
+        }
+        const missingId = rows.filter((r) => !r.chamberID).length;
+        if (missingId) {
+          toast.error(`${missingId} row(s) have no Chamber/Equipment ID. Fill it in and import again.`);
+          return;
+        }
+        const { data } = await axios.post(`${serverBaseAddress}/api/chamberData/import`, { rows });
+        toast.success(`Chambers imported: ${data.updated} updated, ${data.added} added`);
+        setRef((r) => !r);
+        setExcelDataAdded((v) => !v);
+      } catch (error) {
+        console.error("Chamber import error:", error);
+        toast.error(error.response?.data?.message || "Could not read this file.");
+      }
+    };
+    reader.readAsArrayBuffer(file);
   };
 
   // Function to compare calibration due month with current month
@@ -891,6 +867,9 @@ export default function ChamberAndCalibration() {
       "SL No": row.serialNumbers,
       "Chamber/Equipment": row.chamber_name || "",
       "Chamber/Equipment ID": row.chamber_id || "",
+      Make: row.chamber_make || "",
+      Model: row.chamber_model || "",
+      "Serial Number": row.chamber_serial_no || "",
       "Calibration Done Date": formatDate(row.calibration_done_date),
       "Calibration Due Date": formatDate(row.calibration_due_date),
       "Calibration Done By": row.calibration_done_by || "",

@@ -1,4 +1,4 @@
-import { forwardRef, useContext, useState } from "react";
+import { forwardRef, useCallback, useContext, useEffect, useState } from "react";
 import {
   TableContainer,
   Paper,
@@ -41,6 +41,10 @@ import ReportConfigDialogV2 from "../components/ReportConfig/ReportConfigDialogV
 import { GenerateReportDocument } from "../Reports/MainReportDocument";
 import { prepareReportData } from "./TS1ReportDocument";
 import { toast } from "react-toastify";
+import JCChecklistPanel from "./ReportWorkflow/JCChecklistPanel";
+import ReportStageButton from "./ReportWorkflow/ReportStageButton";
+import FinalReleaseBox from "./ReportWorkflow/FinalReleaseBox";
+import { errorText, loadJcWorkflow, loadReportAssets, reportForRow, uploadReportFile } from "./ReportWorkflow/reportWorkflow";
 
 const Transition = forwardRef(function Transition(props, ref) {
   return <Slide direction="up" ref={ref} {...props} />;
@@ -97,6 +101,18 @@ export default function JCPreview({
 
   //State for ESS Tests selection and to generate ESS test report.
   const [selectedESSTests, setSelectedESSTests] = useState([]);
+
+  // Report workflow and checklist of this job card (stages, reviews, final issues)
+  const [workflow, setWorkflow] = useState(null);
+  const refreshWorkflow = useCallback(() => {
+    if (!open || !jcNumber || (jcCategory && jcCategory !== "TS1")) return;
+    loadJcWorkflow(jcNumber)
+      .then(setWorkflow)
+      .catch(() => setWorkflow(null));
+  }, [open, jcNumber, jcCategory]);
+  useEffect(() => {
+    refreshWorkflow();
+  }, [refreshWorkflow]);
 
   const isTS1Testing = loggedInUserDepartment === "TS1 Testing";
   const isReportsAndScrutiny = loggedInUserDepartment === "Reports & Scrutiny";
@@ -245,6 +261,19 @@ export default function JCPreview({
     setConfigDialogOpen(true);
   };
 
+  // From a report's panel: open the report dialog for its rows (a new draft)
+  const handleGenerateDraftFor = (report) => {
+    const indices = (report.testIds || [report.testDetailId])
+      .map((id) => testDetailsRows.findIndex((r) => r.id === id))
+      .filter((i) => i >= 0);
+    if (!indices.length) {
+      toast.error("The test rows of this report were not found. Reopen the job card.");
+      return;
+    }
+    if (indices.length > 1) handleGenerateESSTestReport(indices);
+    else handleGenerateReport(indices[0]);
+  };
+
   // Handler for report config confirmation
   const handleReportConfigConfirm = async (reportConfig) => {
     setConfigDialogOpen(false);
@@ -254,14 +283,25 @@ export default function JCPreview({
       return;
     }
 
+    // Company logo from Reports > Settings > Report images (valid on the report date)
+    let withAssets;
+    try {
+      const assets = await loadReportAssets({ date: reportConfig.originalReportIssueDateISO });
+      withAssets = { ...reportConfig, assets };
+    } catch (error) {
+      toast.error(errorText(error, "Could not load the report images"), { autoClose: 10000 });
+      setConfigDialogOpen(true);
+      return;
+    }
+
     try {
       // Store the config for the Previous button
       setLastReportConfig(reportConfig);
 
-      // Generate the report with config (including images) using new docx package
+      // Generate the draft (marked DRAFT, no signatures / QR code)
       const { blob, fileName } = await GenerateReportDocument(
         pendingReportData,
-        reportConfig,
+        { ...withAssets, issue: { kind: "draft" } },
       );
 
       // Set the preview modal state
@@ -280,12 +320,25 @@ export default function JCPreview({
             testCode: reportConfig.testCode,
             issueDate: reportConfig.originalReportIssueDateISO || null,
             chambers: reportConfig.chambers,
+            // an ESS report covers several test rows
+            testIds: (pendingReportData.reportTests || []).map((t) => t.id).filter(Boolean),
+            testName: pendingReportData.isESSTest
+              ? `ESS: ${(pendingReportData.reportTests || []).map((t) => t.testName).join(", ")}`.slice(0, 1000)
+              : pendingReportData.currentTestRow?.testName || "",
           })
+          // ...and keep the Word file itself as a version of the report
           .then((res) => {
             if (res.data.warning) toast.warning(res.data.warning, { autoClose: 8000 });
-            else toast.success(`Report recorded (version ${res.data.version})`, { autoClose: 2500 });
+            return uploadReportFile(testDetailId, blob, { kind: "draft", source: "generated" }, fileName);
           })
-          .catch((error) => console.error("Error recording the report:", error));
+          .then((saved) => {
+            toast.success(`Draft saved in Lab Bee (Word version ${saved.version})`, { autoClose: 3000 });
+            refreshWorkflow();
+          })
+          .catch((error) => {
+            console.error("Error saving the draft:", error);
+            toast.error(errorText(error, "The draft was made but could not be saved in Lab Bee"));
+          });
       }
 
       // Don't clear pendingReportData - keep it for Previous button
@@ -413,9 +466,10 @@ export default function JCPreview({
   };
 
   //Handle ESS Test Report Generation:
-  const handleGenerateESSTestReport = async () => {
+  const handleGenerateESSTestReport = async (indices = null) => {
+    const chosen = Array.isArray(indices) ? indices : selectedESSTests;
     // Validation: At least one ESS test must be selected
-    if (selectedESSTests.length === 0) {
+    if (chosen.length === 0) {
       toast.warning(
         "Please select at least one ESS test to generate the report.",
       );
@@ -423,7 +477,7 @@ export default function JCPreview({
     }
 
     // Get all selected rows data (sorted by index to maintain order)
-    const essTestRows = selectedESSTests
+    const essTestRows = [...chosen]
       .sort((a, b) => a - b)
       .map((index) => testDetailsRows[index]);
 
@@ -440,7 +494,7 @@ export default function JCPreview({
       isESSReport: true,
       essTestRows: essTestRows, // Array of all selected ESS tests
       currentTestRow: essTestRows[0], // Primary test for header info
-      currentTestRowIndex: selectedESSTests.sort((a, b) => a - b)[0],
+      currentTestRowIndex: [...chosen].sort((a, b) => a - b)[0],
     };
 
     // Use prepareReportData to format the data
@@ -494,6 +548,12 @@ export default function JCPreview({
         </Grid>
 
         <Divider />
+
+        {/* Job card checklist (TS1) */}
+        {workflow && <FinalReleaseBox data={workflow} onChanged={refreshWorkflow} />}
+        {workflow && (
+          <JCChecklistPanel data={workflow} jcNumber={jcNumber} onChanged={refreshWorkflow} />
+        )}
 
         {/* Attached Documents */}
         {attachedFiles && attachedFiles.length > 0 && (
@@ -813,7 +873,7 @@ export default function JCPreview({
                                         variant="contained"
                                         size="small"
                                         startIcon={<AssignmentIcon />}
-                                        onClick={handleGenerateESSTestReport}
+                                        onClick={() => handleGenerateESSTestReport()}
                                         sx={{
                                           "backgroundColor": "#9c27b0",
                                           "ml": 0.5,
@@ -852,6 +912,19 @@ export default function JCPreview({
                                   </Button>
                                 </span>
                               </Tooltip>
+                            )}
+                            {workflow && (
+                              <Box sx={{ mt: 0.5 }}>
+                                <ReportStageButton
+                                  compact
+                                  report={reportForRow(workflow.reports, row.id, workflow.toPrepare)}
+                                  me={workflow.me}
+                                  release={workflow.release}
+                                  jcNumber={jcNumber}
+                                  onChanged={refreshWorkflow}
+                                  onGenerateDraft={handleGenerateDraftFor}
+                                />
+                              </Box>
                             )}
                           </TableCell>
                         </TableRow>

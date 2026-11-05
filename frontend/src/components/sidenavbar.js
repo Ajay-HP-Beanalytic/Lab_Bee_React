@@ -35,6 +35,8 @@ import { UserContext } from "../Pages/UserContext";
 import NotificationDialog from "./NotificationDialog";
 import HelpButton from "./help/HelpButton";
 import { MENU_GROUPS, visibleMenu } from "../Pages/menuCatalog";
+import Badge from "@mui/material/Badge";
+import useReportsCount from "../JC/ReportWorkflow/useReportsCount";
 
 // ─── Layout constants ─────────────────────────────────────────────────────────
 
@@ -149,6 +151,8 @@ function GradientIcon({ children, gradientId }) {
 export default function SidenavigationBar() {
   const theme = useTheme();
   const { loggedInUser, access } = useContext(UserContext);
+  // TS1 reports waiting on this user (badge on the Reports menu)
+  const reportsWaiting = useReportsCount(!!access?.menus?.includes("ts1_reports"));
 
   const location = useLocation();
 
@@ -252,9 +256,15 @@ export default function SidenavigationBar() {
           }}
         >
           <ListItemIcon sx={iconSx}>
-            <GradientIcon gradientId={item.gradientId}>
-              {item.icon}
-            </GradientIcon>
+            <Badge
+              color={reportsWaiting.overdue ? "error" : "primary"}
+              badgeContent={item.key === "ts1_reports" ? reportsWaiting.count : 0}
+              max={99}
+            >
+              <GradientIcon gradientId={item.gradientId}>
+                {item.icon}
+              </GradientIcon>
+            </Badge>
           </ListItemIcon>
           <ListItemText
             primary={item.label}

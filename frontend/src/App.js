@@ -53,6 +53,8 @@ import FutureScope from "./test_feasibility_automation/FutureScope";
 import LabScopeManager from "./test_feasibility_automation/LabScopeManager";
 import TestTypesManager from "./test_feasibility_automation/TestTypesManager";
 import JCPrintPage from "./JC/JCPrintPage";
+import PublicReportPage from "./JC/ReportWorkflow/PublicReportPage";
+import ReportsBoard from "./JC/ReportWorkflow/ReportsBoard";
 import EMIJCPrintPage from "./EMI/EMIJCPrintPage";
 
 function App() {
@@ -96,7 +98,8 @@ function App() {
       "/reset_password",
       "/feasibility-request",
       "/feasibility-submitted",
-    ].includes(location.pathname)
+    ].includes(location.pathname) &&
+    !location.pathname.startsWith("/r/")
   ) {
     return (
       <Box
@@ -148,6 +151,8 @@ function App() {
           element={<FeasibilityRequestSuccess />}
         />
         <Route path="/jc-print" element={<JCPrintPage />} />
+        {/* The customer's link / QR code on a final report (no login) */}
+        <Route path="/r/:token" element={<PublicReportPage />} />
         <Route path="/emi-jc-print/:id" element={<EMIJCPrintPage />} />
 
         {/* Protected Routes */}
@@ -213,6 +218,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <Jobcard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="ts1_reports"
+            element={
+              <ProtectedRoute>
+                <ReportsBoard />
               </ProtectedRoute>
             }
           />

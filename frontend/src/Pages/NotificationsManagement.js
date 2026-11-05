@@ -21,6 +21,7 @@ const EVENT_TITLES = {
   quote_update_notification: "Quote Update",
   emi_jobcard_submit_notification: "New TS2 JC Created",
   rfq_notification: "Enquiry",
+  report_notification: "TS1 Report",
 };
 
 const canNotifyDesktop = () => typeof window !== "undefined" && "Notification" in window;
@@ -63,6 +64,7 @@ export default function NotificationsManagement() {
         );
         // The panel reloads the list and the unread count
         setNewNotificationReceived((prev) => !prev);
+        if (link?.startsWith("/ts1_reports")) window.dispatchEvent(new Event("ts1-report-notification"));
 
         toast.info(`${title}: ${message}`, {
           position: "bottom-right",

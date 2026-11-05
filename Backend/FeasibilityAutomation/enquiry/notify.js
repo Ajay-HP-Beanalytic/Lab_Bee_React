@@ -19,8 +19,9 @@ const initEnquiryNotifications = (socketServer, labbeeUsers) => {
   connectedUsers = labbeeUsers;
 };
 
-// { departments?: string[], userIds?: number[], message, sender, requestId }
-const notify = async ({ departments = [], userIds = [], message, sender = "Lab Bee", requestId = null }) => {
+// { departments?: string[], userIds?: number[], message, sender, requestId, link?, event? }
+// link: the page the notification opens (default: the enquiry); event: the socket event
+const notify = async ({ departments = [], userIds = [], message, sender = "Lab Bee", requestId = null, link: pageLink = null, event = "rfq_notification" }) => {
   if (!departments.length && !userIds.length) return;
   const users = await query(
     `SELECT id, name, department, role FROM labbee_users
@@ -31,7 +32,7 @@ const notify = async ({ departments = [], userIds = [], message, sender = "Lab B
 
   const roles = [...new Set(users.map((u) => u.role).filter(Boolean))];
   const now = new Date();
-  const link = requestId ? `/rfq_inbox?open=${requestId}` : null;
+  const link = pageLink || (requestId ? `/rfq_inbox?open=${requestId}` : null);
   const saved = await query(
     "INSERT INTO notifications_table (message, receivedAt, users_to_be_notified, notification_sent_by, link) VALUES (?, ?, ?, ?, ?)",
     [message, moment(now).format("YYYY-MM-DD HH:mm:ss"), roles.join(","), sender, link],
@@ -41,7 +42,7 @@ const notify = async ({ departments = [], userIds = [], message, sender = "Lab B
   const names = new Set(users.map((u) => u.name));
   for (const [socketId, u] of Object.entries(connectedUsers)) {
     if (names.has(u.name) && u.name !== sender) {
-      io.to(socketId).emit("rfq_notification", { id: saved.insertId, message, sender, receivedAt: now.toISOString(), requestId, link });
+      io.to(socketId).emit(event, { id: saved.insertId, message, sender, receivedAt: now.toISOString(), requestId, link });
     }
   }
 };

@@ -35,7 +35,8 @@ export const createHeader = (
   nablLogoBase64 = null,
   testCode = "",
   testReportNumber = "",
-  ulrNumber = ""
+  ulrNumber = "",
+  draft = false // a draft for the customer to review: "DRAFT" under the header on every page
 ) => {
   const HEADER_CELL_MARGINS = { top: 50, bottom: 50, left: 10, right: 10 };
   // Create the left cell with BEA logo (spans 3 rows)
@@ -82,7 +83,13 @@ export const createHeader = (
     //       }),
     //     ]
     //   :
-    [new Paragraph({ text: "" })],
+    // NABL reports: the final gets the NABL mark here (white marker word, see Backend/ts1/reportFinalize.js)
+    [
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        children: isNABL ? [new TextRun({ text: "LBNABLMARK", color: "FFFFFF", size: 2, font: "Calibri" })] : [],
+      }),
+    ],
     {
       width: 25,
       rowSpan: 3,
@@ -237,7 +244,25 @@ export const createHeader = (
   ]);
 
   return new Header({
-    children: [headerTable],
+    children: [
+      headerTable,
+      ...(draft
+        ? [
+            new Paragraph({
+              alignment: AlignmentType.CENTER,
+              spacing: { before: 60 },
+              children: [
+                createTextRun("DRAFT REPORT - FOR CUSTOMER REVIEW ONLY", {
+                  bold: true,
+                  size: 22,
+                  font: "Calibri(Body)",
+                  color: "C00000",
+                }),
+              ],
+            }),
+          ]
+        : []),
+    ],
   });
 };
 
