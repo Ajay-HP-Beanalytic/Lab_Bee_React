@@ -1,15 +1,11 @@
 import axios from "axios";
 import { serverBaseAddress } from "../../Pages/APIPage";
+import { PHOTO_PLACES } from "../../Reports/reportLayouts";
 
 // Report photos: prepared in the browser (turned upright, big phone photos shrunk), stored on
 // the server per report, and loaded as data URLs when a report is generated.
 
-export const PHASES = [
-  ["before", "Before test"],
-  ["setup", "Test setup"],
-  ["during", "During test"],
-  ["after", "After test"],
-];
+export const PHASES = PHOTO_PLACES;
 
 const MAX_EDGE = 2000; // px on the long side: sharp in print at the sizes reports use
 const SMALL_EDGE = 700; // below this a photo may print blurred at full width
@@ -75,16 +71,27 @@ export async function preparePhoto(file) {
   };
 }
 
+/** A graph or test document ready to upload: an image (as a photo) or a Word file (the server turns .doc into .docx) */
+export async function prepareGraphFile(file) {
+  if (/\.docx?$/i.test(file.name)) {
+    if (file.size > 25 * 1024 * 1024) throw new Error(`${file.name}: the file is too big (25 MB at most)`);
+    return { file, name: file.name };
+  }
+  if (/\.pdf$/i.test(file.name)) throw new Error(`${file.name}: a PDF can't be copied into the report. Add its pages as images, or the Word file.`);
+  return preparePhoto(file);
+}
+
 export const listPhotos = (testDetailId) =>
   axios.get(`${serverBaseAddress}/api/ts1/reports/${testDetailId}/photos`).then((r) => r.data.photos || []);
 
 /** Upload prepared photos in batches of 6 (onProgress(done, total)) */
-export async function uploadPhotos(testDetailId, prepared, { phase, group }, onProgress = () => {}) {
+export async function uploadPhotos(testDetailId, prepared, { phase, group, layout }, onProgress = () => {}) {
   let done = 0;
   for (let i = 0; i < prepared.length; i += 6) {
     const form = new FormData();
     form.append("phase", phase);
     if (group) form.append("group", group);
+    if (layout) form.append("layout", layout);
     for (const p of prepared.slice(i, i + 6)) form.append("files", p.file, p.name);
     await axios.post(`${serverBaseAddress}/api/ts1/reports/${testDetailId}/photos`, form, { timeout: 5 * 60 * 1000 });
     done = Math.min(prepared.length, i + 6);
@@ -94,8 +101,9 @@ export async function uploadPhotos(testDetailId, prepared, { phase, group }, onP
 
 export const updatePhoto = (id, patch) => axios.put(`${serverBaseAddress}/api/ts1/report-photos/${id}`, patch).then((r) => r.data);
 export const deletePhoto = (id) => axios.delete(`${serverBaseAddress}/api/ts1/report-photos/${id}`);
-export const reorderPhotos = (testDetailId, phase, ids) =>
-  axios.post(`${serverBaseAddress}/api/ts1/reports/${testDetailId}/photos/order`, { phase, ids });
+/** items in the new order: [{ id, group? }] (a group moves the photo to that sample) */
+export const reorderPhotos = (testDetailId, phase, items) =>
+  axios.post(`${serverBaseAddress}/api/ts1/reports/${testDetailId}/photos/order`, { phase, items });
 
 const blobOf = (id) => axios.get(`${serverBaseAddress}/api/ts1/report-photos/${id}/file`, { responseType: "blob" }).then((r) => r.data);
 

@@ -2,8 +2,10 @@
 // (frontend/src/templates/Sample TS1 Testing Reports):
 //   first page -> general info -> "It is certified..." chambers (+ test specifications)
 //   -> Table 01 EUT/DUT -> Table 02 tests conducted (columns per family) -> notes -> Table 03
-//   -> Appendix A photos (before / setup / during / after, grouped by serial no. / axis...)
-//   -> test data page + graph (thermal) or controller printouts (vibration) -> disclaimer -> end.
+//   -> Appendix A photos (sample wise, or all before / setup / during / after)
+//   -> test data page + graph (thermal) or controller printouts (vibration, on landscape pages;
+//   ESS: pre-vibration photos + printouts, thermal cycling photos + test data + graph,
+//   post-vibration photos + printouts) -> disclaimer -> end.
 
 /** "Thermal Cycling Test" -> "THERMAL CYCLING" (the report adds "TEST REPORT" / "TEST PHOTOS") */
 export const testTitle = (name) =>
@@ -38,7 +40,7 @@ export const FAMILIES = {
     graph: false,
     graphNote: "",
     specs: true,
-    groupHints: "Sample Serial Number: 01, IP6X, IPX8",
+    photoMode: "sample",
   },
   thermal: {
     label: "Thermal / Climatic (graph)",
@@ -49,17 +51,18 @@ export const FAMILIES = {
     dataPage: true,
     graphNote: GRAPH_TEMP,
     specs: false,
-    groupHints: "Sample Serial Number: 01",
+    photoMode: "phase",
   },
   vibration: {
     label: "Vibration / Shock / Bump",
+    landscapeGraphs: true,
     columns: ["eutSerial", "test", "chamber", "profile", "observation"],
     notes: NOTE_FUNCTIONAL,
     observation: "No Physical Damage Observed",
     graph: true,
     graphNote: "",
     specs: false,
-    groupHints: "X-axis, Y-axis, Z-axis",
+    photoMode: "sample",
   },
   ess: {
     label: "ESS (Vibration + Thermal Cycling)",
@@ -71,7 +74,9 @@ export const FAMILIES = {
     dataPage: true,
     graphNote: GRAPH_TEMP,
     specs: false,
-    groupHints: "Pre-Random Vibration - X-axis, Thermal Cycling",
+    photoMode: "sample",
+    photoGroups: "test", // per sub-test: its photos, then its printouts (usually landscape)
+    landscapeGraphs: true,
     table3: { title: "Table 03: Random Vibration", headers: "Batch | Qty | Serial Number", rows: "" },
   },
   saltfog: {
@@ -82,7 +87,7 @@ export const FAMILIES = {
     graph: false,
     graphNote: "",
     specs: true,
-    groupHints: "Sample name / serial number",
+    photoMode: "sample",
     table3: { title: "Table 03: After Test Observation details", headers: "Nomenclature | After Test Observation", rows: "" },
   },
   mechanical: {
@@ -93,7 +98,7 @@ export const FAMILIES = {
     graph: false,
     graphNote: "",
     specs: false,
-    groupHints: "Serial Number-01: 1125-001",
+    photoMode: "sample",
   },
   general: {
     label: "Other tests",
@@ -103,9 +108,76 @@ export const FAMILIES = {
     graph: true,
     graphNote: "",
     specs: false,
-    groupHints: "",
+    photoMode: "phase",
   },
 };
+
+/** How the photos are arranged: "sample" (each sample: before, setup, during, after) or "phase" */
+export const photoModeOf = (content) => content?.photoMode || FAMILIES[content?.family]?.photoMode || "phase";
+
+/** Where a report's photos can go, in print order */
+export const PHOTO_PLACES = [
+  ["before", "Before test"],
+  ["setup", "Test setup"],
+  ["axis_x", "X-axis"],
+  ["axis_y", "Y-axis"],
+  ["axis_z", "Z-axis"],
+  ["during", "During test"],
+  ["after", "After test"],
+];
+const AXES = ["axis_x", "axis_y", "axis_z"];
+
+// "group" is a sample or an ESS stage; null when all the photos are together
+const isThermalStage = (group) => familyOf("", group || "") === "thermal";
+const hasAxes = (content, group) => content?.family === "vibration" || (content?.family === "ess" && !isThermalStage(group));
+
+/** The places that can be chosen: vibration has the axes too */
+export const placesOffered = (content, group) => PHOTO_PLACES.filter(([k]) => hasAxes(content, group) || !AXES.includes(k));
+
+/** The places in use: chosen in the builder, else the usual ones (a place with photos always stays) */
+export const placesShown = (content, group, photos = []) => {
+  const saved = content?.photoPlaces?.[group ?? "*"];
+  const usual =
+    content?.family === "ess" && group
+      ? isThermalStage(group)
+        ? ["setup"]
+        : AXES
+      : placesOffered(content, group).map(([k]) => k);
+  const chosen = saved || usual;
+  return PHOTO_PLACES.filter(([k]) => chosen.includes(k) || photos.some((p) => p.phase === k && (group === null || (p.group || "").trim() === group)));
+};
+
+// ESS: vibration, thermal cycling, vibration again; each stage has its photos, then its graphs
+const essStages = (content) => {
+  const names = (content?.rows || []).map((r) => (r.test || "").trim());
+  const vibration = testTitle(names.find((n) => familyOf("", n) === "vibration")).replace(/^(PRE|POST)[-\s]*/, "") || "RANDOM VIBRATION";
+  const thermal = testTitle(names.find((n) => familyOf("", n) === "thermal")) || "THERMAL CYCLING";
+  return [`PRE-${vibration} TEST SETUP`, `${thermal} TEST SETUP`, `POST-${vibration} TEST SETUP`];
+};
+
+/** The samples / batches (or ESS stages) photos start with */
+export const defaultSamples = (content) => {
+  if (FAMILIES[content?.family]?.photoGroups === "test") return essStages(content);
+  const serials = (content?.euts || []).flatMap((e) => String(e.serialNo || "").split(/[,;]/)).map((s) => s.trim()).filter(Boolean);
+  return [...new Set(serials)].map((s) => `Sample Serial Number: ${s}`);
+};
+
+/** The samples in print order: the report's list, plus any group a photo already has */
+export const samplesOf = (content, photos = []) => {
+  const base = content?.photoSamples?.length ? content.photoSamples : defaultSamples(content);
+  const extra = photos.filter((p) => p.phase !== "graph").map((p) => (p.group || "").trim()).filter(Boolean);
+  return [...new Set([...base, ...extra])];
+};
+
+/** Table 01 rows as the builder edits them */
+export const eutRowsOf = (eutRows = []) =>
+  eutRows.map((e) => ({
+    nomenclature: e.nomenclature || "",
+    qty: String(e.qty ?? ""),
+    partNo: e.partNo || "",
+    modelNo: e.modelNo || "",
+    serialNo: e.serialNo || "",
+  }));
 
 /** The family of a test from its category / name */
 export const familyOf = (category = "", name = "") => {
@@ -184,6 +256,7 @@ function fill(content, family, reportTests = [], eutRows = []) {
     title: content.title || f.title || testTitle(first.testName),
     notes: f.notes,
     graphNote: f.graphNote,
+    euts: eutRowsOf(eutRows),
     table3: f.table3
       ? {
           ...f.table3,

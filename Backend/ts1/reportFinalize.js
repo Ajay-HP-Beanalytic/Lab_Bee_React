@@ -1,8 +1,10 @@
 const JSZip = require("jszip");
+const { PNG } = require("pngjs");
 
 // Turns a TS1 draft report (a Word file Lab Bee generated, maybe edited by the reports team)
 // into the final report, keeping everything else the team did:
-//   - the red "DRAFT REPORT - FOR CUSTOMER REVIEW ONLY" line is removed from the headers
+//   - the DRAFT watermark is removed from the headers (and the red "DRAFT REPORT..." line of older drafts)
+//   - the footer box gets the current document number / issue / revision
 //   - "Draft Date: ..." becomes "Final Issue Date: ..." (and a revision line on a re-issue)
 //   - the NABL mark goes into the header (NABL reports)
 //   - signature images go under Prepared / Reviewed / Authorized, with the names and designations
@@ -49,6 +51,38 @@ function imageSize(buf) {
   }
   return null;
 }
+
+// A logo saved with wide empty margins prints tiny: cut blank edges off a PNG (transparent or
+// white). An image that can't be read goes in as it is.
+function trimBlankEdges(image) {
+  if (image.ext === "jpeg") return image;
+  try {
+    const png = PNG.sync.read(image.data);
+    const { width: w, height: h, data } = png;
+    let left = w;
+    let right = -1;
+    let top = h;
+    let bottom = -1;
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const i = (y * w + x) * 4;
+        const blank = data[i + 3] < 16 || (data[i] > 240 && data[i + 1] > 240 && data[i + 2] > 240);
+        if (blank) continue;
+        if (x < left) left = x;
+        if (x > right) right = x;
+        if (y < top) top = y;
+        if (y > bottom) bottom = y;
+      }
+    }
+    if (right < 0 || (left === 0 && top === 0 && right === w - 1 && bottom === h - 1)) return image;
+    const out = new PNG({ width: right - left + 1, height: bottom - top + 1 });
+    PNG.bitblt(png, out, left, top, out.width, out.height, 0, 0);
+    return { ...image, data: PNG.sync.write(out) };
+  } catch {
+    return image;
+  }
+}
+
 const fit = (size, maxW, maxH) => {
   if (!size?.w || !size?.h) return { w: maxW, h: maxH };
   const k = Math.min(maxW / size.w, maxH / size.h);
@@ -80,9 +114,10 @@ class Part {
  * @param {number} o.version - final issue number (a revision line from 2 on)
  * @param {Array<{slot, name, designation, image?: {data: Buffer, ext: "png"|"jpeg"}}>} o.signers
  * @param {{data: Buffer, ext}} [o.nablMark] - only for NABL reports
+ * @param {{formNo, issueNo, issueDate, revNo, revDate}} [o.docControl] - the footer box as it stands today
  * @returns {Promise<{ buffer: Buffer, warnings: string[] }>}
  */
-async function finalizeReport(buffer, { issueDateText, version = 1, signers = [], nablMark = null }) {
+async function finalizeReport(buffer, { issueDateText, version = 1, signers = [], nablMark = null, docControl = null }) {
   const zip = await JSZip.loadAsync(buffer);
   const names = Object.keys(zip.files).filter((n) => /^word\/(document|header\d*|footer\d*)\.xml$/.test(n));
   const parts = [];
@@ -153,10 +188,37 @@ async function finalizeReport(buffer, { issueDateText, version = 1, signers = []
     return out;
   };
 
-  // 1. No "DRAFT" line (the paragraph stays, empty, so the header keeps its shape)
+  // 1. No DRAFT watermark, and no "DRAFT" line in older drafts (the paragraph stays, empty,
+  // so the header keeps its shape)
+  let marks = 0;
+  for (const part of parts) {
+    for (const run of part.xml.match(RUN) || []) {
+      if (/<w:pict[\s>]/.test(run) && /PowerPlusWaterMarkObject|string="DRAFT/i.test(run)) {
+        part.xml = part.xml.replace(run, "");
+        marks += 1;
+      }
+    }
+  }
   const draftLines = findAll((t) => t.includes(DRAFT_LINE));
   for (const { part, p } of draftLines) part.replace(p, withRuns(p, ""));
-  if (!draftLines.length) warnings.push('The "DRAFT REPORT" line was not found (already removed?)');
+  if (!marks && !draftLines.length) warnings.push("The DRAFT watermark was not found (already removed?)");
+
+  // The footer box as it stands today (a revision may have come after the draft)
+  if (docControl) {
+    const box = [
+      [/^[A-Z]+\/[A-Z]+\/\d+$/, docControl.formNo],
+      [/^Issue\s*:/i, `Issue :${docControl.issueNo}`],
+      [/^Issue Date\s*:/i, `Issue Date: ${docControl.issueDate}`],
+      [/^Rev No\s*:/i, `Rev No: ${docControl.revNo}`],
+      [/^Rev Date\s*:/i, `Rev Date: ${docControl.revDate}`],
+    ];
+    for (const part of parts.filter((x) => x.name.startsWith("word/footer"))) {
+      for (const p of part.paragraphs()) {
+        const hit = box.find(([re]) => re.test(textOf(p).trim()));
+        if (hit) part.replace(p, withText(p, hit[1]));
+      }
+    }
+  }
 
   // 2. Final issue date (+ revision)
   const dateP = findIn((t) => /^\s*Draft (Issue )?Date\s*:/i.test(t));
@@ -173,8 +235,9 @@ async function finalizeReport(buffer, { issueDateText, version = 1, signers = []
 
   // 3. NABL mark in the header
   const nablSpots = findAll((t) => t.includes(MARKERS.nabl));
+  const mark = nablMark && nablSpots.length ? trimBlankEdges(nablMark) : null;
   for (const { part, p } of nablSpots) {
-    part.replace(p, withRuns(p, nablMark ? await addImage(part, nablMark, 140, 66) : ""));
+    part.replace(p, withRuns(p, mark ? await addImage(part, mark, 185, 95) : ""));
   }
   if (nablMark && !nablSpots.length) warnings.push("No place for the NABL mark was found in the header - add it by hand");
 

@@ -1,15 +1,13 @@
 import { Document, Packer } from "docx";
 import { createHeader, createFooter } from "./HeaderAndFooter";
 
-// Import logos
 import BEA_LOGO from "./BEA_LOGO.png";
-import NABL_LOGO from "./NABL_LOGO.png";
 import { createFirstPage } from "./FirstPage";
 import { createGeneralInfoTable } from "./GeneralInfoTable";
 import { createChamberSection, createEUTInfoTable } from "./EUTInfoTable";
 import { createTestDetailsInfoTable } from "./TestDetailsInfoTable";
-import { addCompleteTestImages } from "./CompleteTestImages";
-import { addTestGraphImages } from "./TestGraphImages";
+import { testPhotoParts } from "./CompleteTestImages";
+import { graphBlocks } from "./TestGraphImages";
 import { endOfTheReportLine } from "./EndOfReportText";
 
 /**
@@ -39,224 +37,126 @@ const imageUrlToBase64 = (url) => {
   });
 };
 
+const pageMargins = {
+  top: 1980, // room for the header table, as in the lab's reports
+  right: 960,
+  bottom: 1300, // room for the footer box and the address
+  left: 960,
+  header: 288,
+  footer: 200,
+};
+
 /**
- * Generates a TS1 test report document using docx package
- * Returns a Promise that resolves with the blob and filename for preview/download
- *
- * @param {object} comprehensiveData - Complete job card data
- * @param {string} comprehensiveData.testDiscipline - Test discipline (e.g., "Electronics")
- * @param {string} comprehensiveData.jcNumber - Job card number
- * @param {string} comprehensiveData.companyName - Customer company name
- * @param {object} comprehensiveData.currentTestRow - The specific test row for this report
- *
- * @param {object} reportConfig - Report configuration from ReportConfigDialog
- * @param {string} reportConfig.testCode - Test code
- * @param {string} reportConfig.reportType - "NABL" or "NON-NABL"
- * @param {string} reportConfig.testReportNumber - Test report number
- * @param {string} reportConfig.ulrNumber - ULR number (NABL only)
- * @param {string} reportConfig.originalReportIssueDate - Original report issue date
- * @param {string} reportConfig.chamberInfo - Chamber information
- * @param {string} reportConfig.chamberMakeInfo - Chamber make information
- *
- * @returns {Promise<{blob: Blob, fileName: string}>} Promise that resolves with blob and filename
+ * The report's page sections: the main part in portrait, Appendix A photos, and each graph or
+ * document in its own orientation, right after the photos of its group (an ESS report goes
+ * portrait, landscape, portrait, landscape, portrait) or at the end. The disclaimer always ends
+ * the report on a portrait page.
+ * @returns {Array<{ landscape: boolean, children: Array }>}
  */
-export const GenerateReportDocument = async (
-  comprehensiveData,
-  reportConfig = {}
-) => {
-  return new Promise(async (resolve, reject) => {
-    try {
-      // console.log(
-      //   "ComprehensiveData in mainReportDocument.jsx is-->",
-      //   comprehensiveData
-      // );
-      const isNABL = reportConfig.reportType === "NABL";
-      // Draft (for the customer to review) unless this is the signed final issue
-      const isDraft = reportConfig.issue?.kind !== "final";
-      // console.log(
-      //   `🔹 Generating ${reportConfig.reportType} report with docx package...`
-      // );
-      // console.log("📋 Report Config:", reportConfig);
+export const reportFlow = async (comprehensiveData, reportConfig) => {
+  const flow = [];
+  const add = (landscape, children) => {
+    if (!children.length) return;
+    const last = flow[flow.length - 1];
+    if (last && last.landscape === landscape) last.children.push(...children);
+    else flow.push({ landscape, children: [...children] });
+  };
 
-      // Load logos as base64
-      let beaLogoBase64 = null;
-      let nablLogoBase64 = null;
+  add(false, [
+    ...createFirstPage(comprehensiveData, reportConfig),
+    ...createGeneralInfoTable(comprehensiveData, reportConfig),
+    ...createChamberSection(comprehensiveData, reportConfig),
+    ...createEUTInfoTable(comprehensiveData, reportConfig),
+    ...createTestDetailsInfoTable(comprehensiveData, reportConfig),
+  ]);
 
-      try {
-        // Reports > Settings > Report images (valid on the report date), else the built-in files
-        beaLogoBase64 = await imageUrlToBase64(reportConfig.assets?.labLogo || BEA_LOGO);
-
-        if (isNABL) {
-          nablLogoBase64 = await imageUrlToBase64(reportConfig.assets?.nablLogo || NABL_LOGO);
-        }
-      } catch (error) {
-        console.error("⚠️ Error loading logos:", error);
-        // Continue without logos
+  const blocks = await graphBlocks(comprehensiveData, reportConfig);
+  const placed = new Set();
+  for (const part of testPhotoParts(comprehensiveData, reportConfig)) {
+    add(false, part.elements);
+    if (!part.group) continue;
+    for (const b of blocks) {
+      if (b.group === part.group) {
+        placed.add(b);
+        add(b.landscape, b.children);
       }
+    }
+  }
+  for (const b of blocks) if (!placed.has(b)) add(b.landscape, b.children);
 
-      // Use the flags prepared by prepareReportData() in TS1ReportDocument.js
-      // These flags are already computed based on currentTest.testCategory
-      const isVibrationTest = comprehensiveData.isVibrationTest || false;
-      // eslint-disable-next-line no-unused-vars
-      const isThermalTest = comprehensiveData.isThermalTest || false;
+  add(false, endOfTheReportLine());
+  return flow;
+};
 
-      const isESSTest = comprehensiveData.isESSTest || false;
+/**
+ * Generates a TS1 test report (Word) in the browser.
+ *
+ * @param {object} comprehensiveData - job card data from prepareReportData
+ * @param {object} reportConfig - from the report builder: reportType, testCode, testReportNumber,
+ *   ulrNumber, originalReportIssueDate, chambers, content, companyLogoBase64, docControl, photos,
+ *   assets, issue
+ * @returns {Promise<{blob: Blob, fileName: string}>}
+ */
+export const GenerateReportDocument = async (comprehensiveData, reportConfig = {}) => {
+  try {
+    const isNABL = reportConfig.reportType === "NABL";
+    // Draft (for the customer to review) unless this is the signed final issue
+    const isDraft = reportConfig.issue?.kind !== "final";
 
-      // Automatically use landscape orientation for Vibration tests
-      const useGraphLandscape = isVibrationTest;
+    let beaLogoBase64 = null;
+    try {
+      // Reports > Settings > Report images (valid on the report date), else the built-in file
+      beaLogoBase64 = await imageUrlToBase64(reportConfig.assets?.labLogo || BEA_LOGO);
+    } catch (error) {
+      console.error("Error loading the lab logo:", error);
+    }
 
-      // console.log("📄 MainReportDocument - Orientation Decision:", {
-      //   isVibrationTest,
-      //   isThermalTest,
-      //   finalDecision: useGraphLandscape ? "LANDSCAPE" : "PORTRAIT",
-      // });
+    // A logo saved in another format (e.g. WebP) can't go into Word as it is
+    let companyLogoBase64 = reportConfig.companyLogoBase64 || null;
+    if (companyLogoBase64 && !/^data:image\/(png|jpe?g);/i.test(companyLogoBase64)) {
+      companyLogoBase64 = await imageUrlToBase64(companyLogoBase64).catch(() => null);
+    }
+    const config = { ...reportConfig, companyLogoBase64 };
 
-      // Prepare graph images content (check if it exists)
-      // Note: addTestGraphImages is now async (parses vibration documents)
-      const graphContent = reportConfig.imageRequirements?.graphImages
-        ? await addTestGraphImages(
-            comprehensiveData,
-            reportConfig,
-            useGraphLandscape // Automatically true for Vibration tests
-          )
-        : null;
-      const endOfReportParagraphs = endOfTheReportLine();
+    const flow = await reportFlow(comprehensiveData, config);
 
-      // Build sections array
-      const sections = [];
-
-      // Section 1: Portrait orientation (main content)
-      sections.push({
+    const doc = new Document({
+      styles: {
+        default: {
+          // Calibri, as in the lab's reports
+          document: { run: { font: "Calibri", size: 22 } },
+          heading2: { run: { font: "Calibri", size: 24, bold: true, color: "000000" } },
+        },
+      },
+      sections: flow.map(({ landscape, children }) => ({
         properties: {
           page: {
-            margin: {
-              top: 1440, // 1 inch = 1440 twentieths of a point
-              // right: 1440, //Original value
-              right: 960, // 0.67"
-              bottom: 1440,
-              // left: 1440, //Original value
-              left: 960, // 0.67"
-              header: 360, // 0.25 inch from top edge to header (reduced for larger table)
-              footer: 360, // 0.25 inch from bottom edge to footer
-            },
+            margin: pageMargins,
+            ...(landscape ? { size: { orientation: "landscape" } } : {}),
           },
         },
         headers: {
-          default: createHeader(
-            isNABL,
-            beaLogoBase64,
-            nablLogoBase64,
-            reportConfig.testCode,
-            reportConfig.testReportNumber,
-            reportConfig.ulrNumber,
-            isDraft
-          ),
+          default: createHeader(isNABL, beaLogoBase64, config.testCode, config.testReportNumber, config.ulrNumber, isDraft),
         },
-        footers: {
-          default: createFooter(reportConfig.reportType),
-        },
-        children: [
-          // First page content
-          ...createFirstPage(comprehensiveData, reportConfig),
+        footers: { default: createFooter(config.docControl) },
+        children,
+      })),
+    });
 
-          // General Info Table
-          ...createGeneralInfoTable(comprehensiveData, reportConfig),
+    const blob = await Packer.toBlob(doc);
 
-          // "It is certified..." chambers (+ test specifications), as in the lab's reports
-          ...createChamberSection(comprehensiveData, reportConfig),
-
-          // Table 01: EUT/DUT details
-          ...createEUTInfoTable(comprehensiveData, reportConfig),
-
-          // Table 02: tests conducted (columns per test family) and the notes
-          ...createTestDetailsInfoTable(comprehensiveData, reportConfig),
-
-          // Appendix A: photos - before, test setup, during, after
-          ...addCompleteTestImages(comprehensiveData, reportConfig),
-
-          // Graph Images - include here if NOT landscape mode
-          ...(graphContent && !useGraphLandscape ? graphContent : []),
-        ],
-      });
-
-      // Section 2: Landscape orientation (graphs only) - automatically for Vibration tests
-      if (graphContent && useGraphLandscape) {
-        sections.push({
-          properties: {
-            page: {
-              margin: {
-                top: 1440,
-                // right: 1440, //Original value
-                right: 960, // 0.67"
-                bottom: 1440,
-                // left: 1440, //Original value
-                left: 960, // 0.67"
-                header: 360, // 0.25 inch from top edge to header
-                footer: 360, // 0.25 inch from bottom edge to footer
-              },
-              // LANDSCAPE ORIENTATION
-              size: {
-                orientation: "landscape",
-              },
-            },
-          },
-          headers: {
-            default: createHeader(
-              isNABL,
-              beaLogoBase64,
-              nablLogoBase64,
-              reportConfig.testCode,
-              reportConfig.testReportNumber,
-              reportConfig.ulrNumber,
-              isDraft
-            ),
-          },
-          footers: {
-            default: createFooter(reportConfig.reportType),
-          },
-          children: [...graphContent, ...endOfReportParagraphs],
-        });
-      } else {
-        // Append the end-of-report line to the last page of the main section
-        sections[0].children.push(...endOfReportParagraphs);
-      }
-
-      // Create the document with sections
-      const doc = new Document({
-        sections: sections,
-      });
-
-      // Generate blob
-      const blob = await Packer.toBlob(doc);
-
-      // Generate filename
-      const now = new Date();
-
-      // Convert to IST (Indian Standard Time, UTC+5:30)
-      const istOffset = 5.5 * 60; // IST offset in minutes
-      const localOffset = now.getTimezoneOffset(); // Local offset in minutes
-      const istTime = new Date(
-        now.getTime() + (istOffset + localOffset) * 60000
-      );
-
-      const year = istTime.getFullYear();
-      const month = String(istTime.getMonth() + 1).padStart(2, "0");
-      const day = String(istTime.getDate()).padStart(2, "0");
-      const hours = String(istTime.getHours()).padStart(2, "0");
-      const minutes = String(istTime.getMinutes()).padStart(2, "0");
-
-      // Format: YYYYMMDD_HHMM (IST)
-      const customDate = `${year}${month}${day}_${hours}${minutes}`;
-
-      // Get the first 3 letters/numbers of the report number, or use date if not present
-      const reportNumber = reportConfig.testReportNumber || customDate;
-      const fileName = isDraft
-        ? `REP_${reportNumber}_DRAFT.docx`
-        : `REP_${reportNumber}${reportConfig.issue?.version > 1 ? `_v${reportConfig.issue.version}` : ""}.docx`;
-      resolve({ blob, fileName });
-    } catch (error) {
-      console.error("❌ Error generating report:", error);
-      reject(new Error(error.message || "Unknown error generating report"));
-    }
-  });
+    // Format: YYYYMMDD_HHMM (IST), when there is no report number yet
+    const now = new Date();
+    const ist = new Date(now.getTime() + (5.5 * 60 + now.getTimezoneOffset()) * 60000);
+    const pad = (n) => String(n).padStart(2, "0");
+    const customDate = `${ist.getFullYear()}${pad(ist.getMonth() + 1)}${pad(ist.getDate())}_${pad(ist.getHours())}${pad(ist.getMinutes())}`;
+    const reportNumber = config.testReportNumber || customDate;
+    const fileName = isDraft
+      ? `REP_${reportNumber}_DRAFT.docx`
+      : `REP_${reportNumber}${config.issue?.version > 1 ? `_v${config.issue.version}` : ""}.docx`;
+    return { blob, fileName };
+  } catch (error) {
+    console.error("Error generating report:", error);
+    throw new Error(error.message || "Unknown error generating report");
+  }
 };

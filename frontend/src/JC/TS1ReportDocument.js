@@ -251,6 +251,9 @@ export const prepareReportData = (comprehensiveData) => {
       duration: formatDuration(t.actualTestDuration || t.duration, t.actualTestDuration ? t.unit : "Hours"),
     })),
 
+    // The same rows unformatted (test data page of an ESS sub-test)
+    reportTestRows: reportTests,
+
     // ============= Current Test Row (the specific test for this report) =============
     // Store original currentTestRow for direct access
     currentTestRow: currentTest,

@@ -32,6 +32,15 @@ async function ensureReportTables() {
   await query("ALTER TABLE ts1_report_register ADD COLUMN content JSON").catch((e) => {
     if (e.code !== "ER_DUP_FIELDNAME") throw e;
   });
+  // A report being built: everything in the builder, saved as it is typed, so the work can be
+  // left and picked up later (photos and graphs are kept separately, see TS1ReportPhotosAPI.js)
+  await query(`
+    CREATE TABLE IF NOT EXISTS ts1_report_builder_drafts (
+      test_detail_id INT PRIMARY KEY,
+      data MEDIUMTEXT NOT NULL,
+      updated_by VARCHAR(255),
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) COMMENT='The report builder state of each TS1 report (auto saved)'`);
 }
 
 const norm = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9]+/g, "");
@@ -48,6 +57,17 @@ function contentOf(c) {
       ? { title: clip(c.table3.title, 300), headers: clip(c.table3.headers, 500), rows: clip(c.table3.rows, 5000) }
       : null,
     graphNote: clip(c.graphNote, 1000),
+    photoMode: c.photoMode === "phase" ? "phase" : c.photoMode === "sample" ? "sample" : undefined,
+    photoSamples: Array.isArray(c.photoSamples) ? c.photoSamples.slice(0, 100).map((x) => clip(x, 255)) : undefined,
+    euts: Array.isArray(c.euts)
+      ? c.euts.slice(0, 100).map((e) => ({
+          nomenclature: clip(e?.nomenclature, 500),
+          qty: clip(e?.qty, 50),
+          partNo: clip(e?.partNo, 200),
+          modelNo: clip(e?.modelNo, 200),
+          serialNo: clip(e?.serialNo, 500),
+        }))
+      : undefined,
     rows: c.rows.slice(0, 30).map((r) => ({
       testId: parseInt(r?.testId) || null,
       eutSerial: clip(r?.eutSerial, 500),
@@ -88,24 +108,20 @@ function reportTypeFor(row, tests, jobcard) {
   return { value: null, from: null };
 }
 
-// Chamber block for the report: the chamber name (printed bold, left) and its details
-// (printed right) from Chamber Calibration (make, model, serial no., calibration) and
-// Chamber Specs (inside dimensions). chamberInfo = name + details, kept for older code;
+// Chamber block for the report: the chamber name and its details, one line each, from Chamber
+// Calibration (make, model, serial no., calibration). chamberInfo = name + details, kept for older code;
 // chamberMake is the short form for the "Chamber/Make/Equipment SL no." column.
 const dmy = (d) => (d && dayjs(d).isValid() ? dayjs(d).format("DD.MM.YYYY") : "");
-const cm = (n) => (Number(n) > 0 ? String(Number(n)) : "");
 function chamberBlock(cal, testStart, spec) {
   cal = cal || {};
   const chamberId = cal.chamber_id || spec?.chamber_id || "";
   const serial = [cal.chamber_serial_no, chamberId && `(${chamberId})`].filter(Boolean).join(" ");
   const due = cal.calibration_due_date ? dayjs(cal.calibration_due_date) : null;
-  const size = spec && [spec.length_cm, spec.width_cm, spec.height_cm].map(cm);
   const name = String(cal.chamber_name || spec?.chamber_name || chamberId).toUpperCase();
   const details = [
-    cal.chamber_make && `Make: ${cal.chamber_make}`,
-    cal.chamber_model && `Model: ${cal.chamber_model}`,
+    cal.chamber_make && `MAKE: ${cal.chamber_make}`,
+    cal.chamber_model && `MODEL: ${cal.chamber_model}`,
     serial && `SL No: ${serial}`,
-    size && size.every(Boolean) && `Inside dimensions (L x W x H): ${size.join(" x ")} cm`,
     cal.calibration_done_date && `Calibration done on: ${dmy(cal.calibration_done_date)}`,
     due && `Calibration due on: ${dmy(due)}`,
   ]
@@ -279,14 +295,22 @@ async function logoFor(jobcard) {
   const withLogo = await query(
     `SELECT c.id, c.company_name, c.customer_email FROM customer_logos l JOIN customers_details c ON c.id = l.customer_id`,
   );
+  const nameOf = (c) => companyKey(c.company_name);
   const match =
-    withLogo.find((c) => name && companyKey(c.company_name) === name) ||
+    withLogo.find((c) => name && nameOf(c) === name) ||
+    // "Tonbo Imaging" on the job card, "Tonbo Imaging India Pvt Ltd" in Customers
+    withLogo.find((c) => name.length >= 5 && nameOf(c).length >= 5 && (nameOf(c).startsWith(`${name} `) || name.startsWith(`${nameOf(c)} `))) ||
     (domain && !PUBLIC_MAIL.test(domain)
       ? withLogo.find((c) => String(c.customer_email || "").toLowerCase().includes(`@${domain}`))
       : null);
   if (!match) return null;
   const [logo] = await query("SELECT mime, data FROM customer_logos WHERE customer_id = ?", [match.id]);
   return logo ? `data:${logo.mime};base64,${Buffer.from(logo.data).toString("base64")}` : null;
+}
+
+async function savedProgress(testDetailId) {
+  const [d] = await query("SELECT data, updated_by, updated_at FROM ts1_report_builder_drafts WHERE test_detail_id = ?", [testDetailId]);
+  return d ? { data: parseJson(d.data, null), updatedBy: d.updated_by, updatedAt: d.updated_at } : null;
 }
 
 const handle = (fn) => async (req, res) => {
@@ -369,7 +393,33 @@ function ts1ReportAPIs(app) {
       chamberOptions: chamberData.options,
       testCodeOptions: await testCodeOptions(types),
       missing,
+      docControl: (await require("./TS1ReportWorkflowAPI").getSettings()).docControl,
+      saved: await savedProgress(row.id),
     };
+  }));
+
+  // The builder saves its state while the report is being made
+  app.put("/api/ts1/reports/:testDetailId/builder-draft", handle(async (req) => {
+    const me = await require("./TS1ReportWorkflowAPI").whoIs(req);
+    const id = parseInt(req.params.testDetailId);
+    const [row] = await query("SELECT id FROM tests_details WHERE id = ?", [id]);
+    if (!row) throw fail(404, "This test is not saved yet. Save the job card first.");
+    const data = JSON.stringify(req.body?.data ?? null);
+    if (!req.body?.data || typeof req.body.data !== "object") throw fail(400, "Nothing to save");
+    if (data.length > 8 * 1024 * 1024) throw fail(400, "The report is too big to save (is the logo very large?)");
+    await query(
+      `INSERT INTO ts1_report_builder_drafts (test_detail_id, data, updated_by) VALUES (?, ?, ?)
+       ON DUPLICATE KEY UPDATE data = VALUES(data), updated_by = VALUES(updated_by), updated_at = CURRENT_TIMESTAMP`,
+      [id, data, me.name],
+    );
+    return savedProgress(id);
+  }));
+
+  // "Start over": forget what was typed (photos and graphs stay)
+  app.delete("/api/ts1/reports/:testDetailId/builder-draft", handle(async (req) => {
+    await require("./TS1ReportWorkflowAPI").whoIs(req);
+    await query("DELETE FROM ts1_report_builder_drafts WHERE test_detail_id = ?", [parseInt(req.params.testDetailId)]);
+    return { ok: true };
   }));
 
   // Record a generated report; keeps tests_details.reportNumber in step

@@ -132,6 +132,7 @@ function ReportDrawer({ testDetailId, onClose, onChanged }) {
 
 /** TS1 reports: my work (by due date), everything in progress, and the issued library */
 export default function ReportsBoard() {
+  const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
@@ -299,12 +300,13 @@ export default function ReportsBoard() {
                   <TableCell>Due</TableCell>
                 </>
               )}
+              <TableCell>Report</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
             {rows.length === 0 && (
               <TableRow>
-                <TableCell colSpan={6} sx={{ py: 4, textAlign: "center", color: "text.secondary" }}>
+                <TableCell colSpan={7} sx={{ py: 4, textAlign: "center", color: "text.secondary" }}>
                   {tab === "mine" ? "Nothing is waiting on you." : "No reports"}
                 </TableCell>
               </TableRow>
@@ -395,6 +397,24 @@ export default function ReportsBoard() {
                     </TableCell>
                   </>
                 )}
+                <TableCell onClick={(e) => e.stopPropagation()}>
+                  {r.stage === "final_issued" ? (
+                    "-"
+                  ) : (
+                    <Tooltip title="Open the job card and the report window">
+                      <span>
+                        <Button
+                          size="small"
+                          variant="contained"
+                          disabled={!r.jcId}
+                          onClick={() => navigate("/jobcard_dashboard", { state: { openJcId: r.jcId, openReportFor: r.testDetailId } })}
+                        >
+                          Report
+                        </Button>
+                      </span>
+                    </Tooltip>
+                  )}
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>

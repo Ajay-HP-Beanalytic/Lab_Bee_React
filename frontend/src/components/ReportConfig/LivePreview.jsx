@@ -4,6 +4,7 @@ import RefreshIcon from "@mui/icons-material/Refresh";
 import ZoomInIcon from "@mui/icons-material/ZoomIn";
 import ZoomOutIcon from "@mui/icons-material/ZoomOut";
 import { renderAsync } from "docx-preview";
+import { draftOverlaySx } from "./draftOverlay";
 
 /**
  * The draft as it will come out, rebuilt a moment after each change (or on Refresh).
@@ -89,7 +90,7 @@ export default function LivePreview({ config, version, onPreview }) {
         </Alert>
       )}
       <Box sx={{ flex: 1, overflow: "auto", bgcolor: "#e9edf1", p: 1 }}>
-        <Box sx={{ transform: `scale(${zoom})`, transformOrigin: "top left", width: `${100 / zoom}%` }}>
+        <Box sx={{ transform: `scale(${zoom})`, transformOrigin: "top left", width: `${100 / zoom}%`, ...draftOverlaySx }}>
           <div ref={box} />
         </Box>
       </Box>

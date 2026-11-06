@@ -1,7 +1,11 @@
 import {
   AlignmentType,
   ImageRun,
+  OverlapType,
   Paragraph,
+  RelativeHorizontalPosition,
+  RelativeVerticalPosition,
+  TableAnchorType,
   TextRun,
   TableRow,
   VerticalAlign,
@@ -20,6 +24,8 @@ import {
   createParagraph,
   createTableCell,
   createDataTable,
+  fitInBox,
+  imageSizeOfDataUrl,
 } from "./Report_Functions/docxHelpers";
 
 /**
@@ -41,7 +47,7 @@ const signatureCell = (label, slot, alignment, width) =>
     [
       new Paragraph({
         alignment,
-        children: [createTextRun(label, { bold: true, size: 23, font: "Calibri(Body)" })],
+        children: [createTextRun(label, { bold: true, size: 23, font: "Calibri" })],
       }),
       new Paragraph({ alignment, spacing: { after: 900 }, children: [marker(`LBSIG${slot.toUpperCase()}`)] }),
     ],
@@ -61,8 +67,8 @@ const issueDateBlock = (reportConfig) => [
     bold: true,
     size: 25,
     color: "000000",
-    font: "Calibri(Body)",
-    spacing: { before: 400, after: 1000 },
+    font: "Calibri",
+    spacing: { before: 400, after: 200 },
   }),
 ];
 
@@ -105,7 +111,7 @@ export const createFirstPage = (comprehensiveData, reportConfig) => {
         bold: true,
         size: 40,
         color: "1f497d",
-        font: "Calibri(Body)",
+        font: "Calibri",
         spacing: {
           before: 500,
           after: 500,
@@ -119,7 +125,7 @@ export const createFirstPage = (comprehensiveData, reportConfig) => {
       bold: true,
       size: 25,
       color: "0070c0",
-      font: "Calibri(Body)",
+      font: "Calibri",
       spacing: {
         after: 500,
       },
@@ -136,10 +142,7 @@ export const createFirstPage = (comprehensiveData, reportConfig) => {
             children: [
               new ImageRun({
                 data: reportConfig.companyLogoBase64,
-                transformation: {
-                  width: 100,
-                  height: 100,
-                },
+                transformation: fitInBox(imageSizeOfDataUrl(reportConfig.companyLogoBase64), 340, 150),
               }),
             ],
           }),
@@ -152,7 +155,7 @@ export const createFirstPage = (comprehensiveData, reportConfig) => {
       bold: true,
       size: 32,
       color: "1f497d",
-      font: "Calibri(Body)",
+      font: "Calibri",
       spacing: {
         after: 300,
       },
@@ -164,7 +167,7 @@ export const createFirstPage = (comprehensiveData, reportConfig) => {
     //   bold: true,
     //   size: 25,
     //   color: "1f497d",
-    //   font: "Calibri(Body)",
+    //   font: "Calibri",
     //   spacing: {
     //     after: 500,
     //   },
@@ -179,7 +182,7 @@ export const createFirstPage = (comprehensiveData, reportConfig) => {
     //       bold: true,
     //       size: 25,
     //       color: "1f497d",
-    //       font: "Calibri(Body)",
+    //       font: "Calibri",
     //     }),
     //     ...(idx < addressLines.length - 1 ? [new TextRun({ break: 1 })] : []),
     //   ]),
@@ -192,7 +195,7 @@ export const createFirstPage = (comprehensiveData, reportConfig) => {
     //     bold: true,
     //     size: 25,
     //     color: "1f497d",
-    //     font: "Calibri(Body)",
+    //     font: "Calibri",
     //     spacing: { after: 500 },
     //   }
     // ),
@@ -202,14 +205,15 @@ export const createFirstPage = (comprehensiveData, reportConfig) => {
       bold: true,
       size: 25,
       color: "1f497d",
-      font: "Calibri(Body)",
+      font: "Calibri",
       spacing: { after: 500 },
     }),
 
     // Draft date (the final gets its issue date when it is made)
     ...issueDateBlock(reportConfig),
 
-    // Signature Table (Prepared By, Reviewed By, Authorized Signature)
+    // Signature Table (Prepared By, Reviewed By, Authorized Signature), kept at the bottom of the
+    // page: it grows upwards when the final puts the signatures in
     createDataTable(
       [
         // Row 1: Headers
@@ -233,13 +237,21 @@ export const createFirstPage = (comprehensiveData, reportConfig) => {
         // Row 3: Designations
         new TableRow({
           children: [
-            markedCell("LBDESGPREPARED", preparedByDesignation || "", AlignmentType.JUSTIFIED, 33, 600),
-            markedCell("LBDESGREVIEWED", reviewedByDesignation || "", AlignmentType.CENTER, 33, 600),
-            markedCell("LBDESGAUTHORIZED", authorizedByDesignation || "", AlignmentType.RIGHT, 34, 600),
+            markedCell("LBDESGPREPARED", preparedByDesignation || "", AlignmentType.JUSTIFIED, 33, 40),
+            markedCell("LBDESGREVIEWED", reviewedByDesignation || "", AlignmentType.CENTER, 33, 40),
+            markedCell("LBDESGAUTHORIZED", authorizedByDesignation || "", AlignmentType.RIGHT, 34, 40),
           ],
         }),
       ],
       {
+        columnWidths: [3295, 3295, 3396],
+        float: {
+          horizontalAnchor: TableAnchorType.MARGIN,
+          relativeHorizontalPosition: RelativeHorizontalPosition.CENTER,
+          verticalAnchor: TableAnchorType.MARGIN,
+          relativeVerticalPosition: RelativeVerticalPosition.BOTTOM,
+          overlap: OverlapType.NEVER,
+        },
         borders: {
           top: { style: "none", size: 0 },
           bottom: { style: "none", size: 0 },

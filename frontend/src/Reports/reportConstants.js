@@ -1,6 +1,10 @@
-export const footerText = `BE Analytic Solutions, B131/A, Devasandra Industrial Estate, Whitefield Rd, 
-  Mahadevapura, Bangalore -560048, India. Ph: 91-80-95000449, Fax: 917838593998, 
-  sales@beanalytic.com, www.beanalytic.com `;
+// The footer of every report
+export const footerAddressLine = "BE Analytic Solutions LLP, B131/A, Devasandra Industrial Estate, Whitefield Rd, Mahadevapura, Bangalore -560048, India.";
+export const footerContact = { phone: "Ph: 91-80-95000449", email: "sales@beanalytic.com", web: "www.beanalytic.com" };
+
+// The document control box in the footer. The current values come from Reports > Settings
+// (they change with the format's revision); these are only used if the settings can't be read.
+export const defaultDocControl = { formNo: "BEA/TR/01", issueNo: "01", issueDate: "01/03/2021", revNo: "3", revDate: "31/03/2026" };
 
 export const reportDisclaimerText = `
 In making any use of this test report you are expressly agreeing to the disclaimers 
@@ -15,6 +19,7 @@ This particular test does not require any statement of conformity or opinion/int
 
 // The disclaimer at the end of every report (as in the lab's current reports)
 export const disclaimerPoints = [
+  "By making any use of this test report, you expressly agree to the disclaimers and notices stated below.",
   "The testing was done carefully and to the lab’s best ability.",
   "The results reflect the condition of the sample only at the time it was tested.",
   "The data applies only to the specific sample (DUT – Device Under Test) that was submitted.",

@@ -1,41 +1,53 @@
 /**
- * Appendix A: the test photos, in the order of the lab's reports -
- * BEFORE TEST, TEST SETUP, DURING TEST, AFTER TEST.
+ * Appendix A: the test photos, kept on the server per report (Photos step of the builder).
  *
- * Photos come from the report's photo list (Photos step: phase, group, caption, half or full
- * width). Each photo keeps its proportions inside its box, so tall and wide photos are never
- * stretched; photos of the same group get a heading (e.g. "Sample Serial Number: 01").
- * Older configs that carry plain image lists (beforeTestImagesBase64...) still work.
+ * Two arrangements:
+ *  - sample wise: Sample Serial Number: 001 -> BEFORE TEST, TEST SETUP, the axes, DURING TEST,
+ *    AFTER TEST; then Sample Serial Number: 002 -> ... (ESS: per stage, its printouts follow its
+ *    photos)
+ *  - all together: the same places once, with an optional group heading inside each.
  *
- * @param {Object} comprehensiveData - Complete jobcard data
- * @param {Object} reportConfig - Report configuration
- * @returns {Array} Array containing image paragraphs
+ * Each photo keeps its proportions inside its box, so tall and wide photos are never stretched.
  */
 
 import { AlignmentType, ImageRun, Paragraph, Table, TableCell, TableRow, TextRun, VerticalAlign, WidthType } from "docx";
-import { testTitle } from "./reportLayouts";
-import { createCaptionParagraph, createHeadingParagraph } from "./Report_Functions/docxHelpers";
+import { FAMILIES, photoModeOf, samplesOf, testTitle } from "./reportLayouts";
+import { createCaptionParagraph, fitInBox } from "./Report_Functions/docxHelpers";
 
 const PHASES = [
-  ["before", "beforeTestImages", "beforeTestImagesBase64", "BEFORE TEST:"],
-  ["setup", "testImages", "testImagesBase64", "TEST SETUP:"],
-  ["during", "duringTestImages", "duringTestImagesBase64", "DURING TEST:"],
-  ["after", "afterTestImages", "afterTestImagesBase64", "AFTER TEST:"],
+  ["before", "BEFORE TEST:"],
+  ["setup", "TEST SETUP:"],
+  ["axes", null],
+  ["during", "DURING TEST:"],
+  ["after", "AFTER TEST:"],
+];
+const AXES = [
+  ["axis_x", "X-axis"],
+  ["axis_y", "Y-axis"],
+  ["axis_z", "Z-axis"],
 ];
 
 // Boxes (px) a photo is fitted into
 const BOX = { half: { w: 310, h: 235 }, full: { w: 620, h: 440 } };
 const fit = (p, layout) => {
   const box = BOX[layout] || BOX.half;
-  if (!p.width || !p.height) return { width: box.w, height: box.h };
-  const k = Math.min(box.w / p.width, box.h / p.height);
-  return { width: Math.round(p.width * k), height: Math.round(p.height * k) };
+  return fitInBox({ width: p.width, height: p.height }, box.w, box.h);
 };
 
 const NONE = { style: "none", size: 0, color: "FFFFFF" };
 const BORDERS = { top: NONE, bottom: NONE, left: NONE, right: NONE, insideHorizontal: NONE, insideVertical: NONE };
 
 const photoParagraphs = (p, layout) => [
+  ...(p.label
+    ? [
+        new Paragraph({
+          alignment: AlignmentType.CENTER,
+          keepNext: true,
+          spacing: { before: 120, after: 40 },
+          children: [new TextRun({ text: p.label, bold: true, size: 22, font: "Calibri", color: "000000", underline: {} })],
+        }),
+      ]
+    : []),
   new Paragraph({
     alignment: AlignmentType.CENTER,
     keepNext: !!p.caption,
@@ -47,21 +59,28 @@ const photoParagraphs = (p, layout) => [
         new Paragraph({
           alignment: AlignmentType.CENTER,
           spacing: { after: 80 },
-          children: [new TextRun({ text: p.caption, italics: true, size: 18, font: "Calibri(Body)", color: "333333" })],
+          children: [new TextRun({ text: p.caption, italics: true, size: 20, font: "Calibri", color: "333333" })],
         }),
       ]
     : []),
 ];
 
-const cell = (children) =>
-  new TableCell({ width: { size: 50, type: WidthType.PERCENTAGE }, verticalAlign: VerticalAlign.CENTER, borders: BORDERS, children });
+const cell = (children, verticalAlign = VerticalAlign.CENTER) =>
+  new TableCell({ width: { size: 50, type: WidthType.PERCENTAGE }, verticalAlign, borders: BORDERS, children });
 
-// Photos of one group: half-width ones two per row, full-width ones alone
+// Half-width photos two per row, full-width ones alone
 function layoutPhotos(list) {
   const out = [];
   let pair = [];
   const flush = () => {
     if (!pair.length) return;
+    // an axis alone sits in the middle of the page, with its name above it
+    if (pair.length === 1 && pair[0].label) {
+      out.push(...photoParagraphs(pair[0], "half"));
+      pair = [];
+      return;
+    }
+    const align = pair.some((p) => p.label) ? VerticalAlign.TOP : VerticalAlign.CENTER;
     out.push(
       new Table({
         width: { size: 100, type: WidthType.PERCENTAGE },
@@ -69,7 +88,7 @@ function layoutPhotos(list) {
         rows: [
           new TableRow({
             cantSplit: true,
-            children: [cell(photoParagraphs(pair[0], "half")), cell(pair[1] ? photoParagraphs(pair[1], "half") : [new Paragraph({ children: [] })])],
+            children: [cell(photoParagraphs(pair[0], "half"), align), cell(pair[1] ? photoParagraphs(pair[1], "half") : [new Paragraph({ children: [] })], align)],
           }),
         ],
       })
@@ -89,47 +108,60 @@ function layoutPhotos(list) {
   return out;
 }
 
-const groupHeading = (text) =>
+const heading = (text, { size, before, after, underline }) =>
   new Paragraph({
     keepNext: true,
-    spacing: { before: 160, after: 60 },
-    children: [new TextRun({ text, bold: true, size: 20, font: "Calibri(Body)", color: "000000" })],
+    spacing: { before, after },
+    children: [new TextRun({ text, bold: true, size, font: "Calibri", color: "000000", ...(underline ? { underline: {} } : {}) })],
+  });
+const phaseHeading = (text) => heading(text, { size: 22, before: 240, after: 80, underline: true });
+const groupHeading = (text) => heading(text, { size: 22, before: 160, after: 60, underline: true });
+const sampleHeading = (text) => heading(text, { size: 24, before: 400, after: 60, underline: true });
+
+// "... TEST PHOTOS": blue, underlined and centred, as in the lab's reports
+const photosTitle = (text, newPage = false) =>
+  new Paragraph({
+    keepNext: true,
+    pageBreakBefore: newPage,
+    alignment: AlignmentType.CENTER,
+    spacing: { before: 240, after: 160 },
+    children: [new TextRun({ text, bold: true, size: 28, font: "Calibri", color: "1F497D", underline: {} })],
   });
 
-export const addCompleteTestImages = (comprehensiveData, reportConfig) => {
-  const stored = Array.isArray(reportConfig?.photos) ? reportConfig.photos.filter((p) => p.dataUrl) : null;
-  const wanted = reportConfig?.imageRequirements || {};
-  const groups = PHASES.map(([phase, key, dataKey, title]) => ({
-    title,
-    photos: stored
-      ? stored.filter((p) => p.phase === phase)
-      : (wanted[key] ? reportConfig?.[dataKey] || [] : []).map((dataUrl) => ({ dataUrl, layout: "half" })),
-  })).filter((g) => g.photos.length);
-  if (!groups.length) return [];
+// The axes' photos side by side, each axis with its name above its first photo
+const axisPhotos = (photos) =>
+  AXES.flatMap(([phase, label]) => photos.filter((p) => p.phase === phase).map((p, i) => ({ ...p, label: i === 0 ? label : "" })));
 
-  const name = (reportConfig?.content?.title || testTitle(comprehensiveData?.currentTest_testName)).toUpperCase();
-  const elements = [
-    createCaptionParagraph("APPENDIX-A", { alignment: AlignmentType.CENTER, underline: true }),
-    createHeadingParagraph(name ? `${name} TEST PHOTOS` : "TEST PHOTOS"),
-  ];
-  for (const g of groups) {
-    elements.push(
-      new Paragraph({
-        keepNext: true,
-        spacing: { before: 300, after: 100 },
-        children: [new TextRun({ text: g.title, bold: true, size: 22, font: "Calibri(Body)", color: "000000" })],
-      })
-    );
+// One phase after another, for the photos given (noSetupTitle: the part's title already says it)
+const byPhase = (photos, withGroups, noSetupTitle = false) => {
+  const out = [];
+  for (const [phase, title] of PHASES) {
+    if (phase === "axes") {
+      const all = photos.filter((p) => AXES.some(([k]) => k === p.phase));
+      const labels = withGroups ? [...new Set(all.map((p) => (p.group || "").trim()))] : [null];
+      for (const label of labels) {
+        if (label) out.push(groupHeading(label));
+        out.push(...layoutPhotos(axisPhotos(label === null ? all : all.filter((p) => (p.group || "").trim() === label))));
+      }
+      continue;
+    }
+    const list = photos.filter((p) => p.phase === phase);
+    if (!list.length) continue;
+    if (!(noSetupTitle && phase === "setup")) out.push(phaseHeading(title));
+    if (!withGroups) {
+      out.push(...layoutPhotos(list));
+      continue;
+    }
     // consecutive photos of the same group under one heading
     let run = [];
     let label = null;
     const flush = () => {
       if (!run.length) return;
-      if (label) elements.push(groupHeading(label));
-      elements.push(...layoutPhotos(run));
+      if (label) out.push(groupHeading(label));
+      out.push(...layoutPhotos(run));
       run = [];
     };
-    for (const p of g.photos) {
+    for (const p of list) {
       const l = (p.group || "").trim() || null;
       if (run.length && l !== label) flush();
       label = l;
@@ -137,5 +169,42 @@ export const addCompleteTestImages = (comprehensiveData, reportConfig) => {
     }
     flush();
   }
-  return elements;
+  return out;
+};
+
+/**
+ * Appendix A in parts: [{ group, elements }]. A group's graphs and documents are printed right
+ * after its part (see MainReportDocument), which is how an ESS report alternates its photos and
+ * its printouts: pre-vibration, thermal cycling, post-vibration.
+ */
+export const testPhotoParts = (comprehensiveData, reportConfig) => {
+  const content = reportConfig?.content;
+  const photos = (reportConfig?.photos || []).filter((p) => p.dataUrl && p.phase !== "graph");
+  const samples = samplesOf(content, photos);
+  const mode = photoModeOf(content);
+
+  const perTest = mode === "sample" && FAMILIES[content?.family]?.photoGroups === "test";
+  const free = photos.filter((p) => !(p.group || "").trim());
+  const title = photos.length
+    ? [
+        createCaptionParagraph("APPENDIX-A", { alignment: AlignmentType.RIGHT, size: 24 }),
+        // ESS: each stage has its own title, as in the lab's reports
+        ...(perTest && !free.length ? [] : [photosTitle(`${(content?.title || testTitle(comprehensiveData?.currentTest_testName)).toUpperCase()} TEST PHOTOS`.trim())]),
+      ]
+    : [];
+
+  if (mode !== "sample") return [{ group: null, elements: [...title, ...byPhase(photos, true)] }];
+
+  const parts = [{ group: null, elements: [...title, ...byPhase(free, false)] }];
+  let stagesPrinted = 0;
+  for (const label of samples) {
+    const own = photos.filter((p) => (p.group || "").trim() === label);
+    const heading = perTest ? photosTitle(`${label.toUpperCase()} PHOTOS`, stagesPrinted > 0) : sampleHeading(label);
+    if (own.length) stagesPrinted += 1;
+    parts.push({
+      group: label,
+      elements: own.length ? [heading, ...byPhase(own, false, perTest && /setup/i.test(label))] : [],
+    });
+  }
+  return parts;
 };

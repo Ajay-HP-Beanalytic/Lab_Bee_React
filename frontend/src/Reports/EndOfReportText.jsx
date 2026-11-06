@@ -2,7 +2,7 @@ import { AlignmentType, Paragraph, TextRun } from "docx";
 import { createCaptionParagraph } from "./Report_Functions/docxHelpers";
 import { disclaimerPoints, reportDisclaimerNoteText } from "./reportConstants";
 
-const run = (text, opts = {}) => new TextRun({ text, size: 21, font: "Calibri(Body)", color: "000000", ...opts });
+const run = (text, opts = {}) => new TextRun({ text, size: 21, font: "Calibri", color: "000000", ...opts });
 
 /** Disclaimer (5 points + the reproduction note) and the end-of-report line */
 export const endOfTheReportLine = () => [

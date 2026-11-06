@@ -208,7 +208,7 @@ const createTableFromTabContent = (element) => {
               new TextRun({
                 text: part,
                 size: 20,
-                font: "Calibri(Body)",
+                font: "Calibri",
               })
             );
           }
@@ -228,7 +228,7 @@ const createTableFromTabContent = (element) => {
                   text: part,
                   bold: true,
                   size: 20,
-                  font: "Calibri(Body)",
+                  font: "Calibri",
                 })
               );
             }
@@ -325,7 +325,7 @@ const processNode = (node) => {
         new TextRun({
           text: text,
           size: 20,
-          font: "Calibri(Body)",
+          font: "Calibri",
         })
       );
     }
@@ -338,7 +338,7 @@ const processNode = (node) => {
             text: text,
             bold: true,
             size: 20,
-            font: "Calibri(Body)",
+            font: "Calibri",
           })
         );
       }
@@ -350,7 +350,7 @@ const processNode = (node) => {
             text: text,
             italics: true,
             size: 20,
-            font: "Calibri(Body)",
+            font: "Calibri",
           })
         );
       }
@@ -362,7 +362,7 @@ const processNode = (node) => {
             text: text,
             underline: {},
             size: 20,
-            font: "Calibri(Body)",
+            font: "Calibri",
           })
         );
       }
@@ -429,7 +429,7 @@ const processNode = (node) => {
           new TextRun({
             text: text,
             size: 20,
-            font: "Calibri(Body)",
+            font: "Calibri",
           })
         );
       }
@@ -468,7 +468,7 @@ const parseHtmlToDocxElements = (html) => {
                     text: headingText,
                     size: 22, // Slightly larger than body text
                     bold: true,
-                    font: "Calibri(Body)",
+                    font: "Calibri",
                     color: "000000", // Black color
                   }),
                 ],
@@ -554,7 +554,7 @@ const parseHtmlToDocxElements = (html) => {
                     new TextRun({
                       text: element.textContent,
                       size: 20,
-                      font: "Calibri(Body)",
+                      font: "Calibri",
                     }),
                   ],
                   spacing: {
@@ -709,7 +709,7 @@ const parseHtmlToDocxElements = (html) => {
                         text: textContent,
                         size: 20,
                         bold: cell.tagName === "TH",
-                        font: "Calibri(Body)",
+                        font: "Calibri",
                       }),
                     ],
                   })

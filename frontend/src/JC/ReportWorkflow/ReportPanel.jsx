@@ -30,8 +30,10 @@ import UploadFileIcon from "@mui/icons-material/UploadFile";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import RadioButtonUncheckedIcon from "@mui/icons-material/RadioButtonUnchecked";
 import QrCode2Icon from "@mui/icons-material/QrCode2";
+import VisibilityIcon from "@mui/icons-material/Visibility";
 import { toast } from "react-toastify";
 import { serverBaseAddress } from "../../Pages/APIPage";
+import DocumentPreviewModal from "../../components/DocumentPreviewModal";
 import {
   ACTIONS_FOR,
   FINAL_FROM,
@@ -45,6 +47,8 @@ import {
   downloadReportFile,
   dueText,
   errorText,
+  fetchIssueFile,
+  fetchReportFile,
   fmt,
   issueUploadedPdf,
   makeFinalReport,
@@ -269,7 +273,7 @@ function MakeFinal({ report, disabled, reason, onDone }) {
         {busy ? "Making..." : report.stage === "final_issued" ? "Make a new final Word" : "Make the final Word"}
       </Button>
       <Typography variant="caption" color="text.secondary" component="div" sx={{ mt: 0.5 }}>
-        Takes the Word version as it is (photos, graphs and changes stay), removes the DRAFT line, puts in the final issue
+        Takes the Word version as it is (photos, graphs and changes stay), removes the DRAFT watermark, puts in the final issue
         date, the signatures{report.reportType === "NABL" ? " and the NABL mark" : ""}.
       </Typography>
       {warnings.length > 0 && (
@@ -299,6 +303,8 @@ export default function ReportPanel({ report, me, release, jcNumber, onChanged, 
   const [busy, setBusy] = useState(false);
   const [issueNow, setIssueNow] = useState(true);
   const [reason, setReason] = useState("");
+  const [viewing, setViewing] = useState(null); // { documentBlob, fileName, fileType, title, draft }
+  const [opening, setOpening] = useState(false);
 
   const isNew = report.stage === "to_prepare";
   const actions = (ACTIONS_FOR[report.stage] || []).filter(([, , reviewerOnly]) => !reviewerOnly || me?.isReviewer);
@@ -310,6 +316,34 @@ export default function ReportPanel({ report, me, release, jcNumber, onChanged, 
   const released = !!release?.released;
   const finalOpen = FINAL_FROM.includes(report.stage);
   const isReissue = report.stage === "final_issued";
+  const newestFile = [...report.files].sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt))[0];
+  const showIssued = isReissue && valid?.hasPdf;
+
+  // Read a report inside Lab Bee (the viewer has a Download button too)
+  const openViewer = async (load, details) => {
+    setOpening(true);
+    try {
+      setViewing({ ...details, documentBlob: await load() });
+    } catch (err) {
+      toast.error(errorText(err));
+    } finally {
+      setOpening(false);
+    }
+  };
+  const viewFile = (f) =>
+    openViewer(() => fetchReportFile(f), {
+      fileName: f.fileName || `report_v${f.version}.${f.kind === "final_pdf" ? "pdf" : "docx"}`,
+      fileType: f.kind === "final_pdf" ? "pdf" : "docx",
+      title: `${f.kindText} v${f.version}`,
+      draft: f.kind === "draft",
+    });
+  const viewIssue = (i) =>
+    openViewer(() => fetchIssueFile(i), {
+      fileName: `REP_${String(i.reportNumber || "report").replace(/[^A-Za-z0-9._-]+/g, "_")}.pdf`,
+      fileType: "pdf",
+      title: `Final report, issue ${i.version}`,
+      draft: false,
+    });
 
   const run = async () => {
     const [action, , , needs] = pending;
@@ -406,11 +440,20 @@ export default function ReportPanel({ report, me, release, jcNumber, onChanged, 
       key={f.id}
       sx={{ px: 0 }}
       secondaryAction={
-        <Tooltip title="Download">
-          <IconButton size="small" onClick={() => downloadReportFile(f).catch((e) => toast.error(errorText(e)))}>
-            <DownloadIcon fontSize="small" />
-          </IconButton>
-        </Tooltip>
+        <Stack direction="row" spacing={0.5}>
+          <Tooltip title="View">
+            <span>
+              <IconButton size="small" disabled={opening} onClick={() => viewFile(f)}>
+                <VisibilityIcon fontSize="small" />
+              </IconButton>
+            </span>
+          </Tooltip>
+          <Tooltip title="Download">
+            <IconButton size="small" onClick={() => downloadReportFile(f).catch((e) => toast.error(errorText(e)))}>
+              <DownloadIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        </Stack>
       }
     >
       <ListItemText
@@ -431,7 +474,7 @@ export default function ReportPanel({ report, me, release, jcNumber, onChanged, 
         ]
           .filter(Boolean)
           .join(" · ")}
-        sx={{ pr: 5 }}
+        sx={{ pr: 9 }}
       />
     </ListItem>
   );
@@ -448,6 +491,19 @@ export default function ReportPanel({ report, me, release, jcNumber, onChanged, 
       <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
         {STAGE_HELP[report.stage]}
       </Typography>
+      {(showIssued || newestFile) && (
+        <Button
+          size="small"
+          variant="outlined"
+          startIcon={<VisibilityIcon />}
+          disabled={opening}
+          sx={{ mb: 1 }}
+          onClick={() => (showIssued ? viewIssue(valid) : viewFile(newestFile))}
+        >
+          {opening ? "Opening..." : `View the report (${showIssued ? `final, issue ${valid.version}` : `${newestFile.kindText} v${newestFile.version}`})`}
+        </Button>
+      )}
+      <DocumentPreviewModal open={!!viewing} onClose={() => setViewing(null)} asPrinted {...(viewing || {})} />
       {report.reviewNote && ["returned", "reviewed", "in_review"].includes(report.stage) && (
         <Alert severity={report.stage === "returned" ? "warning" : "info"} sx={{ mb: 1 }}>
           <b>{report.reviewSkipped ? "Review skipped" : "Reviewer"}:</b> {report.reviewNote}
@@ -616,6 +672,13 @@ export default function ReportPanel({ report, me, release, jcNumber, onChanged, 
                   sx={{ px: 0 }}
                   secondaryAction={
                     <Stack direction="row" spacing={0.5}>
+                      <Tooltip title="View the issued PDF">
+                        <span>
+                          <IconButton size="small" disabled={!i.hasPdf || opening} onClick={() => viewIssue(i)}>
+                            <VisibilityIcon fontSize="small" />
+                          </IconButton>
+                        </span>
+                      </Tooltip>
                       <Tooltip title="Download the issued PDF">
                         <span>
                           <IconButton size="small" disabled={!i.hasPdf} onClick={() => downloadIssueFile(i, "pdf").catch((e) => toast.error(errorText(e)))}>
@@ -639,7 +702,7 @@ export default function ReportPanel({ report, me, release, jcNumber, onChanged, 
                   }
                 >
                   <ListItemText
-                    sx={{ pr: 13 }}
+                    sx={{ pr: 17 }}
                     primary={
                       <>
                         Issue {i.version} · {i.reportNumber}

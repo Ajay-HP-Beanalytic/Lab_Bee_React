@@ -17,10 +17,10 @@ import {
   Delete as DeleteIcon,
   Restore as RestoreIcon,
 } from "@mui/icons-material";
+import { printedLine } from "../../Reports/EUTInfoTable";
 
-// One chamber in the report: the name (printed bold, left column), its details (printed
-// in the right column: make, model, serial no., size, calibration) and the short text for
-// the "Chamber/Make/Equipment SL no." column of the test table.
+// One chamber in the report: the name, its details (make, model, serial no., calibration, one
+// line each) and the short text for the "Chamber/Make/Equipment SL no." column of the test table.
 let typedCount = 0;
 export const toChamber = (c = {}) => {
   const [first = "", ...rest] = String(c.chamberInfo || "").split("\n");
@@ -71,10 +71,7 @@ export default function ChambersPicker({ chambers, setChambers, options = [], fr
   const typedInRow = fromRow.filter((c) => c.source === "typed").map((c) => c.typedAs || c.name);
 
   return (
-    <Box sx={{ mt: 1 }}>
-      <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-        Chambers used
-      </Typography>
+    <Box>
       <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
         {fromRow.length
           ? `Picked from the job card row: ${fromRow.map((c) => c.typedAs || c.name).join(", ")}. Add or remove chambers below.`
@@ -156,7 +153,7 @@ export default function ChambersPicker({ chambers, setChambers, options = [], fr
               <Grid item xs={12} md={4}>
                 <TextField
                   label="Chamber name"
-                  helperText="Printed in bold, left column"
+                  helperText="First line of the block, e.g. THERMAL CYCLING CHAMBER"
                   fullWidth
                   multiline
                   value={chamber.name}
@@ -167,13 +164,13 @@ export default function ChambersPicker({ chambers, setChambers, options = [], fr
               <Grid item xs={12} md={8}>
                 <TextField
                   label="Chamber details"
-                  helperText="Printed in the right column, one line each (make, model, serial no., size, calibration)"
+                  helperText="One line each: make, model, serial no., calibration"
                   fullWidth
                   multiline
                   minRows={4}
                   value={chamber.details}
                   onChange={(e) => update(index, { details: e.target.value })}
-                  placeholder={"Make: ...\nModel: ...\nSL No: ...\nCalibration due on: ..."}
+                  placeholder={"MAKE: ...\nMODEL: ...\nSL No: ...\nCalibration done on: ...\nCalibration due on: ..."}
                 />
               </Grid>
               <Grid item xs={12}>
@@ -204,17 +201,18 @@ export default function ChambersPicker({ chambers, setChambers, options = [], fr
           <Typography variant="caption" color="text.secondary">
             How it prints in the report
           </Typography>
-          <Box component="table" sx={{ width: "100%", borderCollapse: "collapse", fontSize: 13, "& td": { border: "1px solid #999", p: 0.75, verticalAlign: "top" } }}>
-            <tbody>
-              {chambers
-                .filter((c) => String(c.name || c.details).trim())
-                .map((c) => (
-                  <tr key={c.key}>
-                    <td style={{ width: "35%", fontWeight: 700 }}>{c.name}</td>
-                    <td style={{ whiteSpace: "pre-line" }}>{c.details}</td>
-                  </tr>
-                ))}
-            </tbody>
+          <Box sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", columnGap: 4, rowGap: 1.5, mt: 0.5, p: 1.5, border: "1px dashed #bbb", borderRadius: 1, fontSize: 13, fontWeight: 700, textAlign: "left" }}>
+            {chambers
+              .filter((c) => String(c.name || c.details).trim())
+              .map((c) => (
+                <Box key={c.key} sx={{ whiteSpace: "pre-line" }}>
+                  <Box component="span" sx={{ textDecoration: "underline" }}>
+                    {c.name}
+                  </Box>
+                  {c.name && c.details ? "\n" : ""}
+                  {String(c.details || "").split("\n").map(printedLine).join("\n")}
+                </Box>
+              ))}
           </Box>
         </Box>
       )}

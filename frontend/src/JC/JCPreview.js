@@ -76,6 +76,8 @@ export default function JCPreview({
   editJc,
   jcId,
   jobcard = null, // the saved bea_jobcards row (report data is taken from it)
+  openReportFor = null, // from the Reports board: the test row whose report window opens at once
+  onReportOpened,
 }) {
   const { loggedInUserDepartment, loggedInUserRole } = useContext(UserContext);
 
@@ -274,6 +276,14 @@ export default function JCPreview({
     if (indices.length > 1) handleGenerateESSTestReport(indices);
     else handleGenerateReport(indices[0]);
   };
+
+  // From the Reports board: the report window opens once the job card and its reports are loaded
+  useEffect(() => {
+    if (!openReportFor || !jobcard || !workflow || !testDetailsRows?.some((r) => r.id === openReportFor)) return;
+    onReportOpened?.();
+    handleGenerateDraftFor(reportForRow(workflow.reports, openReportFor, workflow.toPrepare) || { testDetailId: openReportFor });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openReportFor, jobcard, workflow, testDetailsRows]);
 
   // The draft from the builder's config: company logo (Report images), the report's photos
   // (kept on the server) and the job card data. Used by "Generate the draft" and the live preview.
@@ -1009,7 +1019,6 @@ export default function JCPreview({
         initialConfig={lastReportConfig}
         prefill={reportPrefill}
         testCategory={pendingReportData?.currentTestRow?.testCategory || ""}
-        isVibrationTest={pendingReportData?.isVibrationTest || false}
         reportTests={pendingReportData?.reportTests || []}
         eutRows={pendingReportData?.currentTestEutRows || []}
         testDetailId={pendingReportData?.currentTestRow?.id || null}

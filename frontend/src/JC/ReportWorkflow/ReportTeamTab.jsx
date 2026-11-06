@@ -12,6 +12,14 @@ const DUE = [
   ["customer", "Customer follow-up", "From the draft sent to the customer's answer"],
 ];
 
+const DOC_CONTROL = [
+  ["formNo", "Document no."],
+  ["issueNo", "Issue"],
+  ["issueDate", "Issue date"],
+  ["revNo", "Rev no."],
+  ["revDate", "Rev date"],
+];
+
 /** Who the reports team and Accounts are, and how many days each step should take */
 export default function ReportTeamTab({ canManage }) {
   const [v, setV] = useState(null);
@@ -92,6 +100,28 @@ export default function ReportTeamTab({ canManage }) {
                 inputProps={{ min: 1, max: 60 }}
                 onChange={(e) => setV({ ...v, due: { ...v.due, [k]: e.target.value } })}
                 helperText={help}
+              />
+            </Grid>
+          ))}
+        </Grid>
+      </Box>
+      <Box>
+        <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
+          Report footer box
+        </Typography>
+        <Typography variant="caption" color="text.secondary" component="div" sx={{ mb: 1.5 }}>
+          Printed at the bottom of every page. Change it when the report format is revised: new drafts and finals use it.
+        </Typography>
+        <Grid container spacing={2}>
+          {DOC_CONTROL.map(([k, label]) => (
+            <Grid item xs={6} sm={4} key={k}>
+              <TextField
+                size="small"
+                fullWidth
+                label={label}
+                value={v.docControl?.[k] ?? ""}
+                disabled={!canManage}
+                onChange={(e) => setV({ ...v, docControl: { ...v.docControl, [k]: e.target.value } })}
               />
             </Grid>
           ))}

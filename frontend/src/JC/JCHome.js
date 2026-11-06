@@ -75,6 +75,7 @@ export default function JCHome() {
 
   const [jcId, setJcId] = useState(null); // Id of the selected job card
   const [openJCPreview, setOpenJCPreview] = useState(false);
+  const [openReportFor, setOpenReportFor] = useState(null); // test row whose report window opens with the job card
 
   const [jcNumberString, setJcumberString] = useState("");
   const [srfNumber, setSrfNumber] = useState("");
@@ -395,11 +396,12 @@ export default function JCHome() {
   }, [jcTableData]);
 
   //If data is loading then show Loading text
-  // Opened from the Reports board: show that job card straight away
+  // Opened from the Reports board: show that job card straight away (and its report window)
   useEffect(() => {
     const id = location.state?.openJcId;
     if (!id) return;
     setJcId(id);
+    setOpenReportFor(location.state?.openReportFor || null);
     setOpenJCPreview(true);
     navigate(location.pathname, { replace: true, state: {} });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -621,6 +623,7 @@ export default function JCHome() {
 
   const handleCloseJCPreview = () => {
     setOpenJCPreview(false);
+    setOpenReportFor(null);
     setJcId(null);
     setJobcardRaw(null);
   };
@@ -961,6 +964,8 @@ export default function JCHome() {
             editJc={editJc}
             jcId={jcId}
             jobcard={jobcardRaw}
+            openReportFor={openReportFor}
+            onReportOpened={() => setOpenReportFor(null)}
           />
         )}
       </Card>

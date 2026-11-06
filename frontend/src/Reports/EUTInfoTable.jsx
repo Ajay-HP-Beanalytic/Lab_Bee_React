@@ -6,7 +6,7 @@
  * @returns {Array} Array containing the EUT info table
  */
 
-import { AlignmentType, Paragraph, TableRow, TextRun, VerticalAlign } from "docx";
+import { Paragraph, TableRow, TextRun, VerticalAlign } from "docx";
 import { FAMILIES } from "./reportLayouts";
 import {
   createCaptionParagraph,
@@ -17,10 +17,10 @@ import {
   createTableHeadingParagraph,
 } from "./Report_Functions/docxHelpers";
 
-export const createEUTInfoTable = (comprehensiveData) => {
-  // Use the pre-filtered currentTestEutRows from prepareReportData in TS1ReportDocument.js
-  // This is already filtered to show only EUTs for the current test
-  const eutData = comprehensiveData?.currentTestEutRows || [];
+export const createEUTInfoTable = (comprehensiveData, reportConfig) => {
+  // The rows edited in the builder, else the EUTs of this test (filtered by serial number in
+  // prepareReportData)
+  const eutData = reportConfig?.content?.euts?.length ? reportConfig.content.euts : comprehensiveData?.currentTestEutRows || [];
 
   // If no EUT data, return empty array
   if (eutData.length === 0) {
@@ -45,12 +45,12 @@ export const createEUTInfoTable = (comprehensiveData) => {
 
   //Create data rows
   const dataRows = eutData.map(
-    (row) =>
+    (row, index) =>
       new TableRow({
         children: [
-          createCenteredDataCell(String(row.slNo), { width: 8 }),
+          createCenteredDataCell(String(index + 1), { width: 8 }),
           createCenteredDataCell(row.nomenclature, { width: 30 }),
-          createCenteredDataCell(String(row.qty), { width: 10 }),
+          createCenteredDataCell(String(row.qty ?? ""), { width: 10 }),
           createCenteredDataCell(row.partNo, { width: 17 }),
           createCenteredDataCell(row.modelNo, { width: 17 }),
           createCenteredDataCell(row.serialNo, { width: 18 }),
@@ -65,67 +65,69 @@ export const createEUTInfoTable = (comprehensiveData) => {
 };
 
 /**
- * "It is certified..." and the chambers / machines used. For IP-type tests the test
- * specifications of each test (dust type, water depth...) sit on the right, as in the lab's reports.
+ * "It is certified..." and the chambers / machines used, one block each, as in the lab's reports:
+ *   THERMAL CYCLING CHAMBER
+ *   MAKE: ...
+ *   MODEL: ...
+ *   SL No: ...
+ *   Calibration done on: ...
+ *   Calibration due on: ...
+ * Two blocks side by side with a space between; more chambers go on the rows below. The test
+ * specifications of IP-type tests (dust type, water depth...) are blocks too, after the chambers.
  */
-export const createChamberSection = (comprehensiveData, reportConfig) => {
-  const caption = createCaptionParagraph(
-    "It is certified that the following tests were carried out in our test facility in following chamber/ Machine:"
-  );
-  const chambers = (reportConfig?.chambers || []).map(nameAndDetails).filter((c) => (c.name + c.details).trim());
-  const content = reportConfig?.content;
-  const specs = FAMILIES[content?.family]?.specs
-    ? (content.rows || []).map((r) => r.specs).filter((x) => x && (x.title || x.lines || "").trim())
-    : [];
-  if (!specs.length) return chambers.length ? [caption, chamberTable(chambers)] : [];
-  // chambers (left) | test specifications (right)
-  const block = (title, body) => [
-    new Paragraph({ children: [new TextRun({ text: title, bold: true, size: 20, font: "Calibri(Body)", color: "000000" })] }),
-    ...String(body || "")
-      .split("\n")
-      .map((line) => new Paragraph({ children: [new TextRun({ text: line, size: 20, font: "Calibri(Body)", color: "000000" })] })),
-    new Paragraph({ children: [] }),
-  ];
-  const left = chambers.flatMap((c) => block(c.name, c.details));
-  const right = specs.flatMap((x) => block(x.title, x.lines));
-  return [
-    caption,
-    createDataTable([
-      new TableRow({
-        children: [
-          createTableCell(left.length ? left : [new Paragraph({ children: [] })], { width: 50, verticalAlign: VerticalAlign.TOP, margins: { top: 60, bottom: 60, left: 100, right: 100 } }),
-          createTableCell(right, { width: 50, verticalAlign: VerticalAlign.TOP, margins: { top: 60, bottom: 60, left: 100, right: 100 } }),
-        ],
-      }),
-    ]),
-  ];
-};
-
-// One row per chamber: the name in bold on the left, its details (one line each) on the right.
-// Older saved chambers only have chamberInfo: its first line is the name.
-const linesCell = (text, width, bold) => {
-  const lines = String(text || "").split("\n");
-  return createTableCell(
-    [
-      new Paragraph({
-        alignment: AlignmentType.LEFT,
-        children: lines.flatMap((line, index) => {
-          const run = new TextRun({ text: line, size: 20, font: "Calibri(Body)", color: "000000", bold });
-          return index < lines.length - 1 ? [run, new TextRun({ break: 1 })] : [run];
-        }),
-      }),
-    ],
-    { width, verticalAlign: bold ? VerticalAlign.CENTER : VerticalAlign.TOP, margins: { top: 60, bottom: 60, left: 100, right: 100 } }
-  );
-};
+const NO_BORDER = { style: "none", size: 0 };
+const NO_BORDERS = { top: NO_BORDER, bottom: NO_BORDER, left: NO_BORDER, right: NO_BORDER, insideHorizontal: NO_BORDER, insideVertical: NO_BORDER };
 
 const nameAndDetails = (chamber) => {
   if (chamber?.name !== undefined || chamber?.details !== undefined) {
     return { name: chamber.name || "", details: chamber.details || "" };
   }
+  // Older saved chambers only have chamberInfo: its first line is the name
   const [name = "", ...rest] = String(chamber?.chamberInfo || "").split("\n");
   return { name, details: rest.join("\n") };
 };
 
-const chamberTable = (chambers) =>
-  createDataTable(chambers.map((c) => new TableRow({ children: [linesCell(c.name, 35, true), linesCell(c.details, 65, false)] })));
+// "Make: X" typed or saved earlier prints as "MAKE: X"
+export const printedLine = (line) => line.replace(/^\s*(make|model)\s*:/i, (m, word) => `${word.toUpperCase()}:`);
+
+const blockLine = (text, underline) =>
+  new Paragraph({ children: [new TextRun({ text, bold: true, size: 22, font: "Calibri", color: "000000", ...(underline ? { underline: {} } : {}) })] });
+const linesOf = (text) => String(text || "").split("\n").filter((line) => line.trim());
+
+// the name underlined, as in the lab's reports
+const blockCell = (block, width) =>
+  createTableCell(
+    block
+      ? [...linesOf(block.title).map((line) => blockLine(line, true)), ...linesOf(block.lines).map((line) => blockLine(printedLine(line), false))]
+      : [new Paragraph({ children: [] })],
+    { width, verticalAlign: VerticalAlign.TOP, margins: { top: 60, bottom: 160, left: 40, right: 40 } }
+  );
+
+export const createChamberSection = (comprehensiveData, reportConfig) => {
+  const chambers = (reportConfig?.chambers || [])
+    .map(nameAndDetails)
+    .filter((c) => (c.name + c.details).trim())
+    .map((c) => ({ title: c.name, lines: c.details }));
+  const content = reportConfig?.content;
+  const specs = FAMILIES[content?.family]?.specs
+    ? (content.rows || [])
+        .map((r) => r.specs)
+        .filter((x) => x && String(x.lines || "").trim()) // no lines: not printed
+        .map((x) => ({ title: x.title, lines: x.lines }))
+    : [];
+  const blocks = [...chambers, ...specs];
+  if (!blocks.length) return [];
+  const rows = [];
+  for (let i = 0; i < blocks.length; i += 2) {
+    rows.push(
+      new TableRow({
+        cantSplit: true,
+        children: [blockCell(blocks[i], 48), blockCell(null, 4), blockCell(blocks[i + 1], 48)],
+      })
+    );
+  }
+  return [
+    createCaptionParagraph("It is certified that the following tests were carried out in our test facility in following chamber/ Machine:"),
+    createDataTable(rows, { borders: NO_BORDERS }),
+  ];
+};

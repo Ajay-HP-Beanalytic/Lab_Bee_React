@@ -68,6 +68,8 @@ const DEFAULT_SETTINGS = {
   reportsTeam: ["Reports & Scrutiny"],
   accounts: ["Accounts"],
   due: { prepare: 3, review: 2, send: 1, customer: 5 },
+  // the box in every report's footer; changed here when the report format is revised
+  docControl: { formNo: "BEA/TR/01", issueNo: "01", issueDate: "01/03/2021", revNo: "3", revDate: "31/03/2026" },
 };
 
 async function ensureWorkflowTables() {
@@ -333,6 +335,7 @@ async function getSettings() {
     reportsTeam: list(saved.reportsTeam, DEFAULT_SETTINGS.reportsTeam),
     accounts: list(saved.accounts, DEFAULT_SETTINGS.accounts),
     due: { ...DEFAULT_SETTINGS.due, ...(saved.due && typeof saved.due === "object" ? saved.due : {}) },
+    docControl: { ...DEFAULT_SETTINGS.docControl, ...(saved.docControl && typeof saved.docControl === "object" ? saved.docControl : {}) },
   };
   settingsCache = { at: Date.now(), value };
   return value;
@@ -798,7 +801,7 @@ async function makeFinal(req) {
 
   let result;
   try {
-    result = await finalizeReport(await fs.readFile(fullOf(src.file_path)), { issueDateText: longDate(issueDate), version: v, signers, nablMark });
+    result = await finalizeReport(await fs.readFile(fullOf(src.file_path)), { issueDateText: longDate(issueDate), version: v, signers, nablMark, docControl: (await getSettings()).docControl });
   } catch (err) {
     console.error("[final report] could not finalize:", err.message);
     throw fail(400, "This Word file could not be read. Open it in Word, save it again as .docx, upload it and try again.");
@@ -1485,6 +1488,14 @@ async function writeSettings(req) {
     const d = DEFAULT_SETTINGS.due;
     await save("due", { prepare: days(b.due.prepare, d.prepare), review: days(b.due.review, d.review), send: days(b.due.send, d.send), customer: days(b.due.customer, d.customer) });
   }
+  if (b.docControl && typeof b.docControl === "object") {
+    const clean = {};
+    for (const k of Object.keys(DEFAULT_SETTINGS.docControl)) {
+      clean[k] = String(b.docControl[k] ?? "").trim().slice(0, 40);
+      if (!clean[k]) throw fail(400, "Fill in every field of the report footer box");
+    }
+    await save("docControl", clean);
+  }
   settingsCache = null;
   return { settings: await getSettings() };
 }
@@ -1685,5 +1696,4 @@ function ts1ReportWorkflowAPIs(app, { tablesReady = false } = {}) {
 
 module.exports = {
   ts1ReportWorkflowAPIs, ensureWorkflowTables, noteDraft, closeProblems, recordClose, recordReopen, noticeEndedTests, STAGES,
-  whoIs, ISSUED_DIR, safe, relOf, fullOf,
-};
+  whoIs, ISSUED_DIR, safe, relOf, fullOf, getSettings };

@@ -184,6 +184,17 @@ export const downloadReportFile = async (file) => {
   saveBlob(res.data, file.fileName || `report_v${file.version}`);
 };
 
+/** A report version as a Blob, to read it inside Lab Bee */
+export const fetchReportFile = async (file) => {
+  const res = await axios.get(`${serverBaseAddress}/api/ts1/reports/files/${file.id}`, { responseType: "blob" });
+  return file.kind === "final_pdf" ? new Blob([res.data], { type: "application/pdf" }) : res.data;
+};
+
+export const fetchIssueFile = async (issue) => {
+  const res = await axios.get(`${serverBaseAddress}/api/ts1/reports/issue/${issue.id}/file`, { params: { type: "pdf" }, responseType: "blob" });
+  return new Blob([res.data], { type: "application/pdf" });
+};
+
 export const downloadIssueFile = async (issue, type = "pdf") => {
   const res = await axios.get(`${serverBaseAddress}/api/ts1/reports/issue/${issue.id}/file`, {
     params: { type },

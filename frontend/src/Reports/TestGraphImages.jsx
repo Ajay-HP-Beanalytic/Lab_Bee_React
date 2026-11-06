@@ -1,143 +1,85 @@
 /**
- * Adds test graph images section to the report
- * Only renders if graphImagesBase64 is available in reportConfig
- *
- * @param {Object} comprehensiveData - Complete jobcard data
- * @param {Object} reportConfig - Report configuration
- * @returns {Array} Array containing image paragraphs
+ * Graphs and test documents of a report (Logo & Graphs step of the builder), kept on the server:
+ * each is an image or a Word file (e.g. the vibration controller's report), portrait or
+ * landscape, printed after the photos of its group or at the end of the report.
  */
 
-// import { PageBreak, Paragraph } from "docx";
-import {
-  createMultipleImageParagraphs,
-  createCaptionParagraph,
-  createHeadingParagraph,
-} from "./Report_Functions/docxHelpers";
+import { AlignmentType, ImageRun, Paragraph } from "docx";
+import { createCaptionParagraph, createHeadingParagraph, fitInBox } from "./Report_Functions/docxHelpers";
 import { createTestGraphTable } from "./TestGraphTable";
-import { FAMILIES } from "./reportLayouts";
-import { parseVibrationDocuments } from "./Report_Functions/vibrationDocParser";
+import { FAMILIES, familyOf } from "./reportLayouts";
+import { parseVibrationDocument } from "./Report_Functions/vibrationDocParser";
 
-// Note: We no longer need this function because the flag is computed in prepareReportData()
-// Keeping it commented for reference
-/*
-const isThermalTest = (comprehensiveData) => {
-  const currentTest = comprehensiveData.currentTestRow || {};
-  const testCategory = currentTest.testCategory || "";
-  const lowerCategory = testCategory.toLowerCase();
+const BOX = { portrait: { w: 640, h: 460 }, landscape: { w: 940, h: 470 } };
+const norm = (s) => String(s || "").toLowerCase().replace(/[^a-z0-9]+/g, "");
 
-  return (
-    lowerCategory.includes("thermal shock") ||
-    lowerCategory.includes("thermal cycling") ||
-    lowerCategory.includes("humidity") ||
-    lowerCategory.includes("burn-in") ||
-    lowerCategory.includes("high temp") ||
-    lowerCategory.includes("low temp")
-  );
-};
-*/
+export const isDocumentFile = (p) => !/^image\//.test(p.mime || "image/");
 
 /**
- * Creates test graph images content
- * Returns null if no images, otherwise returns content array
- * This function prepares content that will be used in either portrait or landscape section
- *
- * For vibration tests: Parses and embeds .docx documents
- * For other tests: Displays images normally
- *
- * @param {Object} comprehensiveData - Complete jobcard data
- * @param {Object} reportConfig - Report configuration
- * @param {boolean} isLandscape - Whether this will be in landscape section (affects sizing)
- * @returns {Promise<Array|null>} Array containing image/document paragraphs or null if no images
+ * @returns {Promise<Array<{ group: string|null, landscape: boolean, children: Array }>>} one per
+ * file, in the order set in the builder
  */
-export const addTestGraphImages = async (
-  comprehensiveData,
-  reportConfig,
-  isLandscape = false
-) => {
-  //Heading of the section:
-  const graphicalPageHeading = `GRAPHICAL REPRESENTATION OF TEST`;
-
-  //End of the report text line:
-  // const endOfTheReportLine = `-------------------- END OF THE REPORT --------------------`;
-
-  // Check if graph images/documents are available
-  const graphImagesBase64 = reportConfig?.graphImagesBase64 || [];
-
-  if (graphImagesBase64.length === 0) {
-    return null; // Return null instead of empty array to indicate no content
-  }
-
-  // Check if this is a vibration test
-  const isVibrationTest = comprehensiveData?.isVibrationTest || false;
-
-  // Adjust dimensions based on orientation
-  const imageWidth = isLandscape ? 700 : 550;
-  const imageHeight = isLandscape ? 500 : 400;
-
-  // The test data page (test description, units under test) for thermal-type tests
+export const graphBlocks = async (comprehensiveData, reportConfig) => {
+  const files = (reportConfig?.photos || []).filter((p) => p.phase === "graph" && p.dataUrl);
   const family = FAMILIES[reportConfig?.content?.family];
-  const includeThermalTable = family ? !!family.dataPage : comprehensiveData.isThermalTest || false;
-  const graphNote = String(reportConfig?.content?.graphNote || "").trim();
+  const noteLines = String(reportConfig?.content?.graphNote || "")
+    .split("\n")
+    .map((x) => x.trim())
+    .filter(Boolean);
+  const isEss = reportConfig?.content?.family === "ess";
+  // ESS: the test data page and the temperature note belong to the thermal sub-test only
+  const thermalPart = (group) => !isEss || familyOf("", group || "") === "thermal";
+  let dataPageDone = !family?.dataPage;
+  const blocks = [];
 
-  const content = [];
-
-  //Add pagebreak
-  // content.push(
-  //   new Paragraph({
-  //     children: [new PageBreak()],
-  //   })
-  // );
-
-  // If thermal test, add the thermal test table first
-  if (includeThermalTable) {
-    content.push(...createTestGraphTable(comprehensiveData));
-  }
-
-  // Add the section heading
-  content.push(createHeadingParagraph(graphicalPageHeading));
-
-  // Handle vibration test documents differently from regular images
-  if (isVibrationTest) {
-    try {
-      // Parse vibration documents and extract content
-      const documentElements = await parseVibrationDocuments(graphImagesBase64);
-      content.push(...documentElements);
-    } catch (error) {
-      console.error("❌ Error parsing vibration documents:", error);
-      // Fallback: add error message
-      content.push(
-        createCaptionParagraph(
-          "Error: Unable to embed vibration test documents. Please check the document format.",
-          {
-            bold: true,
-            size: 22,
+  for (let i = 0; i < files.length; i++) {
+    const f = files[i];
+    const group = (f.group || "").trim() || null;
+    const landscape = f.layout === "landscape";
+    const children = [];
+    if (isDocumentFile(f)) {
+      if (f.caption) children.push(createHeadingParagraph(f.caption.toUpperCase()));
+      try {
+        children.push(...(await parseVibrationDocument(f.dataUrl)));
+      } catch (error) {
+        console.error("Could not read a test document:", error);
+        children.push(
+          createCaptionParagraph(`The document "${f.name || ""}" could not be read. Open it in Word, save it as .docx and upload it again.`, {
             color: "FF0000",
-            before: 200,
-            after: 200,
-          }
-        )
+          })
+        );
+      }
+    } else {
+      const previous = files[i - 1];
+      const startsRun = !previous || isDocumentFile(previous) || (previous.group || "").trim() !== (f.group || "").trim();
+      if (startsRun) {
+        if (!dataPageDone && thermalPart(group)) {
+          // the test data page: of the sub-test this graph belongs to (ESS), else of the report's test
+          const tests = comprehensiveData?.reportTestRows || [];
+          const row = tests.find((t) => group && norm(t.testName) === norm(group)) || (isEss ? tests.find((t) => familyOf("", t.testName) === "thermal") : null);
+          children.push(...createTestGraphTable(row ? { ...comprehensiveData, currentTestRow: row } : comprehensiveData));
+          dataPageDone = true;
+        }
+        children.push(createHeadingParagraph(f.caption ? f.caption.toUpperCase() : "GRAPHICAL REPRESENTATION OF TEST"));
+      } else if (f.caption) {
+        children.push(createHeadingParagraph(f.caption.toUpperCase()));
+      }
+      const box = BOX[landscape ? "landscape" : "portrait"];
+      children.push(
+        new Paragraph({
+          alignment: AlignmentType.CENTER,
+          spacing: { before: 100, after: 100 },
+          children: [new ImageRun({ data: f.dataUrl, transformation: fitInBox({ width: f.width, height: f.height }, box.w, box.h) })],
+        })
       );
+      const next = files[i + 1];
+      const endsRun = !next || isDocumentFile(next) || (next.group || "").trim() !== (f.group || "").trim();
+      if (endsRun && thermalPart(group)) {
+        // e.g. "NOTE: In the above graph X-axis indicates Date & Time (Hour) and Y-axis ..."
+        for (const line of noteLines) children.push(createCaptionParagraph(line, { alignment: "left" }));
+      }
     }
-  } else {
-    // Add all graph images with captions (normal behavior)
-    content.push(
-      ...createMultipleImageParagraphs(graphImagesBase64, {
-        width: imageWidth,
-        height: imageHeight,
-      })
-    );
-    // e.g. "NOTE: In the above graph X-axis indicates Date & Time (Hour) and Y-axis ..."
-    for (const line of graphNote.split("\n").filter((x) => x.trim())) {
-      content.push(createCaptionParagraph(line.trim(), { bold: true, size: 20, alignment: "left", before: 100, after: 100 }));
-    }
+    blocks.push({ group, landscape, children });
   }
-
-  // // Add end of report line
-  // content.push(
-  //   createCaptionParagraph(endOfTheReportLine, {
-  //     alignment: "center",
-  //   })
-  // );
-
-  return content;
+  return blocks;
 };
