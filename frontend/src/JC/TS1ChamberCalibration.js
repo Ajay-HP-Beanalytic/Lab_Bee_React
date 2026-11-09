@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useContext, useEffect, useRef, useState } from "react";
 import axios from "axios";
 import * as XLSX from "xlsx";
 import { toast } from "react-toastify";
@@ -53,7 +53,9 @@ import SearchBar from "../common/SearchBar";
 import EmptyCard from "../common/EmptyCard";
 import DocumentPreviewModal from "../components/DocumentPreviewModal";
 import { DataGrid } from "@mui/x-data-grid";
-import { Link as RouterLink } from "react-router-dom";
+import { Link as RouterLink, useNavigate } from "react-router-dom";
+import BuildCircleIcon from "@mui/icons-material/BuildCircle";
+import { UserContext } from "../Pages/UserContext";
 
 // Base folder (inside shared-files) where chamber calibration certificates are
 // stored. ChamberCalibration -> TS1, EMICalibration -> TS2.
@@ -108,6 +110,10 @@ const importDate = (cell) => {
 };
 
 export default function ChamberAndCalibration() {
+  const navigate = useNavigate();
+  const { access } = useContext(UserContext);
+  const canOpenBreakdowns = !!access?.menus?.includes("ts1_breakdowns");
+
   //State variables.
   const [chamberName, setChamberName] = useState("");
   const [chamberID, setChamberID] = useState("");
@@ -815,12 +821,19 @@ export default function ChamberAndCalibration() {
     {
       field: "actions",
       headerName: "Actions",
-      width: 100,
+      width: canOpenBreakdowns ? 140 : 100,
       align: "center",
       headerAlign: "center",
       headerClassName: "custom-header-color",
       renderCell: (params) => (
         <div>
+          {canOpenBreakdowns && (
+            <Tooltip title="Breakdowns of this chamber">
+              <IconButton onClick={() => navigate(`/chamber_breakdowns?chamber=${params.row.id}`)}>
+                <BuildCircleIcon />
+              </IconButton>
+            </Tooltip>
+          )}
           <IconButton onClick={() => editSelectedChamber(params.row)}>
             <EditIcon />
           </IconButton>
@@ -998,6 +1011,11 @@ export default function ChamberAndCalibration() {
               style={{ display: "none" }}
               ref={fileInputRef}
             />
+            {canOpenBreakdowns && (
+              <Button variant="outlined" startIcon={<BuildCircleIcon />} onClick={() => navigate("/chamber_breakdowns")} sx={{ mr: 1 }}>
+                Breakdowns & Spares
+              </Button>
+            )}
             <Button
               sx={{
                 borderRadius: 1,

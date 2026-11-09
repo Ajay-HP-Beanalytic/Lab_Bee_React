@@ -31,6 +31,7 @@ import {
 import SearchIcon from "@mui/icons-material/Search";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import SettingsIcon from "@mui/icons-material/Settings";
+import InsightsIcon from "@mui/icons-material/Insights";
 import CloseIcon from "@mui/icons-material/Close";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import { serverBaseAddress } from "../../Pages/APIPage";
@@ -215,6 +216,9 @@ export default function ReportsBoard() {
             <RefreshIcon />
           </IconButton>
         </Tooltip>
+        <Button variant="outlined" startIcon={<InsightsIcon />} onClick={() => navigate("/ts1_reports_insights")}>
+          Dashboard
+        </Button>
         <Button variant="outlined" startIcon={<SettingsIcon />} onClick={() => setSettings(true)}>
           Settings
         </Button>

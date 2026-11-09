@@ -21,6 +21,7 @@ import ChevronRightIcon from "@mui/icons-material/ChevronRight";
 import SaveIcon from "@mui/icons-material/Save";
 import UploadFileIcon from "@mui/icons-material/UploadFile";
 import HistoryIcon from "@mui/icons-material/History";
+import InsightsIcon from "@mui/icons-material/Insights";
 import EventRepeatIcon from "@mui/icons-material/EventRepeat";
 
 import { toast } from "react-toastify";
@@ -325,6 +326,9 @@ const Jobcard = () => {
             </Typography>
           </Box>
           <Stack direction="row" gap={1} flexWrap="wrap">
+            <Button variant="outlined" startIcon={<InsightsIcon />} onClick={() => navigate("/ts1_jc_insights")}>
+              JC Dashboard
+            </Button>
             {activeStep === 0 && (
               <Button variant="outlined" startIcon={<UploadFileIcon />} onClick={() => setSrfImportDialogOpen(true)}>
                 Import SRF

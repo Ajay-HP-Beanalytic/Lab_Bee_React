@@ -256,9 +256,26 @@ const RenderTable = ({
                             ? getColumnOptions(column, row)
                             : column.options || [];
 
-                          return (
+                          // A saved value that is no longer offered (a person who
+                          // isn't logged in now, a renamed item) must still show
+                          const saved = row[column.id];
+                          const offered =
                             Array.isArray(options) &&
-                            options.map((option) => {
+                            options.some((option) =>
+                              typeof option === "string"
+                                ? option === saved
+                                : (option.value ? option.value : option.id) === saved,
+                            );
+                          const savedItem =
+                            saved && !offered ? (
+                              <MenuItem key={`saved-${saved}`} value={saved}>
+                                {saved}
+                              </MenuItem>
+                            ) : null;
+
+                          return [
+                            savedItem,
+                            ...(Array.isArray(options) ? options : []).map((option) => {
                               if (typeof option === "string") {
                                 return (
                                   <MenuItem key={option} value={option}>
@@ -277,8 +294,8 @@ const RenderTable = ({
                                   </MenuItem>
                                 );
                               }
-                            })
-                          );
+                            }),
+                          ];
                         })()}
                       </Select>
                     ) : column.type === "autocomplete" ? (

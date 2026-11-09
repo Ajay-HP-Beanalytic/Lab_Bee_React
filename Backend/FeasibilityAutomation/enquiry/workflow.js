@@ -103,9 +103,13 @@ const required = (v, what) => {
   return s;
 };
 
+// Marked not feasible and waiting for the regret email: no quote or "lost" from here
+const regretPending = (r) => r.stage === "reply" && r.feasibility_result === "not_feasible";
+
 // Actions. from: stages it can be done in; who: "stage" (the stage's team),
-// "involved" (testing or sales team of the enquiry) or "sales".
-// run(ctx) returns { to?, set?, note?, data?, notify? } where set = columns to update.
+// "involved" (testing or sales team of the enquiry) or "sales"; when: an extra
+// condition on the enquiry.
+// run(ctx) returns { to?, set?, note?, data?, notify?, after? } where set = columns to update.
 const ACTIONS = {
   take: {
     label: "Take it",
@@ -221,6 +225,21 @@ const ACTIONS = {
     },
   },
 
+  // Marked not feasible by mistake, or the customer changed the requirement
+  recheck: {
+    label: "Back to feasibility check",
+    from: ["reply"],
+    who: "involved",
+    when: regretPending,
+    run: ({ request, body }) => ({
+      to: "feasibility",
+      set: { feasibility_result: null, owner_id: null },
+      note: required(body.note, "Why it is checked again"),
+      after: () => futureScope.clearForRecheck(request.id),
+      notify: { departments: stageTeam(request, "feasibility"), message: `${reference(request)}${who(request)}: please check feasibility again` },
+    }),
+  },
+
   reply_sent: {
     label: "Reply sent",
     from: ["reply"],
@@ -239,6 +258,7 @@ const ACTIONS = {
     label: "Customer asked for a quote",
     from: ["new", "feasibility", "waiting_customer", "reply", "confirmed"],
     who: "involved",
+    when: (r) => !regretPending(r),
     run: ({ request, body }) => {
       if (request.stage !== "confirmed") {
         if (request.quote_requested) throw fail(409, "Already marked as asking for a quote");
@@ -305,6 +325,7 @@ const ACTIONS = {
     label: "Lost",
     from: ["waiting_customer", "reply", "confirmed", "quote", "followup"],
     who: "stage",
+    when: (r) => !regretPending(r),
     run: ({ request, user, body }) => {
       if (!LOST_REASONS.includes(body.reason)) throw fail(400, "Choose a reason");
       // Lost on capability: what we couldn't do goes to the future scope register
@@ -346,11 +367,15 @@ const ACTIONS = {
         "SELECT from_stage FROM rfq_events WHERE request_id = ? AND to_stage = ? ORDER BY id DESC LIMIT 1",
         [request.id, request.stage],
       );
-      const to = OPEN_STAGES.includes(last?.from_stage) ? last.from_stage : "new";
+      // Closed as not feasible: the feasibility check is done again, otherwise
+      // "Reply sent" would only close it the same way
+      const notFeasible = request.stage === "not_feasible";
+      const to = notFeasible ? "feasibility" : OPEN_STAGES.includes(last?.from_stage) ? last.from_stage : "new";
       return {
         to,
-        set: { outcome_reason: null, closed_at: null, owner_id: null },
+        set: { outcome_reason: null, closed_at: null, owner_id: null, ...(notFeasible ? { feasibility_result: null } : {}) },
         note: required(body.note, "Why it is reopened"),
+        after: notFeasible ? () => futureScope.clearForRecheck(request.id) : null,
         notify: { departments: stageTeam(request, to), message: `${reference(request)}${who(request)} was reopened` },
       };
     },
@@ -419,6 +444,7 @@ const allowedDepartments = (request, action) => {
 
 const canDo = (request, user, action) =>
   ACTIONS[action].from.includes(request.stage) &&
+  (!ACTIONS[action].when || ACTIONS[action].when(request)) &&
   (user.department === ADMIN || allowedDepartments(request, action).includes(user.department));
 
 // Actions this user can do on this request now (for the buttons)
@@ -449,6 +475,7 @@ const applyAction = async (requestId, action, userId, body = {}) => {
   if (!def.from.includes(request.stage)) {
     throw fail(409, `"${def.label}" can't be done while the enquiry is at "${STAGES[request.stage]?.label || request.stage}"`);
   }
+  if (def.when && !def.when(request)) throw fail(409, `"${def.label}" can't be done on this enquiry now`);
   if (!canDo(request, user, action)) throw fail(403, `Your department can't do "${def.label}" at this stage`);
 
   const out = await def.run({ request, user, body });

@@ -7,6 +7,7 @@ import CalendarMonthSharpIcon from "@mui/icons-material/CalendarMonthSharp";
 import ArticleIcon from "@mui/icons-material/Article";
 import NoteAddIcon from "@mui/icons-material/NoteAdd";
 import KitchenIcon from "@mui/icons-material/Kitchen";
+import BuildCircleIcon from "@mui/icons-material/BuildCircle";
 import ManageAccountsIcon from "@mui/icons-material/ManageAccounts";
 import CurrencyRupeeIcon from "@mui/icons-material/CurrencyRupee";
 import DashboardIcon from "@mui/icons-material/Dashboard";
@@ -53,10 +54,11 @@ export const MENU_ITEMS = [
   { key: "future_scope", label: "Future Scope", path: "/future_scope", group: "sales", icon: <TipsAndUpdatesIcon /> },
   { key: "marketing", label: "Marketing Content", path: "/marketing", group: "sales", icon: <NewspaperIcon /> },
 
-  { key: "ts1_jobcards", label: "Job Cards", path: "/jobcard_dashboard", also: ["jobcard"], group: "ts1", icon: <ArticleIcon /> },
-  { key: "ts1_reports", label: "Reports", path: "/ts1_reports", group: "ts1", icon: <AssignmentTurnedInIcon /> },
+  { key: "ts1_jobcards", label: "Job Cards", path: "/jobcard_dashboard", also: ["jobcard", "ts1_jc_insights"], group: "ts1", icon: <ArticleIcon /> },
+  { key: "ts1_reports", label: "Reports", path: "/ts1_reports", also: ["ts1_reports_insights"], group: "ts1", icon: <AssignmentTurnedInIcon /> },
   { key: "ts1_slot_booking", label: "Slot Booking", path: "/slot_booking", group: "ts1", icon: <CalendarMonthSharpIcon /> },
   { key: "ts1_chambers", label: "Chambers & Calibration", path: "/chamber-calibration", group: "ts1", icon: <KitchenIcon /> },
+  { key: "ts1_breakdowns", label: "Breakdowns & Spares", path: "/chamber_breakdowns", group: "ts1", icon: <BuildCircleIcon /> },
   { key: "ts1_hours", label: "Hours Calculation", path: "/ts1_utitlity", group: "ts1", icon: <CalculateIcon /> },
   { key: "ts1_jc_essentials", label: "JC Essentials", path: "/jobcard_essentials", group: "ts1", icon: <NoteAddIcon /> },
 
@@ -97,10 +99,14 @@ export const fullLabel = (item) => {
   return twice ? `${item.label} (${MENU_GROUPS.find((g) => g.id === item.group)?.label})` : item.label;
 };
 
+// Groups left out of the side menu for now. Access rules are kept, and the pages
+// still open by their address. Remove "sales" to bring Enquiries & Quotes back.
+const HIDDEN_MENU_GROUPS = ["sales"];
+
 // Groups with the items this user may open, the department's own group first
 export function visibleMenu(access) {
   const allowed = new Set(access?.menus || []);
-  const order = [...MENU_GROUPS].sort((a, b) => (b.id === access?.homeGroup) - (a.id === access?.homeGroup));
+  const order = MENU_GROUPS.filter((g) => !HIDDEN_MENU_GROUPS.includes(g.id)).sort((a, b) => (b.id === access?.homeGroup) - (a.id === access?.homeGroup));
   return order
     .map((g) => ({ ...g, items: MENU_ITEMS.filter((i) => i.group === g.id && allowed.has(i.key)) }))
     .filter((g) => g.items.length);

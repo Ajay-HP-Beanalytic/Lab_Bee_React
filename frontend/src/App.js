@@ -55,6 +55,9 @@ import TestTypesManager from "./test_feasibility_automation/TestTypesManager";
 import JCPrintPage from "./JC/JCPrintPage";
 import PublicReportPage from "./JC/ReportWorkflow/PublicReportPage";
 import ReportsBoard from "./JC/ReportWorkflow/ReportsBoard";
+import ChamberBreakdowns from "./JC/Breakdowns/ChamberBreakdowns";
+import JobCardsInsights from "./JC/Dashboards/JobCardsInsights";
+import ReportsInsights from "./JC/Dashboards/ReportsInsights";
 import EMIJCPrintPage from "./EMI/EMIJCPrintPage";
 
 function App() {
@@ -230,6 +233,22 @@ function App() {
             }
           />
           <Route
+            path="ts1_jc_insights"
+            element={
+              <ProtectedRoute>
+                <JobCardsInsights />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="ts1_reports_insights"
+            element={
+              <ProtectedRoute>
+                <ReportsInsights />
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="jobcard_essentials"
             element={
               <ProtectedRoute>
@@ -242,6 +261,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <ChamberAndCalibration />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="chamber_breakdowns"
+            element={
+              <ProtectedRoute>
+                <ChamberBreakdowns />
               </ProtectedRoute>
             }
           />

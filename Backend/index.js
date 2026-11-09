@@ -48,6 +48,8 @@ const server =
     ? https.createServer(serverOptions, app) // For deployment
     : http.createServer(app); // For development
 
+const { requireLogin, originAllowed, blockActiveFile } = require("./access/requireLogin");
+
 // Middleware to validate session on each request
 const validateSession = (req, res, next) => {
   // Skip validation for public routes (login, register, password reset)
@@ -108,8 +110,7 @@ const validateSession = (req, res, next) => {
 ///Make the app.connection available to the socket.io servers:
 const io = socketIo(server, {
   cors: {
-    origin: true, // mention the host address of the frontend
-    // origin: "https://labbee.beanalytic.com", // Allow requests from this origin
+    origin: (origin, callback) => callback(null, originAllowed(origin)),
     methods: ["GET", "POST", "DELETE", "PUT"],
     credentials: true,
   },
@@ -146,12 +147,13 @@ io.on("connection", (socket) => {
 });
 
 app.use(
-  cors({
-    origin: true, // mention the host address of the frontend
-    //origin: "https://labbee.beanalytic.com", // Allow requests from this origin
-    methods: ["POST", "GET", "DELETE", "PUT"],
-    credentials: true,
-  }),
+  cors((req, callback) =>
+    callback(null, {
+      origin: originAllowed(req.header("Origin"), req.headers.host),
+      methods: ["POST", "GET", "DELETE", "PUT"],
+      credentials: true,
+    }),
+  ),
 );
 
 // const corsOption = {
@@ -196,24 +198,34 @@ const sessionStore = new MySQLStore({
 
 app.use(
   session({
-    secret: process.env.SESSION_SECRET || "secret",
+    // Without SESSION_SECRET in production: a random one, so everyone logs in again after a restart
+    secret:
+      process.env.SESSION_SECRET ||
+      (process.env.NODE_ENV === "production" ? require("crypto").randomBytes(32).toString("hex") : "secret"),
     resave: false,
     saveUninitialized: false,
     store: sessionStore,
     cookie: {
-      secure: false,
+      secure: !!(useHttps && serverOptions), // only when this server itself runs HTTPS
+      httpOnly: true,
+      sameSite: "lax",
       maxAge: 540 * 60 * 1000, // 9 hours
     },
   }),
 );
 
+if (process.env.NODE_ENV === "production" && !process.env.SESSION_SECRET) {
+  console.warn("SESSION_SECRET is not set: using a random one, so users must log in again after every restart.");
+}
+
 // Apply validateSession AFTER session middleware
 app.use(validateSession);
+app.use(requireLogin);
 
 // app.use("./FilesUploaded", express.static("FilesUploaded"))
 app.use(
   "/FilesUploaded",
-  express.static(path.join(__dirname, "FilesUploaded")),
+  express.static(path.join(__dirname, "FilesUploaded"), { setHeaders: blockActiveFile }),
 );
 
 // Get all the connections from the db
@@ -505,7 +517,16 @@ convertToPdfAPIs(app);
 // });
 
 /// Code to get backup of database in .sql format and attachments in .zip format:
-app.get("/api/downloadDataBackup", (req, res) => {
+app.get("/api/downloadDataBackup", async (req, res, next) => {
+  // The whole database and all attachments: Administration only
+  try {
+    const me = await require("./access/accessControl").accessOf(req.session?.user_id);
+    if (!me?.isAdmin) return res.status(403).send("Only Administration can download the backup");
+    next();
+  } catch (err) {
+    next(err);
+  }
+}, (req, res) => {
   createBackup((error, backupFile) => {
     if (error) {
       console.error("Backup failed:", error);

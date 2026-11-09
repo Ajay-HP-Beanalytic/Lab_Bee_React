@@ -22,7 +22,7 @@ const fail = (status, message) => Object.assign(new Error(message), { status });
 const MENU_KEYS = [
   "home", "org_docs",
   "rfq_inbox", "rfq_dashboard", "future_scope", "quotations", "quotation_essentials", "marketing",
-  "ts1_jobcards", "ts1_reports", "ts1_slot_booking", "ts1_chambers", "ts1_hours", "ts1_jc_essentials",
+  "ts1_jobcards", "ts1_reports", "ts1_slot_booking", "ts1_chambers", "ts1_breakdowns", "ts1_hours", "ts1_jc_essentials",
   "ts2_jobcards", "ts2_slot_booking", "ts2_calibration",
   "nabl_scope", "test_types", "test_pricing", "chamber_specs", "test_durations",
   "projects",

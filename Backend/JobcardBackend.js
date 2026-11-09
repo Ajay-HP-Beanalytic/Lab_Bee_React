@@ -7,7 +7,8 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 require("dotenv").config(); // Ensure .env is loaded
-const { saveRows, jobcardUser } = require("./ts1/jobcardRows");
+const { saveRows, jobcardUser, checkCanEdit } = require("./ts1/jobcardRows");
+const { blockActiveFile } = require("./access/requireLogin");
 const { ts1ReportAPIs } = require("./ts1/TS1ReportAPI");
 const { closeProblems, recordClose, recordReopen } = require("./ts1/TS1ReportWorkflowAPI");
 const { ROW_ORDER, ensureRowOrderColumns } = require("./jobcardRowOrder");
@@ -203,6 +204,24 @@ function jobcardsAPIs(app, io, labbeeUsers) {
   };
 
   ts1ReportAPIs(app);
+
+  // Older row routes (the app saves rows through /api/ts1/jobcard-rows): only for
+  // users of TS1 job cards. They skip the audit trail and the closed job card rule.
+  app.use(
+    [
+      "/api/deleteEutTableRows", "/api/eutdetails", "/api/deleteTestTableRows", "/api/tests_sync", "/api/tests",
+      "/api/deleteTestDetailsTableRows", "/api/testdetails_sync", "/api/testdetails",
+    ],
+    async (req, res, next) => {
+      try {
+        await jobcardUser(req);
+        next();
+      } catch (err) {
+        res.status(err.status || 500).json({ message: err.message });
+      }
+    },
+  );
+
   ensureRowOrderColumns().catch((err) => console.error("row_order column error:", err));
 
   app.post("/api/jobcard", async (req, res) => {
@@ -704,6 +723,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
         const wasClosed = ["Closed", "Close"].includes(current?.jc_status);
         closing = isTS1 && !wasClosed && ["Closed", "Close"].includes(jcStatus);
         reopening = isTS1 && wasClosed && !!jcStatus && !["Closed", "Close"].includes(jcStatus);
+        if (wasClosed) checkCanEdit(current, me); // same rule as the rows, before anything is saved
         if (closing) {
           const open = await closeProblems(req, jcNumber, jcCloseDate);
           if (open.length) {
@@ -715,6 +735,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
           }
         }
       } catch (err) {
+        if (err.status === 403) return res.status(403).json({ message: err.message });
         console.error("Checklist check before closing failed:", err);
         if (["Closed", "Close"].includes(jcStatus)) {
           return res.status(err.status || 500).json({ message: err.status ? err.message : "The checklist could not be checked. Try again." });
@@ -3553,6 +3574,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
       const file = results[0];
       const filePath = path.resolve(file.file_path); // Ensure absolute path
 
+      blockActiveFile(res, filePath);
       res.sendFile(filePath, (err) => {
         if (err) {
           console.error("File sending error:", err);

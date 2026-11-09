@@ -31,6 +31,7 @@ import { STAGE_TEXT } from "./ReportWorkflow/reportWorkflow";
 import { CreatePieChart } from "../functions/DashboardFunctions";
 import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
+import InsightsIcon from "@mui/icons-material/Insights";
 import ConfirmationDialog from "../common/ConfirmationDialog";
 import { toast } from "react-toastify";
 
@@ -813,6 +814,9 @@ export default function JCHome() {
               Click a job card to see its tests and generate reports
             </Typography>
           </Box>
+          <Button variant="outlined" startIcon={<InsightsIcon />} onClick={() => navigate("/ts1_jc_insights")}>
+            JC Dashboard
+          </Button>
           <Button variant="contained" startIcon={<AddIcon />} onClick={onClickNewJCButton}>
             New job card
           </Button>

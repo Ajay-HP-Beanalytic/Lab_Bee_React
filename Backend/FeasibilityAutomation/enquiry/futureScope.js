@@ -92,6 +92,19 @@ async function recordItems(request, items, { userId, source = "feasibility" }) {
   }
 }
 
+/**
+ * The feasibility check is done again: its tests go back on the quote and its
+ * items not yet reviewed by management are removed (the new check saves its own).
+ */
+async function clearForRecheck(requestId) {
+  await query(
+    `UPDATE feasibility_request_tests t JOIN rfq_future_scope f ON f.test_id = t.id
+     SET t.quote_excluded = 0 WHERE f.request_id = ? AND f.source = 'feasibility'`,
+    [requestId],
+  );
+  await query("DELETE FROM rfq_future_scope WHERE request_id = ? AND source = 'feasibility' AND status = 'new'", [requestId]);
+}
+
 /** A quote lost on capability: what the customer needed that we can't do */
 const recordLost = (request, requirement, userId) =>
   recordItems(request, [{ requirement: text(requirement, 500), reason: LOST_REASON, detail: "" }], { userId, source: "lost" });
@@ -195,4 +208,4 @@ const withTypes = async (items) => {
   return items.map((it) => ({ ...it, test_type_name: names.get(it.test_id) || null }));
 };
 
-module.exports = { REASONS, STATUSES, LOST_REASON, MANAGERS, cleanItems, recordItems, recordLost, listItems, updateItems, summary, withTypes };
+module.exports = { REASONS, STATUSES, LOST_REASON, MANAGERS, cleanItems, recordItems, clearForRecheck, recordLost, listItems, updateItems, summary, withTypes };

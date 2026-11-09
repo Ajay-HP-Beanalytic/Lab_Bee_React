@@ -66,7 +66,7 @@ async function jobcardUser(req) {
 
 /** TS1 Testing (other than the Lab Manager) can't change a closed job card */
 function checkCanEdit(jobcard, access) {
-  if (jobcard.jc_status === "Closed" && access.department === "TS1 Testing" && access.role !== "Lab Manager") {
+  if (["Closed", "Close"].includes(jobcard.jc_status) && access.department === "TS1 Testing" && access.role !== "Lab Manager") {
     throw fail(403, "This job card is closed. Only the Lab Manager can change it.");
   }
 }

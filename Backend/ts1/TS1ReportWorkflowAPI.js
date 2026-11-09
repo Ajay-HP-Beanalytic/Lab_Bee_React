@@ -1659,6 +1659,7 @@ function ts1ReportWorkflowAPIs(app, { tablesReady = false } = {}) {
   if (!tablesReady) ensureWorkflowTables().catch((err) => console.error("TS1 report workflow tables error:", err));
   startWatcher();
   require("./TS1ReportPhotosAPI").ts1ReportPhotosAPIs(app);
+  require("./TS1DashboardsAPI").ts1DashboardsAPIs(app, handle);
 
   app.get("/api/ts1/jc-workflow", handle(jcWorkflow));
   app.post("/api/ts1/reports/:testDetailId/action", handle(doAction));
@@ -1696,4 +1697,4 @@ function ts1ReportWorkflowAPIs(app, { tablesReady = false } = {}) {
 
 module.exports = {
   ts1ReportWorkflowAPIs, ensureWorkflowTables, noteDraft, closeProblems, recordClose, recordReopen, noticeEndedTests, STAGES,
-  whoIs, ISSUED_DIR, safe, relOf, fullOf, getSettings };
+  whoIs, collect, ISSUED_DIR, safe, relOf, fullOf, getSettings };

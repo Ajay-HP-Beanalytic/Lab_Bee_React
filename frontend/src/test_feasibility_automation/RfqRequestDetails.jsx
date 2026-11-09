@@ -66,7 +66,7 @@ const EMAIL_ACTION_LABELS = {
 };
 
 // Main actions are buttons; the rest are in the "more" menu
-const MAIN_ACTIONS = ["take", "feasibility_done", "need_info", "info_received", "reply_sent", "quote_sent", "followup_note", "won", "lost", "reopen"];
+const MAIN_ACTIONS = ["take", "feasibility_done", "need_info", "info_received", "reply_sent", "recheck", "quote_sent", "followup_note", "won", "lost", "reopen"];
 const ACTION_COLORS = { feasibility_done: "success", reply_sent: "success", quote_sent: "success", won: "success", lost: "error", need_info: "warning" };
 
 // What each action asks for (the backend checks the same)
@@ -78,13 +78,14 @@ const ACTION_HELP = {
   feasibility_done:
     "Accounts / Marketing will be asked to reply to the customer (with the quote, if the customer asked for one). What can't be done is saved in the Future Scope register for management and left out of the quote.",
   reply_sent: "Send the reply from Outlook first, then record it here.",
+  recheck: "It goes back to the testing team to check again. The tests return to the quote and this check's Future Scope items are removed.",
   quote_requested: "Use this when the customer asks for a price.",
   quote_sent: "Send the quote from Outlook first. You will follow it up until it is won or lost.",
   followup_note: "Record a call or email with the customer and when to follow up next.",
   won: "The customer placed the order.",
   lost: "The customer will not order. The reason is used in the dashboard; for Capability, what we couldn't do goes to the Future Scope register.",
   close: "For mails that are not real enquiries, duplicates or cancelled requests.",
-  reopen: "The enquiry goes back to the stage it was closed from.",
+  reopen: "The enquiry goes back to the stage it was closed from. An enquiry closed as not feasible goes back to the feasibility check.",
   note: "A note on the timeline, visible to everyone.",
   set_departments:
     "Choose which testing team checks this enquiry. Lab Bee decides from the tests (their type, or the kind of test the AI read from the email); when a test fits neither team it marks the team as unclear. A team you choose here is kept.",
@@ -98,6 +99,7 @@ const EVENT_TEXT = {
   info_received: () => "Customer sent the details",
   feasibility_done: (e, wf) => `Feasibility: ${wf?.feasibilityResults?.[e.data?.result] || e.data?.result}`,
   reply_sent: () => "Reply sent to the customer",
+  recheck: () => "Sent back to the feasibility check",
   quote_requested: () => "Customer asked for a quote",
   quote_sent: (e) => `Quote sent: ${e.data?.quotation_ref || ""}${e.data?.quote_value != null ? `, ${rupees(e.data.quote_value)}` : ""}`,
   followup_note: (e) => `Follow-up (${e.data?.method || "other"})${e.data?.next_followup_at ? `, next ${moment(e.data.next_followup_at).format("DD MMM")}` : ""}`,
@@ -333,7 +335,13 @@ function ActionDialog({ action, data, onClose, onDone }) {
           onChange={(e) => {
             const result = e.target.value;
             // Not feasible: every test is marked (they can be unmarked)
-            setForm((f) => ({ ...f, result, nf: (f.nf || []).map((x) => ({ ...x, on: result === "not_feasible" ? true : result === "feasible" ? false : x.on })) }));
+            setForm((f) => ({
+              ...f,
+              result,
+              nf: (f.nf || []).map((x) => ({ ...x, on: result === "not_feasible" ? true : result === "feasible" ? false : x.on })),
+              // No tests were read from the enquiry: one row to say what can't be done
+              extra: result !== "feasible" && !(f.nf || []).length && !(f.extra || []).length ? [{ requirement: "", reason: "", detail: "" }] : f.extra,
+            }));
           }}
         >
           {Object.entries(wf.feasibilityResults).map(([k, label]) => (
@@ -355,6 +363,7 @@ function ActionDialog({ action, data, onClose, onDone }) {
         {note("Note (optional): sent to whom, anything promised")}
       </>
     ),
+    recheck: note("Why it is checked again", true),
     quote_requested: note("Note (optional)"),
     quote_sent: (
       <Grid container spacing={2} sx={{ mt: 0 }}>
@@ -638,6 +647,7 @@ export default function RfqRequestDetails({ requestId, open, onClose, onChanged 
   const mainActions = actions.filter(isMain);
   const moreActions = actions.filter((a) => !isMain(a));
   const late = r ? lateness(r) : null;
+  const notFeasible = r?.feasibility_result === "not_feasible"; // nothing to quote
 
   // Timeline: workflow events and emails, oldest first
   const timeline = useMemo(() => {
@@ -760,6 +770,12 @@ export default function RfqRequestDetails({ requestId, open, onClose, onChanged 
 
         {r && tab === "summary" && (
           <>
+            {r.stage === "reply" && notFeasible && (
+              <Alert severity="warning" sx={{ mb: 2 }}>
+                Not feasible: Accounts / Marketing send the regret email, then click "Reply sent" to close the enquiry. If it was marked by mistake or the
+                customer changes the requirement, use "Back to feasibility check".
+              </Alert>
+            )}
             {/* Confidential: staff choose AI or manual */}
             {r.is_confidential === 1 && (
               <Paper variant="outlined" sx={{ p: 2, mb: 2.5, borderColor: "error.light", bgcolor: "#fff8f8" }}>
@@ -981,12 +997,16 @@ export default function RfqRequestDetails({ requestId, open, onClose, onChanged 
           <Box>
             <EnquiryCustomer requestId={requestId} onChanged={load} />
             <Box display="flex" gap={1} alignItems="center" flexWrap="wrap" mb={1.5}>
-              {draft && canQuote && (
+              {draft && canQuote && !notFeasible && (
                 <Button variant="contained" startIcon={<RequestQuoteIcon />} onClick={() => navigate(`/quotation?rfq=${requestId}`)}>
                   {draft.quotation_ids ? "Open in Quotation page again" : "Open in Quotation page"}
                 </Button>
               )}
-              {canQuote ? (
+              {notFeasible ? (
+                <Alert severity="warning" sx={{ py: 0 }}>
+                  Marked not feasible, so no quote is prepared.
+                </Alert>
+              ) : canQuote ? (
                 <Button variant="outlined" startIcon={<AutorenewIcon />} onClick={rebuildDraft} disabled={working}>
                   {draft ? "Prepare again" : "Prepare draft quote"}
                 </Button>
@@ -1004,7 +1024,7 @@ export default function RfqRequestDetails({ requestId, open, onClose, onChanged 
                 </Typography>
               )}
             </Box>
-            {!draft && canQuote && (
+            {!draft && canQuote && !notFeasible && (
               <Typography variant="body2" color="text.secondary">
                 The draft quote is prepared when the enquiry reaches the Quote stage (feasibility done and the customer asked for a
                 quote). You can also prepare it now.

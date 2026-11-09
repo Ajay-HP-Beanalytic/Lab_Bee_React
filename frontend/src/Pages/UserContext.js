@@ -47,7 +47,7 @@ export const UserProvider = ({ children }) => {
   }, []);
 
   // Public routes array for useCallback dependency
-  const publicRoutes = useMemo(() => ["/", "/register", "/reset_password"], []);
+  const publicRoutes = useMemo(() => ["/", "/register", "/reset_password", "/feasibility-request", "/feasibility-submitted"], []);
 
   // Check if current route is public
   const isPublicRoute = useCallback(

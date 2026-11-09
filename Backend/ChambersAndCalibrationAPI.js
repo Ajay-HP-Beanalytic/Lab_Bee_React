@@ -1,6 +1,7 @@
 const moment = require('moment');
 const { db } = require('./db');
 const fileStorageService = require('./services/fileStorageService');
+const { accessOf } = require('./access/accessControl');
 
 // Add the calibration certificate columns to an existing chamber_calibration
 // table (CREATE TABLE IF NOT EXISTS won't alter tables that already exist).
@@ -30,6 +31,23 @@ function chambersAndCalibrationAPIs(app) {
 
     // Ensure the calibration certificate columns exist on startup
     migrateCalibrationCertificateColumns();
+    require('./ts1/ChamberBreakdownsAPI').chamberBreakdownsAPIs(app);
+
+    // Changing chambers and certificates: only users of Chambers & Calibration
+    app.use(
+        ["/api/addChamberData", "/api/chamberData/import", "/api/chamberCalibrationCertificate", "/api/getChamberData"],
+        async (req, res, next) => {
+            if (req.method === "GET") return next();
+            try {
+                const me = await accessOf(req.session?.user_id);
+                if (!me) return res.status(401).json({ message: "Please log in again" });
+                if (!me.menus.includes("ts1_chambers")) return res.status(403).json({ message: "You don't have access to Chambers & Calibration" });
+                next();
+            } catch (err) {
+                next(err);
+            }
+        },
+    );
 
     // To add chamber and calibration data to the table:
     app.post("/api/addChamberData", (req, res) => {
