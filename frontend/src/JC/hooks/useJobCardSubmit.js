@@ -6,93 +6,106 @@ import { serverBaseAddress } from "../../Pages/APIPage";
 import jobCardValidators from "../utils/jobCardValidators";
 import dayjs from "dayjs";
 
+const day = (v) => (v ? dayjs(v).format("YYYY-MM-DD") : null);
+const dateTime = (v) => (v && dayjs(v).isValid() ? dayjs(v).format("YYYY-MM-DD HH:mm:ss") : null);
+
+// The rows as the backend takes them: rows left empty on screen are dropped (and deleted
+// if they were saved before)
+const rowsPayload = ({ eutRows, testRows, testDetailsRows }) => ({
+  eut: eutRows.map((r) => ({
+    id: r.id,
+    nomenclature: r.nomenclature || "",
+    eutDescription: r.eutDescription || "",
+    qty: r.qty || "",
+    partNo: r.partNo || "",
+    modelNo: r.modelNo || "",
+    serialNo: r.serialNo || "",
+  })),
+  tests: testRows.map((r) => ({
+    id: r.id,
+    test: r.test || "",
+    nabl: r.nabl || "",
+    testStandard: r.testStandard || "",
+    testProfile: r.testProfile || "",
+  })),
+  testDetails: testDetailsRows.map((r) => ({
+    id: r.id,
+    testCategory: r.testCategory || "",
+    testName: r.testName || "",
+    testChamber: r.testChamber || "",
+    eutSerialNo: r.eutSerialNo || "",
+    standard: r.standard || "",
+    testStartedBy: r.testStartedBy || "",
+    startTemp: r.startTemp || "",
+    startRh: r.startRh || "",
+    startDate: dateTime(r.startDate),
+    endDate: dateTime(r.endDate),
+    endTemp: r.endTemp || "",
+    endRh: r.endRh || "",
+    duration: r.duration || 0,
+    actualTestDuration: r.actualTestDuration || 0,
+    unit: r.unit || "",
+    testEndedBy: r.testEndedBy || "",
+    remarks: r.remarks || "",
+    testReviewedBy: r.testReviewedBy || "",
+    reportPreparationStatus: r.reportPreparationStatus || "",
+    testReportInstructions: r.testReportInstructions || "",
+    reportNumber: r.reportNumber || "",
+    preparedBy: r.preparedBy || "",
+    nablUploaded: r.nablUploaded || "",
+    reportStatus: r.reportStatus || "",
+  })),
+});
+
 /**
- * Custom hook for handling Job Card submission logic
- * Keeps API calls and validation separate from UI components
- *
- * Aligns with JobcardBackend.js endpoints:
- * - POST /api/jobcard (create new)
- * - POST /api/jobcard/:id (update existing)
- * - POST /api/eutdetails/serialNos/ (sync EUT IDs)
- * - POST /api/eutdetails/ (save EUT data)
- * - POST /api/tests_sync/names/ (sync test IDs)
- * - POST /api/tests/ (save test data)
- * - POST /api/testdetails_sync/names/ (sync test details IDs)
- * - POST /api/testdetails/ (save test details data)
+ * Saves a TS1 job card: the job card itself (POST /api/jobcard or /api/jobcard/:id), then
+ * all its EUT, test and tests-performed rows in one transaction (POST /api/ts1/jobcard-rows).
+ * Who saved it is taken from the login on the server.
  */
 const useJobCardSubmit = () => {
   const [isSaving, setIsSaving] = useState(false);
   const navigate = useNavigate();
 
-  /**
-   * Submit Job Card (Create or Update)
-   */
-  const submitJobCard = async (
-    formData,
-    eutRows,
-    testRows,
-    testDetailsRows,
-    loggedInUserDepartment,
-    loggedInUserRole,
-    id
-  ) => {
+  const submitJobCard = async (formData, eutRows, testRows, testDetailsRows, loggedInUserDepartment, loggedInUserRole, id, options = {}) => {
+    if (!formData.jcNote1Checked || !formData.jcNote2Checked) {
+      toast.error("Please tick both customer acknowledgment notes in the SRF step before saving the job card.", {
+        position: "top-center",
+        autoClose: 5000,
+      });
+      return { success: false, step: 0 };
+    }
+
+    const validationErrors = [
+      ...jobCardValidators.validateJobCard(formData, loggedInUserDepartment),
+      ...jobCardValidators.validateTestRows(testDetailsRows),
+    ];
+    if (validationErrors.length > 0) {
+      jobCardValidators.showValidationErrors(validationErrors);
+      return { success: false };
+    }
+
     setIsSaving(true);
-
+    let jcNumber = formData.jcNumber;
+    let created = false;
+    let createdId = null;
     try {
-      // Step 1: Validate customer acknowledgment checkboxes
-      if (!formData.jcNote1Checked || !formData.jcNote2Checked) {
-        toast.error(
-          "Please acknowledge both important notes by checking the checkboxes before submitting the job card.",
-          {
-            position: "top-center",
-            autoClose: 5000,
-          }
-        );
-        setIsSaving(false);
-        return { success: false };
-      }
-
-      // Step 2: Validate form data
-      const validationErrors = jobCardValidators.validateJobCard(
-        formData,
-        loggedInUserDepartment
-      );
-
-      if (validationErrors.length > 0) {
-        jobCardValidators.showValidationErrors(validationErrors);
-        setIsSaving(false);
-        return { success: false };
-      }
-
-      // Step 2: Prepare job card payload
       const jobCardPayload = {
         id,
         jcNumber: formData.jcNumber,
         srfNumber: formData.srfNumber,
         dcNumber: formData.dcNumber,
-        jcOpenDate: formData.jcOpenDate
-          ? dayjs(formData.jcOpenDate).format("YYYY-MM-DD")
-          : null,
-        srfDate: formData.srfDate
-          ? dayjs(formData.srfDate).format("YYYY-MM-DD")
-          : null,
-        itemReceivedDate: formData.itemReceivedDate
-          ? dayjs(formData.itemReceivedDate).format("YYYY-MM-DD")
-          : null,
-        jcCloseDate: formData.jcCloseDate
-          ? dayjs(formData.jcCloseDate).format("YYYY-MM-DD")
-          : null,
-
+        jcOpenDate: day(formData.jcOpenDate),
+        srfDate: day(formData.srfDate),
+        itemReceivedDate: day(formData.itemReceivedDate),
+        jcCloseDate: day(formData.jcCloseDate),
         poNumber: formData.poNumber,
         testCategory: formData.testCategory,
         testDiscipline: formData.testDiscipline,
         typeOfRequest: formData.typeOfRequest,
         sampleCondition: formData.sampleCondition,
         reportType: formData.reportType,
-        jcCreatedBy: formData.jcCreatedBy,
         testWitnessedBy: formData.testWitnessedBy,
-        jcCategory: formData.jcCategory,
-
+        jcCategory: formData.jcCategory || "TS1",
         companyName: formData.companyName,
         companyAddress: formData.companyAddress,
         customerName: formData.customerName,
@@ -100,314 +113,62 @@ const useJobCardSubmit = () => {
         customerNumber: formData.customerNumber,
         projectName: formData.projectName,
         testInstructions: formData.testInstructions,
-
         jcStatus: formData.jcStatus,
         observations: formData.observations,
         jcNote1Checked: formData.jcNote1Checked,
         jcNote2Checked: formData.jcNote2Checked,
-        loggedInUser: formData.lastModifiedBy,
-        loggedInUserRole: loggedInUserRole,
+        forPreviousMonth: !id && !!options.forPreviousMonth,
       };
 
-      // Step 3: Submit main job card
-      const endpoint = id
-        ? `${serverBaseAddress}/api/jobcard/${id}`
-        : `${serverBaseAddress}/api/jobcard`;
-
-      const jcResponse = await axios.post(endpoint, jobCardPayload);
-
-      if (jcResponse.status !== 200) {
-        throw new Error("Failed to save job card");
-      }
-
-      const jcNumber = jcResponse.data.jcNumber || formData.jcNumber;
-
-      // Step 4: Save EUT Details
-      if (eutRows.length > 0) {
-        await saveEutDetails(
-          eutRows,
-          jcNumber,
-          formData.lastModifiedBy,
-          loggedInUserRole,
-          loggedInUserDepartment
-        );
-      }
-
-      // Step 5: Save Test Details
-      if (testRows.length > 0) {
-        await saveTestDetails(
-          testRows,
-          jcNumber,
-          formData.lastModifiedBy,
-          loggedInUserRole,
-          loggedInUserDepartment
-        );
-      }
-
-      // Step 6: Save Test Performed Details
-      if (testDetailsRows.length > 0) {
-        await saveTestPerformedDetails(
-          testDetailsRows,
-          jcNumber,
-          formData.lastModifiedBy,
-          loggedInUserRole,
-          loggedInUserDepartment
-        );
-      }
-
-      // Step 7: Show success message
-      toast.success(
-        id ? "Jobcard updated successfully" : "Jobcard created successfully"
-      );
-
-      setIsSaving(false);
-      return { success: true, jcNumber };
-    } catch (error) {
-      console.error("Error submitting JC:", error);
-
-      // Handle specific backend validation errors
-      if (error.response?.status === 403) {
+      const url = id ? `${serverBaseAddress}/api/jobcard/${id}` : `${serverBaseAddress}/api/jobcard`;
+      let jcResponse;
+      try {
+        jcResponse = await axios.post(url, jobCardPayload);
+      } catch (err) {
+        // Closing a TS1 job card: every checklist item must be done first (and the closed date given)
+        const open = err.response?.data?.error === "CHECKLIST_OPEN" ? err.response.data.openItems || [] : null;
+        if (!open) throw err;
         toast.error(
-          error.response.data?.message || "Access denied. Unauthorized action.",
-          { position: "top-center", autoClose: 5000 }
+          <div>
+            <b>The job card can't be closed yet.</b> Finish these first (see the job card checklist):
+            <ul style={{ margin: "6px 0 0", paddingLeft: 18 }}>
+              {open.map((t) => (
+                <li key={t}>{t}</li>
+              ))}
+            </ul>
+          </div>,
+          { position: "top-center", autoClose: false }
         );
-      } else {
-        toast.error(
-          error.response?.data?.message ||
-            "Failed to submit JC. Please try again later."
-        );
+        return { success: false };
       }
+      jcNumber = jcResponse.data.jcNumber || formData.jcNumber;
+      created = !id;
+      createdId = jcResponse.data.id || null;
 
+      await axios.post(`${serverBaseAddress}/api/ts1/jobcard-rows`, {
+        jcNumber,
+        ...rowsPayload({ eutRows, testRows, testDetailsRows }),
+      });
+
+      toast.success(id ? `Job card ${jcNumber} saved` : `Job card ${jcNumber} created`);
+      return { success: true, jcNumber, id: id || createdId };
+    } catch (error) {
+      console.error("Error saving the job card:", error);
+      const message = error.response?.data?.message || "Could not save the job card. Please try again.";
+      // The job card was created but its rows were not: say so, so it isn't created twice
+      toast.error(created ? `Job card ${jcNumber} was created, but its tables were not saved: ${message}. Open it from the dashboard and save again.` : message, {
+        position: "top-center",
+        autoClose: created ? false : 6000,
+      });
+      return { success: false, created, createdId, jcNumber, error };
+    } finally {
       setIsSaving(false);
-      return { success: false, error };
     }
   };
 
-  /**
-   * Save EUT Details
-   * Backend endpoint: POST /api/eutdetails/serialNos/ and POST /api/eutdetails/
-   */
-  const saveEutDetails = async (
-    eutRows,
-    jcNumber,
-    loggedInUser,
-    loggedInUserRole,
-    loggedInUserDepartment
-  ) => {
-    try {
-      // Step 1: Save serial numbers
-      const eutRowIds = eutRows.map((row) => row.id);
-      const serialNoResponse = await axios.post(
-        `${serverBaseAddress}/api/eutdetails/serialNos/`,
-        {
-          eutRowIds,
-          jcNumberString: jcNumber,
-          loggedInUser,
-        }
-      );
+  const navigateToDashboard = () => navigate("/jobcard_dashboard");
 
-      const { newIds, existingIds } = serialNoResponse.data;
-
-      // Step 2: Save each EUT row
-      // Build proper ID mapping: existing rows keep their IDs, new rows get new IDs
-      let newIdIndex = 0;
-      for (let index = 0; index < eutRows.length; index++) {
-        const row = eutRows[index];
-
-        // Determine the correct ID:
-        // If row has an existing ID from database, use it
-        // Otherwise, assign a new ID from the newIds array
-        let rowId;
-        if (row.id && existingIds && existingIds.includes(row.id)) {
-          rowId = row.id; // Use existing ID
-        } else {
-          rowId = newIds[newIdIndex]; // Use new ID
-          newIdIndex++;
-        }
-
-        if (!rowId) {
-          console.error(`EUT row ${index} has no ID! Row data:`, row);
-          throw new Error(`EUT row ${index} is missing an ID`);
-        }
-
-        await axios.post(`${serverBaseAddress}/api/eutdetails/`, {
-          eutRowId: rowId,
-          nomenclature: row.nomenclature || "",
-          eutDescription: row.eutDescription || "",
-          qty: row.qty || "",
-          partNo: row.partNo || "",
-          modelNo: row.modelNo || "",
-          serialNo: row.serialNo || "",
-          jcNumber,
-          loggedInUser: loggedInUser, // For audit trail
-          loggedInUserRole: loggedInUserRole,
-          loggedInUserDepartment: loggedInUserDepartment,
-        });
-      }
-    } catch (error) {
-      console.error("Error saving EUT details:", error);
-      throw error;
-    }
-  };
-
-  /**
-   * Save Test Details
-   * Backend endpoint: POST /api/tests_sync/names/ and POST /api/tests/
-   */
-  const saveTestDetails = async (
-    testRows,
-    jcNumber,
-    loggedInUser,
-    loggedInUserRole,
-    loggedInUserDepartment
-  ) => {
-    try {
-      // Step 1: Sync test row IDs (handles temporary IDs)
-      const testRowIds = testRows.map((row) => row.id);
-      const syncResponse = await axios.post(
-        `${serverBaseAddress}/api/tests_sync/names/`,
-        {
-          testRowIds,
-          jcNumberString: jcNumber,
-        }
-      );
-
-      const { newIds, existingIds } = syncResponse.data;
-
-      // Step 2: Save each test row with proper ID
-      let newIdIndex = 0;
-      for (let index = 0; index < testRows.length; index++) {
-        const row = testRows[index];
-
-        // Determine the correct ID
-        let rowId;
-        if (row.id && existingIds && existingIds.includes(row.id)) {
-          rowId = row.id; // Use existing ID
-        } else {
-          rowId = newIds[newIdIndex]; // Use new ID
-          newIdIndex++;
-        }
-
-        if (!rowId) {
-          console.error(`Test row ${index} has no ID! Row data:`, row);
-          throw new Error(`Test row ${index} is missing an ID`);
-        }
-
-        await axios.post(`${serverBaseAddress}/api/tests/`, {
-          testId: rowId,
-          test: row.test || "",
-          nabl: row.nabl || "",
-          testStandard: row.testStandard || "",
-          testProfile: row.testProfile || "",
-          jcNumber,
-          loggedInUser: loggedInUser, // For audit trail
-          loggedInUserRole: loggedInUserRole,
-          loggedInUserDepartment: loggedInUserDepartment,
-        });
-      }
-    } catch (error) {
-      console.error("Error saving test details:", error);
-      throw error;
-    }
-  };
-
-  /**
-   * Save Test Performed Details
-   * Backend endpoint: POST /api/testdetails_sync/names/ and POST /api/testdetails/
-   */
-  const saveTestPerformedDetails = async (
-    testDetailsRows,
-    jcNumber,
-    loggedInUser,
-    loggedInUserRole,
-    loggedInUserDepartment
-  ) => {
-    try {
-      // Step 1: Sync test details row IDs (handles temporary IDs)
-      const testDetailsRowIds = testDetailsRows.map((row) => row.id);
-      const syncResponse = await axios.post(
-        `${serverBaseAddress}/api/testdetails_sync/names/`,
-        {
-          testDetailsRowIds,
-          jcNumberString: jcNumber,
-        }
-      );
-
-      const { newIds, existingIds } = syncResponse.data;
-
-      // Step 2: Save each test details row with proper ID
-      let newIdIndex = 0;
-      for (let index = 0; index < testDetailsRows.length; index++) {
-        const row = testDetailsRows[index];
-
-        // Determine the correct ID
-        let rowId;
-        if (row.id && existingIds && existingIds.includes(row.id)) {
-          rowId = row.id; // Use existing ID
-        } else {
-          rowId = newIds[newIdIndex]; // Use new ID
-          newIdIndex++;
-        }
-
-        if (!rowId) {
-          console.error(`Test Detail row ${index} has no ID! Row data:`, row);
-          throw new Error(`Test Detail row ${index} is missing an ID`);
-        }
-
-        await axios.post(`${serverBaseAddress}/api/testdetails/`, {
-          testDetailRowId: rowId,
-          testCategory: row.testCategory || "",
-          testName: row.testName || "",
-          testChamber: row.testChamber || "",
-          eutSerialNo: row.eutSerialNo || "",
-          standard: row.standard || "",
-          testStartedBy: row.testStartedBy || "",
-          startTemp: row.startTemp || "",
-          startRh: row.startRh || "",
-          startDate: row.startDate
-            ? dayjs(row.startDate).format("YYYY-MM-DD HH:mm:ss")
-            : null,
-          endDate: row.endDate
-            ? dayjs(row.endDate).format("YYYY-MM-DD HH:mm:ss")
-            : null,
-          endTemp: row.endTemp || "",
-          endRh: row.endRh || "",
-          testEndedBy: row.testEndedBy || "",
-          remarks: row.remarks || "",
-          duration: row.duration || 0,
-          actualTestDuration: row.actualTestDuration || 0,
-          unit: row.unit || "",
-          testReviewedBy: row.testReviewedBy || "",
-          reportPreparationStatus: row.reportPreparationStatus || "",
-          testReportInstructions: row.testReportInstructions || "",
-          reportNumber: row.reportNumber || "",
-          preparedBy: row.preparedBy || "",
-          nablUploaded: row.nablUploaded || "",
-          reportStatus: row.reportStatus || "",
-          jcNumber,
-          loggedInUser: loggedInUser, // For audit trail
-          loggedInUserRole: loggedInUserRole,
-          loggedInUserDepartment: loggedInUserDepartment,
-        });
-      }
-    } catch (error) {
-      console.error("Error saving test performed details:", error);
-      throw error;
-    }
-  };
-
-  /**
-   * Navigate to dashboard after successful submission
-   */
-  const navigateToDashboard = () => {
-    navigate("/jobcard_dashboard");
-  };
-
-  return {
-    submitJobCard,
-    isSaving,
-    navigateToDashboard,
-  };
+  return { submitJobCard, isSaving, navigateToDashboard };
 };
 
 export default useJobCardSubmit;

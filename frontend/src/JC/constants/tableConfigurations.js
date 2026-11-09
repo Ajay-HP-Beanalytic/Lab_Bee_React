@@ -79,6 +79,7 @@ export const TEST_TABLE_COLUMNS = [
     type: "textField",
     width: 250,
     align: "center",
+    standardLookup: true,
   },
   {
     id: "testProfile",
@@ -134,6 +135,7 @@ export const TEST_PERFORMED_TABLE_COLUMNS = [
     type: "textField",
     width: "300px",
     align: "center",
+    standardLookup: true,
   },
   {
     id: "testStartedBy",
@@ -142,8 +144,8 @@ export const TEST_PERFORMED_TABLE_COLUMNS = [
     width: "200px",
     options: [],
   },
-  // { id: "startTemp", label: "Start Temp", type: "textField", width: "100px" },
-  // { id: "startRh", label: "Start Rh", type: "textField", width: "100px" },
+  { id: "startTemp", label: "Start Temp (°C)", type: "textField", width: "120px" },
+  { id: "startRh", label: "Start RH (%)", type: "textField", width: "120px" },
 
   {
     id: "startDate",
@@ -264,8 +266,8 @@ export const ROW_TEMPLATES = {
     eutSerialNo: "",
     standard: "",
     testStartedBy: "",
-    startTemp: 0,
-    startRh: 0,
+    startTemp: "",
+    startRh: "",
     startDate: null,
     endDate: null,
     duration: 0,

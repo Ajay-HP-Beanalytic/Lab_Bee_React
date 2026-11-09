@@ -4,7 +4,8 @@ import {
   Box,
   Button,
   Card,
-  Divider,
+  Chip,
+  Stack,
   FormControl,
   Grid,
   InputLabel,
@@ -12,6 +13,7 @@ import {
   Select,
   Typography,
   IconButton,
+  Tooltip,
 } from "@mui/material";
 
 import { serverBaseAddress } from "../Pages/APIPage";
@@ -25,10 +27,15 @@ import EmptyCard from "../common/EmptyCard";
 import Loader from "../common/Loader";
 import { UserContext } from "../Pages/UserContext";
 import JCPreview from "./JCPreview";
+import { STAGE_TEXT } from "./ReportWorkflow/reportWorkflow";
 import { CreatePieChart } from "../functions/DashboardFunctions";
 import DeleteIcon from "@mui/icons-material/Delete";
+import AddIcon from "@mui/icons-material/Add";
+import InsightsIcon from "@mui/icons-material/Insights";
 import ConfirmationDialog from "../common/ConfirmationDialog";
 import { toast } from "react-toastify";
+
+const STATUS_COLORS = { "Open": "warning", "Running": "info", "Test Completed": "secondary", "Closed": "success" };
 
 export default function JCHome() {
   const location = useLocation();
@@ -48,6 +55,8 @@ export default function JCHome() {
   const [filterRow, setFilterRow] = useState([]); //To filter out the table based on search
 
   const [refresh, setRefresh] = useState(false);
+  // Reports of each job card in the table (stage counts, overdue, waiting on me)
+  const [reportSummary, setReportSummary] = useState({});
 
   const { month, year } = getCurrentMonthYear();
 
@@ -63,9 +72,11 @@ export default function JCHome() {
   const [searchInputTextOfJC, setSearchInputTextOfJC] = useState("");
 
   const [filteredJcData, setFilteredJcData] = useState(jcTableData);
+  const [statusFilter, setStatusFilter] = useState(""); // "" = all statuses
 
   const [jcId, setJcId] = useState(null); // Id of the selected job card
   const [openJCPreview, setOpenJCPreview] = useState(false);
+  const [openReportFor, setOpenReportFor] = useState(null); // test row whose report window opens with the job card
 
   const [jcNumberString, setJcumberString] = useState("");
   const [srfNumber, setSrfNumber] = useState("");
@@ -105,6 +116,7 @@ export default function JCHome() {
   const [jcLastModifiedBy, setJcLastModifiedBy] = useState();
 
   const [editJc, setEditJc] = useState(false);
+  const [jobcardRaw, setJobcardRaw] = useState(null);
 
   const { loggedInUserDepartment } = useContext(UserContext);
 
@@ -118,6 +130,7 @@ export default function JCHome() {
       axios
         .get(`${serverBaseAddress}/api/jobcard/${jcId}`)
         .then((res) => {
+          setJobcardRaw(res.data.jobcard);
           setJcumberString(res.data.jobcard.jc_number);
           setSrfNumber(res.data.jobcard.srf_number);
 
@@ -182,10 +195,12 @@ export default function JCHome() {
     { label: "Project Name", value: `${projectName}` },
     { label: "Test Instructions", value: `${testInstructions}` },
     { label: "SRF Number", value: `${srfNumber}` },
-    { label: "SRF Date", value: `${dayjs(srfDate).format("DD/MM/YYYY")}` },
+    { label: "SRF Date", value: srfDate ? dayjs(srfDate).format("DD/MM/YYYY") : "" },
+    { label: "PO Number", value: jobcardRaw?.po_number || "" },
+    { label: "DC Number", value: jobcardRaw?.dcform_number || "" },
     {
       label: "JC Open Date",
-      value: `${dayjs(jcOpenDate).format("DD/MM/YYYY")}`,
+      value: jcOpenDate ? dayjs(jcOpenDate).format("DD/MM/YYYY") : "",
     },
     { label: "JC Created By", value: `${jcCreatedBy}` },
     {
@@ -208,20 +223,8 @@ export default function JCHome() {
     { label: "Observations", value: ` ${observations}` },
   ];
 
-  let primaryJCDetails = [];
-  if (
-    loggedInUserDepartment === "TS1 Testing" ||
-    loggedInUserDepartment === "Reports & Scrutiny"
-  ) {
-    primaryJCDetails = primaryTS1JCDetailsToPreview;
-  } else if (
-    loggedInUserDepartment === "Administration" ||
-    loggedInUserDepartment === "Accounts"
-  ) {
-    if (jcCategory === "TS1") {
-      primaryJCDetails = primaryTS1JCDetailsToPreview;
-    }
-  }
+  // Everyone who can open TS1 job cards (menu access) sees their details
+  const primaryJCDetails = primaryTS1JCDetailsToPreview;
 
   // Simulate fetching jc data from the database
   useEffect(() => {
@@ -375,7 +378,36 @@ export default function JCHome() {
     setFilteredJcData(jcTableData);
   }, [jcTableData, refresh, location.state]);
 
+  // Reports column: one call for the job cards in the table
+  useEffect(() => {
+    const jcNumbers = [...new Set((jcTableData || []).map((r) => r.jc_number).filter(Boolean))];
+    if (!jcNumbers.length) return undefined;
+    let live = true;
+    const load = () =>
+      axios
+        .post(`${serverBaseAddress}/api/ts1/reports/jc-summary`, { jcNumbers })
+        .then((r) => live && setReportSummary(r.data || {}))
+        .catch(() => {});
+    load();
+    window.addEventListener("ts1-reports-changed", load);
+    return () => {
+      live = false;
+      window.removeEventListener("ts1-reports-changed", load);
+    };
+  }, [jcTableData]);
+
   //If data is loading then show Loading text
+  // Opened from the Reports board: show that job card straight away (and its report window)
+  useEffect(() => {
+    const id = location.state?.openJcId;
+    if (!id) return;
+    setJcId(id);
+    setOpenReportFor(location.state?.openReportFor || null);
+    setOpenJCPreview(true);
+    navigate(location.pathname, { replace: true, state: {} });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.state?.openJcId]);
+
   if (loading) {
     return <Loader />;
   }
@@ -461,6 +493,61 @@ export default function JCHome() {
       align: "center",
       headerAlign: "center",
       headerClassName: "custom-header-color",
+      renderCell: (params) =>
+        params.value ? (
+          <Chip
+            size="small"
+            color={STATUS_COLORS[params.value === "Close" ? "Closed" : params.value] || "default"}
+            label={params.value}
+          />
+        ) : (
+          ""
+        ),
+    },
+    {
+      field: "reports",
+      headerName: "Reports",
+      width: 230,
+      align: "center",
+      headerAlign: "center",
+      headerClassName: "custom-header-color",
+      sortable: false,
+      renderCell: (params) => {
+        const s = reportSummary[params.row.jc_number];
+        if (!s) return "";
+        // the most urgent open stage first
+        const order = ["returned", "changes_requested", "in_review", "accepted", "to_prepare", "prepared", "reviewed", "draft_sent"];
+        const open = order.filter((k) => s.stages[k]);
+        const main = open[0];
+        return (
+          <Tooltip
+            title={[
+              ...Object.entries(s.stages).map(([k, n]) => `${n} ${STAGE_TEXT[k] || k}`),
+              s.overdue ? `${s.overdue} overdue` : "",
+              s.mine ? `${s.mine} waiting on you` : "",
+            ]
+              .filter(Boolean)
+              .join(" · ")}
+          >
+            <Box sx={{ display: "flex", gap: 0.5, alignItems: "center", justifyContent: "center", flexWrap: "wrap" }}>
+              {main ? (
+                <Chip
+                  size="small"
+                  color={s.overdue ? "error" : s.mine ? "primary" : "default"}
+                  variant={s.overdue || s.mine ? "filled" : "outlined"}
+                  label={`${s.stages[main]} ${STAGE_TEXT[main].toLowerCase()}${s.overdue ? ` · ${s.overdue} overdue` : ""}`}
+                />
+              ) : null}
+              <Chip
+                size="small"
+                color={s.final === s.total ? "success" : "default"}
+                variant="outlined"
+                label={`${s.final}/${s.total} final`}
+              />
+            </Box>
+          </Tooltip>
+        );
+      },
     },
     {
       field: "jc_closed_date",
@@ -514,7 +601,10 @@ export default function JCHome() {
     }));
   };
 
-  const ts1JcDataWithSerialNumbers = addSerialNumbersToRows(filteredJcData);
+  const statusOf = (row) => (row.jc_status === "Close" ? "Closed" : row.jc_status);
+  const ts1JcDataWithSerialNumbers = addSerialNumbersToRows(
+    statusFilter ? filteredJcData.filter((row) => statusOf(row) === statusFilter) : filteredJcData,
+  );
 
   // on changing the month-year selection:
   const handleYearOfJC = (event) => {
@@ -534,7 +624,9 @@ export default function JCHome() {
 
   const handleCloseJCPreview = () => {
     setOpenJCPreview(false);
+    setOpenReportFor(null);
     setJcId(null);
+    setJobcardRaw(null);
   };
 
   const handleJCDateRangeChange = (selectedJCDateRange) => {
@@ -712,53 +804,41 @@ export default function JCHome() {
 
   return (
     <>
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: { xs: "center", md: "flex-end" },
-          alignItems: "center",
-          mt: { xs: 2, md: 0 }, // Add some margin top on small screens
-        }}
-      >
-        <Button
-          sx={{
-            borderRadius: 1,
-            bgcolor: "orange",
-            color: "white",
-            borderColor: "black",
-            padding: { xs: "8px 16px", md: "6px 12px" }, // Adjust padding for different screen sizes
-            fontSize: { xs: "0.875rem", md: "1rem" }, // Adjust font size for different screen sizes
-            mb: "10px",
-          }}
-          variant="contained"
-          color="primary"
-          onClick={onClickNewJCButton}
-        >
-          Create new Job-Card
-        </Button>
-      </Box>
-
-      <Card sx={{ width: "100%", padding: "20px" }}>
-        <Grid
-          item
-          xs={12}
-          md={6}
-          sx={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: { xs: "center", md: "center" },
-            mb: "10px",
-          }}
-        >
-          <Box sx={{ width: "100%" }}>
-            <Divider>
-              <Typography variant="h4" sx={{ color: "#003366" }}>
-                {" "}
-                Job-Card Dashboard{" "}
-              </Typography>
-            </Divider>
+      <Card sx={{ width: "100%", p: { xs: 1.5, md: 2.5 } }}>
+        <Box display="flex" alignItems="center" gap={2} flexWrap="wrap" mb={2}>
+          <Box flex={1} minWidth={220}>
+            <Typography variant="h5" fontWeight={700} color="#003366">
+              TS1 Job Cards
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Click a job card to see its tests and generate reports
+            </Typography>
           </Box>
-        </Grid>
+          <Button variant="outlined" startIcon={<InsightsIcon />} onClick={() => navigate("/ts1_jc_insights")}>
+            JC Dashboard
+          </Button>
+          <Button variant="contained" startIcon={<AddIcon />} onClick={onClickNewJCButton}>
+            New job card
+          </Button>
+        </Box>
+
+        <Stack direction="row" gap={1} flexWrap="wrap" mb={2}>
+          {[
+            ["", "All", filteredJcData.length],
+            ["Open", "Open", jcStatusRawData.jcOpenCount],
+            ["Running", "Running", jcStatusRawData.jcRunningCount],
+            ["Test Completed", "Test completed", jcStatusRawData.jcTestCompletedCount],
+            ["Closed", "Closed", jcStatusRawData.jcClosedCount],
+          ].map(([value, label, count]) => (
+            <Chip
+              key={label}
+              label={`${label} · ${count}`}
+              color={value ? STATUS_COLORS[value] : "primary"}
+              variant={statusFilter === value ? "filled" : "outlined"}
+              onClick={() => setStatusFilter(value)}
+            />
+          ))}
+        </Stack>
 
         <Grid container spacing={2} alignItems="center">
           <Grid item xs={12} md={8} container alignItems="center" spacing={2}>
@@ -817,12 +897,9 @@ export default function JCHome() {
           </Grid>
         </Grid>
 
-        {(loggedInUserDepartment === "TS1 Testing" ||
-          loggedInUserDepartment === "Administration" ||
-          loggedInUserDepartment === "Accounts" ||
-          loggedInUserDepartment === "Reports & Scrutiny") && (
+        {(
           <>
-            {filteredJcData && filteredJcData.length === 0 ? (
+            {ts1JcDataWithSerialNumbers.length === 0 ? (
               <EmptyCard message="No JC Found" />
             ) : (
               <Box
@@ -890,6 +967,9 @@ export default function JCHome() {
             onEdit={() => editSelectedJC(jcId)}
             editJc={editJc}
             jcId={jcId}
+            jobcard={jobcardRaw}
+            openReportFor={openReportFor}
+            onReportOpened={() => setOpenReportFor(null)}
           />
         )}
       </Card>

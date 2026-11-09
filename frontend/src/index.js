@@ -43,6 +43,14 @@ const theme = createTheme({
 
 axios.defaults.withCredentials = true; // Set this once globally
 
+// The API needs the login cookie: fetch() calls to it send it too, like axios
+const browserFetch = window.fetch.bind(window);
+window.fetch = (input, init) => {
+  const url = typeof input === "string" ? input : input?.url;
+  const toApi = process.env.REACT_APP_SERVER_BASE_ADDRESS && String(url).startsWith(process.env.REACT_APP_SERVER_BASE_ADDRESS);
+  return browserFetch(input, toApi ? { credentials: "include", ...init } : init);
+};
+
 const AppWithLoader = () => {
   return (
     <>

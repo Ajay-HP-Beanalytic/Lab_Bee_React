@@ -15,6 +15,8 @@ import {
   CardContent,
   Stack,
   Alert,
+  Checkbox,
+  FormControlLabel,
 } from "@mui/material";
 import {
   CloudUpload,
@@ -91,12 +93,48 @@ export default function DocToPdf({ id }) {
   const [quotationTitleDialog, setQuotationTitleDialog] = useState(true);
 
   const [companyLogoImage, setCompanyLogoImage] = useState(null);
-  // eslint-disable-next-line no-unused-vars
   const [companyLogoFile, setCompanyLogoFile] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [imageError, setImageError] = useState("");
   const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef(null);
+  // The customer in the customer list and where the logo came from ("saved" = the customer's logo)
+  const [customerRecord, setCustomerRecord] = useState(null);
+  const [logoSource, setLogoSource] = useState(null);
+  const [saveLogoForCustomer, setSaveLogoForCustomer] = useState(true);
+
+  // Load the customer's saved logo (customer_logos), so it goes in without an upload
+  const loadSavedLogo = async (companyCode) => {
+    if (!companyCode) return;
+    try {
+      const { data } = await axios.get(`${serverBaseAddress}/api/getCompanyDetails/` + encodeURIComponent(companyCode));
+      if (!data[0]) return;
+      setCustomerRecord({ id: data[0].id, company_name: data[0].company_name });
+      const logo = await axios.get(`${serverBaseAddress}/api/customer_logo/${data[0].id}`, { responseType: "blob" });
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setImagePreview(e.target.result);
+        setCompanyLogoImage(e.target.result);
+        setLogoSource("saved");
+      };
+      reader.readAsDataURL(logo.data);
+    } catch (err) {
+      if (err.response?.status !== 404) console.error("Saved logo not loaded", err);
+    }
+  };
+
+  // A logo uploaded here is kept as the customer's logo for next time (when ticked)
+  const keepUploadedLogo = async () => {
+    if (logoSource !== "uploaded" || !saveLogoForCustomer || !customerRecord || !companyLogoFile) return;
+    const form = new FormData();
+    form.append("logo", companyLogoFile, companyLogoFile.name);
+    try {
+      await axios.put(`${serverBaseAddress}/api/customer_logo/${customerRecord.id}`, form);
+      toast.info(`Logo saved for ${customerRecord.company_name}`);
+    } catch (err) {
+      toast.warning(err.response?.data?.error || "The logo could not be saved for the customer");
+    }
+  };
 
   //const [fileInputRefOfDoc, setFileInputRefOfDoc] = useState(useRef(null));
 
@@ -140,6 +178,7 @@ export default function DocToPdf({ id }) {
 
       // Store file for processing
       setCompanyLogoFile(file);
+      setLogoSource("uploaded");
       setImageError("");
       toast.success("Image uploaded successfully!");
     } catch (error) {
@@ -179,6 +218,7 @@ export default function DocToPdf({ id }) {
 
   // Remove image function
   const removeImage = () => {
+    setLogoSource(null);
     setCompanyLogoImage(null);
     setCompanyLogoFile(null);
     setImagePreview(null);
@@ -416,6 +456,7 @@ export default function DocToPdf({ id }) {
   function onSubmitQuoteTitleButton() {
     if (quotationTitle !== "") {
       generatePDF();
+      keepUploadedLogo();
       setQuotationTitle("");
       setCompanyLogoImage(null);
       setCompanyLogoFile(null);
@@ -465,6 +506,7 @@ export default function DocToPdf({ id }) {
         setCustomerContactNumber(result.data[0].customer_contact_number);
         setSelectedQuotationId(result.data[0].quotation_ids);
         setCustomerIdStr(result.data[0].customer_id);
+        loadSavedLogo(result.data[0].customer_id);
         setQuoteGivenDate(
           moment(result.data[0].quote_given_date).format("DD-MM-YYYY")
         );
@@ -686,8 +728,17 @@ export default function DocToPdf({ id }) {
                         color="textSecondary"
                         sx={{ textAlign: "center", display: "block" }}
                       >
-                        This logo will be embedded in your quotation document
+                        {logoSource === "saved"
+                          ? `Saved logo of ${customerRecord?.company_name || "the customer"}. Remove it to use another one.`
+                          : "This logo will be embedded in your quotation document"}
                       </Typography>
+                      {logoSource === "uploaded" && customerRecord && (
+                        <FormControlLabel
+                          sx={{ display: "flex", justifyContent: "center", mt: 1 }}
+                          control={<Checkbox size="small" checked={saveLogoForCustomer} onChange={(e) => setSaveLogoForCustomer(e.target.checked)} />}
+                          label={<Typography variant="body2">Save as the logo of {customerRecord.company_name}</Typography>}
+                        />
+                      )}
                     </CardContent>
                   </Card>
                 )}

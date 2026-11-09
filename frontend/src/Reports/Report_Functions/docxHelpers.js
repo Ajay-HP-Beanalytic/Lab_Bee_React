@@ -20,8 +20,8 @@ import {
  * @param {string} text - Text content
  * @param {object} options - Styling options
  * @param {boolean} options.bold - Bold text
- * @param {number} options.size - Font size (default 20)
- * @param {string} options.font - Font family (default "Calibri(Body)")
+ * @param {number} options.size - Font size in half points (default 22 = 11 pt, as in the lab's reports)
+ * @param {string} options.font - Font family (default "Calibri")
  * @param {string} options.color - Text color (default "000000")
  * @returns {TextRun}
  */
@@ -29,10 +29,42 @@ export const createTextRun = (text, options = {}) => {
   return new TextRun({
     text: text || "",
     bold: options.bold || false,
-    size: options.size || 20,
-    font: options.font || "Calibri(Body)",
+    size: options.size || 22,
+    font: options.font || "Calibri",
     color: options.color || "000000",
   });
+};
+
+/** Width / height of a PNG or JPEG data URL; null if it can't be told */
+export const imageSizeOfDataUrl = (dataUrl) => {
+  try {
+    const bin = atob(String(dataUrl).split(",")[1].slice(0, 400000));
+    const at = (i) => bin.charCodeAt(i);
+    if (at(0) === 0x89 && at(1) === 0x50) {
+      return { width: (at(16) << 24) + (at(17) << 16) + (at(18) << 8) + at(19), height: (at(20) << 24) + (at(21) << 16) + (at(22) << 8) + at(23) };
+    }
+    if (at(0) === 0xff && at(1) === 0xd8) {
+      let i = 2;
+      while (i < bin.length - 9) {
+        if (at(i) !== 0xff) return null;
+        const m = at(i + 1);
+        if (m >= 0xc0 && m <= 0xcf && ![0xc4, 0xc8, 0xcc].includes(m)) {
+          return { width: (at(i + 7) << 8) + at(i + 8), height: (at(i + 5) << 8) + at(i + 6) };
+        }
+        i += 2 + (at(i + 2) << 8) + at(i + 3);
+      }
+    }
+  } catch {
+    // not readable: the caller uses its box
+  }
+  return null;
+};
+
+/** The size that fits inside a box and keeps the proportions, so nothing is ever stretched */
+export const fitInBox = (size, maxW, maxH) => {
+  if (!size?.width || !size?.height) return { width: maxW, height: maxH };
+  const k = Math.min(maxW / size.width, maxH / size.height);
+  return { width: Math.round(size.width * k), height: Math.round(size.height * k) };
 };
 
 /**
@@ -40,7 +72,7 @@ export const createTextRun = (text, options = {}) => {
  * @param {String} text - Caption text
  * @param {Object} options - Styling Options
  * @param {boolean} options.bold - Bold text (default true)
- * @param {number} options.size - Font size (default 18)
+ * @param {number} options.size - Font size in half points (default 22)
  * @param {string} options.font - Font family
  * @param {string} options.color - Text color
  * @param {AlignmentType} options.alignment - Paragraph alignment (default LEFT)
@@ -59,8 +91,9 @@ export const createCaptionParagraph = (text, options = {}) => {
       new TextRun({
         text: text || "",
         bold: options.bold !== undefined ? options.bold : true,
-        size: options.size || 18,
-        font: options.font || "Calibri(Body)",
+        size: options.size || 22,
+        ...(options.underline ? { underline: {} } : {}),
+        font: options.font || "Calibri",
         color: options.color || "000000",
       }),
     ],
@@ -171,7 +204,6 @@ export const createHeaderCell = (text, options = {}) => {
     ...options,
     alignment: AlignmentType.CENTER,
     bold: true,
-    shading: "D9D9D9", // Light gray background
   });
 };
 
@@ -222,6 +254,8 @@ export const normalizeValue = (value) => {
  * @param {Object} options - Table customization options
  * @param {number} options.width - Table width percentage (default 100)
  * @param {Object} options.borders - Custom border configuration
+ * @param {number[]} options.columnWidths - Column widths in twips, for columns that are not equal
+ * @param {Object} options.float - Position on the page, for a table that does not follow the text
  * @returns {Table} - docx Table object
  */
 export const createDataTable = (rows, options = {}) => {
@@ -230,6 +264,8 @@ export const createDataTable = (rows, options = {}) => {
       size: options.width || 100,
       type: WidthType.PERCENTAGE,
     },
+    ...(options.columnWidths ? { columnWidths: options.columnWidths } : {}),
+    ...(options.float ? { float: options.float } : {}),
     borders: options.borders || {
       top: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
       bottom: { style: BorderStyle.SINGLE, size: 1, color: "000000" },
@@ -336,7 +372,7 @@ export const createImageParagraph = (base64Data, options = {}) => {
           new TextRun({
             text: options.caption,
             size: 18,
-            font: "Calibri(Body)",
+            font: "Calibri",
             color: "000000",
             italics: true,
           }),
@@ -467,7 +503,7 @@ export const createImageGrid = (imagesBase64, options = {}) => {
               new TextRun({
                 text: caption,
                 size: 18,
-                font: "Calibri(Body)",
+                font: "Calibri",
                 color: "000000",
                 italics: true,
               }),

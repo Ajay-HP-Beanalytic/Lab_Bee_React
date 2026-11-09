@@ -1,727 +1,97 @@
-import { useContext, useEffect, useCallback, useState } from "react";
-import {
-  Box,
-  Button,
-  Card,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
-  Divider,
-  FormControl,
-  Grid,
-  IconButton,
-  InputLabel,
-  MenuItem,
-  Paper,
-  Select,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  TextField,
-  Tooltip,
-  Typography,
-} from "@mui/material";
+import { useCallback, useContext, useEffect, useState } from "react";
 import axios from "axios";
-import { toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
-
-import EditIcon from "@mui/icons-material/Edit";
-import DeleteIcon from "@mui/icons-material/Delete";
-
+import { Alert, Box, Card, CircularProgress, Grid, Tab, Tabs, Typography } from "@mui/material";
+import PeopleIcon from "@mui/icons-material/People";
+import ApartmentIcon from "@mui/icons-material/Apartment";
+import MenuOpenIcon from "@mui/icons-material/MenuOpen";
 import { serverBaseAddress } from "../Pages/APIPage";
 import { UserContext } from "../Pages/UserContext";
 import DataBackup from "../Pages/DataBackup";
-import SearchBar from "../common/SearchBar";
+import UsersTab from "./access/UsersTab";
+import DepartmentsTab from "./access/DepartmentsTab";
+import MenuAccessTab from "./access/MenuAccessTab";
 
+// Users & Access (Administration): users, departments and roles, and which side-menu
+// items each may open. The rules are kept in the backend (access/accessControl.js).
 export default function UserManagement() {
-  // State variables to add the user data
-  const [userName, setUserName] = useState("");
-  const [userEmail, setUserEmail] = useState("");
-  const [initialUserPassword, setInitialUserPassword] = useState("");
-  const [userDepartment, setUserDepartment] = useState("");
-  const [userRole, setUserRole] = useState("");
-  const [userStatus, setUserStatus] = useState("");
-  const [userRoleOptions, setUserRoleOptions] = useState([]);
-
-  const [searchInputTextOfUserManagement, setSearchInputTextOfUserManagement] =
-    useState("");
-  const [selectedDepartmentFilter, setSelectedDepartmentFilter] =
-    useState("Administration");
-
-  const userDepartmentOptions = [
-    "Accounts",
-    "Administration",
-    "Marketing",
-    "Reliability",
-    "Software",
-    "TS1 Testing",
-    "TS2 Testing",
-    "Reports & Scrutiny",
-  ];
-
-  const userDepartmentAndRoles = {
-    "Accounts": ["Accounts Admin", "Accounts Executive"],
-    "Administration": [
-      "Administrator",
-      "Managing Director",
-      "Operations Manager",
-    ],
-    "Marketing": ["Marketing Manager", "Marketing Executive"],
-    "Reliability": [
-      "Reliability Manager",
-      "Lead Reliability Engineer",
-      "Senior Reliability Engineer",
-      "Senior RAMS Engineer",
-      "Reliability Engineer",
-      "Reliability Engineer 1",
-      "Reliability Engineer 2",
-      "Reliability Engineer 3",
-      "Reliability Engineer 4",
-      "Trainee Reliability Engineer",
-    ],
-    "Software": ["Software Engineer", "Trainee Engineer"],
-    "TS1 Testing": [
-      "Lab Manager",
-      "Lab Engineer",
-      "Lab Technician",
-      "Testing Engineer",
-      "Lab Assistant",
-      "Trainee Engineer",
-      "Quality Manager",
-      "Deputy Quality Manager",
-      "Reports & Scrutiny Manager",
-    ],
-    "TS2 Testing": [
-      "Lab Manager(EMI)",
-      "Lab Incharge",
-      "Test Engineer",
-      "Trainee Engineer",
-    ],
-    "Reports & Scrutiny": [
-      "Reports & Scrutiny Manager",
-      "Technical Support Writer",
-      "Quality Engineer",
-    ],
-  };
-
-  const userStatusOptions = ["Enable", "Disable"];
-
-  // "Password must be between 8 to 15 characters, contain at least one uppercase letter, one lowercase letter, one digit, and one special character."
-  const passwordRegex =
-    /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[^a-zA-Z0-9])(?!.*\s).{8,15}$/;
-
-  // Define the table headers:
-  const tableHeadersText = [
-    "Sl No",
-    "Name",
-    "Email",
-    "Department",
-    "Role",
-    "User Status",
-    "Action",
-  ];
-
-  // State varaiable to store users list
-  const [usersList, setUsersList] = useState([]);
-  const [filteredUsersList, setFilteredUsersList] = useState(usersList);
-
-  // State varaiable to Edit the users data
-  const [editUserDetailsFields, setEditUserDetailsFields] = useState(false);
-
-  const [refresh, setRefresh] = useState(false);
-  const [editId, setEditId] = useState("");
-
-  const { loggedInUserDepartment } = useContext(UserContext);
-
-  // Function to submit the data from the dialog
-  const onSubmitAddUserButton = async (e) => {
-    e.preventDefault();
-
-    if (!editId) {
-      if (!initialUserPassword.match(passwordRegex)) {
-        toast.error(
-          "Password must be between 8 to 15 characters, contain at least one uppercase letter, one lowercase letter, one digit, and one special character."
-        );
-        return;
-      }
-    }
-
-    if (editId) {
-      if (
-        !userName ||
-        !userEmail ||
-        !userRole ||
-        !userDepartment ||
-        !userStatus
-      ) {
-        toast.error("Please enter all the fields to update the user data..!");
-        return;
-      }
-    } else {
-      if (
-        !userName ||
-        !userEmail ||
-        !initialUserPassword ||
-        !userRole ||
-        !userDepartment ||
-        !userStatus
-      ) {
-        toast.error("Please enter all the fields to add the user..!");
-        return;
-      }
-    }
-
+  const { access, loggedInUserId, refreshAccess } = useContext(UserContext);
+  const [tab, setTab] = useState(() => {
     try {
-      const addNewUserRequest = await axios.post(
-        `${serverBaseAddress}/api/addUser/` + editId,
-        {
-          name: userName,
-          email: userEmail,
-          password: initialUserPassword,
-          department: userDepartment,
-          role: userRole,
-          user_status: userStatus,
-        }
-      );
-
-      if (addNewUserRequest.status === 200) {
-        toast.success(addNewUserRequest.data.message);
-        //toast.success('User added succesfully')
-        setRefresh(!refresh);
-      } else {
-        toast.error("An error occurred while adding the data.");
-      }
-    } catch (error) {
-      console.error("Error details:", error); // Log error details
-      if (error.response && error.response.status === 400) {
-        toast.error("Database error");
-      } else {
-        toast.error("An error occurred while saving the data");
-      }
+      return localStorage.getItem("labbee_access_tab") || "users";
+    } catch {
+      return "users";
     }
-    onCancelAddUserButton();
+  });
+  const [users, setUsers] = useState([]);
+  const [config, setConfig] = useState(null);
+  const [error, setError] = useState("");
+
+  const load = useCallback(async () => {
+    try {
+      const [u, c] = await Promise.all([axios.get(`${serverBaseAddress}/api/getAllUsers`), axios.get(`${serverBaseAddress}/api/access/config`)]);
+      setUsers(u.data);
+      setConfig(c.data);
+      setError("");
+    } catch (err) {
+      setError(err?.response?.data?.error || err?.response?.data?.message || "Could not load the users");
+    }
+  }, []);
+
+  useEffect(() => {
+    if (access?.isAdmin) load();
+  }, [access?.isAdmin, load]);
+
+  // A change to the departments / menus may change the admin's own menu too
+  const updateConfig = (c) => {
+    setConfig(c);
+    refreshAccess();
   };
 
-  // Fetch the users data from the table using the useEffect hook:
-  useEffect(() => {
-    const fetchUsersList = async () => {
-      try {
-        const usersURL = await axios.get(
-          `${serverBaseAddress}/api/getAllUsers`
-        );
-        setUsersList(usersURL.data);
-        setFilteredUsersList(usersURL.data);
-      } catch (error) {
-        console.error("Failed to fetch the data", error);
-      }
-    };
-    fetchUsersList();
-  }, [refresh]);
+  const chooseTab = (_, t) => {
+    setTab(t);
+    try {
+      localStorage.setItem("labbee_access_tab", t);
+    } catch {}
+  };
 
-  // Function to clear the fields and close the dialog
-  function onCancelAddUserButton() {
-    setEditUserDetailsFields(false);
-    setUserName("");
-    setUserEmail("");
-    setInitialUserPassword("");
-    setUserRole("");
-    setUserDepartment("");
-    setUserStatus("");
-    setEditId("");
+  if (access && !access.isAdmin) {
+    return <Alert severity="warning">Only Administration can manage users and access.</Alert>;
   }
-
-  // Function to add new user:
-  const addNewUserButton = () => {
-    setEditUserDetailsFields(true);
-  };
-
-  // Function to edit the user data:
-  const editUserButton = (id) => {
-    setEditUserDetailsFields(true);
-    setEditId(id);
-    // Find user data by ID instead of using index
-    const rowData = usersList.find((user) => user.id === id);
-    if (rowData) {
-      setUserName(rowData.name);
-      setUserEmail(rowData.email);
-      setUserDepartment(rowData.department);
-
-      const roles = userDepartmentAndRoles[rowData.department] || [];
-      setUserRoleOptions(roles);
-
-      setUserRole(rowData.role);
-      setUserStatus(rowData.user_status);
-    }
-  };
-
-  // State variable to handle the delete user confirmation dialog:
-  const [openDeleteUserDialog, setOpenDeleteUserDialog] = useState(false);
-
-  // State to store the id of the user to be deleted
-  const [deleteUserId, setDeleteUserId] = useState(null);
-
-  // Functions to handle the delete user confirmataion dialog
-  const handleOpen = (id) => {
-    setOpenDeleteUserDialog(true);
-    setDeleteUserId(id);
-  };
-
-  const handleClose = () => {
-    setOpenDeleteUserDialog(false);
-    // Clear the deleteUserId when the dialog is closed
-    setDeleteUserId(null);
-  };
-
-  // Function to delete the user data:
-  const handleDeleteConfirmed = () => {
-    if (deleteUserId !== null) {
-      fetch(`${serverBaseAddress}/api/deleteUser/${deleteUserId}`, {
-        method: "DELETE",
-      })
-        .then((res) => {
-          if (res.status === 200) {
-            const updatedUsersList = usersList.filter(
-              (item) => item.id !== deleteUserId
-            );
-            setUsersList(updatedUsersList);
-            toast.success("User removed successfully");
-          } else {
-            toast.error("An error occurred while deleting the user.");
-          }
-        })
-        .catch((error) => {
-          console.log(error);
-          toast.error("An error occurred while deleting the user.");
-        })
-        .finally(() => {
-          handleClose();
-        });
-    }
-  };
-
-  // Function to delete the user data:
-  const deleteUserButton = (id) => {
-    handleOpen(id);
-  };
-
-  // UseEffect to handle deletion when deleteUserId changes
-  useEffect(() => {}, [deleteUserId]);
-
-  const handleUserDepartment = (e) => {
-    const selectedDepartment = e.target.value;
-    setUserDepartment(selectedDepartment);
-    setUserRole(" ");
-    setUserRoleOptions(userDepartmentAndRoles[selectedDepartment] || []);
-  };
-
-  const handleChangeRole = (e) => {
-    setUserRole(e.target.value);
-  };
-
-  const handleUserStatus = (e) => {
-    setUserStatus(e.target.value);
-  };
-
-  //On change of text of user management searchbar:
-  const onChangeOfSearchInputOfUserManagement = (e) => {
-    const searchText = e.target.value;
-    setSearchInputTextOfUserManagement(searchText);
-    filterUserManagementTable(searchText);
-  };
-
-  //Function to filter the table based on search and department
-  const filterUserManagementTable = useCallback(
-    (searchValue, departmentFilter = selectedDepartmentFilter) => {
-      let filtered = usersList;
-
-      // Filter by department first
-      if (departmentFilter) {
-        filtered = filtered.filter(
-          (row) => row.department === departmentFilter
-        );
-      }
-
-      // Then filter by search text
-      if (searchValue) {
-        filtered = filtered.filter((row) => {
-          return Object.values(row).some((value) =>
-            value.toString().toLowerCase().includes(searchValue.toLowerCase())
-          );
-        });
-      }
-
-      setFilteredUsersList(filtered);
-    },
-    [usersList, selectedDepartmentFilter]
-  );
-
-  //Function to clear the search bar and filter the table
-  const onClearSearchInputOfUserManagement = () => {
-    setSearchInputTextOfUserManagement("");
-    filterUserManagementTable("", selectedDepartmentFilter);
-  };
-
-  //Function to handle department filter change
-  const handleDepartmentFilterChange = (e) => {
-    const selectedDept = e.target.value;
-    setSelectedDepartmentFilter(selectedDept);
-    filterUserManagementTable(searchInputTextOfUserManagement, selectedDept);
-  };
-
-  //useEffect to filter the table based on the search input and department
-  useEffect(() => {
-    filterUserManagementTable(
-      searchInputTextOfUserManagement,
-      selectedDepartmentFilter
-    );
-  }, [
-    filterUserManagementTable,
-    searchInputTextOfUserManagement,
-    selectedDepartmentFilter,
-    usersList,
-  ]);
 
   return (
     <>
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "flex-end",
-          alignItems: "center",
-        }}
-      >
-        <Button
-          sx={{
-            borderRadius: 1,
-            bgcolor: "orange",
-            color: "white",
-            borderColor: "black",
-            marginBottom: "10px",
-          }}
-          variant="contained"
-          color="primary"
-          onClick={addNewUserButton}
-        >
-          Add User
-        </Button>
-      </Box>
-
-      <Divider>
-        <Typography
-          variant="h4"
-          sx={{ color: "#003366", mb: "10px", mt: "10px" }}
-        >
-          {selectedDepartmentFilter}
+      <Box display="flex" alignItems="baseline" gap={2} mb={1} flexWrap="wrap">
+        <Typography variant="h5" fontWeight={700} color="#003366">
+          Users &amp; Access
         </Typography>
-      </Divider>
-      <Card sx={{ width: "100%", padding: "20px" }}>
-        {loggedInUserDepartment === "Administration" && (
-          <Box sx={{ width: "100%" }}>
-            <div>
-              <Dialog open={openDeleteUserDialog} onClose={handleClose}>
-                <DialogTitle>Delete Confirmation</DialogTitle>
-                <DialogContent>
-                  <DialogContentText>
-                    Are you sure you want to delete this user?
-                  </DialogContentText>
-                </DialogContent>
-                <DialogActions>
-                  <Button
-                    sx={{
-                      marginBottom: "16px",
-                      marginLeft: "10px",
-                      borderRadius: 3,
-                    }}
-                    variant="contained"
-                    color="secondary"
-                    onClick={handleClose}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    sx={{
-                      marginBottom: "16px",
-                      marginLeft: "10px",
-                      borderRadius: 3,
-                    }}
-                    variant="contained"
-                    color="primary"
-                    onClick={handleDeleteConfirmed}
-                    autoFocus
-                  >
-                    Delete
-                  </Button>
-                </DialogActions>
-              </Dialog>
-            </div>
-
-            {editUserDetailsFields && (
-              <Dialog
-                open={editUserDetailsFields}
-                onClose={onCancelAddUserButton}
-                aria-labelledby="add-user-dialog"
-              >
-                <DialogTitle id="add-user-dialog">
-                  {editId ? "Edit User Details" : "Add New User"}
-                </DialogTitle>
-
-                <DialogContent>
-                  <TextField
-                    sx={{
-                      marginBottom: "16px",
-                      marginLeft: "10px",
-                      borderRadius: 3,
-                    }}
-                    value={userName}
-                    onChange={(e) => setUserName(e.target.value)}
-                    label="User Name"
-                    margin="normal"
-                    fullWidth
-                    variant="outlined"
-                    autoComplete="on"
-                  />
-
-                  <TextField
-                    sx={{
-                      marginBottom: "16px",
-                      marginLeft: "10px",
-                      borderRadius: 3,
-                    }}
-                    value={userEmail}
-                    onChange={(e) => setUserEmail(e.target.value)}
-                    type="email"
-                    label="User Email"
-                    margin="normal"
-                    fullWidth
-                    variant="outlined"
-                    autoComplete="on"
-                  />
-
-                  {!editId ? (
-                    <TextField
-                      sx={{
-                        marginBottom: "16px",
-                        marginLeft: "10px",
-                        borderRadius: 3,
-                      }}
-                      value={initialUserPassword}
-                      onChange={(e) => setInitialUserPassword(e.target.value)}
-                      //type='password'
-                      label="User Password"
-                      margin="normal"
-                      fullWidth
-                      variant="outlined"
-                      autoComplete="on"
-                    />
-                  ) : null}
-
-                  <FormControl
-                    fullWidth
-                    sx={{
-                      marginBottom: "16px",
-                      marginLeft: "10px",
-                      borderRadius: 3,
-                    }}
-                  >
-                    <InputLabel> Department </InputLabel>
-                    <Select
-                      label="Department"
-                      value={userDepartment}
-                      onChange={handleUserDepartment}
-                    >
-                      {Object.keys(userDepartmentAndRoles).map(
-                        (userDep, index) => (
-                          <MenuItem key={index} value={userDep}>
-                            {userDep}
-                          </MenuItem>
-                        )
-                      )}
-                    </Select>
-                  </FormControl>
-
-                  <FormControl
-                    fullWidth
-                    sx={{
-                      marginBottom: "16px",
-                      marginLeft: "10px",
-                      borderRadius: 3,
-                    }}
-                  >
-                    <InputLabel> Roles </InputLabel>
-                    <Select
-                      label="Role"
-                      value={userRole}
-                      onChange={handleChangeRole}
-                      disabled={!userDepartment}
-                    >
-                      {userRoleOptions.map((role, index) => (
-                        <MenuItem key={index} value={role}>
-                          {" "}
-                          {role}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-
-                  <FormControl
-                    fullWidth
-                    sx={{
-                      marginBottom: "16px",
-                      marginLeft: "10px",
-                      borderRadius: 3,
-                    }}
-                  >
-                    <InputLabel> User Status </InputLabel>
-                    <Select
-                      label="Status"
-                      value={userStatus}
-                      onChange={handleUserStatus}
-                    >
-                      {userStatusOptions.map((userStatus, index) => (
-                        <MenuItem key={index} value={userStatus}>
-                          {" "}
-                          {userStatus}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </DialogContent>
-
-                <DialogActions>
-                  <Button
-                    sx={{
-                      marginBottom: "16px",
-                      marginLeft: "10px",
-                      borderRadius: 3,
-                    }}
-                    variant="contained"
-                    color="primary"
-                    onClick={onCancelAddUserButton}
-                  >
-                    Cancel
-                  </Button>
-
-                  <Button
-                    sx={{
-                      marginBottom: "16px",
-                      marginLeft: "10px",
-                      borderRadius: 3,
-                    }}
-                    variant="contained"
-                    color="secondary"
-                    type="submit"
-                    onClick={onSubmitAddUserButton}
-                    autoFocus
-                  >
-                    Submit
-                  </Button>
-                </DialogActions>
-              </Dialog>
-            )}
-
-            <Box sx={{ mb: 2 }}>
-              <Grid container spacing={2} alignItems="center">
-                <Grid item xs={12} md={4}>
-                  <FormControl fullWidth sx={{ mb: { xs: 1, md: 0 } }}>
-                    <InputLabel>Department Filter</InputLabel>
-                    <Select
-                      value={selectedDepartmentFilter}
-                      onChange={handleDepartmentFilterChange}
-                      label="Department Filter"
-                      size="small"
-                    >
-                      {userDepartmentOptions.map((dept, index) => (
-                        <MenuItem key={index} value={dept}>
-                          {dept}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                </Grid>
-                <Grid item xs={12} md={4}>
-                  <SearchBar
-                    placeholder="Search User"
-                    searchInputText={searchInputTextOfUserManagement}
-                    onChangeOfSearchInput={
-                      onChangeOfSearchInputOfUserManagement
-                    }
-                    onClearSearchInput={onClearSearchInputOfUserManagement}
-                  />
-                </Grid>
-              </Grid>
-            </Box>
-
-            <Paper sx={{ width: "100%", mb: 2 }}>
-              <TableContainer>
-                <Table
-                  sx={{ minWidth: 750 }}
-                  size="small"
-                  aria-label="admin-table"
-                >
-                  <TableHead
-                    sx={{ backgroundColor: "#476f95", fontWeight: "bold" }}
-                  >
-                    <TableRow sx={{ color: "white" }}>
-                      {tableHeadersText.map((header, index) => (
-                        <TableCell
-                          key={index}
-                          align="center"
-                          style={{ color: "white" }}
-                        >
-                          {" "}
-                          {header}
-                        </TableCell>
-                      ))}
-                    </TableRow>
-                  </TableHead>
-
-                  <TableBody>
-                    {filteredUsersList.map((item, index) => (
-                      <TableRow key={index} align="center">
-                        <TableCell align="center" component="th" scope="row">
-                          {index + 1}
-                        </TableCell>
-
-                        <TableCell align="center">{item.name}</TableCell>
-                        <TableCell align="center">{item.email}</TableCell>
-                        <TableCell align="center">{item.department}</TableCell>
-                        <TableCell align="center">{item.role}</TableCell>
-                        <TableCell align="center">{item.user_status}</TableCell>
-
-                        <TableCell align="center">
-                          <IconButton
-                            variant="outlined"
-                            size="small"
-                            onClick={() => editUserButton(item.id)}
-                          >
-                            <Tooltip title="Edit" arrow>
-                              <EditIcon fontSize="inherit" />
-                            </Tooltip>
-                          </IconButton>
-
-                          <IconButton
-                            variant="outlined"
-                            size="small"
-                            onClick={() => deleteUserButton(item.id)}
-                          >
-                            <Tooltip title="Delete" arrow>
-                              <DeleteIcon fontSize="inherit" />
-                            </Tooltip>
-                          </IconButton>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
-            </Paper>
+        {config && (
+          <Typography variant="body2" color="text.secondary">
+            {users.filter((u) => u.user_status === "Enable").length} active users · {config.departments.length} departments
+          </Typography>
+        )}
+      </Box>
+      <Card variant="outlined" sx={{ p: { xs: 1.5, md: 2.5 } }}>
+        <Tabs value={tab} onChange={chooseTab} sx={{ mb: 2, borderBottom: 1, borderColor: "divider" }} variant="scrollable" allowScrollButtonsMobile>
+          <Tab value="users" icon={<PeopleIcon />} iconPosition="start" label="Users" />
+          <Tab value="departments" icon={<ApartmentIcon />} iconPosition="start" label="Departments & Roles" />
+          <Tab value="menus" icon={<MenuOpenIcon />} iconPosition="start" label="Menu Access" />
+        </Tabs>
+        {error && <Alert severity="error">{error}</Alert>}
+        {!config && !error && (
+          <Box display="flex" justifyContent="center" p={4}>
+            <CircularProgress />
           </Box>
         )}
+        {config && tab === "users" && (
+          <UsersTab
+            users={users}
+            departments={config.departments.map((d) => ({ name: d.name, roles: d.roles.map((r) => r.name) }))}
+            myId={Number(loggedInUserId)}
+            reload={load}
+          />
+        )}
+        {config && tab === "departments" && <DepartmentsTab config={config} setConfig={updateConfig} />}
+        {config && tab === "menus" && <MenuAccessTab config={config} setConfig={updateConfig} />}
       </Card>
 
       <Grid container justifyContent="center" sx={{ mt: "10px" }}>

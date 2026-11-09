@@ -14,9 +14,11 @@ import {
   Box,
   Button,
   Autocomplete,
+  Tooltip,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import RemoveIcon from "@mui/icons-material/Remove";
+import PlaylistAddIcon from "@mui/icons-material/PlaylistAdd";
 import { DateTimePicker, TimePicker } from "@mui/x-date-pickers";
 import { DatePicker } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
@@ -24,6 +26,23 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { EMIJCContext } from "../EMI/EMIJCContext";
 import ObservationForms from "../EMI/ObservationForms";
 import ConfirmationDialog from "../common/ConfirmationDialog";
+import StandardRefButton from "../FilesStorage/StandardRefButton";
+
+// A column with `standardLookup: true` gets a button that opens the standard
+// typed in it (at the method's page); `methodField` names a column holding the
+// method separately (EMI test name "CS114")
+const WithStandard = ({ column, row, children }) =>
+  column.standardLookup ? (
+    <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+      <Box sx={{ flex: 1, minWidth: 0 }}>{children}</Box>
+      <StandardRefButton
+        reference={row[column.id]}
+        method={column.methodField ? row[column.methodField] : ""}
+      />
+    </Box>
+  ) : (
+    children
+  );
 
 const RenderTable = ({
   tableColumns,
@@ -47,7 +66,14 @@ const RenderTable = ({
 
   // Function to add a new row
   const addTableRow = () => {
-    setTableRows([...tableRows, rowTemplate]);
+    setTableRows([...tableRows, { ...rowTemplate }]);
+  };
+
+  // Insert an empty row just below the given one
+  const insertRowBelow = (index) => {
+    const updatedRows = [...tableRows];
+    updatedRows.splice(index + 1, 0, { ...rowTemplate });
+    setTableRows(updatedRows);
   };
 
   // Function to remove a row
@@ -168,9 +194,11 @@ const RenderTable = ({
                 </TableCell>
               ))}
               <TableCell>
-                <IconButton onClick={addTableRow}>
-                  <AddIcon sx={{ color: "white" }} size="small" />
-                </IconButton>
+                <Tooltip title="Add a row at the end">
+                  <IconButton onClick={addTableRow}>
+                    <AddIcon sx={{ color: "white" }} size="small" />
+                  </IconButton>
+                </Tooltip>
               </TableCell>
             </TableRow>
           </TableHead>
@@ -186,6 +214,7 @@ const RenderTable = ({
                       padding: "5px",
                     }}
                   >
+                    <WithStandard column={column} row={row}>
                     {column.id === "serialNumber" ? (
                       rowIndex + 1
                     ) : column.type === "textField" ? (
@@ -227,9 +256,26 @@ const RenderTable = ({
                             ? getColumnOptions(column, row)
                             : column.options || [];
 
-                          return (
+                          // A saved value that is no longer offered (a person who
+                          // isn't logged in now, a renamed item) must still show
+                          const saved = row[column.id];
+                          const offered =
                             Array.isArray(options) &&
-                            options.map((option) => {
+                            options.some((option) =>
+                              typeof option === "string"
+                                ? option === saved
+                                : (option.value ? option.value : option.id) === saved,
+                            );
+                          const savedItem =
+                            saved && !offered ? (
+                              <MenuItem key={`saved-${saved}`} value={saved}>
+                                {saved}
+                              </MenuItem>
+                            ) : null;
+
+                          return [
+                            savedItem,
+                            ...(Array.isArray(options) ? options : []).map((option) => {
                               if (typeof option === "string") {
                                 return (
                                   <MenuItem key={option} value={option}>
@@ -248,8 +294,8 @@ const RenderTable = ({
                                   </MenuItem>
                                 );
                               }
-                            })
-                          );
+                            }),
+                          ];
                         })()}
                       </Select>
                     ) : column.type === "autocomplete" ? (
@@ -374,18 +420,29 @@ const RenderTable = ({
                     ) : (
                       ""
                     )}
+                    </WithStandard>
                   </TableCell>
                 ))}
-                <TableCell>
-                  <IconButton
-                    onClick={() => {
-                      setRowIndexPendingDeletion(rowIndex);
-                      setConfirmDeleteOpen(true);
-                    }}
-                    disabled={tableRows.length === 1}
-                  >
-                    <RemoveIcon />
-                  </IconButton>
+                <TableCell sx={{ whiteSpace: "nowrap", p: "2px" }}>
+                  <Tooltip title="Insert a row below">
+                    <IconButton size="small" onClick={() => insertRowBelow(rowIndex)}>
+                      <PlaylistAddIcon fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Remove this row">
+                    <span>
+                      <IconButton
+                        size="small"
+                        onClick={() => {
+                          setRowIndexPendingDeletion(rowIndex);
+                          setConfirmDeleteOpen(true);
+                        }}
+                        disabled={tableRows.length === 1}
+                      >
+                        <RemoveIcon fontSize="small" />
+                      </IconButton>
+                    </span>
+                  </Tooltip>
                 </TableCell>
               </TableRow>
             ))}

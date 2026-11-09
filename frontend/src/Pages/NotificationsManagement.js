@@ -1,454 +1,100 @@
 import { useContext, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+import { toast } from "react-toastify";
 import { serverBaseAddress } from "./APIPage";
 import { UserContext } from "./UserContext";
 import { NotificationContext } from "./NotificationContext";
 import { io } from "socket.io-client";
 
+// Socket events and the title of their desktop notification
+const EVENT_TITLES = {
+  jobcard_submit_notification: "New JC Created",
+  jobcard_update_notification: "TS1 JC Update",
+  jobcard_status_test_completed_notification: "JC Test Completed",
+  jobcard_status_closed_notification: "JC Closed",
+  jobcard_report_delivery_notification: "Report Delivery Instruction",
+  jobcard_report_status_notification: "TS1 Report Status",
+  new_slot_booking_notification: "New Slot Booking",
+  update_slot_booking_notification: "Slot Update",
+  delete_slot_booking_notification: "Slot Delete",
+  new_quote_created_notification: "New Quote",
+  quote_update_notification: "Quote Update",
+  emi_jobcard_submit_notification: "New TS2 JC Created",
+  rfq_notification: "Enquiry",
+  report_notification: "TS1 Report",
+};
+
+const canNotifyDesktop = () => typeof window !== "undefined" && "Notification" in window;
+
 export default function NotificationsManagement() {
-  const { loggedInUser, loggedInUserDepartment, loggedInUserRole } =
-    useContext(UserContext);
-  const { setNewNotificationReceived, setNotifications } =
-    useContext(NotificationContext);
-  const socketRef = useRef(null);
+  const { loggedInUser, loggedInUserDepartment, loggedInUserRole } = useContext(UserContext);
+  const { setNewNotificationReceived, setNotifications } = useContext(NotificationContext);
+  const navigate = useNavigate();
+  const navigateRef = useRef(navigate);
+  navigateRef.current = navigate;
 
-
-  //Handle notifications here:
+  // Ask once for desktop notifications (the browser remembers the answer)
   useEffect(() => {
+    if (loggedInUser && canNotifyDesktop() && Notification.permission === "default") {
+      Notification.requestPermission().catch(() => {});
+    }
+  }, [loggedInUser]);
+
+  useEffect(() => {
+    if (!loggedInUser) return undefined;
     const socket = io(serverBaseAddress, {
       withCredentials: true,
       transports: ["websocket", "polling"],
     });
-    socketRef.current = socket;
-    if (loggedInUser) {
+
+    const register = () =>
       socket.emit("user_connected", {
         username: loggedInUser,
         department: loggedInUserDepartment,
         userRole: loggedInUserRole,
       });
-    }
+    // Register again after every reconnect, so live notifications keep arriving
+    socket.on("connect", register);
 
-    /**
-     * Handles a jobcard submit notification.
-     *
-     * @param {Object} options - The options object.
-     * @param {string} options.message - The notification message.
-     * @param {string} options.sender - The sender of the notification.
-     * @return {void} This function does not return anything.
-     */
-    const handleJobcardSubmitNotification = ({
-      id,
-      message,
-      sender,
-      receivedAt,
-    }) => {
-      if (sender !== loggedInUser) {
-        setNotifications((prevNotifications) => {
-          const updatedNotifications = [
-            { id, message, receivedAt },
-            ...prevNotifications,
-          ];
-          return updatedNotifications;
+    const handlers = Object.entries(EVENT_TITLES).map(([event, title]) => {
+      const handler = ({ id, message, sender, receivedAt, link } = {}) => {
+        if (!message || sender === loggedInUser) return;
+        setNotifications((prev) =>
+          id && prev.some((n) => n.id === id) ? prev : [{ id, message, receivedAt, sender, link, isRead: false }, ...prev],
+        );
+        // The panel reloads the list and the unread count
+        setNewNotificationReceived((prev) => !prev);
+        if (link?.startsWith("/ts1_reports")) window.dispatchEvent(new Event("ts1-report-notification"));
+
+        toast.info(`${title}: ${message}`, {
+          position: "bottom-right",
+          autoClose: 8000,
+          onClick: link ? () => navigateRef.current(link) : undefined,
         });
 
-        // Trigger re-render by updating newNotificationReceived state
-        setNewNotificationReceived((prev) => !prev);
-
-        // Show a browser notification
-        if (Notification.permission === "granted") {
-          new Notification("New JC Created:", { body: message });
+        if (canNotifyDesktop() && Notification.permission === "granted" && document.hidden) {
+          try {
+            const desktop = new Notification(title, { body: message, tag: id ? `labbee-${id}` : undefined });
+            desktop.onclick = () => {
+              window.focus();
+              if (link) navigateRef.current(link);
+              desktop.close();
+            };
+          } catch (err) {
+            // some browsers only allow notifications from a service worker
+          }
         }
-      }
-    };
+      };
+      socket.on(event, handler);
+      return [event, handler];
+    });
 
-    /**
-     * Handles a jobcard update notification.
-     *
-     * @param {Object} options - The options object.
-     * @param {string} options.message - The notification message.
-     * @param {string} options.sender - The sender of the notification.
-     */
-    const handleJobcardUpdateNotification = ({
-      id,
-      message,
-      sender,
-      receivedAt,
-    }) => {
-      if (sender !== loggedInUser) {
-        setNotifications((prevNotifications) => {
-          const updatedNotifications = [
-            { id, message, receivedAt },
-            ...prevNotifications,
-          ];
-          return updatedNotifications;
-        });
-
-        // Trigger re-render by updating newNotificationReceived state
-        setNewNotificationReceived((prev) => !prev);
-
-        // Show a browser notification
-        if (Notification.permission === "granted") {
-          new Notification("TS1 JC Update:", { body: message });
-        }
-      }
-    };
-
-    const handleJobcardTestCompletedNotification = ({
-      id,
-      message,
-      sender,
-      receivedAt,
-    }) => {
-      if (sender !== loggedInUser) {
-        setNotifications((prevNotifications) => {
-          const updatedNotifications = [
-            { id, message, receivedAt },
-            ...prevNotifications,
-          ];
-          return updatedNotifications;
-        });
-
-        // Trigger re-render by updating newNotificationReceived state
-        setNewNotificationReceived((prev) => !prev);
-
-        // Show a browser notification
-        if (Notification.permission === "granted") {
-          new Notification("JC Test Completed:", { body: message });
-        }
-      }
-    };
-
-    const handleJobcardClosedNotification = ({
-      id,
-      message,
-      sender,
-      receivedAt,
-    }) => {
-      if (sender !== loggedInUser) {
-        setNotifications((prevNotifications) => {
-          const updatedNotifications = [
-            { id, message, receivedAt },
-            ...prevNotifications,
-          ];
-          return updatedNotifications;
-        });
-
-        // Trigger re-render by updating newNotificationReceived state
-        setNewNotificationReceived((prev) => !prev);
-
-        // Show a browser notification
-        if (Notification.permission === "granted") {
-          new Notification("JC Closed", { body: message });
-        }
-      }
-    };
-
-    const handleJobcardReportDeliveryNotification = ({
-      id,
-      message,
-      sender,
-      receivedAt,
-    }) => {
-      if (sender !== loggedInUser) {
-        setNotifications((prevNotifications) => {
-          const updatedNotifications = [
-            { id, message, receivedAt },
-            ...prevNotifications,
-          ];
-          return updatedNotifications;
-        });
-
-        // Trigger re-render by updating newNotificationReceived state
-        setNewNotificationReceived((prev) => !prev);
-
-        // Show a browser notification
-        if (Notification.permission === "granted") {
-          new Notification("Report Delivery Instruction", { body: message });
-        }
-      }
-    };
-
-    const handleJobcardReportStatusNotification = ({
-      id,
-      message,
-      sender,
-      receivedAt,
-    }) => {
-      if (sender !== loggedInUser) {
-        setNotifications((prevNotifications) => {
-          const updatedNotifications = [
-            { id, message, receivedAt },
-            ...prevNotifications,
-          ];
-          return updatedNotifications;
-        });
-
-        // Trigger re-render by updating newNotificationReceived state
-        setNewNotificationReceived((prev) => !prev);
-
-        // Show a browser notification
-        if (Notification.permission === "granted") {
-          new Notification("TS1 Report Status", { body: message });
-        }
-      }
-    };
-
-    const handleNewSlotBookingNotification = ({
-      id,
-      message,
-      sender,
-      receivedAt,
-    }) => {
-      if (sender !== loggedInUser) {
-        setNotifications((prevNotifications) => {
-          const updatedNotifications = [
-            { id, message, receivedAt },
-            ...prevNotifications,
-          ];
-          return updatedNotifications;
-        });
-
-        // Trigger re-render by updating newNotificationReceived state
-        setNewNotificationReceived((prev) => !prev);
-
-        // Show a browser notification
-        if (Notification.permission === "granted") {
-          new Notification("New Slot Booking", { body: message });
-        }
-      }
-    };
-
-    const handleUpdateSlotBookingNotification = ({
-      id,
-      message,
-      sender,
-      receivedAt,
-    }) => {
-      if (sender !== loggedInUser) {
-        setNotifications((prevNotifications) => {
-          const updatedNotifications = [
-            { id, message, receivedAt },
-            ...prevNotifications,
-          ];
-          return updatedNotifications;
-        });
-
-        // Trigger re-render by updating newNotificationReceived state
-        setNewNotificationReceived((prev) => !prev);
-
-        // Show a browser notification
-        if (Notification.permission === "granted") {
-          new Notification("Slot Update", { body: message });
-        }
-      }
-    };
-
-    const handleDeleteSlotBookingNotification = ({
-      id,
-      message,
-      sender,
-      receivedAt,
-    }) => {
-      if (sender !== loggedInUser) {
-        setNotifications((prevNotifications) => {
-          const updatedNotifications = [
-            { id, message, receivedAt },
-            ...prevNotifications,
-          ];
-          return updatedNotifications;
-        });
-
-        // Trigger re-render by updating newNotificationReceived state
-        setNewNotificationReceived((prev) => !prev);
-
-        // Show a browser notification
-        if (Notification.permission === "granted") {
-          new Notification("Slot Delete", { body: message });
-        }
-      }
-    };
-
-    const handleNewQuoteCreatedNotification = ({
-      id,
-      message,
-      sender,
-      receivedAt,
-    }) => {
-      if (sender !== loggedInUser) {
-        setNotifications((prevNotifications) => {
-          const updatedNotifications = [
-            { id, message, receivedAt },
-            ...prevNotifications,
-          ];
-          return updatedNotifications;
-        });
-
-        // Trigger re-render by updating newNotificationReceived state
-        setNewNotificationReceived((prev) => !prev);
-
-        // Show a browser notification
-        if (Notification.permission === "granted") {
-          new Notification("New Quote", { body: message });
-        }
-      }
-    };
-
-    const handleQuoteUpdateNotification = ({
-      id,
-      message,
-      sender,
-      receivedAt,
-    }) => {
-      if (sender !== loggedInUser) {
-        setNotifications((prevNotifications) => {
-          const updatedNotifications = [
-            { id, message, receivedAt },
-            ...prevNotifications,
-          ];
-          return updatedNotifications;
-        });
-
-        // Trigger re-render by updating newNotificationReceived state
-        setNewNotificationReceived((prev) => !prev);
-
-        // Show a browser notification
-        if (Notification.permission === "granted") {
-          new Notification("Quote Update", { body: message });
-        }
-      }
-    };
-
-    /**
-     * Handles a jobcard submit notification.
-     *
-     * @param {Object} options - The options object.
-     * @param {string} options.message - The notification message.
-     * @param {string} options.sender - The sender of the notification.
-     * @return {void} This function does not return anything.
-     */
-    const handleEMIJobcardSubmitNotification = ({
-      id,
-      message,
-      sender,
-      receivedAt,
-    }) => {
-      if (sender !== loggedInUser) {
-        setNotifications((prevNotifications) => {
-          const updatedNotifications = [
-            { id, message, receivedAt },
-            ...prevNotifications,
-          ];
-          return updatedNotifications;
-        });
-
-        // Trigger re-render by updating newNotificationReceived state
-        setNewNotificationReceived((prev) => !prev);
-
-        // Show a browser notification
-        if (Notification.permission === "granted") {
-          new Notification("New TS2 JC Created:", { body: message });
-        }
-      }
-    };
-
-    // Set up event listeners
-    socket.on("jobcard_submit_notification", handleJobcardSubmitNotification);
-    socket.on("jobcard_update_notification", handleJobcardUpdateNotification);
-    socket.on(
-      "jobcard_status_test_completed_notification",
-      handleJobcardTestCompletedNotification
-    );
-    socket.on(
-      "jobcard_status_closed_notification",
-      handleJobcardClosedNotification
-    );
-    socket.on(
-      "jobcard_report_delivery_notification",
-      handleJobcardReportDeliveryNotification
-    );
-    socket.on(
-      "jobcard_report_status_notification",
-      handleJobcardReportStatusNotification
-    );
-    socket.on(
-      "new_slot_booking_notification",
-      handleNewSlotBookingNotification
-    );
-    socket.on(
-      "update_slot_booking_notification",
-      handleUpdateSlotBookingNotification
-    );
-    socket.on(
-      "delete_slot_booking_notification",
-      handleDeleteSlotBookingNotification
-    );
-
-    socket.on(
-      "new_quote_created_notification",
-      handleNewQuoteCreatedNotification
-    );
-    socket.on("quote_update_notification", handleQuoteUpdateNotification);
-    socket.on(
-      "emi_jobcard_submit_notification",
-      handleEMIJobcardSubmitNotification
-    );
-
-    // Cleanup function to remove event listeners
     return () => {
-      socket.off(
-        "jobcard_submit_notification",
-        handleJobcardSubmitNotification
-      );
-      socket.off(
-        "jobcard_update_notification",
-        handleJobcardUpdateNotification
-      );
-      socket.off(
-        "jobcard_status_test_completed_notification",
-        handleJobcardTestCompletedNotification
-      );
-      socket.off(
-        "jobcard_status_closed_notification",
-        handleJobcardClosedNotification
-      );
-      socket.off(
-        "jobcard_report_delivery_notification",
-        handleJobcardReportDeliveryNotification
-      );
-      socket.off(
-        "jobcard_report_status_notification",
-        handleJobcardReportStatusNotification
-      );
-      socket.off(
-        "new_slot_booking_notification",
-        handleNewSlotBookingNotification
-      );
-      socket.off(
-        "update_slot_booking_notification",
-        handleUpdateSlotBookingNotification
-      );
-      socket.off(
-        "delete_slot_booking_notification",
-        handleDeleteSlotBookingNotification
-      );
-
-      socket.off(
-        "new_quote_created_notification",
-        handleNewQuoteCreatedNotification
-      );
-      socket.off("quote_update_notification", handleQuoteUpdateNotification);
-      socket.off(
-        "emi_jobcard_submit_notification",
-        handleEMIJobcardSubmitNotification
-      );
+      socket.off("connect", register);
+      handlers.forEach(([event, handler]) => socket.off(event, handler));
       socket.disconnect();
     };
-  }, [
-    loggedInUser,
-    setNotifications,
-    loggedInUserDepartment,
-    setNewNotificationReceived,
-    loggedInUserRole,
-  ]);
+  }, [loggedInUser, loggedInUserDepartment, loggedInUserRole, setNotifications, setNewNotificationReceived]);
 
   return null; // This component doesn't render anything
 }

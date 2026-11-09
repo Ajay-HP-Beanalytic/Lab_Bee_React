@@ -28,6 +28,7 @@ import { publish, EVENT_CONSTANTS } from "./common/CustomEvents";
 import UserManagement from "./LoginRegister/UserManagement";
 import { UserContext } from "./Pages/UserContext";
 import ProtectedRoute from "./Pages/ProtectedRoute";
+import { landingPath } from "./Pages/menuCatalog";
 import { Helmet } from "react-helmet";
 import NotificationsManagement from "./Pages/NotificationsManagement";
 import ServerUnavailablePage from "./Pages/ServerUnavailablePage";
@@ -45,15 +46,25 @@ import FeasibilityRequestForm from "./test_feasibility_automation/FeasibilityReq
 import FeasibilityRequestSuccess from "./test_feasibility_automation/FeasibilityRequestSuccess";
 import ChamberSpecsManager from "./test_feasibility_automation/ChamberSpecsManager";
 import TestPricingManager from "./test_feasibility_automation/TestPricingManager";
+import TestDurationsManager from "./test_feasibility_automation/TestDurationsManager";
+import RfqInbox from "./test_feasibility_automation/RfqInbox";
+import EnquiryDashboard from "./test_feasibility_automation/EnquiryDashboard";
+import FutureScope from "./test_feasibility_automation/FutureScope";
+import LabScopeManager from "./test_feasibility_automation/LabScopeManager";
+import TestTypesManager from "./test_feasibility_automation/TestTypesManager";
 import JCPrintPage from "./JC/JCPrintPage";
+import PublicReportPage from "./JC/ReportWorkflow/PublicReportPage";
+import ReportsBoard from "./JC/ReportWorkflow/ReportsBoard";
+import ChamberBreakdowns from "./JC/Breakdowns/ChamberBreakdowns";
+import JobCardsInsights from "./JC/Dashboards/JobCardsInsights";
+import ReportsInsights from "./JC/Dashboards/ReportsInsights";
 import EMIJCPrintPage from "./EMI/EMIJCPrintPage";
 
 function App() {
   const location = useLocation();
   const navigate = useNavigate();
   const {
-    loggedInUserDepartment,
-    loggedInUserRole,
+    access,
     isLoading,
     backendUnavailable,
     retryConnectionCheck,
@@ -70,51 +81,16 @@ function App() {
     handleRouteChange();
   }, [location]);
 
-  // Improved department-based redirect logic
+  // After login ("/" or "/home"): the first page the user's department may open (Users & Access)
   useEffect(() => {
-    // Don't redirect if still loading or if user data is not available
-    if (isLoading || !loggedInUserDepartment) {
-      return;
-    }
-
-    // Only redirect from root or home routes, not from public auth routes
-    if (location.pathname === "/" || location.pathname === "/home") {
-      // Add a small delay to ensure navigation is stable
-      const redirectTimer = setTimeout(() => {
-        if (
-          loggedInUserDepartment === "Administration" ||
-          loggedInUserDepartment === "Accounts"
-        ) {
-          navigate("/home");
-        } else if (loggedInUserDepartment === "Marketing") {
-          navigate("/quotation_dashboard");
-        } else if (
-          loggedInUserDepartment === "TS1 Testing" ||
-          loggedInUserDepartment === "Reports & Scrutiny"
-        ) {
-          navigate("/jobcard_dashboard");
-        } else if (
-          loggedInUserDepartment === "TS2 Testing" ||
-          loggedInUserRole === "Quality Engineer"
-        ) {
-          navigate("/emi_jc_dashboard");
-        } else if (
-          loggedInUserDepartment === "Reliability" ||
-          loggedInUserDepartment === "Software"
-        ) {
-          navigate("/projects");
-        }
-      }, 100); // Small delay to prevent navigation conflicts
-
-      return () => clearTimeout(redirectTimer);
-    }
-  }, [
-    loggedInUserDepartment,
-    loggedInUserRole,
-    location.pathname,
-    navigate,
-    isLoading,
-  ]);
+    if (isLoading || !access) return undefined;
+    if (location.pathname !== "/" && location.pathname !== "/home") return undefined;
+    const landing = landingPath(access);
+    if (!landing || landing === location.pathname) return undefined;
+    // Small delay to prevent navigation conflicts
+    const redirectTimer = setTimeout(() => navigate(landing), 100);
+    return () => clearTimeout(redirectTimer);
+  }, [access, location.pathname, navigate, isLoading]);
 
   // Show loading spinner while checking authentication
   if (
@@ -125,7 +101,8 @@ function App() {
       "/reset_password",
       "/feasibility-request",
       "/feasibility-submitted",
-    ].includes(location.pathname)
+    ].includes(location.pathname) &&
+    !location.pathname.startsWith("/r/")
   ) {
     return (
       <Box
@@ -177,6 +154,8 @@ function App() {
           element={<FeasibilityRequestSuccess />}
         />
         <Route path="/jc-print" element={<JCPrintPage />} />
+        {/* The customer's link / QR code on a final report (no login) */}
+        <Route path="/r/:token" element={<PublicReportPage />} />
         <Route path="/emi-jc-print/:id" element={<EMIJCPrintPage />} />
 
         {/* Protected Routes */}
@@ -184,10 +163,7 @@ function App() {
           <Route
             path="home"
             element={
-              <ProtectedRoute
-                allowedDepartments={["Administration", "Accounts"]}
-                allowedRoles={[]}
-              >
+              <ProtectedRoute>
                 <Financials />
               </ProtectedRoute>
             }
@@ -195,10 +171,7 @@ function App() {
           <Route
             path="quotation_dashboard"
             element={
-              <ProtectedRoute
-                allowedDepartments={["Administration", "Accounts", "Marketing"]}
-                allowedRoles={[]}
-              >
+              <ProtectedRoute>
                 <QuotationsDashboard />
               </ProtectedRoute>
             }
@@ -206,10 +179,7 @@ function App() {
           <Route
             path="quotation"
             element={
-              <ProtectedRoute
-                allowedDepartments={["Administration", "Accounts", "Marketing"]}
-                allowedRoles={[]}
-              >
+              <ProtectedRoute>
                 <Quotation />
               </ProtectedRoute>
             }
@@ -217,10 +187,7 @@ function App() {
           <Route
             path="quotation/:id"
             element={
-              <ProtectedRoute
-                allowedDepartments={["Administration", "Accounts", "Marketing"]}
-                allowedRoles={[]}
-              >
+              <ProtectedRoute>
                 <Quotation />
               </ProtectedRoute>
             }
@@ -228,10 +195,7 @@ function App() {
           <Route
             path="quotation_essentials"
             element={
-              <ProtectedRoute
-                allowedDepartments={["Administration", "Accounts", "Marketing"]}
-                allowedRoles={[]}
-              >
+              <ProtectedRoute>
                 <QuotationRequirements />
               </ProtectedRoute>
             }
@@ -239,18 +203,7 @@ function App() {
           <Route
             path="jobcard_dashboard"
             element={
-              <ProtectedRoute
-                allowedDepartments={[
-                  "Administration",
-                  "Accounts",
-                  "TS1 Testing",
-                  "TS2 Testing",
-                  "Reliability",
-                  "Software",
-                  "Reports & Scrutiny",
-                ]}
-                allowedRoles={[]}
-              >
+              <ProtectedRoute>
                 <JCHome />
               </ProtectedRoute>
             }
@@ -258,18 +211,7 @@ function App() {
           <Route
             path="jobcard"
             element={
-              <ProtectedRoute
-                allowedDepartments={[
-                  "Administration",
-                  "Accounts",
-                  "TS1 Testing",
-                  "TS2 Testing",
-                  "Reliability",
-                  "Software",
-                  "Reports & Scrutiny",
-                ]}
-                allowedRoles={[]}
-              >
+              <ProtectedRoute>
                 <Jobcard />
               </ProtectedRoute>
             }
@@ -277,37 +219,39 @@ function App() {
           <Route
             path="jobcard/:id"
             element={
-              <ProtectedRoute
-                allowedDepartments={[
-                  "Administration",
-                  "Accounts",
-                  "TS1 Testing",
-                  "TS2 Testing",
-                  "Reliability",
-                  "Software",
-                  "Reports & Scrutiny",
-                ]}
-                allowedRoles={[]}
-              >
+              <ProtectedRoute>
                 <Jobcard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="ts1_reports"
+            element={
+              <ProtectedRoute>
+                <ReportsBoard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="ts1_jc_insights"
+            element={
+              <ProtectedRoute>
+                <JobCardsInsights />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="ts1_reports_insights"
+            element={
+              <ProtectedRoute>
+                <ReportsInsights />
               </ProtectedRoute>
             }
           />
           <Route
             path="jobcard_essentials"
             element={
-              <ProtectedRoute
-                allowedDepartments={[
-                  "Administration",
-                  "Accounts",
-                  "TS1 Testing",
-                  "TS2 Testing",
-                  "Reliability",
-                  "Software",
-                  "Reports & Scrutiny",
-                ]}
-                allowedRoles={[]}
-              >
+              <ProtectedRoute>
                 <JobcardRequirements />
               </ProtectedRoute>
             }
@@ -315,25 +259,23 @@ function App() {
           <Route
             path="chamber-calibration"
             element={
-              <ProtectedRoute
-                allowedDepartments={[
-                  "Administration",
-                  "TS1 Testing",
-                  "Reports & Scrutiny",
-                ]}
-                allowedRoles={[]}
-              >
+              <ProtectedRoute>
                 <ChamberAndCalibration />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="chamber_breakdowns"
+            element={
+              <ProtectedRoute>
+                <ChamberBreakdowns />
               </ProtectedRoute>
             }
           />
           <Route
             path="ts1_chamber_specs"
             element={
-              <ProtectedRoute
-                allowedDepartments={["Administration", "TS1 Testing"]}
-                allowedRoles={[]}
-              >
+              <ProtectedRoute>
                 <ChamberSpecsManager />
               </ProtectedRoute>
             }
@@ -341,26 +283,63 @@ function App() {
           <Route
             path="ts1_test_pricing"
             element={
-              <ProtectedRoute
-                allowedDepartments={["Administration", "Accounts"]}
-                allowedRoles={[]}
-              >
+              <ProtectedRoute>
                 <TestPricingManager />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="test_durations"
+            element={
+              <ProtectedRoute>
+                <TestDurationsManager />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="rfq_inbox"
+            element={
+              <ProtectedRoute>
+                <RfqInbox />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="rfq_dashboard"
+            element={
+              <ProtectedRoute>
+                <EnquiryDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="future_scope"
+            element={
+              <ProtectedRoute>
+                <FutureScope />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="nabl_scope"
+            element={
+              <ProtectedRoute>
+                <LabScopeManager />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="test_types"
+            element={
+              <ProtectedRoute>
+                <TestTypesManager />
               </ProtectedRoute>
             }
           />
           <Route
             path="slot_booking"
             element={
-              <ProtectedRoute
-                allowedDepartments={[
-                  "Administration",
-                  "Accounts",
-                  "TS1 Testing",
-                  "Reports & Scrutiny",
-                ]}
-                allowedRoles={[]}
-              >
+              <ProtectedRoute>
                 <Slotbooking />
               </ProtectedRoute>
             }
@@ -369,15 +348,7 @@ function App() {
           <Route
             path="ts1_utitlity"
             element={
-              <ProtectedRoute
-                allowedDepartments={[
-                  "Administration",
-                  "Accounts",
-                  "TS1 Testing",
-                  "Reports & Scrutiny",
-                ]}
-                allowedRoles={[]}
-              >
+              <ProtectedRoute>
                 <TestHoursCalculator />
               </ProtectedRoute>
             }
@@ -386,10 +357,7 @@ function App() {
           <Route
             path="user_management"
             element={
-              <ProtectedRoute
-                allowedDepartments={["Administration"]}
-                allowedRoles={[]}
-              >
+              <ProtectedRoute>
                 <UserManagement />
               </ProtectedRoute>
             }
@@ -397,16 +365,7 @@ function App() {
           <Route
             path="emi_jc_dashboard"
             element={
-              <ProtectedRoute
-                allowedDepartments={[
-                  "Administration",
-                  "Accounts",
-                  "TS2 Testing",
-                  "Marketing",
-                  "Reports & Scrutiny",
-                ]}
-                allowedRoles={["Quality Engineer"]}
-              >
+              <ProtectedRoute>
                 <EMIJCDashboard />
               </ProtectedRoute>
             }
@@ -414,16 +373,7 @@ function App() {
           <Route
             path="emi_jobcard"
             element={
-              <ProtectedRoute
-                allowedDepartments={[
-                  "Administration",
-                  "Accounts",
-                  "TS2 Testing",
-                  "Marketing",
-                  "Reports & Scrutiny",
-                ]}
-                allowedRoles={["Quality Engineer"]}
-              >
+              <ProtectedRoute>
                 <EmiJobcard />
               </ProtectedRoute>
             }
@@ -431,16 +381,7 @@ function App() {
           <Route
             path="emi_jobcard/:id"
             element={
-              <ProtectedRoute
-                allowedDepartments={[
-                  "Administration",
-                  "Accounts",
-                  "TS2 Testing",
-                  "Marketing",
-                  "Reports & Scrutiny",
-                ]}
-                allowedRoles={["Quality Engineer"]}
-              >
+              <ProtectedRoute>
                 <EmiJobcard />
               </ProtectedRoute>
             }
@@ -449,15 +390,7 @@ function App() {
           <Route
             path="emi_slot_booking"
             element={
-              <ProtectedRoute
-                allowedDepartments={[
-                  "Administration",
-                  "Accounts",
-                  "TS2 Testing",
-                  "Marketing",
-                ]}
-                allowedRoles={["Quality Engineer"]}
-              >
+              <ProtectedRoute>
                 <EMISlotBooking />
               </ProtectedRoute>
             }
@@ -466,16 +399,7 @@ function App() {
           <Route
             path="emi_calibration"
             element={
-              <ProtectedRoute
-                allowedDepartments={[
-                  "Administration",
-                  "Accounts",
-                  "TS2 Testing",
-                  "Marketing",
-                  "Reports & Scrutiny",
-                ]}
-                allowedRoles={["Quality Engineer"]}
-              >
+              <ProtectedRoute>
                 <EMICalibration />
               </ProtectedRoute>
             }
@@ -485,14 +409,7 @@ function App() {
           <Route
             path="projects"
             element={
-              <ProtectedRoute
-                allowedDepartments={[
-                  "Administration",
-                  "Reliability",
-                  "Software",
-                ]}
-                allowedRoles={[]}
-              >
+              <ProtectedRoute>
                 <ProjectManagementDashboard />
               </ProtectedRoute>
             }
@@ -500,14 +417,7 @@ function App() {
           <Route
             path="create_project"
             element={
-              <ProtectedRoute
-                allowedDepartments={[
-                  "Administration",
-                  "Reliability",
-                  "Software",
-                ]}
-                allowedRoles={[]}
-              >
+              <ProtectedRoute>
                 <ProjectManagementDashboard />
               </ProtectedRoute>
             }
@@ -515,14 +425,7 @@ function App() {
           <Route
             path="edit_project/:id"
             element={
-              <ProtectedRoute
-                allowedDepartments={[
-                  "Administration",
-                  "Reliability",
-                  "Software",
-                ]}
-                allowedRoles={[]}
-              >
+              <ProtectedRoute>
                 <ProjectManagementDashboard />
               </ProtectedRoute>
             }
@@ -530,14 +433,7 @@ function App() {
           <Route
             path="tasks"
             element={
-              <ProtectedRoute
-                allowedDepartments={[
-                  "Administration",
-                  "Reliability",
-                  "Software",
-                ]}
-                allowedRoles={[]}
-              >
+              <ProtectedRoute>
                 <ProjectManagementDashboard />
               </ProtectedRoute>
             }
@@ -545,14 +441,7 @@ function App() {
           <Route
             path="add_task"
             element={
-              <ProtectedRoute
-                allowedDepartments={[
-                  "Administration",
-                  "Reliability",
-                  "Software",
-                ]}
-                allowedRoles={[]}
-              >
+              <ProtectedRoute>
                 <ProjectManagementDashboard />
               </ProtectedRoute>
             }
@@ -560,14 +449,7 @@ function App() {
           <Route
             path="edit_task/:id"
             element={
-              <ProtectedRoute
-                allowedDepartments={[
-                  "Administration",
-                  "Reliability",
-                  "Software",
-                ]}
-                allowedRoles={[]}
-              >
+              <ProtectedRoute>
                 <ProjectManagementDashboard />
               </ProtectedRoute>
             }
@@ -575,14 +457,7 @@ function App() {
           <Route
             path="my_tasks"
             element={
-              <ProtectedRoute
-                allowedDepartments={[
-                  "Administration",
-                  "Reliability",
-                  "Software",
-                ]}
-                allowedRoles={[]}
-              >
+              <ProtectedRoute>
                 <ProjectManagementDashboard />
               </ProtectedRoute>
             }
@@ -592,10 +467,7 @@ function App() {
           <Route
             path="org_docs"
             element={
-              <ProtectedRoute
-                allowedDepartments={["Administration"]}
-                allowedRoles={["Quality Engineer"]}
-              >
+              <ProtectedRoute>
                 <FileBrowser />
               </ProtectedRoute>
             }
@@ -605,9 +477,7 @@ function App() {
           <Route
             path="marketing"
             element={
-              <ProtectedRoute
-                allowedDepartments={["Administration", "Marketing"]}
-              >
+              <ProtectedRoute>
                 <SocialMediaConetntDashboard />
               </ProtectedRoute>
             }

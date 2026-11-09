@@ -1,4 +1,4 @@
-import { forwardRef, useContext, useState } from "react";
+import { forwardRef, useCallback, useContext, useEffect, useState } from "react";
 import {
   TableContainer,
   Paper,
@@ -41,6 +41,11 @@ import ReportConfigDialogV2 from "../components/ReportConfig/ReportConfigDialogV
 import { GenerateReportDocument } from "../Reports/MainReportDocument";
 import { prepareReportData } from "./TS1ReportDocument";
 import { toast } from "react-toastify";
+import JCChecklistPanel from "./ReportWorkflow/JCChecklistPanel";
+import ReportStageButton from "./ReportWorkflow/ReportStageButton";
+import FinalReleaseBox from "./ReportWorkflow/FinalReleaseBox";
+import { loadReportPhotos } from "./ReportWorkflow/reportPhotos";
+import { errorText, loadJcWorkflow, loadReportAssets, reportForRow, uploadReportFile } from "./ReportWorkflow/reportWorkflow";
 
 const Transition = forwardRef(function Transition(props, ref) {
   return <Slide direction="up" ref={ref} {...props} />;
@@ -70,6 +75,9 @@ export default function JCPreview({
   onEdit,
   editJc,
   jcId,
+  jobcard = null, // the saved bea_jobcards row (report data is taken from it)
+  openReportFor = null, // from the Reports board: the test row whose report window opens at once
+  onReportOpened,
 }) {
   const { loggedInUserDepartment, loggedInUserRole } = useContext(UserContext);
 
@@ -89,12 +97,25 @@ export default function JCPreview({
   const [configDialogOpen, setConfigDialogOpen] = useState(false);
   const [pendingReportData, setPendingReportData] = useState(null);
   const [lastReportConfig, setLastReportConfig] = useState(null); // Store last config for Previous button
+  const [reportPrefill, setReportPrefill] = useState(null); // what the report dialog fills in itself
 
   // State for audit history dialog
   const [auditHistoryOpen, setAuditHistoryOpen] = useState(false);
 
   //State for ESS Tests selection and to generate ESS test report.
   const [selectedESSTests, setSelectedESSTests] = useState([]);
+
+  // Report workflow and checklist of this job card (stages, reviews, final issues)
+  const [workflow, setWorkflow] = useState(null);
+  const refreshWorkflow = useCallback(() => {
+    if (!open || !jcNumber || (jcCategory && jcCategory !== "TS1")) return;
+    loadJcWorkflow(jcNumber)
+      .then(setWorkflow)
+      .catch(() => setWorkflow(null));
+  }, [open, jcNumber, jcCategory]);
+  useEffect(() => {
+    refreshWorkflow();
+  }, [refreshWorkflow]);
 
   const isTS1Testing = loggedInUserDepartment === "TS1 Testing";
   const isReportsAndScrutiny = loggedInUserDepartment === "Reports & Scrutiny";
@@ -162,48 +183,60 @@ export default function JCPreview({
     onEdit(item);
   };
 
-  const handleGenerateReport = (rowIndex) => {
-    const currentTestRow = testDetailsRows[rowIndex];
+  // Job card fields for the report, from the saved row (dates stay dates, so the
+  // report formats them itself)
+  const jobcardFields = () => {
+    const j = jobcard || {};
+    return {
+      jcNumber: jcNumber,
+      jcCategory: jcCategory,
+      srfNumber: j.srf_number || "",
+      dcNumber: j.dcform_number || "",
+      poNumber: j.po_number || "",
+      jcOpenDate: j.jc_open_date || "",
+      srfDate: j.srf_date || "",
+      itemReceivedDate: j.item_received_date || "",
+      jcCloseDate: j.jc_closed_date || "",
+      jcStatus: j.jc_status || jcStatus || "",
+      companyName: j.company_name || "",
+      companyAddress: j.company_address || "",
+      customerName: j.customer_name || "",
+      customerEmail: j.customer_email || "",
+      customerNumber: j.customer_number || "",
+      projectName: j.project_name || "",
+      testCategory: j.test_category || "",
+      testDiscipline: j.test_discipline || "",
+      typeOfRequest: j.type_of_request || "",
+      jcCreatedBy: j.jc_created_by || "",
+      testInstructions: j.test_instructions || "",
+      sampleCondition: j.sample_condition || "",
+      reportType: j.report_type || "",
+      observations: j.observations || "",
+    };
+  };
 
-    // Convert primaryJCDetails array to object format
-    const primaryData = {};
-    primaryJCDetails.forEach((detail) => {
-      // Extract the key from the label (e.g., "JC Number: " -> "jcNumber")
-      const key = detail.label.split(": ")[0].trim();
-      primaryData[key] = detail.value;
-    });
+  // Report number, NABL, chambers, logo... filled in from the job card / last issue
+  // (an ESS report passes its other tests too, for their chambers and test codes)
+  const loadReportPrefill = async (row, otherRows = []) => {
+    setReportPrefill(null);
+    if (!row?.id) return;
+    const others = otherRows.map((r) => r?.id).filter(Boolean);
+    try {
+      const res = await axios.get(`${serverBaseAddress}/api/ts1/report-context/${row.id}`, {
+        params: others.length ? { with: others.join(",") } : {},
+      });
+      setReportPrefill(res.data);
+    } catch (error) {
+      console.error("Error loading report data:", error);
+    }
+  };
+
+  const handleGenerateReport = async (rowIndex) => {
+    const currentTestRow = testDetailsRows[rowIndex];
 
     // Prepare comprehensive report data
     const comprehensiveReportData = {
-      // Primary Job Card Information
-      jcNumber: jcNumber,
-      jcCategory: jcCategory,
-      srfNumber: primaryData["SRF Number"] || "",
-      dcNumber: primaryData["DC Number"] || "",
-      poNumber: primaryData["PO Number"] || "",
-      jcOpenDate: primaryData["JC Open Date"] || "",
-      srfDate: primaryData["SRF Date"] || "",
-      itemReceivedDate: primaryData["Item Received Date"] || "",
-      jcCloseDate: primaryData["JC Close Date"] || "",
-      jcStatus: primaryData["JC Status"] || "",
-
-      // Customer Information
-      companyName: primaryData["Company Name"] || "",
-      companyAddress: primaryData["Company Address"] || "",
-      customerName: primaryData["Customer Name"] || "",
-      customerEmail: primaryData["Customer Email"] || "",
-      customerNumber: primaryData["Customer Number"] || "",
-      projectName: primaryData["Project Name"] || "",
-
-      // Test Configuration
-      testCategory: primaryData["Test Category"] || "",
-      testDiscipline: primaryData["Test Discipline"] || "",
-      typeOfRequest: primaryData["Type of Request"] || "",
-      jcCreatedBy: primaryData["Test Incharge"] || "",
-      testInstructions: primaryData["Test Instructions"] || "",
-      sampleCondition: primaryData["Sample Condition"] || "",
-      reportType: primaryData["Report Type"] || "",
-      observations: primaryData["Observations"] || "",
+      ...jobcardFields(),
 
       // Table Data
       eutRows: eutRows || [],
@@ -224,9 +257,43 @@ export default function JCPreview({
     //   formattedReportData
     // );
 
-    // Store data and open config dialog
+    // Store data and open config dialog (once its prefill is in)
+    setLastReportConfig(null);
+    await loadReportPrefill(currentTestRow);
     setPendingReportData(formattedReportData);
     setConfigDialogOpen(true);
+  };
+
+  // From a report's panel: open the report dialog for its rows (a new draft)
+  const handleGenerateDraftFor = (report) => {
+    const indices = (report.testIds || [report.testDetailId])
+      .map((id) => testDetailsRows.findIndex((r) => r.id === id))
+      .filter((i) => i >= 0);
+    if (!indices.length) {
+      toast.error("The test rows of this report were not found. Reopen the job card.");
+      return;
+    }
+    if (indices.length > 1) handleGenerateESSTestReport(indices);
+    else handleGenerateReport(indices[0]);
+  };
+
+  // From the Reports board: the report window opens once the job card and its reports are loaded
+  useEffect(() => {
+    if (!openReportFor || !jobcard || !workflow || !testDetailsRows?.some((r) => r.id === openReportFor)) return;
+    onReportOpened?.();
+    handleGenerateDraftFor(reportForRow(workflow.reports, openReportFor, workflow.toPrepare) || { testDetailId: openReportFor });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openReportFor, jobcard, workflow, testDetailsRows]);
+
+  // The draft from the builder's config: company logo (Report images), the report's photos
+  // (kept on the server) and the job card data. Used by "Generate the draft" and the live preview.
+  const buildDraft = async (reportConfig) => {
+    const testDetailId = pendingReportData?.currentTestRow?.id;
+    const [assets, photos] = await Promise.all([
+      loadReportAssets({ date: reportConfig.originalReportIssueDateISO }),
+      testDetailId ? loadReportPhotos(testDetailId) : Promise.resolve([]),
+    ]);
+    return GenerateReportDocument(pendingReportData, { ...reportConfig, assets, photos, issue: { kind: "draft" } });
   };
 
   // Handler for report config confirmation
@@ -238,25 +305,66 @@ export default function JCPreview({
       return;
     }
 
+    let made;
+    try {
+      made = await buildDraft(reportConfig);
+    } catch (error) {
+      toast.error(errorText(error, "Could not make the report"), { autoClose: 10000 });
+      setConfigDialogOpen(true);
+      return;
+    }
+
     try {
       // Store the config for the Previous button
       setLastReportConfig(reportConfig);
 
-      // Generate the report with config (including images) using new docx package
-      const { blob, fileName } = await GenerateReportDocument(
-        pendingReportData,
-        reportConfig,
-      );
+      // The draft (marked DRAFT, no signatures)
+      const { blob, fileName } = made;
 
       // Set the preview modal state
       setPreviewDocumentBlob(blob);
       setPreviewFileName(fileName);
       setPreviewModalOpen(true);
 
+      // Record it in the report register (number, ULR, chambers...) for next time
+      const testDetailId = pendingReportData.currentTestRow?.id;
+      if (testDetailId) {
+        axios
+          .post(`${serverBaseAddress}/api/ts1/report-register/${testDetailId}`, {
+            reportNumber: reportConfig.testReportNumber,
+            ulrNumber: reportConfig.reportType === "NABL" ? reportConfig.ulrNumber : "",
+            reportType: reportConfig.reportType,
+            testCode: reportConfig.testCode,
+            issueDate: reportConfig.originalReportIssueDateISO || null,
+            chambers: reportConfig.chambers,
+            // layout, Table 02 rows, specifications and notes: the next draft starts from them
+            content: reportConfig.content,
+            // an ESS report covers several test rows
+            testIds: (pendingReportData.reportTests || []).map((t) => t.id).filter(Boolean),
+            testName: pendingReportData.isESSTest
+              ? `ESS: ${(pendingReportData.reportTests || []).map((t) => t.testName).join(", ")}`.slice(0, 1000)
+              : pendingReportData.currentTestRow?.testName || "",
+          })
+          // ...and keep the Word file itself as a version of the report
+          .then((res) => {
+            if (res.data.warning) toast.warning(res.data.warning, { autoClose: 8000 });
+            return uploadReportFile(testDetailId, blob, { kind: "draft", source: "generated" }, fileName);
+          })
+          .then((saved) => {
+            toast.success(`Draft saved in Lab Bee (Word version ${saved.version})`, { autoClose: 3000 });
+            refreshWorkflow();
+          })
+          .catch((error) => {
+            console.error("Error saving the draft:", error);
+            toast.error(errorText(error, "The draft was made but could not be saved in Lab Bee"));
+          });
+      }
+
       // Don't clear pendingReportData - keep it for Previous button
       // setPendingReportData(null);
     } catch (error) {
       console.error("Error generating report:", error);
+      toast.error("Could not generate the report");
       // Don't clear pending data on error either
     }
   };
@@ -265,6 +373,7 @@ export default function JCPreview({
   const handleReportConfigCancel = () => {
     setConfigDialogOpen(false);
     setPendingReportData(null);
+    setReportPrefill(null);
   };
 
   // Handler for closing preview modal
@@ -376,9 +485,10 @@ export default function JCPreview({
   };
 
   //Handle ESS Test Report Generation:
-  const handleGenerateESSTestReport = () => {
+  const handleGenerateESSTestReport = async (indices = null) => {
+    const chosen = Array.isArray(indices) ? indices : selectedESSTests;
     // Validation: At least one ESS test must be selected
-    if (selectedESSTests.length === 0) {
+    if (chosen.length === 0) {
       toast.warning(
         "Please select at least one ESS test to generate the report.",
       );
@@ -386,48 +496,13 @@ export default function JCPreview({
     }
 
     // Get all selected rows data (sorted by index to maintain order)
-    const essTestRows = selectedESSTests
+    const essTestRows = [...chosen]
       .sort((a, b) => a - b)
       .map((index) => testDetailsRows[index]);
 
-    // Convert primaryJCDetails array to object format
-    const primaryData = {};
-    primaryJCDetails.forEach((detail) => {
-      const key = detail.label.split(": ")[0].trim();
-      primaryData[key] = detail.value;
-    });
-
     // Create comprehensive ESS report data
     const comprehensiveReportData = {
-      // Primary Job Card Information
-      jcNumber: jcNumber,
-      jcCategory: jcCategory,
-      srfNumber: primaryData["SRF Number"] || "",
-      dcNumber: primaryData["DC Number"] || "",
-      poNumber: primaryData["PO Number"] || "",
-      jcOpenDate: primaryData["JC Open Date"] || "",
-      srfDate: primaryData["SRF Date"] || "",
-      itemReceivedDate: primaryData["Item Received Date"] || "",
-      jcCloseDate: primaryData["JC Close Date"] || "",
-      jcStatus: primaryData["JC Status"] || "",
-
-      // Customer Information
-      companyName: primaryData["Company Name"] || "",
-      companyAddress: primaryData["Company Address"] || "",
-      customerName: primaryData["Customer Name"] || "",
-      customerEmail: primaryData["Customer Email"] || "",
-      customerNumber: primaryData["Customer Number"] || "",
-      projectName: primaryData["Project Name"] || "",
-
-      // Test Configuration
-      testCategory: primaryData["Test Category"] || "",
-      testDiscipline: primaryData["Test Discipline"] || "",
-      typeOfRequest: primaryData["Type of Request"] || "",
-      jcCreatedBy: primaryData["Test Incharge"] || "",
-      testInstructions: primaryData["Test Instructions"] || "",
-      sampleCondition: primaryData["Sample Condition"] || "",
-      reportType: primaryData["Report Type"] || "",
-      observations: primaryData["Observations"] || "",
+      ...jobcardFields(),
 
       // Table Data
       eutRows: eutRows || [],
@@ -438,13 +513,15 @@ export default function JCPreview({
       isESSReport: true,
       essTestRows: essTestRows, // Array of all selected ESS tests
       currentTestRow: essTestRows[0], // Primary test for header info
-      currentTestRowIndex: selectedESSTests.sort((a, b) => a - b)[0],
+      currentTestRowIndex: [...chosen].sort((a, b) => a - b)[0],
     };
 
     // Use prepareReportData to format the data
     const formattedReportData = prepareReportData(comprehensiveReportData);
 
     // Store data and open config dialog
+    setLastReportConfig(null);
+    await loadReportPrefill(essTestRows[0], essTestRows.slice(1));
     setPendingReportData(formattedReportData);
     setConfigDialogOpen(true);
   };
@@ -490,6 +567,12 @@ export default function JCPreview({
         </Grid>
 
         <Divider />
+
+        {/* Job card checklist (TS1) */}
+        {workflow && <FinalReleaseBox data={workflow} onChanged={refreshWorkflow} />}
+        {workflow && (
+          <JCChecklistPanel data={workflow} jcNumber={jcNumber} onChanged={refreshWorkflow} />
+        )}
 
         {/* Attached Documents */}
         {attachedFiles && attachedFiles.length > 0 && (
@@ -809,7 +892,7 @@ export default function JCPreview({
                                         variant="contained"
                                         size="small"
                                         startIcon={<AssignmentIcon />}
-                                        onClick={handleGenerateESSTestReport}
+                                        onClick={() => handleGenerateESSTestReport()}
                                         sx={{
                                           "backgroundColor": "#9c27b0",
                                           "ml": 0.5,
@@ -848,6 +931,19 @@ export default function JCPreview({
                                   </Button>
                                 </span>
                               </Tooltip>
+                            )}
+                            {workflow && (
+                              <Box sx={{ mt: 0.5 }}>
+                                <ReportStageButton
+                                  compact
+                                  report={reportForRow(workflow.reports, row.id, workflow.toPrepare)}
+                                  me={workflow.me}
+                                  release={workflow.release}
+                                  jcNumber={jcNumber}
+                                  onChanged={refreshWorkflow}
+                                  onGenerateDraft={handleGenerateDraftFor}
+                                />
+                              </Box>
                             )}
                           </TableCell>
                         </TableRow>
@@ -921,8 +1017,12 @@ export default function JCPreview({
         onClose={handleReportConfigCancel}
         onConfirm={handleReportConfigConfirm}
         initialConfig={lastReportConfig}
+        prefill={reportPrefill}
         testCategory={pendingReportData?.currentTestRow?.testCategory || ""}
-        isVibrationTest={pendingReportData?.isVibrationTest || false}
+        reportTests={pendingReportData?.reportTests || []}
+        eutRows={pendingReportData?.currentTestEutRows || []}
+        testDetailId={pendingReportData?.currentTestRow?.id || null}
+        onPreview={pendingReportData ? (cfg) => buildDraft(cfg).then((r) => r.blob) : null}
       />
 
       {/* Document Preview Modal */}

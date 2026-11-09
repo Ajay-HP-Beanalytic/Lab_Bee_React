@@ -16,26 +16,8 @@ import ListItemIcon from "@mui/material/ListItemIcon";
 import ListItemText from "@mui/material/ListItemText";
 import Collapse from "@mui/material/Collapse";
 import Divider from "@mui/material/Divider";
-
-import CalculateIcon from "@mui/icons-material/Calculate";
-import NewspaperIcon from "@mui/icons-material/Newspaper";
-import TuneIcon from "@mui/icons-material/Tune";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 import ExpandLessIcon from "@mui/icons-material/ExpandLess";
-import EventRepeatIcon from "@mui/icons-material/EventRepeat";
-import HomeIcon from "@mui/icons-material/Home";
-import CalendarMonthSharpIcon from "@mui/icons-material/CalendarMonthSharp";
-import ArticleIcon from "@mui/icons-material/Article";
-import NoteAddIcon from "@mui/icons-material/NoteAdd";
-import KitchenIcon from "@mui/icons-material/Kitchen";
-import ManageAccountsIcon from "@mui/icons-material/ManageAccounts";
-import CurrencyRupeeIcon from "@mui/icons-material/CurrencyRupee";
-import DashboardIcon from "@mui/icons-material/Dashboard";
-import AccountBalanceIcon from "@mui/icons-material/AccountBalance";
-import ScienceIcon from "@mui/icons-material/Science";
-import ElectricBoltIcon from "@mui/icons-material/ElectricBolt";
-import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
-import FolderOpenIcon from "@mui/icons-material/FolderOpen";
 
 import {
   Avatar,
@@ -50,8 +32,11 @@ import {
 import { Link, Outlet, useLocation } from "react-router-dom";
 import UserProfile from "../LoginRegister/UserProfile";
 import { UserContext } from "../Pages/UserContext";
-import { Source } from "@mui/icons-material";
 import NotificationDialog from "./NotificationDialog";
+import HelpButton from "./help/HelpButton";
+import { MENU_GROUPS, visibleMenu } from "../Pages/menuCatalog";
+import Badge from "@mui/material/Badge";
+import useReportsCount from "../JC/ReportWorkflow/useReportsCount";
 
 // ─── Layout constants ─────────────────────────────────────────────────────────
 
@@ -119,182 +104,12 @@ const Drawer = styled(MuiDrawer, {
   }),
 }));
 
-// ─── Navigation data ──────────────────────────────────────────────────────────
+// The menu items, their groups and who may open them: Pages/menuCatalog.jsx and
+// Users & Access (Backend access/accessControl.js). Each group's gradient id:
+const gradientOf = (id) => `grp_${id}_grad`;
+const itemGradientOf = (key) => `item_${key}_grad`;
 
-const ALL_ITEMS = [
-  {
-    i: 1,
-    label: "Home",
-    icon: <HomeIcon />,
-    path: "/home",
-    gradientId: "homeGradient",
-  },
-  {
-    i: 2,
-    label: "Quotation",
-    icon: <CurrencyRupeeIcon />,
-    path: "/quotation_dashboard",
-    gradientId: "quotationDashboardGradient",
-  },
-  {
-    i: 3,
-    label: "Quotation Essentials",
-    icon: <NoteAddIcon />,
-    path: "/quotation_essentials",
-    gradientId: "quotationEssentialsGradient",
-  },
-  {
-    i: 4,
-    label: "Job-Card",
-    icon: <ArticleIcon />,
-    path: "/jobcard_dashboard",
-    gradientId: "jcDashboardGradient",
-  },
-  {
-    i: 5,
-    label: "JC Essentials",
-    icon: <NoteAddIcon />,
-    path: "/jobcard_essentials",
-    gradientId: "jcEssentialsGradient",
-  },
-  {
-    i: 6,
-    label: "Slot Booking",
-    icon: <CalendarMonthSharpIcon />,
-    path: "/slot_booking",
-    gradientId: "slotBookingGradient",
-  },
-  {
-    i: 7,
-    label: "Chambers & Calibration",
-    icon: <KitchenIcon />,
-    path: "/chamber-calibration",
-    gradientId: "chambersCalibrationGradient",
-  },
-  {
-    i: 8,
-    label: "Hours Calculation",
-    icon: <CalculateIcon />,
-    path: "/ts1_utitlity",
-    gradientId: "hoursCalculationGradient",
-  },
-  {
-    i: 9,
-    label: "Job-Card",
-    icon: <DashboardIcon />,
-    path: "/emi_jc_dashboard",
-    gradientId: "emiDashboardGradient",
-  },
-  {
-    i: 10,
-    label: "Slot Booking",
-    icon: <CalendarMonthSharpIcon />,
-    path: "/emi_slot_booking",
-    gradientId: "emiSlotBookingGradient",
-  },
-  {
-    i: 11,
-    label: "Calibration Dashboard",
-    icon: <KitchenIcon />,
-    path: "/emi_calibration",
-    gradientId: "emiChamberCalibrationGradient",
-  },
-  {
-    i: 12,
-    label: "Project Management",
-    icon: <EventRepeatIcon />,
-    path: "/projects",
-    gradientId: "projectManagementGradient",
-  },
-  {
-    i: 13,
-    label: "Org Documents",
-    icon: <Source />,
-    path: "/org_docs",
-    gradientId: "orgDocsGradient",
-  },
-  {
-    i: 14,
-    label: "Users Management",
-    icon: <ManageAccountsIcon />,
-    path: "/user_management",
-    gradientId: "usersManagementGradient",
-  },
-  {
-    i: 15,
-    label: "Marketing Content",
-    icon: <NewspaperIcon />,
-    path: "/marketing",
-    gradientId: "marketingGradient",
-  },
-  {
-    i: 16,
-    label: "Chamber Specs",
-    icon: <TuneIcon />,
-    path: "/ts1_chamber_specs",
-    gradientId: "chamberSpecsGradient",
-  },
-  {
-    i: 17,
-    label: "Test Pricing",
-    icon: <CurrencyRupeeIcon />,
-    path: "/ts1_test_pricing",
-    gradientId: "testPricingGradient",
-  },
-];
-
-const GROUPS = [
-  {
-    id: "Finance",
-    label: "Finance",
-    icon: <AccountBalanceIcon />,
-    gradientId: "grpFinanceGrad",
-    itemIds: [1, 2, 3, 17],
-  },
-  {
-    id: "TS1 Testing",
-    label: "TS1 Testing",
-    icon: <ScienceIcon />,
-    gradientId: "grpTS1Grad",
-    itemIds: [4, 5, 6, 7, 8, 16],
-  },
-  {
-    id: "TS2 Testing",
-    label: "TS2 Testing",
-    icon: <ElectricBoltIcon />,
-    gradientId: "grpTS2Grad",
-    itemIds: [9, 10, 11],
-  },
-  {
-    id: "Projects",
-    label: "Projects",
-    icon: <FolderOpenIcon />,
-    gradientId: "grpProjectsGrad",
-    itemIds: [12],
-  },
-  {
-    id: "Administration",
-    label: "Administration",
-    icon: <AdminPanelSettingsIcon />,
-    gradientId: "grpAdminGrad",
-    itemIds: [13, 14, 15],
-  },
-];
-
-const ACCESS_RULES = {
-  "Accounts": [1, 2, 3, 4, 5, 6, 8, 9, 10, 17],
-  "Marketing": [2, 3, 8, 9, 10],
-  "TS1 Testing": [4, 5, 6, 7, 8, 16],
-  "TS2 Testing": [9, 10, 11],
-  "Reliability": [12],
-  "Software": [12],
-  "Reports & Scrutiny": [4, 5, 6, 7, 8, 9, 11],
-  "Reports & Scrutiny Manager": [4, 5, 6, 7, 8, 9, 11],
-  "Technical Support Writer": [4, 5, 6, 7, 8, 9, 11],
-  "Quality Engineer": [4, 6, 7, 8, 9, 10, 11, 13],
-};
-
-const DEFAULT_GROUP_OPEN = GROUPS.reduce(
+const DEFAULT_GROUP_OPEN = MENU_GROUPS.reduce(
   (acc, g) => ({ ...acc, [g.id]: true }),
   {},
 );
@@ -335,8 +150,9 @@ function GradientIcon({ children, gradientId }) {
 
 export default function SidenavigationBar() {
   const theme = useTheme();
-  const { loggedInUser, loggedInUserDepartment, loggedInUserRole } =
-    useContext(UserContext);
+  const { loggedInUser, access } = useContext(UserContext);
+  // TS1 reports waiting on this user (badge on the Reports menu)
+  const reportsWaiting = useReportsCount(!!access?.menus?.includes("ts1_reports"));
 
   const location = useLocation();
 
@@ -395,26 +211,14 @@ export default function SidenavigationBar() {
     });
   };
 
-  // ─── Permission filtering ────────────────────────────────────────────────
+  // ─── What this user may open (their department's group first) ────────────
 
-  const allowedIds = (() => {
-    if (loggedInUserDepartment === "Administration") return null;
-    const byRole = ACCESS_RULES[loggedInUserRole] || [];
-    const byDept = ACCESS_RULES[loggedInUserDepartment] || [];
-    const ids = new Set([...byRole, ...byDept]);
-    return ids.size > 0 ? ids : new Set();
-  })();
-
-  const isAllowed = (i) => allowedIds === null || allowedIds.has(i);
-
-  const filteredItems = ALL_ITEMS.filter((item) => isAllowed(item.i));
-
-  const visibleGroups = GROUPS.map((group) => ({
-    ...group,
-    visibleItems: group.itemIds
-      .map((id) => ALL_ITEMS.find((item) => item.i === id))
-      .filter((item) => item && isAllowed(item.i)),
-  })).filter((g) => g.visibleItems.length > 0);
+  const visibleGroups = visibleMenu(access).map((g) => ({
+    ...g,
+    gradientId: gradientOf(g.id),
+    visibleItems: g.items.map((item) => ({ ...item, i: item.key, gradientId: itemGradientOf(item.key) })),
+  }));
+  const filteredItems = visibleGroups.flatMap((g) => g.visibleItems);
 
   // ─── Render helpers ──────────────────────────────────────────────────────
 
@@ -452,9 +256,15 @@ export default function SidenavigationBar() {
           }}
         >
           <ListItemIcon sx={iconSx}>
-            <GradientIcon gradientId={item.gradientId}>
-              {item.icon}
-            </GradientIcon>
+            <Badge
+              color={reportsWaiting.overdue ? "error" : "primary"}
+              badgeContent={item.key === "ts1_reports" ? reportsWaiting.count : 0}
+              max={99}
+            >
+              <GradientIcon gradientId={item.gradientId}>
+                {item.icon}
+              </GradientIcon>
+            </Badge>
           </ListItemIcon>
           <ListItemText
             primary={item.label}
@@ -583,6 +393,7 @@ export default function SidenavigationBar() {
               Lab Bee
             </Typography>
             <Box sx={{ flexGrow: 1 }} />
+            <HelpButton />
             <NotificationDialog />
             <IconButton onClick={handleClickAvatar}>
               <Avatar sx={{ backgroundColor: "#ff3333", fontWeight: 700 }}>

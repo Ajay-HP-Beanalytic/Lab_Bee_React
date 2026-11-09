@@ -30,6 +30,7 @@ import SearchBar from "../common/SearchBar";
 import ConfirmationDialog from "../common/ConfirmationDialog";
 import EmptyCard from "../common/EmptyCard";
 import { DataGrid } from "@mui/x-data-grid";
+import CustomerLogoPicker, { customerLogoUrl } from "../common/CustomerLogoPicker";
 
 export default function AddCustomerDetails() {
   const [companyName, setCompanyName] = useState("");
@@ -60,6 +61,18 @@ export default function AddCustomerDetails() {
   const [deleteItemId, setDeleteItemId] = useState(null);
 
   const [editFields, setEditFields] = useState(false);
+
+  // Logos (customer_logos): customer id -> updated_at, and the customer whose logo is being changed
+  const [logos, setLogos] = useState({});
+  const [logoCustomer, setLogoCustomer] = useState(null);
+  const loadLogos = () =>
+    axios
+      .get(`${serverBaseAddress}/api/customer_logos`)
+      .then((res) => setLogos(Object.fromEntries(res.data.map((l) => [l.customer_id, l.updated_at]))))
+      .catch((error) => console.error("Failed to fetch the logos", error));
+  useEffect(() => {
+    loadLogos();
+  }, []);
 
   // Function to submit the customer details:
   const onSubmitCustomerDetailsButton = async (e) => {
@@ -370,6 +383,30 @@ export default function AddCustomerDetails() {
       headerClassName: "custom-header-color",
     },
     {
+      field: "logo",
+      headerName: "Logo",
+      width: 110,
+      align: "center",
+      headerAlign: "center",
+      headerClassName: "custom-header-color",
+      sortable: false,
+      renderCell: (params) =>
+        logos[params.row.id] ? (
+          <Tooltip title="Change the logo" arrow>
+            <img
+              src={customerLogoUrl(params.row.id, logos[params.row.id])}
+              alt="logo"
+              onClick={() => setLogoCustomer(params.row)}
+              style={{ maxWidth: 90, maxHeight: 40, objectFit: "contain", cursor: "pointer", verticalAlign: "middle" }}
+            />
+          </Tooltip>
+        ) : (
+          <Button size="small" onClick={() => setLogoCustomer(params.row)}>
+            Add
+          </Button>
+        ),
+    },
+    {
       field: "actions",
       headerName: "Actions",
       width: 100,
@@ -646,6 +683,26 @@ export default function AddCustomerDetails() {
             </Grid>
           </Grid>
         </Box>
+
+        <Dialog open={!!logoCustomer} onClose={() => setLogoCustomer(null)} maxWidth="sm" fullWidth>
+          <DialogTitle>Logo of {logoCustomer?.company_name}</DialogTitle>
+          <DialogContent>
+            <Typography variant="body2" color="text.secondary" mb={1.5}>
+              Used on this customer's quotations when the document is downloaded.
+            </Typography>
+            {logoCustomer && (
+              <CustomerLogoPicker
+                customerId={logoCustomer.id}
+                hasLogo={!!logos[logoCustomer.id]}
+                version={logos[logoCustomer.id]}
+                onChange={loadLogos}
+              />
+            )}
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={() => setLogoCustomer(null)}>Close</Button>
+          </DialogActions>
+        </Dialog>
 
         <ConfirmationDialog
           open={openDeleteCustomerDetailDialog}

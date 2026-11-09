@@ -1,7 +1,11 @@
 import {
   AlignmentType,
   ImageRun,
+  OverlapType,
   Paragraph,
+  RelativeHorizontalPosition,
+  RelativeVerticalPosition,
+  TableAnchorType,
   TextRun,
   TableRow,
   VerticalAlign,
@@ -11,16 +15,17 @@ import {
   authorizedByName,
   preparedByDesignation,
   preparedByName,
-  reportDisclaimerNoteText,
-  reportDisclaimerText,
   reviewedByDesignation,
   reviewedByName,
 } from "./reportConstants";
+import { testTitle } from "./reportLayouts";
 import {
   createTextRun,
   createParagraph,
   createTableCell,
   createDataTable,
+  fitInBox,
+  imageSizeOfDataUrl,
 } from "./Report_Functions/docxHelpers";
 
 /**
@@ -31,6 +36,42 @@ import {
  * @param {object} reportConfig - Report configuration
  * @returns {Array<Paragraph>} Array of Paragraph objects
  */
+// Reports are made as drafts. The final is made on the server from the team's Word file
+// (Backend/ts1/reportFinalize.js): it finds these white marker words and puts the
+// signatures, names and designations there (the names below are only the draft's).
+const marker = (word) => new TextRun({ text: word, color: "FFFFFF", size: 2, font: "Calibri" });
+
+// "Prepared By," heading, with the place for the signature under it
+const signatureCell = (label, slot, alignment, width) =>
+  createTableCell(
+    [
+      new Paragraph({
+        alignment,
+        children: [createTextRun(label, { bold: true, size: 23, font: "Calibri" })],
+      }),
+      new Paragraph({ alignment, spacing: { after: 900 }, children: [marker(`LBSIG${slot.toUpperCase()}`)] }),
+    ],
+    { width, verticalAlign: VerticalAlign.TOP, margins: { top: 0, bottom: 100 } }
+  );
+
+// Name / designation under the signature (marker + text)
+const markedCell = (word, text, alignment, width, bottom) =>
+  createTableCell(
+    [new Paragraph({ alignment, children: [marker(word), createTextRun(text || "", { size: 23 })] })],
+    { width, verticalAlign: VerticalAlign.TOP, margins: { top: 0, bottom } }
+  );
+
+const issueDateBlock = (reportConfig) => [
+  createParagraph(`Draft Issue Date: ${reportConfig.originalReportIssueDate || "N/A"}`, {
+    alignment: AlignmentType.LEFT,
+    bold: true,
+    size: 25,
+    color: "000000",
+    font: "Calibri",
+    spacing: { before: 400, after: 200 },
+  }),
+];
+
 export const createFirstPage = (comprehensiveData, reportConfig) => {
   // const addressLines = (comprehensiveData?.companyAddress ?? "N/A").split(
   //   /,\s*/
@@ -64,15 +105,13 @@ export const createFirstPage = (comprehensiveData, reportConfig) => {
   return [
     // Test report heading
     createParagraph(
-      `${
-        (comprehensiveData?.currentTestRow?.testName).toUpperCase() || ""
-      } TEST REPORT`,
+      `${(reportConfig?.content?.title || testTitle(comprehensiveData?.currentTestRow?.testName)).toUpperCase()} TEST REPORT`.trim(),
       {
         alignment: AlignmentType.CENTER,
         bold: true,
         size: 40,
         color: "1f497d",
-        font: "Calibri(Body)",
+        font: "Calibri",
         spacing: {
           before: 500,
           after: 500,
@@ -86,7 +125,7 @@ export const createFirstPage = (comprehensiveData, reportConfig) => {
       bold: true,
       size: 25,
       color: "0070c0",
-      font: "Calibri(Body)",
+      font: "Calibri",
       spacing: {
         after: 500,
       },
@@ -103,10 +142,7 @@ export const createFirstPage = (comprehensiveData, reportConfig) => {
             children: [
               new ImageRun({
                 data: reportConfig.companyLogoBase64,
-                transformation: {
-                  width: 100,
-                  height: 100,
-                },
+                transformation: fitInBox(imageSizeOfDataUrl(reportConfig.companyLogoBase64), 340, 150),
               }),
             ],
           }),
@@ -119,7 +155,7 @@ export const createFirstPage = (comprehensiveData, reportConfig) => {
       bold: true,
       size: 32,
       color: "1f497d",
-      font: "Calibri(Body)",
+      font: "Calibri",
       spacing: {
         after: 300,
       },
@@ -131,7 +167,7 @@ export const createFirstPage = (comprehensiveData, reportConfig) => {
     //   bold: true,
     //   size: 25,
     //   color: "1f497d",
-    //   font: "Calibri(Body)",
+    //   font: "Calibri",
     //   spacing: {
     //     after: 500,
     //   },
@@ -146,7 +182,7 @@ export const createFirstPage = (comprehensiveData, reportConfig) => {
     //       bold: true,
     //       size: 25,
     //       color: "1f497d",
-    //       font: "Calibri(Body)",
+    //       font: "Calibri",
     //     }),
     //     ...(idx < addressLines.length - 1 ? [new TextRun({ break: 1 })] : []),
     //   ]),
@@ -159,7 +195,7 @@ export const createFirstPage = (comprehensiveData, reportConfig) => {
     //     bold: true,
     //     size: 25,
     //     color: "1f497d",
-    //     font: "Calibri(Body)",
+    //     font: "Calibri",
     //     spacing: { after: 500 },
     //   }
     // ),
@@ -169,120 +205,53 @@ export const createFirstPage = (comprehensiveData, reportConfig) => {
       bold: true,
       size: 25,
       color: "1f497d",
-      font: "Calibri(Body)",
+      font: "Calibri",
       spacing: { after: 500 },
     }),
 
-    // Report Issue Date
-    createParagraph(
-      `Original Issue Date: ${reportConfig.originalReportIssueDate || "N/A"}`,
-      {
-        alignment: AlignmentType.LEFT,
-        bold: true,
-        size: 25,
-        color: "000000",
-        font: "Calibri(Body)",
-        spacing: {
-          before: 400,
-          after: 1000,
-        },
-      }
-    ),
+    // Draft date (the final gets its issue date when it is made)
+    ...issueDateBlock(reportConfig),
 
-    // Signature Table (Prepared By, Reviewed By, Authorized Signature)
+    // Signature Table (Prepared By, Reviewed By, Authorized Signature), kept at the bottom of the
+    // page: it grows upwards when the final puts the signatures in
     createDataTable(
       [
         // Row 1: Headers
         new TableRow({
           children: [
-            createTableCell("Prepared By,", {
-              width: 33,
-              alignment: AlignmentType.LEFT,
-              bold: true,
-              size: 23,
-              verticalAlign: VerticalAlign.TOP,
-              margins: { top: 0, bottom: 1000 },
-            }),
-            createTableCell("Reviewed By", {
-              width: 33,
-              alignment: AlignmentType.CENTER,
-              bold: true,
-              size: 23,
-              verticalAlign: VerticalAlign.TOP,
-              margins: { top: 0, bottom: 1000 },
-            }),
-            createTableCell("Authorized Signature,", {
-              width: 34,
-              alignment: AlignmentType.RIGHT,
-              bold: true,
-              size: 23,
-              verticalAlign: VerticalAlign.TOP,
-              margins: { top: 0, bottom: 1000 },
-            }),
+            signatureCell("Prepared By,", "prepared", AlignmentType.LEFT, 33),
+            signatureCell("Reviewed By", "reviewed", AlignmentType.CENTER, 33),
+            signatureCell("Authorized Signature,", "authorized", AlignmentType.RIGHT, 34),
           ],
         }),
 
         // Row 2: Names
         new TableRow({
           children: [
-            createTableCell(
-              comprehensiveData?.currentTest_preparedBy || preparedByName,
-              {
-                width: 33,
-                alignment: AlignmentType.LEFT,
-                size: 23,
-                verticalAlign: VerticalAlign.TOP,
-                margins: { top: 0, bottom: 100 },
-              }
-            ),
-            createTableCell(
-              comprehensiveData?.currentTest_testReviewedBy || reviewedByName,
-              {
-                width: 33,
-                alignment: AlignmentType.CENTER,
-                size: 23,
-                verticalAlign: VerticalAlign.TOP,
-                margins: { top: 0, bottom: 100 },
-              }
-            ),
-            createTableCell(authorizedByName, {
-              width: 34,
-              alignment: AlignmentType.RIGHT,
-              size: 23,
-              verticalAlign: VerticalAlign.TOP,
-              margins: { top: 0, bottom: 100 },
-            }),
+            markedCell("LBNAMEPREPARED", comprehensiveData?.currentTest_preparedBy || preparedByName, AlignmentType.LEFT, 33, 100),
+            markedCell("LBNAMEREVIEWED", comprehensiveData?.currentTest_testReviewedBy || reviewedByName, AlignmentType.CENTER, 33, 100),
+            markedCell("LBNAMEAUTHORIZED", authorizedByName, AlignmentType.RIGHT, 34, 100),
           ],
         }),
 
         // Row 3: Designations
         new TableRow({
           children: [
-            createTableCell(preparedByDesignation || "", {
-              width: 33,
-              alignment: AlignmentType.JUSTIFIED,
-              size: 23,
-              verticalAlign: VerticalAlign.TOP,
-              margins: { top: 0, bottom: 600 },
-            }),
-            createTableCell(reviewedByDesignation || "", {
-              width: 33,
-              alignment: AlignmentType.CENTER,
-              size: 23,
-              verticalAlign: VerticalAlign.TOP,
-              margins: { top: 0, bottom: 600 },
-            }),
-            createTableCell(authorizedByDesignation || "", {
-              width: 34,
-              alignment: AlignmentType.RIGHT,
-              size: 23,
-              verticalAlign: VerticalAlign.TOP,
-              margins: { top: 0, bottom: 600 },
-            }),
+            markedCell("LBDESGPREPARED", preparedByDesignation || "", AlignmentType.JUSTIFIED, 33, 40),
+            markedCell("LBDESGREVIEWED", reviewedByDesignation || "", AlignmentType.CENTER, 33, 40),
+            markedCell("LBDESGAUTHORIZED", authorizedByDesignation || "", AlignmentType.RIGHT, 34, 40),
           ],
         }),
       ],
       {
+        columnWidths: [3295, 3295, 3396],
+        float: {
+          horizontalAnchor: TableAnchorType.MARGIN,
+          relativeHorizontalPosition: RelativeHorizontalPosition.CENTER,
+          verticalAnchor: TableAnchorType.MARGIN,
+          relativeVerticalPosition: RelativeVerticalPosition.BOTTOM,
+          overlap: OverlapType.NEVER,
+        },
         borders: {
           top: { style: "none", size: 0 },
           bottom: { style: "none", size: 0 },
@@ -294,42 +263,5 @@ export const createFirstPage = (comprehensiveData, reportConfig) => {
       }
     ),
 
-    // Disclaimer section
-    new Paragraph({
-      alignment: AlignmentType.LEFT,
-      spacing: {
-        before: 400,
-        after: 200,
-      },
-      children: [
-        // Note: underline is not in createTextRun helper, so we use TextRun directly
-        new TextRun({
-          text: "Disclaimer: ",
-          bold: true,
-          size: 21,
-          font: "Calibri(Body)",
-          color: "000000",
-          underline: {},
-        }),
-        createTextRun(reportDisclaimerText, {
-          bold: false,
-          size: 21,
-          font: "Calibri(Body)",
-          color: "000000",
-        }),
-      ],
-    }),
-
-    // Disclaimer note
-    createParagraph(reportDisclaimerNoteText, {
-      alignment: AlignmentType.LEFT,
-      bold: true,
-      size: 21,
-      color: "000000",
-      font: "Calibri(Body)",
-      spacing: {
-        after: 200,
-      },
-    }),
   ];
 };

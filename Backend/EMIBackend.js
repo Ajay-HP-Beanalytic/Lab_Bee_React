@@ -7,6 +7,7 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 const fileStorageService = require("./services/fileStorageService");
+const { ROW_ORDER, setRowOrder } = require("./jobcardRowOrder");
 require("dotenv").config(); // Ensure .env is loaded
 
 // Add the calibration certificate columns to an existing emi_calibrations_table
@@ -960,6 +961,10 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
       );
 
       let childChangesDetected = false;
+      // ids in screen order, to keep rows inserted between others in place
+      const eutOrder = [];
+      const testsOrder = [];
+      const testDetailsOrder = [];
 
       // Handle the EUT table rows
       // Delete rows that are marked for deletion
@@ -988,6 +993,7 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
       }
 
       for (let eutRow of eutTableRows) {
+        if (eutRow.id) eutOrder.push(eutRow.id);
         if (eutRow.id) {
           // Update existing rows
           const existingRow = existingEutMap.get(eutRow.id);
@@ -1096,6 +1102,7 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
             insertEutSql,
             eutValues,
           );
+          eutOrder.push(insertResult.insertId);
 
           childChangesDetected = true;
         }
@@ -1128,6 +1135,7 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
       }
 
       for (let testRow of testsTableRows) {
+        if (testRow.id) testsOrder.push(testRow.id);
         if (testRow.id) {
           // Update existing rows
           const existingRow = existingTestMap.get(testRow.id);
@@ -1213,6 +1221,7 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
             insertTestsSql,
             testValues,
           );
+          testsOrder.push(insertResult.insertId);
 
           childChangesDetected = true;
         }
@@ -1248,6 +1257,7 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
       }
 
       for (let testPerformedRow of testPerformedTableRows) {
+        if (testPerformedRow.id) testDetailsOrder.push(testPerformedRow.id);
         const formattedStartDateTime = testPerformedRow.testStartDateTime
           ? convertDateTime(testPerformedRow.testStartDateTime)
           : null;
@@ -1497,10 +1507,15 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
             insertTestPerformedSql,
             testPerformedValues,
           );
+          testDetailsOrder.push(insertResult.insertId);
 
           childChangesDetected = true;
         }
       }
+
+      await setRowOrder(connection, "emi_eut_table", eutOrder);
+      await setRowOrder(connection, "emi_tests_table", testsOrder);
+      await setRowOrder(connection, "emi_tests_details_table", testDetailsOrder);
 
       if (childChangesDetected && !hasMainChanges) {
         await updateParentEMIJobCardLastModified(
@@ -1560,19 +1575,19 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
       const jcNumber = result[0].jcNumber;
 
       // Fetch data from emi_eut_table table
-      sqlQuery = "SELECT * FROM emi_eut_table WHERE jcNumber = ?";
+      sqlQuery = `SELECT * FROM emi_eut_table WHERE jcNumber = ? ${ROW_ORDER}`;
       db.query(sqlQuery, [jcNumber], (error, result) => {
         if (error) return res.status(500).json({ error });
         output["emiEutData"] = result;
 
         // Fetch data from emi_tests_table table
-        sqlQuery = "SELECT * FROM emi_tests_table WHERE jcNumber = ?";
+        sqlQuery = `SELECT * FROM emi_tests_table WHERE jcNumber = ? ${ROW_ORDER}`;
         db.query(sqlQuery, [jcNumber], (error, result) => {
           if (error) return res.status(500).json({ error });
           output["emiTestsData"] = result;
 
           // Fetch data from emi_tests_details_table table
-          sqlQuery = "SELECT * FROM emi_tests_details_table WHERE jcNumber = ?";
+          sqlQuery = `SELECT * FROM emi_tests_details_table WHERE jcNumber = ? ${ROW_ORDER}`;
           db.query(sqlQuery, [jcNumber], (error, result) => {
             if (error) return res.status(500).json({ error });
             output["emiTestsDetailsData"] = result;

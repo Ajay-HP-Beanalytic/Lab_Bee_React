@@ -44,8 +44,17 @@ const getFieldValue = (fieldId, comprehensiveData, _reportConfig) => {
     case 6: // Test Carried out at
       return `BE Analytic Solutions LLP,\nB131/A, Devasandra Industrial Estate, Whitefield Rd,\nMahadevapura, Bangalore -560048, Karnataka, INDIA`;
 
-    case 7: // Lab Environmental Condition
-      return `Temperature: 26°C, Humidity: 50% RH,\nAtmospheric Pressure: 90.81kPa`;
+    case 7: {
+      // Lab Environmental Condition: the start temperature / RH typed in the job card
+      // for this test (the first test of an ESS report). Left blank to fill if missing.
+      const reading = (v, unit) => {
+        const n = String(v ?? "").replace(/°?\s*C\b|%\s*RH|%|RH/gi, "").trim();
+        return n && n !== "0" ? `${n}${unit}` : "____";
+      };
+      const temp = reading(comprehensiveData?.currentTest_startTemp, "°C");
+      const rh = reading(comprehensiveData?.currentTest_startRh, "% RH");
+      return `Temperature: ${temp}, Humidity: ${rh},\nAtmospheric Pressure: 90.81kPa`;
+    }
 
     case 8: // Total No. Of Samples
       // Count the EUT rows

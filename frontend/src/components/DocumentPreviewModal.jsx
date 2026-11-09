@@ -13,6 +13,7 @@ import {
 import CloseIcon from "@mui/icons-material/Close";
 import DownloadIcon from "@mui/icons-material/Download";
 import { renderAsync } from "docx-preview";
+import { draftOverlaySx } from "./ReportConfig/draftOverlay";
 import { saveAs } from "file-saver";
 
 // Import docx-preview CSS for proper styling
@@ -32,6 +33,8 @@ import { saveAs } from "file-saver";
  * @param {string} fileName - Suggested filename for download
  * @param {string} fileType - File extension (pdf, docx, png, jpg, etc.)
  * @param {string} title - Modal title (optional)
+ * @param {boolean} asPrinted - Word files keep their own table look, for reading a report as it prints
+ * @param {boolean} draft - Show DRAFT over the pages (default: when the file name says DRAFT)
  */
 const DocumentPreviewModal = ({
   open,
@@ -41,6 +44,8 @@ const DocumentPreviewModal = ({
   fileName = "document.docx",
   fileType = "docx",
   title = "Document Preview",
+  asPrinted = false,
+  draft,
 }) => {
   const previewContainerRef = useRef(null);
   const [loading, setLoading] = useState(false);
@@ -315,32 +320,37 @@ const DocumentPreviewModal = ({
           <Box
             ref={previewContainerRef}
             sx={{
+              ...((draft ?? /DRAFT/.test(fileName)) ? draftOverlaySx : {}),
               width: "100%",
-              "backgroundColor": "white",
-              "padding": "20px",
               "minHeight": "600px",
-              "& .docx-wrapper": {
-                backgroundColor: "white",
-                padding: "30px",
-                boxShadow: "0 0 10px rgba(0,0,0,0.1)",
-              },
-              "& .docx": {
-                margin: "0 auto",
-              },
-              // Style tables
-              "& table": {
-                borderCollapse: "collapse",
-                width: "100%",
-                marginBottom: "1em",
-              },
-              "& table td, & table th": {
-                border: "1px solid #ddd",
-                padding: "8px",
-              },
-              "& table th": {
-                backgroundColor: "#f2f2f2",
-                fontWeight: "bold",
-              },
+              ...(asPrinted
+                ? {}
+                : {
+                    "backgroundColor": "white",
+                    "padding": "20px",
+                    "& .docx-wrapper": {
+                      backgroundColor: "white",
+                      padding: "30px",
+                      boxShadow: "0 0 10px rgba(0,0,0,0.1)",
+                    },
+                    "& .docx": {
+                      margin: "0 auto",
+                    },
+                    // Style tables
+                    "& table": {
+                      borderCollapse: "collapse",
+                      width: "100%",
+                      marginBottom: "1em",
+                    },
+                    "& table td, & table th": {
+                      border: "1px solid #ddd",
+                      padding: "8px",
+                    },
+                    "& table th": {
+                      backgroundColor: "#f2f2f2",
+                      fontWeight: "bold",
+                    },
+                  }),
             }}
           />
         )}

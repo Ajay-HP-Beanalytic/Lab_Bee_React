@@ -23,6 +23,10 @@ import {
   Card,
   Chip,
   CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
 } from "@mui/material";
 // LoadingButton removed - using manual implementation instead
 import axios from "axios";
@@ -35,7 +39,7 @@ import { styled } from "@mui/material/styles";
 import AddIcon from "@mui/icons-material/Add";
 import RemoveIcon from "@mui/icons-material/Remove";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useSearchParams } from "react-router-dom";
 
 import { serverBaseAddress } from "../Pages/APIPage";
 import DocToPdf from "./DocToPdf";
@@ -43,6 +47,7 @@ import { UserContext } from "../Pages/UserContext";
 import { DatePicker, LocalizationProvider } from "@mui/x-date-pickers";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs from "dayjs";
+import { rfqReference } from "../test_feasibility_automation/rfqInboxHelpers";
 
 const StyledTableRow = styled(TableRow)(({ theme }) => ({
   "&:nth-of-type(odd)": {
@@ -127,6 +132,10 @@ export default function Quotation() {
   const [totalAmountAfterDiscount, setTotalAmountAfterDiscount] = useState(0);
 
   const { id } = useParams("id");
+  // Opened from an enquiry's draft quote: /quotation?rfq=12
+  const [searchParams] = useSearchParams();
+  const rfqId = !id ? parseInt(searchParams.get("rfq")) || null : null;
+  const [rfqRef, setRfqRef] = useState(""); // RFQ/DDMMYYYY/NN, from the draft quote
 
   const [companyIdList, setCompanyIdList] = useState([]);
   const [selectedCompanyId, setSelectedCompanyId] = useState("");
@@ -184,6 +193,66 @@ export default function Quotation() {
     // Set initial quotation ID when the component mounts
     // setInitialQuotationId(initialCompanyName);
   }, [id, initialCompanyName]);
+
+  // Pre-fill a new quotation from an enquiry's draft quote (customer and test lines)
+  useEffect(() => {
+    if (!rfqId) return;
+    axios
+      .get(`${serverBaseAddress}/api/enquiries/${rfqId}/draft-quote`)
+      .then(async ({ data }) => {
+        const { request, draft } = data;
+        if (request) setRfqRef(rfqReference(request));
+        if (!draft) {
+          toast.warning("This enquiry has no draft quote yet");
+          return;
+        }
+        const c = draft.customer || {};
+        if (c.company_id) {
+          try {
+            const res = await axios.get(`${serverBaseAddress}/api/getCompanyDetails/` + c.company_id);
+            const m = res.data[0] || {};
+            setSelectedCompanyId(c.company_id);
+            setToCompanyAddress(m.company_address || c.company_address || "");
+            setCustomerreferance(m.customer_referance || "");
+          } catch (err) {
+            console.error(err);
+          }
+        } else {
+          setToCompanyAddress(c.company_address || "");
+        }
+        setCompanyName(c.company_name || "");
+        setCustomerId((c.company_id || "").toUpperCase());
+        setKindAttention(c.kind_attention || "");
+        setCustomerEmail(c.email || "");
+        setCustomerContactNumber(c.phone || "");
+        if (request.customer_reference) setCustomerreferance(request.customer_reference);
+        setProjectName(request.email_subject || `Enquiry ${rfqReference(request)}`);
+        const ts2Only = String(request.departments || "") === "TS2";
+        setQuoteCategory(ts2Only ? "EMI & EMC" : "Environmental Testing");
+        setCatCode(ts2Only ? "TS2" : "TS1");
+        setSelectedDate(formattedDate);
+        setTableData(
+          draft.lines.map((l, i) => ({
+            id: i + 1,
+            slno: i + 1,
+            testDescription: l.testDescription || "",
+            sacNo: l.sacNo || "",
+            duration: l.duration ?? "",
+            unit: l.unit || "",
+            perUnitCharge: l.perUnitCharge ?? "",
+            amount: l.amount ?? "",
+            module_id: 0,
+          })),
+        );
+        const toCheck = draft.lines.filter((l) => l.problems.length).length;
+        toast.info(
+          `Filled from the draft quote of ${rfqReference(request)}.${toCheck ? ` ${toCheck} line(s) need checking (see the enquiry's Quote tab).` : ""}${c.company_id ? "" : " New customer: save it in the enquiry's Quote tab (or choose the company here) before saving."}`,
+          { autoClose: 9000 },
+        );
+      })
+      .catch(() => toast.error("Couldn't load the draft quote"));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rfqId]);
 
   // To prefill the primary company details on selecting company name:
   const prefillTextFields = (selectedCompanyId) => {
@@ -421,6 +490,7 @@ export default function Quotation() {
 
         // Update the state with successful ID
         setQuotationIDString(freshQuotationId);
+        submitResponse.quotationId = freshQuotationId;
         return submitResponse; // Success!
       } catch (error) {
         // Check if it's a duplicate ID error
@@ -543,6 +613,18 @@ export default function Quotation() {
 
       if (response.status === 200) {
         toast.success(editId ? "Changes Saved" : "Quotation Added");
+        // Made from an enquiry's draft: link the quotation to the enquiry, then offer the next steps
+        if (rfqId && !editId && response.quotationId) {
+          await axios
+            .post(`${serverBaseAddress}/api/enquiries/${rfqId}/draft-quote/link`, {
+              quotation_ids: response.quotationId,
+              value: taxableAmount,
+            })
+            .catch(() => toast.warning("Quotation saved, but it couldn't be linked to the enquiry"));
+          setIsSubmitting(false);
+          setEnquiryNext({ quotationId: response.quotationId, dbId: response.data?.insertId, value: taxableAmount, followup: nextWorkingDay(3) });
+          return;
+        }
       }
     } catch (error) {
       console.error("Error submitting quotation:", error);
@@ -726,6 +808,40 @@ export default function Quotation() {
   // Function to handle download action
   const handleDownloadQuote = () => {
     setShowPdfDialog(true); // Show the PDF generation dialog
+  };
+
+  // After saving a quotation made from an enquiry: download it, then mark the enquiry "Quote sent"
+  const [enquiryNext, setEnquiryNext] = useState(null); // {quotationId, dbId, value, followup}
+  const [pdfId, setPdfId] = useState(null);
+  const [markingSent, setMarkingSent] = useState(false);
+  const nextWorkingDay = (days) => {
+    const d = moment();
+    let left = days;
+    while (left > 0) {
+      d.add(1, "day");
+      if (d.day() !== 0 && d.day() !== 6) left--;
+    }
+    return d.format("YYYY-MM-DD");
+  };
+  const leaveEnquiryNext = () => {
+    setEnquiryNext(null);
+    navigate(-1);
+  };
+  const markQuoteSent = async () => {
+    setMarkingSent(true);
+    try {
+      await axios.post(`${serverBaseAddress}/api/enquiries/${rfqId}/actions/quote_sent`, {
+        quotation_ref: enquiryNext.quotationId,
+        quote_value: enquiryNext.value,
+        next_followup_at: enquiryNext.followup,
+      });
+      toast.success(`${rfqRef || rfqReference(rfqId)} marked as Quote sent`);
+      leaveEnquiryNext();
+    } catch (err) {
+      toast.error(err.response?.data?.error || "Couldn't mark the quote as sent");
+    } finally {
+      setMarkingSent(false);
+    }
   };
 
   return (
@@ -1603,8 +1719,54 @@ export default function Quotation() {
 
           {/* Dialog for PDF generation */}
           {showPdfDialog && (
-            <DocToPdf id={editId} onClose={() => setShowPdfDialog(false)} />
+            <DocToPdf id={pdfId || editId} onClose={() => setShowPdfDialog(false)} />
           )}
+
+          {/* Saved from an enquiry: the next steps without going back to the enquiry */}
+          <Dialog open={!!enquiryNext} onClose={() => !markingSent && leaveEnquiryNext()} maxWidth="xs" fullWidth>
+            <DialogTitle>Quotation {enquiryNext?.quotationId} saved</DialogTitle>
+            <DialogContent dividers>
+              <Typography variant="body2" gutterBottom>
+                It is linked to enquiry {rfqRef || rfqReference(rfqId)}.
+              </Typography>
+              <Typography variant="body2" fontWeight={600} mt={1}>
+                1. Download the document
+              </Typography>
+              <Button
+                size="small"
+                variant="outlined"
+                startIcon={<FileDownloadIcon />}
+                disabled={!enquiryNext?.dbId}
+                onClick={() => {
+                  setPdfId(enquiryNext.dbId);
+                  setShowPdfDialog(true);
+                }}
+                sx={{ mt: 0.5 }}
+              >
+                Download
+              </Button>
+              <Typography variant="body2" fontWeight={600} mt={2}>
+                2. Send it to the customer from Outlook, then mark it sent
+              </Typography>
+              <TextField
+                size="small"
+                type="date"
+                label="First follow-up on"
+                InputLabelProps={{ shrink: true }}
+                value={enquiryNext?.followup || ""}
+                onChange={(e) => setEnquiryNext({ ...enquiryNext, followup: e.target.value })}
+                sx={{ mt: 1 }}
+              />
+            </DialogContent>
+            <DialogActions>
+              <Button color="inherit" onClick={leaveEnquiryNext} disabled={markingSent}>
+                Later
+              </Button>
+              <Button variant="contained" color="success" onClick={markQuoteSent} disabled={markingSent}>
+                {markingSent ? "Saving…" : "Mark as Quote sent"}
+              </Button>
+            </DialogActions>
+          </Dialog>
         </Box>
       </form>
     </div>

@@ -2,290 +2,184 @@ const { db } = require("./db");
 const schedule = require("node-schedule");
 const moment = require("moment");
 
+// notifications_table keeps, per notification, comma separated lists:
+//   users_to_be_notified - the roles that see it (e.g. "Lab Manager,Lab Engineer")
+//   isReadBy / isUnReadBy / isDeletedBy - user names
+// Roles and names are matched as whole list items (FIND_IN_SET), so "Lab Manager"
+// does not match "Lab Manager(EMI)" and "Ajay" does not match "Ajay HP".
+
+const KEEP_DAYS = 90; // shown in the panel
+const DELETE_AFTER_DAYS = 180; // removed from the table
+const MAX_LIST = 300;
+
+const query = (sql, params) => db.promise().query(sql, params).then(([rows]) => rows);
+
+// SQL: whether ? is an item of the list column (old rows may have ", " or empty items)
+const inList = (col) => `FIND_IN_SET(?, REPLACE(IFNULL(${col}, ''), ', ', ',')) > 0`;
+// SQL: the list column with ? added once
+const addTo = (col) =>
+  `IF(${inList(col)}, ${col}, CONCAT_WS(',', NULLIF(TRIM(BOTH ',' FROM IFNULL(${col}, '')), ''), ?))`;
+// SQL: the list column without ?
+const removeFrom = (col) =>
+  `NULLIF(TRIM(BOTH ',' FROM REPLACE(CONCAT(',', REPLACE(IFNULL(${col}, ''), ', ', ','), ','), CONCAT(',', ?, ','), ',')), '')`;
+
+const SET = {
+  read: `isReadBy = ${addTo("isReadBy")}, isUnReadBy = ${removeFrom("isUnReadBy")}`,
+  unread: `isUnReadBy = ${addTo("isUnReadBy")}, isReadBy = ${removeFrom("isReadBy")}`,
+  delete: `isDeletedBy = ${addTo("isDeletedBy")}`,
+};
+// parameters for SET[action]
+const setParams = (action, name) => (action === "delete" ? [name, name] : [name, name, name]);
+
+const VISIBLE = `${inList("users_to_be_notified")} AND NOT ${inList("isDeletedBy")}
+  AND receivedAt >= NOW() - INTERVAL ${KEEP_DAYS} DAY`;
+
 function notificationsAPIs(app, io, labbeeUsers) {
-  //Function to auto delete the notifications after 30 days of receiving them:
+  // Link to the page a notification is about (e.g. /rfq_inbox?open=12)
+  query(
+    "SELECT 1 FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'notifications_table' AND column_name = 'link'",
+  )
+    .then((r) => (r.length ? null : query("ALTER TABLE notifications_table ADD COLUMN link VARCHAR(255) DEFAULT NULL")))
+    .catch((err) => console.error("Error adding notifications_table.link", err.message));
 
-  // Function to auto delete the notifications after 30 days of receiving them:
-  // schedule.scheduleJob("*/2 * * * *", function () { // To run the function every minutes.
+  // Every night, remove notifications older than DELETE_AFTER_DAYS
   schedule.scheduleJob("0 0 * * *", function () {
-    const sqlQuery = `
-      DELETE FROM notifications_table
-      WHERE DATEDIFF(NOW(), receivedAt) > 30
-      AND (
-        LENGTH(users_to_be_notified) - LENGTH(REPLACE(users_to_be_notified, ',', '')) + 1 =
-        LENGTH(isDeletedBy) - LENGTH(REPLACE(isDeletedBy, ',', '')) + 1
-      );
-    `;
-
-    db.query(sqlQuery, (error, result) => {
-      if (error) {
-        console.error("Error while deleting older notifications", error);
-      } else {
-        // console.log("result is-->", result);
-      }
-    });
+    db.query(
+      `DELETE FROM notifications_table WHERE receivedAt < NOW() - INTERVAL ${DELETE_AFTER_DAYS} DAY`,
+      (error) => {
+        if (error) console.error("Error while deleting older notifications", error);
+      },
+    );
   });
 
-  // To fetch the count and ID:
-  // schedule.scheduleJob("*/2 * * * *", function () {
+  // The logged-in user (from the session); the name / role sent by the page
+  // are only used when there is no session.
+  const currentUser = async (req) => {
+    const userId = req.session?.user_id;
+    if (userId) {
+      const [u] = await query("SELECT name, role FROM labbee_users WHERE id = ?", [userId]);
+      if (u) return u;
+    }
+    const name = req.body?.userName || req.query?.userName;
+    const role = req.body?.userRole || req.query?.userRole;
+    return name || role ? { name, role } : null;
+  };
 
-  //   const sqlSelectQuery = `
-  //   SELECT id,
-  //     LENGTH(users_to_be_notified) - LENGTH(REPLACE(users_to_be_notified, ',', '')) + 1 AS users_count,
-  //     LENGTH(isDeletedBy) - LENGTH(REPLACE(isDeletedBy, ',', '')) + 1 AS deleted_by_count
-  //   FROM notifications_table
-  //   WHERE DATEDIFF(NOW(), receivedAt) > 30
-  //   AND (
-  //     LENGTH(users_to_be_notified) - LENGTH(REPLACE(users_to_be_notified, ',', '')) + 1 =
-  //     LENGTH(isDeletedBy) - LENGTH(REPLACE(isDeletedBy, ',', '')) + 1
-  //   );
-  // `;
-  //   db.query(sqlSelectQuery, (error, result) => {
-  //     if (error) {
-  //       console.error("Error while deleting older notifications", error);
-  //     } else {
-  //       result.forEach((row) => {
-  //         console.log(`Notification ID: ${row.id}`);
-  //         console.log(`Users Count: ${row.users_count}`);
-  //         console.log(`Deleted By Count: ${row.deleted_by_count}`);
-  //         console.log("------------------------");
-  //       });
-  //     }
-  //   });
-  // });
+  const handle = (fn) => async (req, res) => {
+    try {
+      const user = await currentUser(req);
+      if (!user) return res.status(401).json({ message: "Not logged in" });
+      await fn(req, res, user);
+    } catch (err) {
+      console.error(`notifications ${req.method} ${req.path}:`, err.message);
+      res.status(500).json({ message: "Internal server error" });
+    }
+  };
 
   // API function to add a new notification:
   app.post("/api/addNotification", async (req, res) => {
     try {
-      const { message, receivedAt, usersToBeNotified, sender } = req.body;
-
-      const query = `
-      INSERT INTO notifications_table (message, receivedAt, users_to_be_notified, notification_sent_by)
-      VALUES (?, ?, ?, ?)
-    `;
-
-      const formattedDateTime = moment(receivedAt).format(
-        "YYYY-MM-DD HH:mm:ss"
+      const { message, receivedAt, usersToBeNotified, sender, link } = req.body;
+      if (!message || !Array.isArray(usersToBeNotified)) {
+        return res.status(400).json({ error: "message and usersToBeNotified are required" });
+      }
+      await query(
+        `INSERT INTO notifications_table (message, receivedAt, users_to_be_notified, notification_sent_by, link)
+         VALUES (?, ?, ?, ?, ?)`,
+        [
+          message,
+          moment(receivedAt || undefined).format("YYYY-MM-DD HH:mm:ss"),
+          usersToBeNotified.map((r) => String(r).trim()).filter(Boolean).join(","),
+          sender || null,
+          link || null,
+        ],
       );
-      const values = [
-        message,
-        formattedDateTime,
-        usersToBeNotified.join(","),
-        sender,
-      ];
-
-      db.query(query, values, (error, result) => {
-        if (error) {
-          console.error("Error while adding notification:", error.message);
-          return res
-            .status(500)
-            .json({ error: "Error while adding notification" });
-        }
-        res.status(200).json({ message: "Notification added successfully" });
-      });
+      res.status(200).json({ message: "Notification added successfully" });
     } catch (error) {
-      console.error("Unexpected error:", error.message);
-      res.status(500).json({ error: "Unexpected error occurred" });
+      console.error("Error while adding notification:", error.message);
+      res.status(500).json({ error: "Error while adding notification" });
     }
   });
 
-  // API function to fetch all the notifications:
-  app.get("/api/getAllNotifications", (req, res) => {
-    const { userRole } = req.query;
+  // The notifications of the user's role, newest first, with isRead for this user
+  app.get(
+    "/api/getAllNotifications",
+    handle(async (req, res, user) => {
+      const rows = await query(
+        `SELECT id, message, receivedAt, notification_sent_by AS sender, link, isReadBy, isDeletedBy,
+                ${inList("isReadBy")} AS isRead
+         FROM notifications_table
+         WHERE ${VISIBLE}
+         ORDER BY receivedAt DESC, id DESC
+         LIMIT ${MAX_LIST}`,
+        [user.name, user.role, user.name],
+      );
+      res.status(200).json(rows.map((r) => ({ ...r, isRead: !!r.isRead })));
+    }),
+  );
 
-    const sqlQuery = `
-        SELECT id, message, receivedAt, isReadBy, isDeletedBy
-        FROM notifications_table
-        WHERE users_to_be_notified LIKE ?
-        AND (isDeletedBy IS NULL OR NOT FIND_IN_SET(?, isDeletedBy))
-        ORDER BY receivedAt DESC;
-      `;
-
-    db.query(sqlQuery, [`%${userRole}%`, userRole], (error, result) => {
-      if (error) {
-        console.error("Error while fetching notifications", error.message);
-        return res
-          .status(500)
-          .json({ error: "Error while fetching notifications" });
-      }
-
-      res.status(200).json(result);
+  // Mark one notification as read / unread, or delete it (for this user only)
+  const single = (action) =>
+    handle(async (req, res, user) => {
+      const id = parseInt(req.params.id);
+      if (!id) return res.status(400).json({ message: "Invalid notification id" });
+      await query(`UPDATE notifications_table SET ${SET[action]} WHERE id = ?`, [...setParams(action, user.name), id]);
+      res.status(200).json({ message: `Notification ${action === "delete" ? "deleted" : `marked as ${action}`}` });
     });
-  });
+  app.post("/api/notifications/markAsRead/:id", single("read"));
+  app.post("/api/notifications/markAsUnRead/:id", single("unread"));
+  app.delete("/api/deleteNotification/:id", single("delete"));
 
-  //API endpoint mark the notification as read :(Working Fine)
-  app.post("/api/notifications/markAsRead/:id", (req, res) => {
-    const { id } = req.params;
-    const { userName } = req.body;
-
-    const sqlQuery = `
-        UPDATE notifications_table 
-        SET isReadBy = 
-            CASE 
-                WHEN isReadBy IS NULL THEN ?
-                ELSE CONCAT_WS(',', isReadBy, ?)
-            END,
-            isUnReadBy = REPLACE(isUnReadBy, ?, ''),
-            isDeletedBy = REPLACE(isDeletedBy, ?, '')
-        WHERE id = ?;
-    `;
-
-    db.query(
-      sqlQuery,
-      [userName, userName, userName, userName, id],
-      (error, result) => {
-        if (error) {
-          console.error("Error marking notification as read:", error.message);
-          return res.status(500).json({
-            message: "Internal server error",
-            error: error.message,
-          });
-        }
-
-        res.status(200).json({
-          message: "Notification marked as read",
-        });
+  // Several at once: { action: "read" | "unread" | "delete", ids: [..] | "all" }
+  // "all" = every notification this user sees.
+  app.post(
+    "/api/notifications/bulk",
+    handle(async (req, res, user) => {
+      const { action, ids } = req.body;
+      if (!SET[action]) return res.status(400).json({ message: "Unknown action" });
+      let where;
+      let params;
+      if (ids === "all") {
+        where = VISIBLE;
+        params = [user.role, user.name];
+      } else {
+        const list = (Array.isArray(ids) ? ids : []).map((x) => parseInt(x)).filter(Boolean);
+        if (!list.length) return res.status(400).json({ message: "No notifications chosen" });
+        where = "id IN (?)";
+        params = [list];
       }
-    );
-  });
-
-  //API endpoint mark the notification as unread: (working fine)
-  app.post("/api/notifications/markAsUnRead/:id", (req, res) => {
-    const { id } = req.params;
-    const { userName } = req.body;
-
-    const sqlQuery = `
-        UPDATE notifications_table 
-        SET isUnReadBy = 
-            CASE 
-                WHEN isUnReadBy IS NULL THEN ?
-                ELSE CONCAT_WS(',', isUnReadBy, ?)
-            END,
-            isReadBy = REPLACE(isReadBy, ?, ''),
-            isDeletedBy = REPLACE(isDeletedBy, ?, '')
-        WHERE id = ?;
-    `;
-
-    db.query(
-      sqlQuery,
-      [userName, userName, userName, userName, id],
-      (error, result) => {
-        if (error) {
-          console.error("Error marking notification as unread:", error.message);
-          return res.status(500).json({
-            message: "Internal server error",
-            error: error.message,
-          });
-        }
-
-        res.status(200).json({
-          message: "Notification marked as unread",
-        });
-      }
-    );
-  });
-
-  //API endpoint to delete the notification:
-
-  app.delete("/api/deleteNotification/:id", (req, res) => {
-    const { id } = req.params;
-    const { userName } = req.body;
-
-    if (!id || !userName) {
-      return res
-        .status(400)
-        .json({ message: "Invalid request: id or userName is missing" });
-    }
-
-    const sqlQuery = `
-        UPDATE notifications_table 
-        SET isDeletedBy = 
-            CASE 
-                WHEN isDeletedBy IS NULL THEN ?
-                ELSE CONCAT_WS(',', isDeletedBy, ?)
-            END,
-            isReadBy = REPLACE(isReadBy, ?, ''),
-            isUnReadBy = REPLACE(isUnReadBy, ?, '')
-        WHERE id = ?;
-    `;
-
-    db.query(
-      sqlQuery,
-      [userName, userName, userName, userName, id],
-      (error, result) => {
-        if (error) {
-          console.error("Error deleting notification:", error.message);
-          return res.status(500).json({
-            message: "Internal server error",
-            error: error.message,
-          });
-        }
-
-        res.status(200).json({
-          message: "Notification deleted",
-        });
-      }
-    );
-  });
+      const result = await query(`UPDATE notifications_table SET ${SET[action]} WHERE ${where}`, [
+        ...setParams(action, user.name),
+        ...params,
+      ]);
+      res.status(200).json({ updated: result.affectedRows });
+    }),
+  );
 
   //API to delete all notifications for a user :
-  app.delete("/api/deleteAllNotifications", (req, res) => {
-    const { userName } = req.body;
-    if (!userName) {
-      return res.status(400).json({
-        message: "Invalid request: userName is missing",
-      });
-    }
-
-    const sqlQuery = `
-    UPDATE notifications_table SET isDeletedBy = CASE WHEN isDeletedBy IS NULL THEN ? ELSE CONCAT_WS(',', isDeletedBy, ?) END
-    `;
-
-    db.query(sqlQuery, [userName, userName], (error, result) => {
-      if (error) {
-        console.error("Error deleting notifications for user:", error.message);
-        return res.status(500).json({
-          message: "Internal server error",
-          error: error.message,
-        });
-      }
-      res.status(200).json({
-        message: "All notifications deleted for user",
-      });
-    });
-  });
+  app.delete(
+    "/api/deleteAllNotifications",
+    handle(async (req, res, user) => {
+      await query(`UPDATE notifications_table SET ${SET.delete} WHERE ${VISIBLE}`, [
+        ...setParams("delete", user.name),
+        user.role,
+        user.name,
+      ]);
+      res.status(200).json({ message: "All notifications deleted for user" });
+    }),
+  );
 
   //API to fetch the count of un-read notifications based on logged in user role:
-  app.get("/api/getUnreadNotificationsCount", (req, res) => {
-    const { userRole, userName } = req.query;
-
-    const sqlQuery = `
-            SELECT COUNT(*) AS count 
-            FROM notifications_table
-            WHERE users_to_be_notified LIKE ?
-              AND (isReadBy IS NULL OR isReadBy NOT LIKE ?)
-              AND (isDeletedBy IS NULL OR isDeletedBy NOT LIKE ?)
-          `;
-
-    db.query(
-      sqlQuery,
-      [`%${userRole}%`, `%${userName}%`, `%${userName}%`],
-      (error, result) => {
-        if (error) {
-          console.error(
-            "Error fetching count of unread notifications:",
-            error.message
-          );
-          return res.status(500).json({
-            message: "Internal server error",
-            error: error.message,
-          });
-        }
-        const count = result[0].count;
-        res.status(200).json({ count });
-      }
-    );
-  });
+  app.get(
+    "/api/getUnreadNotificationsCount",
+    handle(async (req, res, user) => {
+      const [row] = await query(
+        `SELECT COUNT(*) AS count FROM notifications_table WHERE ${VISIBLE} AND NOT ${inList("isReadBy")}`,
+        [user.role, user.name, user.name],
+      );
+      res.status(200).json({ count: row.count });
+    }),
+  );
 }
 
 module.exports = { notificationsAPIs };

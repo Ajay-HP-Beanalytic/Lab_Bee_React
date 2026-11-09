@@ -69,9 +69,20 @@ function customerDetailsAPIs(app) {
     } = req.body;
     const id = req.params.id;
 
-    const sqlQuery = `UPDATE customers_details SET company_name= '${companyName}', company_address= '${toCompanyAddress}', contact_person= '${kindAttention}', customer_email= '${customerEmail}', customer_contact_number= '${customerContactNumber}', company_id= '${customerId}', customer_referance= '${customerReferance}' WHERE id=${id}`;
+    const sqlQuery = `UPDATE customers_details SET company_name = ?, company_address = ?, contact_person = ?, customer_email = ?, customer_contact_number = ?, company_id = ?, customer_referance = ? WHERE id = ?`;
 
-    db.query(sqlQuery, (error, result) => {
+    const values = [
+      companyName,
+      toCompanyAddress,
+      kindAttention,
+      customerEmail,
+      customerContactNumber,
+      customerId,
+      customerReferance,
+      id,
+    ];
+
+    db.query(sqlQuery, values, (error, result) => {
       if (error) {
         console.log(error);
         return res
@@ -115,7 +126,7 @@ function customerDetailsAPIs(app) {
   // To fetch the data based on the company id from the table 'customers_details'
   app.get("/api/getCompanyDetails/:companyId", (req, res) => {
     const customerId = req.params.companyId;
-    const sqlQuery = `SELECT company_name, company_address, contact_person, customer_email, customer_contact_number, company_id, customer_referance FROM customers_details WHERE company_id = ?`;
+    const sqlQuery = `SELECT id, company_name, company_address, contact_person, customer_email, customer_contact_number, company_id, customer_referance FROM customers_details WHERE company_id = ?`;
 
     db.query(sqlQuery, [customerId], (error, result) => {
       if (error) {

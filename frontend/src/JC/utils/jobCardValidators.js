@@ -13,6 +13,9 @@ export const jobCardValidators = {
     const errors = [];
 
     // Required field validations
+    if (!String(data.companyName || "").trim()) {
+      errors.push({ field: "companyName", message: "Company name is required" });
+    }
     if (!data.jcOpenDate) {
       errors.push({
         field: "jcOpenDate",
@@ -38,6 +41,22 @@ export const jobCardValidators = {
       }
     }
 
+    return errors;
+  },
+
+  /**
+   * Tests performed: an end before its start is a typing slip
+   */
+  validateTestRows: (testDetailsRows = []) => {
+    const errors = [];
+    testDetailsRows.forEach((row, i) => {
+      if (row.startDate && row.endDate && dayjs(row.endDate).isBefore(dayjs(row.startDate))) {
+        errors.push({
+          field: "endDate",
+          message: `Tests performed, row ${i + 1}${row.testName ? ` (${row.testName})` : ""}: the end is before the start`,
+        });
+      }
+    });
     return errors;
   },
 

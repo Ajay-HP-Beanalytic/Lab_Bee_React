@@ -1,50 +1,55 @@
 const { db } = require("./db");
-const fs = require("fs");
+const os = require("os");
+const fs = require("fs-extra");
 const path = require("path");
 const multer = require("multer");
+const contentDisposition = require("content-disposition");
 const fileStorageService = require("./services/fileStorageService");
+const fileIndex = require("./services/fileIndex");
+const standards = require("./FeasibilityAutomation/standards/standardsLibrary");
 
-// Configure multer for file uploads:
+const MAX_UPLOAD_MB = Number(process.env.FILE_UPLOAD_MAX_MB) || 200;
+
+// multer 1.x reads file names as latin1; browsers send UTF-8
+const decodeName = (name) => {
+  const utf8 = Buffer.from(String(name || ""), "latin1").toString("utf8");
+  return utf8.includes("�") ? name : utf8;
+};
+
+// Configure multer for file uploads (checked by extension: browsers do not always send the right MIME type).
+// preservePath keeps "Sub/folder/a.pdf" names from folder uploads. A file of a
+// type that is not allowed is left out (and reported), not the whole batch.
 const upload = multer({
-  dest: "/tmp/",
-  limits: { fileSize: 50 * 1024 * 1024 },
+  dest: os.tmpdir(),
+  preservePath: true,
+  limits: { fileSize: MAX_UPLOAD_MB * 1024 * 1024, files: 50 },
   fileFilter: (req, file, cb) => {
-    const allowedTypes = [
-      "application/pdf",
-      "application/msword",
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      "application/vnd.ms-excel",
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-      "text/plain",
-      "text/csv",
-      "application/json",
-      "image/jpeg",
-      "image/webp",
-      "image/jpg",
-      "image/png",
-      "image/gif",
-      "video/mp4",
-      "audio/mpeg",
-      "audio/wav",
-      "audio/ogg",
-    ];
-
-    if (allowedTypes.includes(file.mimetype)) {
-      cb(null, true);
-    } else {
-      cb(new Error("Invalid file type"));
-    }
+    const name = decodeName(file.originalname);
+    const ext = path.extname(name).slice(1).toLowerCase();
+    if (fileStorageService.allowedExtensions.includes(ext)) return cb(null, true);
+    (req.rejectedFiles ||= []).push({ name, error: `Files of type .${ext || "?"} cannot be uploaded`, status: 400 });
+    cb(null, false);
   },
 });
+
+// Same people as the Org Documents page (route "org_docs" in App.js): they can
+// delete, create folders and change the Standards library. Everyone logged in
+// can view, download and upload (calibration certificates are uploaded from other pages).
+const MANAGER_DEPARTMENTS = ["Administration"];
+const MANAGER_ROLES = ["Quality Engineer"];
+const canManageFiles = (session) =>
+  String(session?.department || "")
+    .split(",")
+    .some((d) => MANAGER_DEPARTMENTS.includes(d.trim())) || MANAGER_ROLES.includes(session?.role);
+
+const inStandards = (relPath) => {
+  const p = String(relPath || "").replace(/\\/g, "/").replace(/^\/+/, "");
+  return p === standards.ROOT || p.startsWith(`${standards.ROOT}/`);
+};
 
 function fileStorageAPIs(app, io, labbeeUsers) {
   // Middleware to authenticate user via sessions to authenticate files
   const authenticateUser = (req, res, next) => {
-    // console.log("🔐 File Storage Auth Check:");
-    // console.log("  Session ID:", req.sessionID);
-    // console.log("  Session:", req.session);
-    // console.log("  Session user_id:", req.session?.user_id);
-
     //check if the user is logged in via session:
     const userId = req.session?.user_id;
 
@@ -67,6 +72,7 @@ function fileStorageAPIs(app, io, labbeeUsers) {
 
         // Set userId for use in file operations
         req.userId = userId;
+        req.canManageFiles = canManageFiles(req.session);
 
         next();
       })
@@ -79,189 +85,184 @@ function fileStorageAPIs(app, io, labbeeUsers) {
       });
   };
 
+  const requireManager = (req, res, next) =>
+    req.canManageFiles ? next() : res.status(403).json({ error: "Only Administration and the Quality Engineer can do this" });
+
   // Helper function to verify user exists in database
   const verifyUserInDatabase = async (userId) => {
-    return new Promise((resolve, reject) => {
-      const query =
-        "SELECT id, name, department, user_status FROM labbee_users WHERE id = ?";
-
-      db.query(query, [userId], (error, results) => {
-        if (error) {
-          console.error("Database error:", error);
-          reject(error);
-          return;
-        }
-
-        if (results.length === 0) {
-          resolve(false);
-          return;
-        }
-
-        const user = results[0];
-
-        //check if user status is enabled or not:
-        if (user.user_status !== "Enable") {
-          console.log("User account disabled:", userId, "Status:", user.status);
-          resolve(false);
-          return;
-        }
-
-        //If user is enabled, return true
-        resolve(true);
-      });
-    });
+    const [results] = await db
+      .promise()
+      .query("SELECT id, user_status FROM labbee_users WHERE id = ?", [userId]);
+    //check if user status is enabled or not:
+    return results.length > 0 && results[0].user_status === "Enable";
   };
 
-  // Enhanced logging function with user details:
-  const logFileAccess = (userId, filePath, action) => {
-    return new Promise((resolve, reject) => {
-      // Get user details for better logging
-      const query = "SELECT name, department FROM labbee_users WHERE id = ?";
-
-      db.query(query, [userId], (userError, userResults) => {
-        if (userError) {
-          console.error("Database error:", userError);
-          reject(userError);
-          return;
-        }
-
-        const userName = userResults[0]?.name || "Unknown User";
-        const userDepartment =
-          userResults[0]?.department || "Unknown Department";
-
-        // Log the file access
-        const logQuery = `
-        INSERT INTO file_access_log (user_id, file_path, action, accessed_at, user_name, user_department)
-        VALUES (?, ?, ?, NOW(), ?, ?)
-      `;
-
-        db.query(
-          logQuery,
-          [userId, filePath, action, userName, userDepartment],
-          (error, results) => {
-            if (error) {
-              console.error("Error logging file access:", error);
-              reject(error);
-            } else {
-              // If the log was successful, resolve the promise
-              resolve(results);
-            }
-          }
-        );
-      });
-    });
+  // Log who did what. A failed log entry never fails the request itself.
+  const logFileAccess = (req, filePath, action) => {
+    db.promise()
+      .query(
+        `INSERT INTO file_access_log (user_id, file_path, action, accessed_at, user_name, user_department)
+         VALUES (?, ?, ?, NOW(), ?, ?)`,
+        [req.userId, String(filePath).slice(0, 500), action, req.session?.username || null, req.session?.department || null],
+      )
+      .catch((error) => console.error("Error logging file access:", error.message));
   };
+
+  // Answer an error: its own status and message when it has one (bad path, not found …)
+  const sendError = (res, error, message) => {
+    if (!error.status) console.error(`❌ ${message}:`, error);
+    if (!res.headersSent) res.status(error.status || 500).json({ error: error.status ? error.message : message });
+  };
+
+  // Index the store and the standards register once the server is up
+  setTimeout(() => {
+    fileIndex
+      .ensureTable()
+      .then(() => standards.ensureTables())
+      .then(() => fileIndex.reindex())
+      .then(() => standards.syncWithFiles())
+      .catch((error) => console.error("❌ File index / standards start-up:", error.message));
+  }, 5000);
 
   // List files endpoint
   app.get("/api/files", authenticateUser, async (req, res) => {
     try {
-      const { folder = "" } = req.query;
+      const folder = String(req.query.folder || "").replace(/^\/+|\/+$/g, "");
       const files = await fileStorageService.listFiles(folder);
-
-      res.json({ files });
+      const uploadedBy = await fileIndex.uploaders(folder).catch(() => new Map());
+      res.json({
+        files: files.map((f) => ({ ...f, uploadedBy: uploadedBy.get(f.path) || null })),
+        canManage: req.canManageFiles,
+        maxUploadMb: MAX_UPLOAD_MB,
+      });
+      // bring the index in line with what is on disk
+      fileIndex.syncFolder(folder, files).catch((error) => console.error("File index sync:", error.message));
     } catch (error) {
-      console.error("❌ Error in /api/files:", error);
-      res
-        .status(500)
-        .json({ error: "Failed to list files", details: error.message });
+      sendError(res, error, "Failed to list files");
     }
   });
 
-  // Upload endpoint
-  app.post(
-    "/api/files/upload",
-    authenticateUser,
-    upload.single("file"),
-    async (req, res) => {
+  // Upload endpoint: one file ("file") or several ("files"). A file name may
+  // include sub-folders (folder upload). The same file again is skipped; a
+  // different file with an existing name is saved as "name (1).pdf".
+  const receiveFiles = (req, res, next) =>
+    upload.fields([
+      { name: "file", maxCount: 1 },
+      { name: "files", maxCount: 50 },
+    ])(req, res, (error) => {
+      if (!error) return next();
+      Object.values(req.files || {}).flat().forEach((f) => fs.remove(f.path).catch(() => {}));
+      if (error.code === "LIMIT_FILE_SIZE") return res.status(413).json({ error: `A file is larger than ${MAX_UPLOAD_MB} MB` });
+      if (error.code === "LIMIT_FILE_COUNT" || error.code === "LIMIT_UNEXPECTED_FILE") return res.status(400).json({ error: "Upload at most 50 files at a time" });
+      res.status(error.status || 400).json({ error: error.message || "Upload failed" });
+    });
+
+  app.post("/api/files/upload", authenticateUser, receiveFiles, async (req, res) => {
+    const incoming = Object.values(req.files || {}).flat();
+    const rejected = req.rejectedFiles || [];
+    if (!incoming.length) {
+      return res.status(rejected[0]?.status || 400).json({ error: rejected[0]?.error || "No file uploaded", errors: rejected });
+    }
+
+    // no folder sent: "uploads"; "" = Home (folder uploads at the top level)
+    const folder = req.body.folder === undefined ? "uploads" : String(req.body.folder);
+
+    const saved = [];
+    const errors = [...rejected];
+    for (const file of incoming) {
+      const name = decodeName(file.originalname);
       try {
-        if (!req.file) {
-          return res.status(400).json({ error: "No file uploaded" });
+        const target = [folder, ...name.replace(/\\/g, "/").split("/").slice(0, -1)].filter(Boolean).join("/");
+        if (inStandards(target) && !req.canManageFiles) {
+          throw Object.assign(new Error("Only Administration and the Quality Engineer can add standards"), { status: 403 });
         }
-
-        const { folder = "uploads" } = req.body;
-
-        const uploadedFile = await fileStorageService.uploadFile(
-          req.file,
-          folder,
-          req.file.originalname
-        );
-
-        // Log upload
-        await logFileAccess(req.userId, uploadedFile.path, "upload");
-
-        res.json({
-          message: "File uploaded successfully",
-          file: uploadedFile,
-        });
+        const uploadedFile = await fileStorageService.uploadFile(file, folder, name);
+        const parent = uploadedFile.path.split("/").slice(0, -1).join("/");
+        if (parent) await fileIndex.recordFolder(parent).catch((e) => console.error("File index:", e.message));
+        await fileIndex.recordUpload(uploadedFile, { id: req.userId, name: req.session?.username }).catch((e) => console.error("File index:", e.message));
+        const duplicateOf = uploadedFile.skipped ? null : await fileIndex.sameContent(uploadedFile.sha256, uploadedFile.path).catch(() => null);
+        let standardId = null;
+        if (standards.isStandardFile(uploadedFile.path)) {
+          standardId = await standards.register(uploadedFile.path, req.userId).catch((e) => console.error("Standards register:", e.message));
+        }
+        logFileAccess(req, uploadedFile.path, "upload");
+        const { sha256, ...rest } = uploadedFile;
+        saved.push({ ...rest, originalName: name, duplicateOf, standardId: standardId || null });
       } catch (error) {
-        console.error("❌ Error in upload:", error);
-        res
-          .status(500)
-          .json({ error: "Failed to upload file", details: error.message });
+        fs.remove(file.path).catch(() => {});
+        if (!error.status) console.error("❌ Error in upload:", error);
+        errors.push({ name, error: error.status ? error.message : "Could not be saved", status: error.status || 500 });
       }
     }
-  );
 
-  // Download endpoint
-  app.get(
-    "/api/files/download/:path(*)",
-    authenticateUser,
-    async (req, res) => {
-      try {
-        const filePath = req.params.path;
-
-        const fileInfo = await fileStorageService.downloadFile(filePath);
-
-        // Log download
-        await logFileAccess(req.userId, filePath, "download");
-
-        res.download(fileInfo.fullPath, fileInfo.name);
-      } catch (error) {
-        console.error("❌ Error in download:", error);
-        res.status(500).json({ error: "Failed to download file" });
-      }
+    if (!saved.length) {
+      return res.status(errors[0].status).json({ error: errors[0].error, errors });
     }
-  );
+    res.json({
+      message: saved.length === 1 ? "File uploaded successfully" : `${saved.length} files uploaded`,
+      file: saved[0],
+      files: saved,
+      errors,
+    });
+  });
 
-  // Search endpoint
+  // Download endpoint (streamed, supports resuming)
+  app.get("/api/files/download/:path(*)", authenticateUser, async (req, res) => {
+    try {
+      const fileInfo = await fileStorageService.downloadFile(req.params.path);
+      logFileAccess(req, fileInfo.path, "download");
+      res.download(fileInfo.fullPath, fileInfo.name, { dotfiles: "allow" }, (error) => {
+        if (error && !res.headersSent) sendError(res, error, "Failed to download file");
+      });
+    } catch (error) {
+      sendError(res, error, "Failed to download file");
+    }
+  });
+
+  // Search endpoint: file and folder names (from the index; walks the folders if the index cannot be used)
   app.get("/api/files/search", authenticateUser, async (req, res) => {
     try {
-      const { q } = req.query;
-
+      const q = String(req.query.q || "").trim();
       if (!q) {
         return res.status(400).json({ error: "Search query required" });
       }
 
-      const files = await fileStorageService.searchFiles(q);
-      // Log search
-      await logFileAccess(req.userId, `search:${q}`, "search");
+      let files;
+      try {
+        files = await fileIndex.search(q);
+      } catch (error) {
+        console.error("File index search failed, searching the folders:", error.message);
+        files = [];
+        const needle = q.toLowerCase();
+        await fileStorageService.walk(async (item) => {
+          if (files.length < 200 && item.name.toLowerCase().includes(needle)) files.push(item);
+        });
+      }
+      logFileAccess(req, `search:${q}`, "search");
 
       res.json({ files, query: q });
     } catch (error) {
-      console.error("❌ Error in search:", error);
-      res.status(500).json({ error: "Failed to search files" });
+      sendError(res, error, "Failed to search files");
     }
   });
 
-  // Delete endpoint
-  app.delete("/api/files/:path(*)", authenticateUser, async (req, res) => {
+  // Delete a file (moved to the hidden .trash folder) or an empty folder
+  app.delete("/api/files/:path(*)", authenticateUser, requireManager, async (req, res) => {
     try {
       const filePath = req.params.path;
-
       await fileStorageService.deleteFile(filePath);
+      await fileIndex.remove(filePath).catch((e) => console.error("File index:", e.message));
+      if (inStandards(filePath)) await standards.unregister(filePath).catch((e) => console.error("Standards:", e.message));
+      logFileAccess(req, filePath, "delete");
 
-      // Log deletion
-      await logFileAccess(req.userId, filePath, "delete");
-
-      res.json({ message: "File deleted successfully" });
+      res.json({ message: "Deleted successfully" });
     } catch (error) {
-      console.error("❌ Error in delete:", error);
-      res.status(500).json({ error: "Failed to delete file" });
+      sendError(res, error, "Failed to delete file");
     }
   });
 
   // Create directory endpoint
-  app.post("/api/files/mkdir", authenticateUser, async (req, res) => {
+  app.post("/api/files/mkdir", authenticateUser, requireManager, async (req, res) => {
     try {
       const { path: dirPath } = req.body;
 
@@ -269,15 +270,79 @@ function fileStorageAPIs(app, io, labbeeUsers) {
         return res.status(400).json({ error: "Directory path required" });
       }
 
-      await fileStorageService.createDirectory(dirPath);
-
-      // Log directory creation
-      await logFileAccess(req.userId, dirPath, "mkdir");
+      const fullPath = await fileStorageService.createDirectory(dirPath);
+      await fileIndex.recordFolder(fileStorageService.relative(fullPath)).catch((e) => console.error("File index:", e.message));
+      logFileAccess(req, dirPath, "mkdir");
 
       res.json({ message: "Directory created successfully" });
     } catch (error) {
-      console.error("❌ Error in mkdir:", error);
-      res.status(500).json({ error: "Failed to create directory" });
+      sendError(res, error, "Failed to create directory");
+    }
+  });
+
+  // Other pages keep paths of stored files; a move updates them so their links keep working
+  const FILE_REFERENCES = [
+    ["chamber_calibration", "calibration_certificate_path"],
+    ["emi_calibrations_table", "calibration_certificate_path"],
+  ];
+  const updateReferences = async (oldPath, newPath) => {
+    for (const [table, column] of FILE_REFERENCES) {
+      await db
+        .promise()
+        .query(
+          `UPDATE ${table} SET ${column} = CONCAT(?, SUBSTRING(${column}, ?)) WHERE ${column} = ? OR ${column} LIKE ?`,
+          [newPath, oldPath.length + 1, oldPath, `${oldPath.replace(/[\\%_]/g, (c) => `\\${c}`)}/%`],
+        )
+        .catch((e) => console.error(`File references (${table}):`, e.message));
+    }
+  };
+
+  // Move or copy files/folders into another folder: { paths: [...], to: "TS1/x", mode: "move" | "copy" }
+  app.post("/api/files/transfer", authenticateUser, requireManager, async (req, res) => {
+    try {
+      const { paths, to = "", mode = "move" } = req.body || {};
+      if (!Array.isArray(paths) || !paths.length) return res.status(400).json({ error: "Nothing selected" });
+      if (!["move", "copy"].includes(mode)) return res.status(400).json({ error: "mode must be move or copy" });
+
+      const done = [];
+      const errors = [];
+      for (const from of paths.slice(0, 500)) {
+        try {
+          const result = await fileStorageService.transfer(from, to, mode);
+          if (mode === "move") {
+            await fileIndex.rename(result.from, result.path).catch((e) => console.error("File index:", e.message));
+            await standards.renamePaths(result.from, result.path).catch((e) => console.error("Standards:", e.message));
+            await updateReferences(result.from, result.path);
+          } else {
+            await fileIndex.indexTree(result.path).catch((e) => console.error("File index:", e.message));
+          }
+          logFileAccess(req, `${result.from} -> ${result.path}`, mode);
+          done.push(result);
+        } catch (error) {
+          if (!error.status) console.error(`❌ Error in ${mode}:`, error);
+          errors.push({ name: from, error: error.status ? error.message : `Could not ${mode}` });
+        }
+      }
+      // PDFs that came into Standards/ join the register
+      if (done.length && (inStandards(to) || done.some((d) => inStandards(d.path)))) {
+        standards.syncWithFiles().catch((e) => console.error("Standards:", e.message));
+      }
+      if (!done.length) return res.status(400).json({ error: errors[0]?.error || "Nothing done", errors });
+      res.json({ done, errors });
+    } catch (error) {
+      sendError(res, error, "Failed to move files");
+    }
+  });
+
+  // Re-read the whole store into the search index (after files were copied onto the server directly)
+  app.post("/api/files/reindex", authenticateUser, requireManager, async (req, res) => {
+    try {
+      const indexed = await fileIndex.reindex();
+      const standardFiles = await standards.syncWithFiles();
+      logFileAccess(req, "reindex", "reindex");
+      res.json({ indexed, standards: standardFiles });
+    } catch (error) {
+      sendError(res, error, "Failed to re-index the files");
     }
   });
 
@@ -285,123 +350,83 @@ function fileStorageAPIs(app, io, labbeeUsers) {
   app.get("/api/files/storage-info", authenticateUser, async (req, res) => {
     try {
       const storageInfo = await fileStorageService.getStorageInfo();
-      // Log storage info
-      await logFileAccess(req.userId, "storage-info", "info");
-
+      logFileAccess(req, "storage-info", "info");
       res.json(storageInfo);
     } catch (error) {
-      console.error("❌ Error getting storage info:", error);
-      res.status(500).json({ error: "Failed to get storage information" });
+      sendError(res, error, "Failed to get storage information");
     }
   });
 
-  //Verify the folder structure:
   // Verify directory structure
   app.get("/api/files/verify-structure", authenticateUser, async (req, res) => {
     try {
       const verification = await fileStorageService.verifyDirectoryStructure();
-
-      // Log structure verification
-      await logFileAccess(req.userId, "verify-structure", "verify");
-
+      logFileAccess(req, "verify-structure", "verify");
       res.json(verification);
     } catch (error) {
-      console.error("❌ Error verifying structure:", error);
-      res.status(500).json({ error: "Failed to verify directory structure" });
+      sendError(res, error, "Failed to verify directory structure");
     }
   });
 
   // Recreate missing directories
-  app.post(
-    "/api/files/recreate-structure",
-    authenticateUser,
-    async (req, res) => {
-      try {
-        await fileStorageService.ensureDirectoriesExist();
-        await fileStorageService.createDefaultStructure();
+  app.post("/api/files/recreate-structure", authenticateUser, requireManager, async (req, res) => {
+    try {
+      await fileStorageService.ensureDirectoriesExist();
+      await fileStorageService.createDefaultStructure();
+      const verification = await fileStorageService.verifyDirectoryStructure();
+      logFileAccess(req, "recreate-structure", "recreate");
 
-        const verification =
-          await fileStorageService.verifyDirectoryStructure();
-
-        // Log structure recreation
-        await logFileAccess(req.userId, "recreate-structure", "recreate");
-
-        res.json({
-          message: "Directory structure recreated successfully",
-          verification,
-        });
-      } catch (error) {
-        console.error("❌ Error recreating structure:", error);
-        res
-          .status(500)
-          .json({ error: "Failed to recreate directory structure" });
-      }
+      res.json({
+        message: "Directory structure recreated successfully",
+        verification,
+      });
+    } catch (error) {
+      sendError(res, error, "Failed to recreate directory structure");
     }
-  );
+  });
 
   // Clean up temporary files
-  app.post("/api/files/cleanup-temp", authenticateUser, async (req, res) => {
+  app.post("/api/files/cleanup-temp", authenticateUser, requireManager, async (req, res) => {
     try {
       const cleanedCount = await fileStorageService.cleanupTempFiles();
-
-      await logFileAccess(req.userId, "temp-cleanup", "cleanup");
-
+      logFileAccess(req, "temp-cleanup", "cleanup");
       res.json({
         message: `Cleaned up ${cleanedCount} temporary files`,
         cleanedCount,
       });
     } catch (error) {
-      console.error("❌ Error cleaning temp files:", error);
-      res.status(500).json({ error: "Failed to cleanup temporary files" });
+      sendError(res, error, "Failed to cleanup temporary files");
     }
   });
 
   // Create custom directory
-  app.post(
-    "/api/files/create-directory",
-    authenticateUser,
-    async (req, res) => {
-      try {
-        const { path: dirPath, description } = req.body;
+  app.post("/api/files/create-directory", authenticateUser, requireManager, async (req, res) => {
+    try {
+      const { path: dirPath, description } = req.body;
 
-        if (!dirPath) {
-          return res.status(400).json({ error: "Directory path required" });
-        }
-
-        await logFileAccess(req.userId, dirPath, "create-directory");
-
-        await fileStorageService.createCustomDirectory(dirPath, description);
-        res.json({
-          message: "Directory created successfully",
-          path: dirPath,
-        });
-      } catch (error) {
-        console.error("❌ Error creating custom directory:", error);
-        res.status(500).json({ error: "Failed to create directory" });
+      if (!dirPath) {
+        return res.status(400).json({ error: "Directory path required" });
       }
+
+      await fileStorageService.createCustomDirectory(dirPath, description);
+      logFileAccess(req, dirPath, "create-directory");
+      res.json({
+        message: "Directory created successfully",
+        path: dirPath,
+      });
+    } catch (error) {
+      sendError(res, error, "Failed to create directory");
     }
-  );
+  });
 
   // Get directory statistics
   app.get("/api/files/stats/:path(*)?", authenticateUser, async (req, res) => {
     try {
       const folderPath = req.params.path || "";
-
-      const fullPath = path.join(fileStorageService.baseDir, folderPath);
-
-      await logFileAccess(req.userId, fullPath, "stats");
-
-      if (!fullPath.startsWith(fileStorageService.baseDir)) {
-        return res.status(400).json({ error: "Invalid path" });
-      }
-
-      if (!fs.existsSync(fullPath)) {
-        return res.status(404).json({ error: "Directory not found" });
-      }
-
       const files = await fileStorageService.listFiles(folderPath);
+      logFileAccess(req, folderPath || "/", "stats");
 
-      const stats = {
+      res.json({
         path: folderPath,
         totalItems: files.length,
         folders: files.filter((f) => f.type === "folder").length,
@@ -413,75 +438,59 @@ function fileStorageAPIs(app, io, labbeeUsers) {
           files.length > 0
             ? new Date(Math.max(...files.map((f) => new Date(f.lastModified))))
             : null,
-      };
-
-      res.json(stats);
+      });
     } catch (error) {
-      console.error("❌ Error getting directory stats:", error);
-      res.status(500).json({ error: "Failed to get directory statistics" });
+      sendError(res, error, "Failed to get directory statistics");
     }
   });
 
   // View file endpoint
   app.get("/api/files/view/:path(*)", authenticateUser, async (req, res) => {
     try {
-      const filePath = req.params.path;
-
-      const fileInfo = await fileStorageService.viewFile(filePath);
-
-      // await logFileAccess(req.userId, filePath, "View");
-
+      const { fullPath, ...fileInfo } = await fileStorageService.viewFile(req.params.path);
       res.json({ file: fileInfo });
     } catch (error) {
-      console.error("❌ Error in view endpoint:", error);
-      res.status(500).json({ error: "Failed to view file" });
+      sendError(res, error, "Failed to view file");
     }
   });
 
   // Get file content for text files
   app.get("/api/files/content/:path(*)", authenticateUser, async (req, res) => {
     try {
-      const filePath = req.params.path;
-
-      const fileContent = await fileStorageService.getFileContent(filePath);
-
-      await logFileAccess(req.userId, filePath, "Text Content ");
-
+      const fileContent = await fileStorageService.getFileContent(req.params.path);
+      logFileAccess(req, req.params.path, "Text Content");
       res.json(fileContent);
     } catch (error) {
-      console.error("❌ Error getting file content:", error);
-      res.status(500).json({ error: "Failed to get file content" });
+      sendError(res, error, "Failed to get file content");
     }
   });
 
-  // Serve files directly for viewing (alternative to download)
+  // Serve files directly for viewing. Streamed with range support, so a large
+  // PDF opens at once and can be opened at a page (…#page=12).
   app.get("/api/files/serve/:path(*)", authenticateUser, async (req, res) => {
     try {
-      const filePath = req.params.path;
-
-      const fileInfo = await fileStorageService.viewFile(filePath);
-
-      // Set appropriate headers for inline viewing
-      res.setHeader(
-        "Content-Type",
-        fileInfo.mimeType || "application/octet-stream"
+      const fileInfo = await fileStorageService.viewFile(req.params.path);
+      logFileAccess(req, fileInfo.path, "View");
+      res.sendFile(
+        fileInfo.fullPath,
+        {
+          dotfiles: "allow",
+          headers: {
+            "Content-Type": fileInfo.mimeType || "application/octet-stream",
+            "Content-Disposition": contentDisposition(fileInfo.name, { type: "inline" }),
+            "X-Content-Type-Options": "nosniff",
+            // a stored HTML/SVG file must not run scripts on our domain
+            ...(/html|svg|xml/.test(fileInfo.mimeType) ? { "Content-Security-Policy": "sandbox" } : {}),
+          },
+        },
+        (error) => {
+          if (error && !res.headersSent) sendError(res, error, "Failed to serve file");
+        },
       );
-      res.setHeader(
-        "Content-Disposition",
-        `inline; filename="${fileInfo.name}"`
-      );
-
-      await logFileAccess(req.userId, filePath, "View");
-
-      // Stream the file
-      const fileStream = fs.createReadStream(fileInfo.fullPath);
-
-      fileStream.pipe(res);
     } catch (error) {
-      console.error("❌ Error serving file:", error);
-      res.status(500).json({ error: "Failed to serve file" });
+      sendError(res, error, "Failed to serve file");
     }
   });
 }
 
-module.exports = { fileStorageAPIs };
+module.exports = { fileStorageAPIs, canManageFiles };

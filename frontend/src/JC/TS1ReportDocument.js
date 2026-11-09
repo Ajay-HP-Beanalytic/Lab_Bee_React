@@ -30,25 +30,23 @@ const formatDate = (dateValue) => {
 const formatTime = (dateValue) => {
   if (!dateValue) return "";
 
-  // Handle dayjs objects
-  if (dayjs.isDayjs(dateValue)) {
-    return dateValue.format("HH:mm A");
-  }
-
-  // Handle Date objects or strings
-  const date = dayjs(dateValue);
-  if (date.isValid()) {
-    return date.format("HH:mm A");
-  }
+  // 12-hour clock with AM/PM ("02:30 PM")
+  const date = dayjs.isDayjs(dateValue) ? dateValue : dayjs(dateValue);
+  return date.isValid() ? date.format("hh:mm A") : "";
 };
 
 /**
- * Calculate and format duration in readable format
- * @param {number} minutes - Duration in minutes
+ * Duration in words. The job card stores hours ("Duration (Hours)", e.g. "2.50"); a
+ * duration whose unit is "Test" is a count, not a time.
+ * @param {number|string} hoursValue - Duration in hours
+ * @param {string} unit - "Hours" (default) or "Test"
  * @returns {string} Formatted duration string
  */
-const formatDuration = (minutes) => {
-  if (!minutes || minutes === 0) return "0 minutes";
+const formatDuration = (hoursValue, unit = "Hours") => {
+  const value = Number(hoursValue);
+  if (!Number.isFinite(value) || value <= 0) return "";
+  if (String(unit).toLowerCase() === "test") return `${value} test${value === 1 ? "" : "s"}`;
+  const minutes = Math.round(value * 60);
 
   const hours = Math.floor(minutes / 60);
   const mins = Math.floor(minutes % 60);
@@ -91,8 +89,14 @@ export const prepareReportData = (comprehensiveData) => {
       serialNo: row.serialNo || "",
     }));
 
-  // Filter EUT rows for CURRENT TEST only (based on currentTest.eutSerialNo)
-  const currentTestEutSerialNo = currentTest.eutSerialNo || "";
+  // An ESS report covers all the selected tests, in order
+  const reportTests = (comprehensiveData.essTestRows || []).length
+    ? comprehensiveData.essTestRows
+    : [currentTest];
+
+  // Filter EUT rows for CURRENT TEST only (based on currentTest.eutSerialNo);
+  // for ESS, the EUTs of all its tests
+  const currentTestEutSerialNo = reportTests.map((t) => t.eutSerialNo || "").join(",");
 
   // Split serial numbers if multiple (comma-separated or semicolon-separated)
   const currentTestSerialNumbers = currentTestEutSerialNo
@@ -149,7 +153,7 @@ export const prepareReportData = (comprehensiveData) => {
       startDate: formatDate(row.startDate),
       endDate: formatDate(row.endDate),
       duration: formatDuration(row.duration),
-      actualTestDuration: formatDuration(row.actualTestDuration),
+      actualTestDuration: formatDuration(row.actualTestDuration, row.unit),
       remarks: row.remarks || "",
       reportNumber: row.reportNumber || "",
       preparedBy: row.preparedBy || "",
@@ -234,6 +238,22 @@ export const prepareReportData = (comprehensiveData) => {
     // Filtered EUT rows for current test only
     currentTestEutRows: currentTestEutRows, // Only EUTs used in this specific test
 
+    // Tests listed in the report's test table (one for a single test, all for ESS)
+    reportTests: reportTests.map((t) => ({
+      id: t.id || null,
+      testName: t.testName || "",
+      testChamber: t.testChamber || "",
+      eutSerialNo: t.eutSerialNo || "",
+      standard: t.standard || "",
+      remarks: t.remarks || "",
+      testCategory: t.testCategory || "",
+      // total duration for Table 02 (the actual duration, else the planned one)
+      duration: formatDuration(t.actualTestDuration || t.duration, t.actualTestDuration ? t.unit : "Hours"),
+    })),
+
+    // The same rows unformatted (test data page of an ESS sub-test)
+    reportTestRows: reportTests,
+
     // ============= Current Test Row (the specific test for this report) =============
     // Store original currentTestRow for direct access
     currentTestRow: currentTest,
@@ -253,9 +273,10 @@ export const prepareReportData = (comprehensiveData) => {
         } else if (key === "endDate") {
           acc["currentTest_endTime"] = formatTime(value);
         }
-      } else if (key === "duration" || key === "actualTestDuration") {
-        // Format duration fields
+      } else if (key === "duration") {
         acc[`currentTest_${key}`] = formatDuration(value);
+      } else if (key === "actualTestDuration") {
+        acc[`currentTest_${key}`] = formatDuration(value, currentTest.unit);
       } else {
         // For all other fields, use value or empty string
         acc[`currentTest_${key}`] = value || "";

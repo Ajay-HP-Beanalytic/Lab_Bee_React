@@ -154,6 +154,7 @@ export default function ResetPassword() {
       });
 
       if (response.status === 200) {
+        setOtp(otp); // sent again with the new password
         setOtpVerified(true);
         toast.success("OTP verified successfully.");
         // Display toast message for successful OTP verification
@@ -190,7 +191,7 @@ export default function ResetPassword() {
     try {
       const response = await axios.post(
         `${serverBaseAddress}/api/resetPassword`,
-        { email, newPassword },
+        { email, otp, newPassword },
       );
       if (response.status === 200) {
         toast.success("Password reset successfully");

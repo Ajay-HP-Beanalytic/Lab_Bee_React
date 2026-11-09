@@ -48,6 +48,8 @@ const server =
     ? https.createServer(serverOptions, app) // For deployment
     : http.createServer(app); // For development
 
+const { requireLogin, originAllowed, blockActiveFile } = require("./access/requireLogin");
+
 // Middleware to validate session on each request
 const validateSession = (req, res, next) => {
   // Skip validation for public routes (login, register, password reset)
@@ -67,7 +69,9 @@ const validateSession = (req, res, next) => {
   const isFeasibilityPublicRoute =
     req.path.startsWith("/api/feasibility/validate-token/") ||
     req.path.startsWith("/api/feasibility/status/") ||
-    req.path === "/api/feasibility/submit";
+    req.path === "/api/feasibility/submit" ||
+    // the customer's report link / QR code (token-protected)
+    req.path.startsWith("/api/public/reports/");
 
   if (isFeasibilityPublicRoute) return next();
 
@@ -106,8 +110,7 @@ const validateSession = (req, res, next) => {
 ///Make the app.connection available to the socket.io servers:
 const io = socketIo(server, {
   cors: {
-    origin: true, // mention the host address of the frontend
-    // origin: "https://labbee.beanalytic.com", // Allow requests from this origin
+    origin: (origin, callback) => callback(null, originAllowed(origin)),
     methods: ["GET", "POST", "DELETE", "PUT"],
     credentials: true,
   },
@@ -144,12 +147,13 @@ io.on("connection", (socket) => {
 });
 
 app.use(
-  cors({
-    origin: true, // mention the host address of the frontend
-    //origin: "https://labbee.beanalytic.com", // Allow requests from this origin
-    methods: ["POST", "GET", "DELETE", "PUT"],
-    credentials: true,
-  }),
+  cors((req, callback) =>
+    callback(null, {
+      origin: originAllowed(req.header("Origin"), req.headers.host),
+      methods: ["POST", "GET", "DELETE", "PUT"],
+      credentials: true,
+    }),
+  ),
 );
 
 // const corsOption = {
@@ -159,7 +163,7 @@ app.use(
 // };
 // app.use(cors(corsOption));
 
-app.use(express.json());
+app.use(express.json({ limit: "50mb" })); // same limit as below (the first parser wins)
 app.use(bodyParser.urlencoded({ extended: true }));
 
 // app.use(express.urlencoded({ extended: false })); // To handle the form data
@@ -177,10 +181,10 @@ const sessionStore = new MySQLStore({
   user: process.env.DB_USER,
   password: process.env.DB_PASSWORD,
   database: process.env.DB_DATABASE,
-  clearExpired: true,           // automatically delete expired sessions
+  clearExpired: true, // automatically delete expired sessions
   checkExpirationInterval: 15 * 60 * 1000, // check every 15 minutes
   expiration: 540 * 60 * 1000, // match cookie maxAge (9 hours)
-  createDatabaseTable: true,    // auto-create sessions table if missing
+  createDatabaseTable: true, // auto-create sessions table if missing
   connectionLimit: 3,
   schema: {
     tableName: "user_sessions",
@@ -194,24 +198,34 @@ const sessionStore = new MySQLStore({
 
 app.use(
   session({
-    secret: process.env.SESSION_SECRET || "secret",
+    // Without SESSION_SECRET in production: a random one, so everyone logs in again after a restart
+    secret:
+      process.env.SESSION_SECRET ||
+      (process.env.NODE_ENV === "production" ? require("crypto").randomBytes(32).toString("hex") : "secret"),
     resave: false,
     saveUninitialized: false,
     store: sessionStore,
     cookie: {
-      secure: false,
+      secure: !!(useHttps && serverOptions), // only when this server itself runs HTTPS
+      httpOnly: true,
+      sameSite: "lax",
       maxAge: 540 * 60 * 1000, // 9 hours
     },
   }),
 );
 
+if (process.env.NODE_ENV === "production" && !process.env.SESSION_SECRET) {
+  console.warn("SESSION_SECRET is not set: using a random one, so users must log in again after every restart.");
+}
+
 // Apply validateSession AFTER session middleware
 app.use(validateSession);
+app.use(requireLogin);
 
 // app.use("./FilesUploaded", express.static("FilesUploaded"))
 app.use(
   "/FilesUploaded",
-  express.static(path.join(__dirname, "FilesUploaded")),
+  express.static(path.join(__dirname, "FilesUploaded"), { setHeaders: blockActiveFile }),
 );
 
 // Get all the connections from the db
@@ -272,6 +286,9 @@ const {
   createFeasibilityRequestTestsTable,
   createTS1ChamberSpecTable,
   createTS1TestPricingTable,
+  createInboundEmailsTable,
+  migrateFeasibilityForEmailIntake,
+  migrateMasterData,
 } = require("./FeasibilityAutomation/feasibility_tables");
 
 //Get db connection from the db.js file
@@ -344,6 +361,9 @@ db.getConnection(function (err, connection) {
   createFeasibilityRequestTestsTable();
   createTS1ChamberSpecTable();
   createTS1TestPricingTable();
+  createInboundEmailsTable();
+  migrateFeasibilityForEmailIntake(); // also creates feasibility_request_euts
+  migrateMasterData(); // NABL scope, certificates, test types
 
   connection.release(); // Release the connection back to the pool when done
 });
@@ -363,6 +383,8 @@ chambersAndCalibrationAPIs(app);
 // backend connection from 'AddCustomerDetails' page:
 const { customerDetailsAPIs } = require("./CustomerDetails");
 customerDetailsAPIs(app);
+const { customerLogosAPIs } = require("./CustomerLogos");
+customerLogosAPIs(app);
 
 // backend connection of ItemSoftModules API's from 'ItemSoftModules' page:
 const { itemSoftModulesAPIs } = require("./ItemSoftModules");
@@ -415,15 +437,51 @@ fileStorageAPIs(app, io, labbeeUsers);
 const { openaiAPIs } = require("./OpenaiAPI");
 openaiAPIs(app, io, labbeeUsers);
 
+// An enquiry route called without an id (e.g. while a dialog closes) answers 400
+// instead of reaching MySQL as "WHERE id = NaN"
+const MISSING_ENQUIRY_ID = /^\/api\/(enquiries|feasibility\/requests)\/(undefined|null|NaN)(\/|$)/;
+app.use((req, res, next) =>
+  MISSING_ENQUIRY_ID.test(req.path) ? res.status(400).json({ error: "Enquiry id missing" }) : next(),
+);
+
+// Departments, roles and side-menu access; also checks every enquiry route
+// (department's enquiries only, quotes only by departments that create them)
+const { accessAPIs } = require("./access/AccessAPI");
+accessAPIs(app);
+
 // Feasibility Automation APIs:
 const { feasibilityAPIs } = require("./FeasibilityAutomation/FeasibilityAPI");
 feasibilityAPIs(app);
+
+const { intakeAPIs } = require("./FeasibilityAutomation/IntakeAPI");
+intakeAPIs(app);
+
+// Enquiry workflow notifications (bell + live "rfq_notification")
+const { initEnquiryNotifications } = require("./FeasibilityAutomation/enquiry/notify");
+initEnquiryNotifications(io, labbeeUsers);
 
 const { chamberSpecsAPIs } = require("./FeasibilityAutomation/ChamberSpecsAPI");
 chamberSpecsAPIs(app);
 
 const { testPricingAPIs } = require("./FeasibilityAutomation/TestPricingAPI");
 testPricingAPIs(app);
+
+// How the chamber hours of each test type are worked out
+const { testDurationsAPIs } = require("./FeasibilityAutomation/TestDurationsAPI");
+testDurationsAPIs(app);
+
+const { labScopeAPIs } = require("./FeasibilityAutomation/LabScopeAPI");
+labScopeAPIs(app);
+
+const { testTypesAPIs } = require("./FeasibilityAutomation/TestTypesAPI");
+testTypesAPIs(app);
+
+const { testNameLinksAPIs } = require("./FeasibilityAutomation/TestNameLinksAPI");
+testNameLinksAPIs(app);
+
+// Standards library (PDFs in Org Documents → Standards)
+const { standardsAPIs } = require("./FeasibilityAutomation/standards/StandardsAPI");
+standardsAPIs(app);
 
 //Backend connection to acess bea_marketing_APIs:
 const {
@@ -459,7 +517,16 @@ convertToPdfAPIs(app);
 // });
 
 /// Code to get backup of database in .sql format and attachments in .zip format:
-app.get("/api/downloadDataBackup", (req, res) => {
+app.get("/api/downloadDataBackup", async (req, res, next) => {
+  // The whole database and all attachments: Administration only
+  try {
+    const me = await require("./access/accessControl").accessOf(req.session?.user_id);
+    if (!me?.isAdmin) return res.status(403).send("Only Administration can download the backup");
+    next();
+  } catch (err) {
+    next(err);
+  }
+}, (req, res) => {
   createBackup((error, backupFile) => {
     if (error) {
       console.error("Backup failed:", error);
@@ -523,7 +590,9 @@ process.on("unhandledRejection", (reason) => {
   const timestamp = new Date().toISOString();
   console.error("=".repeat(60));
   console.error(`[unhandledRejection] ${timestamp}`);
-  console.error(`Reason : ${reason instanceof Error ? reason.message : reason}`);
+  console.error(
+    `Reason : ${reason instanceof Error ? reason.message : reason}`,
+  );
   if (reason instanceof Error) {
     console.error(`Stack  :\n${reason.stack}`);
   }
@@ -533,3 +602,7 @@ process.on("unhandledRejection", (reason) => {
 server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
+
+// Scheduled reading of the RFQ mailbox (off unless EMAIL_INTAKE_ENABLED=true)
+const { startEmailIntake } = require("./FeasibilityAutomation/intake/intakeScheduler");
+startEmailIntake().catch((err) => console.error("[email-intake] failed to start:", err.message));
