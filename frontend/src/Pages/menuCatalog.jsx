@@ -99,16 +99,21 @@ export const fullLabel = (item) => {
   return twice ? `${item.label} (${MENU_GROUPS.find((g) => g.id === item.group)?.label})` : item.label;
 };
 
-// Groups left out of the side menu for now. Access rules are kept, and the pages
-// still open by their address. Remove "sales" to bring Enquiries & Quotes back.
-const HIDDEN_MENU_GROUPS = ["sales"];
+// Items left out of the side menu for now (the enquiry pages, until their usability
+// pass). Only these items: Quotations, Marketing etc. in the same group still show.
+// Access rules are kept, and the pages still open by their address. Empty the list
+// to bring Enquiries back.
+const HIDDEN_MENU_ITEMS = ["rfq_inbox", "rfq_dashboard"];
 
 // Groups with the items this user may open, the department's own group first
 export function visibleMenu(access) {
   const allowed = new Set(access?.menus || []);
-  const order = MENU_GROUPS.filter((g) => !HIDDEN_MENU_GROUPS.includes(g.id)).sort((a, b) => (b.id === access?.homeGroup) - (a.id === access?.homeGroup));
+  const order = [...MENU_GROUPS].sort((a, b) => (b.id === access?.homeGroup) - (a.id === access?.homeGroup));
   return order
-    .map((g) => ({ ...g, items: MENU_ITEMS.filter((i) => i.group === g.id && allowed.has(i.key)) }))
+    .map((g) => ({
+      ...g,
+      items: MENU_ITEMS.filter((i) => i.group === g.id && allowed.has(i.key) && !HIDDEN_MENU_ITEMS.includes(i.key)),
+    }))
     .filter((g) => g.items.length);
 }
 
