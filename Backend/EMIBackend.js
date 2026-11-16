@@ -8,6 +8,16 @@ const path = require("path");
 const fs = require("fs");
 const fileStorageService = require("./services/fileStorageService");
 const { ROW_ORDER, setRowOrder } = require("./jobcardRowOrder");
+const { accessOf } = require("./access/accessControl");
+
+// The logged-in user, who must have TS2 job cards (admin: Administration only)
+async function ts2User(req, { admin = false } = {}) {
+  const me = await accessOf(req.session?.user_id);
+  if (!me) throw Object.assign(new Error("Please log in again"), { status: 401 });
+  if (admin && !me.isAdmin) throw Object.assign(new Error("Only Administration can do this"), { status: 403 });
+  if (!me.isAdmin && !me.menus.includes("ts2_jobcards")) throw Object.assign(new Error("You don't have access to TS2 job cards"), { status: 403 });
+  return me;
+}
 require("dotenv").config(); // Ensure .env is loaded
 
 // Add the calibration certificate columns to an existing emi_calibrations_table
@@ -315,15 +325,20 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
   );
 
   app.post("/api/EMIJobcard", async (req, res) => {
+    let me;
+    try {
+      me = await ts2User(req);
+    } catch (err) {
+      return res.status(err.status || 500).json({ message: err.message });
+    }
+    const loggedInUser = me.user.name;
     const {
-      stepOneData,
+      stepOneData = {},
       eutTableRows,
       testsTableRows,
-      stepTwoData,
+      stepTwoData = {},
       testPerformedTableRows,
-      stepThreeData,
-      loggedInUser,
-      loggedInUserDepartment,
+      stepThreeData = {},
     } = req.body;
 
     const {
@@ -584,6 +599,11 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
 
   app.delete("/api/EMIJobcard/:id", async (req, res) => {
     const { id } = req.params; // Retrieve job card ID from the URL
+    try {
+      await ts2User(req, { admin: true });
+    } catch (err) {
+      return res.status(err.status || 500).json({ message: err.message });
+    }
 
     let connection;
     try {
@@ -649,20 +669,27 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
   //API to edit and update the jobcard details:
 
   app.put("/api/EMIJobcard/:id", async (req, res) => {
+    let me;
+    try {
+      me = await ts2User(req);
+    } catch (err) {
+      return res.status(err.status || 500).json({ message: err.message });
+    }
+    const loggedInUser = me.user.name;
+    const loggedInUserDepartment = me.department;
+    const loggedInUserRole = me.role;
     const {
-      stepOneData,
-      eutTableRows,
-      testsTableRows,
-      stepTwoData,
-      testPerformedTableRows,
-      stepThreeData,
-      deletedEutIds,
-      deletedTestIds,
-      deletedTestPerformedIds,
-      loggedInUser,
-      loggedInUserDepartment,
-      loggedInUserRole,
+      stepOneData = {},
+      eutTableRows = [],
+      testsTableRows = [],
+      stepTwoData = {},
+      testPerformedTableRows = [],
+      stepThreeData = {},
     } = req.body;
+    // ids of rows removed on screen (none sent = none removed)
+    const deletedEutIds = Array.isArray(req.body.deletedEutIds) ? req.body.deletedEutIds : [];
+    const deletedTestIds = Array.isArray(req.body.deletedTestIds) ? req.body.deletedTestIds : [];
+    const deletedTestPerformedIds = Array.isArray(req.body.deletedTestPerformedIds) ? req.body.deletedTestPerformedIds : [];
 
     const { id } = req.params; // Retrieve job card ID from the URL
 
@@ -684,7 +711,6 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
       typeOfRequest,
       sampleCondition,
       slotDuration,
-      jcIncharge,
     } = stepTwoData;
     const { observations, jcClosedDate, jcStatus } = stepThreeData;
 
@@ -715,7 +741,7 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
       );
 
       if (existingRows.length === 0) {
-        throw new Error("Job card not found");
+        throw Object.assign(new Error("Job card not found"), { status: 404 });
       }
 
       const existingJC = existingRows[0];
@@ -801,11 +827,6 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
           oldVal: existingJC.conformityData,
           isJson: true,
         },
-        {
-          name: "jcIncharge",
-          newVal: jcIncharge,
-          oldVal: existingJC.jcIncharge,
-        },
         { name: "jcStatus", newVal: jcStatus, oldVal: existingJC.jcStatus },
         {
           name: "jcClosedDate",
@@ -866,7 +887,6 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
                 projectName = ?, 
                 reportType = ?, 
                 conformityData = ?,
-                jcIncharge = ?, 
                 jcStatus = ?, 
                 jcClosedDate = ?, 
                 observations = ?, 
@@ -889,7 +909,6 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
         projectName || "",
         reportType || "",
         conformityData ? JSON.stringify(conformityData) : null,
-        jcIncharge || "",
         jcStatus || "",
         formattedCloseDate || null,
         observations || "",
@@ -1527,11 +1546,11 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
 
       // Commit the transaction
       await connection.commit();
-      return res.status(200).json({ message: "Jobcard updated successfully" });
+      return res.status(200).json({ message: "Jobcard updated successfully", jcNumber });
     } catch (error) {
-      console.log(error);
+      if (!error.status) console.log(error);
       if (connection) await connection.rollback(); // Rollback transaction in case of error
-      return res.status(500).json({ message: "Internal server error" });
+      return res.status(error.status || 500).json({ message: error.status ? error.message : "Internal server error" });
     } finally {
       if (connection) await connection.release(); // Release the connection back to the pool
     }
@@ -1540,20 +1559,25 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
   ///////////////////////////////////////////////////////////////////////////////////////////////////////////
 
   // To fetch the last saved jcnumber  from the table jobcards data table:
+  // The last TS2 JC number of this month, as the create below numbers them
+  // ("2026-2027/11-004"), or "<this month>-000" when there is none yet
   app.get("/api/getLatestEMIJCNumber", (req, res) => {
-    const latestjcnumberJT =
-      "SELECT jcNumber FROM emi_jobcards ORDER BY id  DESC LIMIT 1 ";
-    db.query(latestjcnumberJT, (error, result) => {
-      if (result.length === 0) {
-        res.send([
-          {
-            jcNumber: "2024-25/00-000",
-          },
-        ]);
-      } else {
-        res.send(result);
-      }
-    });
+    const { currentYear, currentMonth } = getCurrentYearAndMonth();
+    const finYear =
+      currentMonth > 3
+        ? `${currentYear}-${currentYear + 1}/${currentMonth}`
+        : `${currentYear - 1}-${currentYear}/${currentMonth}`;
+    db.query(
+      "SELECT jcNumber FROM emi_jobcards WHERE jcNumber LIKE ? ORDER BY jcNumber DESC LIMIT 1",
+      [`${finYear}-%`],
+      (error, result) => {
+        if (error) {
+          console.error("Error fetching the latest TS2 JC number:", error);
+          return res.status(500).json({ message: "Could not read the latest JC number" });
+        }
+        res.send(result.length ? result : [{ jcNumber: `${finYear}-000` }]);
+      },
+    );
   });
 
   /////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -54,6 +54,8 @@ const rowsPayload = ({ eutRows, testRows, testDetailsRows }) => ({
     preparedBy: r.preparedBy || "",
     nablUploaded: r.nablUploaded || "",
     reportStatus: r.reportStatus || "",
+    photosOnNas: r.photosOnNas || "",
+    graphsOnNas: r.graphsOnNas || "",
   })),
 });
 
@@ -121,36 +123,83 @@ const useJobCardSubmit = () => {
       };
 
       const url = id ? `${serverBaseAddress}/api/jobcard/${id}` : `${serverBaseAddress}/api/jobcard`;
-      let jcResponse;
-      try {
-        jcResponse = await axios.post(url, jobCardPayload);
-      } catch (err) {
-        // Closing a TS1 job card: every checklist item must be done first (and the closed date given)
+
+      // The checklist list shown when step 1 (Test Completed) or step 2 (Closed) is refused
+      const showChecklistError = (err, saved) => {
         const open = err.response?.data?.error === "CHECKLIST_OPEN" ? err.response.data.openItems || [] : null;
-        if (!open) throw err;
+        if (!open && !(saved && err.response?.status === 403)) return false;
+        const tests = err.response?.data?.step === "tests";
         toast.error(
           <div>
-            <b>The job card can't be closed yet.</b> Finish these first (see the job card checklist):
-            <ul style={{ margin: "6px 0 0", paddingLeft: 18 }}>
-              {open.map((t) => (
-                <li key={t}>{t}</li>
-              ))}
-            </ul>
+            {saved && <div style={{ marginBottom: 4 }}>Your other changes were saved; only the JC status was not changed.</div>}
+            <b>{tests ? "The tests can't be marked completed yet." : "The job card can't be closed yet."}</b>
+            {open ? " Finish these first (see the job card checklist):" : ` ${err.response?.data?.message || ""}`}
+            {open && (
+              <ul style={{ margin: "6px 0 0", paddingLeft: 18 }}>
+                {open.map((t) => (
+                  <li key={t}>{t}</li>
+                ))}
+              </ul>
+            )}
           </div>,
-          { position: "top-center", autoClose: false }
+          { position: "top-center", autoClose: false },
         );
-        return { success: false };
-      }
-      jcNumber = jcResponse.data.jcNumber || formData.jcNumber;
-      created = !id;
-      createdId = jcResponse.data.id || null;
+        return true;
+      };
 
-      await axios.post(`${serverBaseAddress}/api/ts1/jobcard-rows`, {
-        jcNumber,
-        ...rowsPayload({ eutRows, testRows, testDetailsRows }),
-      });
+      // Owner / supporting staff: only when changed (assigning has its own rules on the server)
+      const support = formData.jcSupportStaff || [];
+      const ownerChanged =
+        (formData.jcOwner || "") !== (formData.savedJcOwner || "") ||
+        support.join(",") !== (formData.savedJcSupportStaff || []).join(",");
+      let ownerNote = "";
+      const saveOwner = async () => {
+        if (!ownerChanged) return;
+        try {
+          await axios.put(`${serverBaseAddress}/api/ts1/jobcards/owner`, { jcNumber, owner: formData.jcOwner || "", supportStaff: support });
+        } catch (err) {
+          ownerNote = err.response?.data?.message || "the owner could not be saved";
+        }
+      };
+      const saveRows = () =>
+        axios.post(`${serverBaseAddress}/api/ts1/jobcard-rows`, {
+          jcNumber,
+          ...rowsPayload({ eutRows, testRows, testDetailsRows }),
+        });
+
+      // Step 1 / step 2 of closing on a saved job card: the checklist is checked against what
+      // is saved, so save everything else first (owner, rows), then the new status.
+      const savedStatus = formData.savedJcStatus || "";
+      const statusStep = !!id && !!savedStatus && formData.jcStatus !== savedStatus && ["Test Completed", "Closed"].includes(formData.jcStatus);
+
+      if (statusStep) {
+        await axios.post(url, { ...jobCardPayload, jcStatus: savedStatus });
+        await saveOwner();
+        await saveRows();
+        try {
+          await axios.post(url, jobCardPayload);
+        } catch (err) {
+          if (showChecklistError(err, true)) return { success: false, reload: true };
+          throw err;
+        }
+      } else {
+        let jcResponse;
+        try {
+          jcResponse = await axios.post(url, jobCardPayload);
+        } catch (err) {
+          if (showChecklistError(err, false)) return { success: false };
+          throw err;
+        }
+        jcNumber = jcResponse.data.jcNumber || formData.jcNumber;
+        created = !id;
+        createdId = jcResponse.data.id || null;
+
+        await saveRows();
+        await saveOwner();
+      }
 
       toast.success(id ? `Job card ${jcNumber} saved` : `Job card ${jcNumber} created`);
+      if (ownerNote) toast.warning(`Job card saved, but ${ownerNote}`, { position: "top-center", autoClose: 8000 });
       return { success: true, jcNumber, id: id || createdId };
     } catch (error) {
       console.error("Error saving the job card:", error);

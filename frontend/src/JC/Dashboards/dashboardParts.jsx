@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import {
@@ -25,8 +25,16 @@ import {
 import ArrowBackIcon from "@mui/icons-material/ArrowBack";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
+import LockIcon from "@mui/icons-material/Lock";
+import FileDownloadIcon from "@mui/icons-material/FileDownload";
+import { toast } from "react-toastify";
+import downloadExport from "../../common/downloadExport";
+import { UserContext } from "../../Pages/UserContext";
 import { Bar, BarChart, CartesianGrid, LabelList, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import dayjs from "dayjs";
 import { serverBaseAddress } from "../../Pages/APIPage";
+import DateRangeFilter from "../../common/DateRangeFilter";
+import SearchBar from "../../common/SearchBar";
 
 // Same validated colours as the Enquiry dashboard, always in this order
 export const SERIES = { first: "#2a78d6", second: "#eb6834" };
@@ -45,29 +53,202 @@ export const hoursText = (h) => (h == null ? "–" : h < 48 ? `${h} h` : `${Math
 export const daysText = (d) => (d == null ? "–" : `${d} ${d === 1 ? "day" : "days"}`);
 export const pctText = (p) => (p == null ? "–" : `${p}%`);
 
-/** Loads one dashboard for the chosen period */
+const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+const DEFAULT_FILTER = { kind: "days", days: 30 };
+
+// from / to (YYYY-MM-DD) of a chosen year, or of one month of it
+const yearMonthRange = (year, month) => {
+  const start = month ? dayjs(new Date(year, month - 1, 1)) : dayjs(new Date(year, 0, 1));
+  const end = month ? start.endOf("month") : start.endOf("year");
+  return { from: start.format("YYYY-MM-DD"), to: end.format("YYYY-MM-DD") };
+};
+
+/**
+ * Loads one dashboard for the chosen period and search text.
+ * Period: a preset ("Last 30 days"), a year (and month), or a date range.
+ */
 export function useDashboard(path) {
-  const [days, setDays] = useState(30);
+  const [filter, setFilter] = useState(DEFAULT_FILTER);
+  const [search, setSearch] = useState("");
+  const [query, setQuery] = useState(""); // the search text, sent after typing stops
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => setQuery(search.trim()), 400);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  const params = useMemo(() => {
+    const q = query ? { q: query } : {};
+    if (filter.kind === "range") return { from: filter.from, to: filter.to, ...q };
+    if (filter.kind === "year") return { ...yearMonthRange(filter.year, filter.month), ...q };
+    return { days: filter.days, ...q };
+  }, [filter, query]);
+
+  // The dashboards are for Administration only (the server checks this too)
+  const { access } = useContext(UserContext);
+  const allowed = !!access?.isAdmin;
+
   const load = useCallback(() => {
+    if (!allowed) return;
     setLoading(true);
     axios
-      .get(`${serverBaseAddress}${path}`, { params: { days } })
+      .get(`${serverBaseAddress}${path}`, { params })
       .then((r) => {
         setData(r.data);
         setError("");
       })
       .catch((e) => setError(e.response?.data?.error || "Could not load the dashboard"))
       .finally(() => setLoading(false));
-  }, [path, days]);
+  }, [path, params, allowed]);
   useEffect(load, [load]);
-  return { days, setDays, data, error, loading, load };
+
+  // "Last 30 days", "Nov 2026", "2026" or "01 Nov 2026 – 15 Nov 2026"
+  const periodLabel =
+    filter.kind === "days"
+      ? PERIODS.find(([v]) => v === filter.days)?.[1] || `Last ${filter.days} days`
+      : filter.kind === "year"
+        ? `${filter.month ? `${MONTHS[filter.month - 1]} ` : ""}${filter.year}`
+        : `${dayjs(filter.from).format("DD MMM YYYY")} – ${dayjs(filter.to).format("DD MMM YYYY")}`;
+
+  // Excel file of the complete data for the same period and search
+  const [exporting, setExporting] = useState(false);
+  const exportFile = async () => {
+    setExporting(true);
+    try {
+      await downloadExport(`${serverBaseAddress}${path}/export`, params, "export.xlsx");
+    } catch (e) {
+      toast.error(e.message);
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  return { filter, setFilter, search, setSearch, query, periodLabel, data, error, loading, load, allowed, accessLoaded: !!access, exportFile, exporting };
 }
 
-export function Shell({ title, note, backTo, backLabel, board, children }) {
+// Years to choose from: the years job cards were opened in, else this year back to 2023
+function useYears() {
+  const [years, setYears] = useState([]);
+  useEffect(() => {
+    const fallback = () => {
+      const now = new Date().getFullYear();
+      setYears(Array.from({ length: Math.max(now - 2022, 1) }, (_, i) => now - i));
+    };
+    axios
+      .get(`${serverBaseAddress}/api/getJCDateOptions`)
+      .then((r) => (r.data?.years?.length ? setYears(r.data.years.map(Number)) : fallback()))
+      .catch(fallback);
+  }, []);
+  return years;
+}
+
+/** Period preset, year, month, date range and search for a dashboard */
+function DashboardFilters({ board, searchPlaceholder }) {
+  const years = useYears();
+  const { filter, setFilter } = board;
+  // The date range button keeps its own text: show it again empty once another period is chosen
+  const [rangeKey, setRangeKey] = useState(0);
+  const choose = (next) => {
+    if (filter.kind === "range" && next.kind !== "range") setRangeKey((k) => k + 1);
+    setFilter(next);
+  };
+
+  return (
+    <Grid container spacing={1} alignItems="center" mb={2}>
+      <Grid item xs={6} sm={4} md={2}>
+        <TextField
+          select
+          fullWidth
+          size="small"
+          label="Period"
+          value={filter.kind === "days" ? filter.days : ""}
+          onChange={(e) => choose({ kind: "days", days: e.target.value })}
+        >
+          {PERIODS.map(([v, label]) => (
+            <MenuItem key={v} value={v}>
+              {label}
+            </MenuItem>
+          ))}
+        </TextField>
+      </Grid>
+      <Grid item xs={6} sm={4} md={1.5}>
+        <TextField
+          select
+          fullWidth
+          size="small"
+          label="Year"
+          value={filter.kind === "year" ? filter.year : ""}
+          onChange={(e) => choose({ kind: "year", year: Number(e.target.value), month: filter.kind === "year" ? filter.month : "" })}
+        >
+          {years.map((y) => (
+            <MenuItem key={y} value={y}>
+              {y}
+            </MenuItem>
+          ))}
+        </TextField>
+      </Grid>
+      <Grid item xs={6} sm={4} md={1.5}>
+        <TextField
+          select
+          fullWidth
+          size="small"
+          label="Month"
+          disabled={filter.kind !== "year"}
+          value={filter.kind === "year" ? filter.month : ""}
+          onChange={(e) => choose({ ...filter, month: e.target.value === "" ? "" : Number(e.target.value) })}
+          SelectProps={{ displayEmpty: filter.kind === "year" }}
+          InputLabelProps={filter.kind === "year" ? { shrink: true } : undefined}
+        >
+          <MenuItem value="">Whole year</MenuItem>
+          {MONTHS.map((m, i) => (
+            <MenuItem key={m} value={i + 1}>
+              {m}
+            </MenuItem>
+          ))}
+        </TextField>
+      </Grid>
+      <Grid item xs={6} sm={12} md={3}>
+        <DateRangeFilter
+          key={rangeKey}
+          onClickDateRangeSelectDoneButton={(r) => {
+            if (!r?.startDate || !r?.endDate) return;
+            choose({ kind: "range", from: dayjs(r.startDate).format("YYYY-MM-DD"), to: dayjs(r.endDate).format("YYYY-MM-DD") });
+          }}
+          onClickDateRangeSelectClearButton={() => setFilter(DEFAULT_FILTER)}
+        />
+      </Grid>
+      <Grid item xs={12} md={4}>
+        <SearchBar
+          placeholder={searchPlaceholder}
+          searchInputText={board.search}
+          onChangeOfSearchInput={(e) => board.setSearch(e.target.value)}
+          onClearSearchInput={() => board.setSearch("")}
+        />
+      </Grid>
+    </Grid>
+  );
+}
+
+export function Shell({ title, note, backTo, backLabel, extraActions, searchPlaceholder = "Search JC number, customer, test…", board, children }) {
   const navigate = useNavigate();
+  if (board.accessLoaded && !board.allowed) {
+    return (
+      <Box textAlign="center" mt={8} px={2}>
+        <LockIcon color="disabled" sx={{ fontSize: 48 }} />
+        <Typography variant="h6" mt={1}>
+          {title} is for Administration only
+        </Typography>
+        {backTo && (
+          <Button variant="outlined" startIcon={<ArrowBackIcon />} sx={{ mt: 2 }} onClick={() => navigate(backTo)}>
+            {backLabel}
+          </Button>
+        )}
+      </Box>
+    );
+  }
   return (
     <Box sx={{ p: { xs: 1, md: 2 } }}>
       <Stack direction="row" alignItems="center" gap={1} flexWrap="wrap" mb={2}>
@@ -79,22 +260,36 @@ export function Shell({ title, note, backTo, backLabel, board, children }) {
             {note}
           </Typography>
         </Box>
+        {extraActions}
+        <MuiTooltip title={`Excel file of the complete data for ${board.periodLabel}${board.query ? ` matching "${board.query}"` : ""}`}>
+          <span>
+            <Button variant="outlined" startIcon={board.exporting ? <CircularProgress size={16} /> : <FileDownloadIcon />} onClick={board.exportFile} disabled={board.exporting}>
+              Export
+            </Button>
+          </span>
+        </MuiTooltip>
         {backTo && (
-          <Button startIcon={<ArrowBackIcon />} onClick={() => navigate(backTo)}>
+          <Button variant="outlined" startIcon={<ArrowBackIcon />} onClick={() => navigate(backTo)}>
             {backLabel}
           </Button>
         )}
-        <TextField select size="small" label="Period" value={board.days} onChange={(e) => board.setDays(e.target.value)} sx={{ minWidth: 160 }}>
-          {PERIODS.map(([v, label]) => (
-            <MenuItem key={v} value={v}>
-              {label}
-            </MenuItem>
-          ))}
-        </TextField>
         <MuiTooltip title="Reload">
           <IconButton onClick={board.load}>{board.loading ? <CircularProgress size={22} /> : <RefreshIcon />}</IconButton>
         </MuiTooltip>
       </Stack>
+      <DashboardFilters board={board} searchPlaceholder={searchPlaceholder} />
+      {(board.query || board.filter.kind !== "days") && (
+        <Typography variant="body2" color="text.secondary" mb={1}>
+          Showing <b>{board.periodLabel}</b>
+          {board.query ? (
+            <>
+              {" "}
+              matching <b>“{board.query}”</b>
+            </>
+          ) : null}
+          . “Now” and “last 24 hours” figures are always today’s.
+        </Typography>
+      )}
       {board.error && (
         <Alert severity="error" sx={{ mb: 2 }}>
           {board.error}

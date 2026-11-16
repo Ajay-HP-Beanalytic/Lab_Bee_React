@@ -259,6 +259,8 @@ async function ensureWorkflowTables() {
   await query("ALTER TABLE ts1_report_register ADD COLUMN kind VARCHAR(10) NOT NULL DEFAULT 'draft'").catch(ignoreDup);
   await require("./TS1ReportPhotosAPI").ensurePhotoTables();
   await seedChecklist();
+  await query("ALTER TABLE ts1_checklist_items ADD COLUMN stage VARCHAR(10) NOT NULL DEFAULT 'close'").catch(ignoreDup);
+  await seedTwoStepClosing();
   // the Lab Manager's review is now done by closing the job card
   await query(
     `UPDATE ts1_checklist_items SET label = 'Job card reviewed and closed by the Lab Manager',
@@ -267,6 +269,26 @@ async function ensureWorkflowTables() {
   );
   await seedSignatories();
   await seedMenu();
+}
+
+// Two-step closing: "tests" items are needed before the job card owner (or the Lab
+// Manager) marks it Test Completed; the rest ("close") before the Lab Manager closes it.
+const TESTS_REVIEW_KEY = "tests_reviewed";
+const TEST_STAGE_KEYS = ["jc_basics", "tests_complete", "lab_conditions", "chambers_valid", "nas_confirmed", TESTS_REVIEW_KEY];
+async function seedTwoStepClosing() {
+  const [done] = await query("SELECT id FROM ts1_checklist_items WHERE item_key = ?", [TESTS_REVIEW_KEY]);
+  if (done) return; // set up once; Administration may change the items afterwards
+  const add = async (key, kind, label, help, who, sortOrder) => {
+    const [have] = await query("SELECT id FROM ts1_checklist_items WHERE item_key = ?", [key]);
+    if (have) return;
+    await query(
+      "INSERT INTO ts1_checklist_items (item_key, scope, kind, label, help, who, required, sort_order, stage) VALUES (?, 'jobcard', ?, ?, ?, ?, 1, ?, 'tests')",
+      [key, kind, label, help, who, sortOrder],
+    );
+  };
+  await add("nas_confirmed", "auto", "Photos and graphs of every test confirmed on the BEA NAS", "Photos: test started by; graphs: test ended by (Tests performed)", "anyone", 45);
+  await add(TESTS_REVIEW_KEY, "manual", "Tests reviewed and marked completed by the job card owner", "Done by setting the JC status to Test Completed (job card owner or Lab Manager)", "owner", 47);
+  await query("UPDATE ts1_checklist_items SET stage = 'tests' WHERE item_key IN (?)", [TEST_STAGE_KEYS]);
 }
 
 async function seedChecklist() {
@@ -999,6 +1021,14 @@ async function autoChecks(jcNumber, rows, workflows, issues) {
   });
   out.chambers_valid = { done: !noRows && !chamberIssues.length, detail: noRows || list(chamberIssues) };
 
+  const nasMissing = rows
+    .map((r, i) => {
+      const m = [r.photosOnNas !== "Yes" && "photos", r.graphsOnNas !== "Yes" && "graphs"].filter(Boolean);
+      return m.length ? `${label(r, i)} (${m.join(", ")})` : null;
+    })
+    .filter(Boolean);
+  out.nas_confirmed = { done: !noRows && !nasMissing.length, detail: noRows || (nasMissing.length ? `Not confirmed: ${list(nasMissing)}` : "") };
+
   const finalFor = new Set();
   for (const w of workflows) {
     if (w.stage === "final_issued" && issues.some((x) => x.workflow_id === w.id && x.status === "valid")) {
@@ -1013,9 +1043,17 @@ async function autoChecks(jcNumber, rows, workflows, issues) {
   return out;
 }
 
-const canTick = (item, me) =>
-  item.who === "lab_manager" ? me.isLabManager || me.access.isAdmin : item.who === "reviewer" ? me.isReviewer : true;
-const whoText = { anyone: "Anyone", reviewer: "Quality / Lab Manager", lab_manager: "Lab Manager" };
+const canTick = (item, me, owner = "") =>
+  item.who === "lab_manager"
+    ? me.isLabManager || me.access.isAdmin
+    : item.who === "reviewer"
+      ? me.isReviewer
+      : item.who === "owner"
+        ? me.isLabManager || me.access.isAdmin || (!!owner && owner === me.name)
+        : true;
+const whoText = { anyone: "Anyone", reviewer: "Quality / Lab Manager", lab_manager: "Lab Manager", owner: "Job card owner / Lab Manager" };
+// Items done by changing the job card status, not ticked by hand
+const BY_STATUS = { jc_reviewed: "Closed", tests_reviewed: "Test Completed" };
 
 function reportItems(w, items, ticks, me) {
   return items
@@ -1080,11 +1118,11 @@ async function jcWorkflow(req) {
 }
 
 async function workflowOf(me, jcNumber) {
-  const cols = "id, testCategory, testName, testChamber, startDate, endDate, testEndedBy, startTemp, startRh, reportNumber, reportStatus, testReportInstructions";
+  const cols = "id, testCategory, testName, testChamber, startDate, endDate, testEndedBy, startTemp, startRh, reportNumber, reportStatus, testReportInstructions, photosOnNas, graphsOnNas";
   const rows = await query(`SELECT ${cols} FROM tests_details WHERE jc_number = ? ORDER BY COALESCE(row_order, id), id`, [jcNumber]).catch(() =>
     query(`SELECT ${cols} FROM tests_details WHERE jc_number = ? ORDER BY id`, [jcNumber]),
   );
-  const [jc] = await query("SELECT id, company_name, jc_status FROM bea_jobcards WHERE jc_number = ?", [jcNumber]);
+  const [jc] = await query("SELECT id, company_name, jc_status, jc_owner FROM bea_jobcards WHERE jc_number = ?", [jcNumber]);
   const workflows = await query("SELECT * FROM ts1_report_workflow WHERE jc_number = ?", [jcNumber]);
   const issues = await query(
     `SELECT id, workflow_id, version, token, report_number, ulr_number, report_type, issue_date, signers, status, reissue_reason, withdrawn_reason,
@@ -1122,8 +1160,10 @@ async function workflowOf(me, jcNumber) {
         who: it.who, whoText: whoText[it.who],
         done: a ? a.done : !!t, detail: a ? a.detail : "",
         doneBy: t?.done_by || null, doneAt: t?.done_at || null, note: t?.note || null,
-        canTick: it.kind === "manual" && it.item_key !== REVIEW_KEY && canTick(it, me),
+        canTick: it.kind === "manual" && !BY_STATUS[it.item_key] && canTick(it, me, jc?.jc_owner),
         byClosing: it.item_key === REVIEW_KEY,
+        byStatus: BY_STATUS[it.item_key] || null,
+        stage: it.stage === "tests" ? "tests" : "close",
       };
     });
 
@@ -1187,6 +1227,13 @@ async function workflowOf(me, jcNumber) {
     checklist,
     // every active job card item must be done before the job card is closed
     progress: { done: checklist.filter((c) => c.done).length, total: checklist.length, requiredOpen: checklist.filter((c) => !c.done).length },
+    // step 1: tests completed (job card owner / Lab Manager); step 2: closed (Lab Manager)
+    owner: jc?.jc_owner || "",
+    status: jc?.jc_status || "Open",
+    testsStep: (() => {
+      const items = checklist.filter((c) => c.stage === "tests" && c.key !== TESTS_REVIEW_KEY);
+      return { done: items.filter((c) => c.done).length, total: items.length, ready: items.every((c) => c.done || !c.required) };
+    })(),
     reports,
     toPrepare,
     release,
@@ -1201,10 +1248,11 @@ async function tick(req) {
   const [item] = await query("SELECT * FROM ts1_checklist_items WHERE id = ? AND is_active = 1", [itemId]);
   if (!item || item.kind !== "manual") throw fail(400, "This item can't be ticked by hand");
   if (item.item_key === REVIEW_KEY) throw fail(400, "This is done by closing the job card (status Closed and closed date)");
-  if (!canTick(item, me)) throw fail(403, `Only ${whoText[item.who]} can tick "${item.label}"`);
+  if (BY_STATUS[item.item_key]) throw fail(400, `This is done by setting the JC status to ${BY_STATUS[item.item_key]}`);
   const jc = String(jcNumber || "");
-  const [exists] = await query("SELECT id FROM bea_jobcards WHERE jc_number = ?", [jc]);
+  const [exists] = await query("SELECT id, jc_owner FROM bea_jobcards WHERE jc_number = ?", [jc]);
   if (!exists) throw fail(404, "Job card not found");
+  if (!canTick(item, me, exists.jc_owner)) throw fail(403, `Only ${whoText[item.who]} can tick "${item.label}"`);
   const tdId = item.scope === "report" ? parseInt(testDetailId) || 0 : 0;
   if (item.scope === "report" && !tdId) throw fail(400, "Which report?");
   if (done) {
@@ -1244,6 +1292,49 @@ async function closeProblems(req, jcNumber, closedDate) {
     problems.push(c.detail ? `${c.label}: ${c.detail}` : c.label);
   }
   return problems;
+}
+
+/**
+ * Step 1: what is missing before the job card can be marked Test Completed, and
+ * whether this user may do it (the job card owner, the Lab Manager or Administration).
+ * Also used for moving it back from Test Completed.
+ */
+async function testsCompleteProblems(req, jcNumber, { back = false } = {}) {
+  const me = await whoIs(req);
+  const data = await workflowOf(me, jcNumber);
+  const owner = data.owner;
+  if (!canTick({ who: "owner" }, me, owner)) {
+    const who = owner ? `the job card owner (${owner})` : "the job card owner";
+    return [`Only ${who}, the Lab Manager or Administration can ${back ? "change the status from" : "mark the job card"} Test Completed${owner ? "" : " (assign an owner first)"}`];
+  }
+  if (back) return [];
+  return data.checklist
+    .filter((c) => c.stage === "tests" && c.key !== TESTS_REVIEW_KEY && c.required && !c.done)
+    .map((c) => (c.detail ? `${c.label}: ${c.detail}` : c.label));
+}
+
+async function testsItem() {
+  const [it] = await query("SELECT * FROM ts1_checklist_items WHERE item_key = ? AND is_active = 1", [TESTS_REVIEW_KEY]);
+  return it || null;
+}
+
+/** Marked Test Completed: the tests review is done by the person who did it */
+async function recordTestsCompleted(req, jcNumber) {
+  const me = await whoIs(req);
+  const it = await testsItem();
+  if (!it) return;
+  await query(
+    `INSERT INTO ts1_checklist_ticks (item_id, jc_number, test_detail_id, note, done_by) VALUES (?, ?, 0, ?, ?)
+     ON DUPLICATE KEY UPDATE note = VALUES(note), done_by = VALUES(done_by), done_at = NOW()`,
+    [it.id, jcNumber, "Tests reviewed - JC status set to Test Completed", me.name],
+  );
+}
+
+/** Back to Open / Running: the tests have to be reviewed again */
+async function recordTestsReopen(req, jcNumber) {
+  const it = await testsItem();
+  if (!it) return;
+  await query("DELETE FROM ts1_checklist_ticks WHERE item_id = ? AND jc_number = ? AND test_detail_id = 0", [it.id, jcNumber]);
 }
 
 async function reviewItem() {
@@ -1697,4 +1788,5 @@ function ts1ReportWorkflowAPIs(app, { tablesReady = false } = {}) {
 
 module.exports = {
   ts1ReportWorkflowAPIs, ensureWorkflowTables, noteDraft, closeProblems, recordClose, recordReopen, noticeEndedTests, STAGES,
+  testsCompleteProblems, recordTestsCompleted, recordTestsReopen,
   whoIs, collect, ISSUED_DIR, safe, relOf, fullOf, getSettings };

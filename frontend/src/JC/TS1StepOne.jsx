@@ -30,6 +30,7 @@ import {
 } from "./constants/formFieldConfigurations";
 import { TS1_JC_NOTES } from "./constants/jobCardConstants";
 import DocumentPreviewModal from "../components/DocumentPreviewModal";
+import JCOwnerCard from "./JCOwnerCard";
 import axios from "axios";
 import { serverBaseAddress } from "../Pages/APIPage";
 import { toast } from "react-toastify";
@@ -244,6 +245,7 @@ export default function TS1StepOne() {
           </CardContent>
         </Card>
 
+        {/* DC number, PO number, JC open date and item received date */}
         <Card sx={{ mt: 1, mb: 1 }}>
           <CardContent>
             <Grid container spacing={2}>
@@ -255,6 +257,9 @@ export default function TS1StepOne() {
             </Grid>
           </CardContent>
         </Card>
+
+        {/* Job card owner and supporting staff */}
+        <JCOwnerCard />
 
         {/* EUT/DUT DETAILS Section */}
         <Card sx={{ mb: 2 }}>

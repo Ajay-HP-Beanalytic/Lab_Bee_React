@@ -58,7 +58,7 @@ export default function ReportsInsights() {
             </Grid>
           </Grid>
 
-          <SectionTitle note={`Last ${d.days} days`}>The period</SectionTitle>
+          <SectionTitle note={board.periodLabel}>The period</SectionTitle>
           <Tiles
             items={[
               { label: "Drafts sent", value: d.period.drafts_sent },

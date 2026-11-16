@@ -47,4 +47,24 @@ const notify = async ({ departments = [], userIds = [], message, sender = "Lab B
   }
 };
 
-module.exports = { initEnquiryNotifications, notify };
+// A notification for named people only (saved under their names, so others with
+// the same role don't see it), e.g. the owner of a job card.
+// { names: string[], message, sender, link?, event }
+const notifyPeople = async ({ names = [], message, sender = "Lab Bee", link = null, event }) => {
+  const people = [...new Set(names.map((n) => String(n || "").trim()).filter(Boolean))];
+  if (!people.length) return;
+  const now = new Date();
+  const saved = await query(
+    "INSERT INTO notifications_table (message, receivedAt, users_to_be_notified, notification_sent_by, link) VALUES (?, ?, ?, ?, ?)",
+    [message, moment(now).format("YYYY-MM-DD HH:mm:ss"), people.join(","), sender, link],
+  );
+  if (!io) return;
+  const wanted = new Set(people);
+  for (const [socketId, u] of Object.entries(connectedUsers)) {
+    if (wanted.has(u.name)) {
+      io.to(socketId).emit(event, { id: saved.insertId, message, sender, receivedAt: now.toISOString(), link });
+    }
+  }
+};
+
+module.exports = { initEnquiryNotifications, notify, notifyPeople };

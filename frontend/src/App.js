@@ -57,6 +57,7 @@ import PublicReportPage from "./JC/ReportWorkflow/PublicReportPage";
 import ReportsBoard from "./JC/ReportWorkflow/ReportsBoard";
 import ChamberBreakdowns from "./JC/Breakdowns/ChamberBreakdowns";
 import JobCardsInsights from "./JC/Dashboards/JobCardsInsights";
+import JCAllocation from "./JC/JCAllocation";
 import ReportsInsights from "./JC/Dashboards/ReportsInsights";
 import EMIJCPrintPage from "./EMI/EMIJCPrintPage";
 
@@ -229,6 +230,22 @@ function App() {
             element={
               <ProtectedRoute>
                 <ReportsBoard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="ts1_jc_allocation"
+            element={
+              <ProtectedRoute>
+                <JCAllocation lab="ts1" />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="ts2_jc_allocation"
+            element={
+              <ProtectedRoute>
+                <JCAllocation lab="ts2" />
               </ProtectedRoute>
             }
           />

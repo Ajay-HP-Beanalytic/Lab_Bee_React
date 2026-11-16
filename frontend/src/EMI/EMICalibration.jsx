@@ -373,7 +373,12 @@ const EMICalibration = () => {
       closeCertDialog();
     } catch (error) {
       console.error("Error uploading certificate:", error);
-      toast.error("Failed to upload the calibration certificate");
+      const status = error.response?.status;
+      const reason =
+        status === 413
+          ? "the file is too large for the server"
+          : error.response?.data?.error || error.response?.data?.message || "";
+      toast.error(`Failed to upload the calibration certificate${reason ? `: ${reason}` : ""}`);
     } finally {
       setUploadingCert(false);
     }
@@ -1428,8 +1433,11 @@ const EMICalibration = () => {
             loading={loading}
             getRowId={(row) => row.id || row.serialNumbers}
             autoHeight
-            pageSize={10}
-            rowsPerPageOptions={[5, 10, 20, 50]}
+            // pages of 10, as in TS1 (pageSize / rowsPerPageOptions are not read by this DataGrid version)
+            initialState={{
+              pagination: { paginationModel: { pageSize: 10 } },
+            }}
+            pageSizeOptions={[5, 10, 20, 50]}
             disableRowSelectionOnClick
             sx={{
               "& .MuiDataGrid-row:hover": {

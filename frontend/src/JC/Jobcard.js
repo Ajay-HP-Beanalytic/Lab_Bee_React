@@ -23,6 +23,7 @@ import UploadFileIcon from "@mui/icons-material/UploadFile";
 import HistoryIcon from "@mui/icons-material/History";
 import InsightsIcon from "@mui/icons-material/Insights";
 import EventRepeatIcon from "@mui/icons-material/EventRepeat";
+import TableRowsIcon from "@mui/icons-material/TableRows";
 
 import { toast } from "react-toastify";
 import axios from "axios";
@@ -40,6 +41,7 @@ import TS1JCStepTwo from "./TS1StepTwo";
 import TS1JCStepThree from "./TS1StepThree";
 import SRFImportDialog from "../components/SRFImportDialog";
 import AuditHistoryDialog from "../components/AuditHistoryDialog";
+import ConfirmationDialog from "../common/ConfirmationDialog";
 
 export const JC_STATUS_COLORS = {
   "Open": "warning",
@@ -70,7 +72,9 @@ const Jobcard = () => {
   const jobcardStore = useJobCardStore();
   const { submitJobCard, isSaving, navigateToDashboard } = useJobCardSubmit();
   const navigate = useNavigate();
-  const { loggedInUser, loggedInUserDepartment, loggedInUserRole } = useContext(UserContext);
+  const { loggedInUser, loggedInUserDepartment, loggedInUserRole, access } = useContext(UserContext);
+  const [leaveOpen, setLeaveOpen] = useState(false);
+  const [reloadKey, setReloadKey] = useState(0); // loads the saved job card again
 
   const { activeStep, setActiveStep, editJc, jcStatus } = jobcardStore;
 
@@ -147,7 +151,7 @@ const Jobcard = () => {
           );
           store.setReferanceDocs(res.data.attachments || []);
           store.setEditJc(true);
-          store.setActiveStep(0);
+          if (!reloadKey) store.setActiveStep(0); // a reload after saving keeps the step
         })
         .catch((error) => {
           console.error(error);
@@ -163,7 +167,7 @@ const Jobcard = () => {
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [id]);
+  }, [id, reloadKey]);
 
   const handleSubmitJobcard = async () => {
     const formData = jobcardStore.getFormData();
@@ -185,6 +189,9 @@ const Jobcard = () => {
     if (result.success) {
       jobcardStore.resetJobCard();
       navigateToDashboard();
+    } else if (result.reload) {
+      // the other changes were saved but not the new status: show what is saved
+      setReloadKey((k) => k + 1);
     } else if (result.step !== undefined) {
       setActiveStep(result.step);
     } else if (result.created && result.createdId) {
@@ -264,7 +271,20 @@ const Jobcard = () => {
   const stepIncomplete = [!jobcardStore.jcNote1Checked || !jobcardStore.jcNote2Checked || !String(jobcardStore.companyName || "").trim(), false, false];
 
   const isAdmin = loggedInUserDepartment === "Administration";
+  const canSeeDashboard = !!access?.isAdmin; // the JC Dashboard is for Administration only
+  // A closed job card opens read-only except for the Lab Manager and Administration (the server checks this too)
+  const canEditClosed = loggedInUserRole === "Lab Manager" || !!access?.isAdmin || isAdmin;
+  const closedLocked = editJc && ["Closed", "Close"].includes(jcStatus) && !canEditClosed;
   const lastStep = activeStep === STEPS.length - 1;
+
+  // Back to the job cards table. Editing: ask first, then drop the unsaved changes.
+  // New job card: what was typed stays as a draft, offered the next time.
+  const leavePage = () => (editJc ? setLeaveOpen(true) : navigate("/jobcard_dashboard"));
+  const confirmLeave = () => {
+    setLeaveOpen(false);
+    useJobCardStore.getState().resetJobCard();
+    navigate("/jobcard_dashboard");
+  };
 
   if (loadError) {
     return (
@@ -277,7 +297,7 @@ const Jobcard = () => {
   }
 
   return (
-    <Box sx={{ pb: "96px" }}>
+    <Box sx={{ pb: 0 }}>
       {/* Summary */}
       <Card variant="outlined" sx={{ p: { xs: 1.5, md: 2 }, mb: 1.5 }}>
         <Box display="flex" alignItems="flex-start" gap={2} flexWrap="wrap">
@@ -326,10 +346,15 @@ const Jobcard = () => {
             </Typography>
           </Box>
           <Stack direction="row" gap={1} flexWrap="wrap">
-            <Button variant="outlined" startIcon={<InsightsIcon />} onClick={() => navigate("/ts1_jc_insights")}>
-              JC Dashboard
+            <Button variant="outlined" startIcon={<TableRowsIcon />} onClick={leavePage}>
+              Job cards
             </Button>
-            {activeStep === 0 && (
+            {canSeeDashboard && (
+              <Button variant="outlined" startIcon={<InsightsIcon />} onClick={() => navigate("/ts1_jc_insights")}>
+                JC Dashboard
+              </Button>
+            )}
+            {activeStep === 0 && !closedLocked && (
               <Button variant="outlined" startIcon={<UploadFileIcon />} onClick={() => setSrfImportDialogOpen(true)}>
                 Import SRF
               </Button>
@@ -348,6 +373,12 @@ const Jobcard = () => {
             )}
           </Stack>
         </Box>
+
+        {closedLocked && (
+          <Alert severity="warning" sx={{ mt: 1.5 }}>
+            This job card is closed. Only the Lab Manager or Administration can change it, so it is shown read-only.
+          </Alert>
+        )}
 
         {draft && (
           <Alert
@@ -391,17 +422,19 @@ const Jobcard = () => {
         </Stepper>
       </Card>
 
-      {activeStep === 0 && <TS1JCStepOne />}
-      {activeStep === 1 && <TS1JCStepTwo />}
-      {activeStep === 2 && <TS1JCStepThree />}
+      {/* Read-only for a closed job card (nothing in it can be changed or clicked) */}
+      <Box sx={closedLocked ? { pointerEvents: "none", opacity: 0.75 } : undefined} aria-disabled={closedLocked || undefined}>
+        {activeStep === 0 && <TS1JCStepOne />}
+        {activeStep === 1 && <TS1JCStepTwo />}
+        {activeStep === 2 && <TS1JCStepThree />}
+      </Box>
 
-      {/* Actions */}
+      {/* Actions: sticks to the bottom of the page area (a fixed bar from the screen edge was hidden under the side menu) */}
       <Box
         sx={{
-          position: "fixed",
+          position: "sticky",
           bottom: 0,
-          left: 0,
-          right: 0,
+          mt: 2,
           px: 2,
           py: 1.25,
           bgcolor: "background.paper",
@@ -414,7 +447,7 @@ const Jobcard = () => {
           gap: 1,
         }}
       >
-        <Button startIcon={<ArrowBackIcon />} onClick={() => navigate("/jobcard_dashboard")}>
+        <Button startIcon={<ArrowBackIcon />} onClick={leavePage}>
           Job cards
         </Button>
         <Box flex={1} />
@@ -433,12 +466,21 @@ const Jobcard = () => {
           variant="contained"
           startIcon={isSaving ? <CircularProgress size={16} color="inherit" /> : <SaveIcon />}
           onClick={handleSubmitJobcard}
-          disabled={isSaving || !!draft}
+          disabled={isSaving || !!draft || closedLocked}
         >
           {editJc ? "Save changes" : "Create job card"}
         </Button>
       </Box>
 
+      <ConfirmationDialog
+        open={leaveOpen}
+        onClose={() => setLeaveOpen(false)}
+        onConfirm={confirmLeave}
+        dialogTitle="Leave without saving?"
+        contentText="Changes made to this job card since it was opened will not be saved."
+        confirmButtonText="Leave"
+        cancelButtonText="Stay"
+      />
       <SRFImportDialog open={srfImportDialogOpen} onClose={() => setSrfImportDialogOpen(false)} onImport={handleSRFDataImport} />
       {editJc && <AuditHistoryDialog open={auditOpen} onClose={() => setAuditOpen(false)} jcNumber={jobcardStore.jcNumberString} />}
     </Box>

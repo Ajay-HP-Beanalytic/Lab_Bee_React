@@ -22,6 +22,7 @@ const TABLES = {
       "startTemp", "startRh", "startDate", "endDate", "duration", "actualTestDuration", "unit",
       "endTemp", "endRh", "testEndedBy", "remarks", "testReviewedBy", "reportPreparationStatus",
       "testReportInstructions", "reportNumber", "preparedBy", "nablUploaded", "reportStatus",
+      "photosOnNas", "graphsOnNas", // photos (test started by) / graphs (test ended by) on the BEA NAS
     ],
     dates: ["startDate", "endDate"],
   },
@@ -64,10 +65,11 @@ async function jobcardUser(req) {
   return access;
 }
 
-/** TS1 Testing (other than the Lab Manager) can't change a closed job card */
+/** A closed job card can be changed (or reopened) only by the Lab Manager or Administration */
+const canEditClosed = (access) => !!access?.isAdmin || access?.role === "Lab Manager";
 function checkCanEdit(jobcard, access) {
-  if (["Closed", "Close"].includes(jobcard.jc_status) && access.department === "TS1 Testing" && access.role !== "Lab Manager") {
-    throw fail(403, "This job card is closed. Only the Lab Manager can change it.");
+  if (["Closed", "Close"].includes(jobcard.jc_status) && !canEditClosed(access)) {
+    throw fail(403, "This job card is closed. Only the Lab Manager or Administration can change it.");
   }
 }
 
@@ -184,4 +186,4 @@ async function saveRows(pool, access, jcNumber, payload) {
   }
 }
 
-module.exports = { TABLES, saveRows, jobcardUser, checkCanEdit, fail };
+module.exports = { TABLES, saveRows, jobcardUser, checkCanEdit, canEditClosed, fail };

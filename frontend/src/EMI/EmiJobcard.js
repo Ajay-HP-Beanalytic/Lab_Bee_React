@@ -50,6 +50,9 @@ export default function EmiJobcard() {
     setDeletedTestIds,
     deletedTestPerformedIds,
     setDeletedTestPerformedIds,
+    initialAllocation,
+    jcAllocation,
+    setJcAllocation,
   } = useContext(EMIJCContext);
 
   const steps = ["JC Primary Details", "Test Details", "Observations"];
@@ -168,10 +171,10 @@ export default function EmiJobcard() {
       }
     }
 
-    if (
-      stepThreeFormData?.jcClosedDate !== null &&
-      stepThreeFormData?.jcClosedDate.isBefore(stepTwoFormData?.jcOpenDate)
-    ) {
+    // The dates may be dayjs values or (when loaded from the server) text
+    const closedDate = stepThreeFormData?.jcClosedDate ? dayjs(stepThreeFormData.jcClosedDate) : null;
+    const openDate = stepTwoFormData?.jcOpenDate ? dayjs(stepTwoFormData.jcOpenDate) : null;
+    if (closedDate?.isValid() && openDate?.isValid() && closedDate.isBefore(openDate, "day")) {
       toast.warning(
         "JC Closed Date cannot be earlier than JC Open Date. Please adjust the dates."
       );
@@ -219,6 +222,29 @@ export default function EmiJobcard() {
             ? "Job-Card Updated Successfully"
             : "Job-Card Created Successfully"
         );
+
+        // Owner (JC Incharge) and supporting staff: only when changed, with the
+        // allocation rules and notifications (the job card itself is saved either way)
+        const savedJcNumber = response.data?.jcNumber || editingJCNumber;
+        const support = jcAllocation.supportStaff || [];
+        const allocationChanged =
+          (jcAllocation.owner || "") !== (jcAllocation.savedOwner || "") ||
+          support.join(",") !== (jcAllocation.savedSupportStaff || []).join(",");
+        if (allocationChanged && savedJcNumber) {
+          try {
+            await axios.put(`${serverBaseAddress}/api/jc-allocation/ts2/owner`, {
+              jcNumber: savedJcNumber,
+              owner: jcAllocation.owner || "",
+              supportStaff: support,
+            });
+          } catch (err) {
+            toast.warning(`Job-Card saved, but ${err.response?.data?.message || "the owner could not be saved"}`, {
+              position: "top-center",
+              autoClose: 8000,
+            });
+          }
+        }
+        setJcAllocation(initialAllocation);
         setActiveStep(0);
 
         // Resetting all form data after submission
@@ -236,7 +262,7 @@ export default function EmiJobcard() {
       }
     } catch (error) {
       console.error("Error submitting Job-Card:", error);
-      toast.error("Failed to submit Job-Card. Please try again later.");
+      toast.error(error.response?.data?.message || "Failed to submit Job-Card. Please try again later.");
     }
   };
 
@@ -312,9 +338,16 @@ export default function EmiJobcard() {
         typeOfRequest: data.emiPrimaryJCData.typeOfRequest,
         sampleCondition: data.emiPrimaryJCData.sampleCondition,
         slotDuration: data.emiPrimaryJCData.slotDuration,
-        jcIncharge: data.emiPrimaryJCData.jcIncharge,
         lastUpdatedBy: data.emiPrimaryJCData.lastUpdatedBy,
       });
+
+      // Owner (JC Incharge) and supporting staff, as saved
+      const owner = data.emiPrimaryJCData.jcIncharge || "";
+      const supportStaff = String(data.emiPrimaryJCData.jcSupportStaff || "")
+        .split(",")
+        .map((n) => n.trim())
+        .filter(Boolean);
+      setJcAllocation({ owner, supportStaff, savedOwner: owner, savedSupportStaff: supportStaff });
 
       const parsedTestDetailsData = data.emiTestsDetailsData.map(
         (testDetail) => ({
@@ -347,6 +380,7 @@ export default function EmiJobcard() {
       setTestPerformedTableRows,
       setStepThreeFormData,
       setEditingJCNumber,
+      setJcAllocation,
     ]
   );
 
@@ -358,12 +392,13 @@ export default function EmiJobcard() {
           `${serverBaseAddress}/api/getLatestEMIJCNumber`
         );
         if (response.status === 200) {
-          const lastJCNumberString = response.data[0]?.jcNumber;
-
-          const [yearPart, MonthAndNumberPart] = lastJCNumberString.split("/");
+          // The last number of this month ("2026-2027/11-004"), or "…/11-000" for the first
+          const lastJCNumberString = String(response.data[0]?.jcNumber || "");
+          const [yearPart, MonthAndNumberPart = ""] = lastJCNumberString.split("/");
           const [monthSection, jcNumberSection] = MonthAndNumberPart.split("-");
+          if (!yearPart || !monthSection) return;
 
-          const incrementingJCNumber = parseInt(jcNumberSection);
+          const incrementingJCNumber = parseInt(jcNumberSection, 10) || 0;
 
           const newJCNumberPart = String(incrementingJCNumber + 1).padStart(
             3,
@@ -387,6 +422,12 @@ export default function EmiJobcard() {
 
     fetchLatestJCNumber();
   }, [loggedInUser, id]);
+
+  // A new job card does not keep the owner of a job card edited earlier
+  useEffect(() => {
+    if (!id) setJcAllocation((a) => (a.savedOwner || a.savedSupportStaff.length ? initialAllocation : a));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id]);
 
   // Only fetch JC data if there's an id in the URL (edit mode)
   useEffect(() => {
@@ -418,6 +459,10 @@ export default function EmiJobcard() {
     setStepTwoFormData(initialStepTwoFormData);
     setTestPerformedTableRows(initialTestPerformedTableRows);
     setStepThreeFormData(initialStepThreeFormData);
+    setDeletedEutIds(initialDeletedIds);
+    setDeletedTestIds(initialDeletedIds);
+    setDeletedTestPerformedIds(initialDeletedIds);
+    setJcAllocation(initialAllocation);
     navigate("/emi_jc_dashboard");
   };
 

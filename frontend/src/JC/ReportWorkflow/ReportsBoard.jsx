@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useContext, useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import {
@@ -35,6 +35,7 @@ import InsightsIcon from "@mui/icons-material/Insights";
 import CloseIcon from "@mui/icons-material/Close";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import { serverBaseAddress } from "../../Pages/APIPage";
+import { UserContext } from "../../Pages/UserContext";
 import { toast } from "react-toastify";
 import QrCode2Icon from "@mui/icons-material/QrCode2";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
@@ -134,6 +135,7 @@ function ReportDrawer({ testDetailId, onClose, onChanged }) {
 /** TS1 reports: my work (by due date), everything in progress, and the issued library */
 export default function ReportsBoard() {
   const navigate = useNavigate();
+  const isAdmin = !!useContext(UserContext).access?.isAdmin; // the dashboard is for Administration only
   const [params, setParams] = useSearchParams();
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
@@ -216,9 +218,11 @@ export default function ReportsBoard() {
             <RefreshIcon />
           </IconButton>
         </Tooltip>
-        <Button variant="outlined" startIcon={<InsightsIcon />} onClick={() => navigate("/ts1_reports_insights")}>
-          Dashboard
-        </Button>
+        {isAdmin && (
+          <Button variant="outlined" startIcon={<InsightsIcon />} onClick={() => navigate("/ts1_reports_insights")}>
+            Dashboard
+          </Button>
+        )}
         <Button variant="outlined" startIcon={<SettingsIcon />} onClick={() => setSettings(true)}>
           Settings
         </Button>

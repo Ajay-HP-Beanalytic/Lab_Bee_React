@@ -396,10 +396,25 @@ const SRFImportDialog = ({ open, onClose, onImport }) => {
     const tables = [];
     tableElements.forEach((table, tableIndex) => {
       const rows = [];
+      // The same rows laid out on the table grid: a cell merged down over several
+      // rows (e.g. one Test Standard for many tests) is repeated in each of them,
+      // and a cell merged across columns keeps its columns, so every EUT / test
+      // row has all its columns in the right place. Used for the EUT and test rows.
+      const grid = [];
+      const carry = []; // column -> { text, left: rows still covered by a merged cell }
       const trs = table.querySelectorAll("tr");
 
       trs.forEach((tr) => {
         const cells = [];
+        const gridRow = [];
+        let col = 0;
+        const takeCarried = () => {
+          while (carry[col] && carry[col].left > 0) {
+            gridRow.push(carry[col].text);
+            carry[col].left -= 1;
+            col += 1;
+          }
+        };
         const tds = tr.querySelectorAll("td, th");
 
         tds.forEach((td) => {
@@ -407,15 +422,26 @@ const SRFImportDialog = ({ open, onClose, onImport }) => {
             ? td.textContent.replace(/\r/g, " ").trim()
             : "";
           cells.push(text);
+
+          takeCarried();
+          const across = Math.max(1, parseInt(td.getAttribute("colspan"), 10) || 1);
+          const down = Math.max(1, parseInt(td.getAttribute("rowspan"), 10) || 1);
+          for (let k = 0; k < across; k += 1) {
+            gridRow.push(k === 0 ? text : "");
+            carry[col] = down > 1 ? { text: k === 0 ? text : "", left: down - 1 } : null;
+            col += 1;
+          }
         });
+        takeCarried();
 
         if (cells.length > 0) {
           rows.push(cells);
+          grid.push(gridRow);
         }
       });
 
       if (rows.length > 0) {
-        tables.push({ index: tableIndex, rows });
+        tables.push({ index: tableIndex, rows, grid });
       }
     });
 
@@ -460,10 +486,16 @@ const SRFImportDialog = ({ open, onClose, onImport }) => {
 
     for (let i = 0; i < table.rows.length; i++) {
       const row = table.rows[i];
+      const full = table.grid?.[i] || row; // the row with merged cells filled in
       const cellText = row.join(" ").toLowerCase().trim();
 
+      // A numbered data row is never a section heading: a test such as
+      // "7 | Vibration test - details as per annexure" stays a test
+      const numbered = /^\d+\s*[.)]?$/.test((full[0] || "").trim());
+      const isHeading = !numbered;
+
       // Check for section headers
-      if (cellText.includes("eut") && cellText.includes("details")) {
+      if (isHeading && cellText.includes("eut") && cellText.includes("details")) {
         // Save current section
         if (currentSection.rows.length > 0) {
           sections.push(currentSection);
@@ -472,7 +504,7 @@ const SRFImportDialog = ({ open, onClose, onImport }) => {
         inTestSection = false;
         currentSection = { type: "eut", rows: [] };
         continue; // Skip the header row itself
-      } else if (cellText.includes("test") && cellText.includes("details")) {
+      } else if (isHeading && cellText.includes("test") && cellText.includes("details")) {
         // Save current section
         if (currentSection.rows.length > 0) {
           sections.push(currentSection);
@@ -482,8 +514,9 @@ const SRFImportDialog = ({ open, onClose, onImport }) => {
         currentSection = { type: "test", rows: [] };
         continue; // Skip the header row itself
       } else if (
-        cellText.includes("customer details") ||
-        cellText.includes("reference document")
+        isHeading &&
+        (cellText.includes("customer details") ||
+          cellText.includes("reference document"))
       ) {
         // End of test section, back to form fields
         if (currentSection.rows.length > 0) {
@@ -497,13 +530,16 @@ const SRFImportDialog = ({ open, onClose, onImport }) => {
 
       // Determine if this row belongs to current section
       const colCount = row.filter((cell) => cell && cell.trim()).length;
+      const fullCount = full.filter((cell) => cell && cell.trim()).length;
 
-      if (inEutSection && colCount >= 5) {
-        // EUT rows typically have 6 columns (SL, Nomenclature, Qty, Part, Model, Serial)
-        currentSection.rows.push(row);
-      } else if (inTestSection && colCount >= 3) {
-        // Test rows typically have 4 columns (SL, Test Name, Standard, Profile)
-        currentSection.rows.push(row);
+      if (inEutSection && (fullCount >= 3 || (numbered && fullCount >= 2))) {
+        // EUT rows typically have 6 columns (SL, Nomenclature, Qty, Part, Model, Serial).
+        // Rows with some cells left empty are kept too.
+        currentSection.rows.push(full);
+      } else if (inTestSection && (fullCount >= 3 || (numbered && fullCount >= 2))) {
+        // Test rows typically have 4 columns (SL, Test Name, Standard, Profile).
+        // A numbered test with no standard / profile given is kept too.
+        currentSection.rows.push(full);
       } else if (
         !inEutSection &&
         !inTestSection &&

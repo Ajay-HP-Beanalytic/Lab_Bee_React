@@ -22,6 +22,7 @@ const EVENT_TITLES = {
   emi_jobcard_submit_notification: "New TS2 JC Created",
   rfq_notification: "Enquiry",
   report_notification: "TS1 Report",
+  jobcard_owner_notification: "Job Card Assigned",
 };
 
 const canNotifyDesktop = () => typeof window !== "undefined" && "Notification" in window;

@@ -22,8 +22,8 @@ const fail = (status, message) => Object.assign(new Error(message), { status });
 const MENU_KEYS = [
   "home", "org_docs",
   "rfq_inbox", "rfq_dashboard", "future_scope", "quotations", "quotation_essentials", "marketing",
-  "ts1_jobcards", "ts1_reports", "ts1_slot_booking", "ts1_chambers", "ts1_breakdowns", "ts1_hours", "ts1_jc_essentials",
-  "ts2_jobcards", "ts2_slot_booking", "ts2_calibration",
+  "ts1_jobcards", "ts1_jc_allocation", "ts1_reports", "ts1_slot_booking", "ts1_chambers", "ts1_breakdowns", "ts1_hours", "ts1_jc_essentials",
+  "ts2_jobcards", "ts2_jc_allocation", "ts2_slot_booking", "ts2_calibration",
   "nabl_scope", "test_types", "test_pricing", "chamber_specs", "test_durations",
   "projects",
   "user_management",
@@ -45,10 +45,10 @@ const SEED = [
     menus: ["rfq_inbox", "rfq_dashboard", "future_scope", "quotations", "quotation_essentials", "marketing", "ts1_hours", "ts2_jobcards", "ts2_slot_booking"] },
   { name: "TS1 Testing", enquiry_scope: "TS1", home_group: "ts1",
     roles: ["Lab Manager", "Lab Engineer", "Lab Technician", "Testing Engineer", "Lab Assistant", "Trainee Engineer", "Quality Manager", "Deputy Quality Manager", "Reports & Scrutiny Manager"],
-    menus: ["rfq_inbox", "rfq_dashboard", "future_scope", "ts1_jobcards", "ts1_jc_essentials", "ts1_slot_booking", "ts1_chambers", "ts1_hours", "chamber_specs", "nabl_scope", "test_types", "test_durations", "org_docs"] },
+    menus: ["rfq_inbox", "rfq_dashboard", "future_scope", "ts1_jobcards", "ts1_jc_allocation", "ts1_jc_essentials", "ts1_slot_booking", "ts1_chambers", "ts1_hours", "chamber_specs", "nabl_scope", "test_types", "test_durations", "org_docs"] },
   { name: "TS2 Testing", enquiry_scope: "TS2", home_group: "ts2",
     roles: ["Lab Manager(EMI)", "Lab Incharge", "Test Engineer", "Trainee Engineer"],
-    menus: ["rfq_inbox", "rfq_dashboard", "future_scope", "ts2_jobcards", "ts2_slot_booking", "ts2_calibration", "nabl_scope", "test_types", "org_docs"] },
+    menus: ["rfq_inbox", "rfq_dashboard", "future_scope", "ts2_jobcards", "ts2_jc_allocation", "ts2_slot_booking", "ts2_calibration", "nabl_scope", "test_types", "org_docs"] },
   { name: "Reports & Scrutiny", home_group: "ts1",
     roles: ["Reports & Scrutiny Manager", "Technical Support Writer", "Quality Engineer"],
     menus: ["ts1_jobcards", "ts1_jc_essentials", "ts1_slot_booking", "ts1_chambers", "ts1_hours", "ts2_jobcards", "ts2_calibration", "org_docs"],
@@ -99,6 +99,22 @@ async function ensureTables() {
       PRIMARY KEY (subject_type, subject_id, menu_key)
     )`);
   await seed();
+  await grantNewMenus();
+}
+
+// Menu items added after the first run: given once to these departments (Administration
+// can change it in Users & Access afterwards). Skipped when anyone already has the item.
+const NEW_MENUS = [
+  ["ts1_jc_allocation", ["TS1 Testing"]],
+  ["ts2_jc_allocation", ["TS2 Testing"]],
+];
+async function grantNewMenus() {
+  for (const [key, departments] of NEW_MENUS) {
+    const [given] = await query("SELECT 1 AS x FROM labbee_menu_access WHERE menu_key = ? LIMIT 1", [key]);
+    if (given) continue;
+    const depts = await query("SELECT id FROM labbee_departments WHERE name IN (?)", [departments]);
+    for (const d of depts) await query("INSERT IGNORE INTO labbee_menu_access (subject_type, subject_id, menu_key) VALUES ('department', ?, ?)", [d.id, key]);
+  }
 }
 
 // First run: the departments, roles and menus Lab Bee had, plus any department /

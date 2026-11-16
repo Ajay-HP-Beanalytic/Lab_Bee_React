@@ -3,7 +3,8 @@ const schedule = require("node-schedule");
 const moment = require("moment");
 
 // notifications_table keeps, per notification, comma separated lists:
-//   users_to_be_notified - the roles that see it (e.g. "Lab Manager,Lab Engineer")
+//   users_to_be_notified - the roles that see it (e.g. "Lab Manager,Lab Engineer"),
+//     or user names for a notification meant for named people (a job card owner)
 //   isReadBy / isUnReadBy / isDeletedBy - user names
 // Roles and names are matched as whole list items (FIND_IN_SET), so "Lab Manager"
 // does not match "Lab Manager(EMI)" and "Ajay" does not match "Ajay HP".
@@ -31,7 +32,8 @@ const SET = {
 // parameters for SET[action]
 const setParams = (action, name) => (action === "delete" ? [name, name] : [name, name, name]);
 
-const VISIBLE = `${inList("users_to_be_notified")} AND NOT ${inList("isDeletedBy")}
+// Parameters: the user's role, name, name
+const VISIBLE = `(${inList("users_to_be_notified")} OR ${inList("users_to_be_notified")}) AND NOT ${inList("isDeletedBy")}
   AND receivedAt >= NOW() - INTERVAL ${KEEP_DAYS} DAY`;
 
 function notificationsAPIs(app, io, labbeeUsers) {
@@ -112,7 +114,7 @@ function notificationsAPIs(app, io, labbeeUsers) {
          WHERE ${VISIBLE}
          ORDER BY receivedAt DESC, id DESC
          LIMIT ${MAX_LIST}`,
-        [user.name, user.role, user.name],
+        [user.name, user.role, user.name, user.name],
       );
       res.status(200).json(rows.map((r) => ({ ...r, isRead: !!r.isRead })));
     }),
@@ -141,7 +143,7 @@ function notificationsAPIs(app, io, labbeeUsers) {
       let params;
       if (ids === "all") {
         where = VISIBLE;
-        params = [user.role, user.name];
+        params = [user.role, user.name, user.name];
       } else {
         const list = (Array.isArray(ids) ? ids : []).map((x) => parseInt(x)).filter(Boolean);
         if (!list.length) return res.status(400).json({ message: "No notifications chosen" });
@@ -164,6 +166,7 @@ function notificationsAPIs(app, io, labbeeUsers) {
         ...setParams("delete", user.name),
         user.role,
         user.name,
+        user.name,
       ]);
       res.status(200).json({ message: "All notifications deleted for user" });
     }),
@@ -175,7 +178,7 @@ function notificationsAPIs(app, io, labbeeUsers) {
     handle(async (req, res, user) => {
       const [row] = await query(
         `SELECT COUNT(*) AS count FROM notifications_table WHERE ${VISIBLE} AND NOT ${inList("isReadBy")}`,
-        [user.role, user.name, user.name],
+        [user.role, user.name, user.name, user.name],
       );
       res.status(200).json({ count: row.count });
     }),

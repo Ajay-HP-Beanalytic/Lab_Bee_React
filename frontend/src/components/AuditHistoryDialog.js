@@ -117,6 +117,7 @@ export default function AuditHistoryDialog({
     if (tableName === "tests_details") return "Test Details";
     if (tableName === "eut_details") return "EUT Details";
     if (tableName === "jc_tests") return "Tests";
+    if (tableName === "attachments") return "Attachments";
 
     // TS2 (EMI) Tables
     if (tableName === "emi_jobcards") return "Main JC";
@@ -201,7 +202,15 @@ export default function AuditHistoryDialog({
                     </TableCell>
                     <TableCell>
                       <Chip
-                        label={entry.action_type}
+                        label={
+                          entry.table_name === "attachments"
+                            ? entry.action_type === "CREATE"
+                              ? "UPLOADED"
+                              : entry.action_type === "DELETE"
+                                ? "REMOVED"
+                                : entry.action_type
+                            : entry.action_type
+                        }
                         color={getActionColor(entry.action_type)}
                         size="small"
                       />

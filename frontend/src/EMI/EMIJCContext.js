@@ -44,6 +44,9 @@ const EMIJCContextProvider = ({ children }) => {
     initialTestPerformedTableRows
   );
   const [deletedEutIds, setDeletedEutIds] = useState(initialDeletedIds);
+  // Job card owner (JC Incharge) and supporting staff, and what is saved (to send only a change)
+  const initialAllocation = { owner: "", supportStaff: [], savedOwner: "", savedSupportStaff: [] };
+  const [jcAllocation, setJcAllocation] = useState(initialAllocation);
   const [deletedTestIds, setDeletedTestIds] = useState(initialDeletedIds);
   const [deletedTestPerformedIds, setDeletedTestPerformedIds] =
     useState(initialDeletedIds);
@@ -225,6 +228,9 @@ const EMIJCContextProvider = ({ children }) => {
   return (
     <EMIJCContext.Provider
       value={{
+        initialAllocation,
+        jcAllocation,
+        setJcAllocation,
         initialStepOneFormData,
         initialStepTwoFormData,
         initialStepThreeFormData,

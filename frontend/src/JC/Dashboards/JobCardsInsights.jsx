@@ -46,6 +46,8 @@ export default function JobCardsInsights() {
               { label: "Chambers in use", value: d.now.chambers_busy },
               { label: "Tests all ended, JC open", value: d.now.ready_to_close, warn: true, hint: "Every test has ended but the job card isn't closed" },
               { label: "Open over 30 days", value: d.now.over_30_days, warn: true },
+              { label: "No owner yet", value: d.now.unassigned, warn: true, hint: "Open job cards not assigned to an owner" },
+              { label: "Owners with open job cards", value: d.now.owners },
             ]}
           />
           <Grid container spacing={1} mt={0}>
@@ -74,7 +76,43 @@ export default function JobCardsInsights() {
             </Grid>
           </Grid>
 
-          <SectionTitle note={`Last ${d.days} days`}>The period</SectionTitle>
+          <SectionTitle note="Who is in charge of the open job cards. Closed: job cards closed in the period">Job card owners</SectionTitle>
+          <Grid container spacing={1}>
+            <Grid item xs={12} md={7}>
+              <Panel title="Owners">
+                <PagedTable
+                  rows={d.owners}
+                  minWidth={520}
+                  rowKey={(o) => o.name}
+                  columns={[
+                    { label: "Owner", field: "name" },
+                    { label: "Open", field: "open", align: "right" },
+                    { label: "Tests running", field: "running", align: "right" },
+                    { label: "Ready to close", field: "ready", align: "right" },
+                    { label: "Open over 30 days", field: "over30", align: "right" },
+                    { label: "Closed", field: "closed", align: "right" },
+                  ]}
+                />
+              </Panel>
+            </Grid>
+            <Grid item xs={12} md={5}>
+              <Panel title="No owner yet" note="Click to open the job card">
+                <PagedTable
+                  rows={d.unassigned}
+                  minWidth={380}
+                  rowKey={(j) => j.id}
+                  onRowClick={(j) => openJc(j.id)}
+                  columns={[
+                    { label: "JC", field: "jcNumber" },
+                    { label: "Customer", field: "company" },
+                    { label: "Days open", field: "days", align: "right" },
+                  ]}
+                />
+              </Panel>
+            </Grid>
+          </Grid>
+
+          <SectionTitle note={board.periodLabel}>The period</SectionTitle>
           <Tiles
             items={[
               { label: "Job cards opened", value: d.period.opened },
