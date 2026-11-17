@@ -1,5 +1,5 @@
 /**
- * Table 02: EUT/DUT numbers and respective details for the tests conducted, and the notes
+ * Table 03: EUT/DUT numbers and respective details for the tests conducted, and the notes
  * under it. The columns depend on the family of the test (see reportLayouts.js): IP-type
  * tests show the medium and total duration, thermal / other tests the test profile.
  *
@@ -8,13 +8,15 @@
  * @returns {Array} Array containing the table and notes
  */
 
-import { AlignmentType, Paragraph, TableRow, PageBreak } from "docx";
+import { AlignmentType, TableRow } from "docx";
 import {
   createHeaderCell,
   createCenteredDataCell,
   createCaptionParagraph,
   createDataTable,
   createTableHeadingParagraph,
+  pageBreakParagraph,
+  tableNumbering,
 } from "./Report_Functions/docxHelpers";
 import { COLUMN_TEXT, FAMILIES, defaultContent, table3Of } from "./reportLayouts";
 
@@ -25,6 +27,7 @@ export const createTestDetailsInfoTable = (comprehensiveData, reportConfig) => {
   const content = reportConfig?.content || defaultContent(comprehensiveData?.reportTests || [], comprehensiveData?.currentTest_testCategory);
   const family = FAMILIES[content.family] || FAMILIES.general;
   const columns = family.columns;
+  const tableNo = reportConfig?.tableNo || tableNumbering();
 
   // The chambers each test ran in (matched to its job card row, or by the id typed there)
   const chambers = (reportConfig?.chambers || []).filter((c) => c.chamberMake);
@@ -61,14 +64,15 @@ export const createTestDetailsInfoTable = (comprehensiveData, reportConfig) => {
     .map((t) => t.trim())
     .filter(Boolean);
 
-  // Table 03 (salt fog: observation per item; ESS: batches...), when it has rows
+  // Table 04 (salt fog: observation per item; ESS: batches...), when it has rows
   const t3 = table3Of(content.table3);
   const table3 = [];
+  const mainTitle = tableNo("EUT/DUT numbers and respective details for test conducted");
   if (t3) {
     const n = Math.max(t3.headers.length, ...t3.rows.map((r) => r.length));
     const w = Math.floor(92 / n);
     table3.push(
-      createTableHeadingParagraph(t3.title),
+      createTableHeadingParagraph(tableNo(t3.title)),
       createDataTable([
         new TableRow({
           tableHeader: true,
@@ -85,10 +89,10 @@ export const createTestDetailsInfoTable = (comprehensiveData, reportConfig) => {
   }
 
   return [
-    createTableHeadingParagraph("Table 02: EUT/DUT numbers and respective details for test conducted"),
+    createTableHeadingParagraph(mainTitle),
     createDataTable([headerRow, ...dataRows]),
     ...notes.map((t) => createCaptionParagraph(t, { alignment: AlignmentType.LEFT })),
     ...table3,
-    new Paragraph({ children: [new PageBreak()] }),
+    pageBreakParagraph(),
   ];
 };

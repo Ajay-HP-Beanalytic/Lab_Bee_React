@@ -15,6 +15,9 @@ import {
   Button,
   Autocomplete,
   Tooltip,
+  RadioGroup,
+  Radio,
+  FormControlLabel,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import RemoveIcon from "@mui/icons-material/Remove";
@@ -417,6 +420,27 @@ const RenderTable = ({
                       >
                         Open OF
                       </Button>
+                    ) : column.type === "yesNo" ? (
+                      // Yes / No confirmation (e.g. photos / graphs uploaded to the BEA NAS)
+                      <RadioGroup
+                        row
+                        value={row[column.id] || ""}
+                        onChange={(e) =>
+                          handleInputChange(rowIndex, column.id, e.target.value)
+                        }
+                        sx={{ justifyContent: "center", flexWrap: "nowrap" }}
+                      >
+                        <FormControlLabel
+                          value="Yes"
+                          control={<Radio size="small" color="success" />}
+                          label="Yes"
+                        />
+                        <FormControlLabel
+                          value="No"
+                          control={<Radio size="small" color="error" />}
+                          label="No"
+                        />
+                      </RadioGroup>
                     ) : (
                       ""
                     )}

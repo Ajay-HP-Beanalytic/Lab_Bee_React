@@ -79,7 +79,7 @@ export default function JCPreview({
   openReportFor = null, // from the Reports board: the test row whose report window opens at once
   onReportOpened,
 }) {
-  const { loggedInUserDepartment, loggedInUserRole } = useContext(UserContext);
+  const { loggedInUserDepartment, loggedInUserRole, access } = useContext(UserContext);
 
   // State for attached-document preview
   const [attachmentPreviewOpen, setAttachmentPreviewOpen] = useState(false);
@@ -125,8 +125,10 @@ export default function JCPreview({
   const isLabManager = loggedInUserRole === "Lab Manager";
   const canEditJC =
     isLabManager || isAdminOrAccounts || isReportsAndScrutiny || isTS1Testing;
-  const disableEditButton =
-    !canEditJC || (jcStatus === "Closed" && isTS1Testing && !isLabManager);
+  // A closed job card: only the Lab Manager or Administration may edit it (the server checks this too)
+  const canEditClosed = isLabManager || !!access?.isAdmin || loggedInUserDepartment === "Administration";
+  const isClosedJc = ["Closed", "Close"].includes(jcStatus);
+  const disableEditButton = !canEditJC || (isClosedJc && !canEditClosed);
 
   const eutTableHeaderNames = [
     "Sl No",
@@ -159,6 +161,8 @@ export default function JCPreview({
     "Unit",
     "Test Ended By",
     "Remarks",
+    "Photos on BEA NAS",
+    "Graphs on BEA NAS",
     "Test Reviewed By",
 
     // "Report Prepartion Status",
@@ -756,6 +760,8 @@ export default function JCPreview({
                           <TableCell>{row.unit}</TableCell>
                           <TableCell>{row.testEndedBy}</TableCell>
                           <TableCell>{row.remarks}</TableCell>
+                          <TableCell>{row.photosOnNas || "–"}</TableCell>
+                          <TableCell>{row.graphsOnNas || "–"}</TableCell>
                           <TableCell>{row.testReviewedBy}</TableCell>
                           {/* <TableCell>{row.reportPreparationStatus}</TableCell> */}
                           <TableCell>{row.testReportInstructions}</TableCell>
@@ -957,22 +963,26 @@ export default function JCPreview({
 
         {/* Buttons for Edit/Update, View History, Download, and Close */}
         <Box sx={{ display: "flex", justifyContent: "center", mt: 3 }}>
-          <Button
-            sx={{
-              borderRadius: 3,
-              mx: 0.5,
-              mb: 1,
-              bgcolor: "orange",
-              color: "white",
-              borderColor: "black",
-            }}
-            variant="contained"
-            color="primary"
-            onClick={onEditJC}
-            disabled={disableEditButton}
-          >
-            Edit/Update
-          </Button>
+          <Tooltip title={isClosedJc && !canEditClosed ? "This job card is closed. Only the Lab Manager or Administration can edit it." : ""}>
+            <span>
+              <Button
+                sx={{
+                  borderRadius: 3,
+                  mx: 0.5,
+                  mb: 1,
+                  bgcolor: "orange",
+                  color: "white",
+                  borderColor: "black",
+                }}
+                variant="contained"
+                color="primary"
+                onClick={onEditJC}
+                disabled={disableEditButton}
+              >
+                Edit/Update
+              </Button>
+            </span>
+          </Tooltip>
 
           {/* View History Button */}
           <Button

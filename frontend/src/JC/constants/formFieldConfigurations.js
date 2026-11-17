@@ -140,22 +140,22 @@ export const TEST_CONFIG_FIELDS = [
 
 // Job Card Metadata Fields
 export const JC_METADATA_FIELDS = [
-  // {
-  //   name: "dcNumber",
-  //   label: "DC Number",
-  //   type: "textField",
-  //   stateKey: "dcNumber",
-  //   setterKey: "setDcNumber",
-  //   width: "100%",
-  // },
-  // {
-  //   name: "poNumber",
-  //   label: "PO Number",
-  //   type: "textField",
-  //   stateKey: "poNumber",
-  //   setterKey: "setPoNumber",
-  //   width: "100%",
-  // },
+  {
+    name: "dcNumber",
+    label: "DC Number",
+    type: "textField",
+    stateKey: "dcNumber",
+    setterKey: "setDcNumber",
+    width: "100%",
+  },
+  {
+    name: "poNumber",
+    label: "PO Number",
+    type: "textField",
+    stateKey: "poNumber",
+    setterKey: "setPoNumber",
+    width: "100%",
+  },
   {
     name: "jcOpenDate",
     label: "JC Open Date",
@@ -191,20 +191,28 @@ export const getJcStatusFields = (
   usersOptions = [],
   loggedInUserRole = "",
   jobcardStatus = null,
-  editJc = false
+  editJc = false,
+  // Two-step closing: canCompleteTests = the job card owner, Lab Manager or Administration;
+  // savedStatus = the status as last saved
+  { canCompleteTests = loggedInUserRole === "Lab Manager", savedStatus = null, isAdmin = false } = {}
 ) => {
-  // Check if user is Lab Manager
-  const isLabManager = loggedInUserRole === "Lab Manager";
+  // The Lab Manager closes job cards; Administration may do everything they can
+  const isLabManager = loggedInUserRole === "Lab Manager" || isAdmin;
 
   // Check if JC is closed
   const isClosed = jobcardStatus === "Closed";
 
   // For non-Lab Manager users, show all status options when JC is closed (but field will be disabled)
   // For other statuses or Lab Manager, filter as before
+  // Step 1 (Test Completed) is set or taken back only by the job card owner / Lab Manager / Administration
+  const testsCompletedSaved = savedStatus === "Test Completed";
+  const lockedForMe = (isClosed && !isLabManager) || (testsCompletedSaved && !canCompleteTests);
   const jcStatusOptions =
     isLabManager || isClosed
       ? JOB_CARD_OPTIONS.jcStatus
-      : JOB_CARD_OPTIONS.jcStatus.filter((option) => option.id !== "Closed");
+      : JOB_CARD_OPTIONS.jcStatus.filter(
+          (option) => option.id !== "Closed" && (option.id !== "Test Completed" || canCompleteTests || testsCompletedSaved),
+        );
 
   return [
     // {
@@ -226,7 +234,10 @@ export const getJcStatusFields = (
       setterKey: "setJcStatus",
       width: "100%",
       options: jcStatusOptions, // Filtered based on user role
-      disabled: isClosed && !isLabManager, // Disable if closed and not Lab Manager
+      disabled: lockedForMe, // closed: Lab Manager only; Test Completed: owner / Lab Manager only
+      helperText: canCompleteTests
+        ? "Test Completed: step 1 (needs the test checklist done). Closed: step 2, by the Lab Manager once reports are issued."
+        : "Test Completed is set by the job card owner or the Lab Manager.",
     },
 
     ...(isClosed

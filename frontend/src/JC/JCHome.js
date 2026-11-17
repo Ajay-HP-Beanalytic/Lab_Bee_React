@@ -33,6 +33,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
 import InsightsIcon from "@mui/icons-material/Insights";
 import ConfirmationDialog from "../common/ConfirmationDialog";
+import AssignmentIndIcon from "@mui/icons-material/AssignmentInd";
 import { toast } from "react-toastify";
 
 const STATUS_COLORS = { "Open": "warning", "Running": "info", "Test Completed": "secondary", "Closed": "success" };
@@ -118,7 +119,9 @@ export default function JCHome() {
   const [editJc, setEditJc] = useState(false);
   const [jobcardRaw, setJobcardRaw] = useState(null);
 
-  const { loggedInUserDepartment } = useContext(UserContext);
+  const { loggedInUserDepartment, access } = useContext(UserContext);
+  const canSeeDashboard = !!access?.isAdmin; // the JC Dashboard is for Administration only
+  const canSeeAllocation = !!access?.isAdmin || !!access?.menus?.includes("ts1_jc_allocation");
 
   // State for delete confirmation dialog
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
@@ -487,6 +490,24 @@ export default function JCHome() {
       headerClassName: "custom-header-color",
     },
     {
+      field: "jc_owner",
+      headerName: "Owner",
+      width: 180,
+      align: "center",
+      headerAlign: "center",
+      headerClassName: "custom-header-color",
+      renderCell: (params) =>
+        params.value ? (
+          <Tooltip title={params.row.jc_support_staff ? `Supporting: ${String(params.row.jc_support_staff).split(",").join(", ")}` : ""}>
+            <span>{params.value}</span>
+          </Tooltip>
+        ) : (
+          <Typography variant="body2" color="text.secondary" component="span">
+            Not assigned
+          </Typography>
+        ),
+    },
+    {
       field: "jc_status",
       headerName: "JC Status",
       width: 200,
@@ -814,13 +835,21 @@ export default function JCHome() {
               Click a job card to see its tests and generate reports
             </Typography>
           </Box>
-          <Button variant="outlined" startIcon={<InsightsIcon />} onClick={() => navigate("/ts1_jc_insights")}>
-            JC Dashboard
-          </Button>
+          {canSeeAllocation && (
+            <Button variant="outlined" startIcon={<AssignmentIndIcon />} onClick={() => navigate("/ts1_jc_allocation")}>
+              JC Allocation
+            </Button>
+          )}
+          {canSeeDashboard && (
+            <Button variant="outlined" startIcon={<InsightsIcon />} onClick={() => navigate("/ts1_jc_insights")}>
+              JC Dashboard
+            </Button>
+          )}
           <Button variant="contained" startIcon={<AddIcon />} onClick={onClickNewJCButton}>
             New job card
           </Button>
         </Box>
+
 
         <Stack direction="row" gap={1} flexWrap="wrap" mb={2}>
           {[

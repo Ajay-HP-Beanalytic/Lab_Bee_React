@@ -1,7 +1,7 @@
 // How a TS1 report is laid out for each family of tests, following the lab's own reports
 // (frontend/src/templates/Sample TS1 Testing Reports):
 //   first page -> general info -> "It is certified..." chambers (+ test specifications)
-//   -> Table 01 EUT/DUT -> Table 02 tests conducted (columns per family) -> notes -> Table 03
+//   -> Table 02 EUT/DUT -> Table 03 tests conducted (columns per family) -> notes -> Table 04
 //   -> Appendix A photos (sample wise, or all before / setup / during / after)
 //   -> test data page + graph (thermal) or controller printouts (vibration, on landscape pages;
 //   ESS: pre-vibration photos + printouts, thermal cycling photos + test data + graph,
@@ -77,18 +77,18 @@ export const FAMILIES = {
     photoMode: "sample",
     photoGroups: "test", // per sub-test: its photos, then its printouts (usually landscape)
     landscapeGraphs: true,
-    table3: { title: "Table 03: Random Vibration", headers: "Batch | Qty | Serial Number", rows: "" },
+    table3: { title: "Table 04: Random Vibration", headers: "Batch | Qty | Serial Number", rows: "" },
   },
   saltfog: {
     label: "Salt Fog",
     columns: ["eutSerial", "test", "chamber", "duration", "observation"],
     notes: "Note: All samples tested as per customer test profile and samples handed over to the customer for functional test. Images and details included in Appendix-A.",
-    observation: "Refer Table-03",
+    observation: "Refer Table-04",
     graph: false,
     graphNote: "",
     specs: true,
     photoMode: "sample",
-    table3: { title: "Table 03: After Test Observation details", headers: "Nomenclature | After Test Observation", rows: "" },
+    table3: { title: "Table 04: After Test Observation details", headers: "Nomenclature | After Test Observation", rows: "" },
   },
   mechanical: {
     label: "Drop / Toppling",
@@ -169,7 +169,7 @@ export const samplesOf = (content, photos = []) => {
   return [...new Set([...base, ...extra])];
 };
 
-/** Table 01 rows as the builder edits them */
+/** Table 02 rows as the builder edits them */
 export const eutRowsOf = (eutRows = []) =>
   eutRows.map((e) => ({
     nomenclature: e.nomenclature || "",
@@ -217,15 +217,15 @@ const serialsText = (serials) => {
     .split(/[,;]/)
     .map((s) => s.trim())
     .filter(Boolean);
-  return list.length > 0 && list.length <= 3 ? list.join(", ") : "Refer Table-01";
+  return list.length > 0 && list.length <= 3 ? list.join(", ") : "Refer Table-02";
 };
 
-/** Table 03 as {title, headers: [..], rows: [[..]]} from its text form ("a | b" per line) */
+/** Table 04 as {title, headers: [..], rows: [[..]]} from its text form ("a | b" per line) */
 export const table3Of = (t) => {
   if (!t || !String(t.rows || "").trim()) return null;
   const split = (line) => line.split("|").map((x) => x.trim());
   return {
-    title: t.title || "Table 03",
+    title: t.title || "Table 04",
     headers: split(t.headers || ""),
     rows: String(t.rows)
       .split("\n")
@@ -235,11 +235,11 @@ export const table3Of = (t) => {
 };
 
 /**
- * What the report's text starts with: family, title, Table 02 rows (one per test, editable),
- * notes, Table 03 and graph note.
+ * What the report's text starts with: family, title, Table 03 rows (one per test, editable),
+ * notes, Table 04 and graph note.
  * @param {Array} reportTests - from prepareReportData (testName, eutSerialNo, standard, remarks, duration, testCategory)
  * @param {string} category - the main test's category
- * @param {Array} eutRows - the EUTs of the report (for Table 03 of salt fog)
+ * @param {Array} eutRows - the EUTs of the report (for Table 04 of salt fog)
  */
 export const defaultContent = (reportTests = [], category = "", eutRows = []) => {
   const first = reportTests[0] || {};
@@ -268,7 +268,7 @@ function fill(content, family, reportTests = [], eutRows = []) {
       : null,
     rows: reportTests.map((t) => ({
       testId: t.id || null,
-      eutSerial: family === "saltfog" ? "Refer Table-01" : serialsText(t.eutSerialNo),
+      eutSerial: family === "saltfog" ? "Refer Table-02" : serialsText(t.eutSerialNo),
       test: t.testName || "",
       profile: t.standard || "",
       medium: "",

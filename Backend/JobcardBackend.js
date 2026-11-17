@@ -7,11 +7,22 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 require("dotenv").config(); // Ensure .env is loaded
-const { saveRows, jobcardUser, checkCanEdit } = require("./ts1/jobcardRows");
+const { saveRows, jobcardUser, checkCanEdit, canEditClosed } = require("./ts1/jobcardRows");
+
+// Attachments of a closed job card: only the Lab Manager or Administration may change them
+async function closedJobcardBlocked(req, jcNumber) {
+  const [[jc]] = await db.promise().query("SELECT jc_status FROM bea_jobcards WHERE jc_number = ?", [jcNumber]);
+  if (!jc || !["Closed", "Close"].includes(jc.jc_status)) return false;
+  return !canEditClosed(await accessOf(req.session?.user_id).catch(() => null));
+}
 const { blockActiveFile } = require("./access/requireLogin");
 const { ts1ReportAPIs } = require("./ts1/TS1ReportAPI");
-const { closeProblems, recordClose, recordReopen } = require("./ts1/TS1ReportWorkflowAPI");
+const { closeProblems, recordClose, recordReopen, testsCompleteProblems, recordTestsCompleted, recordTestsReopen } = require("./ts1/TS1ReportWorkflowAPI");
 const { ROW_ORDER, ensureRowOrderColumns } = require("./jobcardRowOrder");
+const { accessOf } = require("./access/accessControl");
+
+const fileSizeText = (bytes) =>
+  bytes >= 1024 * 1024 ? `${(bytes / (1024 * 1024)).toFixed(1)} MB` : `${Math.max(1, Math.round((bytes || 0) / 1024))} KB`;
 
 // function of jobcard api's:
 function jobcardsAPIs(app, io, labbeeUsers) {
@@ -223,6 +234,8 @@ function jobcardsAPIs(app, io, labbeeUsers) {
   );
 
   ensureRowOrderColumns().catch((err) => console.error("row_order column error:", err));
+  // Job card owner / supporting staff, my job cards and the NAS upload columns
+  require("./ts1/JobcardOwnerAPI").jobcardOwnerAPIs(app);
 
   app.post("/api/jobcard", async (req, res) => {
     let me;
@@ -406,7 +419,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
       saveNotificationToDatabase(
         message,
         currentTimestampForJCCreation,
-        usersToNotifyAboutJCCreation, // Pass the array directly
+        usersToNotifyJcCreation, // every configured role, not only the ones online now (the others see it in the bell later)
         loggedInUser
       );
 
@@ -552,7 +565,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
 
     const getJCColumns = `
                             SELECT 
-                                id, jc_number, DATE_FORMAT(jc_open_date, '%d-%m-%Y') as jc_open_date, company_name, jc_status, DATE_FORMAT(jc_closed_date, '%d-%m-%Y') as jc_closed_date, last_updated_by
+                                id, jc_number, DATE_FORMAT(jc_open_date, '%d-%m-%Y') as jc_open_date, company_name, jc_status, DATE_FORMAT(jc_closed_date, '%d-%m-%Y') as jc_closed_date, last_updated_by, jc_owner, jc_support_staff
                             FROM 
                                 bea_jobcards
                             WHERE 
@@ -616,7 +629,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
     }
 
     const getJCColumns = `
-        SELECT id, jc_number, DATE_FORMAT(jc_open_date, '%d-%m-%Y') as jc_open_date, company_name, jc_status, last_updated_by 
+        SELECT id, jc_number, DATE_FORMAT(jc_open_date, '%d-%m-%Y') as jc_open_date, company_name, jc_status, last_updated_by, jc_owner, jc_support_staff 
         FROM bea_jobcards
         WHERE jc_open_date BETWEEN ? AND ?
     `;
@@ -716,6 +729,10 @@ function jobcardsAPIs(app, io, labbeeUsers) {
     // takes the review away again.
     let closing = false;
     let reopening = false;
+    // Two-step closing: step 1 "Test Completed" (job card owner / Lab Manager, test checklist done),
+    // step 2 "Closed" (Lab Manager, every checklist item done, which includes step 1)
+    let completing = false;
+    let uncompleting = false;
     if (jcNumber) {
       try {
         const [current] = await db.promise().query("SELECT jc_status, jc_category FROM bea_jobcards WHERE jc_number = ?", [jcNumber]).then(([r]) => r);
@@ -723,13 +740,29 @@ function jobcardsAPIs(app, io, labbeeUsers) {
         const wasClosed = ["Closed", "Close"].includes(current?.jc_status);
         closing = isTS1 && !wasClosed && ["Closed", "Close"].includes(jcStatus);
         reopening = isTS1 && wasClosed && !!jcStatus && !["Closed", "Close"].includes(jcStatus);
+        const TC = "Test Completed";
+        completing = isTS1 && !wasClosed && current?.jc_status !== TC && jcStatus === TC;
+        // back to Open / Running (from Test Completed, or reopened from Closed)
+        uncompleting = isTS1 && !!jcStatus && jcStatus !== TC && !["Closed", "Close"].includes(jcStatus) && (current?.jc_status === TC || wasClosed);
         if (wasClosed) checkCanEdit(current, me); // same rule as the rows, before anything is saved
+        if (completing || (uncompleting && !wasClosed)) {
+          const open = await testsCompleteProblems(req, jcNumber, { back: uncompleting });
+          if (open.length) {
+            return res.status(uncompleting ? 403 : 409).json({
+              message: uncompleting ? open[0] : `The tests can't be marked completed yet: ${open.join("; ")}`,
+              error: uncompleting ? undefined : "CHECKLIST_OPEN",
+              step: "tests",
+              openItems: open,
+            });
+          }
+        }
         if (closing) {
           const open = await closeProblems(req, jcNumber, jcCloseDate);
           if (open.length) {
             return res.status(409).json({
               message: `The job card can't be closed yet: ${open.join("; ")}`,
               error: "CHECKLIST_OPEN",
+              step: "close",
               openItems: open,
             });
           }
@@ -737,7 +770,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
       } catch (err) {
         if (err.status === 403) return res.status(403).json({ message: err.message });
         console.error("Checklist check before closing failed:", err);
-        if (["Closed", "Close"].includes(jcStatus)) {
+        if (["Closed", "Close", "Test Completed"].includes(jcStatus)) {
           return res.status(err.status || 500).json({ message: err.status ? err.message : "The checklist could not be checked. Try again." });
         }
       }
@@ -1250,6 +1283,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
         // the Lab Manager's review is the close (or is undone by reopening)
         Promise.resolve()
           .then(() => (closing ? recordClose(req, jcNumber, jcCloseDate) : reopening ? recordReopen(req, jcNumber) : null))
+          .then(() => (completing ? recordTestsCompleted(req, jcNumber) : uncompleting ? recordTestsReopen(req, jcNumber) : null))
           .catch((err) => console.error("Recording the job card review failed:", err))
           .finally(() =>
             res.status(200).json({
@@ -3481,6 +3515,13 @@ function jobcardsAPIs(app, io, labbeeUsers) {
 
       const files = req.files;
 
+      // async from here: a closed job card is checked first
+      return (async () => {
+      if (await closedJobcardBlocked(req, jcNumber).catch(() => false)) {
+        for (const f of files) fs.unlink(f.path, () => {});
+        return res.status(403).send("This job card is closed. Only the Lab Manager or Administration can change its attachments.");
+      }
+
       const filePromises = files.map((file) => {
         const relativeFilePath = file.path.replace(/\\/g, "/");
         const sqlInsertFile =
@@ -3500,8 +3541,17 @@ function jobcardsAPIs(app, io, labbeeUsers) {
       });
 
       Promise.all(filePromises)
-        .then((fileData) => {
+        .then(async (fileData) => {
           res.status(200).json(fileData);
+          // Job card history: who uploaded which file, and when (changed_at)
+          const who = await accessOf(req.session?.user_id).catch(() => null);
+          for (const [i, file] of files.entries()) {
+            await logAuditTrail(
+              "attachments", fileData[i]?.id || null, jcNumber, "attachment", "CREATE",
+              null, `${file.originalname} (${fileSizeText(file.size)})`,
+              who?.user?.name || "Unknown", who?.role || null, who?.department || null, req.ip,
+            );
+          }
         })
         .catch((error) => {
           console.error("Error uploading files:", error);
@@ -3509,6 +3559,7 @@ function jobcardsAPIs(app, io, labbeeUsers) {
             res.status(500).send("Internal server error.");
           }
         });
+      })();
     }
   );
 
@@ -3530,6 +3581,11 @@ function jobcardsAPIs(app, io, labbeeUsers) {
 
       const file = result[0];
       const filePath = path.resolve(file.file_path); // Ensure absolute path
+
+      closedJobcardBlocked(req, file.jc_number).catch(() => false).then((blocked) => {
+      if (blocked) {
+        return res.status(403).json({ message: "This job card is closed. Only the Lab Manager or Administration can change its attachments." });
+      }
 
       const sqlDeleteFile = "DELETE FROM attachments WHERE id = ?";
       db.query(sqlDeleteFile, [fileId], (error) => {
@@ -3553,6 +3609,18 @@ function jobcardsAPIs(app, io, labbeeUsers) {
           }
           res.status(200).json({ message: "File deleted successfully" });
         });
+
+        // Job card history: who removed which file, and when
+        accessOf(req.session?.user_id)
+          .catch(() => null)
+          .then((who) =>
+            logAuditTrail(
+              "attachments", file.id, file.jc_number, "attachment", "DELETE",
+              file.file_name, null,
+              who?.user?.name || "Unknown", who?.role || null, who?.department || null, req.ip,
+            ),
+          );
+      });
       });
     });
   });

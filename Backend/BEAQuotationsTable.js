@@ -147,7 +147,7 @@ function mainQuotationsTableAPIs(app, io, labbeeUsers) {
         saveNotificationToDatabase(
           message,
           currentTimestampForSlotBooking,
-          usersToNotifyNewQuotation,
+          usersToNotifyQuotation, // every configured role, not only the ones online now (the others see it in the bell later)
           loggedInUser
         );
 
@@ -310,7 +310,7 @@ function mainQuotationsTableAPIs(app, io, labbeeUsers) {
         saveNotificationToDatabase(
           message,
           currentTimestampForSlotBooking,
-          usersToNotifyQuoteUpdate,
+          usersToNotifyQuotation, // every configured role, not only the ones online now (the others see it in the bell later)
           loggedInUser
         );
 
@@ -350,6 +350,86 @@ function mainQuotationsTableAPIs(app, io, labbeeUsers) {
     "Nov",
     "Dec",
   ];
+
+  // Excel export of the quotations shown on the dashboard: a date range (from / to), or
+  // a year and month (month 1-12); q: search text. Sheets: the quotations, and their test lines.
+  app.get("/api/quotations/export", async (req, res) => {
+    try {
+      const { accessOf } = require("./access/accessControl");
+      const { sendWorkbook } = require("./services/excelExport");
+      const me = await accessOf(req.session?.user_id);
+      if (!me) return res.status(401).json({ message: "Please log in again" });
+      if (!me.isAdmin && !me.menus.includes("quotations")) return res.status(403).json({ message: "You don't have access to quotations" });
+
+      const isDate = (s) => /^\d{4}-\d{2}-\d{2}$/.test(String(s || ""));
+      let from;
+      let to;
+      if (isDate(req.query.from) && isDate(req.query.to)) {
+        from = req.query.from;
+        to = req.query.to;
+      } else {
+        const year = parseInt(req.query.year);
+        const month = parseInt(req.query.month); // 1-12, or none for the whole year
+        if (!year) return res.status(400).json({ message: "Choose a year / month or a date range" });
+        const start = moment({ year, month: month ? month - 1 : 0, day: 1 });
+        from = start.format("YYYY-MM-DD");
+        to = start.clone().endOf(month ? "month" : "year").format("YYYY-MM-DD");
+      }
+      const text = String(req.query.q || "").trim().slice(0, 100);
+      const like = `%${text}%`;
+      const [quotes] = await db.promise().query(
+        `SELECT * FROM bea_quotations_table
+         WHERE quote_given_date BETWEEN ? AND ?
+           ${text ? "AND (quotation_ids LIKE ? OR company_name LIKE ? OR quote_category LIKE ? OR quote_created_by LIKE ? OR project_name LIKE ? OR kind_attention LIKE ?)" : ""}
+         ORDER BY quote_given_date, id`,
+        [from, to, ...(text ? Array(6).fill(like) : [])],
+      );
+
+      // Test lines (stored as JSON in "tests"), one row each with the quotation it belongs to
+      const lines = [];
+      const quotations = quotes.map((q) => {
+        let tests = [];
+        try {
+          tests = typeof q.tests === "string" ? JSON.parse(q.tests || "[]") : q.tests || [];
+        } catch (e) {
+          tests = [];
+        }
+        if (!Array.isArray(tests)) tests = [];
+        tests.forEach((t, i) =>
+          lines.push({
+            quotation_ids: q.quotation_ids,
+            company_name: q.company_name,
+            quote_given_date: q.quote_given_date,
+            quote_category: q.quote_category,
+            line: i + 1,
+            ...(t && typeof t === "object" ? t : { value: t }),
+          }),
+        );
+        const { tests: _omit, ...rest } = q;
+        return { ...rest, test_lines: tests.length };
+      });
+
+      await sendWorkbook(res, `Quotations ${from} to ${to}.xlsx`, [
+        {
+          name: "Summary",
+          rows: [
+            { item: "From", value: moment(from).format("DD MMM YYYY") },
+            { item: "To", value: moment(to).format("DD MMM YYYY") },
+            { item: "Search", value: text || "(none)" },
+            { item: "Quotations", value: quotations.length },
+            { item: "Test lines", value: lines.length },
+            { item: "Exported by", value: me.user.name },
+            { item: "Exported at", value: moment().format("DD MMM YYYY, HH:mm") },
+          ],
+        },
+        { name: "Quotations", rows: quotations },
+        { name: "Test lines", rows: lines },
+      ]);
+    } catch (error) {
+      console.error("Quotations export failed:", error);
+      if (!res.headersSent) res.status(500).json({ message: "The export failed" });
+    }
+  });
 
   // Fetch the all quotation data from the 'bea_quotations_table' table :
   app.get("/api/getQuotationData", (req, res) => {

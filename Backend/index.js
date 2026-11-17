@@ -28,6 +28,9 @@ const socketIo = require("socket.io");
 
 // create an express application::
 const app = express();
+// nginx (on this machine) passes the visitor's address in X-Forwarded-For: trust it from there only,
+// so req.ip is the real visitor (the public report link's rate limit is per visitor)
+app.set("trust proxy", "loopback");
 
 // When behind Nginx (TLS terminated at the proxy), keep USE_HTTPS=false.
 const useHttps = process.env.USE_HTTPS === "true";

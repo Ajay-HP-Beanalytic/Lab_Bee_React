@@ -47,6 +47,8 @@ import dayjs from "dayjs";
 import Loader from "../common/Loader";
 import EmptyCard from "../common/EmptyCard";
 import { toast } from "react-toastify";
+import FileDownloadIcon from "@mui/icons-material/FileDownload";
+import downloadExport from "../common/downloadExport";
 
 export default function QuotationsDashboard() {
   // State variables to hold the data fetched from the database:
@@ -93,6 +95,22 @@ export default function QuotationsDashboard() {
   const [selectedQuoteDateRange, setSelectedQuoteDateRange] = useState(null);
 
   const [searchInputTextOfQuote, setSearchInputTextOfQuote] = useState("");
+
+  // Excel export of the complete quotation data for the chosen date range (or year / month) and search
+  const [exportingQuotes, setExportingQuotes] = useState(false);
+  const exportQuotes = async () => {
+    const [from, to] = String(selectedQuoteDateRange || "").split(" - ");
+    const params = from && to ? { from, to } : { year: selectedYear, month: selectedMonth };
+    if (searchInputTextOfQuote.trim()) params.q = searchInputTextOfQuote.trim();
+    setExportingQuotes(true);
+    try {
+      await downloadExport(`${serverBaseAddress}/api/quotations/export`, params, "Quotations.xlsx");
+    } catch (e) {
+      toast.error(e.message);
+    } finally {
+      setExportingQuotes(false);
+    }
+  };
 
   const [filteredQuoteData, setFilteredQuoteData] = useState(quotesTableData);
 
@@ -795,13 +813,26 @@ export default function QuotationsDashboard() {
           </Grid>
         </Grid>
 
-        <Grid item xs={12} md={4} container justifyContent="flex-end">
+        <Grid item xs={12} md={4} container justifyContent="flex-end" alignItems="center" wrap="nowrap" gap={1}>
           <SearchBar
             placeholder="Search Quote"
             searchInputText={searchInputTextOfQuote}
             onChangeOfSearchInput={onChangeOfSearchInputOfQuote}
             onClearSearchInput={onClearSearchInputOfQuote}
           />
+          <Tooltip title="Excel file of the complete quotation data (with test lines) for the chosen date range, or year and month, and search">
+            <span>
+              <Button
+                variant="outlined"
+                startIcon={exportingQuotes ? <CircularProgress size={16} /> : <FileDownloadIcon />}
+                onClick={exportQuotes}
+                disabled={exportingQuotes}
+                sx={{ height: 56, whiteSpace: "nowrap" }}
+              >
+                Export
+              </Button>
+            </span>
+          </Tooltip>
         </Grid>
       </Grid>
 

@@ -12,7 +12,7 @@ export const JOB_CARD_OPTIONS = {
 
   testDiscipline: [
     { id: "Electrical", label: "Electrical" },
-    { id: "Electronics", label: "Electronics" },
+    // { id: "Electronics", label: "Electronics" },
     { id: "Mechanical", label: "Mechanical" },
     { id: "Chemical", label: "Chemical" },
     { id: "Other", label: "Other" },

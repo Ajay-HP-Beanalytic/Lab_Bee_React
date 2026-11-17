@@ -144,8 +144,9 @@ export const TEST_PERFORMED_TABLE_COLUMNS = [
     width: "200px",
     options: [],
   },
-  { id: "startTemp", label: "Start Temp (°C)", type: "textField", width: "120px" },
-  { id: "startRh", label: "Start RH (%)", type: "textField", width: "120px" },
+  // Lab conditions are typed in the report (Temperature: ____, Humidity: ____)
+  // { id: "startTemp", label: "Start Temp (°C)", type: "textField", width: "120px" },
+  // { id: "startRh", label: "Start RH (%)", type: "textField", width: "120px" },
 
   {
     id: "startDate",
@@ -193,6 +194,9 @@ export const TEST_PERFORMED_TABLE_COLUMNS = [
     options: [],
   },
   { id: "remarks", label: "Remarks", type: "textField", width: "250px" },
+  // Confirmations that the test's files are on the BEA NAS network
+  { id: "photosOnNas", label: "Photos on BEA NAS? (Test started by)", type: "yesNo", width: "170px" },
+  { id: "graphsOnNas", label: "Graphs on BEA NAS? (Test ended by)", type: "yesNo", width: "170px" },
   {
     id: "testReviewedBy",
     label: "Test Reviewed By",
@@ -284,5 +288,7 @@ export const ROW_TEMPLATES = {
     preparedBy: "",
     nablUploaded: "",
     reportStatus: "",
+    photosOnNas: "",
+    graphsOnNas: "",
   },
 };

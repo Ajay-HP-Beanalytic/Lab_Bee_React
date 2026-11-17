@@ -13,6 +13,7 @@ import {
   Table,
   BorderStyle,
   ImageRun,
+  PageBreak,
 } from "docx";
 
 /**
@@ -552,4 +553,25 @@ export const createImageGrid = (imagesBase64, options = {}) => {
   );
 
   return elements;
+};
+
+/**
+ * Numbers the report's tables in the order they are printed ("Table 01: ...", "Table 02: ...").
+ * A title saved with a number of its own ("Table 03: Random Vibration") is renumbered.
+ * @returns {(title: string) => string}
+ */
+export const tableNumbering = () => {
+  let n = 0;
+  return (title) => {
+    n += 1;
+    const rest = String(title || "").replace(/^\s*Table\s*\d+\s*[:.-]?\s*/i, "").trim();
+    return `Table ${String(n).padStart(2, "0")}${rest ? `: ${rest}` : ""}`;
+  };
+};
+
+/** A page break, marked so that a page break right before a new section can be left out */
+export const pageBreakParagraph = () => {
+  const p = new Paragraph({ children: [new PageBreak()] });
+  p.lbPageBreak = true;
+  return p;
 };

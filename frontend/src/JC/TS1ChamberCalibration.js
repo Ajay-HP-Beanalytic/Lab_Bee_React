@@ -659,7 +659,12 @@ export default function ChamberAndCalibration() {
       closeCertDialog();
     } catch (error) {
       console.error("Error uploading certificate:", error);
-      toast.error("Failed to upload the calibration certificate");
+      const status = error.response?.status;
+      const reason =
+        status === 413
+          ? "the file is too large for the server"
+          : error.response?.data?.error || error.response?.data?.message || error.response?.data?.rejected?.[0]?.error || "";
+      toast.error(`Failed to upload the calibration certificate${reason ? `: ${reason}` : ""}`);
     } finally {
       setUploadingCert(false);
     }

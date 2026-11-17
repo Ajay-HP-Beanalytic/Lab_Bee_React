@@ -9,6 +9,7 @@ import { serverBaseAddress } from "../Pages/APIPage";
 import { UserContext } from "../Pages/UserContext";
 import axios from "axios";
 import dayjs from "dayjs";
+import JCOwnerCard from "../JC/JCOwnerCard";
 
 export default function EMIJCStepTwo() {
   //Import the respective context:
@@ -20,6 +21,8 @@ export default function EMIJCStepTwo() {
     updateTestPerformedTableRows,
     deletedTestPerformedIds,
     setDeletedTestPerformedIds,
+    jcAllocation,
+    setJcAllocation,
   } = useContext(EMIJCContext);
 
   const { loggedInUser } = useContext(UserContext);
@@ -197,14 +200,7 @@ export default function EMIJCStepTwo() {
       ],
       width: "100%",
     },
-
-    {
-      label: "JC Incharge",
-      name: "jcIncharge",
-      type: "select",
-      options: emiUsers,
-      width: "100%",
-    },
+    // JC Incharge: the "Job card owner" card below (owner and supporting staff)
   ];
 
   //Fields to create Test Performed Table:
@@ -258,20 +254,21 @@ export default function EMIJCStepTwo() {
       type: "dateTime",
       align: "center",
     },
-    {
-      id: "startTemp",
-      label: "Start Temp(°C)",
-      width: "150px",
-      type: "textField",
-      align: "center",
-    },
-    {
-      id: "startRh",
-      label: "Start RH(%)",
-      width: "150px",
-      type: "textField",
-      align: "center",
-    },
+    // Temperature / humidity columns hidden (not used now)
+    // {
+    //   id: "startTemp",
+    //   label: "Start Temp(°C)",
+    //   width: "150px",
+    //   type: "textField",
+    //   align: "center",
+    // },
+    // {
+    //   id: "startRh",
+    //   label: "Start RH(%)",
+    //   width: "150px",
+    //   type: "textField",
+    //   align: "center",
+    // },
     {
       id: "testStartedBy",
       label: "Test Started By",
@@ -287,20 +284,20 @@ export default function EMIJCStepTwo() {
       type: "dateTime",
       align: "center",
     },
-    {
-      id: "endTemp",
-      label: "End Temp(°C)",
-      width: "150px",
-      type: "textField",
-      align: "center",
-    },
-    {
-      id: "endRh",
-      label: "End RH(%)",
-      width: "150px",
-      type: "textField",
-      align: "center",
-    },
+    // {
+    //   id: "endTemp",
+    //   label: "End Temp(°C)",
+    //   width: "150px",
+    //   type: "textField",
+    //   align: "center",
+    // },
+    // {
+    //   id: "endRh",
+    //   label: "End RH(%)",
+    //   width: "150px",
+    //   type: "textField",
+    //   align: "center",
+    // },
     {
       id: "testEndedBy",
       label: "Test Ended By",
@@ -483,6 +480,16 @@ export default function EMIJCStepTwo() {
           </Grid>
         </Grid>
       </Card>
+
+      {/* Job card owner (JC Incharge) and supporting staff */}
+      <JCOwnerCard
+        lab="ts2"
+        owner={jcAllocation.owner}
+        supportStaff={jcAllocation.supportStaff}
+        savedOwner={jcAllocation.savedOwner}
+        onOwnerChange={(owner) => setJcAllocation((a) => ({ ...a, owner, supportStaff: a.supportStaff.filter((n) => n !== owner) }))}
+        onSupportChange={(supportStaff) => setJcAllocation((a) => ({ ...a, supportStaff }))}
+      />
 
       <Card sx={{ width: "100%", mt: "10px", mb: "10px", padding: "10px" }}>
         <Box>

@@ -15,6 +15,7 @@ import {
   createHeaderCell,
   createTableCell,
   createTableHeadingParagraph,
+  tableNumbering,
 } from "./Report_Functions/docxHelpers";
 
 export const createEUTInfoTable = (comprehensiveData, reportConfig) => {
@@ -59,7 +60,7 @@ export const createEUTInfoTable = (comprehensiveData, reportConfig) => {
   );
 
   return [
-    createTableHeadingParagraph("Table 01: EUT/DUT Details"),
+    createTableHeadingParagraph((reportConfig?.tableNo || tableNumbering())("EUT/DUT Details")),
     createDataTable([headerRow, ...dataRows]),
   ];
 };
@@ -127,7 +128,10 @@ export const createChamberSection = (comprehensiveData, reportConfig) => {
     );
   }
   return [
-    createCaptionParagraph("It is certified that the following tests were carried out in our test facility in following chamber/ Machine:"),
+    createCaptionParagraph("It is certified that the following tests were carried out in our test facility in following chamber/ Machine:", {
+      before: 360,
+      after: 120,
+    }),
     createDataTable(rows, { borders: NO_BORDERS }),
   ];
 };

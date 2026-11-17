@@ -206,6 +206,7 @@ const RenderFormFields = ({ fields, store }) => {
                     }
                   }}
                   disabled={field.disabled || false}
+                  helperText={field.helperText}
                   fullWidth
                 >
                   {Array.isArray(field.options) &&

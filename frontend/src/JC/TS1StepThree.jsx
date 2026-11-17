@@ -8,15 +8,19 @@ import { UserContext } from "../Pages/UserContext";
 
 export default function TS1StepThree() {
   const jobcardStore = useJobCardStore();
-  const { loggedInUserRole } = useContext(UserContext);
+  const { loggedInUser, loggedInUserRole, access } = useContext(UserContext);
 
   const getUsersAsOptions = useJobCardStore((state) => state.getUsersAsOptions);
   const usersOptions = getUsersAsOptions();
+  // Step 1 of closing (Test Completed): the job card owner, the Lab Manager or Administration
+  const canCompleteTests =
+    loggedInUserRole === "Lab Manager" || !!access?.isAdmin || (!!jobcardStore.jcOwner && jobcardStore.jcOwner === loggedInUser);
   const JC_STATUS_FIELDS = getJcStatusFields(
     usersOptions,
     loggedInUserRole,
     jobcardStore.jcStatus,
-    jobcardStore.editJc
+    jobcardStore.editJc,
+    { canCompleteTests, savedStatus: jobcardStore.savedJcStatus, isAdmin: !!access?.isAdmin }
   );
 
   return (

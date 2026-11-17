@@ -119,12 +119,12 @@ const EMIJCPreview = ({
     "Test Standard",
     "Slot Details",
     "Test Started Date & Time",
-    "Start Temp (°C)",
-    "Start RH (%)",
+    // "Start Temp (°C)",
+    // "Start RH (%)",
     "Test Started By",
     "Test Ended Date & Time",
-    "End Temp (°C)",
-    "End RH (%)",
+    // "End Temp (°C)",
+    // "End RH (%)",
     "Test Ended By",
     "Test Duration (Mins)",
     "Actual Test Duration (Hrs)",
@@ -419,14 +419,14 @@ const EMIJCPreview = ({
                         <TableCell>
                           {formatDateTime(row.testStartDateTime)}
                         </TableCell>
-                        <TableCell>{row.startTemp}</TableCell>
-                        <TableCell>{row.startRh}</TableCell>
+                        {/* <TableCell>{row.startTemp}</TableCell>
+                        <TableCell>{row.startRh}</TableCell> */}
                         <TableCell>{row.testStartedBy}</TableCell>
                         <TableCell>
                           {formatDateTime(row.testEndDateTime)}
                         </TableCell>
-                        <TableCell>{row.endTemp}</TableCell>
-                        <TableCell>{row.endRh}</TableCell>
+                        {/* <TableCell>{row.endTemp}</TableCell>
+                        <TableCell>{row.endRh}</TableCell> */}
                         <TableCell>{row.testEndedBy}</TableCell>
                         <TableCell>{row.testDuration}</TableCell>
                         <TableCell>{row.actualTestDuration}</TableCell>

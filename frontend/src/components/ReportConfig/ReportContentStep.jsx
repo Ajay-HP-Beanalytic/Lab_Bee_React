@@ -20,7 +20,7 @@ import { COLUMN_TEXT, FAMILIES, eutRowsOf, specsFor, withFamily } from "../../Re
 import SectionCard from "./SectionCard";
 
 const HINT = {
-  eutSerial: "Serial numbers, or Refer Table-01",
+  eutSerial: "Serial numbers, or Refer Table-02",
   profile: "e.g. Temp: -20°C ±3°C, Duration: 16 Hrs",
   medium: "e.g. Talcum Powder, DM Water",
   duration: "e.g. 08 hours",
@@ -69,8 +69,8 @@ const moved = (list, i, d) => {
 
 /**
  * What the report says (besides the job card data), each part in its own card: the layout family,
- * Table 01 (EUTs), Table 02 (one row per test or sub-test, e.g. IP6X and IPX8 of an IP68 test),
- * the notes, the optional Table 03 and the note under the graph.
+ * Table 02 (EUTs), Table 03 (one row per test or sub-test, e.g. IP6X and IPX8 of an IP68 test),
+ * the notes, the optional Table 04 and the note under the graph.
  *
  * value: { family, title, euts, rows: [{ testId, eutSerial, test, profile, medium, duration, observation, specs: {title, lines} }], notes, table3, graphNote }
  */
@@ -115,7 +115,7 @@ export default function ReportContentStep({ value, onChange, eutRows = [] }) {
               label="Report layout"
               value={value.family}
               onChange={(e) => onChange(withFamily(value, e.target.value))}
-              helperText="Picked from the test; sets the Table 02 columns and sections"
+              helperText="Picked from the test; sets the Table 03 columns and sections"
             >
               {Object.entries(FAMILIES).map(([k, f]) => (
                 <MenuItem key={k} value={k}>
@@ -126,7 +126,7 @@ export default function ReportContentStep({ value, onChange, eutRows = [] }) {
           </Grid>
           <Grid item xs={12} md={7}>
             <Alert severity="info" sx={{ py: 0 }}>
-              Table 02 columns: {family.columns.map((c) => COLUMN_TEXT[c]).join(" | ")}
+              Table 03 columns: {family.columns.map((c) => COLUMN_TEXT[c]).join(" | ")}
               {family.specs ? ". Test specifications are printed with the chambers." : ""}
               {family.dataPage ? ". A test data page comes before the graph." : ""}
             </Alert>
@@ -144,7 +144,7 @@ export default function ReportContentStep({ value, onChange, eutRows = [] }) {
       </SectionCard>
 
       <SectionCard
-        title="Table 01 - EUT details"
+        title="Table 02 - EUT details"
         subtitle="Filled from the job card. Add, change or remove rows for this report; the S. No. follows the order."
         action={
           <Button size="small" startIcon={<RestoreIcon />} onClick={() => onChange({ ...value, euts: eutRowsOf(eutRows) })}>
@@ -178,7 +178,7 @@ export default function ReportContentStep({ value, onChange, eutRows = [] }) {
       </SectionCard>
 
       <SectionCard
-        title="Table 02 - tests conducted"
+        title="Table 03 - tests conducted"
         subtitle="One row per test. Split a test into more rows when the report lists its parts (e.g. IP68: Dust Test (IP6X) and Water Test (IPX8)). The chamber column is filled from the chambers picked in Report Info."
       >
         {value.rows.map((row, i) => (
@@ -246,7 +246,7 @@ export default function ReportContentStep({ value, onChange, eutRows = [] }) {
         </Button>
       </SectionCard>
 
-      <SectionCard title="Notes under Table 02">
+      <SectionCard title="Notes under Table 03">
         <TextField
           fullWidth
           multiline
@@ -259,7 +259,7 @@ export default function ReportContentStep({ value, onChange, eutRows = [] }) {
       </SectionCard>
 
       <SectionCard
-        title="Table 03 (optional)"
+        title="Table 04 (optional)"
         subtitle="Printed when it has rows."
         action={
           value.table3 ? (
@@ -267,8 +267,8 @@ export default function ReportContentStep({ value, onChange, eutRows = [] }) {
               Remove
             </Button>
           ) : (
-            <Button size="small" startIcon={<AddIcon />} onClick={() => onChange({ ...value, table3: { title: "Table 03: ", headers: "Nomenclature | After Test Observation", rows: "" } })}>
-              Add Table 03
+            <Button size="small" startIcon={<AddIcon />} onClick={() => onChange({ ...value, table3: { title: "Table 04: ", headers: "Nomenclature | After Test Observation", rows: "" } })}>
+              Add Table 04
             </Button>
           )
         }
