@@ -43,6 +43,13 @@ function notificationsAPIs(app, io, labbeeUsers) {
   )
     .then((r) => (r.length ? null : query("ALTER TABLE notifications_table ADD COLUMN link VARCHAR(255) DEFAULT NULL")))
     .catch((err) => console.error("Error adding notifications_table.link", err.message));
+  // The lists hold people's names now (and who read / deleted it): room for long lists
+  query(
+    `SELECT column_name AS c FROM information_schema.columns WHERE table_schema = DATABASE() AND table_name = 'notifications_table'
+       AND column_name IN ('users_to_be_notified', 'isReadBy', 'isUnReadBy', 'isDeletedBy') AND data_type = 'varchar'`,
+  )
+    .then((cols) => Promise.all(cols.map(({ c }) => query(`ALTER TABLE notifications_table MODIFY ${c} TEXT NULL`))))
+    .catch((err) => console.error("Error widening notifications_table lists", err.message));
 
   // Every night, remove notifications older than DELETE_AFTER_DAYS
   schedule.scheduleJob("0 0 * * *", function () {

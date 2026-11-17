@@ -144,8 +144,9 @@ export const TEST_PERFORMED_TABLE_COLUMNS = [
     width: "200px",
     options: [],
   },
-  { id: "startTemp", label: "Start Temp (°C)", type: "textField", width: "120px" },
-  { id: "startRh", label: "Start RH (%)", type: "textField", width: "120px" },
+  // Lab conditions are typed in the report (Temperature: ____, Humidity: ____)
+  // { id: "startTemp", label: "Start Temp (°C)", type: "textField", width: "120px" },
+  // { id: "startRh", label: "Start RH (%)", type: "textField", width: "120px" },
 
   {
     id: "startDate",

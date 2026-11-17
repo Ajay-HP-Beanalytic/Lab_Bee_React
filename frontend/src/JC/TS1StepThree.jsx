@@ -20,7 +20,7 @@ export default function TS1StepThree() {
     loggedInUserRole,
     jobcardStore.jcStatus,
     jobcardStore.editJc,
-    { canCompleteTests, savedStatus: jobcardStore.savedJcStatus }
+    { canCompleteTests, savedStatus: jobcardStore.savedJcStatus, isAdmin: !!access?.isAdmin }
   );
 
   return (

@@ -1,9 +1,9 @@
 // Enquiry notifications: saved in notifications_table (the bell) and pushed
 // live over socket.io as "rfq_notification".
 //
-// notifications_table is shown by role, so a message for a department is saved
-// for the roles of that department's active users, and a message for a person
-// for that person's role (other people with the same role see it too).
+// notifications_table is shown by role or by name. A message for departments / people is
+// saved under the names of exactly those people (the active users of the departments and
+// the users given), so nobody else with the same role sees it.
 
 const moment = require("moment");
 const { db } = require("../../db");
@@ -30,12 +30,14 @@ const notify = async ({ departments = [], userIds = [], message, sender = "Lab B
   );
   if (!users.length) return;
 
-  const roles = [...new Set(users.map((u) => u.role).filter(Boolean))];
+  // names, not roles: a role can be in more than one department
+  const people = [...new Set(users.map((u) => String(u.name || "").trim()).filter((n) => n && n !== sender))];
+  if (!people.length) return;
   const now = new Date();
   const link = pageLink || (requestId ? `/rfq_inbox?open=${requestId}` : null);
   const saved = await query(
     "INSERT INTO notifications_table (message, receivedAt, users_to_be_notified, notification_sent_by, link) VALUES (?, ?, ?, ?, ?)",
-    [message, moment(now).format("YYYY-MM-DD HH:mm:ss"), roles.join(","), sender, link],
+    [message, moment(now).format("YYYY-MM-DD HH:mm:ss"), people.join(","), sender, link],
   );
 
   if (!io) return;

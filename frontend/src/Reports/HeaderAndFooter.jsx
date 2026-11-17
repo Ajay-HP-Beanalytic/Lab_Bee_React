@@ -15,7 +15,7 @@ import {
   WidthType,
 } from "docx";
 import { defaultDocControl, footerAddressLine, footerContact } from "./reportConstants";
-import { createDataTable, createTableCell, createTextRun, fitInBox, imageSizeOfDataUrl } from "./Report_Functions/docxHelpers";
+import { createTextRun, fitInBox, imageSizeOfDataUrl } from "./Report_Functions/docxHelpers";
 
 // Word's own text watermark ("DRAFT", diagonally across the page, behind the text). The final is
 // made from the draft on the server: Backend/ts1/reportFinalize.js takes this shape out again.
@@ -39,18 +39,21 @@ const draftWatermark = () => {
   return ImportedXmlComponent.fromXmlString(xml).root[0];
 };
 
-const headerImageCell = (children, width) =>
-  createTableCell([new Paragraph({ alignment: AlignmentType.CENTER, children })], {
-    width,
-    rowSpan: 3,
+// The header box is as wide as the footer's box (BOX_WIDTHS) and centred like it, so the two line
+// up. Columns: lab logo | TEST REPORT, test code, report no., ULR | NABL + ILAC mark (kept narrow:
+// the mark is put in at its size by Backend/ts1/reportFinalize.js, NABL_MARK_BOX there).
+const HEADER_WIDTHS = [2900, 5840, 2150];
+
+const headerCell = (children, width, rowSpan) =>
+  new TableCell({
+    width: { size: width, type: WidthType.DXA },
+    ...(rowSpan ? { rowSpan } : {}),
     verticalAlign: VerticalAlign.CENTER,
-    margins: { top: 0, bottom: 0, left: 10, right: 10 },
+    margins: rowSpan ? { top: 0, bottom: 0, left: 40, right: 40 } : { top: 10, bottom: 10, left: 40, right: 40 },
+    children: Array.isArray(children) ? children : [new Paragraph({ alignment: AlignmentType.CENTER, children })],
   });
 
-const centerCell = (paragraphs, width) =>
-  createTableCell(paragraphs, { width, verticalAlign: VerticalAlign.CENTER, margins: { top: 50, bottom: 50, left: 10, right: 10 } });
-
-const headerLine = (children) => new Paragraph({ alignment: AlignmentType.CENTER, spacing: { before: 50, after: 50 }, children });
+const headerLine = (children) => new Paragraph({ alignment: AlignmentType.CENTER, spacing: { before: 0, after: 0 }, children });
 
 /**
  * The header on every page: lab logo | TEST REPORT, test code, report no. and ULR | NABL mark.
@@ -65,24 +68,29 @@ const headerLine = (children) => new Paragraph({ alignment: AlignmentType.CENTER
  * @param {boolean} draft
  */
 export const createHeader = (isNABL, beaLogoBase64, testCode = "", testReportNumber = "", ulrNumber = "", draft = false) => {
+  const [left, middle, right] = HEADER_WIDTHS;
   const logo = beaLogoBase64
-    ? [new ImageRun({ data: beaLogoBase64, transformation: fitInBox(imageSizeOfDataUrl(beaLogoBase64), 192, 90) })]
+    ? [new ImageRun({ data: beaLogoBase64, transformation: fitInBox(imageSizeOfDataUrl(beaLogoBase64), 180, 85) })]
     : [new TextRun({ text: "" })];
   const nablMarker = isNABL ? [new TextRun({ text: "LBNABLMARK", color: "FFFFFF", size: 2, font: "Calibri" })] : [];
 
   const run = (text, color, bold = false) => createTextRun(text, { bold, size: 22, color });
-  const reportLines = [headerLine([run("Test report No: ", "FF0000"), run(testReportNumber, "FF0000", true)])];
-  if (isNABL && ulrNumber) reportLines.push(headerLine([run("ULR: ", "FF0000"), run(ulrNumber, "FF0000", true)]));
+  // report no. and ULR: label and value in bold capitals
+  const reportLines = [headerLine([run(`TEST REPORT NO: ${String(testReportNumber || "").toUpperCase()}`, "FF0000", true)])];
+  if (isNABL && ulrNumber) reportLines.push(headerLine([run(`ULR NO: ${String(ulrNumber).toUpperCase()}`, "FF0000", true)]));
 
-  // Room for the lab logo and the wide NABL + ILAC mark (see reportFinalize.js)
-  const [left, middle, right] = [30, 40, 30];
-  const table = createDataTable([
-    new TableRow({
-      children: [headerImageCell(logo, left), centerCell([headerLine([run("TEST REPORT", "000000", true)])], middle), headerImageCell(nablMarker, right)],
-    }),
-    new TableRow({ children: [centerCell([headerLine([run(`TEST CODE: ${testCode}`, "0070C0")])], middle)] }),
-    new TableRow({ children: [centerCell(reportLines, middle)] }),
-  ], { columnWidths: [left, middle, right].map((percent) => Math.round(percent * 100)) });
+  const table = new Table({
+    width: { size: left + middle + right, type: WidthType.DXA },
+    columnWidths: HEADER_WIDTHS,
+    alignment: AlignmentType.CENTER,
+    rows: [
+      new TableRow({
+        children: [headerCell(logo, left, 3), headerCell([headerLine([run("TEST REPORT", "000000", true)])], middle), headerCell(nablMarker, right, 3)],
+      }),
+      new TableRow({ children: [headerCell([headerLine([run(`TEST CODE: ${testCode}`, "0070C0")])], middle)] }),
+      new TableRow({ children: [headerCell(reportLines, middle)] }),
+    ],
+  });
 
   return new Header({
     children: [table, new Paragraph({ children: draft ? [draftWatermark()] : [] })],

@@ -103,7 +103,9 @@ export const dueText = (r) => {
 };
 
 export const errorText = (err, fallback = "Something went wrong") =>
-  err?.response?.data?.error || err?.response?.data?.message || err?.message || fallback;
+  err?.response?.status === 413
+    ? "The file is larger than the web server allows. Ask the administrator to raise client_max_body_size in the server's nginx settings."
+    : err?.response?.data?.error || err?.response?.data?.message || err?.message || fallback;
 
 // Tell the side menu badge and other lists that something changed
 export const reportsChanged = () => window.dispatchEvent(new Event("ts1-reports-changed"));

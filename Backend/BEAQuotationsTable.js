@@ -147,7 +147,7 @@ function mainQuotationsTableAPIs(app, io, labbeeUsers) {
         saveNotificationToDatabase(
           message,
           currentTimestampForSlotBooking,
-          usersToNotifyNewQuotation,
+          usersToNotifyQuotation, // every configured role, not only the ones online now (the others see it in the bell later)
           loggedInUser
         );
 
@@ -310,7 +310,7 @@ function mainQuotationsTableAPIs(app, io, labbeeUsers) {
         saveNotificationToDatabase(
           message,
           currentTimestampForSlotBooking,
-          usersToNotifyQuoteUpdate,
+          usersToNotifyQuotation, // every configured role, not only the ones online now (the others see it in the bell later)
           loggedInUser
         );
 

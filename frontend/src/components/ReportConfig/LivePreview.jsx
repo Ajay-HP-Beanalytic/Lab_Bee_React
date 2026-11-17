@@ -5,6 +5,7 @@ import ZoomInIcon from "@mui/icons-material/ZoomIn";
 import ZoomOutIcon from "@mui/icons-material/ZoomOut";
 import { renderAsync } from "docx-preview";
 import { draftOverlaySx } from "./draftOverlay";
+import { previewableReport } from "../../Reports/Report_Functions/embeddedDocuments";
 
 /**
  * The draft as it will come out, rebuilt a moment after each change (or on Refresh).
@@ -33,7 +34,7 @@ export default function LivePreview({ config, version, onPreview }) {
       const blob = await onPreview(latest.current);
       if (mine !== run.current || !box.current) return;
       box.current.innerHTML = "";
-      await renderAsync(blob, box.current, null, {
+      await renderAsync(await previewableReport(blob), box.current, null, {
         className: "docx-preview",
         inWrapper: true,
         breakPages: true,

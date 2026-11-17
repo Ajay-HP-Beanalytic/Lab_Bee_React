@@ -297,6 +297,12 @@ function MakeFinal({ report, disabled, reason, onDone }) {
  * @param {() => void} props.onChanged - reload
  * @param {(report) => void} [props.onGenerateDraft] - generate the draft in Lab Bee (job card page)
  */
+// Steps Administration can take at any stage, besides the stage's own
+const ADMIN_ACTIONS = [
+  ["approve", "Approve (Admin)", true, "optional"],
+  ["customer_accepted", "Customer accepted (Admin)", false, "optional"],
+];
+
 export default function ReportPanel({ report, me, release, jcNumber, onChanged, onGenerateDraft }) {
   const [pending, setPending] = useState(null); // [action, text, reviewerOnly, note]
   const [note, setNote] = useState("");
@@ -307,14 +313,22 @@ export default function ReportPanel({ report, me, release, jcNumber, onChanged, 
   const [opening, setOpening] = useState(false);
 
   const isNew = report.stage === "to_prepare";
-  const actions = (ACTIONS_FOR[report.stage] || []).filter(([, , reviewerOnly]) => !reviewerOnly || me?.isReviewer);
+  // Administration may do every step, also out of the usual order (kept in the history as an override)
+  const isAdmin = !!me?.isAdmin;
+  const stageActions = (ACTIONS_FOR[report.stage] || []).filter(([, , reviewerOnly]) => !reviewerOnly || me?.isReviewer);
+  const adminExtra = isAdmin && !isNew
+    ? ADMIN_ACTIONS.filter(([key]) => !stageActions.some(([k]) => k === key))
+    : [];
+  const actions = [...stageActions, ...adminExtra];
   const valid = report.issues.find((i) => i.status === "valid");
   const drafts = report.files.filter((f) => f.kind === "draft");
   const finalWords = report.files.filter((f) => f.kind === "final_word");
   const finalPdfs = report.files.filter((f) => f.kind === "final_pdf");
   const waitingPdfs = finalPdfs.filter((f) => !f.issueId);
   const released = !!release?.released;
-  const finalOpen = FINAL_FROM.includes(report.stage);
+  // Administration can make / issue the final whenever there is a draft, released or not
+  const finalOpen = FINAL_FROM.includes(report.stage) || (isAdmin && drafts.length > 0);
+  const canFinal = released || isAdmin;
   const isReissue = report.stage === "final_issued";
   const newestFile = [...report.files].sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt))[0];
   const showIssued = isReissue && valid?.hasPdf;
@@ -381,7 +395,12 @@ export default function ReportPanel({ report, me, release, jcNumber, onChanged, 
     );
 
   const issued = (r) => {
-    toast.success(`Final issued (issue ${r.version}). The customer link and its QR code are ready.`, { autoClose: 7000 });
+    toast.success(
+      r.sameLink
+        ? `Final issued (issue ${r.version}). The customer link and QR code stay the same - they now open this issue.`
+        : `Final issued (issue ${r.version}). The customer link and its QR code are ready.`,
+      { autoClose: 7000 },
+    );
     setReason("");
     onChanged?.();
   };
@@ -516,6 +535,48 @@ export default function ReportPanel({ report, me, release, jcNumber, onChanged, 
         </Alert>
       )}
 
+      {/* Report checks (set up in Reports > Settings): first, so they are done before the review is completed */}
+      {report.checks.length > 0 && (
+        <Paper variant="outlined" sx={{ p: 1.5, my: 1.5, borderColor: report.checks.every((c) => c.done) ? "success.main" : "warning.main" }}>
+          <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 0.5 }}>
+            <Typography variant="subtitle1" sx={{ fontWeight: 600, flex: 1 }}>
+              Report checks
+            </Typography>
+            <Chip
+              size="small"
+              color={report.checks.every((c) => c.done) ? "success" : "warning"}
+              label={`${report.checks.filter((c) => c.done).length} of ${report.checks.length} done`}
+            />
+          </Stack>
+          <Typography variant="caption" color="text.secondary" component="div" sx={{ mb: 0.5 }}>
+            Go through these before approving the report.
+          </Typography>
+          {report.checks.map((c) => (
+            <Stack key={c.id} direction="row" alignItems="center" spacing={1} sx={{ py: 0.25 }}>
+              <Button
+                size="small"
+                variant={c.done ? "contained" : "outlined"}
+                color={c.done ? "success" : "inherit"}
+                disabled={!c.canTick}
+                onClick={() => tick(c)}
+                sx={{ minWidth: 76 }}
+              >
+                {c.done ? "Done" : "Tick"}
+              </Button>
+              <Typography variant="body2">
+                {c.label}
+                {c.required && <Chip size="small" label="Needed for the final" sx={{ ml: 1 }} />}
+              </Typography>
+              {c.done && (
+                <Typography variant="caption" color="text.secondary">
+                  {c.doneBy}, {fmt(c.doneAt, true)}
+                </Typography>
+              )}
+            </Stack>
+          ))}
+        </Paper>
+      )}
+
       {/* What can be done now */}
       {actions.length > 0 && (
         <Stack direction="row" spacing={1} sx={{ my: 1.5, flexWrap: "wrap", rowGap: 1 }}>
@@ -616,7 +677,7 @@ export default function ReportPanel({ report, me, release, jcNumber, onChanged, 
                     onChange={(e) => setReason(e.target.value)}
                   />
                 )}
-                <MakeFinal report={report} disabled={!released} reason={reason} onDone={onChanged} />
+                <MakeFinal report={report} disabled={!canFinal} reason={reason} onDone={onChanged} />
                 {finalWords.length > 0 && (
                   <>
                     <List dense disablePadding sx={{ mt: 1 }}>
@@ -625,7 +686,7 @@ export default function ReportPanel({ report, me, release, jcNumber, onChanged, 
                     <UploadBox
                       accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                       button="Upload an edited final Word"
-                      disabled={!released}
+                      disabled={!canFinal}
                       onUpload={uploadFinalWord}
                     />
                   </>
@@ -637,7 +698,7 @@ export default function ReportPanel({ report, me, release, jcNumber, onChanged, 
                     accept=".pdf,application/pdf"
                     button="Upload the final PDF"
                     hint="The customer link is made for this PDF."
-                    disabled={!released}
+                    disabled={!canFinal}
                     onUpload={uploadFinalPdf}
                     extra={
                       <FormControlLabel
@@ -653,7 +714,7 @@ export default function ReportPanel({ report, me, release, jcNumber, onChanged, 
                     severity="info"
                     sx={{ mt: 1 }}
                     action={
-                      <Button size="small" startIcon={<QrCode2Icon />} disabled={busy || !released} onClick={() => issueWaiting(f)}>
+                      <Button size="small" startIcon={<QrCode2Icon />} disabled={busy || !canFinal} onClick={() => issueWaiting(f)}>
                         Create the link
                       </Button>
                     }
@@ -767,39 +828,6 @@ export default function ReportPanel({ report, me, release, jcNumber, onChanged, 
         <List dense disablePadding>
           {finalPdfs.map((f) => fileRow(f, false))}
         </List>
-      )}
-
-      {/* Report checks (set up in Reports > Settings) */}
-      {report.checks.length > 0 && (
-        <>
-          <Divider sx={{ my: 1.5 }} />
-          <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
-            Report checks
-          </Typography>
-          {report.checks.map((c) => (
-            <Stack key={c.id} direction="row" alignItems="center" spacing={1} sx={{ py: 0.25 }}>
-              <Button
-                size="small"
-                variant={c.done ? "contained" : "outlined"}
-                color={c.done ? "success" : "inherit"}
-                disabled={!c.canTick}
-                onClick={() => tick(c)}
-                sx={{ minWidth: 76 }}
-              >
-                {c.done ? "Done" : "Tick"}
-              </Button>
-              <Typography variant="body2">
-                {c.label}
-                {c.required && <Chip size="small" label="Needed for the final" sx={{ ml: 1 }} />}
-              </Typography>
-              {c.done && (
-                <Typography variant="caption" color="text.secondary">
-                  {c.doneBy}, {fmt(c.doneAt, true)}
-                </Typography>
-              )}
-            </Stack>
-          ))}
-        </>
       )}
 
       {/* History */}

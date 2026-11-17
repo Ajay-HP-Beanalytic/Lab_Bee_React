@@ -194,10 +194,10 @@ export const getJcStatusFields = (
   editJc = false,
   // Two-step closing: canCompleteTests = the job card owner, Lab Manager or Administration;
   // savedStatus = the status as last saved
-  { canCompleteTests = loggedInUserRole === "Lab Manager", savedStatus = null } = {}
+  { canCompleteTests = loggedInUserRole === "Lab Manager", savedStatus = null, isAdmin = false } = {}
 ) => {
-  // Check if user is Lab Manager
-  const isLabManager = loggedInUserRole === "Lab Manager";
+  // The Lab Manager closes job cards; Administration may do everything they can
+  const isLabManager = loggedInUserRole === "Lab Manager" || isAdmin;
 
   // Check if JC is closed
   const isClosed = jobcardStatus === "Closed";

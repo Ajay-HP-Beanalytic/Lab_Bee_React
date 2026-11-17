@@ -9,6 +9,8 @@ import { createTestDetailsInfoTable } from "./TestDetailsInfoTable";
 import { testPhotoParts } from "./CompleteTestImages";
 import { graphBlocks } from "./TestGraphImages";
 import { endOfTheReportLine } from "./EndOfReportText";
+import { tableNumbering } from "./Report_Functions/docxHelpers";
+import { embedDocuments } from "./Report_Functions/embeddedDocuments";
 
 /**
  * Convert image URL to base64 data URL
@@ -50,17 +52,25 @@ const pageMargins = {
  * The report's page sections: the main part in portrait, Appendix A photos, and each graph or
  * document in its own orientation, right after the photos of its group (an ESS report goes
  * portrait, landscape, portrait, landscape, portrait) or at the end. The disclaimer always ends
- * the report on a portrait page.
+ * the report on a portrait page. A graph document (or a run of graphs) starts a new page.
+ * @param {string[]} [embeds] - collects the Word files to put in as they are
  * @returns {Array<{ landscape: boolean, children: Array }>}
  */
-export const reportFlow = async (comprehensiveData, reportConfig) => {
+export const reportFlow = async (comprehensiveData, reportConfig, embeds = []) => {
   const flow = [];
-  const add = (landscape, children) => {
+  const add = (landscape, children, newPage = false) => {
     if (!children.length) return;
     const last = flow[flow.length - 1];
-    if (last && last.landscape === landscape) last.children.push(...children);
-    else flow.push({ landscape, children: [...children] });
+    if (last && last.landscape === landscape && !newPage) last.children.push(...children);
+    else {
+      // the new section starts a page anyway: no page break left before it (no blank page)
+      if (last && last.children.length > 1 && last.children[last.children.length - 1]?.lbPageBreak) last.children.pop();
+      flow.push({ landscape, children: [...children] });
+    }
   };
+
+  // Tables numbered in the order they are printed: Table 01, Table 02...
+  reportConfig = { ...reportConfig, tableNo: tableNumbering() };
 
   add(false, [
     ...createFirstPage(comprehensiveData, reportConfig),
@@ -70,7 +80,7 @@ export const reportFlow = async (comprehensiveData, reportConfig) => {
     ...createTestDetailsInfoTable(comprehensiveData, reportConfig),
   ]);
 
-  const blocks = await graphBlocks(comprehensiveData, reportConfig);
+  const blocks = await graphBlocks(comprehensiveData, reportConfig, embeds);
   const placed = new Set();
   for (const part of testPhotoParts(comprehensiveData, reportConfig)) {
     add(false, part.elements);
@@ -78,11 +88,11 @@ export const reportFlow = async (comprehensiveData, reportConfig) => {
     for (const b of blocks) {
       if (b.group === part.group) {
         placed.add(b);
-        add(b.landscape, b.children);
+        add(b.landscape, b.children, b.newPage);
       }
     }
   }
-  for (const b of blocks) if (!placed.has(b)) add(b.landscape, b.children);
+  for (const b of blocks) if (!placed.has(b)) add(b.landscape, b.children, b.newPage);
 
   add(false, endOfTheReportLine());
   return flow;
@@ -118,7 +128,8 @@ export const GenerateReportDocument = async (comprehensiveData, reportConfig = {
     }
     const config = { ...reportConfig, companyLogoBase64 };
 
-    const flow = await reportFlow(comprehensiveData, config);
+    const embeds = [];
+    const flow = await reportFlow(comprehensiveData, config, embeds);
 
     const doc = new Document({
       styles: {
@@ -143,7 +154,8 @@ export const GenerateReportDocument = async (comprehensiveData, reportConfig = {
       })),
     });
 
-    const blob = await Packer.toBlob(doc);
+    // the graph Word files go in as they are
+    const blob = await embedDocuments(await Packer.toBlob(doc), embeds);
 
     // Format: YYYYMMDD_HHMM (IST), when there is no report number yet
     const now = new Date();

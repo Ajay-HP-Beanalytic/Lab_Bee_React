@@ -155,8 +155,8 @@ const ReportConfigDialogV2 = ({
   initialConfig = null,
   testCategory = "",
   prefill = null,
-  reportTests = [], // the tests in this report (prepareReportData), for Table 02
-  eutRows = [], // the report's EUTs (Table 01)
+  reportTests = [], // the tests in this report (prepareReportData), for Table 03
+  eutRows = [], // the report's EUTs (Table 02)
   testDetailId = null, // the report's (first) test row: its work, photos and graphs are kept under it
   onPreview = null, // (config) => Promise<Blob>: the draft for the live preview
 }) => {
@@ -330,8 +330,20 @@ const ReportConfigDialogV2 = ({
     photosVersion,
   ]);
 
+  // Every draft needs its report number, and a NABL report its ULR number too
+  const [showMissing, setShowMissing] = useState(false);
+  const missingReportNo = !String(testReportNumber || "").trim();
+  const missingUlr = reportType === "NABL" && !String(ulrNumber || "").trim();
+
   const handleConfirm = () => {
     if (hasUnsaved()) saveNow();
+    if (missingReportNo || missingUlr) {
+      setShowMissing(true);
+      setActiveStep(0);
+      const what = [missingReportNo && "the Report Number", missingUlr && "the ULR Number (NABL report)"].filter(Boolean).join(" and ");
+      toast.error(`The draft can't be made without ${what}. Fill it in on Report info, then generate the draft.`, { autoClose: 8000 });
+      return;
+    }
     onConfirm(buildConfig());
   };
 
@@ -406,11 +418,31 @@ const ReportConfigDialogV2 = ({
                   />
                 </Grid>
                 <Grid item xs={12} sm={6} md={4}>
-                  <TextField label="Report Number" variant="outlined" fullWidth margin="normal" value={testReportNumber} onChange={(e) => setTestReportNumber(e.target.value)} />
+                  <TextField
+                    label="Report Number"
+                    required
+                    variant="outlined"
+                    fullWidth
+                    margin="normal"
+                    value={testReportNumber}
+                    onChange={(e) => setTestReportNumber(e.target.value)}
+                    error={showMissing && missingReportNo}
+                    helperText={showMissing && missingReportNo ? "Needed for every draft" : ""}
+                  />
                 </Grid>
                 {reportType === "NABL" && (
                   <Grid item xs={12} sm={6} md={4}>
-                    <TextField label="ULR Number" variant="outlined" fullWidth margin="normal" value={ulrNumber} onChange={(e) => setUlrNumber(e.target.value)} />
+                    <TextField
+                      label="ULR Number"
+                      required
+                      variant="outlined"
+                      fullWidth
+                      margin="normal"
+                      value={ulrNumber}
+                      onChange={(e) => setUlrNumber(e.target.value)}
+                      error={showMissing && missingUlr}
+                      helperText={showMissing && missingUlr ? "Needed for a NABL report" : ""}
+                    />
                   </Grid>
                 )}
                 <Grid item xs={12} sm={6} md={4}>
@@ -536,8 +568,8 @@ const ReportConfigDialogV2 = ({
             </SectionCard>
             <SectionCard title="Tables">
               <Typography variant="body2">
-                Table 01: {(content?.euts || []).length} row(s) · Table 02: {(content?.rows || []).length} row(s)
-                {content?.table3 && String(content.table3.rows || "").trim() ? " · Table 03: included" : ""}
+                Table 02: {(content?.euts || []).length} row(s) · Table 03: {(content?.rows || []).length} row(s)
+                {content?.table3 && String(content.table3.rows || "").trim() ? " · Table 04: included" : ""}
               </Typography>
             </SectionCard>
             <SectionCard title="Photos, graphs and logo">

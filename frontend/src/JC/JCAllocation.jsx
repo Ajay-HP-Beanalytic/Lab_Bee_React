@@ -14,7 +14,6 @@ import {
   DialogTitle,
   Grid,
   IconButton,
-  InputAdornment,
   Paper,
   Stack,
   TextField,
@@ -22,12 +21,12 @@ import {
   Typography,
 } from "@mui/material";
 import RefreshIcon from "@mui/icons-material/Refresh";
-import SearchIcon from "@mui/icons-material/Search";
 import AssignmentIndIcon from "@mui/icons-material/AssignmentInd";
 import dayjs from "dayjs";
 import { toast } from "react-toastify";
 import { serverBaseAddress } from "../Pages/APIPage";
 import { PagedTable, SectionTitle, Tiles } from "./Dashboards/dashboardParts";
+import TablePeriodFilter, { usePeriodFilter } from "../common/TablePeriodFilter";
 
 const STATE_COLORS = { "Free": "success", "Has job cards": "warning", "Testing now": "info" };
 const STATUS_COLORS = { "Open": "warning", "Running": "info", "Test Completed": "secondary" };
@@ -128,7 +127,7 @@ export default function JCAllocation({ lab = "ts1" }) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState(new URLSearchParams(location.search).get("mine") === "1" ? "mine" : "all");
-  const [search, setSearch] = useState("");
+  const pf = usePeriodFilter(); // period (JC open date), year, month, date range and search
   const [editing, setEditing] = useState(null);
   const title = lab === "ts2" ? "TS2 Job Card Allocation" : "TS1 Job Card Allocation";
 
@@ -148,19 +147,23 @@ export default function JCAllocation({ lab = "ts1" }) {
   const open = (r) =>
     lab === "ts2" ? navigate(`/emi_jobcard/${r.id}`) : navigate("/jobcard_dashboard", { state: { openJcId: r.id } });
 
-  const rows = useMemo(() => {
+  const { inPeriod, matches } = pf;
+  // the job cards in the chosen period (by JC open date) and matching the search
+  const inView = useMemo(() => {
     if (!data) return [];
-    const text = search.trim().toLowerCase();
-    return data.jobcards
-      .filter((r) => (filter === "mine" ? r.owner === data.me || r.supportStaff.includes(data.me) : filter === "unassigned" ? !r.owner : true))
-      .filter(
-        (r) =>
-          !text ||
-          [r.jcNumber, r.company, r.customer, r.phone, r.email, r.owner, r.supportStaff.join(" "), r.assignedBy, r.status].some((v) =>
-            String(v || "").toLowerCase().includes(text),
-          ),
-      );
-  }, [data, filter, search]);
+    return data.jobcards.filter(
+      (r) =>
+        inPeriod(r.openDate) &&
+        matches([r.jcNumber, r.company, r.customer, r.phone, r.email, r.owner, r.supportStaff.join(" "), r.assignedBy, r.status]),
+    );
+  }, [data, inPeriod, matches]);
+  const rows = useMemo(
+    () =>
+      data
+        ? inView.filter((r) => (filter === "mine" ? r.owner === data.me || r.supportStaff.includes(data.me) : filter === "unassigned" ? !r.owner : true))
+        : [],
+    [data, inView, filter],
+  );
 
   if (error) {
     return (
@@ -177,7 +180,8 @@ export default function JCAllocation({ lab = "ts1" }) {
     );
   }
   const k = data.kpis;
-  const mineCount = data.jobcards.filter((r) => r.owner === data.me || r.supportStaff.includes(data.me)).length;
+  const mineCount = inView.filter((r) => r.owner === data.me || r.supportStaff.includes(data.me)).length;
+  const unassignedCount = inView.filter((r) => !r.owner).length;
 
   const columns = [
     { label: "JC", render: (r) => <b>{r.jcNumber}</b> },
@@ -335,29 +339,28 @@ export default function JCAllocation({ lab = "ts1" }) {
 
       <SectionTitle note="Click a row to open the job card">Open job cards</SectionTitle>
       <Paper variant="outlined" sx={{ p: 1.5 }}>
+          <Box mb={1.5}>
+            <TablePeriodFilter pf={pf} dateLabel="JC open date" searchPlaceholder="JC, customer, owner, status…" />
+          </Box>
           <Stack mb={1} direction="row" gap={1} alignItems="center" flexWrap="wrap">
             {[
-              ["all", `All open · ${data.jobcards.length}`],
+              ["all", `All open · ${inView.length}`],
               ["mine", `Assigned to me · ${mineCount}`],
-              ["unassigned", `No owner · ${k.unassigned}`],
+              ["unassigned", `No owner · ${unassignedCount}`],
             ].map(([v, label]) => (
               <Chip key={v} label={label} color={filter === v ? "primary" : "default"} variant={filter === v ? "filled" : "outlined"} onClick={() => setFilter(v)} />
             ))}
-            <Box flex={1} />
-            <TextField
-              size="small"
-              placeholder="JC, customer, owner…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon fontSize="small" />
-                  </InputAdornment>
-                ),
-              }}
-              sx={{ minWidth: 240 }}
-            />
+            {pf.active && (
+              <>
+                <Typography variant="caption" color="text.secondary" ml={1}>
+                  {pf.label}
+                  {pf.search.trim() ? ` · matching "${pf.search.trim()}"` : ""}
+                </Typography>
+                <Button size="small" onClick={pf.reset}>
+                  Clear filters
+                </Button>
+              </>
+            )}
           </Stack>
         <PagedTable rows={rows} columns={columns} rowKey={(r) => r.id} onRowClick={open} minWidth={1000} perPage={10} maxHeight={640} />
       </Paper>

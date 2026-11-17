@@ -20,7 +20,11 @@ const MARKERS = {
   designation: (slot) => `LBDESG${slot.toUpperCase()}`,
 };
 const DRAFT_LINE = "DRAFT REPORT - FOR CUSTOMER REVIEW ONLY";
-const HEADINGS = { prepared: "Prepared By,", reviewed: "Reviewed By", authorized: "Authorized Signature," };
+const HEADINGS = { prepared: "Prepared By", reviewed: "Reviewed By", authorized: "Authorized Signature" };
+// older drafts have "Prepared By," and "Authorized Signature,"
+const isHeading = (text, slot) => text.trim().replace(/,$/, "").trim() === HEADINGS[slot];
+// the NABL + ILAC mark fits the narrow right column of the header (HeaderAndFooter.jsx)
+const NABL_MARK_BOX = { w: 130, h: 66 };
 const SLOTS = ["prepared", "reviewed", "authorized"];
 
 const decode = (s) =>
@@ -237,7 +241,7 @@ async function finalizeReport(buffer, { issueDateText, version = 1, signers = []
   const nablSpots = findAll((t) => t.includes(MARKERS.nabl));
   const mark = nablMark && nablSpots.length ? trimBlankEdges(nablMark) : null;
   for (const { part, p } of nablSpots) {
-    part.replace(p, withRuns(p, mark ? await addImage(part, mark, 185, 95) : ""));
+    part.replace(p, withRuns(p, mark ? await addImage(part, mark, NABL_MARK_BOX.w, NABL_MARK_BOX.h) : ""));
   }
   if (nablMark && !nablSpots.length) warnings.push("No place for the NABL mark was found in the header - add it by hand");
 
@@ -252,7 +256,7 @@ async function finalizeReport(buffer, { issueDateText, version = 1, signers = []
       const pPr = s.image ? pPrOf(sigSpot.p).replace(/<w:spacing[^>]*\/>/, '<w:spacing w:before="100" w:after="100"/>') : pPrOf(sigSpot.p);
       sigSpot.part.replace(sigSpot.p, `${openTag(sigSpot.p)}${pPr}${runs}</w:p>`);
     } else if (s.image) {
-      const heading = findIn((t) => t.trim() === HEADINGS[slot]);
+      const heading = findIn((t) => isHeading(t, slot));
       if (heading) {
         const jc = (pPrOf(heading.p).match(/<w:jc [^>]*\/>/) || [""])[0];
         const img = await addImage(heading.part, s.image, 130, 50);

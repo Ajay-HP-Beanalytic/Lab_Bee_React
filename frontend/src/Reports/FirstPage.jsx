@@ -41,13 +41,17 @@ import {
 // signatures, names and designations there (the names below are only the draft's).
 const marker = (word) => new TextRun({ text: word, color: "FFFFFF", size: 2, font: "Calibri" });
 
-// "Prepared By," heading, with the place for the signature under it
+// First page sizes (half points): title 20 pt, "Submitted to" 14, company 18 (capitals),
+// address 14, issue date 12, signatures 12 - all Calibri
+const SIZE = { title: 40, submittedTo: 28, company: 36, address: 28, issueDate: 24, signature: 24 };
+
+// "Prepared By" heading, with the place for the signature under it
 const signatureCell = (label, slot, alignment, width) =>
   createTableCell(
     [
       new Paragraph({
         alignment,
-        children: [createTextRun(label, { bold: true, size: 23, font: "Calibri" })],
+        children: [createTextRun(label, { size: SIZE.signature, font: "Calibri" })],
       }),
       new Paragraph({ alignment, spacing: { after: 900 }, children: [marker(`LBSIG${slot.toUpperCase()}`)] }),
     ],
@@ -57,7 +61,7 @@ const signatureCell = (label, slot, alignment, width) =>
 // Name / designation under the signature (marker + text)
 const markedCell = (word, text, alignment, width, bottom) =>
   createTableCell(
-    [new Paragraph({ alignment, children: [marker(word), createTextRun(text || "", { size: 23 })] })],
+    [new Paragraph({ alignment, children: [marker(word), createTextRun(text || "", { size: SIZE.signature })] })],
     { width, verticalAlign: VerticalAlign.TOP, margins: { top: 0, bottom } }
   );
 
@@ -65,7 +69,7 @@ const issueDateBlock = (reportConfig) => [
   createParagraph(`Draft Issue Date: ${reportConfig.originalReportIssueDate || "N/A"}`, {
     alignment: AlignmentType.LEFT,
     bold: true,
-    size: 25,
+    size: SIZE.issueDate,
     color: "000000",
     font: "Calibri",
     spacing: { before: 400, after: 200 },
@@ -109,7 +113,7 @@ export const createFirstPage = (comprehensiveData, reportConfig) => {
       {
         alignment: AlignmentType.CENTER,
         bold: true,
-        size: 40,
+        size: SIZE.title,
         color: "1f497d",
         font: "Calibri",
         spacing: {
@@ -123,7 +127,7 @@ export const createFirstPage = (comprehensiveData, reportConfig) => {
     createParagraph("Submitted to:", {
       alignment: AlignmentType.CENTER,
       bold: true,
-      size: 25,
+      size: SIZE.submittedTo,
       color: "0070c0",
       font: "Calibri",
       spacing: {
@@ -150,10 +154,10 @@ export const createFirstPage = (comprehensiveData, reportConfig) => {
       : []),
 
     // Company Name
-    createParagraph(comprehensiveData?.companyName || "N/A", {
+    createParagraph((comprehensiveData?.companyName || "N/A").toUpperCase(), {
       alignment: AlignmentType.CENTER,
       bold: true,
-      size: 32,
+      size: SIZE.company,
       color: "1f497d",
       font: "Calibri",
       spacing: {
@@ -203,7 +207,7 @@ export const createFirstPage = (comprehensiveData, reportConfig) => {
     createParagraph(wrappedAddress, {
       alignment: AlignmentType.CENTER,
       bold: true,
-      size: 25,
+      size: SIZE.address,
       color: "1f497d",
       font: "Calibri",
       spacing: { after: 500 },
@@ -219,27 +223,27 @@ export const createFirstPage = (comprehensiveData, reportConfig) => {
         // Row 1: Headers
         new TableRow({
           children: [
-            signatureCell("Prepared By,", "prepared", AlignmentType.LEFT, 33),
+            signatureCell("Prepared By", "prepared", AlignmentType.CENTER, 33),
             signatureCell("Reviewed By", "reviewed", AlignmentType.CENTER, 33),
-            signatureCell("Authorized Signature,", "authorized", AlignmentType.RIGHT, 34),
+            signatureCell("Authorized Signature", "authorized", AlignmentType.CENTER, 34),
           ],
         }),
 
         // Row 2: Names
         new TableRow({
           children: [
-            markedCell("LBNAMEPREPARED", comprehensiveData?.currentTest_preparedBy || preparedByName, AlignmentType.LEFT, 33, 100),
+            markedCell("LBNAMEPREPARED", comprehensiveData?.currentTest_preparedBy || preparedByName, AlignmentType.CENTER, 33, 100),
             markedCell("LBNAMEREVIEWED", comprehensiveData?.currentTest_testReviewedBy || reviewedByName, AlignmentType.CENTER, 33, 100),
-            markedCell("LBNAMEAUTHORIZED", authorizedByName, AlignmentType.RIGHT, 34, 100),
+            markedCell("LBNAMEAUTHORIZED", authorizedByName, AlignmentType.CENTER, 34, 100),
           ],
         }),
 
         // Row 3: Designations
         new TableRow({
           children: [
-            markedCell("LBDESGPREPARED", preparedByDesignation || "", AlignmentType.JUSTIFIED, 33, 40),
+            markedCell("LBDESGPREPARED", preparedByDesignation || "", AlignmentType.CENTER, 33, 40),
             markedCell("LBDESGREVIEWED", reviewedByDesignation || "", AlignmentType.CENTER, 33, 40),
-            markedCell("LBDESGAUTHORIZED", authorizedByDesignation || "", AlignmentType.RIGHT, 34, 40),
+            markedCell("LBDESGAUTHORIZED", authorizedByDesignation || "", AlignmentType.CENTER, 34, 40),
           ],
         }),
       ],

@@ -442,6 +442,9 @@ function ts1ReportAPIs(app) {
           .filter((c) => c.chamberInfo || c.chamberMake)
       : [];
 
+    // A draft without its report number (or a NABL one without its ULR) is not recorded
+    await require("./TS1ReportWorkflowAPI").requireDraftNumbers(id, { reportNumber, reportType, ulrNumber: b.ulrNumber, strict: true });
+
     // The same report number on another test is almost always a typing slip
     const clash = reportNumber
       ? await query(

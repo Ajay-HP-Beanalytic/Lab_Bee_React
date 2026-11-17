@@ -19,7 +19,6 @@ import {
   ShadingType,
 } from "docx";
 import dayjs from "dayjs";
-import { createHeadingParagraph } from "./Report_Functions/docxHelpers";
 
 /**
  * Create a yellow box paragraph for section titles
@@ -170,7 +169,7 @@ export const createTestGraphTable = (comprehensiveData) => {
       // Row 4: TEST SEVERITY
       new TableRow({
         children: [
-          createTableHeaderCell("TEST SEVERITY", 25),
+          createTableHeaderCell("TEST SEVERITY/PROFILE", 25),
           createTableDataCell(currentTest.testProfile || "N/A", 75, 3),
         ],
       }),
@@ -218,9 +217,6 @@ export const createTestGraphTable = (comprehensiveData) => {
   });
 
   return [
-    // Section heading
-    createHeadingParagraph("TEST REPORT"),
-
     // Yellow box title for TEST DESCRIPTION section
     createYellowBoxTitle("TEST DESCRIPTION"),
     testDescriptionTable,

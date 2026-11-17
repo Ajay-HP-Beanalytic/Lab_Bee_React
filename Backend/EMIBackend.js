@@ -576,7 +576,7 @@ function emiJobcardsAPIs(app, io, labbeeUsers) {
       await saveNotificationToDatabase(
         message,
         currentTimestampForJCCreation,
-        usersToNotifyAboutJCCreation, // Pass the array directly
+        usersToNotifyEMIJCCreation, // every configured role, not only the ones online now (the others see it in the bell later)
         loggedInUser,
       );
 

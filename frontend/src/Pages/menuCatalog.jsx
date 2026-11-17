@@ -164,6 +164,14 @@ export const MENU_ITEMS = [
   },
 
   {
+    key: "ts2_slot_booking",
+    label: "Slot Booking",
+    path: "/emi_slot_booking",
+    group: "ts2",
+    icon: <CalendarMonthSharpIcon />,
+  },
+
+  {
     key: "ts2_jobcards",
     label: "Job Cards",
     path: "/emi_jc_dashboard",
@@ -178,13 +186,7 @@ export const MENU_ITEMS = [
     group: "ts2",
     icon: <AssignmentIndIcon />,
   },
-  {
-    key: "ts2_slot_booking",
-    label: "Slot Booking",
-    path: "/emi_slot_booking",
-    group: "ts2",
-    icon: <CalendarMonthSharpIcon />,
-  },
+
   {
     key: "ts2_calibration",
     label: "Calibration",

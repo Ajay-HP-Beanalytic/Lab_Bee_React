@@ -14,6 +14,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import DownloadIcon from "@mui/icons-material/Download";
 import { renderAsync } from "docx-preview";
 import { draftOverlaySx } from "./ReportConfig/draftOverlay";
+import { previewableReport } from "../Reports/Report_Functions/embeddedDocuments";
 import { saveAs } from "file-saver";
 
 // Import docx-preview CSS for proper styling
@@ -118,7 +119,7 @@ const DocumentPreviewModal = ({
         }
 
         // Render the document with proper options for tables and images
-        await renderAsync(documentBlob, container, null, {
+        await renderAsync(await previewableReport(documentBlob), container, null, {
           className: "docx-preview",
           inWrapper: true,
           ignoreWidth: false,
