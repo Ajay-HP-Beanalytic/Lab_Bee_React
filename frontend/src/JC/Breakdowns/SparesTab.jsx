@@ -2,9 +2,11 @@ import { useRef, useState } from "react";
 import axios from "axios";
 import * as XLSX from "xlsx";
 import { toast } from "react-toastify";
+import TablePeriodFilter, { usePeriodFilter } from "../../common/TablePeriodFilter";
 import {
   Alert,
   Autocomplete,
+  Box,
   Button,
   Chip,
   Dialog,
@@ -219,7 +221,8 @@ function MovesDialog({ spare, moves, onClose }) {
 /** The spare parts list: stock, minimum levels, which chambers each part fits */
 export default function SparesTab({ spares, meta, onChanged }) {
   const fileRef = useRef(null);
-  const [search, setSearch] = useState("");
+  // period (last stock movement, else the date the part was added), year, month, range, search
+  const pf = usePeriodFilter();
   const [lowOnly, setLowOnly] = useState(false);
   const [editing, setEditing] = useState(null);
   const [stock, setStock] = useState(null);
@@ -227,7 +230,10 @@ export default function SparesTab({ spares, meta, onChanged }) {
   const canSeeCost = meta.me.canSeeCost;
 
   const shown = spares.filter(
-    (s) => (!lowOnly || s.low) && (!search || [s.part_name, s.part_no, s.make, s.category, s.vendor, ...s.chambers.map((c) => c.code || c.name)].some((v) => String(v || "").toLowerCase().includes(search.toLowerCase()))),
+    (s) =>
+      (!lowOnly || s.low) &&
+      pf.inPeriod(s.last_move_at || s.created_at) &&
+      pf.matches([s.part_name, s.part_no, s.make, s.category, s.vendor, ...s.chambers.map((c) => c.code || c.name)]),
   );
 
   const { pageRows, pager } = usePaged(shown, 25);
@@ -282,7 +288,9 @@ export default function SparesTab({ spares, meta, onChanged }) {
   return (
     <>
       <Stack direction="row" gap={1} flexWrap="wrap" alignItems="center" mb={1.5}>
-        <TextField size="small" label="Search" value={search} onChange={(e) => setSearch(e.target.value)} sx={{ minWidth: 240 }} />
+        <Box sx={{ flex: "1 1 100%" }}>
+          <TablePeriodFilter pf={pf} dateLabel="last stock movement" searchPlaceholder="Part, part no., make, vendor, chamber…" />
+        </Box>
         <Chip color={lowOnly ? "error" : "default"} variant={lowOnly ? "filled" : "outlined"} label={`Low stock · ${spares.filter((s) => s.low).length}`} onClick={() => setLowOnly(!lowOnly)} />
         <Stack direction="row" gap={1} flex={1} justifyContent="flex-end" flexWrap="wrap">
           <input ref={fileRef} type="file" accept=".xls,.xlsx" hidden onChange={importFile} />

@@ -80,7 +80,10 @@ export const reportFlow = async (comprehensiveData, reportConfig, embeds = []) =
     ...createTestDetailsInfoTable(comprehensiveData, reportConfig),
   ]);
 
-  const blocks = await graphBlocks(comprehensiveData, reportConfig, embeds);
+  // the test data page's "Units under test" table: the EUT rows as edited in the builder (Table 02)
+  const builderEuts = reportConfig?.content?.euts || [];
+  const graphData = builderEuts.length ? { ...comprehensiveData, currentTestEutRows: builderEuts } : comprehensiveData;
+  const blocks = await graphBlocks(graphData, reportConfig, embeds);
   const placed = new Set();
   for (const part of testPhotoParts(comprehensiveData, reportConfig)) {
     add(false, part.elements);

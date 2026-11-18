@@ -157,6 +157,8 @@ const ReportConfigDialogV2 = ({
   prefill = null,
   reportTests = [], // the tests in this report (prepareReportData), for Table 03
   eutRows = [], // the report's EUTs (Table 02)
+  allEutRows = [], // every EUT of the job card (to pick from in Table 02)
+  eutMatch = "serial", // "all": the test's EUT serial no. matched none, so these are all the job card's EUTs
   testDetailId = null, // the report's (first) test row: its work, photos and graphs are kept under it
   onPreview = null, // (config) => Promise<Blob>: the draft for the live preview
 }) => {
@@ -224,7 +226,9 @@ const ReportConfigDialogV2 = ({
       setUlrNumber(d.ulrNumber || "");
       setOriginalReportIssueDate(d.issueDate ? dayjs(d.issueDate) : null);
       setChambers((d.chambers || []).map(toChamber));
-      setContent(d.content || defaultContent(reportTests, testCategory, eutRows));
+      const saved = d.content || defaultContent(reportTests, testCategory, eutRows);
+      // a draft saved without EUT rows gets the job card's
+      setContent(saved.euts?.length ? saved : { ...saved, euts: eutRowsOf(eutRows) });
       setLogo(
         d.logo?.source === "upload" && d.logo.data
           ? d.logo
@@ -330,18 +334,17 @@ const ReportConfigDialogV2 = ({
     photosVersion,
   ]);
 
-  // Every draft needs its report number, and a NABL report its ULR number too
+  // Every draft needs its report number. The ULR number is optional on a draft: the final NABL
+  // report must have it (asked for when the final is made, if not given here).
   const [showMissing, setShowMissing] = useState(false);
   const missingReportNo = !String(testReportNumber || "").trim();
-  const missingUlr = reportType === "NABL" && !String(ulrNumber || "").trim();
 
   const handleConfirm = () => {
     if (hasUnsaved()) saveNow();
-    if (missingReportNo || missingUlr) {
+    if (missingReportNo) {
       setShowMissing(true);
       setActiveStep(0);
-      const what = [missingReportNo && "the Report Number", missingUlr && "the ULR Number (NABL report)"].filter(Boolean).join(" and ");
-      toast.error(`The draft can't be made without ${what}. Fill it in on Report info, then generate the draft.`, { autoClose: 8000 });
+      toast.error("The draft can't be made without the Report Number. Fill it in on Report info, then generate the draft.", { autoClose: 8000 });
       return;
     }
     onConfirm(buildConfig());
@@ -434,14 +437,12 @@ const ReportConfigDialogV2 = ({
                   <Grid item xs={12} sm={6} md={4}>
                     <TextField
                       label="ULR Number"
-                      required
                       variant="outlined"
                       fullWidth
                       margin="normal"
                       value={ulrNumber}
                       onChange={(e) => setUlrNumber(e.target.value)}
-                      error={showMissing && missingUlr}
-                      helperText={showMissing && missingUlr ? "Needed for a NABL report" : ""}
+                      helperText="Optional on a draft - needed for the final NABL report"
                     />
                   </Grid>
                 )}
@@ -465,7 +466,7 @@ const ReportConfigDialogV2 = ({
         );
 
       case 1:
-        return <ReportContentStep value={content} onChange={setContent} eutRows={eutRows} />;
+        return <ReportContentStep value={content} onChange={setContent} eutRows={eutRows} allEutRows={allEutRows} eutMatch={eutMatch} />;
 
       case 2:
         return (

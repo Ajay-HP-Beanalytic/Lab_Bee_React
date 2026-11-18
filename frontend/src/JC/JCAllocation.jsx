@@ -29,7 +29,7 @@ import { PagedTable, SectionTitle, Tiles } from "./Dashboards/dashboardParts";
 import TablePeriodFilter, { usePeriodFilter } from "../common/TablePeriodFilter";
 
 const STATE_COLORS = { "Free": "success", "Has job cards": "warning", "Testing now": "info" };
-const STATUS_COLORS = { "Open": "warning", "Running": "info", "Test Completed": "secondary" };
+const STATUS_COLORS = { "Open": "warning", "Running": "info", "Test Completed": "secondary", "Closed": "success", "Close": "success" };
 
 // Job card owner and supporting staff (Lab Manager / Lab Incharge / Administration, or
 // anyone taking a job card with no owner yet)
@@ -127,21 +127,25 @@ export default function JCAllocation({ lab = "ts1" }) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState(new URLSearchParams(location.search).get("mine") === "1" ? "mine" : "all");
-  const pf = usePeriodFilter(); // period (JC open date), year, month, date range and search
+  // period (JC open date), year, month, date range and search - this month by default.
+  // A period lists every job card opened in it (closed ones too); "All time" the open ones.
+  const pf = usePeriodFilter({ kind: "year", year: new Date().getFullYear(), month: new Date().getMonth() + 1 });
+  const fromDay = pf.from ? pf.from.format("YYYY-MM-DD") : "";
+  const toDay = pf.to ? pf.to.format("YYYY-MM-DD") : "";
   const [editing, setEditing] = useState(null);
   const title = lab === "ts2" ? "TS2 Job Card Allocation" : "TS1 Job Card Allocation";
 
   const load = useCallback(() => {
     setLoading(true);
     axios
-      .get(`${serverBaseAddress}/api/jc-allocation/${lab}/board`)
+      .get(`${serverBaseAddress}/api/jc-allocation/${lab}/board`, { params: { from: fromDay || undefined, to: toDay || undefined } })
       .then((b) => {
         setData(b.data);
         setError("");
       })
       .catch((e) => setError(e.response?.data?.message || "Could not load the allocation"))
       .finally(() => setLoading(false));
-  }, [lab]);
+  }, [lab, fromDay, toDay]);
   useEffect(load, [load]);
 
   const open = (r) =>
@@ -341,10 +345,16 @@ export default function JCAllocation({ lab = "ts1" }) {
       <Paper variant="outlined" sx={{ p: 1.5 }}>
           <Box mb={1.5}>
             <TablePeriodFilter pf={pf} dateLabel="JC open date" searchPlaceholder="JC, customer, owner, status…" />
+            <Typography variant="caption" color="text.secondary" component="div" sx={{ mt: 0.5 }}>
+              {fromDay || toDay
+                ? "Every job card opened in this period, closed ones too - newest first."
+                : "All time: the job cards not closed yet - newest first."}{" "}
+              The tiles and the team list always show today's open job cards.
+            </Typography>
           </Box>
           <Stack mb={1} direction="row" gap={1} alignItems="center" flexWrap="wrap">
             {[
-              ["all", `All open · ${inView.length}`],
+              ["all", `${fromDay || toDay ? `All opened in ${pf.label}` : "All open"} · ${inView.length}`],
               ["mine", `Assigned to me · ${mineCount}`],
               ["unassigned", `No owner · ${unassignedCount}`],
             ].map(([v, label]) => (

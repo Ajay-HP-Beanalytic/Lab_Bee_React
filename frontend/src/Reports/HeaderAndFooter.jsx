@@ -50,7 +50,7 @@ const headerCell = (children, width, rowSpan) =>
     ...(rowSpan ? { rowSpan } : {}),
     verticalAlign: VerticalAlign.CENTER,
     margins: rowSpan ? { top: 0, bottom: 0, left: 40, right: 40 } : { top: 10, bottom: 10, left: 40, right: 40 },
-    children: Array.isArray(children) ? children : [new Paragraph({ alignment: AlignmentType.CENTER, children })],
+    children, // paragraphs
   });
 
 const headerLine = (children) => new Paragraph({ alignment: AlignmentType.CENTER, spacing: { before: 0, after: 0 }, children });
@@ -85,7 +85,9 @@ export const createHeader = (isNABL, beaLogoBase64, testCode = "", testReportNum
     alignment: AlignmentType.CENTER,
     rows: [
       new TableRow({
-        children: [headerCell(logo, left, 3), headerCell([headerLine([run("TEST REPORT", "000000", true)])], middle), headerCell(nablMarker, right, 3)],
+        // logo and NABL mark are runs: each goes in a paragraph (a run straight in a cell is
+        // invalid Word XML - Word refuses to open the file, though the preview shows it)
+        children: [headerCell([headerLine(logo)], left, 3), headerCell([headerLine([run("TEST REPORT", "000000", true)])], middle), headerCell([headerLine(nablMarker)], right, 3)],
       }),
       new TableRow({ children: [headerCell([headerLine([run(`TEST CODE: ${testCode}`, "0070C0")])], middle)] }),
       new TableRow({ children: [headerCell(reportLines, middle)] }),

@@ -38,6 +38,7 @@ import CloseIcon from "@mui/icons-material/Close";
 import DeleteIcon from "@mui/icons-material/Delete";
 import FileDownloadIcon from "@mui/icons-material/FileDownload";
 import { serverBaseAddress } from "../../Pages/APIPage";
+import TablePeriodFilter, { usePeriodFilter } from "../../common/TablePeriodFilter";
 import SparesTab from "./SparesTab";
 import BreakdownDashboard from "./BreakdownDashboard";
 import { usePaged } from "../Dashboards/dashboardParts";
@@ -126,10 +127,30 @@ function BreakdownDialog({ initial, meta, spares, onClose, onSaved }) {
             <Autocomplete
               freeSolo
               size="small"
+              // open job cards, newest opened first, under a month heading ("Nov 2026")
               options={meta.jobcards}
+              groupBy={(o) => (o.opened ? dayjs(o.opened).format("MMM YYYY") : "Open date not set")}
+              getOptionLabel={(o) => (typeof o === "string" ? o : o.jc)}
+              isOptionEqualToValue={(o, v) => o.jc === (typeof v === "string" ? v : v?.jc)}
+              filterOptions={(opts, { inputValue }) => {
+                const q = inputValue.trim().toLowerCase();
+                return q ? opts.filter((o) => `${o.jc} ${o.company}`.toLowerCase().includes(q)) : opts;
+              }}
+              renderOption={(props, o) => (
+                <li {...props} key={o.jc}>
+                  <Box>
+                    <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                      {o.jc}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {[o.company, o.status, o.opened && `opened ${dayjs(o.opened).format("DD MMM YYYY")}`].filter(Boolean).join(" · ")}
+                    </Typography>
+                  </Box>
+                </li>
+              )}
               value={f.jc_number || ""}
               onInputChange={(_, v) => setF((x) => ({ ...x, jc_number: v }))}
-              renderInput={(p) => <TextField {...p} label="Job card affected (if any)" />}
+              renderInput={(p) => <TextField {...p} label="Job card affected (if any)" helperText="Type the JC number or company" />}
             />
           </Grid>
           <Grid item xs={12} sm={4}>
@@ -327,7 +348,8 @@ export default function ChamberBreakdowns() {
   const [error, setError] = useState("");
   const [editing, setEditing] = useState(null);
   const [status, setStatus] = useState("active");
-  const [search, setSearch] = useState("");
+  // period (breakdown date), year, month, date range and search
+  const pf = usePeriodFilter();
   const chamberId = Number(params.get("chamber")) || "";
 
   const load = useCallback(() => {
@@ -346,7 +368,8 @@ export default function ChamberBreakdowns() {
     if (chamberId && b.chamber_id !== chamberId) return false;
     if (status === "active" && b.status === "closed") return false;
     if (status !== "active" && status !== "all" && b.status !== status) return false;
-    return !search || [b.chamber_name, b.chamber_code, b.symptom, b.category, b.root_cause, b.jc_number, ...b.parts.map((p) => p.part_name)].some((v) => String(v || "").toLowerCase().includes(search.toLowerCase()));
+    if (!pf.inPeriod(b.failed_at)) return false;
+    return pf.matches([b.chamber_name, b.chamber_code, b.symptom, b.category, b.root_cause, b.jc_number, ...b.parts.map((p) => p.part_name)]);
   });
 
   const { pageRows, pager } = usePaged(shown, 25);
@@ -397,11 +420,15 @@ export default function ChamberBreakdowns() {
       <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 2, borderBottom: 1, borderColor: "divider" }}>
         <Tab value="breakdowns" label={`Breakdowns (${rows.filter((b) => b.status !== "closed").length} open)`} />
         <Tab value="spares" label={`Spare parts (${spares.length})`} />
-        <Tab value="dashboard" label="Dashboard" />
+        {/* the dashboard is for Administration only (the server checks this too) */}
+        {meta.me.isAdmin && <Tab value="dashboard" label="Dashboard" />}
       </Tabs>
 
       {tab === "breakdowns" && (
         <>
+          <Box mb={1}>
+            <TablePeriodFilter pf={pf} dateLabel="breakdown date" searchPlaceholder="Chamber, symptom, cause, JC, part…" />
+          </Box>
           <Stack direction="row" gap={1} flexWrap="wrap" alignItems="center" mb={1.5}>
             <TextField select size="small" label="Show" value={status} onChange={(e) => setStatus(e.target.value)} sx={{ minWidth: 170 }}>
               <MenuItem value="active">Not closed</MenuItem>
@@ -412,7 +439,6 @@ export default function ChamberBreakdowns() {
                 </MenuItem>
               ))}
             </TextField>
-            <TextField size="small" label="Search" value={search} onChange={(e) => setSearch(e.target.value)} sx={{ minWidth: 240 }} />
             {chamber && <Chip label={`Chamber: ${chamber.chamber_name}`} onDelete={() => setParams({})} />}
           </Stack>
           {shown.length === 0 ? (
@@ -463,7 +489,7 @@ export default function ChamberBreakdowns() {
         </>
       )}
       {tab === "spares" && <SparesTab spares={spares} meta={meta} onChanged={load} />}
-      {tab === "dashboard" && <BreakdownDashboard />}
+      {tab === "dashboard" && meta.me.isAdmin && <BreakdownDashboard />}
 
       {editing && (
         <BreakdownDialog

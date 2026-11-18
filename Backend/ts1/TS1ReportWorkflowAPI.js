@@ -806,9 +806,9 @@ async function noteDraftFor(
 }
 
 /**
- * Every draft needs a report number, and a NABL report its ULR number too: the ones given now,
- * else (an uploaded Word version, not strict) the ones recorded for this report earlier.
- * Throws 400 with what is missing.
+ * Every draft needs its report number: the one given now, else (an uploaded Word version, not
+ * strict) the one recorded for this report earlier. The ULR number is optional on a draft - only
+ * the final NABL report must have it (makeFinal). Throws 400 when the number is missing.
  */
 async function requireDraftNumbers(
   testDetailId,
@@ -826,16 +826,10 @@ async function requireDraftNumbers(
     w?.report_number ||
     reg?.report_number ||
     "";
-  const type = reportType || w?.report_type || reg?.report_type || null;
-  const ulr = String(ulrNumber || "").trim() || reg?.ulr_number || "";
-  const missing = [
-    !number && "the report number",
-    type === "NABL" && !ulr && "the ULR number (NABL report)",
-  ].filter(Boolean);
-  if (missing.length) {
+  if (!number) {
     throw fail(
       400,
-      `A draft can't be saved without ${missing.join(" and ")}. Generate the draft from the report builder with ${missing.length > 1 ? "them" : "it"} filled in.`,
+      "A draft can't be saved without the report number. Generate the draft from the report builder with it filled in.",
     );
   }
 }
@@ -1300,11 +1294,14 @@ async function makeFinal(req) {
       400,
       "The report number is not known. Generate the draft with its report number first.",
     );
-  if (nums.reportType === "NABL" && !nums.ulrNumber)
-    throw fail(
-      400,
-      "The ULR number is not known. Generate the draft with its ULR number first.",
-    );
+  // A draft may go out without its ULR; the final NABL report must have it (typed in now if
+  // the draft had none)
+  const ulrNumber =
+    nums.reportType === "NABL"
+      ? String(b.ulrNumber || "").trim().slice(0, 255) || nums.ulrNumber || ""
+      : nums.ulrNumber || "";
+  if (nums.reportType === "NABL" && !ulrNumber)
+    throw fail(400, "Enter the ULR number: a final NABL report needs it.");
 
   const fileId = parseInt(b.fileId);
   const [src] = fileId
@@ -1356,6 +1353,7 @@ async function makeFinal(req) {
       signers,
       nablMark,
       docControl: (await getSettings()).docControl,
+      ulrNumber: nums.reportType === "NABL" ? ulrNumber : "",
     });
   } catch (err) {
     console.error("[final report] could not finalize:", err.message);
@@ -1375,7 +1373,7 @@ async function makeFinal(req) {
   const from = `${KINDS[src.kind]} v${src.version}`;
   const meta = {
     reportNumber: nums.reportNumber,
-    ulrNumber: nums.ulrNumber,
+    ulrNumber: ulrNumber || null,
     reportType: nums.reportType,
     issueDate,
     version: v,

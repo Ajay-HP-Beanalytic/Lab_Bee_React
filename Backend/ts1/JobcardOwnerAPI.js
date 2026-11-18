@@ -11,7 +11,7 @@
 const dayjs = require("dayjs");
 const { db } = require("../db");
 const { accessOf } = require("../access/accessControl");
-const { checkCanEdit, fail } = require("./jobcardRows");
+const { canReopenClosed, fail } = require("./jobcardRows");
 const { notifyPeople } = require("../FeasibilityAutomation/enquiry/notify");
 
 const query = (sql, params) => db.promise().query(sql, params).then(([rows]) => rows);
@@ -152,7 +152,10 @@ async function setOwner(req) {
     [jcNumber],
   );
   if (!jc) throw fail(404, `Job card ${jcNumber} not found`);
-  if (lab === LABS.ts1) checkCanEdit({ jc_status: jc.status }, me); // closed: only the Lab Manager or Administration
+  // owners of a closed job card: only the Lab Manager or Administration
+  if (lab === LABS.ts1 && ["Closed", "Close"].includes(jc.status) && !canReopenClosed(me)) {
+    throw fail(403, "This job card is closed. Only the Lab Manager or Administration can change its owners.");
+  }
 
   const owner = String(req.body?.owner || "").trim();
   const support = [...new Set((Array.isArray(req.body?.supportStaff) ? req.body.supportStaff : []).map((n) => String(n || "").trim()).filter(Boolean))]
@@ -237,13 +240,29 @@ async function board(req) {
   const t = lab.tests;
   const now = dayjs();
 
-  const jobcards = await query(
-    `SELECT ${c.id} AS id, ${c.number} AS jcNumber, ${c.company} AS company, ${c.customer} AS customer, ${c.email} AS email,
+  const cols = `${c.id} AS id, ${c.number} AS jcNumber, ${c.company} AS company, ${c.customer} AS customer, ${c.email} AS email,
             ${c.phone} AS phone, ${c.status} AS status, ${c.openDate} AS openDate, ${c.owner} AS owner, ${c.support} AS support,
-            ${c.assignedBy} AS assignedBy, ${c.assignedAt} AS assignedAt
-     FROM ${c.table} WHERE ${c.where} AND (${c.status} IS NULL OR ${c.status} NOT IN (?))`,
+            ${c.assignedBy} AS assignedBy, ${c.assignedAt} AS assignedAt`;
+  // The open job cards: the workload (tiles, who is free / testing)
+  const openJobcards = await query(
+    `SELECT ${cols} FROM ${c.table} WHERE ${c.where} AND (${c.status} IS NULL OR ${c.status} NOT IN (?))`,
     [CLOSED],
   );
+  // A period picked on the page (?from=YYYY-MM-DD&to=YYYY-MM-DD, by JC open date): the table
+  // lists every job card opened in it, closed ones too. Without one: the open job cards.
+  const day = (v) => (/^\d{4}-\d{2}-\d{2}$/.test(String(v || "")) && dayjs(v).isValid() ? String(v) : null);
+  const from = day(req.query.from);
+  const to = day(req.query.to);
+  const periodJobcards =
+    from || to
+      ? await query(
+          `SELECT ${cols} FROM ${c.table}
+           WHERE ${c.where} AND ${c.openDate} IS NOT NULL ${from ? `AND DATE(${c.openDate}) >= ?` : ""} ${to ? `AND DATE(${c.openDate}) <= ?` : ""}`,
+          [from, to].filter(Boolean),
+        )
+      : null;
+  const listed = periodJobcards || openJobcards;
+  const jobcards = [...new Map([...openJobcards, ...listed].map((j) => [j.jcNumber, j])).values()];
   const numbers = jobcards.map((j) => j.jcNumber);
   const tests = numbers.length
     ? await query(
@@ -258,7 +277,7 @@ async function board(req) {
 
   const ended = (x) => x.endDate && !dayjs(x.endDate).isAfter(now);
   const running = (x) => x.startDate && !dayjs(x.startDate).isAfter(now) && !ended(x);
-  const rows = jobcards.map((j) => {
+  const allRows = jobcards.map((j) => {
     const list = byJc.get(j.jcNumber) || [];
     const done = list.filter(ended).length;
     return {
@@ -283,8 +302,12 @@ async function board(req) {
       // tests started / ended without the NAS upload confirmed (TS1)
       nasPending: t.nas ? list.filter((x) => (x.startDate && x.photosOnNas !== "Yes") || (ended(x) && x.graphsOnNas !== "Yes")).length : 0,
       readyToClose: list.length > 0 && done === list.length,
+      closed: CLOSED.includes(j.status),
     };
   });
+  const listedNumbers = new Set(listed.map((j) => j.jcNumber));
+  const tableRows = allRows.filter((r) => listedNumbers.has(r.jcNumber));
+  const rows = allRows.filter((r) => !r.closed); // the workload: open job cards only
 
   // Who is working: running tests they started or on job cards they own / support
   const people = (await labPeople(lab)).map((p) => {
@@ -328,7 +351,13 @@ async function board(req) {
       my_nas_pending: mine.reduce((s, r) => s + r.nasPending, 0),
     },
     people,
-    jobcards: rows.sort((a, b) => (b.days ?? 0) - (a.days ?? 0)),
+    // newest opened first, then by JC number (newest number first)
+    period: { from, to },
+    jobcards: tableRows.sort(
+      (a, b) =>
+        (b.openDate ? dayjs(b.openDate).valueOf() : 0) - (a.openDate ? dayjs(a.openDate).valueOf() : 0) ||
+        String(b.jcNumber).localeCompare(String(a.jcNumber), undefined, { numeric: true }),
+    ),
   };
 }
 

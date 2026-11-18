@@ -119,9 +119,10 @@ class Part {
  * @param {Array<{slot, name, designation, image?: {data: Buffer, ext: "png"|"jpeg"}}>} o.signers
  * @param {{data: Buffer, ext}} [o.nablMark] - only for NABL reports
  * @param {{formNo, issueNo, issueDate, revNo, revDate}} [o.docControl] - the footer box as it stands today
+ * @param {string} [o.ulrNumber] - NABL: the ULR printed in the header (a draft may have gone out without it)
  * @returns {Promise<{ buffer: Buffer, warnings: string[] }>}
  */
-async function finalizeReport(buffer, { issueDateText, version = 1, signers = [], nablMark = null, docControl = null }) {
+async function finalizeReport(buffer, { issueDateText, version = 1, signers = [], nablMark = null, docControl = null, ulrNumber = "" }) {
   const zip = await JSZip.loadAsync(buffer);
   const names = Object.keys(zip.files).filter((n) => /^word\/(document|header\d*|footer\d*)\.xml$/.test(n));
   const parts = [];
@@ -244,6 +245,29 @@ async function finalizeReport(buffer, { issueDateText, version = 1, signers = []
     part.replace(p, withRuns(p, mark ? await addImage(part, mark, NABL_MARK_BOX.w, NABL_MARK_BOX.h) : ""));
   }
   if (nablMark && !nablSpots.length) warnings.push("No place for the NABL mark was found in the header - add it by hand");
+
+  // 3b. ULR number in the header (NABL): the ULR line set to it, or added under the report
+  // number line when the draft went out without a ULR
+  const ulr = String(ulrNumber || "").trim();
+  if (ulr) {
+    const ulrText = `ULR NO: ${ulr.toUpperCase()}`;
+    let done = 0;
+    for (const part of parts.filter((x) => x.name.startsWith("word/header"))) {
+      const ps = part.paragraphs();
+      const ulrLine = ps.find((p) => /^\s*ULR(\s*NO)?\s*:/i.test(textOf(p)));
+      if (ulrLine) {
+        part.replace(ulrLine, withText(ulrLine, ulrText));
+        done += 1;
+        continue;
+      }
+      const numberLine = ps.find((p) => /^\s*TEST REPORT NO\s*:/i.test(textOf(p)));
+      if (numberLine) {
+        part.replace(numberLine, numberLine + withText(numberLine, ulrText));
+        done += 1;
+      }
+    }
+    if (!done) warnings.push(`No place for the ULR number was found in the header - add "${ulrText}" by hand`);
+  }
 
   // 4. Signatures, names, designations
   for (const slot of SLOTS) {

@@ -352,15 +352,34 @@ async function meta(req) {
   const me = await who(req);
   const [chambers, jobcards] = await Promise.all([
     query("SELECT id, chamber_name, chamber_id, chamber_status FROM chamber_calibration ORDER BY chamber_name"),
-    query("SELECT jc_number FROM bea_jobcards WHERE jc_category = 'TS1' AND (jc_status IS NULL OR jc_status NOT IN ('Close', 'Closed')) ORDER BY id DESC LIMIT 300"),
+    // Job cards a breakdown can hit: the ones not closed yet, newest opened first (the form
+    // groups them by month of opening and shows the company, so the list reads in order)
+    query(
+      `SELECT jc_number, company_name, jc_status, DATE_FORMAT(jc_open_date, '%Y-%m-%d') AS opened
+       FROM bea_jobcards
+       WHERE jc_category = 'TS1' AND (jc_status IS NULL OR jc_status NOT IN ('Close', 'Closed'))
+       ORDER BY jc_open_date IS NULL, jc_open_date DESC, jc_number DESC
+       LIMIT 500`
+    ),
   ]);
-  return { chambers, jobcards: jobcards.map((j) => j.jc_number), categories: CATEGORIES, statuses: STATUSES, partActions: PART_ACTIONS, me };
+  return {
+    chambers,
+    jobcards: jobcards.map((j) => ({ jc: j.jc_number, company: j.company_name || "", status: j.jc_status || "Open", opened: j.opened })),
+    categories: CATEGORIES,
+    statuses: STATUSES,
+    partActions: PART_ACTIONS,
+    me,
+  };
 }
 
 // ---- Spare parts ----------------------------------------------------------------------------
 
 async function loadSpares(me, { all = false } = {}) {
-  const rows = await query(`SELECT * FROM ts1_spare_parts ${all ? "" : "WHERE is_active = 1"} ORDER BY part_name`);
+  // last_move_at: the last stock movement (received / used / returned), for the period filter
+  const rows = await query(
+    `SELECT p.*, (SELECT MAX(m.done_at) FROM ts1_spare_stock_moves m WHERE m.spare_id = p.id) AS last_move_at
+     FROM ts1_spare_parts p ${all ? "" : "WHERE p.is_active = 1"} ORDER BY p.part_name`,
+  );
   const fits = await query(
     `SELECT f.spare_id, c.id, c.chamber_name, c.chamber_id FROM ts1_spare_part_chambers f JOIN chamber_calibration c ON c.id = f.chamber_id`,
   );
@@ -528,6 +547,7 @@ const suggestedMin = (usedPerYear, leadDays) => Math.ceil((usedPerYear / 365) * 
 
 async function dashboard(req) {
   const me = await who(req);
+  if (!me.isAdmin) throw fail(403, "The breakdown dashboard is for Administration only");
   const days = Math.min(Math.max(parseInt(req.query.days) || 30, 1), 1500);
   const now = dayjs();
   const since = now.subtract(days, "day").startOf("day");

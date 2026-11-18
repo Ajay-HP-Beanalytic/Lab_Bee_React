@@ -32,6 +32,90 @@ import EmptyCard from "../common/EmptyCard";
 import { DataGrid } from "@mui/x-data-grid";
 import CustomerLogoPicker, { customerLogoUrl } from "../common/CustomerLogoPicker";
 
+// The logo in the add / edit form: picked, dropped or pasted, shown as a preview, and saved
+// right after the customer is saved (a new customer has no id before that)
+const LOGO_TYPES = ["image/png", "image/jpeg", "image/gif"];
+function FormLogoField({ file, onFile, currentUrl }) {
+  const inputRef = useRef(null);
+  const [error, setError] = useState("");
+  const [preview, setPreview] = useState("");
+  useEffect(() => {
+    if (!file) return setPreview("");
+    const url = URL.createObjectURL(file);
+    setPreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [file]);
+  const pick = (f) => {
+    setError("");
+    if (!f) return;
+    if (!LOGO_TYPES.includes(f.type)) return setError("Use a PNG, JPG or GIF image");
+    if (f.size > 2 * 1024 * 1024) return setError("The logo must be smaller than 2 MB");
+    onFile(f);
+  };
+  const shown = preview || currentUrl;
+  return (
+    <Box
+      tabIndex={0}
+      onPaste={(e) => {
+        const item = [...(e.clipboardData?.items || [])].find((i) => i.type.startsWith("image/"));
+        if (item) {
+          e.preventDefault();
+          pick(item.getAsFile());
+        }
+      }}
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={(e) => {
+        e.preventDefault();
+        pick(e.dataTransfer.files[0]);
+      }}
+      sx={{ ml: "10px", mt: 2, p: 1.5, border: "1px dashed #b0bec5", borderRadius: 2, display: "flex", alignItems: "center", gap: 2 }}
+    >
+      <Box sx={{ width: 72, height: 72, display: "flex", alignItems: "center", justifyContent: "center", bgcolor: "#f5f7fa", borderRadius: 1 }}>
+        {shown ? (
+          <img src={shown} alt="logo" style={{ maxWidth: 68, maxHeight: 68, objectFit: "contain" }} />
+        ) : (
+          <Typography variant="caption" color="text.secondary">
+            No logo
+          </Typography>
+        )}
+      </Box>
+      <Box sx={{ flex: 1 }}>
+        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+          Company logo (optional)
+        </Typography>
+        <Typography variant="caption" color="text.secondary" component="div">
+          PNG, JPG or GIF, up to 2 MB. Choose a file, drop it here or paste it (Ctrl+V). Used on the quotation.
+        </Typography>
+        <Box sx={{ mt: 0.5, display: "flex", gap: 1 }}>
+          <Button size="small" variant="outlined" onClick={() => inputRef.current?.click()}>
+            {shown ? "Change logo" : "Choose logo"}
+          </Button>
+          {file && (
+            <Button size="small" color="inherit" onClick={() => onFile(null)}>
+              Undo
+            </Button>
+          )}
+        </Box>
+        {error && (
+          <Typography variant="caption" color="error">
+            {error}
+          </Typography>
+        )}
+        <input
+          ref={inputRef}
+          type="file"
+          accept={LOGO_TYPES.join(",")}
+          hidden
+          onChange={(e) => {
+            pick(e.target.files?.[0]);
+            e.target.value = "";
+          }}
+        />
+      </Box>
+    </Box>
+  );
+}
+
 export default function AddCustomerDetails() {
   const [companyName, setCompanyName] = useState("");
   const [toCompanyAddress, setToCompanyAddress] = useState("");
@@ -48,6 +132,7 @@ export default function AddCustomerDetails() {
   const fileInputRef = useRef(null); // Declare fileInputRef
   const [refresh, setRefresh] = useState(false);
   const [editId, setEditId] = useState("");
+  const [logoFile, setLogoFile] = useState(null); // a logo picked in the form, saved with it
   const [excelDataAdded, setExcelDataAdded] = useState(false);
 
   const [filteredCompaniesList, setFilteredCompaniesList] =
@@ -105,6 +190,18 @@ export default function AddCustomerDetails() {
       );
 
       if (addCompanyDetilsRequest.status === 200) {
+        // the logo picked in the form: saved against the customer just saved
+        const savedId = editId || addCompanyDetilsRequest.data?.id;
+        if (logoFile && savedId) {
+          const form = new FormData();
+          form.append("logo", logoFile, logoFile.name || "logo.png");
+          try {
+            await axios.put(`${serverBaseAddress}/api/customer_logo/${savedId}`, form);
+            loadLogos();
+          } catch (logoError) {
+            toast.warning(`Customer saved, but the logo could not be saved: ${logoError.response?.data?.error || "try again from the Logo column"}`);
+          }
+        }
         toast.success("Company data added succesfully");
         setRefresh(!refresh);
       } else {
@@ -147,6 +244,7 @@ export default function AddCustomerDetails() {
     setCustomerId("");
     setCustomerreferance("");
     setEditId("");
+    setLogoFile(null);
     setEditFields(true);
     setEditCustomerDetailsFields(false);
   }
@@ -589,6 +687,12 @@ export default function AddCustomerDetails() {
                 fullWidth
                 variant="outlined"
                 autoComplete="on"
+              />
+
+              <FormLogoField
+                file={logoFile}
+                onFile={setLogoFile}
+                currentUrl={editId && logos[editId] ? customerLogoUrl(editId, logos[editId]) : ""}
               />
             </DialogContent>
 

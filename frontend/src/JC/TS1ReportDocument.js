@@ -105,11 +105,21 @@ export const prepareReportData = (comprehensiveData) => {
     .filter((s) => s.length > 0); // Remove empty strings
 
   // Filter and format EUT rows that match the current test's serial number(s)
-  const currentTestEutRows = (comprehensiveData.eutRows || [])
+  const eutOf = (row, index) => ({
+    slNo: index + 1,
+    nomenclature: row.nomenclature || "",
+    qty: row.qty || "",
+    partNo: row.partNo || "",
+    modelNo: row.modelNo || "",
+    serialNo: row.serialNo || "",
+  });
+  const matchedEutRows = (comprehensiveData.eutRows || [])
     .filter((row) => !row.temporary) // Filter out temporary rows
     .filter((row) => {
       // Check if this EUT's serial number matches any of the current test's serial numbers
+      // (an EUT without a serial number matches nothing - "" is part of every text)
       const rowSerialNo = (row.serialNo || "").trim();
+      if (!rowSerialNo) return false;
       return currentTestSerialNumbers.some(
         (testSerial) =>
           rowSerialNo === testSerial ||
@@ -117,14 +127,11 @@ export const prepareReportData = (comprehensiveData) => {
           testSerial.includes(rowSerialNo)
       );
     })
-    .map((row, index) => ({
-      slNo: index + 1,
-      nomenclature: row.nomenclature || "",
-      qty: row.qty || "",
-      partNo: row.partNo || "",
-      modelNo: row.modelNo || "",
-      serialNo: row.serialNo || "",
-    }));
+    .map(eutOf);
+  // No serial number matched (e.g. "As attached" or left blank): all the job card's EUTs, so the
+  // report is never without them; the report builder says so, and they can be removed there
+  const currentTestEutRows = matchedEutRows.length ? matchedEutRows : formattedEutRows;
+  const eutMatch = matchedEutRows.length ? "serial" : formattedEutRows.length ? "all" : "none";
 
   // Format Test rows for table loop
   const formattedTestRows = (comprehensiveData.testRows || [])
@@ -136,6 +143,25 @@ export const prepareReportData = (comprehensiveData) => {
       testStandard: row.testStandard || "",
       testProfile: row.testProfile || "",
     }));
+
+  // A test's profile comes from the job card's Test details (step 1: test, standard, profile):
+  // the row with the same standard, else the same test name, else the only row there is
+  const normText = (v) => String(v || "").toLowerCase().replace(/\s+/g, " ").trim();
+  const profileRows = formattedTestRows.filter((r) => String(r.testProfile).trim());
+  const profileOf = (t = {}) => {
+    if (t.testProfile) return t.testProfile;
+    const std = normText(t.standard);
+    const name = normText(t.testName);
+    const hit =
+      (std && profileRows.find((r) => normText(r.testStandard) === std)) ||
+      (name &&
+        profileRows.find((r) => {
+          const x = normText(r.test);
+          return x && (x === name || x.includes(name) || name.includes(x));
+        })) ||
+      (formattedTestRows.length === 1 ? profileRows[0] : null);
+    return hit ? hit.testProfile : "";
+  };
 
   // Format Test Details rows for table loop
   const formattedTestDetailsRows = (comprehensiveData.testDetailsRows || [])
@@ -237,6 +263,7 @@ export const prepareReportData = (comprehensiveData) => {
 
     // Filtered EUT rows for current test only
     currentTestEutRows: currentTestEutRows, // Only EUTs used in this specific test
+    eutMatch, // "serial": matched by the test's EUT serial no.; "all": none matched, all EUTs; "none"
 
     // Tests listed in the report's test table (one for a single test, all for ESS)
     reportTests: reportTests.map((t) => ({
@@ -245,6 +272,7 @@ export const prepareReportData = (comprehensiveData) => {
       testChamber: t.testChamber || "",
       eutSerialNo: t.eutSerialNo || "",
       standard: t.standard || "",
+      testProfile: profileOf(t),
       remarks: t.remarks || "",
       testCategory: t.testCategory || "",
       // total duration for Table 02 (the actual duration, else the planned one)
@@ -252,11 +280,11 @@ export const prepareReportData = (comprehensiveData) => {
     })),
 
     // The same rows unformatted (test data page of an ESS sub-test)
-    reportTestRows: reportTests,
+    reportTestRows: reportTests.map((t) => ({ ...t, testProfile: profileOf(t) })),
 
     // ============= Current Test Row (the specific test for this report) =============
     // Store original currentTestRow for direct access
-    currentTestRow: currentTest,
+    currentTestRow: { ...currentTest, testProfile: profileOf(currentTest) },
 
     // Programmatically generate currentTest_* fields with "currentTest_" prefix
     // This allows template-based access while keeping code maintainable

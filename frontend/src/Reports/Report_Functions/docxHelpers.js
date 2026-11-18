@@ -151,7 +151,7 @@ export const createTableCell = (content, options = {}) => {
   if (options.width) {
     cellConfig.width = {
       size: options.width,
-      type: WidthType.PERCENTAGE,
+      type: options.widthType || WidthType.PERCENTAGE,
     };
   }
 
@@ -263,9 +263,10 @@ export const createDataTable = (rows, options = {}) => {
   return new Table({
     width: {
       size: options.width || 100,
-      type: WidthType.PERCENTAGE,
+      type: options.widthType || WidthType.PERCENTAGE,
     },
     ...(options.columnWidths ? { columnWidths: options.columnWidths } : {}),
+    ...(options.layout ? { layout: options.layout } : {}),
     ...(options.float ? { float: options.float } : {}),
     borders: options.borders || {
       top: { style: BorderStyle.SINGLE, size: 1, color: "000000" },

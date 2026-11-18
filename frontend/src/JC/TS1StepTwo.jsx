@@ -31,11 +31,27 @@ export default function TS1StepTwo() {
   const testCategoriesOptions = jobcardStore.getTestCategoriesAsOptions();
   const usersOptions = jobcardStore.getUsersAsOptions();
 
+  // From this job card's step 1: the EUT serial numbers (all of them together as the
+  // first choice when there are several) and the test standards; typing stays allowed
+  const uniq = (list) => [...new Set(list.map((v) => String(v || "").trim()).filter(Boolean))];
+  const eutSerialOptions = useMemo(() => {
+    const serials = uniq((jobcardStore.eutRows || []).filter((r) => !r.temporary).map((r) => r.serialNo));
+    return serials.length > 1 ? [serials.join(", "), ...serials] : serials;
+  }, [jobcardStore.eutRows]);
+  const standardOptions = useMemo(
+    () => uniq((jobcardStore.testRows || []).filter((r) => !r.temporary).map((r) => r.testStandard)),
+    [jobcardStore.testRows],
+  );
+
   // Update columns with dynamic options based on row data
   const getColumnOptions = (column, row) => {
     const selectedCategory = row?.testCategory;
 
-    if (column.id === "testCategory") {
+    if (column.id === "eutSerialNo") {
+      return eutSerialOptions;
+    } else if (column.id === "standard") {
+      return standardOptions;
+    } else if (column.id === "testCategory") {
       return testCategoriesOptions;
     } else if (column.id === "testName") {
       // Filter test names based on selected category
