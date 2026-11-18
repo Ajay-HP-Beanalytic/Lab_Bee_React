@@ -125,14 +125,16 @@ export const TEST_PERFORMED_TABLE_COLUMNS = [
   {
     id: "eutSerialNo",
     label: "EUT S.No",
-    type: "textField",
+    type: "autocomplete", // pick from the job card's EUT table, or type
+    options: [],
     width: "300px",
     align: "center",
   },
   {
     id: "standard",
     label: "Test Standard",
-    type: "textField",
+    type: "autocomplete", // pick from the job card's Test details, or type
+    options: [],
     width: "300px",
     align: "center",
     standardLookup: true,
@@ -195,8 +197,18 @@ export const TEST_PERFORMED_TABLE_COLUMNS = [
   },
   { id: "remarks", label: "Remarks", type: "textField", width: "250px" },
   // Confirmations that the test's files are on the BEA NAS network
-  { id: "photosOnNas", label: "Photos on BEA NAS? (Test started by)", type: "yesNo", width: "170px" },
-  { id: "graphsOnNas", label: "Graphs on BEA NAS? (Test ended by)", type: "yesNo", width: "170px" },
+  {
+    id: "photosOnNas",
+    label: "Test Photos on BEA NAS? (Test started by)",
+    type: "yesNo",
+    width: "170px",
+  },
+  {
+    id: "graphsOnNas",
+    label: "Test Graphs or Test End photos on BEA NAS? (Test ended by)",
+    type: "yesNo",
+    width: "170px",
+  },
   {
     id: "testReviewedBy",
     label: "Test Reviewed By",

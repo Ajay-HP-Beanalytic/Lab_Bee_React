@@ -36,7 +36,7 @@ function customerDetailsAPIs(app) {
         } else {
           res
             .status(200)
-            .json({ message: "Company details added successfully" });
+            .json({ message: "Company details added successfully", id: result.insertId });
         }
       }
     );

@@ -1,7 +1,14 @@
+import { useState } from "react";
 import {
   Alert,
   Box,
   Button,
+  Checkbox,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
+  FormControlLabel,
   Grid,
   IconButton,
   MenuItem,
@@ -16,6 +23,7 @@ import DeleteIcon from "@mui/icons-material/Delete";
 import ArrowUpwardIcon from "@mui/icons-material/ArrowUpward";
 import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
 import RestoreIcon from "@mui/icons-material/Restore";
+import PlaylistAddCheckIcon from "@mui/icons-material/PlaylistAddCheck";
 import { COLUMN_TEXT, FAMILIES, eutRowsOf, specsFor, withFamily } from "../../Reports/reportLayouts";
 import SectionCard from "./SectionCard";
 
@@ -67,6 +75,82 @@ const moved = (list, i, d) => {
   return next;
 };
 
+const eutKey = (e) => [e.nomenclature, e.partNo, e.modelNo, e.serialNo].map((x) => String(x || "").trim().toLowerCase()).join("|");
+
+/**
+ * Tick the job card's EUTs to list in Table 02 (in the job card's order). Rows typed in the
+ * builder that aren't job card EUTs stay, after them.
+ */
+function EutPicker({ open, onClose, allEuts, current, onApply }) {
+  const [picked, setPicked] = useState(() => new Set());
+  const keys = allEuts.map(eutKey);
+  const onEnter = () => {
+    const have = new Set(current.map(eutKey));
+    setPicked(new Set(keys.filter((k) => have.has(k))));
+  };
+  const toggle = (k) =>
+    setPicked((prev) => {
+      const next = new Set(prev);
+      next.has(k) ? next.delete(k) : next.add(k);
+      return next;
+    });
+  const allOn = keys.length > 0 && keys.every((k) => picked.has(k));
+  const apply = () => {
+    const fromJc = allEuts.filter((e) => picked.has(eutKey(e)));
+    const jcKeys = new Set(keys);
+    const typed = current.filter((e) => !jcKeys.has(eutKey(e)));
+    onApply([...fromJc, ...typed]);
+    onClose();
+  };
+  return (
+    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth TransitionProps={{ onEnter }}>
+      <DialogTitle>Pick the EUTs for this report</DialogTitle>
+      <DialogContent dividers>
+        {allEuts.length === 0 ? (
+          <Alert severity="warning">The job card has no EUT rows.</Alert>
+        ) : (
+          <>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={allOn}
+                  indeterminate={!allOn && picked.size > 0}
+                  onChange={() => setPicked(allOn ? new Set() : new Set(keys))}
+                />
+              }
+              label={<strong>All EUTs of the job card ({allEuts.length})</strong>}
+            />
+            {allEuts.map((e, i) => (
+              <Box key={i} sx={{ pl: 2 }}>
+                <FormControlLabel
+                  control={<Checkbox checked={picked.has(keys[i])} onChange={() => toggle(keys[i])} />}
+                  label={
+                    <Typography variant="body2">
+                      {i + 1}. {e.nomenclature || "(no description)"}
+                      <Typography component="span" variant="body2" color="text.secondary">
+                        {e.qty ? ` - Qty ${e.qty}` : ""}
+                        {e.partNo ? ` - P/N ${e.partNo}` : ""}
+                        {e.modelNo ? ` - Model ${e.modelNo}` : ""}
+                        {` - S/N ${e.serialNo || "none"}`}
+                      </Typography>
+                    </Typography>
+                  }
+                />
+              </Box>
+            ))}
+          </>
+        )}
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={onClose}>Cancel</Button>
+        <Button variant="contained" onClick={apply} disabled={allEuts.length === 0}>
+          Use {picked.size} EUT{picked.size === 1 ? "" : "s"}
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
 /**
  * What the report says (besides the job card data), each part in its own card: the layout family,
  * Table 02 (EUTs), Table 03 (one row per test or sub-test, e.g. IP6X and IPX8 of an IP68 test),
@@ -74,8 +158,10 @@ const moved = (list, i, d) => {
  *
  * value: { family, title, euts, rows: [{ testId, eutSerial, test, profile, medium, duration, observation, specs: {title, lines} }], notes, table3, graphNote }
  */
-export default function ReportContentStep({ value, onChange, eutRows = [] }) {
+export default function ReportContentStep({ value, onChange, eutRows = [], allEutRows = [], eutMatch = "serial" }) {
+  const [pickerOpen, setPickerOpen] = useState(false);
   if (!value) return null;
+  const allEuts = eutRowsOf(allEutRows.length ? allEutRows : eutRows);
   const family = FAMILIES[value.family] || FAMILIES.general;
   const columns = family.columns.filter((c) => c !== "chamber");
   const setRow = (i, patch) => onChange({ ...value, rows: value.rows.map((r, k) => (k === i ? { ...r, ...patch } : r)) });
@@ -145,13 +231,40 @@ export default function ReportContentStep({ value, onChange, eutRows = [] }) {
 
       <SectionCard
         title="Table 02 - EUT details"
-        subtitle="Filled from the job card. Add, change or remove rows for this report; the S. No. follows the order."
+        subtitle="Filled automatically with this test's EUTs (by the EUT serial no. in Tests performed). Pick others from the job card, or add, change or remove rows; the S. No. follows the order."
         action={
-          <Button size="small" startIcon={<RestoreIcon />} onClick={() => onChange({ ...value, euts: eutRowsOf(eutRows) })}>
-            Reload from the job card
-          </Button>
+          <Stack direction="row" spacing={1}>
+            <Tooltip title="Fill again with this test's EUTs, as matched from the job card">
+              <Button size="small" startIcon={<RestoreIcon />} onClick={() => onChange({ ...value, euts: eutRowsOf(eutRows) })}>
+                Reload from the job card
+              </Button>
+            </Tooltip>
+            <Tooltip title="Choose from all the EUTs in the job card">
+              <Button size="small" variant="outlined" startIcon={<PlaylistAddCheckIcon />} onClick={() => setPickerOpen(true)}>
+                Pick EUTs ({allEuts.length})
+              </Button>
+            </Tooltip>
+          </Stack>
         }
       >
+        <EutPicker
+          open={pickerOpen}
+          onClose={() => setPickerOpen(false)}
+          allEuts={allEuts}
+          current={euts}
+          onApply={(list) => onChange({ ...value, euts: list })}
+        />
+        {eutMatch === "all" && (
+          <Alert severity="info" sx={{ mb: 1 }}>
+            The test's EUT serial number (in Test details) didn't match any EUT of the job card, so all the job card's EUTs
+            are listed. Remove the ones not tested in this report.
+          </Alert>
+        )}
+        {eutMatch === "none" && euts.length === 0 && (
+          <Alert severity="warning" sx={{ mb: 1 }}>
+            The job card has no EUT rows. Add them in the job card (EUT details), or add rows here.
+          </Alert>
+        )}
         {euts.map((e, i) => (
           <Box key={i} sx={{ ...eutGrid, mb: 1 }}>
             <Typography variant="body2" color="text.secondary" align="center">

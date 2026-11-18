@@ -165,6 +165,13 @@ function MakeFinal({ report, disabled, reason, onDone }) {
   const [fileId, setFileId] = useState(latestDraft?.id || "");
   const [signers, setSigners] = useState({});
   const [issueDate, setIssueDate] = useState(dayjs().format("YYYY-MM-DD"));
+  // NABL: the draft may have gone out without its ULR; the final must have it
+  const isNabl = report.reportType === "NABL";
+  const [ulrNumber, setUlrNumber] = useState(report.ulrNumber || "");
+  const [ulrMissing, setUlrMissing] = useState(false);
+  useEffect(() => {
+    if (report.ulrNumber) setUlrNumber(report.ulrNumber);
+  }, [report.ulrNumber]);
   const [busy, setBusy] = useState(false);
   const [warnings, setWarnings] = useState([]);
 
@@ -192,13 +199,24 @@ function MakeFinal({ report, disabled, reason, onDone }) {
       toast.warning("Pick who signs the report");
       return;
     }
+    if (isNabl && !ulrNumber.trim()) {
+      setUlrMissing(true);
+      toast.warning("Enter the ULR number: a final NABL report needs it");
+      return;
+    }
     if (report.stage === "final_issued" && !reason.trim()) {
       toast.warning("Give the reason for re-issuing (below)");
       return;
     }
     setBusy(true);
     try {
-      const r = await makeFinalReport(report.testDetailId, { fileId, signers, issueDate, reason: reason.trim() || undefined });
+      const r = await makeFinalReport(report.testDetailId, {
+        fileId,
+        signers,
+        issueDate,
+        reason: reason.trim() || undefined,
+        ulrNumber: isNabl ? ulrNumber.trim() : undefined,
+      });
       setWarnings(r.warnings || []);
       toast.success(`Final Word v${r.version} made. Check it, save it as PDF in Word and upload the PDF.`, { autoClose: 8000 });
       await downloadReportFile({ id: r.fileId, fileName: r.fileName }).catch(() => {});
@@ -240,6 +258,23 @@ function MakeFinal({ report, disabled, reason, onDone }) {
             onChange={(e) => setIssueDate(e.target.value)}
           />
         </Grid>
+        {isNabl && (
+          <Grid item xs={12} sm={8}>
+            <TextField
+              fullWidth
+              size="small"
+              required
+              label="ULR number"
+              value={ulrNumber}
+              onChange={(e) => {
+                setUlrNumber(e.target.value);
+                setUlrMissing(false);
+              }}
+              error={ulrMissing}
+              helperText={ulrMissing ? "Needed for the final NABL report" : "Printed in the header of the final report"}
+            />
+          </Grid>
+        )}
         {SLOTS.map(([slot, label]) => {
           const p = people.find((x) => x.id === signers[slot]);
           return (
@@ -274,7 +309,7 @@ function MakeFinal({ report, disabled, reason, onDone }) {
       </Button>
       <Typography variant="caption" color="text.secondary" component="div" sx={{ mt: 0.5 }}>
         Takes the Word version as it is (photos, graphs and changes stay), removes the DRAFT watermark, puts in the final issue
-        date, the signatures{report.reportType === "NABL" ? " and the NABL mark" : ""}.
+        date, the signatures{isNabl ? ", the ULR number and the NABL mark" : ""}.
       </Typography>
       {warnings.length > 0 && (
         <Alert severity="warning" sx={{ mt: 1 }}>

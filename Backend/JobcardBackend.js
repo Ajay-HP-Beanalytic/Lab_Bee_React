@@ -7,9 +7,9 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 require("dotenv").config(); // Ensure .env is loaded
-const { saveRows, jobcardUser, checkCanEdit, canEditClosed } = require("./ts1/jobcardRows");
+const { saveRows, jobcardUser, checkCanEdit, canEditClosed, canReopenClosed } = require("./ts1/jobcardRows");
 
-// Attachments of a closed job card: only the Lab Manager or Administration may change them
+// Attachments of a closed job card: only those who may edit a closed job card (jobcardRows.js)
 async function closedJobcardBlocked(req, jcNumber) {
   const [[jc]] = await db.promise().query("SELECT jc_status FROM bea_jobcards WHERE jc_number = ?", [jcNumber]);
   if (!jc || !["Closed", "Close"].includes(jc.jc_status)) return false;
@@ -745,6 +745,9 @@ function jobcardsAPIs(app, io, labbeeUsers) {
         // back to Open / Running (from Test Completed, or reopened from Closed)
         uncompleting = isTS1 && !!jcStatus && jcStatus !== TC && !["Closed", "Close"].includes(jcStatus) && (current?.jc_status === TC || wasClosed);
         if (wasClosed) checkCanEdit(current, me); // same rule as the rows, before anything is saved
+        if (reopening && !canReopenClosed(me)) {
+          return res.status(403).json({ message: "Only the Lab Manager or Administration can reopen a closed job card." });
+        }
         if (completing || (uncompleting && !wasClosed)) {
           const open = await testsCompleteProblems(req, jcNumber, { back: uncompleting });
           if (open.length) {

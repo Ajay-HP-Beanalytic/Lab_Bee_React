@@ -42,6 +42,7 @@ import TS1JCStepThree from "./TS1StepThree";
 import SRFImportDialog from "../components/SRFImportDialog";
 import AuditHistoryDialog from "../components/AuditHistoryDialog";
 import ConfirmationDialog from "../common/ConfirmationDialog";
+import { canEditClosedJobcard } from "./jcPermissions";
 
 export const JC_STATUS_COLORS = {
   "Open": "warning",
@@ -272,8 +273,9 @@ const Jobcard = () => {
 
   const isAdmin = loggedInUserDepartment === "Administration";
   const canSeeDashboard = !!access?.isAdmin; // the JC Dashboard is for Administration only
-  // A closed job card opens read-only except for the Lab Manager and Administration (the server checks this too)
-  const canEditClosed = loggedInUserRole === "Lab Manager" || !!access?.isAdmin || isAdmin;
+  // A closed job card opens read-only except for Administration, the Lab Manager, Accounts,
+  // Reports and Quality (the server checks this too)
+  const canEditClosed = canEditClosedJobcard({ department: loggedInUserDepartment, role: loggedInUserRole, isAdmin: !!access?.isAdmin || isAdmin });
   const closedLocked = editJc && ["Closed", "Close"].includes(jcStatus) && !canEditClosed;
   const lastStep = activeStep === STEPS.length - 1;
 
@@ -376,7 +378,7 @@ const Jobcard = () => {
 
         {closedLocked && (
           <Alert severity="warning" sx={{ mt: 1.5 }}>
-            This job card is closed. Only the Lab Manager or Administration can change it, so it is shown read-only.
+            This job card is closed. Only Administration, the Lab Manager, Accounts, Reports or Quality can change it, so it is shown read-only.
           </Alert>
         )}
 

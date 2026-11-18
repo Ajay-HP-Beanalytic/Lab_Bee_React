@@ -270,7 +270,7 @@ function fill(content, family, reportTests = [], eutRows = []) {
       testId: t.id || null,
       eutSerial: family === "saltfog" ? "Refer Table-02" : serialsText(t.eutSerialNo),
       test: t.testName || "",
-      profile: t.standard || "",
+      profile: t.testProfile || t.standard || "", // the Test details profile, else the standard
       medium: "",
       duration: t.duration || "",
       observation: t.remarks || f.observation,

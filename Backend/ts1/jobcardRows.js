@@ -65,11 +65,22 @@ async function jobcardUser(req) {
   return access;
 }
 
-/** A closed job card can be changed (or reopened) only by the Lab Manager or Administration */
-const canEditClosed = (access) => !!access?.isAdmin || access?.role === "Lab Manager";
+/**
+ * A closed job card can still be edited (report numbers, report delivery status, invoice...) by
+ * Administration, the Lab Manager, Accounts, the Reports team and the Quality team. Only the
+ * Lab Manager or Administration can reopen it (canReopenClosed).
+ * Keep in step with frontend/src/JC/jcPermissions.js.
+ */
+const canReopenClosed = (access) => !!access?.isAdmin || access?.role === "Lab Manager";
+const canEditClosed = (access) =>
+  canReopenClosed(access) ||
+  // Accounts, Reports & Scrutiny (incl. Quality Engineer), a Quality department if one is added
+  /accounts|reports|scrutiny|quality/i.test(String(access?.department || "")) ||
+  // Quality Manager, Deputy Quality Manager, Reports & Scrutiny Manager (in TS1 Testing)
+  /quality|reports|scrutiny/i.test(String(access?.role || ""));
 function checkCanEdit(jobcard, access) {
   if (["Closed", "Close"].includes(jobcard.jc_status) && !canEditClosed(access)) {
-    throw fail(403, "This job card is closed. Only the Lab Manager or Administration can change it.");
+    throw fail(403, "This job card is closed. Only Administration, the Lab Manager, Accounts, Reports or Quality can change it.");
   }
 }
 
@@ -186,4 +197,4 @@ async function saveRows(pool, access, jcNumber, payload) {
   }
 }
 
-module.exports = { TABLES, saveRows, jobcardUser, checkCanEdit, canEditClosed, fail };
+module.exports = { TABLES, saveRows, jobcardUser, checkCanEdit, canEditClosed, canReopenClosed, fail };

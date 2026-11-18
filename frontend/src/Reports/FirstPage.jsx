@@ -7,8 +7,11 @@ import {
   RelativeVerticalPosition,
   TableAnchorType,
   TextRun,
+  TableCell,
+  TableLayoutType,
   TableRow,
   VerticalAlign,
+  WidthType,
 } from "docx";
 import {
   authorizedByDesignation,
@@ -55,14 +58,14 @@ const signatureCell = (label, slot, alignment, width) =>
       }),
       new Paragraph({ alignment, spacing: { after: 900 }, children: [marker(`LBSIG${slot.toUpperCase()}`)] }),
     ],
-    { width, verticalAlign: VerticalAlign.TOP, margins: { top: 0, bottom: 100 } }
+    { width, widthType: WidthType.DXA, verticalAlign: VerticalAlign.TOP, margins: { top: 0, bottom: 100 } }
   );
 
 // Name / designation under the signature (marker + text)
 const markedCell = (word, text, alignment, width, bottom) =>
   createTableCell(
     [new Paragraph({ alignment, children: [marker(word), createTextRun(text || "", { size: SIZE.signature })] })],
-    { width, verticalAlign: VerticalAlign.TOP, margins: { top: 0, bottom } }
+    { width, widthType: WidthType.DXA, verticalAlign: VerticalAlign.TOP, margins: { top: 0, bottom } }
   );
 
 const issueDateBlock = (reportConfig) => [
@@ -72,7 +75,8 @@ const issueDateBlock = (reportConfig) => [
     size: SIZE.issueDate,
     color: "000000",
     font: "Calibri",
-    spacing: { before: 400, after: 200 },
+    // the gap between the date and the signatures
+    spacing: { before: 0, after: 600 },
   }),
 ];
 
@@ -213,41 +217,58 @@ export const createFirstPage = (comprehensiveData, reportConfig) => {
       spacing: { after: 500 },
     }),
 
-    // Draft date (the final gets its issue date when it is made)
-    ...issueDateBlock(reportConfig),
-
     // Signature Table (Prepared By, Reviewed By, Authorized Signature), kept at the bottom of the
-    // page: it grows upwards when the final puts the signatures in
+    // page: it grows upwards when the final puts the signatures in. Its first row is the date
+    // (draft date; the final gets its issue date when it is made), so the date sits just above
+    // the signatures.
     createDataTable(
       [
+        // Row 0: the issue date, across the three columns
+        new TableRow({
+          children: [
+            new TableCell({
+              columnSpan: 3,
+              width: { size: 9986, type: WidthType.DXA },
+              children: issueDateBlock(reportConfig),
+              verticalAlign: VerticalAlign.TOP,
+              margins: { top: 0, bottom: 0, left: 0, right: 0 }, // the date at the page margin, as before
+            }),
+          ],
+        }),
+
         // Row 1: Headers
         new TableRow({
           children: [
-            signatureCell("Prepared By", "prepared", AlignmentType.CENTER, 33),
-            signatureCell("Reviewed By", "reviewed", AlignmentType.CENTER, 33),
-            signatureCell("Authorized Signature", "authorized", AlignmentType.CENTER, 34),
+            signatureCell("Prepared By", "prepared", AlignmentType.CENTER, 3295),
+            signatureCell("Reviewed By", "reviewed", AlignmentType.CENTER, 3295),
+            signatureCell("Authorized Signature", "authorized", AlignmentType.CENTER, 3396),
           ],
         }),
 
         // Row 2: Names
         new TableRow({
           children: [
-            markedCell("LBNAMEPREPARED", comprehensiveData?.currentTest_preparedBy || preparedByName, AlignmentType.CENTER, 33, 100),
-            markedCell("LBNAMEREVIEWED", comprehensiveData?.currentTest_testReviewedBy || reviewedByName, AlignmentType.CENTER, 33, 100),
-            markedCell("LBNAMEAUTHORIZED", authorizedByName, AlignmentType.CENTER, 34, 100),
+            markedCell("LBNAMEPREPARED", comprehensiveData?.currentTest_preparedBy || preparedByName, AlignmentType.CENTER, 3295, 100),
+            markedCell("LBNAMEREVIEWED", comprehensiveData?.currentTest_testReviewedBy || reviewedByName, AlignmentType.CENTER, 3295, 100),
+            markedCell("LBNAMEAUTHORIZED", authorizedByName, AlignmentType.CENTER, 3396, 100),
           ],
         }),
 
         // Row 3: Designations
         new TableRow({
           children: [
-            markedCell("LBDESGPREPARED", preparedByDesignation || "", AlignmentType.CENTER, 33, 40),
-            markedCell("LBDESGREVIEWED", reviewedByDesignation || "", AlignmentType.CENTER, 33, 40),
-            markedCell("LBDESGAUTHORIZED", authorizedByDesignation || "", AlignmentType.CENTER, 34, 40),
+            markedCell("LBDESGPREPARED", preparedByDesignation || "", AlignmentType.CENTER, 3295, 40),
+            markedCell("LBDESGREVIEWED", reviewedByDesignation || "", AlignmentType.CENTER, 3295, 40),
+            markedCell("LBDESGAUTHORIZED", authorizedByDesignation || "", AlignmentType.CENTER, 3396, 40),
           ],
         }),
       ],
       {
+        // fixed widths across the text width (9986 twips): Word lays a floating table out
+        // narrower when its widths are percentages
+        width: 9986,
+        widthType: WidthType.DXA,
+        layout: TableLayoutType.FIXED,
         columnWidths: [3295, 3295, 3396],
         float: {
           horizontalAnchor: TableAnchorType.MARGIN,

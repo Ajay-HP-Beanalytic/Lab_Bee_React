@@ -33,6 +33,16 @@ export const graphBlocks = async (comprehensiveData, reportConfig, embeds = []) 
   // ESS: the test data page and the temperature note belong to the thermal sub-test only
   const thermalPart = (group) => !isEss || familyOf("", group || "") === "thermal";
   let dataPageDone = !family?.dataPage;
+  // TEST SEVERITY/PROFILE: the profile written in the builder's Table 03 row of this test,
+  // else the job card's Test details profile, else the standard
+  const builderRows = reportConfig?.content?.rows || [];
+  const filled = (r) => String(r?.profile || "").trim();
+  const withProfile = (t) => {
+    const r =
+      builderRows.find((x) => x.testId && t.id && String(x.testId) === String(t.id) && filled(x)) ||
+      (!isEss ? builderRows.find(filled) : null);
+    return { ...t, testProfile: filled(r) || t.testProfile || t.standard || "" };
+  };
   const blocks = [];
 
   for (let i = 0; i < files.length; i++) {
@@ -62,7 +72,7 @@ export const graphBlocks = async (comprehensiveData, reportConfig, embeds = []) 
           // the test data page: of the sub-test this graph belongs to (ESS), else of the report's test
           const tests = comprehensiveData?.reportTestRows || [];
           const row = tests.find((t) => group && norm(t.testName) === norm(group)) || (isEss ? tests.find((t) => familyOf("", t.testName) === "thermal") : null);
-          children.push(...createTestGraphTable(row ? { ...comprehensiveData, currentTestRow: row } : comprehensiveData));
+          children.push(...createTestGraphTable({ ...comprehensiveData, currentTestRow: withProfile(row || comprehensiveData?.currentTestRow || {}) }));
           dataPageDone = true;
         }
         children.push(createHeadingParagraph(f.caption ? f.caption.toUpperCase() : "GRAPHICAL REPRESENTATION OF TEST"));

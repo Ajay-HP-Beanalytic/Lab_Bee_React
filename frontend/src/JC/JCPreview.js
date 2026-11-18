@@ -1,4 +1,10 @@
-import { forwardRef, useCallback, useContext, useEffect, useState } from "react";
+import {
+  forwardRef,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 import {
   TableContainer,
   Paper,
@@ -45,7 +51,14 @@ import JCChecklistPanel from "./ReportWorkflow/JCChecklistPanel";
 import ReportStageButton from "./ReportWorkflow/ReportStageButton";
 import FinalReleaseBox from "./ReportWorkflow/FinalReleaseBox";
 import { loadReportPhotos } from "./ReportWorkflow/reportPhotos";
-import { errorText, loadJcWorkflow, loadReportAssets, reportForRow, uploadReportFile } from "./ReportWorkflow/reportWorkflow";
+import {
+  errorText,
+  loadJcWorkflow,
+  loadReportAssets,
+  reportForRow,
+  uploadReportFile,
+} from "./ReportWorkflow/reportWorkflow";
+import { canEditClosedJobcard } from "./jcPermissions";
 
 const Transition = forwardRef(function Transition(props, ref) {
   return <Slide direction="up" ref={ref} {...props} />;
@@ -79,7 +92,8 @@ export default function JCPreview({
   openReportFor = null, // from the Reports board: the test row whose report window opens at once
   onReportOpened,
 }) {
-  const { loggedInUserDepartment, loggedInUserRole, access } = useContext(UserContext);
+  const { loggedInUserDepartment, loggedInUserRole, access } =
+    useContext(UserContext);
 
   // State for attached-document preview
   const [attachmentPreviewOpen, setAttachmentPreviewOpen] = useState(false);
@@ -125,8 +139,13 @@ export default function JCPreview({
   const isLabManager = loggedInUserRole === "Lab Manager";
   const canEditJC =
     isLabManager || isAdminOrAccounts || isReportsAndScrutiny || isTS1Testing;
-  // A closed job card: only the Lab Manager or Administration may edit it (the server checks this too)
-  const canEditClosed = isLabManager || !!access?.isAdmin || loggedInUserDepartment === "Administration";
+  // A closed job card: Administration, the Lab Manager, Accounts, Reports and Quality may edit it
+  // (the server checks this too)
+  const canEditClosed = canEditClosedJobcard({
+    department: loggedInUserDepartment,
+    role: loggedInUserRole,
+    isAdmin: !!access?.isAdmin,
+  });
   const isClosedJc = ["Closed", "Close"].includes(jcStatus);
   const disableEditButton = !canEditJC || (isClosedJc && !canEditClosed);
 
@@ -161,8 +180,8 @@ export default function JCPreview({
     "Unit",
     "Test Ended By",
     "Remarks",
-    "Photos on BEA NAS",
-    "Graphs on BEA NAS",
+    "Test Photos on BEA NAS",
+    "Test Graphs & Test End Photos on BEA NAS",
     "Test Reviewed By",
 
     // "Report Prepartion Status",
@@ -226,9 +245,12 @@ export default function JCPreview({
     if (!row?.id) return;
     const others = otherRows.map((r) => r?.id).filter(Boolean);
     try {
-      const res = await axios.get(`${serverBaseAddress}/api/ts1/report-context/${row.id}`, {
-        params: others.length ? { with: others.join(",") } : {},
-      });
+      const res = await axios.get(
+        `${serverBaseAddress}/api/ts1/report-context/${row.id}`,
+        {
+          params: others.length ? { with: others.join(",") } : {},
+        },
+      );
       setReportPrefill(res.data);
     } catch (error) {
       console.error("Error loading report data:", error);
@@ -274,7 +296,9 @@ export default function JCPreview({
       .map((id) => testDetailsRows.findIndex((r) => r.id === id))
       .filter((i) => i >= 0);
     if (!indices.length) {
-      toast.error("The test rows of this report were not found. Reopen the job card.");
+      toast.error(
+        "The test rows of this report were not found. Reopen the job card.",
+      );
       return;
     }
     if (indices.length > 1) handleGenerateESSTestReport(indices);
@@ -283,9 +307,19 @@ export default function JCPreview({
 
   // From the Reports board: the report window opens once the job card and its reports are loaded
   useEffect(() => {
-    if (!openReportFor || !jobcard || !workflow || !testDetailsRows?.some((r) => r.id === openReportFor)) return;
+    if (
+      !openReportFor ||
+      !jobcard ||
+      !workflow ||
+      !testDetailsRows?.some((r) => r.id === openReportFor)
+    )
+      return;
     onReportOpened?.();
-    handleGenerateDraftFor(reportForRow(workflow.reports, openReportFor, workflow.toPrepare) || { testDetailId: openReportFor });
+    handleGenerateDraftFor(
+      reportForRow(workflow.reports, openReportFor, workflow.toPrepare) || {
+        testDetailId: openReportFor,
+      },
+    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [openReportFor, jobcard, workflow, testDetailsRows]);
 
@@ -297,7 +331,12 @@ export default function JCPreview({
       loadReportAssets({ date: reportConfig.originalReportIssueDateISO }),
       testDetailId ? loadReportPhotos(testDetailId) : Promise.resolve([]),
     ]);
-    return GenerateReportDocument(pendingReportData, { ...reportConfig, assets, photos, issue: { kind: "draft" } });
+    return GenerateReportDocument(pendingReportData, {
+      ...reportConfig,
+      assets,
+      photos,
+      issue: { kind: "draft" },
+    });
   };
 
   // Handler for report config confirmation
@@ -313,7 +352,9 @@ export default function JCPreview({
     try {
       made = await buildDraft(reportConfig);
     } catch (error) {
-      toast.error(errorText(error, "Could not make the report"), { autoClose: 10000 });
+      toast.error(errorText(error, "Could not make the report"), {
+        autoClose: 10000,
+      });
       setConfigDialogOpen(true);
       return;
     }
@@ -334,33 +375,58 @@ export default function JCPreview({
       const testDetailId = pendingReportData.currentTestRow?.id;
       if (testDetailId) {
         axios
-          .post(`${serverBaseAddress}/api/ts1/report-register/${testDetailId}`, {
-            reportNumber: reportConfig.testReportNumber,
-            ulrNumber: reportConfig.reportType === "NABL" ? reportConfig.ulrNumber : "",
-            reportType: reportConfig.reportType,
-            testCode: reportConfig.testCode,
-            issueDate: reportConfig.originalReportIssueDateISO || null,
-            chambers: reportConfig.chambers,
-            // layout, Table 02 rows, specifications and notes: the next draft starts from them
-            content: reportConfig.content,
-            // an ESS report covers several test rows
-            testIds: (pendingReportData.reportTests || []).map((t) => t.id).filter(Boolean),
-            testName: pendingReportData.isESSTest
-              ? `ESS: ${(pendingReportData.reportTests || []).map((t) => t.testName).join(", ")}`.slice(0, 1000)
-              : pendingReportData.currentTestRow?.testName || "",
-          })
+          .post(
+            `${serverBaseAddress}/api/ts1/report-register/${testDetailId}`,
+            {
+              reportNumber: reportConfig.testReportNumber,
+              ulrNumber:
+                reportConfig.reportType === "NABL"
+                  ? reportConfig.ulrNumber
+                  : "",
+              reportType: reportConfig.reportType,
+              testCode: reportConfig.testCode,
+              issueDate: reportConfig.originalReportIssueDateISO || null,
+              chambers: reportConfig.chambers,
+              // layout, Table 02 rows, specifications and notes: the next draft starts from them
+              content: reportConfig.content,
+              // an ESS report covers several test rows
+              testIds: (pendingReportData.reportTests || [])
+                .map((t) => t.id)
+                .filter(Boolean),
+              testName: pendingReportData.isESSTest
+                ? `ESS: ${(pendingReportData.reportTests || []).map((t) => t.testName).join(", ")}`.slice(
+                    0,
+                    1000,
+                  )
+                : pendingReportData.currentTestRow?.testName || "",
+            },
+          )
           // ...and keep the Word file itself as a version of the report
           .then((res) => {
-            if (res.data.warning) toast.warning(res.data.warning, { autoClose: 8000 });
-            return uploadReportFile(testDetailId, blob, { kind: "draft", source: "generated" }, fileName);
+            if (res.data.warning)
+              toast.warning(res.data.warning, { autoClose: 8000 });
+            return uploadReportFile(
+              testDetailId,
+              blob,
+              { kind: "draft", source: "generated" },
+              fileName,
+            );
           })
           .then((saved) => {
-            toast.success(`Draft saved in Lab Bee (Word version ${saved.version})`, { autoClose: 3000 });
+            toast.success(
+              `Draft saved in Lab Bee (Word version ${saved.version})`,
+              { autoClose: 3000 },
+            );
             refreshWorkflow();
           })
           .catch((error) => {
             console.error("Error saving the draft:", error);
-            toast.error(errorText(error, "The draft was made but could not be saved in Lab Bee"));
+            toast.error(
+              errorText(
+                error,
+                "The draft was made but could not be saved in Lab Bee",
+              ),
+            );
           });
       }
 
@@ -573,9 +639,15 @@ export default function JCPreview({
         <Divider />
 
         {/* Job card checklist (TS1) */}
-        {workflow && <FinalReleaseBox data={workflow} onChanged={refreshWorkflow} />}
         {workflow && (
-          <JCChecklistPanel data={workflow} jcNumber={jcNumber} onChanged={refreshWorkflow} />
+          <FinalReleaseBox data={workflow} onChanged={refreshWorkflow} />
+        )}
+        {workflow && (
+          <JCChecklistPanel
+            data={workflow}
+            jcNumber={jcNumber}
+            onChanged={refreshWorkflow}
+          />
         )}
 
         {/* Attached Documents */}
@@ -898,7 +970,9 @@ export default function JCPreview({
                                         variant="contained"
                                         size="small"
                                         startIcon={<AssignmentIcon />}
-                                        onClick={() => handleGenerateESSTestReport()}
+                                        onClick={() =>
+                                          handleGenerateESSTestReport()
+                                        }
                                         sx={{
                                           "backgroundColor": "#9c27b0",
                                           "ml": 0.5,
@@ -942,7 +1016,11 @@ export default function JCPreview({
                               <Box sx={{ mt: 0.5 }}>
                                 <ReportStageButton
                                   compact
-                                  report={reportForRow(workflow.reports, row.id, workflow.toPrepare)}
+                                  report={reportForRow(
+                                    workflow.reports,
+                                    row.id,
+                                    workflow.toPrepare,
+                                  )}
                                   me={workflow.me}
                                   release={workflow.release}
                                   jcNumber={jcNumber}
@@ -963,7 +1041,13 @@ export default function JCPreview({
 
         {/* Buttons for Edit/Update, View History, Download, and Close */}
         <Box sx={{ display: "flex", justifyContent: "center", mt: 3 }}>
-          <Tooltip title={isClosedJc && !canEditClosed ? "This job card is closed. Only the Lab Manager or Administration can edit it." : ""}>
+          <Tooltip
+            title={
+              isClosedJc && !canEditClosed
+                ? "This job card is closed. Only Administration, the Lab Manager, Accounts, Reports or Quality can edit it."
+                : ""
+            }
+          >
             <span>
               <Button
                 sx={{
@@ -1031,8 +1115,14 @@ export default function JCPreview({
         testCategory={pendingReportData?.currentTestRow?.testCategory || ""}
         reportTests={pendingReportData?.reportTests || []}
         eutRows={pendingReportData?.currentTestEutRows || []}
+        allEutRows={pendingReportData?.eutRows || []}
+        eutMatch={pendingReportData?.eutMatch || "serial"}
         testDetailId={pendingReportData?.currentTestRow?.id || null}
-        onPreview={pendingReportData ? (cfg) => buildDraft(cfg).then((r) => r.blob) : null}
+        onPreview={
+          pendingReportData
+            ? (cfg) => buildDraft(cfg).then((r) => r.blob)
+            : null
+        }
       />
 
       {/* Document Preview Modal */}
